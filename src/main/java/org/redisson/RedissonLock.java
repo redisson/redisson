@@ -98,6 +98,9 @@ public class RedissonLock implements Lock {
             msg.tryAcquire(time, TimeUnit.MILLISECONDS);
             long elapsed = System.currentTimeMillis() - current;
             time -= elapsed;
+            if (time <= 0) {
+                return false;
+            }
         }
         return true;
     }
