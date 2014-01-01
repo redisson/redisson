@@ -1,47 +1,64 @@
 package org.redisson;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class RedissonLock implements Lock {
 
-    private final RedisPubSubConnection<Object, Object> connection;
+    private final CountDownLatch subscribeLatch = new CountDownLatch(1);
+    private final RedisPubSubConnection<Object, Object> pubSubConnection;
+    private final RedisConnection<Object, Object> connection;
     private final String lockGroupName = "redisson_lock";
     private final String lockName;
 
-    RedissonLock(RedisPubSubConnection<Object, Object> connection, String lockName) {
+    private static final Integer unlockMessage = 0;
+
+    private final AtomicBoolean subscribeOnce = new AtomicBoolean();
+
+    private final Semaphore msg = new Semaphore(1);
+
+    RedissonLock(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String lockName) {
+        this.pubSubConnection = pubSubConnection;
         this.connection = connection;
         this.lockName = lockName;
     }
 
-    private CountDownLatch subscribe(final RedisPubSubConnection<Object, Object> connection) {
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
-        connection.addListener(new RedisPubSubAdapter<Object, Object>() {
+    public void subscribe() {
+        if (subscribeOnce.compareAndSet(false, true)) {
+            RedisPubSubAdapter<Object, Object> listener = new RedisPubSubAdapter<Object, Object>() {
 
-            @Override
-            public void subscribed(Object channel, long count) {
-                if (tryLock()) {
-                    connection.unsubscribe(getChannelName());
-                    countDownLatch.countDown();
+                @Override
+                public void subscribed(Object channel, long count) {
+                    if (channel.equals(getChannelName())) {
+                        subscribeLatch.countDown();
+                    }
                 }
-            }
 
-            @Override
-            public void message(Object channel, Object message) {
-                if (tryLock()) {
-                    connection.unsubscribe(getChannelName());
-                    countDownLatch.countDown();
+                @Override
+                public void message(Object channel, Object message) {
+                    if (message.equals(unlockMessage) && channel.equals(getChannelName())) {
+                        msg.release();
+                    }
                 }
-            }
-        });
 
-        connection.subscribe(getChannelName());
-        return countDownLatch;
+            };
+            pubSubConnection.addListener(listener);
+            pubSubConnection.subscribe(getChannelName());
+        }
+
+        try {
+            subscribeLatch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
@@ -50,6 +67,7 @@ public class RedissonLock implements Lock {
             lockInterruptibly();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return;
         }
     }
 
@@ -59,26 +77,27 @@ public class RedissonLock implements Lock {
 
     @Override
     public void lockInterruptibly() throws InterruptedException {
-        if (!tryLock()) {
-            CountDownLatch countDownLatch = subscribe(connection);
-            countDownLatch.await();
+        while (!tryLock()) {
+            // waiting for message
+            msg.acquire();
         }
     }
 
     @Override
     public boolean tryLock() {
-        try {
-            return connection.hsetnx(lockGroupName, lockName, true).get();
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+        Boolean res = connection.hsetnx(lockGroupName, lockName, "1");
+        return res;
     }
 
     @Override
     public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-        if (!tryLock()) {
-            CountDownLatch countDownLatch = subscribe(connection);
-            countDownLatch.await(time, unit);
+        time = unit.toMillis(time);
+        while (!tryLock()) {
+            long current = System.currentTimeMillis();
+            // waiting for message
+            msg.tryAcquire(time, TimeUnit.MILLISECONDS);
+            long elapsed = System.currentTimeMillis() - current;
+            time -= elapsed;
         }
         return true;
     }
@@ -86,6 +105,8 @@ public class RedissonLock implements Lock {
     @Override
     public void unlock() {
         connection.hdel(lockGroupName, lockName);
+        connection.publish(getChannelName(), unlockMessage);
+        msg.release();
     }
 
     @Override

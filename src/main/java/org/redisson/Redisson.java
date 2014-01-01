@@ -1,6 +1,8 @@
 package org.redisson;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 
 import com.lambdaworks.redis.RedisClient;
@@ -9,6 +11,11 @@ import com.lambdaworks.redis.codec.JsonCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class Redisson {
+
+    // TODO drain after some time
+    private final ConcurrentMap<String, RedissonLock> locksMap = new ConcurrentHashMap<String, RedissonLock>();
+
+    private JsonCodec codec = new JsonCodec();
 
     RedisClient redisClient;
 
@@ -21,14 +28,28 @@ public class Redisson {
     }
 
     public <K, V> Map<K, V> getMap(String name) {
-        RedisConnection<Object, Object> connection = redisClient.connect(new JsonCodec());
+        RedisConnection<Object, Object> connection = redisClient.connect(codec);
         return new RedissonMap<K, V>(connection, name);
     }
 
     public Lock getLock(String name) {
-        RedisPubSubConnection<Object, Object> connection = redisClient.connectPubSub(new JsonCodec());
-        return new RedissonLock(connection, name);
-    }
+        RedissonLock lock = locksMap.get(name);
+        if (lock == null) {
+            RedisConnection<Object, Object> connection = redisClient.connect(codec);
+            RedisPubSubConnection<Object, Object> pubSubConnection = redisClient.connectPubSub(codec);
 
+            lock = new RedissonLock(pubSubConnection, connection, name);
+            RedissonLock oldLock = locksMap.putIfAbsent(name, lock);
+            if (oldLock != null) {
+                connection.close();
+                pubSubConnection.close();
+
+                lock = oldLock;
+            }
+        }
+
+        lock.subscribe();
+        return lock;
+    }
 
 }
