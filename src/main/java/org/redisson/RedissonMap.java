@@ -18,6 +18,14 @@ public class RedissonMap<K, V> implements Map<K, V> {
         this.name = name;
     }
 
+    protected String getName() {
+        return name;
+    }
+
+    protected RedisConnection<Object, Object> getConnection() {
+        return connection;
+    }
+
     @Override
     public int size() {
         return connection.hlen(name).intValue();
