@@ -110,6 +110,26 @@ public class RedissonMapTest {
     }
 
     @Test
+    public void testNull() {
+        Redisson redisson = Redisson.create();
+        Map<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, null);
+        map.put(2, null);
+        map.put(3, "43");
+
+        Assert.assertEquals(3, map.size());
+
+        String val = map.get(2);
+        Assert.assertNull(val);
+        String val2 = map.get(1);
+        Assert.assertNull(val2);
+        String val3 = map.get(3);
+        Assert.assertEquals("43", val3);
+
+        clear(map);
+    }
+
+    @Test
     public void testSimpleTypes() {
         Redisson redisson = Redisson.create();
         Map<Integer, String> map = redisson.getMap("simple12");
