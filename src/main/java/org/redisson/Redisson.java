@@ -1,5 +1,6 @@
 package org.redisson;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -12,6 +13,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class Redisson {
 
     // TODO drain after some time
+    private final ConcurrentMap<String, RedissonList> listsMap = new ConcurrentHashMap<String, RedissonList>();
     private final ConcurrentMap<String, RedissonMap> mapsMap = new ConcurrentHashMap<String, RedissonMap>();
     private final ConcurrentMap<String, RedissonLock> locksMap = new ConcurrentHashMap<String, RedissonLock>();
 
@@ -19,12 +21,36 @@ public class Redisson {
 
     RedisClient redisClient;
 
-    Redisson() {
-        redisClient = new RedisClient("localhost");
+    Redisson(String host, int port) {
+        redisClient = new RedisClient(host, port);
     }
 
     public static Redisson create() {
-        return new Redisson();
+        return create("localhost");
+    }
+
+    public static Redisson create(String host) {
+        return create(host, 6379);
+    }
+
+    public static Redisson create(String host, int port) {
+        return new Redisson(host, port);
+    }
+
+    public <V> List<V> getList(String name) {
+        RedissonList<V> list = listsMap.get(name);
+        if (list == null) {
+            RedisConnection<Object, Object> connection = connect();
+            list = new RedissonList<V>(connection, name);
+            RedissonList<V> oldList = listsMap.putIfAbsent(name, list);
+            if (oldList != null) {
+                connection.close();
+
+                list = oldList;
+            }
+        }
+
+        return list;
     }
 
     public <K, V> ConcurrentMap<K, V> getMap(String name) {
@@ -41,10 +67,6 @@ public class Redisson {
         }
 
         return map;
-    }
-
-    RedisConnection<Object, Object> connect() {
-        return redisClient.connect(codec);
     }
 
     public Lock getLock(String name) {
@@ -67,4 +89,8 @@ public class Redisson {
         return lock;
     }
 
+    RedisConnection<Object, Object> connect() {
+        return redisClient.connect(codec);
+    }
 }
+
