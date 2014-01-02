@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -201,6 +202,91 @@ public class RedissonMapTest {
 
         clear(map);
     }
+
+    @Test
+    public void testRemoveValue() {
+        Redisson redisson = Redisson.create();
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+
+        boolean res = map.remove(new SimpleKey("1"), new SimpleValue("2"));
+        Assert.assertTrue(res);
+
+        SimpleValue val1 = map.get(new SimpleKey("1"));
+        Assert.assertNull(val1);
+
+        Assert.assertEquals(0, map.size());
+
+        clear(map);
+    }
+
+    @Test
+    public void testRemoveValueFail() {
+        Redisson redisson = Redisson.create();
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+
+        boolean res = map.remove(new SimpleKey("2"), new SimpleValue("1"));
+        Assert.assertFalse(res);
+
+        boolean res1 = map.remove(new SimpleKey("1"), new SimpleValue("3"));
+        Assert.assertFalse(res1);
+
+        SimpleValue val1 = map.get(new SimpleKey("1"));
+        Assert.assertEquals("2", val1.getValue());
+
+        clear(map);
+    }
+
+
+    @Test
+    public void testReplaceOldValueFail() {
+        Redisson redisson = Redisson.create();
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+
+        boolean res = map.replace(new SimpleKey("1"), new SimpleValue("43"), new SimpleValue("31"));
+        Assert.assertFalse(res);
+
+        SimpleValue val1 = map.get(new SimpleKey("1"));
+        Assert.assertEquals("2", val1.getValue());
+
+        clear(map);
+    }
+
+    @Test
+    public void testReplaceOldValueSuccess() {
+        Redisson redisson = Redisson.create();
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+
+        boolean res = map.replace(new SimpleKey("1"), new SimpleValue("2"), new SimpleValue("3"));
+        Assert.assertTrue(res);
+
+        boolean res1 = map.replace(new SimpleKey("1"), new SimpleValue("2"), new SimpleValue("3"));
+        Assert.assertFalse(res1);
+
+        SimpleValue val1 = map.get(new SimpleKey("1"));
+        Assert.assertEquals("3", val1.getValue());
+
+        clear(map);
+    }
+
+    @Test
+    public void testReplaceValue() {
+        Redisson redisson = Redisson.create();
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+
+        SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
+        Assert.assertEquals("2", res.getValue());
+
+        SimpleValue val1 = map.get(new SimpleKey("1"));
+        Assert.assertEquals("3", val1.getValue());
+
+        clear(map);
+    }
+
 
     @Test
     public void testReplace() {
