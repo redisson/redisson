@@ -177,7 +177,7 @@ public class RedissonList<V> implements List<V> {
         int batchSize = 50;
         int to = Math.max(size()/batchSize, 1);
         for (int i = 0; i < to; i++) {
-            List<Object> range = connection.lrange(name, i*batchSize, i*batchSize + batchSize);
+            List<Object> range = connection.lrange(name, i*batchSize, i*batchSize + batchSize - 1);
             int index = range.indexOf(o);
             if (index != -1) {
                 return index + i*batchSize;

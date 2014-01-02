@@ -12,6 +12,117 @@ import org.junit.Test;
 public class RedissonListTest {
 
     @Test
+    public void testIndexOf() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        for (int i = 1; i < 200; i++) {
+            list.add(i);
+        }
+
+        Assert.assertTrue(55 == list.indexOf(56));
+        Assert.assertTrue(99 == list.indexOf(100));
+        Assert.assertTrue(-1 == list.indexOf(200));
+        Assert.assertTrue(-1 == list.indexOf(0));
+
+        clear(list);
+    }
+
+
+    @Test
+    public void testRemove() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        Integer val = list.remove(0);
+        Assert.assertTrue(1 == val);
+
+        Assert.assertThat(list, Matchers.contains(2, 3, 4, 5));
+
+        clear(list);
+    }
+
+    @Test
+    public void testSet() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        list.set(4, 6);
+
+        Assert.assertThat(list, Matchers.contains(1, 2, 3, 4, 6));
+        clear(list);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testSetFail() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        try {
+            list.set(5, 6);
+        } finally {
+            clear(list);
+        }
+    }
+
+    @Test
+    public void testSetList() {
+        List<Integer> list = new LinkedList<Integer>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        list.set(4, 6);
+
+        Assert.assertThat(list, Matchers.contains(1, 2, 3, 4, 6));
+
+        clear(list);
+    }
+
+
+    @Test
+    public void testRemoveAll() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        list.removeAll(Arrays.asList(3, 2, 10, 6));
+
+        Assert.assertThat(list, Matchers.contains(1, 4, 5));
+
+        list.removeAll(Arrays.asList(4));
+
+        Assert.assertThat(list, Matchers.contains(1, 5));
+
+        list.removeAll(Arrays.asList(1, 5, 1, 5));
+
+        Assert.assertTrue(list.isEmpty());
+
+        clear(list);
+    }
+
+
+    @Test
     public void testAddAllIndex() {
         Redisson redisson = Redisson.create();
         List<Integer> list = redisson.getList("list");
