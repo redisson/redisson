@@ -115,6 +115,11 @@ public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
         }
     }
 
+    private boolean isEquals(RedisConnection<Object, Object> connection, Object key, Object value) {
+        Object val = connection.hget(getName(), key);
+        return (value != null && value.equals(val)) || (value == null && val == null);
+    }
+
     @Override
     public boolean remove(Object key, Object value) {
         RedisConnection<Object, Object> connection = redisson.connect();
@@ -122,7 +127,7 @@ public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
             while (true) {
                 connection.watch(getName());
                 if (connection.hexists(getName(), key)
-                        && connection.hget(getName(), key).equals(value)) {
+                        && isEquals(connection, key, value)) {
                     connection.multi();
                     connection.hdel(getName(), key);
                     if (connection.exec().size() == 1) {
@@ -144,7 +149,7 @@ public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
             while (true) {
                 connection.watch(getName());
                 if (connection.hexists(getName(), key)
-                        && connection.hget(getName(), key).equals(oldValue)) {
+                        && isEquals(connection, key, oldValue)) {
                     connection.multi();
                     connection.hset(getName(), key, newValue);
                     if (connection.exec().size() == 1) {
@@ -167,6 +172,7 @@ public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
                 connection.watch(getName());
                 if (connection.hexists(getName(), key)) {
                     V prev = (V) connection.hget(getName(), key);
+                    connection.multi();
                     connection.hset(getName(), key, value);
                     if (connection.exec().size() == 1) {
                         return prev;

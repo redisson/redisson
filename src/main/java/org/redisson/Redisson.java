@@ -1,6 +1,5 @@
 package org.redisson;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -13,6 +12,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class Redisson {
 
     // TODO drain after some time
+    private final ConcurrentMap<String, RedissonMap> mapsMap = new ConcurrentHashMap<String, RedissonMap>();
     private final ConcurrentMap<String, RedissonLock> locksMap = new ConcurrentHashMap<String, RedissonLock>();
 
     private JsonCodec codec = new JsonCodec();
@@ -27,8 +27,20 @@ public class Redisson {
         return new Redisson();
     }
 
-    public <K, V> Map<K, V> getMap(String name) {
-        return new RedissonMap<K, V>(this, connect(), name);
+    public <K, V> ConcurrentMap<K, V> getMap(String name) {
+        RedissonMap<K, V> map = mapsMap.get(name);
+        if (map == null) {
+            RedisConnection<Object, Object> connection = connect();
+            map = new RedissonMap<K, V>(this, connection, name);
+            RedissonMap<K, V> oldMap = mapsMap.putIfAbsent(name, map);
+            if (oldMap != null) {
+                connection.close();
+
+                map = oldMap;
+            }
+        }
+
+        return map;
     }
 
     RedisConnection<Object, Object> connect() {

@@ -8,10 +8,68 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.RedissonMapTest.SimpleKey;
-import org.redisson.RedissonMapTest.SimpleValue;
 
 public class RedissonConcurrentMapTest {
+
+    @Test
+    public void testSingleReplaceOldValue_SingleInstance() throws InterruptedException {
+        final String name = "testSingleReplaceOldValue_SingleInstance";
+
+        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+        map.put("1", "122");
+
+        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+            @Override
+            public void run(Redisson redisson) {
+                ConcurrentMap<String, String> map = redisson.getMap(name);
+                map.replace("1", "122", "32");
+                map.replace("1", "0", "31");
+            }
+        });
+
+        ConcurrentMap<String, String> testMap = Redisson.create().getMap(name);
+        Assert.assertEquals("32", testMap.get("1"));
+
+        assertMapSize(1, name);
+    }
+
+    @Test
+    public void testSingleReplace_SingleInstance() throws InterruptedException {
+        final String name = "testSingleReplace_SingleInstance";
+
+        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+        map.put("1", "0");
+
+        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+            @Override
+            public void run(Redisson redisson) {
+                ConcurrentMap<String, String> map = redisson.getMap(name);
+                map.replace("1", "3");
+            }
+        });
+
+        ConcurrentMap<String, String> testMap = Redisson.create().getMap(name);
+        Assert.assertEquals("3", testMap.get("1"));
+
+        assertMapSize(1, name);
+    }
+
+    @Test
+    public void testSingleRemoveValue_SingleInstance() throws InterruptedException {
+        final String name = "testSingleRemoveValue_SingleInstance";
+
+        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+        map.putIfAbsent("1", "0");
+        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+            @Override
+            public void run(Redisson redisson) {
+                ConcurrentMap<String, String> map = redisson.getMap(name);
+                map.remove("1", "0");
+            }
+        });
+
+        assertMapSize(0, name);
+    }
 
     @Test
     public void testSinglePutIfAbsent_SingleInstance() throws InterruptedException {
