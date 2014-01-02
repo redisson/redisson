@@ -40,13 +40,13 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public Object[] toArray() {
-        List<V> list = subList(0, size());
+        List<V> list = subList(0, size()-1);
         return list.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<V> list = subList(0, size());
+        List<V> list = subList(0, size()-1);
         return list.toArray(a);
     }
 
@@ -73,10 +73,7 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public boolean addAll(Collection<? extends V> c) {
-        for (V v : c) {
-            add(v);
-        }
-        return true;
+        return addAll(size(), c);
     }
 
     @Override
@@ -133,6 +130,17 @@ public class RedissonList<V> implements List<V> {
         return index >= 0 && index < size;
     }
 
+    private void checkPosition(int index) {
+        int size = size();
+        if (!isPositionInRange(index, size))
+            throw new IndexOutOfBoundsException("index: " + index + " but current size: "+ size);
+    }
+
+    private boolean isPositionInRange(int index, int size) {
+        return index >= 0 && index <= size;
+    }
+
+
     @Override
     public V set(int index, V element) {
         checkIndex(index);
@@ -143,8 +151,13 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public void add(int index, V element) {
-        V value = get(index);
-        connection.linsert(name, true, value, element);
+        checkPosition(index);
+        if (index < size()) {
+            V value = (V) connection.lindex(name, index);
+            connection.linsert(name, true, value, element);
+        } else {
+            add(element);
+        }
     }
 
     @Override
@@ -161,12 +174,13 @@ public class RedissonList<V> implements List<V> {
             return -1;
         }
 
-        int to = Math.max(size()/100, 1);
+        int batchSize = 50;
+        int to = Math.max(size()/batchSize, 1);
         for (int i = 0; i < to; i++) {
-            List<Object> range = connection.lrange(name, i*100, i*100 + 100);
+            List<Object> range = connection.lrange(name, i*batchSize, i*batchSize + batchSize);
             int index = range.indexOf(o);
             if (index != -1) {
-                return index + i*100;
+                return index + i*batchSize;
             }
         }
 

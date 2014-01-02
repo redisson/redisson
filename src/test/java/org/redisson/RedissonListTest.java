@@ -2,6 +2,7 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.hamcrest.Matchers;
@@ -9,6 +10,87 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class RedissonListTest {
+
+    @Test
+    public void testAddAllIndex() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        list.addAll(2, Arrays.asList(7, 8, 9));
+
+        Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 5));
+
+        list.addAll(list.size()-1, Arrays.asList(9, 1, 9));
+
+        Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5));
+
+        list.addAll(list.size(), Arrays.asList(0, 5));
+
+        Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
+
+        clear(list);
+    }
+
+    @Test
+    public void testAddAllIndexList() {
+        List<Integer> list = new LinkedList<Integer>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        list.addAll(2, Arrays.asList(7,8,9));
+
+        list.addAll(list.size()-1, Arrays.asList(9, 1, 9));
+
+        Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5));
+
+        list.addAll(list.size(), Arrays.asList(0, 5));
+
+        Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
+
+        clear(list);
+    }
+
+
+    @Test
+    public void testAddAll() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        list.addAll(Arrays.asList(7,8,9));
+
+        list.addAll(Arrays.asList(9, 1, 9));
+
+        Assert.assertThat(list, Matchers.contains(1, 2, 3, 4, 5, 7, 8, 9, 9, 1, 9));
+
+        clear(list);
+    }
+
+    @Test
+    public void testContainsAll() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        for (int i = 0; i < 200; i++) {
+            list.add(i);
+        }
+
+        Assert.assertTrue(list.containsAll(Arrays.asList(30, 11)));
+        Assert.assertFalse(list.containsAll(Arrays.asList(30, 711, 11)));
+
+        clear(list);
+    }
 
     @Test
     public void testToArray() {
