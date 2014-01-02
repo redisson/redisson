@@ -95,7 +95,10 @@ public class RedissonLock implements Lock {
         while (!tryLock()) {
             long current = System.currentTimeMillis();
             // waiting for message
-            msg.tryAcquire(time, TimeUnit.MILLISECONDS);
+            boolean res = msg.tryAcquire(time, TimeUnit.MILLISECONDS);
+            if (res) {
+                return true;
+            }
             long elapsed = System.currentTimeMillis() - current;
             time -= elapsed;
             if (time <= 0) {
