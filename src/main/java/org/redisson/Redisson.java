@@ -28,14 +28,17 @@ public class Redisson {
     }
 
     public <K, V> Map<K, V> getMap(String name) {
-        RedisConnection<Object, Object> connection = redisClient.connect(codec);
-        return new RedissonMap<K, V>(connection, name);
+        return new RedissonMap<K, V>(this, connect(), name);
+    }
+
+    RedisConnection<Object, Object> connect() {
+        return redisClient.connect(codec);
     }
 
     public Lock getLock(String name) {
         RedissonLock lock = locksMap.get(name);
         if (lock == null) {
-            RedisConnection<Object, Object> connection = redisClient.connect(codec);
+            RedisConnection<Object, Object> connection = connect();
             RedisPubSubConnection<Object, Object> pubSubConnection = redisClient.connectPubSub(codec);
 
             lock = new RedissonLock(pubSubConnection, connection, name);

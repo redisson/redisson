@@ -5,15 +5,19 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 
 import com.lambdaworks.redis.RedisConnection;
 
-public class RedissonMap<K, V> implements Map<K, V> {
+//TODO make keys watching instead of map name
+public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
 
     private final RedisConnection<Object, Object> connection;
     private final String name;
+    private final Redisson redisson;
 
-    RedissonMap(RedisConnection<Object, Object> connection, String name) {
+    RedissonMap(Redisson redisson, RedisConnection<Object, Object> connection, String name) {
+        this.redisson = redisson;
         this.connection = connection;
         this.name = name;
     }
@@ -94,6 +98,85 @@ public class RedissonMap<K, V> implements Map<K, V> {
             result.put((K)entry.getKey(), (V)entry.getValue());
         }
         return result.entrySet();
+    }
+
+    @Override
+    public V putIfAbsent(K key, V value) {
+        while (true) {
+            Boolean res = getConnection().hsetnx(getName(), key, value);
+            if (!res) {
+                V result = get(key);
+                if (result != null) {
+                    return result;
+                }
+            } else {
+                return null;
+            }
+        }
+    }
+
+    @Override
+    public boolean remove(Object key, Object value) {
+        RedisConnection<Object, Object> connection = redisson.connect();
+        try {
+            while (true) {
+                connection.watch(getName());
+                if (connection.hexists(getName(), key)
+                        && connection.hget(getName(), key).equals(value)) {
+                    connection.multi();
+                    connection.hdel(getName(), key);
+                    if (connection.exec().size() == 1) {
+                        return true;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        } finally {
+            connection.close();
+        }
+    }
+
+    @Override
+    public boolean replace(K key, V oldValue, V newValue) {
+        RedisConnection<Object, Object> connection = redisson.connect();
+        try {
+            while (true) {
+                connection.watch(getName());
+                if (connection.hexists(getName(), key)
+                        && connection.hget(getName(), key).equals(oldValue)) {
+                    connection.multi();
+                    connection.hset(getName(), key, newValue);
+                    if (connection.exec().size() == 1) {
+                        return true;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        } finally {
+            connection.close();
+        }
+    }
+
+    @Override
+    public V replace(K key, V value) {
+        RedisConnection<Object, Object> connection = redisson.connect();
+        try {
+            while (true) {
+                connection.watch(getName());
+                if (connection.hexists(getName(), key)) {
+                    V prev = (V) connection.hget(getName(), key);
+                    connection.hset(getName(), key, value);
+                    if (connection.exec().size() == 1) {
+                        return prev;
+                    }
+                }
+                return null;
+            }
+        } finally {
+            connection.close();
+        }
     }
 
 }
