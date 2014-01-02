@@ -72,8 +72,7 @@ public class RedissonMap<K, V> implements Map<K, V> {
 
     @Override
     public void clear() {
-        Object[] fields = connection.hkeys(name).toArray();
-        connection.hdel(name, fields);
+        connection.del(name);
     }
 
     @Override
