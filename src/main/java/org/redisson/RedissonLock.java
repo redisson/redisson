@@ -109,7 +109,6 @@ public class RedissonLock implements Lock {
     public void unlock() {
         connection.hdel(lockGroupName, lockName);
         connection.publish(getChannelName(), unlockMessage);
-        msg.release();
     }
 
     @Override
