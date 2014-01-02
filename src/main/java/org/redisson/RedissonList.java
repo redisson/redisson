@@ -119,11 +119,23 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public V get(int index) {
+        checkIndex(index);
         return (V) connection.lindex(name, index);
+    }
+
+    private void checkIndex(int index) {
+        int size = size();
+        if (!isInRange(index, size))
+            throw new IndexOutOfBoundsException("index: " + index + " but current size: "+ size);
+    }
+
+    private boolean isInRange(int index, int size) {
+        return index >= 0 && index < size;
     }
 
     @Override
     public V set(int index, V element) {
+        checkIndex(index);
         V prev = get(index);
         connection.lset(name, index, element);
         return prev;
@@ -137,6 +149,7 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public V remove(int index) {
+        checkIndex(index);
         V value = get(index);
         connection.lrem(name, 1, value);
         return value;
@@ -212,6 +225,7 @@ public class RedissonList<V> implements List<V> {
                     throw new IllegalStateException("Element been already deleted");
                 }
                 RedissonList.this.remove(currentIndex);
+                currentIndex--;
                 removeExecuted = true;
             }
 
