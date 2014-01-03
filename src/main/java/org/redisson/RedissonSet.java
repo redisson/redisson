@@ -75,10 +75,10 @@ public class RedissonSet<V> implements Set<V> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        int changed = 0;
         RedisConnection<Object, Object> conn = redisson.connect();
         try {
             while (true) {
+                int changed = 0;
                 conn.watch(name);
                 Iterator<V> iterator = (Iterator<V>) conn.smembers(name).iterator();
                 conn.multi();
