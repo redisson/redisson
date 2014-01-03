@@ -127,7 +127,7 @@ public class RedissonMapTest {
         String val3 = map.get(3);
         Assert.assertEquals("43", val3);
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class RedissonMapTest {
         String val = map.get(2);
         Assert.assertEquals("33", val);
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -157,7 +157,7 @@ public class RedissonMapTest {
 
         Assert.assertEquals(1, map.size());
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -171,7 +171,7 @@ public class RedissonMapTest {
         Assert.assertTrue(map.keySet().contains(new SimpleKey("33")));
         Assert.assertFalse(map.keySet().contains(new SimpleKey("44")));
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -186,7 +186,7 @@ public class RedissonMapTest {
         Assert.assertFalse(map.containsValue(new SimpleValue("441")));
         Assert.assertFalse(map.containsValue(new SimpleKey("5")));
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -200,7 +200,7 @@ public class RedissonMapTest {
         Assert.assertTrue(map.containsKey(new SimpleKey("33")));
         Assert.assertFalse(map.containsKey(new SimpleKey("34")));
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -217,7 +217,7 @@ public class RedissonMapTest {
 
         Assert.assertEquals(0, map.size());
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -235,7 +235,7 @@ public class RedissonMapTest {
         SimpleValue val1 = map.get(new SimpleKey("1"));
         Assert.assertEquals("2", val1.getValue());
 
-        clear(map);
+        clear(map, redisson);
     }
 
 
@@ -251,7 +251,7 @@ public class RedissonMapTest {
         SimpleValue val1 = map.get(new SimpleKey("1"));
         Assert.assertEquals("2", val1.getValue());
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -269,7 +269,7 @@ public class RedissonMapTest {
         SimpleValue val1 = map.get(new SimpleKey("1"));
         Assert.assertEquals("3", val1.getValue());
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -284,7 +284,7 @@ public class RedissonMapTest {
         SimpleValue val1 = map.get(new SimpleKey("1"));
         Assert.assertEquals("3", val1.getValue());
 
-        clear(map);
+        clear(map, redisson);
     }
 
 
@@ -303,7 +303,7 @@ public class RedissonMapTest {
         SimpleValue val2 = map.get(new SimpleKey("33"));
         Assert.assertEquals("abc", val2.getValue());
 
-        clear(map);
+        clear(map, redisson);
     }
 
     @Test
@@ -320,12 +320,13 @@ public class RedissonMapTest {
         SimpleValue val2 = map.get(new SimpleKey("5"));
         Assert.assertEquals("6", val2.getValue());
 
-        clear(map);
+        clear(map, redisson);
     }
 
-    private void clear(Map<?, ?> map) {
+    private void clear(Map<?, ?> map, Redisson redisson) {
         map.clear();
         Assert.assertEquals(0, map.size());
+        redisson.shutdown();
     }
 
     @Test
@@ -352,7 +353,7 @@ public class RedissonMapTest {
         map.remove(new SimpleKey("3"));
         Assert.assertEquals(3, map.size());
 
-        clear(map);
+        clear(map, redisson);
     }
 
 }

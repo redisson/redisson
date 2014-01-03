@@ -7,7 +7,7 @@
  <packaging>jar</packaging>
 
  <name>Redisson</name>
- <description>Simplified distributed java data structures based on Redis</description>
+ <description>Distributed java data structures on top of Redis</description>
  <inceptionYear>2014</inceptionYear>
 
  <licenses>
@@ -272,7 +272,7 @@
                  <failIfMissing>true</failIfMissing>
                  <aggregate>false</aggregate>
                  <includes>
-                     <include>src/**</include>
+                     <include>src/main/java/org/redisson</include>
                  </includes>
                  <excludes>
                      <exclude>target/**</exclude>

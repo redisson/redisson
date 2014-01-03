@@ -1,7 +1,7 @@
 package org.redisson;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -18,7 +18,7 @@ public class RedissonTopic<M> implements RTopic<M> {
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
 
-    private final Map<Integer, RedisPubSubTopicListener> listeners = new HashMap<Integer, RedisPubSubTopicListener>();
+    private final Map<Integer, RedisPubSubTopicListener> listeners = new ConcurrentHashMap<Integer, RedisPubSubTopicListener>();
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
     private final String name;

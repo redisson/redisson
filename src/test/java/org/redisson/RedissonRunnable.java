@@ -1,6 +1,6 @@
 package org.redisson;
 
-public interface SingleInstanceRunnable {
+public interface RedissonRunnable {
 
     void run(Redisson redisson);
 

@@ -70,6 +70,9 @@ public class RedissonTopicTest {
         topic2.publish(new Message("123"));
 
         messageRecieved.await();
+
+        redisson1.shutdown();
+        redisson2.shutdown();
     }
 
     @Test
@@ -89,6 +92,9 @@ public class RedissonTopicTest {
         topic2.publish(new Message("123"));
 
         Thread.sleep(1000);
+
+        redisson1.shutdown();
+        redisson2.shutdown();
     }
 
 

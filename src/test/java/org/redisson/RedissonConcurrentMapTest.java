@@ -2,14 +2,11 @@ package org.redisson;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RedissonConcurrentMapTest {
+public class RedissonConcurrentMapTest extends RedissonConcurrentTest {
 
     @Test
     public void testSingleReplaceOldValue_SingleInstance() throws InterruptedException {
@@ -18,7 +15,7 @@ public class RedissonConcurrentMapTest {
         ConcurrentMap<String, String> map = Redisson.create().getMap(name);
         map.put("1", "122");
 
-        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+        testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
             public void run(Redisson redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
@@ -40,7 +37,7 @@ public class RedissonConcurrentMapTest {
         ConcurrentMap<String, String> map = Redisson.create().getMap(name);
         map.put("1", "0");
 
-        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+        testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
             public void run(Redisson redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
@@ -60,7 +57,7 @@ public class RedissonConcurrentMapTest {
 
         ConcurrentMap<String, String> map = Redisson.create().getMap(name);
         map.putIfAbsent("1", "0");
-        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+        testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
             public void run(Redisson redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
@@ -77,7 +74,7 @@ public class RedissonConcurrentMapTest {
 
         ConcurrentMap<String, String> map = Redisson.create().getMap(name);
         map.putIfAbsent("1", "0");
-        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+        testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
             public void run(Redisson redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
@@ -94,7 +91,7 @@ public class RedissonConcurrentMapTest {
     @Test
     public void testMultiPutIfAbsent_SingleInstance() throws InterruptedException {
         final String name = "testMultiPutIfAbsent_SingleInstance";
-        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+        testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
             public void run(Redisson redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
@@ -108,49 +105,15 @@ public class RedissonConcurrentMapTest {
     @Test
     public void testMultiPutIfAbsent_MultiInstance() throws InterruptedException {
         final String name = "testMultiPutIfAbsent_MultiInstance";
-        testMultiInstanceConcurrency(100, new Runnable() {
+        testMultiInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run() {
-                ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+            public void run(Redisson redisson) {
+                ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.putIfAbsent("" + Math.random(), "1");
             }
         });
 
         assertMapSize(100, name);
-    }
-
-    private void testMultiInstanceConcurrency(int iterations, final Runnable runnable) throws InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
-        long watch = System.currentTimeMillis();
-        for (int i = 0; i < iterations; i++) {
-            executor.execute(runnable);
-        }
-
-        executor.shutdown();
-        executor.awaitTermination(5, TimeUnit.MINUTES);
-
-        System.out.println(System.currentTimeMillis() - watch);
-    }
-
-    private void testSingleInstanceConcurrency(int iterations, final SingleInstanceRunnable singleInstaneRunnable) throws InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
-        final Redisson redisson = Redisson.create();
-        long watch = System.currentTimeMillis();
-        for (int i = 0; i < iterations; i++) {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    singleInstaneRunnable.run(redisson);
-                }
-            });
-        }
-
-        executor.shutdown();
-        executor.awaitTermination(5, TimeUnit.MINUTES);
-
-        System.out.println(System.currentTimeMillis() - watch);
     }
 
     private void assertMapSize(int size, String name) {
@@ -162,7 +125,7 @@ public class RedissonConcurrentMapTest {
     @Test
     public void testMultiPut_SingleInstance() throws InterruptedException {
         final String name = "testMultiPut_SingleInstance";
-        testSingleInstanceConcurrency(100, new SingleInstanceRunnable() {
+        testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
             public void run(Redisson redisson) {
                 Map<String, String> map = redisson.getMap(name);
@@ -177,10 +140,10 @@ public class RedissonConcurrentMapTest {
     @Test
     public void testMultiPut_MultiInstance() throws InterruptedException {
         final String name = "testMultiPut_MultiInstance";
-        testMultiInstanceConcurrency(100, new Runnable() {
+        testMultiInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run() {
-                ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+            public void run(Redisson redisson) {
+                ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.putIfAbsent("" + Math.random(), "1");
             }
         });

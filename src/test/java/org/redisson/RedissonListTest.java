@@ -2,6 +2,7 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,7 +39,7 @@ public class RedissonListTest {
         try {
             iterator.set(3);
         } finally {
-            clear(list);
+            clear(list, redisson);
         }
     }
 
@@ -94,7 +95,7 @@ public class RedissonListTest {
         iterator.add(8);
         Assert.assertThat(list, Matchers.contains(3, 2, 31, 3, 4, 71, 8));
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -130,8 +131,6 @@ public class RedissonListTest {
         Assert.assertTrue(iterator.hasPrevious());
         Assert.assertTrue(1 == iterator.previous());
         Assert.assertFalse(iterator.hasPrevious());
-
-        clear(list);
     }
 
     @Test
@@ -165,8 +164,6 @@ public class RedissonListTest {
         Assert.assertTrue(10 == iterator.next());
         Assert.assertTrue(9 == iterator.previousIndex());
         Assert.assertTrue(10 == iterator.nextIndex());
-
-        clear(list);
     }
 
     @Test
@@ -202,7 +199,7 @@ public class RedissonListTest {
         Assert.assertTrue(9 == iterator.previousIndex());
         Assert.assertTrue(10 == iterator.nextIndex());
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -240,7 +237,7 @@ public class RedissonListTest {
         Assert.assertTrue(1 == iterator.previous());
         Assert.assertFalse(iterator.hasPrevious());
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -261,7 +258,7 @@ public class RedissonListTest {
         int index = list.lastIndexOf(3);
         Assert.assertEquals(2, index);
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -282,7 +279,7 @@ public class RedissonListTest {
         int index = list.lastIndexOf(3);
         Assert.assertEquals(5, index);
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -303,7 +300,7 @@ public class RedissonListTest {
         int index = list.lastIndexOf(3);
         Assert.assertEquals(8, index);
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -322,8 +319,6 @@ public class RedissonListTest {
 
         int index = list.lastIndexOf(3);
         Assert.assertEquals(8, index);
-
-        clear(list);
     }
 
     @Test
@@ -363,7 +358,7 @@ public class RedissonListTest {
         List<Integer> subList = list.subList(3, 7);
         Assert.assertThat(subList, Matchers.contains(4, 5, 6, 7));
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -379,7 +374,7 @@ public class RedissonListTest {
         Assert.assertTrue(-1 == list.indexOf(200));
         Assert.assertTrue(-1 == list.indexOf(0));
 
-        clear(list);
+        clear(list, redisson);
     }
 
 
@@ -398,7 +393,7 @@ public class RedissonListTest {
 
         Assert.assertThat(list, Matchers.contains(2, 3, 4, 5));
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -414,7 +409,7 @@ public class RedissonListTest {
         list.set(4, 6);
 
         Assert.assertThat(list, Matchers.contains(1, 2, 3, 4, 6));
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
@@ -430,7 +425,7 @@ public class RedissonListTest {
         try {
             list.set(5, 6);
         } finally {
-            clear(list);
+            clear(list, redisson);
         }
     }
 
@@ -446,8 +441,6 @@ public class RedissonListTest {
         list.set(4, 6);
 
         Assert.assertThat(list, Matchers.contains(1, 2, 3, 4, 6));
-
-        clear(list);
     }
 
 
@@ -473,7 +466,7 @@ public class RedissonListTest {
 
         Assert.assertTrue(list.isEmpty());
 
-        clear(list);
+        clear(list, redisson);
     }
 
 
@@ -499,7 +492,7 @@ public class RedissonListTest {
 
         Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -520,8 +513,6 @@ public class RedissonListTest {
         list.addAll(list.size(), Arrays.asList(0, 5));
 
         Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
-
-        clear(list);
     }
 
 
@@ -541,7 +532,7 @@ public class RedissonListTest {
 
         Assert.assertThat(list, Matchers.contains(1, 2, 3, 4, 5, 7, 8, 9, 9, 1, 9));
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -555,7 +546,7 @@ public class RedissonListTest {
         Assert.assertTrue(list.containsAll(Arrays.asList(30, 11)));
         Assert.assertFalse(list.containsAll(Arrays.asList(30, 711, 11)));
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -573,7 +564,7 @@ public class RedissonListTest {
         String[] strs = list.toArray(new String[0]);
         Assert.assertArrayEquals(strs, new String[] {"1", "4", "2", "5", "3"});
 
-        clear(list);
+        clear(list, redisson);
     }
 
 
@@ -608,7 +599,7 @@ public class RedissonListTest {
         Assert.assertEquals(0, list.size());
         Assert.assertTrue(list.isEmpty());
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test
@@ -625,7 +616,7 @@ public class RedissonListTest {
         // to test "memory effect" absence
         checkIterator(list);
 
-        clear(list);
+        clear(list, redisson);
     }
 
     private void checkIterator(List<String> list) {
@@ -655,7 +646,7 @@ public class RedissonListTest {
         Assert.assertFalse(list.contains("31"));
         Assert.assertTrue(list.contains("1"));
 
-        clear(list);
+        clear(list, redisson);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
@@ -690,7 +681,7 @@ public class RedissonListTest {
         String val2 = list.get(3);
         Assert.assertEquals("5", val2);
 
-        clear(list);
+        clear(list, redisson);
     }
 
 
@@ -713,12 +704,14 @@ public class RedissonListTest {
         list.remove("4");
         Assert.assertThat(list, Matchers.contains("1", "3", "5", "6"));
 
-        clear(list);
+        clear(list, redisson);
     }
 
-    private void clear(List<?> list) {
+    private void clear(Collection<?> list, Redisson redisson) {
         list.clear();
         Assert.assertEquals(0, list.size());
+
+        redisson.shutdown();
     }
 
 

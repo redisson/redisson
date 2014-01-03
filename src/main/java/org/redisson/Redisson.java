@@ -151,7 +151,9 @@ public class Redisson {
 
     }
 
-
+    public void shutdown() {
+        redisClient.shutdown();
+    }
 
     RedisConnection<Object, Object> connect() {
         return redisClient.connect(codec);
