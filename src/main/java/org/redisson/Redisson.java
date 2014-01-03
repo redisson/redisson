@@ -33,6 +33,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class Redisson {
 
     // TODO drain after some time
+    private final ConcurrentMap<String, RedissonCountDownLatch> latchesMap = new ConcurrentHashMap<String, RedissonCountDownLatch>();
     private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ConcurrentHashMap<String, RedissonAtomicLong>();
     private final ConcurrentMap<String, RedissonQueue> queuesMap = new ConcurrentHashMap<String, RedissonQueue>();
     private final ConcurrentMap<String, RedissonTopic> topicsMap = new ConcurrentHashMap<String, RedissonTopic>();
@@ -97,7 +98,7 @@ public class Redisson {
         RedissonLock lock = locksMap.get(name);
         if (lock == null) {
             RedisConnection<Object, Object> connection = connect();
-            RedisPubSubConnection<Object, Object> pubSubConnection = redisClient.connectPubSub(codec);
+            RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
 
             lock = new RedissonLock(pubSubConnection, connection, name);
             RedissonLock oldLock = locksMap.putIfAbsent(name, lock);
@@ -133,7 +134,7 @@ public class Redisson {
         RedissonTopic<M> topic = topicsMap.get(name);
         if (topic == null) {
             RedisConnection<Object, Object> connection = connect();
-            RedisPubSubConnection<Object, Object> pubSubConnection = redisClient.connectPubSub(codec);
+            RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
 
             topic = new RedissonTopic<M>(pubSubConnection, connection, name);
             RedissonTopic<M> oldTopic = topicsMap.putIfAbsent(name, topic);
@@ -183,16 +184,32 @@ public class Redisson {
 
     }
 
-    public void getCountDownLatch() {
+    public RedissonCountDownLatch getCountDownLatch(String name) {
+        RedissonCountDownLatch latch = latchesMap.get(name);
+        if (latch == null) {
+            RedisConnection<Object, Object> connection = connect();
+            RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
 
+            latch = new RedissonCountDownLatch(pubSubConnection, connection, name);
+            RedissonCountDownLatch oldLatch = latchesMap.putIfAbsent(name, latch);
+            if (oldLatch != null) {
+                connection.close();
+                pubSubConnection.close();
+
+                latch = oldLatch;
+            }
+        }
+
+        latch.subscribe();
+        return latch;
+    }
+
+    private RedisPubSubConnection<Object, Object> connectPubSub() {
+        return redisClient.connectPubSub(codec);
     }
 
     public void getSemaphore() {
-
-    }
-
-    public void getExecutorService() {
-
+        // TODO implement
     }
 
     public void shutdown() {

@@ -19,20 +19,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
+
+import org.redisson.core.RCountDownLatch;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
-public class RedissonLock implements Lock {
+public class RedissonCountDownLatch implements RCountDownLatch {
 
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
-    private final String lockGroupName = "redisson_lock";
-    private final String lockName;
+    private final String groupName = "redisson_countdownlatch";
+    private final String name;
 
     private static final Integer unlockMessage = 0;
 
@@ -40,10 +40,11 @@ public class RedissonLock implements Lock {
 
     private final Semaphore msg = new Semaphore(1);
 
-    RedissonLock(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String lockName) {
-        this.pubSubConnection = pubSubConnection;
+    RedissonCountDownLatch(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String name) {
         this.connection = connection;
-        this.lockName = lockName;
+        this.name = name;
+        this.pubSubConnection = pubSubConnection;
+
     }
 
     public void subscribe() {
@@ -75,37 +76,9 @@ public class RedissonLock implements Lock {
     }
 
     @Override
-    public void lock() {
-        try {
-            lockInterruptibly();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-        }
-    }
-
-    private String getChannelName() {
-        return lockGroupName + lockName;
-    }
-
-    @Override
-    public void lockInterruptibly() throws InterruptedException {
-        while (!tryLock()) {
-            // waiting for message
-            msg.acquire();
-        }
-    }
-
-    @Override
-    public boolean tryLock() {
-        Boolean res = connection.hsetnx(lockGroupName, lockName, "1");
-        return res;
-    }
-
-    @Override
-    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+    public boolean await(long time, TimeUnit unit) throws InterruptedException {
         time = unit.toMillis(time);
-        while (!tryLock()) {
+        while (getCount() > 0) {
             long current = System.currentTimeMillis();
             // waiting for message
             boolean res = msg.tryAcquire(time, TimeUnit.MILLISECONDS);
@@ -122,14 +95,30 @@ public class RedissonLock implements Lock {
     }
 
     @Override
-    public void unlock() {
-        connection.hdel(lockGroupName, lockName);
-        connection.publish(getChannelName(), unlockMessage);
+    public void countDown() {
+        Long val = connection.decr(name);
+        if (val == 0) {
+            connection.del(name);
+            connection.publish(getChannelName(), unlockMessage);
+        }
+    }
+
+    private String getChannelName() {
+        return groupName + name;
     }
 
     @Override
-    public Condition newCondition() {
-        throw new UnsupportedOperationException();
+    public int getCount() {
+        Integer val = (Integer) connection.get(name);
+        if (val == null) {
+            return 0;
+        }
+        return val;
+    }
+
+    @Override
+    public boolean trySetCount(int count) {
+        return connection.setnx(name, count);
     }
 
 }
