@@ -40,13 +40,13 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public Object[] toArray() {
-        List<V> list = subList(0, size()-1);
+        List<V> list = subList(0, size());
         return list.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<V> list = subList(0, size()-1);
+        List<V> list = subList(0, size());
         return list.toArray(a);
     }
 
@@ -283,7 +283,7 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public List<V> subList(int fromIndex, int toIndex) {
-        return (List<V>) connection.lrange(name, fromIndex, toIndex);
+        return (List<V>) connection.lrange(name, fromIndex, toIndex - 1);
     }
 
 

@@ -12,6 +12,46 @@ import org.junit.Test;
 public class RedissonListTest {
 
     @Test
+    public void testSubListList() {
+        List<Integer> list = new LinkedList<Integer>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(6);
+        list.add(7);
+        list.add(8);
+        list.add(9);
+        list.add(10);
+
+        List<Integer> subList = list.subList(3, 7);
+        Assert.assertThat(subList, Matchers.contains(4, 5, 6, 7));
+    }
+
+
+    @Test
+    public void testSubList() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(6);
+        list.add(7);
+        list.add(8);
+        list.add(9);
+        list.add(10);
+
+        List<Integer> subList = list.subList(3, 7);
+        Assert.assertThat(subList, Matchers.contains(4, 5, 6, 7));
+
+        clear(list);
+    }
+
+    @Test
     public void testIndexOf() {
         Redisson redisson = Redisson.create();
         List<Integer> list = redisson.getList("list");
@@ -213,10 +253,10 @@ public class RedissonListTest {
         list.add("5");
         list.add("3");
 
-        Assert.assertTrue(Arrays.equals(list.toArray(), new Object[] {"1", "4", "2", "5", "3"}));
+        Assert.assertArrayEquals(list.toArray(), new Object[] {"1", "4", "2", "5", "3"});
 
         String[] strs = list.toArray(new String[0]);
-        Assert.assertTrue(Arrays.equals(strs, new String[] {"1", "4", "2", "5", "3"}));
+        Assert.assertArrayEquals(strs, new String[] {"1", "4", "2", "5", "3"});
 
         clear(list);
     }
