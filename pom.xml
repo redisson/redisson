@@ -272,7 +272,7 @@
                  <failIfMissing>true</failIfMissing>
                  <aggregate>false</aggregate>
                  <includes>
-                     <include>src/main/java/org/redisson</include>
+                     <include>src/main/java/org/redisson/</include>
                  </includes>
                  <excludes>
                      <exclude>target/**</exclude>
