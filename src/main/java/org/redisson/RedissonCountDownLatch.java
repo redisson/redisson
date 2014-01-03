@@ -31,7 +31,8 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
-    private final String groupName = "redisson_countdownlatch";
+
+    private final String groupName = "redisson_countdownlatch_";
     private final String name;
 
     private static final Integer unlockMessage = 0;

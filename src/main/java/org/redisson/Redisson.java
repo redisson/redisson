@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 
 import org.redisson.core.RAtomicLong;
+import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RTopic;
 
 import com.lambdaworks.redis.RedisClient;
@@ -184,7 +185,7 @@ public class Redisson {
 
     }
 
-    public RedissonCountDownLatch getCountDownLatch(String name) {
+    public RCountDownLatch getCountDownLatch(String name) {
         RedissonCountDownLatch latch = latchesMap.get(name);
         if (latch == null) {
             RedisConnection<Object, Object> connection = connect();

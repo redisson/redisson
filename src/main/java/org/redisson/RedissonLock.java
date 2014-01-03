@@ -31,8 +31,9 @@ public class RedissonLock implements Lock {
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
-    private final String lockGroupName = "redisson_lock";
-    private final String lockName;
+
+    private final String groupName = "redisson_lock_";
+    private final String name;
 
     private static final Integer unlockMessage = 0;
 
@@ -40,10 +41,10 @@ public class RedissonLock implements Lock {
 
     private final Semaphore msg = new Semaphore(1);
 
-    RedissonLock(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String lockName) {
+    RedissonLock(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String name) {
         this.pubSubConnection = pubSubConnection;
         this.connection = connection;
-        this.lockName = lockName;
+        this.name = name;
     }
 
     public void subscribe() {
@@ -85,7 +86,7 @@ public class RedissonLock implements Lock {
     }
 
     private String getChannelName() {
-        return lockGroupName + lockName;
+        return groupName + name;
     }
 
     @Override
@@ -98,7 +99,7 @@ public class RedissonLock implements Lock {
 
     @Override
     public boolean tryLock() {
-        Boolean res = connection.hsetnx(lockGroupName, lockName, "1");
+        Boolean res = connection.hsetnx(groupName, name, "1");
         return res;
     }
 
@@ -123,7 +124,7 @@ public class RedissonLock implements Lock {
 
     @Override
     public void unlock() {
-        connection.hdel(lockGroupName, lockName);
+        connection.hdel(groupName, name);
         connection.publish(getChannelName(), unlockMessage);
     }
 
