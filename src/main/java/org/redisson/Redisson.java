@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -13,6 +14,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class Redisson {
 
     // TODO drain after some time
+    private final ConcurrentMap<String, RedissonSet> setsMap = new ConcurrentHashMap<String, RedissonSet>();
     private final ConcurrentMap<String, RedissonList> listsMap = new ConcurrentHashMap<String, RedissonList>();
     private final ConcurrentMap<String, RedissonMap> mapsMap = new ConcurrentHashMap<String, RedissonMap>();
     private final ConcurrentMap<String, RedissonLock> locksMap = new ConcurrentHashMap<String, RedissonLock>();
@@ -41,7 +43,7 @@ public class Redisson {
         RedissonList<V> list = listsMap.get(name);
         if (list == null) {
             RedisConnection<Object, Object> connection = connect();
-            list = new RedissonList<V>(connection, name);
+            list = new RedissonList<V>(this, connection, name);
             RedissonList<V> oldList = listsMap.putIfAbsent(name, list);
             if (oldList != null) {
                 connection.close();
@@ -88,6 +90,48 @@ public class Redisson {
         lock.subscribe();
         return lock;
     }
+
+    public <V> Set<V> getSet(String name) {
+        RedissonSet<V> set = setsMap.get(name);
+        if (set == null) {
+            RedisConnection<Object, Object> connection = connect();
+            set = new RedissonSet<V>(this, connection, name);
+            RedissonSet<V> oldSet = setsMap.putIfAbsent(name, set);
+            if (oldSet != null) {
+                connection.close();
+
+                set = oldSet;
+            }
+        }
+
+        return set;
+    }
+
+    public void getTopic() {
+
+    }
+
+    public void getQueue() {
+
+    }
+
+    public void getAtomicLong() {
+
+    }
+
+    public void getCountDownLatch() {
+
+    }
+
+    public void getSemaphore() {
+
+    }
+
+    public void getExecutorService() {
+
+    }
+
+
 
     RedisConnection<Object, Object> connect() {
         return redisClient.connect(codec);
