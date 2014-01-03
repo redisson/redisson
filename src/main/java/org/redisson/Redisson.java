@@ -16,11 +16,13 @@
 package org.redisson;
 
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 
+import org.redisson.core.RAtomicLong;
 import org.redisson.core.RTopic;
 
 import com.lambdaworks.redis.RedisClient;
@@ -31,6 +33,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class Redisson {
 
     // TODO drain after some time
+    private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ConcurrentHashMap<String, RedissonAtomicLong>();
     private final ConcurrentMap<String, RedissonQueue> queuesMap = new ConcurrentHashMap<String, RedissonQueue>();
     private final ConcurrentMap<String, RedissonTopic> topicsMap = new ConcurrentHashMap<String, RedissonTopic>();
     private final ConcurrentMap<String, RedissonSet> setsMap = new ConcurrentHashMap<String, RedissonSet>();
@@ -147,7 +150,7 @@ public class Redisson {
 
     }
 
-    public <V> RedissonQueue<V> getQueue(String name) {
+    public <V> Queue<V> getQueue(String name) {
         RedissonQueue<V> queue = queuesMap.get(name);
         if (queue == null) {
             RedisConnection<Object, Object> connection = connect();
@@ -163,7 +166,20 @@ public class Redisson {
         return queue;
     }
 
-    public void getAtomicLong() {
+    public RAtomicLong getAtomicLong(String name) {
+        RedissonAtomicLong atomicLong = atomicLongsMap.get(name);
+        if (atomicLong == null) {
+            RedisConnection<Object, Object> connection = connect();
+            atomicLong = new RedissonAtomicLong(this, connection, name);
+            RedissonAtomicLong oldAtomicLong = atomicLongsMap.putIfAbsent(name, atomicLong);
+            if (oldAtomicLong != null) {
+                connection.close();
+
+                atomicLong = oldAtomicLong;
+            }
+        }
+
+        return atomicLong;
 
     }
 
