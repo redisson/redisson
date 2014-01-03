@@ -359,4 +359,12 @@ public class RedissonList<V> implements List<V> {
         }
     }
 
+    protected RedisConnection<Object, Object> getConnection() {
+        return connection;
+    }
+
+    protected String getName() {
+        return name;
+    }
+
 }

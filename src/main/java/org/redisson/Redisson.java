@@ -31,6 +31,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class Redisson {
 
     // TODO drain after some time
+    private final ConcurrentMap<String, RedissonQueue> queuesMap = new ConcurrentHashMap<String, RedissonQueue>();
     private final ConcurrentMap<String, RedissonTopic> topicsMap = new ConcurrentHashMap<String, RedissonTopic>();
     private final ConcurrentMap<String, RedissonSet> setsMap = new ConcurrentHashMap<String, RedissonSet>();
     private final ConcurrentMap<String, RedissonList> listsMap = new ConcurrentHashMap<String, RedissonList>();
@@ -146,8 +147,20 @@ public class Redisson {
 
     }
 
-    public void getQueue() {
+    public <V> RedissonQueue<V> getQueue(String name) {
+        RedissonQueue<V> queue = queuesMap.get(name);
+        if (queue == null) {
+            RedisConnection<Object, Object> connection = connect();
+            queue = new RedissonQueue<V>(this, connection, name);
+            RedissonQueue<V> oldQueue = queuesMap.putIfAbsent(name, queue);
+            if (oldQueue != null) {
+                connection.close();
 
+                queue = oldQueue;
+            }
+        }
+
+        return queue;
     }
 
     public void getAtomicLong() {
