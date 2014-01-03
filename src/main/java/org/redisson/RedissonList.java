@@ -85,23 +85,26 @@ public class RedissonList<V> implements List<V> {
     @Override
     public boolean addAll(int index, Collection<? extends V> coll) {
         checkPosition(index);
-        while (true) {
-            if (index < size()) {
-                RedisConnection<Object, Object> c = redisson.connect();
+        if (index < size()) {
+            RedisConnection<Object, Object> c = redisson.connect();
+            try {
+                while (true) {
+                    c.watch(name);
+                    List<Object> tail = c.lrange(name, index, size());
 
-                c.watch(name);
-                List<Object> tail = c.lrange(name, index, size());
-
-                c.multi();
-                c.ltrim(name, 0, index - 1);
-                c.rpush(name, coll.toArray());
-                c.rpush(name, tail.toArray());
-                if (c.exec().size() == 3) {
-                    return true;
+                    c.multi();
+                    c.ltrim(name, 0, index - 1);
+                    c.rpush(name, coll.toArray());
+                    c.rpush(name, tail.toArray());
+                    if (c.exec().size() == 3) {
+                        return true;
+                    }
                 }
-            } else {
-                return addAll(coll);
+            } finally {
+                c.close();
             }
+        } else {
+            return addAll(coll);
         }
     }
 
