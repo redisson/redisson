@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -70,5 +71,25 @@ public class RedissonTopicTest {
 
         messageRecieved.await();
     }
+
+    @Test
+    public void testListenerRemove() throws InterruptedException {
+        Redisson redisson1 = Redisson.create();
+        RTopic<Message> topic1 = redisson1.getTopic("topic");
+        int id = topic1.addListener(new MessageListener<Message>() {
+            @Override
+            public void onMessage(Message msg) {
+                Assert.fail();
+            }
+        });
+
+        Redisson redisson2 = Redisson.create();
+        RTopic<Message> topic2 = redisson2.getTopic("topic");
+        topic1.removeListener(id);
+        topic2.publish(new Message("123"));
+
+        Thread.sleep(1000);
+    }
+
 
 }
