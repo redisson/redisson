@@ -19,13 +19,14 @@ import java.util.concurrent.TimeUnit;
 
 public interface RCountDownLatch {
 
-    public boolean await(long timeout, TimeUnit unit) throws InterruptedException;
+    void await() throws InterruptedException;
 
-    public void countDown();
+    boolean await(long timeout, TimeUnit unit) throws InterruptedException;
 
-    public int getCount();
+    void countDown();
 
-    public boolean trySetCount(int count);
+    int getCount();
 
+    boolean trySetCount(int count);
 
 }

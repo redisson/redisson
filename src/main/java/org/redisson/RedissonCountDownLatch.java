@@ -75,6 +75,14 @@ public class RedissonCountDownLatch implements RCountDownLatch {
         }
     }
 
+    public void await() throws InterruptedException {
+        while (getCount() > 0) {
+            // waiting for message
+            msg.acquire();
+        }
+    }
+
+
     @Override
     public boolean await(long time, TimeUnit unit) throws InterruptedException {
         time = unit.toMillis(time);
