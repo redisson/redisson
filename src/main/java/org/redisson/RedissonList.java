@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -56,8 +57,7 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public boolean add(V e) {
-        connection.rpush(name, e);
-        return true;
+        return addAll(Collections.singleton(e));
     }
 
     @Override
@@ -83,11 +83,26 @@ public class RedissonList<V> implements List<V> {
     }
 
     @Override
-    public boolean addAll(int index, Collection<? extends V> c) {
-        for (V v : c) {
-            add(index++, v);
+    public boolean addAll(int index, Collection<? extends V> coll) {
+        checkPosition(index);
+        while (true) {
+            if (index < size()) {
+                RedisConnection<Object, Object> c = redisson.connect();
+
+                c.watch(name);
+                List<Object> tail = c.lrange(name, index, size());
+
+                c.multi();
+                c.ltrim(name, 0, index - 1);
+                c.rpush(name, coll.toArray());
+                c.rpush(name, tail.toArray());
+                if (c.exec().size() == 3) {
+                    return true;
+                }
+            } else {
+                return addAll(coll);
+            }
         }
-        return true;
     }
 
     @Override
@@ -157,19 +172,7 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public void add(int index, V element) {
-        checkPosition(index);
-        if (index < size()) {
-            RedisConnection<Object, Object> c = redisson.connect();
-            c.watch(name);
-            List<Object> tail = c.lrange(name, index, size());
-            c.multi();
-            c.ltrim(name, 0, index - 1);
-            c.rpush(name, element);
-            c.rpush(name, tail.toArray());
-            c.exec();
-        } else {
-            add(element);
-        }
+        addAll(index, Collections.singleton(element));
     }
 
     private int div(int p, int q) {
