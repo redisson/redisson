@@ -12,12 +12,14 @@ public class RedissonList<V> implements List<V> {
 
     private int batchSize = 50;
 
-    private RedisConnection<Object, Object> connection;
-    private String name;
+    private final Redisson redisson;
+    private final RedisConnection<Object, Object> connection;
+    private final String name;
 
-    RedissonList(RedisConnection<Object, Object> connection, String name) {
+    RedissonList(Redisson redisson, RedisConnection<Object, Object> connection, String name) {
         this.connection = connection;
         this.name = name;
+        this.redisson = redisson;
     }
 
     @Override
@@ -54,7 +56,8 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public boolean add(V e) {
-        return connection.rpush(name, e) > 1;
+        connection.rpush(name, e);
+        return true;
     }
 
     @Override
@@ -75,7 +78,8 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public boolean addAll(Collection<? extends V> c) {
-        return addAll(size(), c);
+        connection.rpush(name, c.toArray());
+        return true;
     }
 
     @Override
@@ -155,8 +159,14 @@ public class RedissonList<V> implements List<V> {
     public void add(int index, V element) {
         checkPosition(index);
         if (index < size()) {
-            V value = (V) connection.lindex(name, index);
-            connection.linsert(name, true, value, element);
+            RedisConnection<Object, Object> c = redisson.connect();
+            c.watch(name);
+            List<Object> tail = c.lrange(name, index, size());
+            c.multi();
+            c.ltrim(name, 0, index - 1);
+            c.rpush(name, element);
+            c.rpush(name, tail.toArray());
+            c.exec();
         } else {
             add(element);
         }
@@ -260,7 +270,7 @@ public class RedissonList<V> implements List<V> {
             @Override
             public boolean hasPrevious() {
                 int size = size();
-                return currentIndex-1 < size && size > 0;
+                return currentIndex-1 < size && size > 0 && currentIndex >= 0;
             }
 
             @Override
@@ -268,9 +278,10 @@ public class RedissonList<V> implements List<V> {
                 if (!hasPrevious()) {
                     throw new NoSuchElementException("No such element at index " + currentIndex);
                 }
-                currentIndex--;
                 removeExecuted = false;
-                return RedissonList.this.get(currentIndex);
+                V res = RedissonList.this.get(currentIndex);
+                currentIndex--;
+                return res;
             }
 
             @Override
@@ -280,17 +291,21 @@ public class RedissonList<V> implements List<V> {
 
             @Override
             public int previousIndex() {
-                return currentIndex - 1;
+                return currentIndex;
             }
 
             @Override
             public void set(V e) {
+                if (currentIndex >= size()-1) {
+                    throw new IllegalStateException();
+                }
                 RedissonList.this.set(currentIndex, e);
             }
 
             @Override
             public void add(V e) {
-                RedissonList.this.add(currentIndex, e);
+                RedissonList.this.add(currentIndex+1, e);
+                currentIndex++;
             }
         };
     }
@@ -307,5 +322,20 @@ public class RedissonList<V> implements List<V> {
         return (List<V>) connection.lrange(name, fromIndex, toIndex - 1);
     }
 
+    public String toString() {
+        Iterator<V> it = iterator();
+        if (! it.hasNext())
+            return "[]";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        for (;;) {
+            V e = it.next();
+            sb.append(e == this ? "(this Collection)" : e);
+            if (! it.hasNext())
+                return sb.append(']').toString();
+            sb.append(',').append(' ');
+        }
+    }
 
 }

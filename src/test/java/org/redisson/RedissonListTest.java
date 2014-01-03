@@ -1,15 +1,247 @@
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class RedissonListTest {
+
+    @Test(expected = IllegalStateException.class)
+    public void testListIteratorSetListFail() {
+        List<Integer> list = new ArrayList<Integer>();
+        list.add(1);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        iterator.next();
+        iterator.add(2);
+        iterator.set(3);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testListIteratorSetFail() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        iterator.next();
+        iterator.add(2);
+        try {
+            iterator.set(3);
+        } finally {
+            clear(list);
+        }
+    }
+
+    @Test
+    public void testListIteratorGetSetList() {
+        List<Integer> list = new ArrayList<Integer>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        Assert.assertFalse(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.next());
+        iterator.set(3);
+        Assert.assertThat(list, Matchers.contains(3, 2, 3, 4));
+        Assert.assertTrue(2 == iterator.next());
+        iterator.add(31);
+        Assert.assertThat(list, Matchers.contains(3, 2, 31, 3, 4));
+        Assert.assertTrue(3 == iterator.next());
+        Assert.assertTrue(4 == iterator.next());
+        Assert.assertFalse(iterator.hasNext());
+        iterator.add(71);
+        Assert.assertThat(list, Matchers.contains(3, 2, 31, 3, 4, 71));
+        iterator.add(8);
+        Assert.assertThat(list, Matchers.contains(3, 2, 31, 3, 4, 71, 8));
+    }
+
+    @Test
+    public void testListIteratorGetSet() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        Assert.assertFalse(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.next());
+        iterator.set(3);
+        Assert.assertThat(list, Matchers.contains(3, 2, 3, 4));
+        Assert.assertTrue(2 == iterator.next());
+        iterator.add(31);
+        Assert.assertThat(list, Matchers.contains(3, 2, 31, 3, 4));
+        Assert.assertTrue(3 == iterator.next());
+        Assert.assertTrue(4 == iterator.next());
+        Assert.assertFalse(iterator.hasNext());
+        iterator.add(71);
+        Assert.assertThat(list, Matchers.contains(3, 2, 31, 3, 4, 71));
+        iterator.add(8);
+        Assert.assertThat(list, Matchers.contains(3, 2, 31, 3, 4, 71, 8));
+
+        clear(list);
+    }
+
+    @Test
+    public void testListIteratorPreviousList() {
+        List<Integer> list = new LinkedList<Integer>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(0);
+        list.add(7);
+        list.add(8);
+        list.add(0);
+        list.add(10);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        Assert.assertFalse(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.next());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.previous());
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(1 == iterator.next());
+
+        Assert.assertTrue(2 == iterator.next());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(3 == iterator.next());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(3 == iterator.previous());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(2 == iterator.previous());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.previous());
+        Assert.assertFalse(iterator.hasPrevious());
+
+        clear(list);
+    }
+
+    @Test
+    public void testListIteratorIndexList() {
+        List<Integer> list = new LinkedList<Integer>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(0);
+        list.add(7);
+        list.add(8);
+        list.add(0);
+        list.add(10);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        Assert.assertFalse(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.next());
+        Assert.assertTrue(1 == iterator.nextIndex());
+        Assert.assertTrue(0 == iterator.previousIndex());
+        Assert.assertTrue(2 == iterator.next());
+        Assert.assertTrue(3 == iterator.next());
+        Assert.assertTrue(4 == iterator.next());
+        Assert.assertTrue(5 == iterator.next());
+        Assert.assertTrue(0 == iterator.next());
+        Assert.assertTrue(7 == iterator.next());
+        Assert.assertTrue(8 == iterator.next());
+        Assert.assertTrue(0 == iterator.next());
+        Assert.assertTrue(10 == iterator.next());
+        Assert.assertTrue(9 == iterator.previousIndex());
+        Assert.assertTrue(10 == iterator.nextIndex());
+
+        clear(list);
+    }
+
+    @Test
+    public void testListIteratorIndex() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(0);
+        list.add(7);
+        list.add(8);
+        list.add(0);
+        list.add(10);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        Assert.assertFalse(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.next());
+        Assert.assertTrue(1 == iterator.nextIndex());
+        Assert.assertTrue(0 == iterator.previousIndex());
+        Assert.assertTrue(2 == iterator.next());
+        Assert.assertTrue(3 == iterator.next());
+        Assert.assertTrue(4 == iterator.next());
+        Assert.assertTrue(5 == iterator.next());
+        Assert.assertTrue(0 == iterator.next());
+        Assert.assertTrue(7 == iterator.next());
+        Assert.assertTrue(8 == iterator.next());
+        Assert.assertTrue(0 == iterator.next());
+        Assert.assertTrue(10 == iterator.next());
+        Assert.assertTrue(9 == iterator.previousIndex());
+        Assert.assertTrue(10 == iterator.nextIndex());
+
+        clear(list);
+    }
+
+    @Test
+    public void testListIteratorPrevious() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(0);
+        list.add(7);
+        list.add(8);
+        list.add(0);
+        list.add(10);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        Assert.assertFalse(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.next());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.previous());
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(1 == iterator.next());
+
+        Assert.assertTrue(2 == iterator.next());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(3 == iterator.next());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(3 == iterator.previous());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(2 == iterator.previous());
+        Assert.assertTrue(iterator.hasPrevious());
+        Assert.assertTrue(1 == iterator.previous());
+        Assert.assertFalse(iterator.hasPrevious());
+
+        clear(list);
+    }
 
     @Test
     public void testLastIndexOf2() {
