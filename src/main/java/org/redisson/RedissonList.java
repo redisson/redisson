@@ -10,6 +10,8 @@ import com.lambdaworks.redis.RedisConnection;
 
 public class RedissonList<V> implements List<V> {
 
+    private int batchSize = 50;
+
     private RedisConnection<Object, Object> connection;
     private String name;
 
@@ -160,6 +162,17 @@ public class RedissonList<V> implements List<V> {
         }
     }
 
+    private int div(int p, int q) {
+        int div = p / q;
+        int rem = p - q * div; // equal to p % q
+
+        if (rem == 0) {
+          return div;
+        }
+
+        return div + 1;
+    }
+
     @Override
     public V remove(int index) {
         checkIndex(index);
@@ -174,8 +187,7 @@ public class RedissonList<V> implements List<V> {
             return -1;
         }
 
-        int batchSize = 50;
-        int to = Math.max(size()/batchSize, 1);
+        int to = div(size(), batchSize);
         for (int i = 0; i < to; i++) {
             List<Object> range = connection.lrange(name, i*batchSize, i*batchSize + batchSize - 1);
             int index = range.indexOf(o);
@@ -193,12 +205,14 @@ public class RedissonList<V> implements List<V> {
             return -1;
         }
 
-        int to = Math.max(size()/100, 1);
+        int size = size();
+        int to = div(size, batchSize);
         for (int i = 1; i <= to; i++) {
-            List<Object> range = connection.lrange(name, -i*100, 100);
-            int index = range.indexOf(o);
+            int startIndex = -i*batchSize;
+            List<Object> range = connection.lrange(name, startIndex, size - (i-1)*batchSize);
+            int index = range.lastIndexOf(o);
             if (index != -1) {
-                return index + i*100;
+                return Math.max(size + startIndex, 0) + index;
             }
         }
 
@@ -283,6 +297,13 @@ public class RedissonList<V> implements List<V> {
 
     @Override
     public List<V> subList(int fromIndex, int toIndex) {
+        int size = size();
+        if (fromIndex < 0 || toIndex > size) {
+            throw new IndexOutOfBoundsException("fromIndex: " + fromIndex + " toIndex: " + toIndex + " size: " + size);
+        }
+        if (fromIndex > toIndex) {
+            throw new IllegalArgumentException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
+        }
         return (List<V>) connection.lrange(name, fromIndex, toIndex - 1);
     }
 

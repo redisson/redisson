@@ -12,6 +12,89 @@ import org.junit.Test;
 public class RedissonListTest {
 
     @Test
+    public void testLastIndexOf2() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(0);
+        list.add(7);
+        list.add(8);
+        list.add(0);
+        list.add(10);
+
+        int index = list.lastIndexOf(3);
+        Assert.assertEquals(2, index);
+
+        clear(list);
+    }
+
+    @Test
+    public void testLastIndexOf1() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(3);
+        list.add(7);
+        list.add(8);
+        list.add(0);
+        list.add(10);
+
+        int index = list.lastIndexOf(3);
+        Assert.assertEquals(5, index);
+
+        clear(list);
+    }
+
+    @Test
+    public void testLastIndexOf() {
+        Redisson redisson = Redisson.create();
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(3);
+        list.add(7);
+        list.add(8);
+        list.add(3);
+        list.add(10);
+
+        int index = list.lastIndexOf(3);
+        Assert.assertEquals(8, index);
+
+        clear(list);
+    }
+
+    @Test
+    public void testLastIndexOfList() {
+        List<Integer> list = new LinkedList<Integer>();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(3);
+        list.add(7);
+        list.add(8);
+        list.add(3);
+        list.add(10);
+
+        int index = list.lastIndexOf(3);
+        Assert.assertEquals(8, index);
+
+        clear(list);
+    }
+
+    @Test
     public void testSubListList() {
         List<Integer> list = new LinkedList<Integer>();
         list.add(1);
