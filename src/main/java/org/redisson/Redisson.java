@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 
+import org.redisson.core.RTopic;
+
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.codec.JsonCodec;
@@ -14,6 +16,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class Redisson {
 
     // TODO drain after some time
+    private final ConcurrentMap<String, RedissonTopic> topicsMap = new ConcurrentHashMap<String, RedissonTopic>();
     private final ConcurrentMap<String, RedissonSet> setsMap = new ConcurrentHashMap<String, RedissonSet>();
     private final ConcurrentMap<String, RedissonList> listsMap = new ConcurrentHashMap<String, RedissonList>();
     private final ConcurrentMap<String, RedissonMap> mapsMap = new ConcurrentHashMap<String, RedissonMap>();
@@ -107,7 +110,24 @@ public class Redisson {
         return set;
     }
 
-    public void getTopic() {
+    public <M> RTopic<M> getTopic(String name) {
+        RedissonTopic<M> topic = topicsMap.get(name);
+        if (topic == null) {
+            RedisConnection<Object, Object> connection = connect();
+            RedisPubSubConnection<Object, Object> pubSubConnection = redisClient.connectPubSub(codec);
+
+            topic = new RedissonTopic<M>(pubSubConnection, connection, name);
+            RedissonTopic<M> oldTopic = topicsMap.putIfAbsent(name, topic);
+            if (oldTopic != null) {
+                connection.close();
+                pubSubConnection.close();
+
+                topic = oldTopic;
+            }
+        }
+
+        topic.subscribe();
+        return topic;
 
     }
 
