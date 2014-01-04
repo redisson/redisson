@@ -1,5 +1,6 @@
 package org.redisson;
 
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
@@ -31,6 +32,23 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testSingleRemoveValue_SingleInstance() throws InterruptedException {
+        final String name = "testSingleRemoveValue_SingleInstance";
+
+        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+        map.putIfAbsent("1", "0");
+        testSingleInstanceConcurrency(100, new RedissonRunnable() {
+            @Override
+            public void run(Redisson redisson) {
+                ConcurrentMap<String, String> map = redisson.getMap(name);
+                map.remove("1", "0");
+            }
+        });
+
+        assertMapSize(0, name);
+    }
+
+    @Test
     public void testSingleReplace_SingleInstance() throws InterruptedException {
         final String name = "testSingleReplace_SingleInstance";
 
@@ -52,16 +70,48 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     }
 
     @Test
-    public void testSingleRemoveValue_SingleInstance() throws InterruptedException {
-        final String name = "testSingleRemoveValue_SingleInstance";
+    public void test_Multi_Replace_MultiInstance() throws InterruptedException {
+        final String name = "test_Multi_Replace_MultiInstance";
 
-        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
-        map.putIfAbsent("1", "0");
+        Redisson redisson = Redisson.create();
+        ConcurrentMap<Integer, Integer> map = redisson.getMap(name);
+        for (int i = 0; i < 5; i++) {
+            map.put(i, 1);
+        }
+
+        final SecureRandom secureRandom = new SecureRandom();
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
             public void run(Redisson redisson) {
+                ConcurrentMap<Integer, Integer> map = redisson.getMap(name);
+                map.replace(secureRandom.nextInt(5), 2);
+            }
+        });
+
+        ConcurrentMap<Integer, Integer> testMap = Redisson.create().getMap(name);
+        for (Integer value : testMap.values()) {
+            Assert.assertTrue(2 == value);
+        }
+        assertMapSize(5, name);
+
+        redisson.shutdown();
+    }
+
+    @Test
+    public void test_Multi_RemoveValue_MultiInstance() throws InterruptedException {
+        final String name = "test_Multi_RemoveValue_MultiInstance";
+
+        ConcurrentMap<Integer, Integer> map = Redisson.create().getMap(name);
+        for (int i = 0; i < 10; i++) {
+            map.put(i, 1);
+        }
+
+        final SecureRandom secureRandom = new SecureRandom();
+        testMultiInstanceConcurrency(100, new RedissonRunnable() {
+            @Override
+            public void run(Redisson redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
-                map.remove("1", "0");
+                map.remove(secureRandom.nextInt(10), 1);
             }
         });
 
