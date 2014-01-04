@@ -12,7 +12,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RedissonListTest {
+public class RedissonListTest extends BaseRedissonTest {
 
     @Test(expected = IllegalStateException.class)
     public void testListIteratorSetListFail() {
@@ -684,6 +684,21 @@ public class RedissonListTest {
         clear(list, redisson);
     }
 
+    @Test
+    public void testDuplicates() {
+        Redisson redisson = Redisson.create();
+        List<TestObject> list = redisson.getList("list");
+
+        list.add(new TestObject("1", "2"));
+        list.add(new TestObject("1", "2"));
+        list.add(new TestObject("2", "3"));
+        list.add(new TestObject("3", "4"));
+        list.add(new TestObject("5", "6"));
+
+        Assert.assertEquals(5, list.size());
+
+        clear(list, redisson);
+    }
 
     @Test
     public void testSize() {
@@ -706,13 +721,5 @@ public class RedissonListTest {
 
         clear(list, redisson);
     }
-
-    private void clear(Collection<?> list, Redisson redisson) {
-        list.clear();
-        Assert.assertEquals(0, list.size());
-
-        redisson.shutdown();
-    }
-
 
 }

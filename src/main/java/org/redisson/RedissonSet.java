@@ -50,6 +50,7 @@ public class RedissonSet<V> implements Set<V> {
 
     @Override
     public Iterator<V> iterator() {
+        // TODO use SSCAN in case of usage Redis 2.8
         return (Iterator<V>) connection.smembers(name).iterator();
     }
 
