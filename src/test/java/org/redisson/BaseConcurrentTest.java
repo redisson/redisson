@@ -1,7 +1,9 @@
 package org.redisson;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -11,14 +13,18 @@ public abstract class BaseConcurrentTest {
     protected void testMultiInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-        final List<Redisson> redissons = new ArrayList<Redisson>();
+        final Map<Integer, Redisson> instances = new HashMap<Integer, Redisson>();
+        for (int i = 0; i < iterations; i++) {
+            instances.put(i, Redisson.create());
+        }
+
         long watch = System.currentTimeMillis();
         for (int i = 0; i < iterations; i++) {
+            final int n = i;
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    Redisson redisson = Redisson.create();
-                    redissons.add(redisson);
+                    Redisson redisson = instances.get(n);
                     runnable.run(redisson);
                 }
             });
@@ -31,7 +37,7 @@ public abstract class BaseConcurrentTest {
 
         executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-        for (final Redisson redisson : redissons) {
+        for (final Redisson redisson : instances.values()) {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -42,7 +48,6 @@ public abstract class BaseConcurrentTest {
 
         executor.shutdown();
         executor.awaitTermination(5, TimeUnit.MINUTES);
-
     }
 
     protected void testSingleInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
