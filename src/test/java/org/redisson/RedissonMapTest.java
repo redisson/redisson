@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RedissonMapTest {
+public class RedissonMapTest extends BaseTest {
 
     public static class SimpleKey {
 
@@ -321,12 +321,6 @@ public class RedissonMapTest {
         Assert.assertEquals("6", val2.getValue());
 
         clear(map, redisson);
-    }
-
-    private void clear(Map<?, ?> map, Redisson redisson) {
-        map.clear();
-        Assert.assertEquals(0, map.size());
-        redisson.shutdown();
     }
 
     @Test

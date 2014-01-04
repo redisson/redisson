@@ -1,7 +1,6 @@
 package org.redisson;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 
 import org.hamcrest.MatcherAssert;
