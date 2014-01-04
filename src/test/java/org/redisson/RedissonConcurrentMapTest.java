@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RedissonConcurrentMapTest extends RedissonConcurrentTest {
+public class RedissonConcurrentMapTest extends BaseConcurrentTest {
 
     @Test
     public void testSingleReplaceOldValue_SingleInstance() throws InterruptedException {

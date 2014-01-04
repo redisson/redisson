@@ -9,7 +9,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RedissonSetTest extends BaseRedissonTest {
+public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testContainsAll() {

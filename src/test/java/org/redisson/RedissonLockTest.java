@@ -6,7 +6,7 @@ import java.util.concurrent.locks.Lock;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RedissonLockTest extends RedissonConcurrentTest {
+public class RedissonLockTest extends BaseConcurrentTest {
 
     @Test
     public void testLockUnlock() {

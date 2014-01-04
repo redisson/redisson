@@ -12,7 +12,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RedissonListTest extends BaseRedissonTest {
+public class RedissonListTest extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testListIteratorSetListFail() {

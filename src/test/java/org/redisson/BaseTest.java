@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.junit.Assert;
 
-public abstract class BaseRedissonTest {
+public abstract class BaseTest {
 
     protected void clear(Collection<?> collection, Redisson redisson) {
         collection.clear();
