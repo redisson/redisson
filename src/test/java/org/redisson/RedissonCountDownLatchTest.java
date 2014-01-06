@@ -95,17 +95,23 @@ public class RedissonCountDownLatchTest {
         Redisson redisson = Redisson.create();
         RCountDownLatch latch = redisson.getCountDownLatch("latch");
         latch.trySetCount(1);
+        Assert.assertEquals(1, latch.getCount());
         latch.countDown();
+        Assert.assertEquals(0, latch.getCount());
         latch.await();
         latch.countDown();
+        Assert.assertEquals(0, latch.getCount());
         latch.await();
         latch.countDown();
+        Assert.assertEquals(0, latch.getCount());
         latch.await();
 
         RCountDownLatch latch1 = redisson.getCountDownLatch("latch1");
         latch1.trySetCount(1);
         latch1.countDown();
+        Assert.assertEquals(0, latch.getCount());
         latch1.countDown();
+        Assert.assertEquals(0, latch.getCount());
         latch1.await();
 
         RCountDownLatch latch2 = redisson.getCountDownLatch("latch2");
@@ -115,10 +121,13 @@ public class RedissonCountDownLatchTest {
         latch2.await();
 
         RCountDownLatch latch3 = redisson.getCountDownLatch("latch3");
+        Assert.assertEquals(0, latch.getCount());
         latch3.await();
 
         RCountDownLatch latch4 = redisson.getCountDownLatch("latch4");
+        Assert.assertEquals(0, latch.getCount());
         latch4.countDown();
+        Assert.assertEquals(0, latch.getCount());
         latch4.await();
 
         redisson.shutdown();

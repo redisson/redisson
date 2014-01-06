@@ -109,13 +109,15 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
     @Override
     public void countDown() {
-        if (getCount() == 0) {
+        if (getCount() <= 0) {
             return;
         }
 
         Long val = connection.decr(name);
         if (val == 0) {
             connection.publish(getChannelName(), unlockMessage);
+            connection.del(name);
+        } else if (val < 0) {
             connection.del(name);
         }
     }
