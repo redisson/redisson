@@ -1,25 +1,20 @@
 package com.lambdaworks.redis.codec;
 
-import static java.nio.charset.CoderResult.OVERFLOW;
-
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 
-import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 
 public class JsonCodec extends RedisCodec<Object, Object> {
 
-    private final Charset charset = Charset.forName("UTF-8");
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public JsonCodec() {
@@ -51,18 +46,8 @@ public class JsonCodec extends RedisCodec<Object, Object> {
     }
 
     private Object decode(ByteBuffer bytes) {
-        CharBuffer chars  = CharBuffer.allocate(bytes.limit());
-        bytes.mark();
-
-        CharsetDecoder decoder = charset.newDecoder();
-        while (decoder.decode(bytes, chars, true) == OVERFLOW || decoder.flush(chars) == OVERFLOW) {
-            chars = CharBuffer.allocate(chars.capacity() * 2);
-            bytes.reset();
-        }
-
-        String res = chars.flip().toString();
         try {
-            return objectMapper.readValue(res, Object.class);
+            return objectMapper.readValue(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Object.class);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
