@@ -8,6 +8,18 @@ import org.junit.Test;
 
 public class RedissonLockTest extends BaseConcurrentTest {
 
+    @Test(expected = IllegalMonitorStateException.class)
+    public void testUnlockFail() {
+        Redisson redisson = Redisson.create();
+        Lock lock = redisson.getLock("lock1");
+        try {
+            lock.unlock();
+        } finally {
+            redisson.shutdown();
+        }
+    }
+
+
     @Test
     public void testLockUnlock() {
         Redisson redisson = Redisson.create();

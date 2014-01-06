@@ -28,12 +28,18 @@ import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
+/**
+ * Reentrant distributed lock
+ *
+ *
+ */
 public class RedissonLock implements RLock {
 
     public static class LockValue {
 
         private UUID id;
         private Long threadId;
+        // need for reentrant support
         private int counter;
 
         public LockValue() {
@@ -206,7 +212,7 @@ public class RedissonLock implements RLock {
         LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
 
         LockValue lock = (LockValue) connection.get(getKeyName());
-        if (lock.equals(currentLock)) {
+        if (lock != null && lock.equals(currentLock)) {
             if (lock.getCounter() > 1) {
                 lock.decCounter();
                 connection.set(getKeyName(), lock);
@@ -215,7 +221,8 @@ public class RedissonLock implements RLock {
                 connection.publish(getChannelName(), unlockMessage);
             }
         } else {
-            // TODO throw error
+            throw new IllegalMonitorStateException("Attempt to unlock lock, not locked by current thread id: "
+                            + id + " thread-id: " + Thread.currentThread().getId());
         }
 
     }
