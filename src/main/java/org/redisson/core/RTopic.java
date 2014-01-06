@@ -16,6 +16,11 @@
 package org.redisson.core;
 
 
+/**
+ * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
+ *
+ * @param <M> the type of message object
+ */
 public interface RTopic<M> {
 
     /**
@@ -25,9 +30,22 @@ public interface RTopic<M> {
      */
     void publish(M message);
 
+    /**
+     * Subscribes to this topic.
+     * <code>MessageListener.onMessage</code> is called when any message
+     * is published on this topic.
+     *
+     * @param listener
+     * @return locally unique listener id
+     * @see org.redisson.core.MessageListener
+     */
     int addListener(MessageListener<M> listener);
 
+    /**
+     * Removes the listener by <code>id</code> for listening this topic
+     *
+     * @param listenerId
+     */
     void removeListener(int listenerId);
-
 
 }
