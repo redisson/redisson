@@ -24,16 +24,19 @@ import java.util.concurrent.locks.Lock;
 
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RCountDownLatch;
+import org.redisson.core.RObject;
 import org.redisson.core.RTopic;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.codec.JsonCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
+// TODO lazy connection
 public class Redisson {
 
-    // TODO drain after some time
+    // TODO drain by weak reference
     private final ConcurrentMap<String, RedissonCountDownLatch> latchesMap = new ConcurrentHashMap<String, RedissonCountDownLatch>();
     private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ConcurrentHashMap<String, RedissonAtomicLong>();
     private final ConcurrentMap<String, RedissonQueue> queuesMap = new ConcurrentHashMap<String, RedissonQueue>();
@@ -101,7 +104,7 @@ public class Redisson {
             RedisConnection<Object, Object> connection = connect();
             RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
 
-            lock = new RedissonLock(pubSubConnection, connection, name);
+            lock = new RedissonLock(this, pubSubConnection, connection, name);
             RedissonLock oldLock = locksMap.putIfAbsent(name, lock);
             if (oldLock != null) {
                 connection.close();
@@ -209,8 +212,14 @@ public class Redisson {
         return redisClient.connectPubSub(codec);
     }
 
-    public void getSemaphore() {
-        // TODO implement
+    // TODO implement
+//    public void getSemaphore() {
+//    }
+
+    void remove(RObject robject) {
+        if (robject instanceof RedissonLock) {
+            locksMap.remove(robject.getName());
+        }
     }
 
     public void shutdown() {
@@ -220,5 +229,10 @@ public class Redisson {
     RedisConnection<Object, Object> connect() {
         return redisClient.connect(codec);
     }
+
+    RedisAsyncConnection<Object, Object> connectAsync() {
+        return redisClient.connectAsync(codec);
+    }
+
 }
 

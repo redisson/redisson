@@ -17,6 +17,8 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         lock.lock();
         lock.unlock();
+
+        redisson.shutdown();
     }
 
     @Test
@@ -35,6 +37,25 @@ public class RedissonLockTest extends BaseConcurrentTest {
         });
 
         Assert.assertEquals(iterations, lockedCounter.get());
+    }
+
+    @Test
+    public void testConcurrencyLoop_MultiInstance() throws InterruptedException {
+        final int iterations = 100;
+        final AtomicInteger lockedCounter = new AtomicInteger();
+
+        testMultiInstanceConcurrency(16, new RedissonRunnable() {
+            @Override
+            public void run(Redisson redisson) {
+                for (int i = 0; i < iterations; i++) {
+                    redisson.getLock("testConcurrency_MultiInstance").lock();
+                    lockedCounter.set(lockedCounter.get() + 1);
+                    redisson.getLock("testConcurrency_MultiInstance").unlock();
+                }
+            }
+        });
+
+        Assert.assertEquals(16 * iterations, lockedCounter.get());
     }
 
     @Test

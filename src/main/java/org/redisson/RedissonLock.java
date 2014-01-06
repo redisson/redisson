@@ -22,26 +22,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+import org.redisson.core.RObject;
+
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
-public class RedissonLock implements Lock {
+// TODO make it reentrant
+public class RedissonLock implements Lock, RObject {
 
-    private final CountDownLatch subscribeLatch = new CountDownLatch(1);
+    private final Redisson redisson;
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
 
-    private final String groupName = "redisson_lock_";
+    private final String groupName = "redisson_lock";
     private final String name;
 
     private static final Integer unlockMessage = 0;
 
+    private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
 
     private final Semaphore msg = new Semaphore(1);
 
-    RedissonLock(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String name) {
+    RedissonLock(Redisson redisson, RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String name) {
+        this.redisson = redisson;
         this.pubSubConnection = pubSubConnection;
         this.connection = connection;
         this.name = name;
@@ -49,6 +54,8 @@ public class RedissonLock implements Lock {
 
     public void subscribe() {
         if (subscribeOnce.compareAndSet(false, true)) {
+            msg.acquireUninterruptibly();
+
             RedisPubSubAdapter<Object, Object> listener = new RedisPubSubAdapter<Object, Object>() {
 
                 @Override
@@ -107,17 +114,14 @@ public class RedissonLock implements Lock {
     public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
         time = unit.toMillis(time);
         while (!tryLock()) {
-            long current = System.currentTimeMillis();
-            // waiting for message
-            boolean res = msg.tryAcquire(time, TimeUnit.MILLISECONDS);
-            if (res) {
-                return true;
-            }
-            long elapsed = System.currentTimeMillis() - current;
-            time -= elapsed;
             if (time <= 0) {
                 return false;
             }
+            long current = System.currentTimeMillis();
+            // waiting for message
+            msg.tryAcquire(time, TimeUnit.MILLISECONDS);
+            long elapsed = System.currentTimeMillis() - current;
+            time -= elapsed;
         }
         return true;
     }
@@ -131,6 +135,21 @@ public class RedissonLock implements Lock {
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public void destroy() {
+        pubSubConnection.unsubscribe(getChannelName());
+
+        connection.close();
+        pubSubConnection.close();
+
+        redisson.remove(this);
     }
 
 }
