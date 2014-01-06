@@ -25,8 +25,8 @@ public interface RCountDownLatch {
 
     void countDown();
 
-    int getCount();
+    long getCount();
 
-    boolean trySetCount(int count);
+    boolean trySetCount(long count);
 
 }

@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.core.RCountDownLatch;
+import org.redisson.misc.internal.ThreadLocalSemaphore;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
@@ -39,7 +40,7 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
 
-    private final Semaphore msg = new Semaphore(1);
+    private final ThreadLocalSemaphore msg = new ThreadLocalSemaphore();
 
     RedissonCountDownLatch(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String name) {
         this.connection = connection;
@@ -60,7 +61,9 @@ public class RedissonCountDownLatch implements RCountDownLatch {
                 @Override
                 public void message(Object channel, Object message) {
                     if (message.equals(unlockMessage)) {
-                        msg.release();
+                        for (Semaphore s : msg.getAll()) {
+                            s.release();
+                        }
                     }
                 }
 
@@ -79,8 +82,9 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     public void await() throws InterruptedException {
         while (getCount() > 0) {
             // waiting for message
-            msg.acquire();
+            msg.get().acquire();
         }
+        msg.remove();
     }
 
 
@@ -89,14 +93,17 @@ public class RedissonCountDownLatch implements RCountDownLatch {
         time = unit.toMillis(time);
         while (getCount() > 0) {
             if (time <= 0) {
+                msg.remove();
                 return false;
             }
             long current = System.currentTimeMillis();
             // waiting for message
-            msg.tryAcquire(time, TimeUnit.MILLISECONDS);
+            msg.get().tryAcquire(time, TimeUnit.MILLISECONDS);
             long elapsed = System.currentTimeMillis() - current;
             time -= elapsed;
         }
+
+        msg.remove();
         return true;
     }
 
@@ -104,8 +111,8 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     public void countDown() {
         Long val = connection.decr(name);
         if (val == 0) {
-            connection.del(name);
             connection.publish(getChannelName(), unlockMessage);
+            connection.del(name);
         }
     }
 
@@ -114,16 +121,16 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     }
 
     @Override
-    public int getCount() {
-        Integer val = (Integer) connection.get(name);
+    public long getCount() {
+        Number val = (Number) connection.get(name);
         if (val == null) {
             return 0;
         }
-        return val;
+        return val.longValue();
     }
 
     @Override
-    public boolean trySetCount(int count) {
+    public boolean trySetCount(long count) {
         return connection.setnx(name, count);
     }
 
