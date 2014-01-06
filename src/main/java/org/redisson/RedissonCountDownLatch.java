@@ -16,12 +16,11 @@
 package org.redisson;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.core.RCountDownLatch;
-import org.redisson.misc.internal.ThreadLocalSemaphore;
+import org.redisson.misc.internal.ReclosableLatch;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
@@ -41,7 +40,7 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
 
-    private final ThreadLocalSemaphore msg = new ThreadLocalSemaphore();
+    private final ReclosableLatch msg = new ReclosableLatch();
 
     RedissonCountDownLatch(Redisson redisson, RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String name) {
         this.connection = connection;
@@ -63,9 +62,7 @@ public class RedissonCountDownLatch implements RCountDownLatch {
                 @Override
                 public void message(Object channel, Object message) {
                     if (message.equals(unlockMessage)) {
-                        for (Semaphore s : msg.getAll()) {
-                            s.release();
-                        }
+                        msg.open();
                     }
                 }
 
@@ -84,9 +81,8 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     public void await() throws InterruptedException {
         while (getCount() > 0) {
             // waiting for message
-            msg.get().acquire();
+            msg.await();
         }
-        msg.remove();
     }
 
 
@@ -95,17 +91,15 @@ public class RedissonCountDownLatch implements RCountDownLatch {
         time = unit.toMillis(time);
         while (getCount() > 0) {
             if (time <= 0) {
-                msg.remove();
                 return false;
             }
             long current = System.currentTimeMillis();
             // waiting for message
-            msg.get().tryAcquire(time, TimeUnit.MILLISECONDS);
+            msg.await(time, TimeUnit.MILLISECONDS);
             long elapsed = System.currentTimeMillis() - current;
             time = time - elapsed;
         }
 
-        msg.remove();
         return true;
     }
 
@@ -139,7 +133,11 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
     @Override
     public boolean trySetCount(long count) {
-        return connection.setnx(name, count);
+        Boolean res = connection.setnx(name, count);
+        if (res) {
+            msg.close();
+        }
+        return res;
     }
 
     @Override

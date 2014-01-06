@@ -103,6 +103,7 @@ public class RedissonLock implements RLock {
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
 
+    // TODO move it Redisson as ID
     private final UUID id = UUID.randomUUID();
     private final String groupName = "redisson_lock";
     private final String name;
