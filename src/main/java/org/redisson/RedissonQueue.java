@@ -16,11 +16,12 @@
 package org.redisson;
 
 import java.util.NoSuchElementException;
-import java.util.Queue;
+
+import org.redisson.core.RQueue;
 
 import com.lambdaworks.redis.RedisConnection;
 
-public class RedissonQueue<V> extends RedissonList<V> implements Queue<V> {
+public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     RedissonQueue(Redisson redisson, RedisConnection<Object, Object> connection, String name) {
         super(redisson, connection, name);

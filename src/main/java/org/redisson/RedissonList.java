@@ -22,9 +22,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
+import org.redisson.core.RList;
+
 import com.lambdaworks.redis.RedisConnection;
 
-public class RedissonList<V> implements List<V> {
+public class RedissonList<V> implements RList<V> {
 
     private int batchSize = 50;
 
@@ -363,8 +365,15 @@ public class RedissonList<V> implements List<V> {
         return connection;
     }
 
-    protected String getName() {
+    public String getName() {
         return name;
+    }
+
+    @Override
+    public void destroy() {
+        connection.close();
+
+        redisson.remove(this);
     }
 
 }

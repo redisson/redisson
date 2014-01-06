@@ -17,11 +17,12 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Set;
+
+import org.redisson.core.RSet;
 
 import com.lambdaworks.redis.RedisConnection;
 
-public class RedissonSet<V> implements Set<V> {
+public class RedissonSet<V> implements RSet<V> {
 
     private final Redisson redisson;
     private final RedisConnection<Object, Object> connection;
@@ -110,6 +111,18 @@ public class RedissonSet<V> implements Set<V> {
     @Override
     public void clear() {
         connection.del(name);
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public void destroy() {
+        connection.close();
+
+        redisson.remove(this);
     }
 
 }

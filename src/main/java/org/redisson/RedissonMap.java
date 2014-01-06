@@ -22,10 +22,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.core.RMap;
+
 import com.lambdaworks.redis.RedisConnection;
 
-//TODO make keys watching instead of map name
-public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
+//TODO implement watching by keys instead of map name
+public class RedissonMap<K, V> implements RMap<K, V> {
 
     private final RedisConnection<Object, Object> connection;
     private final String name;
@@ -37,12 +39,8 @@ public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
         this.name = name;
     }
 
-    protected String getName() {
+    public String getName() {
         return name;
-    }
-
-    protected RedisConnection<Object, Object> getConnection() {
-        return connection;
     }
 
     @Override
@@ -118,7 +116,7 @@ public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
     @Override
     public V putIfAbsent(K key, V value) {
         while (true) {
-            Boolean res = getConnection().hsetnx(getName(), key, value);
+            Boolean res = connection.hsetnx(getName(), key, value);
             if (!res) {
                 V result = get(key);
                 if (result != null) {
@@ -198,6 +196,13 @@ public class RedissonMap<K, V> implements ConcurrentMap<K, V> {
         } finally {
             connection.close();
         }
+    }
+
+    @Override
+    public void destroy() {
+        connection.close();
+
+        redisson.remove(this);
     }
 
 }

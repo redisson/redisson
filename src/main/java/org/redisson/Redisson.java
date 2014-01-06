@@ -15,16 +15,18 @@
  */
 package org.redisson;
 
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RCountDownLatch;
+import org.redisson.core.RList;
+import org.redisson.core.RLock;
+import org.redisson.core.RMap;
 import org.redisson.core.RObject;
+import org.redisson.core.RQueue;
+import org.redisson.core.RSet;
 import org.redisson.core.RTopic;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
@@ -66,7 +68,7 @@ public class Redisson {
         return new Redisson(host, port);
     }
 
-    public <V> List<V> getList(String name) {
+    public <V> RList<V> getList(String name) {
         RedissonList<V> list = listsMap.get(name);
         if (list == null) {
             RedisConnection<Object, Object> connection = connect();
@@ -82,7 +84,7 @@ public class Redisson {
         return list;
     }
 
-    public <K, V> ConcurrentMap<K, V> getMap(String name) {
+    public <K, V> RMap<K, V> getMap(String name) {
         RedissonMap<K, V> map = mapsMap.get(name);
         if (map == null) {
             RedisConnection<Object, Object> connection = connect();
@@ -98,7 +100,7 @@ public class Redisson {
         return map;
     }
 
-    public Lock getLock(String name) {
+    public RLock getLock(String name) {
         RedissonLock lock = locksMap.get(name);
         if (lock == null) {
             RedisConnection<Object, Object> connection = connect();
@@ -118,7 +120,7 @@ public class Redisson {
         return lock;
     }
 
-    public <V> Set<V> getSet(String name) {
+    public <V> RSet<V> getSet(String name) {
         RedissonSet<V> set = setsMap.get(name);
         if (set == null) {
             RedisConnection<Object, Object> connection = connect();
@@ -155,7 +157,7 @@ public class Redisson {
 
     }
 
-    public <V> Queue<V> getQueue(String name) {
+    public <V> RQueue<V> getQueue(String name) {
         RedissonQueue<V> queue = queuesMap.get(name);
         if (queue == null) {
             RedisConnection<Object, Object> connection = connect();
@@ -231,6 +233,15 @@ public class Redisson {
         }
         if (robject instanceof RedissonCountDownLatch) {
             latchesMap.remove(robject.getName());
+        }
+        if (robject instanceof RedissonList) {
+            listsMap.remove(robject.getName());
+        }
+        if (robject instanceof RedissonMap) {
+            mapsMap.remove(robject.getName());
+        }
+        if (robject instanceof RedissonQueue) {
+            queuesMap.remove(robject.getName());
         }
     }
 

@@ -20,16 +20,15 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 
-import org.redisson.core.RObject;
+import org.redisson.core.RLock;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 // TODO make it reentrant
-public class RedissonLock implements Lock, RObject {
+public class RedissonLock implements RLock {
 
     private final Redisson redisson;
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
