@@ -88,17 +88,14 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     public boolean await(long time, TimeUnit unit) throws InterruptedException {
         time = unit.toMillis(time);
         while (getCount() > 0) {
-            long current = System.currentTimeMillis();
-            // waiting for message
-            boolean res = msg.tryAcquire(time, TimeUnit.MILLISECONDS);
-            if (res) {
-                return true;
-            }
-            long elapsed = System.currentTimeMillis() - current;
-            time -= elapsed;
             if (time <= 0) {
                 return false;
             }
+            long current = System.currentTimeMillis();
+            // waiting for message
+            msg.tryAcquire(time, TimeUnit.MILLISECONDS);
+            long elapsed = System.currentTimeMillis() - current;
+            time -= elapsed;
         }
         return true;
     }
