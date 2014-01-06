@@ -37,11 +37,13 @@ public class RedissonTopic<M> implements RTopic<M> {
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
     private final String name;
+    private final Redisson redisson;
 
-    RedissonTopic(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, final String name) {
+    RedissonTopic(Redisson redisson, RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, final String name) {
         this.pubSubConnection = pubSubConnection;
         this.name = name;
         this.connection = connection;
+        this.redisson = redisson;
     }
 
     public void subscribe() {
@@ -84,6 +86,19 @@ public class RedissonTopic<M> implements RTopic<M> {
     public void removeListener(int listenerId) {
         RedisPubSubTopicListener list = listeners.remove(listenerId);
         pubSubConnection.removeListener(list);
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public void destroy() {
+        connection.close();
+        pubSubConnection.close();
+
+        redisson.remove(this);
     }
 
 

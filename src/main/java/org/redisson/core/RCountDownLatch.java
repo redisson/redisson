@@ -17,7 +17,7 @@ package org.redisson.core;
 
 import java.util.concurrent.TimeUnit;
 
-public interface RCountDownLatch {
+public interface RCountDownLatch extends RObject {
 
     void await() throws InterruptedException;
 

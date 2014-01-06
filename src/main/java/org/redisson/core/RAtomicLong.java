@@ -15,7 +15,7 @@
  */
 package org.redisson.core;
 
-public interface RAtomicLong {
+public interface RAtomicLong extends RObject {
 
     long getAndDecrement();
 

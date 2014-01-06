@@ -21,7 +21,7 @@ package org.redisson.core;
  *
  * @param <M> the type of message object
  */
-public interface RTopic<M> {
+public interface RTopic<M> extends RObject {
 
     /**
      * Publish the message to all subscribers of this topic

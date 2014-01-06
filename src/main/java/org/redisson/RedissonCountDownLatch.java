@@ -32,6 +32,7 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
+    private final Redisson redisson;
 
     private final String groupName = "redisson_countdownlatch_";
     private final String name;
@@ -42,10 +43,11 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
     private final ThreadLocalSemaphore msg = new ThreadLocalSemaphore();
 
-    RedissonCountDownLatch(RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String name) {
+    RedissonCountDownLatch(Redisson redisson, RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, String name) {
         this.connection = connection;
         this.name = name;
         this.pubSubConnection = pubSubConnection;
+        this.redisson = redisson;
 
     }
 
@@ -138,6 +140,19 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     @Override
     public boolean trySetCount(long count) {
         return connection.setnx(name, count);
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public void destroy() {
+        connection.close();
+        pubSubConnection.close();
+
+        redisson.remove(this);
     }
 
 }

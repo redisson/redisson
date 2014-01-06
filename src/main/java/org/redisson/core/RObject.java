@@ -25,7 +25,7 @@ public interface RObject {
     String getName();
 
     /**
-     * Closes connections and releases resources engaged by this object
+     * Releases resources engaged by this object
      *
      */
     void destroy();

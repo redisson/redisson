@@ -107,4 +107,17 @@ public class RedissonAtomicLong implements RAtomicLong {
         return Long.toString(get());
     }
 
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+
+    @Override
+    public void destroy() {
+        connection.close();
+        redisson.remove(this);
+    }
+
 }

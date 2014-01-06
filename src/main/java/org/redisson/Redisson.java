@@ -140,7 +140,7 @@ public class Redisson {
             RedisConnection<Object, Object> connection = connect();
             RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
 
-            topic = new RedissonTopic<M>(pubSubConnection, connection, name);
+            topic = new RedissonTopic<M>(this, pubSubConnection, connection, name);
             RedissonTopic<M> oldTopic = topicsMap.putIfAbsent(name, topic);
             if (oldTopic != null) {
                 connection.close();
@@ -194,7 +194,7 @@ public class Redisson {
             RedisConnection<Object, Object> connection = connect();
             RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
 
-            latch = new RedissonCountDownLatch(pubSubConnection, connection, name);
+            latch = new RedissonCountDownLatch(this, pubSubConnection, connection, name);
             RedissonCountDownLatch oldLatch = latchesMap.putIfAbsent(name, latch);
             if (oldLatch != null) {
                 connection.close();
@@ -219,6 +219,18 @@ public class Redisson {
     void remove(RObject robject) {
         if (robject instanceof RedissonLock) {
             locksMap.remove(robject.getName());
+        }
+        if (robject instanceof RedissonSet) {
+            setsMap.remove(robject.getName());
+        }
+        if (robject instanceof RedissonTopic) {
+            topicsMap.remove(robject.getName());
+        }
+        if (robject instanceof RedissonAtomicLong) {
+            atomicLongsMap.remove(robject.getName());
+        }
+        if (robject instanceof RedissonCountDownLatch) {
+            latchesMap.remove(robject.getName());
         }
     }
 
