@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -35,7 +36,9 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
  */
 public class RedissonLock implements RLock {
 
-    public static class LockValue {
+    public static class LockValue implements Serializable {
+
+        private static final long serialVersionUID = -8895632286065689476L;
 
         private UUID id;
         private Long threadId;
