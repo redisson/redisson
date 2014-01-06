@@ -182,7 +182,7 @@ public class RedissonLock implements RLock {
         Boolean res = connection.setnx(getKeyName(), currentLock);
         if (!res) {
             LockValue lock = (LockValue) connection.get(getKeyName());
-            if (lock.equals(currentLock)) {
+            if (lock != null && lock.equals(currentLock)) {
                 lock.incCounter();
                 connection.set(getKeyName(), lock);
                 return true;
