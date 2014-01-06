@@ -91,31 +91,15 @@ public class RedissonSet<V> implements Set<V> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        RedisConnection<Object, Object> conn = redisson.connect();
-        try {
-            while (true) {
-                int changed = 0;
-                conn.watch(name);
-                Iterator<V> iterator = (Iterator<V>) conn.smembers(name).iterator();
-                conn.multi();
-                while (iterator.hasNext()) {
-                    V object = iterator.next();
-                    if (!c.contains(object)) {
-                        iterator.remove();
-                        connection.srem(name, object);
-                        changed++;
-                    }
-                }
-                if (changed == 0) {
-                    conn.discard();
-                    return false;
-                } else if (conn.exec().size() == changed) {
-                    return true;
-                }
+        boolean changed = false;
+        for (Iterator<V> iterator = iterator(); iterator.hasNext();) {
+            V object = iterator.next();
+            if (!c.contains(object)) {
+                iterator.remove();
+                changed = true;
             }
-        } finally {
-            conn.close();
         }
+        return changed;
     }
 
     @Override
