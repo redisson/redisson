@@ -1,9 +1,94 @@
 package org.redisson;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RCountDownLatch;
 
 public class RedissonCountDownLatchTest {
+
+    @Test
+    public void testAwaitTimeout() throws InterruptedException {
+        Redisson redisson = Redisson.create();
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        final RCountDownLatch latch = redisson.getCountDownLatch("latch1");
+        latch.trySetCount(1);
+
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    Assert.fail();
+                }
+                latch.countDown();
+            }
+        });
+
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Assert.assertEquals(1, latch.getCount());
+                    boolean res = latch.await(550, TimeUnit.MILLISECONDS);
+                    Assert.assertTrue(res);
+                } catch (InterruptedException e) {
+                    Assert.fail();
+                }
+            }
+        });
+
+        executor.shutdown();
+        executor.awaitTermination(10, TimeUnit.SECONDS);
+
+        redisson.shutdown();
+    }
+
+    @Test
+    public void testAwaitTimeoutFail() throws InterruptedException {
+        Redisson redisson = Redisson.create();
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        final RCountDownLatch latch = redisson.getCountDownLatch("latch1");
+        latch.trySetCount(1);
+
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Assert.fail();
+                }
+                latch.countDown();
+            }
+        });
+
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Assert.assertEquals(1, latch.getCount());
+                    boolean res = latch.await(500, TimeUnit.MILLISECONDS);
+                    Assert.assertFalse(res);
+                } catch (InterruptedException e) {
+                    Assert.fail();
+                }
+            }
+        });
+
+        executor.shutdown();
+        executor.awaitTermination(10, TimeUnit.SECONDS);
+
+        redisson.shutdown();
+    }
 
     @Test
     public void testCountDown() throws InterruptedException {

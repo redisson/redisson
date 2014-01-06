@@ -1,7 +1,7 @@
 package org.redisson;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
@@ -18,7 +18,7 @@ public class RedissonCountDownLatchConcurrentTest {
         final RCountDownLatch latch = redisson.getCountDownLatch("latch");
         latch.trySetCount(iterations);
 
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(iterations);
+        ExecutorService executor = Executors.newFixedThreadPool(iterations);
         for (int i = 0; i < iterations; i++) {
             executor.execute(new Runnable() {
                 @Override

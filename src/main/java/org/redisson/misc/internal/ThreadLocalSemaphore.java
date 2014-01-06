@@ -15,6 +15,7 @@ public class ThreadLocalSemaphore {
         semaphore = new ThreadLocal<Semaphore>() {
             @Override protected Semaphore initialValue() {
                 Semaphore value = new Semaphore(1);
+                value.acquireUninterruptibly();
                 allValues.add(value);
                 return value;
             }

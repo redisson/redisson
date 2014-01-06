@@ -100,7 +100,7 @@ public class RedissonCountDownLatch implements RCountDownLatch {
             // waiting for message
             msg.get().tryAcquire(time, TimeUnit.MILLISECONDS);
             long elapsed = System.currentTimeMillis() - current;
-            time -= elapsed;
+            time = time - elapsed;
         }
 
         msg.remove();
@@ -109,6 +109,10 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
     @Override
     public void countDown() {
+        if (getCount() == 0) {
+            return;
+        }
+
         Long val = connection.decr(name);
         if (val == 0) {
             connection.publish(getChannelName(), unlockMessage);
