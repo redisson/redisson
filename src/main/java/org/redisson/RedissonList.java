@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -84,13 +85,24 @@ public class RedissonList<V> implements RList<V> {
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        for (Object object : c) {
-            // TODO optimize - search bulk values at once in range
-            if (!contains(object)) {
-                return false;
+        if (isEmpty()) {
+            return false;
+        }
+
+        Collection copy = new ArrayList(c);
+        int to = div(size(), batchSize);
+        for (int i = 0; i < to; i++) {
+            List<Object> range = connection.lrange(name, i*batchSize, i*batchSize + batchSize - 1);
+            for (Iterator iterator = copy.iterator(); iterator.hasNext();) {
+                Object obj = iterator.next();
+                int index = range.indexOf(obj);
+                if (index != -1) {
+                    iterator.remove();
+                }
             }
         }
-        return true;
+
+        return copy.isEmpty();
     }
 
     @Override
