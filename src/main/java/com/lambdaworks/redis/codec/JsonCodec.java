@@ -24,6 +24,11 @@ public class JsonCodec extends RedisCodec<Object, Object> {
 
     public JsonCodec() {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
+        objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
+                                            .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                                            .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                                            .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                                            .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN, true);
         objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);

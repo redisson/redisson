@@ -22,6 +22,19 @@ public class RedissonLockTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testReentrancy() {
+        Redisson redisson = Redisson.create();
+        Lock lock = redisson.getLock("lock1");
+        lock.lock();
+        lock.lock();
+        lock.unlock();
+        lock.unlock();
+
+        redisson.shutdown();
+    }
+
+
+    @Test
     public void testConcurrency_SingleInstance() throws InterruptedException {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
