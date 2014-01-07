@@ -103,7 +103,7 @@ public class RedissonLock implements RLock {
     private final RedisPubSubConnection<Object, Object> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
 
-    // TODO move it Redisson as ID
+    // TODO move it to Redisson as ID
     private final UUID id = UUID.randomUUID();
     private final String groupName = "redisson_lock";
     private final String name;
@@ -130,12 +130,14 @@ public class RedissonLock implements RLock {
 
                 @Override
                 public void subscribed(Object channel, long count) {
-                    subscribeLatch.countDown();
+                    if (getChannelName().equals(channel)) {
+                        subscribeLatch.countDown();
+                    }
                 }
 
                 @Override
                 public void message(Object channel, Object message) {
-                    if (message.equals(unlockMessage)) {
+                    if (message.equals(unlockMessage) && getChannelName().equals(channel)) {
                         msg.release();
                     }
                 }
@@ -245,9 +247,10 @@ public class RedissonLock implements RLock {
     @Override
     public void destroy() {
         pubSubConnection.unsubscribe(getChannelName());
-
-        connection.close();
         pubSubConnection.close();
+
+        connection.del(getKeyName());
+        connection.close();
 
         redisson.remove(this);
     }

@@ -33,13 +33,13 @@ public class RedissonTopic<M> implements RTopic<M> {
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
 
-    private final Map<Integer, RedisPubSubTopicListener> listeners = new ConcurrentHashMap<Integer, RedisPubSubTopicListener>();
-    private final RedisPubSubConnection<Object, Object> pubSubConnection;
+    private final Map<Integer, RedisPubSubTopicListener<String, M>> listeners = new ConcurrentHashMap<Integer, RedisPubSubTopicListener<String, M>>();
+    private final RedisPubSubConnection<String, M> pubSubConnection;
     private final RedisConnection<Object, Object> connection;
     private final String name;
     private final Redisson redisson;
 
-    RedissonTopic(Redisson redisson, RedisPubSubConnection<Object, Object> pubSubConnection, RedisConnection<Object, Object> connection, final String name) {
+    RedissonTopic(Redisson redisson, RedisPubSubConnection<String, M> pubSubConnection, RedisConnection<Object, Object> connection, final String name) {
         this.pubSubConnection = pubSubConnection;
         this.name = name;
         this.connection = connection;
@@ -48,10 +48,10 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     public void subscribe() {
         if (subscribeOnce.compareAndSet(false, true)) {
-            RedisPubSubAdapter<Object, Object> listener = new RedisPubSubAdapter<Object, Object>() {
+            RedisPubSubAdapter<String, M> listener = new RedisPubSubAdapter<String, M>() {
 
                 @Override
-                public void subscribed(Object channel, long count) {
+                public void subscribed(String channel, long count) {
                     if (channel.equals(name)) {
                         subscribeLatch.countDown();
                     }
@@ -76,7 +76,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public int addListener(MessageListener<M> listener) {
-        RedisPubSubTopicListener list = new RedisPubSubTopicListener(listener);
+        RedisPubSubTopicListener<String, M> list = new RedisPubSubTopicListener<String, M>(listener, name);
         listeners.put(list.hashCode(), list);
         pubSubConnection.addListener(list);
         return list.hashCode();
@@ -84,7 +84,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public void removeListener(int listenerId) {
-        RedisPubSubTopicListener list = listeners.remove(listenerId);
+        RedisPubSubTopicListener<String, M> list = listeners.remove(listenerId);
         pubSubConnection.removeListener(list);
     }
 

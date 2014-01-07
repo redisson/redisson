@@ -36,7 +36,8 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     private final String groupName = "redisson_countdownlatch_";
     private final String name;
 
-    private static final Integer unlockMessage = 0;
+    private static final Integer zeroCountMessage = 0;
+    private static final Integer newCountMessage = 1;
 
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
 
@@ -56,13 +57,21 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
                 @Override
                 public void subscribed(Object channel, long count) {
-                    subscribeLatch.countDown();
+                    if (getChannelName().equals(channel)) {
+                        subscribeLatch.countDown();
+                    }
                 }
 
                 @Override
                 public void message(Object channel, Object message) {
-                    if (message.equals(unlockMessage)) {
+                    if (!getChannelName().equals(channel)) {
+                        return;
+                    }
+                    if (message.equals(zeroCountMessage)) {
                         msg.open();
+                    }
+                    if (message.equals(newCountMessage)) {
+                        msg.close();
                     }
                 }
 
@@ -111,8 +120,15 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
         Long val = connection.decr(name);
         if (val == 0) {
-            connection.publish(getChannelName(), unlockMessage);
-            connection.del(name);
+            RedisConnection<Object, Object> conn = redisson.connect();
+            try {
+                conn.multi();
+                conn.publish(getChannelName(), zeroCountMessage);
+                conn.del(name);
+                conn.exec();
+            } finally {
+                conn.close();
+            }
         } else if (val < 0) {
             connection.del(name);
         }
@@ -133,11 +149,21 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
     @Override
     public boolean trySetCount(long count) {
-        Boolean res = connection.setnx(name, count);
-        if (res) {
-            msg.close();
+        RedisConnection<Object, Object> conn = redisson.connect();
+        try {
+            conn.watch(name);
+            Long oldValue = (Long) conn.get(name);
+            if (oldValue != null) {
+                conn.discard();
+                return false;
+            }
+            conn.multi();
+            conn.set(name, count);
+            conn.publish(getChannelName(), newCountMessage);
+            return conn.exec().size() == 2;
+        } finally {
+            conn.close();
         }
-        return res;
     }
 
     @Override

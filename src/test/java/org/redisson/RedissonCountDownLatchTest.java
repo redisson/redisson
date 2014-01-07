@@ -17,7 +17,7 @@ public class RedissonCountDownLatchTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final RCountDownLatch latch = redisson.getCountDownLatch("latch1");
-        latch.trySetCount(1);
+        Assert.assertTrue(latch.trySetCount(1));
 
         executor.execute(new Runnable() {
             @Override
@@ -30,6 +30,7 @@ public class RedissonCountDownLatchTest {
                 latch.countDown();
             }
         });
+
 
         executor.execute(new Runnable() {
             @Override
@@ -57,7 +58,7 @@ public class RedissonCountDownLatchTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final RCountDownLatch latch = redisson.getCountDownLatch("latch1");
-        latch.trySetCount(1);
+        Assert.assertTrue(latch.trySetCount(1));
 
         executor.execute(new Runnable() {
             @Override
@@ -70,6 +71,7 @@ public class RedissonCountDownLatchTest {
                 latch.countDown();
             }
         });
+
 
         executor.execute(new Runnable() {
             @Override

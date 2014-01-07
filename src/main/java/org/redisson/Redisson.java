@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.Lock;
 
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RCountDownLatch;
@@ -140,7 +139,7 @@ public class Redisson {
         RedissonTopic<M> topic = topicsMap.get(name);
         if (topic == null) {
             RedisConnection<Object, Object> connection = connect();
-            RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
+            RedisPubSubConnection<String, M> pubSubConnection = connectPubSub();
 
             topic = new RedissonTopic<M>(this, pubSubConnection, connection, name);
             RedissonTopic<M> oldTopic = topicsMap.putIfAbsent(name, topic);
@@ -210,8 +209,8 @@ public class Redisson {
         return latch;
     }
 
-    private RedisPubSubConnection<Object, Object> connectPubSub() {
-        return redisClient.connectPubSub(codec);
+    private <K, V> RedisPubSubConnection<K, V> connectPubSub() {
+        return (RedisPubSubConnection<K, V>) redisClient.connectPubSub(codec);
     }
 
     // TODO implement

@@ -20,15 +20,20 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 public class RedisPubSubTopicListener<K, V> extends RedisPubSubAdapter<K, V> {
 
     private final MessageListener<V> listener;
+    private final K name;
 
-    public RedisPubSubTopicListener(MessageListener<V> listener) {
+    public RedisPubSubTopicListener(MessageListener<V> listener, K name) {
         super();
         this.listener = listener;
+        this.name = name;
     }
 
     @Override
     public void message(K channel, V message) {
-        listener.onMessage(message);
+        // could be subscribed to multiple channels
+        if (name.equals(channel)) {
+            listener.onMessage(message);
+        }
     }
 
     @Override
