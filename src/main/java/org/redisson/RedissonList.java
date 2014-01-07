@@ -31,19 +31,26 @@ public class RedissonList<V> implements RList<V> {
 
     private int batchSize = 50;
 
-    private final Redisson redisson;
-    private final RedisConnection<Object, Object> connection;
+    private final ConnectionManager connectionManager;
     private final String name;
 
-    RedissonList(Redisson redisson, RedisConnection<Object, Object> connection, String name) {
-        this.connection = connection;
+    RedissonList(ConnectionManager connectionManager, String name) {
+        this.connectionManager = connectionManager;
         this.name = name;
-        this.redisson = redisson;
+    }
+
+    protected ConnectionManager getConnectionManager() {
+        return connectionManager;
     }
 
     @Override
     public int size() {
-        return connection.llen(name).intValue();
+        RedisConnection<String, Object> connection = connectionManager.acquireConnection();
+        try {
+            return connection.llen(name).intValue();
+        } finally {
+            connectionManager.release(connection);
+        }
     }
 
     @Override
@@ -80,7 +87,12 @@ public class RedissonList<V> implements RList<V> {
 
     @Override
     public boolean remove(Object o) {
-        return connection.lrem(name, 1, o) > 0;
+        RedisConnection<String, Object> connection = connectionManager.acquireConnection();
+        try {
+            return connection.lrem(name, 1, o) > 0;
+        } finally {
+            connectionManager.release(connection);
+        }
     }
 
     @Override
@@ -89,48 +101,59 @@ public class RedissonList<V> implements RList<V> {
             return false;
         }
 
-        Collection copy = new ArrayList(c);
-        int to = div(size(), batchSize);
-        for (int i = 0; i < to; i++) {
-            List<Object> range = connection.lrange(name, i*batchSize, i*batchSize + batchSize - 1);
-            for (Iterator iterator = copy.iterator(); iterator.hasNext();) {
-                Object obj = iterator.next();
-                int index = range.indexOf(obj);
-                if (index != -1) {
-                    iterator.remove();
+        RedisConnection<String, Object> connection = connectionManager.acquireConnection();
+        try {
+            Collection copy = new ArrayList(c);
+            int to = div(size(), batchSize);
+            for (int i = 0; i < to; i++) {
+                List<Object> range = connection.lrange(name, i*batchSize, i*batchSize + batchSize - 1);
+                for (Iterator iterator = copy.iterator(); iterator.hasNext();) {
+                    Object obj = iterator.next();
+                    int index = range.indexOf(obj);
+                    if (index != -1) {
+                        iterator.remove();
+                    }
                 }
             }
+
+            return copy.isEmpty();
+        } finally {
+            connectionManager.release(connection);
         }
 
-        return copy.isEmpty();
     }
 
     @Override
     public boolean addAll(Collection<? extends V> c) {
-        connection.rpush(name, c.toArray());
-        return true;
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            conn.rpush(name, c.toArray());
+            return true;
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
     public boolean addAll(int index, Collection<? extends V> coll) {
         checkPosition(index);
         if (index < size()) {
-            RedisConnection<Object, Object> c = redisson.connect();
+            RedisConnection<String, Object> conn = connectionManager.acquireConnection();
             try {
                 while (true) {
-                    c.watch(name);
-                    List<Object> tail = c.lrange(name, index, size());
+                    conn.watch(name);
+                    List<Object> tail = conn.lrange(name, index, size());
 
-                    c.multi();
-                    c.ltrim(name, 0, index - 1);
-                    c.rpush(name, coll.toArray());
-                    c.rpush(name, tail.toArray());
-                    if (c.exec().size() == 3) {
+                    conn.multi();
+                    conn.ltrim(name, 0, index - 1);
+                    conn.rpush(name, coll.toArray());
+                    conn.rpush(name, tail.toArray());
+                    if (conn.exec().size() == 3) {
                         return true;
                     }
                 }
             } finally {
-                c.close();
+                connectionManager.release(conn);
             }
         } else {
             return addAll(coll);
@@ -139,14 +162,20 @@ public class RedissonList<V> implements RList<V> {
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        boolean result = false;
-        for (Object object : c) {
-            boolean res = connection.lrem(name, 0, object) > 0;
-            if (!result) {
-                result = res;
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            boolean result = false;
+            for (Object object : c) {
+                boolean res = conn.lrem(name, 0, object) > 0;
+                if (!result) {
+                    result = res;
+                }
             }
+            return result;
+        } finally {
+            connectionManager.release(conn);
         }
-        return result;
+
     }
 
     @Override
@@ -164,13 +193,23 @@ public class RedissonList<V> implements RList<V> {
 
     @Override
     public void clear() {
-        connection.del(name);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            conn.del(name);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
     public V get(int index) {
         checkIndex(index);
-        return (V) connection.lindex(name, index);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            return (V) conn.lindex(name, index);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     private void checkIndex(int index) {
@@ -197,9 +236,14 @@ public class RedissonList<V> implements RList<V> {
     @Override
     public V set(int index, V element) {
         checkIndex(index);
-        V prev = get(index);
-        connection.lset(name, index, element);
-        return prev;
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            V prev = (V) conn.lindex(name, index);
+            conn.lset(name, index, element);
+            return prev;
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
@@ -221,9 +265,27 @@ public class RedissonList<V> implements RList<V> {
     @Override
     public V remove(int index) {
         checkIndex(index);
-        V value = get(index);
-        connection.lrem(name, 1, value);
-        return value;
+
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            if (index == 0) {
+                return (V) conn.lpop(name);
+            }
+            while (true) {
+                conn.watch(name);
+                V prev = (V) conn.lindex(name, index);
+                List<Object> tail = conn.lrange(name, index + 1, size());
+
+                conn.multi();
+                conn.ltrim(name, 0, index - 1);
+                conn.rpush(name, tail.toArray());
+                if (conn.exec().size() == 2) {
+                    return prev;
+                }
+            }
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
@@ -232,16 +294,21 @@ public class RedissonList<V> implements RList<V> {
             return -1;
         }
 
-        int to = div(size(), batchSize);
-        for (int i = 0; i < to; i++) {
-            List<Object> range = connection.lrange(name, i*batchSize, i*batchSize + batchSize - 1);
-            int index = range.indexOf(o);
-            if (index != -1) {
-                return index + i*batchSize;
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            int to = div(size(), batchSize);
+            for (int i = 0; i < to; i++) {
+                List<Object> range = conn.lrange(name, i*batchSize, i*batchSize + batchSize - 1);
+                int index = range.indexOf(o);
+                if (index != -1) {
+                    return index + i*batchSize;
+                }
             }
-        }
 
-        return -1;
+            return -1;
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
@@ -250,18 +317,23 @@ public class RedissonList<V> implements RList<V> {
             return -1;
         }
 
-        int size = size();
-        int to = div(size, batchSize);
-        for (int i = 1; i <= to; i++) {
-            int startIndex = -i*batchSize;
-            List<Object> range = connection.lrange(name, startIndex, size - (i-1)*batchSize);
-            int index = range.lastIndexOf(o);
-            if (index != -1) {
-                return Math.max(size + startIndex, 0) + index;
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            int size = size();
+            int to = div(size, batchSize);
+            for (int i = 1; i <= to; i++) {
+                int startIndex = -i*batchSize;
+                List<Object> range = conn.lrange(name, startIndex, size - (i-1)*batchSize);
+                int index = range.lastIndexOf(o);
+                if (index != -1) {
+                    return Math.max(size + startIndex, 0) + index;
+                }
             }
-        }
 
-        return -1;
+            return -1;
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
@@ -354,7 +426,13 @@ public class RedissonList<V> implements RList<V> {
         if (fromIndex > toIndex) {
             throw new IllegalArgumentException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
         }
-        return (List<V>) connection.lrange(name, fromIndex, toIndex - 1);
+
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            return (List<V>) conn.lrange(name, fromIndex, toIndex - 1);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     public String toString() {
@@ -373,19 +451,13 @@ public class RedissonList<V> implements RList<V> {
         }
     }
 
-    protected RedisConnection<Object, Object> getConnection() {
-        return connection;
-    }
-
     public String getName() {
         return name;
     }
 
     @Override
     public void destroy() {
-        connection.close();
-
-        redisson.remove(this);
+//        redisson.remove(this);
     }
 
 }

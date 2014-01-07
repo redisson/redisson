@@ -1,5 +1,6 @@
 package org.redisson;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
@@ -8,7 +9,7 @@ import org.junit.Test;
 
 public class RedissonMapTest extends BaseTest {
 
-    public static class SimpleKey {
+    public static class SimpleKey implements Serializable {
 
         private String key;
 
@@ -59,7 +60,7 @@ public class RedissonMapTest extends BaseTest {
 
     }
 
-    public static class SimpleValue {
+    public static class SimpleValue implements Serializable {
 
         private String value;
 

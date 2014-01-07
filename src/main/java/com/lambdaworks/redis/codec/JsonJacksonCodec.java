@@ -13,11 +13,11 @@ import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 
-public class JsonCodec extends RedisCodec<Object, Object> {
+public class JsonJacksonCodec extends RedisCodec<Object, Object> {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public JsonCodec() {
+    public JsonJacksonCodec() {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
                                             .withFieldVisibility(JsonAutoDetect.Visibility.ANY)

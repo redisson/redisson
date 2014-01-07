@@ -30,20 +30,19 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class RedissonTopic<M> implements RTopic<M> {
 
+    private RedisPubSubConnection<String, M> pubSubConnection;
+
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
 
-    private final Map<Integer, RedisPubSubTopicListener<String, M>> listeners = new ConcurrentHashMap<Integer, RedisPubSubTopicListener<String, M>>();
-    private final RedisPubSubConnection<String, M> pubSubConnection;
-    private final RedisConnection<Object, Object> connection;
+    private final Map<Integer, RedisPubSubTopicListener<String, M>> listeners =
+                                new ConcurrentHashMap<Integer, RedisPubSubTopicListener<String, M>>();
+    private final ConnectionManager connectionManager;
     private final String name;
-    private final Redisson redisson;
 
-    RedissonTopic(Redisson redisson, RedisPubSubConnection<String, M> pubSubConnection, RedisConnection<Object, Object> connection, final String name) {
-        this.pubSubConnection = pubSubConnection;
+    RedissonTopic(ConnectionManager connectionManager, final String name) {
+        this.connectionManager = connectionManager;
         this.name = name;
-        this.connection = connection;
-        this.redisson = redisson;
     }
 
     public void subscribe() {
@@ -58,6 +57,8 @@ public class RedissonTopic<M> implements RTopic<M> {
                 }
 
             };
+
+            pubSubConnection = connectionManager.acquirePubSubConnection();
             pubSubConnection.addListener(listener);
             pubSubConnection.subscribe(name);
         }
@@ -71,7 +72,12 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public void publish(M message) {
-        connection.publish(name, message);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            conn.publish(name, message);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
@@ -95,10 +101,8 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public void destroy() {
-        connection.close();
         pubSubConnection.close();
-
-        redisson.remove(this);
+//        redisson.remove(this);
     }
 
 

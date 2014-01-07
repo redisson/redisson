@@ -23,8 +23,8 @@ import com.lambdaworks.redis.RedisConnection;
 
 public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
-    RedissonQueue(Redisson redisson, RedisConnection<Object, Object> connection, String name) {
-        super(redisson, connection, name);
+    RedissonQueue(ConnectionManager connectionManager, String name) {
+        super(connectionManager, name);
     }
 
     @Override
@@ -33,19 +33,29 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     public V getFirst() {
-        V value = (V) getConnection().lindex(getName(), 0);
-        if (value == null) {
-            throw new NoSuchElementException();
+        RedisConnection<String, Object> connection = getConnectionManager().acquireConnection();
+        try {
+            V value = (V) connection.lindex(getName(), 0);
+            if (value == null) {
+                throw new NoSuchElementException();
+            }
+            return value;
+        } finally {
+            getConnectionManager().release(connection);
         }
-        return value;
     }
 
     public V removeFirst() {
-        V value = (V) getConnection().lpop(getName());
-        if (value == null) {
-            throw new NoSuchElementException();
+        RedisConnection<String, Object> connection = getConnectionManager().acquireConnection();
+        try {
+            V value = (V) connection.lpop(getName());
+            if (value == null) {
+                throw new NoSuchElementException();
+            }
+            return value;
+        } finally {
+            getConnectionManager().release(connection);
         }
-        return value;
     }
 
     @Override
@@ -55,7 +65,12 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V poll() {
-        return (V) getConnection().lpop(getName());
+        RedisConnection<String, Object> connection = getConnectionManager().acquireConnection();
+        try {
+            return (V) connection.lpop(getName());
+        } finally {
+            getConnectionManager().release(connection);
+        }
     }
 
     @Override
@@ -65,7 +80,10 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V peek() {
-        return (V) getConnection().lindex(getName(), 0);
+        if (isEmpty()) {
+            return null;
+        }
+        return get(0);
     }
 
 }

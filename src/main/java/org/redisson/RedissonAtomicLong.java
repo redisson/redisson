@@ -21,25 +21,28 @@ import com.lambdaworks.redis.RedisConnection;
 
 public class RedissonAtomicLong implements RAtomicLong {
 
-    private final RedisConnection<Object, Object> connection;
+    private final ConnectionManager connectionManager;
     private final String name;
-    private final Redisson redisson;
 
-    RedissonAtomicLong(Redisson redisson, RedisConnection<Object, Object> connection, String name) {
-        this.redisson = redisson;
-        this.connection = connection;
+    RedissonAtomicLong(ConnectionManager connectionManager, String name) {
+        this.connectionManager = connectionManager;
         this.name = name;
     }
 
 
     @Override
     public long addAndGet(long delta) {
-        return connection.incrby(name, delta);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            return conn.incrby(name, delta);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
     public boolean compareAndSet(long expect, long update) {
-        RedisConnection<Object, Object> conn = redisson.connect();
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
         try {
             while (true) {
                 conn.watch(name);
@@ -55,18 +58,28 @@ public class RedissonAtomicLong implements RAtomicLong {
                 }
             }
         } finally {
-            conn.close();
+            connectionManager.release(conn);
         }
     }
 
     @Override
     public long decrementAndGet() {
-        return connection.decr(name);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            return conn.decr(name);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
     public long get() {
-        return (Long) connection.get(name);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            return (Long) conn.get(name);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
@@ -81,12 +94,22 @@ public class RedissonAtomicLong implements RAtomicLong {
 
     @Override
     public long getAndSet(long newValue) {
-        return (Long) connection.getset(name, newValue);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            return (Long) conn.getset(name, newValue);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
     public long incrementAndGet() {
-        return connection.incr(name);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            return conn.incr(name);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     @Override
@@ -100,7 +123,12 @@ public class RedissonAtomicLong implements RAtomicLong {
 
     @Override
     public void set(long newValue) {
-        connection.set(name, newValue);
+        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        try {
+            conn.set(name, newValue);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     public String toString() {
@@ -116,8 +144,7 @@ public class RedissonAtomicLong implements RAtomicLong {
 
     @Override
     public void destroy() {
-        connection.close();
-        redisson.remove(this);
+//        redisson.remove(this);
     }
 
 }

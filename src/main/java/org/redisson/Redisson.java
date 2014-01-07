@@ -15,9 +15,11 @@
  */
 package org.redisson;
 
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.config.Config;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RList;
@@ -31,7 +33,7 @@ import org.redisson.core.RTopic;
 import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.codec.JsonCodec;
+import com.lambdaworks.redis.codec.JsonJacksonCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 // TODO lazy connection
@@ -47,35 +49,28 @@ public class Redisson {
     private final ConcurrentMap<String, RedissonMap> mapsMap = new ConcurrentHashMap<String, RedissonMap>();
     private final ConcurrentMap<String, RedissonLock> locksMap = new ConcurrentHashMap<String, RedissonLock>();
 
-    private JsonCodec codec = new JsonCodec();
+    private final ConnectionManager connectionManager;
 
-    RedisClient redisClient;
-
-    Redisson(String host, int port) {
-        redisClient = new RedisClient(host, port);
+    public Redisson(Config config) {
+        connectionManager = new ConnectionManager(config);
     }
 
     public static Redisson create() {
-        return create("localhost");
+        Config config = new Config();
+        config.addAddress("localhost", 6379);
+        return create(config);
     }
 
-    public static Redisson create(String host) {
-        return create(host, 6379);
-    }
-
-    public static Redisson create(String host, int port) {
-        return new Redisson(host, port);
+    public static Redisson create(Config config) {
+        return new Redisson(config);
     }
 
     public <V> RList<V> getList(String name) {
         RedissonList<V> list = listsMap.get(name);
         if (list == null) {
-            RedisConnection<Object, Object> connection = connect();
-            list = new RedissonList<V>(this, connection, name);
+            list = new RedissonList<V>(connectionManager, name);
             RedissonList<V> oldList = listsMap.putIfAbsent(name, list);
             if (oldList != null) {
-                connection.close();
-
                 list = oldList;
             }
         }
@@ -86,12 +81,9 @@ public class Redisson {
     public <K, V> RMap<K, V> getMap(String name) {
         RedissonMap<K, V> map = mapsMap.get(name);
         if (map == null) {
-            RedisConnection<Object, Object> connection = connect();
-            map = new RedissonMap<K, V>(this, connection, name);
+            map = new RedissonMap<K, V>(connectionManager, name);
             RedissonMap<K, V> oldMap = mapsMap.putIfAbsent(name, map);
             if (oldMap != null) {
-                connection.close();
-
                 map = oldMap;
             }
         }
@@ -102,15 +94,9 @@ public class Redisson {
     public RLock getLock(String name) {
         RedissonLock lock = locksMap.get(name);
         if (lock == null) {
-            RedisConnection<Object, Object> connection = connect();
-            RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
-
-            lock = new RedissonLock(this, pubSubConnection, connection, name);
+            lock = new RedissonLock(connectionManager, name);
             RedissonLock oldLock = locksMap.putIfAbsent(name, lock);
             if (oldLock != null) {
-                connection.close();
-                pubSubConnection.close();
-
                 lock = oldLock;
             }
         }
@@ -122,12 +108,9 @@ public class Redisson {
     public <V> RSet<V> getSet(String name) {
         RedissonSet<V> set = setsMap.get(name);
         if (set == null) {
-            RedisConnection<Object, Object> connection = connect();
-            set = new RedissonSet<V>(this, connection, name);
+            set = new RedissonSet<V>(connectionManager, name);
             RedissonSet<V> oldSet = setsMap.putIfAbsent(name, set);
             if (oldSet != null) {
-                connection.close();
-
                 set = oldSet;
             }
         }
@@ -138,15 +121,9 @@ public class Redisson {
     public <M> RTopic<M> getTopic(String name) {
         RedissonTopic<M> topic = topicsMap.get(name);
         if (topic == null) {
-            RedisConnection<Object, Object> connection = connect();
-            RedisPubSubConnection<String, M> pubSubConnection = connectPubSub();
-
-            topic = new RedissonTopic<M>(this, pubSubConnection, connection, name);
+            topic = new RedissonTopic<M>(connectionManager, name);
             RedissonTopic<M> oldTopic = topicsMap.putIfAbsent(name, topic);
             if (oldTopic != null) {
-                connection.close();
-                pubSubConnection.close();
-
                 topic = oldTopic;
             }
         }
@@ -159,12 +136,9 @@ public class Redisson {
     public <V> RQueue<V> getQueue(String name) {
         RedissonQueue<V> queue = queuesMap.get(name);
         if (queue == null) {
-            RedisConnection<Object, Object> connection = connect();
-            queue = new RedissonQueue<V>(this, connection, name);
+            queue = new RedissonQueue<V>(connectionManager, name);
             RedissonQueue<V> oldQueue = queuesMap.putIfAbsent(name, queue);
             if (oldQueue != null) {
-                connection.close();
-
                 queue = oldQueue;
             }
         }
@@ -175,12 +149,9 @@ public class Redisson {
     public RAtomicLong getAtomicLong(String name) {
         RedissonAtomicLong atomicLong = atomicLongsMap.get(name);
         if (atomicLong == null) {
-            RedisConnection<Object, Object> connection = connect();
-            atomicLong = new RedissonAtomicLong(this, connection, name);
+            atomicLong = new RedissonAtomicLong(connectionManager, name);
             RedissonAtomicLong oldAtomicLong = atomicLongsMap.putIfAbsent(name, atomicLong);
             if (oldAtomicLong != null) {
-                connection.close();
-
                 atomicLong = oldAtomicLong;
             }
         }
@@ -192,25 +163,15 @@ public class Redisson {
     public RCountDownLatch getCountDownLatch(String name) {
         RedissonCountDownLatch latch = latchesMap.get(name);
         if (latch == null) {
-            RedisConnection<Object, Object> connection = connect();
-            RedisPubSubConnection<Object, Object> pubSubConnection = connectPubSub();
-
-            latch = new RedissonCountDownLatch(this, pubSubConnection, connection, name);
+            latch = new RedissonCountDownLatch(connectionManager, name);
             RedissonCountDownLatch oldLatch = latchesMap.putIfAbsent(name, latch);
             if (oldLatch != null) {
-                connection.close();
-                pubSubConnection.close();
-
                 latch = oldLatch;
             }
         }
 
         latch.subscribe();
         return latch;
-    }
-
-    private <K, V> RedisPubSubConnection<K, V> connectPubSub() {
-        return (RedisPubSubConnection<K, V>) redisClient.connectPubSub(codec);
     }
 
     // TODO implement
@@ -245,15 +206,7 @@ public class Redisson {
     }
 
     public void shutdown() {
-        redisClient.shutdown();
-    }
-
-    RedisConnection<Object, Object> connect() {
-        return redisClient.connect(codec);
-    }
-
-    RedisAsyncConnection<Object, Object> connectAsync() {
-        return redisClient.connectAsync(codec);
+        connectionManager.shutdown();
     }
 
 }
