@@ -123,8 +123,8 @@ public class RedissonCountDownLatch implements RCountDownLatch {
             RedisConnection<Object, Object> conn = redisson.connect();
             try {
                 conn.multi();
-                conn.publish(getChannelName(), zeroCountMessage);
                 conn.del(name);
+                conn.publish(getChannelName(), zeroCountMessage);
                 conn.exec();
             } finally {
                 conn.close();
