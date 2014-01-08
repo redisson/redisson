@@ -21,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RMap;
 
 import com.lambdaworks.redis.RedisConnection;

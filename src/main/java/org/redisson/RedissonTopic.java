@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ConnectionManager.PubSubEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
 import org.redisson.core.RedisPubSubTopicListener;
@@ -40,7 +42,9 @@ public class RedissonTopic<M> implements RTopic<M> {
     private final ConnectionManager connectionManager;
     private final String name;
 
-    RedissonTopic(ConnectionManager connectionManager, final String name) {
+    private PubSubEntry pubSubEntry;
+
+    RedissonTopic(ConnectionManager connectionManager, String name) {
         this.connectionManager = connectionManager;
         this.name = name;
     }
@@ -58,9 +62,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
             };
 
-            pubSubConnection = connectionManager.acquirePubSubConnection();
-            pubSubConnection.addListener(listener);
-            pubSubConnection.subscribe(name);
+            pubSubEntry = connectionManager.subscribe(listener, name);
         }
 
         try {
@@ -82,16 +84,16 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public int addListener(MessageListener<M> listener) {
-        RedisPubSubTopicListener<String, M> list = new RedisPubSubTopicListener<String, M>(listener, name);
-        listeners.put(list.hashCode(), list);
-        pubSubConnection.addListener(list);
-        return list.hashCode();
+        RedisPubSubTopicListener<String, M> pubSubListener = new RedisPubSubTopicListener<String, M>(listener, name);
+        listeners.put(pubSubListener.hashCode(), pubSubListener);
+        pubSubEntry.addListener(pubSubListener);
+        return pubSubListener.hashCode();
     }
 
     @Override
     public void removeListener(int listenerId) {
-        RedisPubSubTopicListener<String, M> list = listeners.remove(listenerId);
-        pubSubConnection.removeListener(list);
+        RedisPubSubTopicListener<String, M> pubSubListener = listeners.remove(listenerId);
+        pubSubEntry.removeListener(pubSubListener);
     }
 
     @Override
@@ -101,7 +103,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public void destroy() {
-        pubSubConnection.close();
+        connectionManager.unsubscribe(pubSubEntry, name);
 //        redisson.remove(this);
     }
 

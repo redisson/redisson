@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.NoSuchElementException;
 
+import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RQueue;
 
 import com.lambdaworks.redis.RedisConnection;

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
+import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RList;
 
 import com.lambdaworks.redis.RedisConnection;

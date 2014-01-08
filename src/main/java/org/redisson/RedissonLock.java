@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ConnectionManager.PubSubEntry;
 import org.redisson.core.RLock;
 
 import com.lambdaworks.redis.RedisConnection;
@@ -103,7 +105,7 @@ public class RedissonLock implements RLock {
 
     // TODO move it to Redisson as ID
     private final UUID id = UUID.randomUUID();
-    private final String groupName = "redisson_lock";
+    private final String groupName = "redisson_lock_";
     private final String name;
 
     private static final Integer unlockMessage = 0;
@@ -112,6 +114,8 @@ public class RedissonLock implements RLock {
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
 
     private final Semaphore msg = new Semaphore(1);
+
+    private PubSubEntry pubSubEntry;
 
     RedissonLock(ConnectionManager connectionManager, String name) {
         this.connectionManager = connectionManager;
@@ -140,13 +144,7 @@ public class RedissonLock implements RLock {
 
             };
 
-            RedisPubSubConnection<String, Integer> pubSubConnection = connectionManager.acquirePubSubConnection();
-            try {
-                pubSubConnection.addListener(listener);
-                pubSubConnection.subscribe(getChannelName());
-            } finally {
-                connectionManager.release(pubSubConnection);
-            }
+            pubSubEntry = connectionManager.subscribe(listener, getChannelName());
         }
 
         try {
@@ -258,6 +256,7 @@ public class RedissonLock implements RLock {
 
     @Override
     public void destroy() {
+        connectionManager.unsubscribe(pubSubEntry, getChannelName());
 //        redisson.remove(this);
     }
 

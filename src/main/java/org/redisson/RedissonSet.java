@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSet;
 
 import com.lambdaworks.redis.RedisConnection;

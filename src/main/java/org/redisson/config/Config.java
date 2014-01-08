@@ -21,9 +21,13 @@ import java.util.Map;
 import com.lambdaworks.redis.codec.JsonJacksonCodec;
 import com.lambdaworks.redis.codec.RedisCodec;
 
+// TODO ping support
+// TODO multi addresses support
 public class Config {
 
     private RedisCodec codec = new JsonJacksonCodec();
+
+    private int subscriptionsPerConnection = 5;
 
     private int connectionPoolSize = 100;
 
@@ -36,6 +40,13 @@ public class Config {
     }
     public RedisCodec getCodec() {
         return codec;
+    }
+
+    public int getSubscriptionsPerConnection() {
+        return subscriptionsPerConnection;
+    }
+    public void setSubscriptionsPerConnection(int subscriptionsPerConnection) {
+        this.subscriptionsPerConnection = subscriptionsPerConnection;
     }
 
     public void setConnectionPoolSize(int connectionPoolSize) {

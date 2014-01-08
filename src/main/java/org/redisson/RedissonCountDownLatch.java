@@ -19,6 +19,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ConnectionManager.PubSubEntry;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.misc.internal.ReclosableLatch;
 
@@ -41,6 +43,7 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     private final ReclosableLatch msg = new ReclosableLatch();
 
     private final ConnectionManager connectionManager;
+    private PubSubEntry pubSubEntry;
 
     RedissonCountDownLatch(ConnectionManager connectionManager, String name) {
         this.connectionManager = connectionManager;
@@ -73,13 +76,7 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
             };
 
-            RedisPubSubConnection<String, Integer> pubSubConnection = connectionManager.acquirePubSubConnection();
-            try {
-                pubSubConnection.addListener(listener);
-                pubSubConnection.subscribe(getChannelName());
-            } finally {
-                connectionManager.release(pubSubConnection);
-            }
+            pubSubEntry = connectionManager.subscribe(listener, getChannelName());
         }
 
         try {
@@ -182,6 +179,7 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
     @Override
     public void destroy() {
+        connectionManager.unsubscribe(pubSubEntry, getChannelName());
 //        redisson.remove(this);
     }
 

@@ -15,10 +15,16 @@
  */
 package org.redisson;
 
+import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 
 import com.lambdaworks.redis.RedisConnection;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonAtomicLong implements RAtomicLong {
 
     private final ConnectionManager connectionManager;

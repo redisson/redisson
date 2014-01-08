@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.config.Config;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RList;
@@ -36,7 +37,11 @@ import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.codec.JsonJacksonCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
-// TODO lazy connection
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class Redisson {
 
     // TODO drain by weak reference
