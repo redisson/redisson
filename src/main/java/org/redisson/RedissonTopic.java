@@ -28,11 +28,8 @@ import org.redisson.core.RedisPubSubTopicListener;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class RedissonTopic<M> implements RTopic<M> {
-
-    private RedisPubSubConnection<String, M> pubSubConnection;
 
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();

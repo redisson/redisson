@@ -29,7 +29,6 @@ import org.redisson.core.RLock;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 /**
  * Reentrant distributed lock
