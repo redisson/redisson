@@ -15,12 +15,10 @@
  */
 package org.redisson;
 
-import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.redisson.config.Config;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RCountDownLatch;
@@ -31,12 +29,6 @@ import org.redisson.core.RObject;
 import org.redisson.core.RQueue;
 import org.redisson.core.RSet;
 import org.redisson.core.RTopic;
-
-import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.codec.JsonJacksonCodec;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 /**
  *
@@ -65,12 +57,13 @@ public class Redisson {
 
     public static Redisson create() {
         Config config = new Config();
-        config.addAddress("localhost:6379");
+        config.addAddress("127.0.0.1:6379");
         return create(config);
     }
 
     public static Redisson create(Config config) {
-        return new Redisson(config);
+        Config configCopy = new Config(config);
+        return new Redisson(configCopy);
     }
 
     public <V> RList<V> getList(String name) {

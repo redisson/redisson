@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.config;
+package org.redisson;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,7 +23,6 @@ import java.util.List;
 import com.lambdaworks.redis.codec.JsonJacksonCodec;
 import com.lambdaworks.redis.codec.RedisCodec;
 
-// TODO multi addresses support
 public class Config {
 
     private RedisCodec codec = new JsonJacksonCodec();
@@ -32,15 +31,33 @@ public class Config {
 
     private int connectionPoolSize = 100;
 
-    private int connectionPingTimeout = 5000;
+    private String password;
 
     private List<URI> addresses = new ArrayList<URI>();
+
+    public Config() {
+    }
+
+    Config(Config oldConf) {
+        setCodec(oldConf.getCodec());
+        setConnectionPoolSize(oldConf.getConnectionPoolSize());
+        setPassword(oldConf.getPassword());
+        setSubscriptionsPerConnection(oldConf.getSubscriptionsPerConnection());
+        setAddresses(oldConf.getAddresses());
+    }
 
     public void setCodec(RedisCodec codec) {
         this.codec = codec;
     }
     public RedisCodec getCodec() {
         return codec;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public int getSubscriptionsPerConnection() {
@@ -57,13 +74,6 @@ public class Config {
         return connectionPoolSize;
     }
 
-    public void setConnectionPingTimeout(int connectionPingTimeout) {
-        this.connectionPingTimeout = connectionPingTimeout;
-    }
-    public int getConnectionPingTimeout() {
-        return connectionPingTimeout;
-    }
-
     public void addAddress(String ... addressesVar) {
         for (String address : addressesVar) {
             try {
@@ -75,6 +85,9 @@ public class Config {
     }
     public List<URI> getAddresses() {
         return addresses;
+    }
+    void setAddresses(List<URI> addresses) {
+        this.addresses = addresses;
     }
 
 }

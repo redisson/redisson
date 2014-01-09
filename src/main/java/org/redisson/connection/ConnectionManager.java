@@ -16,12 +16,11 @@
 package org.redisson.connection;
 
 import java.net.URI;
-import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
-import org.redisson.config.Config;
+import org.redisson.Config;
 
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
@@ -35,6 +34,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubListener;
  *
  */
 //TODO ping support
+//TODO multi addresses support
 public class ConnectionManager {
 
     public static class PubSubEntry {
@@ -98,11 +98,14 @@ public class ConnectionManager {
 
     public <K, V> RedisConnection<K, V> acquireConnection() {
         activeConnections.acquireUninterruptibly();
-        RedisConnection<K, V> c = connections.poll();
-        if (c == null) {
-            c = redisClient.connect(config.getCodec());
+        RedisConnection<K, V> conn = connections.poll();
+        if (conn == null) {
+            conn = redisClient.connect(config.getCodec());
+            if (config.getPassword() != null) {
+                conn.auth(config.getPassword());
+            }
         }
-        return c;
+        return conn;
     }
 
     public <K, V> PubSubEntry subscribe(RedisPubSubAdapter<K, V> listener, K channel) {
@@ -114,6 +117,9 @@ public class ConnectionManager {
 
         activeConnections.acquireUninterruptibly();
         RedisPubSubConnection<K, V> conn = redisClient.connectPubSub(config.getCodec());
+        if (config.getPassword() != null) {
+            conn.auth(config.getPassword());
+        }
         PubSubEntry entry = new PubSubEntry(conn, config.getSubscriptionsPerConnection());
         entry.subscribe(listener, channel);
         pubSubConnections.add(entry);

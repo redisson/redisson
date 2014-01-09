@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ConnectionManager.PubSubEntry;
 import org.redisson.core.RCountDownLatch;
-import org.redisson.misc.internal.ReclosableLatch;
+import org.redisson.misc.ReclosableLatch;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
