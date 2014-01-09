@@ -6,7 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
-public class StreamCodec implements RedissonCodec {
+public class SerializationCodec implements RedissonCodec {
 
     @Override
     public Object decodeKey(ByteBuffer bytes) {
