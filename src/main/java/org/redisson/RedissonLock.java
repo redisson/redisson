@@ -102,8 +102,7 @@ public class RedissonLock implements RLock {
 
     private final ConnectionManager connectionManager;
 
-    // TODO move it to Redisson as ID
-    private final UUID id = UUID.randomUUID();
+    private final UUID id;
     private final String groupName = "redisson_lock_";
     private final String name;
 
@@ -116,9 +115,10 @@ public class RedissonLock implements RLock {
 
     private PubSubEntry pubSubEntry;
 
-    RedissonLock(ConnectionManager connectionManager, String name) {
+    RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
         this.connectionManager = connectionManager;
         this.name = name;
+        this.id = id;
     }
 
     public void subscribe() {
@@ -239,7 +239,6 @@ public class RedissonLock implements RLock {
         } finally {
             connectionManager.release(connection);
         }
-
     }
 
     @Override

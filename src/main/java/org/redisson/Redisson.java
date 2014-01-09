@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -55,6 +56,8 @@ public class Redisson {
     private final ConcurrentMap<String, RedissonLock> locksMap = new ConcurrentHashMap<String, RedissonLock>();
 
     private final ConnectionManager connectionManager;
+
+    private final UUID id = UUID.randomUUID();
 
     public Redisson(Config config) {
         connectionManager = new ConnectionManager(config);
@@ -99,7 +102,7 @@ public class Redisson {
     public RLock getLock(String name) {
         RedissonLock lock = locksMap.get(name);
         if (lock == null) {
-            lock = new RedissonLock(connectionManager, name);
+            lock = new RedissonLock(connectionManager, name, id);
             RedissonLock oldLock = locksMap.putIfAbsent(name, lock);
             if (oldLock != null) {
                 lock = oldLock;
