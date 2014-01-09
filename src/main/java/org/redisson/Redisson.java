@@ -62,7 +62,7 @@ public class Redisson {
 
     public static Redisson create() {
         Config config = new Config();
-        config.addAddress("localhost", 6379);
+        config.addAddress("localhost:6379");
         return create(config);
     }
 

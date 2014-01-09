@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.net.URI;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -33,6 +34,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubListener;
  * @author Nikita Koksharov
  *
  */
+//TODO ping support
 public class ConnectionManager {
 
     public static class PubSubEntry {
@@ -88,8 +90,8 @@ public class ConnectionManager {
     private final Config config;
 
     public ConnectionManager(Config config) {
-        Entry<String, Integer> address = config.getAddresses().entrySet().iterator().next();
-        redisClient = new RedisClient(address.getKey(), address.getValue());
+        URI address = config.getAddresses().iterator().next();
+        redisClient = new RedisClient(address.getHost(), address.getPort());
         activeConnections = new Semaphore(config.getConnectionPoolSize());
         this.config = config;
     }

@@ -15,13 +15,18 @@
  */
 package org.redisson.config;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.lambdaworks.redis.codec.JsonJacksonCodec;
 import com.lambdaworks.redis.codec.RedisCodec;
 
-// TODO ping support
 // TODO multi addresses support
 public class Config {
 
@@ -33,7 +38,7 @@ public class Config {
 
     private int connectionPingTimeout = 5000;
 
-    private Map<String, Integer> addresses = new HashMap<String, Integer>();
+    private List<URI> addresses = new ArrayList<URI>();
 
     public void setCodec(RedisCodec codec) {
         this.codec = codec;
@@ -63,10 +68,16 @@ public class Config {
         return connectionPingTimeout;
     }
 
-    public void addAddress(String host, int port) {
-        addresses.put(host, port);
+    public void addAddress(String ... addressesVar) {
+        for (String address : addressesVar) {
+            try {
+                addresses.add(new URI("//" + address));
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException("Can't parse " + address);
+            }
+        }
     }
-    public Map<String, Integer> getAddresses() {
+    public List<URI> getAddresses() {
         return addresses;
     }
 
