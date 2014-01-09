@@ -35,7 +35,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
  *
  *
  */
-public class RedissonLock implements RLock {
+public class RedissonLock extends RedissonObject implements RLock {
 
     public static class LockValue implements Serializable {
 
@@ -104,7 +104,6 @@ public class RedissonLock implements RLock {
 
     private final UUID id;
     private final String groupName = "redisson_lock_";
-    private final String name;
 
     private static final Integer unlockMessage = 0;
 
@@ -116,8 +115,8 @@ public class RedissonLock implements RLock {
     private PubSubEntry pubSubEntry;
 
     RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
+        super(name);
         this.connectionManager = connectionManager;
-        this.name = name;
         this.id = id;
     }
 
@@ -164,11 +163,11 @@ public class RedissonLock implements RLock {
     }
 
     private String getKeyName() {
-        return groupName + name;
+        return groupName + getName();
     }
 
     private String getChannelName() {
-        return groupName + name;
+        return groupName + getName();
     }
 
     @Override
@@ -248,14 +247,8 @@ public class RedissonLock implements RLock {
     }
 
     @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public void destroy() {
+    public void close() {
         connectionManager.unsubscribe(pubSubEntry, getChannelName());
-//        redisson.remove(this);
     }
 
 }

@@ -26,14 +26,12 @@ import org.redisson.misc.ReclosableLatch;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
-public class RedissonCountDownLatch implements RCountDownLatch {
+public class RedissonCountDownLatch extends RedissonObject implements RCountDownLatch {
 
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
 
     private final String groupName = "redisson_countdownlatch_";
-    private final String name;
 
     private static final Integer zeroCountMessage = 0;
     private static final Integer newCountMessage = 1;
@@ -46,8 +44,8 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     private PubSubEntry pubSubEntry;
 
     RedissonCountDownLatch(ConnectionManager connectionManager, String name) {
+        super(name);
         this.connectionManager = connectionManager;
-        this.name = name;
     }
 
     public void subscribe() {
@@ -119,16 +117,16 @@ public class RedissonCountDownLatch implements RCountDownLatch {
 
         RedisConnection<String, Object> connection = connectionManager.acquireConnection();
         try {
-            Long val = connection.decr(name);
+            Long val = connection.decr(getName());
             if (val == 0) {
                 connection.multi();
-                connection.del(name);
+                connection.del(getName());
                 connection.publish(getChannelName(), zeroCountMessage);
                 if (connection.exec().size() != 2) {
                     throw new IllegalStateException();
                 }
             } else if (val < 0) {
-                connection.del(name);
+                connection.del(getName());
             }
         } finally {
             connectionManager.release(connection);
@@ -136,14 +134,14 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     }
 
     private String getChannelName() {
-        return groupName + name;
+        return groupName + getName();
     }
 
     @Override
     public long getCount() {
         RedisConnection<String, Object> connection = connectionManager.acquireConnection();
         try {
-            Number val = (Number) connection.get(name);
+            Number val = (Number) connection.get(getName());
             if (val == null) {
                 return 0;
             }
@@ -157,14 +155,14 @@ public class RedissonCountDownLatch implements RCountDownLatch {
     public boolean trySetCount(long count) {
         RedisConnection<String, Object> connection = connectionManager.acquireConnection();
         try {
-            connection.watch(name);
-            Long oldValue = (Long) connection.get(name);
+            connection.watch(getName());
+            Long oldValue = (Long) connection.get(getName());
             if (oldValue != null) {
                 connection.discard();
                 return false;
             }
             connection.multi();
-            connection.set(name, count);
+            connection.set(getName(), count);
             connection.publish(getChannelName(), newCountMessage);
             return connection.exec().size() == 2;
         } finally {
@@ -172,15 +170,8 @@ public class RedissonCountDownLatch implements RCountDownLatch {
         }
     }
 
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public void destroy() {
+    public void close() {
         connectionManager.unsubscribe(pubSubEntry, getChannelName());
-//        redisson.remove(this);
     }
 
 }

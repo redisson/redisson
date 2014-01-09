@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.connection.ConnectionManager;
@@ -25,10 +24,12 @@ import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
-import org.redisson.core.RObject;
 import org.redisson.core.RQueue;
 import org.redisson.core.RSet;
 import org.redisson.core.RTopic;
+import org.redisson.misc.ReferenceMap;
+import org.redisson.misc.ReferenceMap.ReferenceType;
+import org.redisson.misc.ReferenceMap.RemoveValueListener;
 
 /**
  *
@@ -37,21 +38,32 @@ import org.redisson.core.RTopic;
  */
 public class Redisson {
 
-    // TODO drain by weak reference
-    private final ConcurrentMap<String, RedissonCountDownLatch> latchesMap = new ConcurrentHashMap<String, RedissonCountDownLatch>();
-    private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ConcurrentHashMap<String, RedissonAtomicLong>();
-    private final ConcurrentMap<String, RedissonQueue> queuesMap = new ConcurrentHashMap<String, RedissonQueue>();
-    private final ConcurrentMap<String, RedissonTopic> topicsMap = new ConcurrentHashMap<String, RedissonTopic>();
-    private final ConcurrentMap<String, RedissonSet> setsMap = new ConcurrentHashMap<String, RedissonSet>();
-    private final ConcurrentMap<String, RedissonList> listsMap = new ConcurrentHashMap<String, RedissonList>();
-    private final ConcurrentMap<String, RedissonMap> mapsMap = new ConcurrentHashMap<String, RedissonMap>();
-    private final ConcurrentMap<String, RedissonLock> locksMap = new ConcurrentHashMap<String, RedissonLock>();
+    RemoveValueListener listener = new RemoveValueListener() {
+
+        @Override
+        public void onRemove(Object value) {
+            if (value instanceof RedissonObject) {
+                ((RedissonObject)value).close();
+            }
+        }
+
+    };
+
+    private final ConcurrentMap<String, RedissonCountDownLatch> latchesMap = new ReferenceMap<String, RedissonCountDownLatch>(ReferenceType.STRONG, ReferenceType.SOFT, listener);
+    private final ConcurrentMap<String, RedissonTopic> topicsMap = new ReferenceMap<String, RedissonTopic>(ReferenceType.STRONG, ReferenceType.SOFT, listener);
+    private final ConcurrentMap<String, RedissonLock> locksMap = new ReferenceMap<String, RedissonLock>(ReferenceType.STRONG, ReferenceType.SOFT, listener);
+
+    private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ReferenceMap<String, RedissonAtomicLong>(ReferenceType.STRONG, ReferenceType.SOFT);
+    private final ConcurrentMap<String, RedissonQueue> queuesMap = new ReferenceMap<String, RedissonQueue>(ReferenceType.STRONG, ReferenceType.SOFT);
+    private final ConcurrentMap<String, RedissonSet> setsMap = new ReferenceMap<String, RedissonSet>(ReferenceType.STRONG, ReferenceType.SOFT);
+    private final ConcurrentMap<String, RedissonList> listsMap = new ReferenceMap<String, RedissonList>(ReferenceType.STRONG, ReferenceType.SOFT);
+    private final ConcurrentMap<String, RedissonMap> mapsMap = new ReferenceMap<String, RedissonMap>(ReferenceType.STRONG, ReferenceType.SOFT);
 
     private final ConnectionManager connectionManager;
 
     private final UUID id = UUID.randomUUID();
 
-    public Redisson(Config config) {
+    Redisson(Config config) {
         connectionManager = new ConnectionManager(config);
     }
 
@@ -178,33 +190,6 @@ public class Redisson {
     // TODO implement
 //    public void getSemaphore() {
 //    }
-
-    void remove(RObject robject) {
-        if (robject instanceof RedissonLock) {
-            locksMap.remove(robject.getName());
-        }
-        if (robject instanceof RedissonSet) {
-            setsMap.remove(robject.getName());
-        }
-        if (robject instanceof RedissonTopic) {
-            topicsMap.remove(robject.getName());
-        }
-        if (robject instanceof RedissonAtomicLong) {
-            atomicLongsMap.remove(robject.getName());
-        }
-        if (robject instanceof RedissonCountDownLatch) {
-            latchesMap.remove(robject.getName());
-        }
-        if (robject instanceof RedissonList) {
-            listsMap.remove(robject.getName());
-        }
-        if (robject instanceof RedissonMap) {
-            mapsMap.remove(robject.getName());
-        }
-        if (robject instanceof RedissonQueue) {
-            queuesMap.remove(robject.getName());
-        }
-    }
 
     public void shutdown() {
         connectionManager.shutdown();

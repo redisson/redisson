@@ -27,25 +27,20 @@ import org.redisson.core.RMap;
 import com.lambdaworks.redis.RedisConnection;
 
 //TODO implement watching by keys instead of map name
-public class RedissonMap<K, V> implements RMap<K, V> {
+public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
 
     private final ConnectionManager connectionManager;
-    private final String name;
 
     RedissonMap(ConnectionManager connectionManager, String name) {
+        super(name);
         this.connectionManager = connectionManager;
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
     }
 
     @Override
     public int size() {
         RedisConnection<String, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.hlen(name).intValue();
+            return connection.hlen(getName()).intValue();
         } finally {
             connectionManager.release(connection);
         }
@@ -60,7 +55,7 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public boolean containsKey(Object key) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.hexists(name, key);
+            return connection.hexists(getName(), key);
         } finally {
             connectionManager.release(connection);
         }
@@ -70,7 +65,7 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public boolean containsValue(Object value) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.hvals(name).contains(value);
+            return connection.hvals(getName()).contains(value);
         } finally {
             connectionManager.release(connection);
         }
@@ -80,7 +75,7 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public V get(Object key) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return (V) connection.hget(name, key);
+            return (V) connection.hget(getName(), key);
         } finally {
             connectionManager.release(connection);
         }
@@ -90,8 +85,8 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public V put(K key, V value) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            V prev = (V) connection.hget(name, key);
-            connection.hset(name, key, value);
+            V prev = (V) connection.hget(getName(), key);
+            connection.hset(getName(), key, value);
             return prev;
         } finally {
             connectionManager.release(connection);
@@ -102,8 +97,8 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public V remove(Object key) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            V prev = (V) connection.hget(name, key);
-            connection.hdel(name, key);
+            V prev = (V) connection.hget(getName(), key);
+            connection.hdel(getName(), key);
             return prev;
         } finally {
             connectionManager.release(connection);
@@ -114,7 +109,7 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public void putAll(Map<? extends K, ? extends V> map) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            connection.hmset(name, (Map<Object, Object>) map);
+            connection.hmset(getName(), (Map<Object, Object>) map);
         } finally {
             connectionManager.release(connection);
         }
@@ -124,7 +119,7 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public void clear() {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            connection.del(name);
+            connection.del(getName());
         } finally {
             connectionManager.release(connection);
         }
@@ -134,7 +129,7 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public Set<K> keySet() {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return new LinkedHashSet<K>((Collection<? extends K>) connection.hkeys(name));
+            return new LinkedHashSet<K>((Collection<? extends K>) connection.hkeys(getName()));
         } finally {
             connectionManager.release(connection);
         }
@@ -144,7 +139,7 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public Collection<V> values() {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return (Collection<V>) connection.hvals(name);
+            return (Collection<V>) connection.hvals(getName());
         } finally {
             connectionManager.release(connection);
         }
@@ -154,7 +149,7 @@ public class RedissonMap<K, V> implements RMap<K, V> {
     public Set<java.util.Map.Entry<K, V>> entrySet() {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            Map<Object, Object> map = connection.hgetall(name);
+            Map<Object, Object> map = connection.hgetall(getName());
             Map<K, V> result = new HashMap<K, V>();
             for (java.util.Map.Entry<Object, Object> entry : map.entrySet()) {
                 result.put((K)entry.getKey(), (V)entry.getValue());
@@ -254,11 +249,6 @@ public class RedissonMap<K, V> implements RMap<K, V> {
         } finally {
             connectionManager.release(connection);
         }
-    }
-
-    @Override
-    public void destroy() {
-//        redisson.remove(this);
     }
 
 }

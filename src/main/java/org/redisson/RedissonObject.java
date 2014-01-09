@@ -13,15 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.core;
+package org.redisson;
 
-public interface RObject {
+abstract class RedissonObject {
 
-    /**
-     * Returns name of object
-     *
-     * @return name
-     */
-    String getName();
+    private String name;
+
+    public RedissonObject(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void close() {
+    }
 
 }

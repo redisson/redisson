@@ -23,21 +23,20 @@ import org.redisson.core.RSet;
 
 import com.lambdaworks.redis.RedisConnection;
 
-public class RedissonSet<V> implements RSet<V> {
+public class RedissonSet<V> extends RedissonObject implements RSet<V> {
 
     private final ConnectionManager connectionManager;
-    private final String name;
 
     RedissonSet(ConnectionManager connectionManager, String name) {
+        super(name);
         this.connectionManager = connectionManager;
-        this.name = name;
     }
 
     @Override
     public int size() {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.scard(name).intValue();
+            return connection.scard(getName()).intValue();
         } finally {
             connectionManager.release(connection);
         }
@@ -52,7 +51,7 @@ public class RedissonSet<V> implements RSet<V> {
     public boolean contains(Object o) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.sismember(name, o);
+            return connection.sismember(getName(), o);
         } finally {
             connectionManager.release(connection);
         }
@@ -63,7 +62,7 @@ public class RedissonSet<V> implements RSet<V> {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
             // TODO use SSCAN in case of usage Redis 2.8
-            return (Iterator<V>) connection.smembers(name).iterator();
+            return (Iterator<V>) connection.smembers(getName()).iterator();
         } finally {
             connectionManager.release(connection);
         }
@@ -73,7 +72,7 @@ public class RedissonSet<V> implements RSet<V> {
     public Object[] toArray() {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.smembers(name).toArray();
+            return connection.smembers(getName()).toArray();
         } finally {
             connectionManager.release(connection);
         }
@@ -83,7 +82,7 @@ public class RedissonSet<V> implements RSet<V> {
     public <T> T[] toArray(T[] a) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.smembers(name).toArray(a);
+            return connection.smembers(getName()).toArray(a);
         } finally {
             connectionManager.release(connection);
         }
@@ -93,7 +92,7 @@ public class RedissonSet<V> implements RSet<V> {
     public boolean add(V e) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.sadd(name, e) > 0;
+            return connection.sadd(getName(), e) > 0;
         } finally {
             connectionManager.release(connection);
         }
@@ -103,7 +102,7 @@ public class RedissonSet<V> implements RSet<V> {
     public boolean remove(Object o) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.srem(name, o) > 0;
+            return connection.srem(getName(), o) > 0;
         } finally {
             connectionManager.release(connection);
         }
@@ -123,7 +122,7 @@ public class RedissonSet<V> implements RSet<V> {
     public boolean addAll(Collection<? extends V> c) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.sadd(name, c.toArray()) > 0;
+            return connection.sadd(getName(), c.toArray()) > 0;
         } finally {
             connectionManager.release(connection);
         }
@@ -146,7 +145,7 @@ public class RedissonSet<V> implements RSet<V> {
     public boolean removeAll(Collection<?> c) {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            return connection.srem(name, c.toArray()) > 0;
+            return connection.srem(getName(), c.toArray()) > 0;
         } finally {
             connectionManager.release(connection);
         }
@@ -156,20 +155,10 @@ public class RedissonSet<V> implements RSet<V> {
     public void clear() {
         RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
         try {
-            connection.del(name);
+            connection.del(getName());
         } finally {
             connectionManager.release(connection);
         }
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public void destroy() {
-//        redisson.remove(this);
     }
 
 }

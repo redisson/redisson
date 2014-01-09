@@ -29,7 +29,7 @@ import org.redisson.core.RedisPubSubTopicListener;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
-public class RedissonTopic<M> implements RTopic<M> {
+public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
     private final AtomicBoolean subscribeOnce = new AtomicBoolean();
@@ -37,13 +37,12 @@ public class RedissonTopic<M> implements RTopic<M> {
     private final Map<Integer, RedisPubSubTopicListener<String, M>> listeners =
                                 new ConcurrentHashMap<Integer, RedisPubSubTopicListener<String, M>>();
     private final ConnectionManager connectionManager;
-    private final String name;
 
     private PubSubEntry pubSubEntry;
 
     RedissonTopic(ConnectionManager connectionManager, String name) {
+        super(name);
         this.connectionManager = connectionManager;
-        this.name = name;
     }
 
     public void subscribe() {
@@ -52,14 +51,14 @@ public class RedissonTopic<M> implements RTopic<M> {
 
                 @Override
                 public void subscribed(String channel, long count) {
-                    if (channel.equals(name)) {
+                    if (channel.equals(getName())) {
                         subscribeLatch.countDown();
                     }
                 }
 
             };
 
-            pubSubEntry = connectionManager.subscribe(listener, name);
+            pubSubEntry = connectionManager.subscribe(listener, getName());
         }
 
         try {
@@ -73,7 +72,7 @@ public class RedissonTopic<M> implements RTopic<M> {
     public void publish(M message) {
         RedisConnection<String, Object> conn = connectionManager.acquireConnection();
         try {
-            conn.publish(name, message);
+            conn.publish(getName(), message);
         } finally {
             connectionManager.release(conn);
         }
@@ -81,7 +80,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public int addListener(MessageListener<M> listener) {
-        RedisPubSubTopicListener<String, M> pubSubListener = new RedisPubSubTopicListener<String, M>(listener, name);
+        RedisPubSubTopicListener<String, M> pubSubListener = new RedisPubSubTopicListener<String, M>(listener, getName());
         listeners.put(pubSubListener.hashCode(), pubSubListener);
         pubSubEntry.addListener(pubSubListener);
         return pubSubListener.hashCode();
@@ -94,15 +93,8 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
 
     @Override
-    public String getName() {
-        return name;
+    public void close() {
+        connectionManager.unsubscribe(pubSubEntry, getName());
     }
-
-    @Override
-    public void destroy() {
-        connectionManager.unsubscribe(pubSubEntry, name);
-//        redisson.remove(this);
-    }
-
 
 }
