@@ -3,6 +3,7 @@
 package com.lambdaworks.redis.protocol;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
@@ -79,6 +80,20 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter implements 
      */
     @Override
     public void run(Timeout timeout) throws Exception {
-        bootstrap.connect();
+        ChannelPipeline old = channel.pipeline();
+        final CommandHandler<?, ?> handler = old.get(CommandHandler.class);
+        final RedisAsyncConnection<?, ?> connection = old.get(RedisAsyncConnection.class);
+
+        ChannelFuture connect = null;
+        // TODO use better concurrent workaround
+        synchronized (bootstrap) {
+            connect = bootstrap.handler(new ChannelInitializer<Channel>() {
+                @Override
+                protected void initChannel(Channel ch) throws Exception {
+                    ch.pipeline().addLast(this, handler, connection);
+                }
+            }).connect();
+        }
+        connect.sync();
     }
 }
