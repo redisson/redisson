@@ -20,12 +20,12 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.lambdaworks.redis.codec.JsonJacksonCodec;
-import com.lambdaworks.redis.codec.RedisCodec;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.RedissonCodec;
 
 public class Config {
 
-    private RedisCodec codec = new JsonJacksonCodec();
+    private RedissonCodec codec = new JsonJacksonCodec();
 
     private int subscriptionsPerConnection = 5;
 
@@ -46,10 +46,10 @@ public class Config {
         setAddresses(oldConf.getAddresses());
     }
 
-    public void setCodec(RedisCodec codec) {
+    public void setCodec(RedissonCodec codec) {
         this.codec = codec;
     }
-    public RedisCodec getCodec() {
+    public RedissonCodec getCodec() {
         return codec;
     }
 

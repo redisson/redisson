@@ -1,4 +1,4 @@
-package com.lambdaworks.redis.codec;
+package org.redisson.codec;
 
 import java.nio.ByteBuffer;
 
@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 
-public class JsonJacksonCodec extends RedisCodec<Object, Object> {
+public class JsonJacksonCodec implements RedissonCodec {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

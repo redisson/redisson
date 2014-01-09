@@ -21,9 +21,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 import org.redisson.Config;
+import org.redisson.codec.RedisCodecWrapper;
 
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubListener;
@@ -87,11 +89,13 @@ public class ConnectionManager {
 
     private final Semaphore activeConnections;
     private final RedisClient redisClient;
+    private final RedisCodec codec;
     private final Config config;
 
     public ConnectionManager(Config config) {
         URI address = config.getAddresses().iterator().next();
         redisClient = new RedisClient(address.getHost(), address.getPort());
+        codec = new RedisCodecWrapper(config.getCodec());
         activeConnections = new Semaphore(config.getConnectionPoolSize());
         this.config = config;
     }
@@ -100,7 +104,7 @@ public class ConnectionManager {
         activeConnections.acquireUninterruptibly();
         RedisConnection<K, V> conn = connections.poll();
         if (conn == null) {
-            conn = redisClient.connect(config.getCodec());
+            conn = redisClient.connect(codec);
             if (config.getPassword() != null) {
                 conn.auth(config.getPassword());
             }
@@ -116,7 +120,7 @@ public class ConnectionManager {
         }
 
         activeConnections.acquireUninterruptibly();
-        RedisPubSubConnection<K, V> conn = redisClient.connectPubSub(config.getCodec());
+        RedisPubSubConnection<K, V> conn = redisClient.connectPubSub(codec);
         if (config.getPassword() != null) {
             conn.auth(config.getPassword());
         }

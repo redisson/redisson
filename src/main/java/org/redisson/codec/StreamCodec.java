@@ -1,4 +1,4 @@
-package com.lambdaworks.redis.codec;
+package org.redisson.codec;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -6,7 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
-public class StreamCodec extends RedisCodec<Object, Object> {
+public class StreamCodec implements RedissonCodec {
 
     @Override
     public Object decodeKey(ByteBuffer bytes) {
