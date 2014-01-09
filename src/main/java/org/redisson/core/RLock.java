@@ -17,6 +17,12 @@ package org.redisson.core;
 
 import java.util.concurrent.locks.Lock;
 
+/**
+ * Distributed implementation of {@link java.util.concurrent.locks.Lock}
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface RLock extends Lock, RObject {
 
 }

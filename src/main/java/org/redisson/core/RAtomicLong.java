@@ -15,8 +15,19 @@
  */
 package org.redisson.core;
 
+/**
+ * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface RAtomicLong extends RObject {
 
+    /**
+     * Atomically decrements by one the current value.
+     *
+     * @return the previous value
+     */
     long getAndDecrement();
 
     /**

@@ -17,6 +17,15 @@ package org.redisson.core;
 
 import java.util.EventListener;
 
+/**
+ * Listener for Redis messages published via RTopic Redisson object
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <M> message
+ *
+ * @see org.redisson.core.RTopic
+ */
 public interface MessageListener<M> extends EventListener {
 
     void onMessage(M msg);

@@ -17,6 +17,15 @@ package org.redisson.core;
 
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
+ * and {@link java.util.Map}
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <K> key
+ * @param <V> value
+ */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RObject {
 
 }

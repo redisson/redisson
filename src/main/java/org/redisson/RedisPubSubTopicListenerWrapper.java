@@ -13,16 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.core;
+package org.redisson;
+
+import org.redisson.core.MessageListener;
 
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
-public class RedisPubSubTopicListener<K, V> extends RedisPubSubAdapter<K, V> {
+public class RedisPubSubTopicListenerWrapper<K, V> extends RedisPubSubAdapter<K, V> {
 
     private final MessageListener<V> listener;
     private final K name;
 
-    public RedisPubSubTopicListener(MessageListener<V> listener, K name) {
+    public RedisPubSubTopicListenerWrapper(MessageListener<V> listener, K name) {
         super();
         this.listener = listener;
         this.name = name;
@@ -52,7 +54,7 @@ public class RedisPubSubTopicListener<K, V> extends RedisPubSubAdapter<K, V> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        RedisPubSubTopicListener other = (RedisPubSubTopicListener) obj;
+        RedisPubSubTopicListenerWrapper other = (RedisPubSubTopicListenerWrapper) obj;
         if (listener == null) {
             if (other.listener != null)
                 return false;

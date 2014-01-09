@@ -15,6 +15,12 @@
  */
 package org.redisson.core;
 
+/**
+ * Base interface for all Redisson objects
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface RObject {
 
     /**

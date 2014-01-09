@@ -17,6 +17,13 @@ package org.redisson.core;
 
 import java.util.Queue;
 
+/**
+ * Distributed and concurrent implementation of {@link java.util.List}
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <V> value
+ */
 public interface RQueue<V> extends Queue<V>, RObject {
 
 }

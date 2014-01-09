@@ -17,6 +17,12 @@ package org.redisson.core;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface RCountDownLatch extends RObject {
 
     void await() throws InterruptedException;

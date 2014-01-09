@@ -19,6 +19,8 @@ package org.redisson.core;
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
  *
+ * @author Nikita Koksharov
+ *
  * @param <M> the type of message object
  */
 public interface RTopic<M> extends RObject {
