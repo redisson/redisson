@@ -32,6 +32,8 @@ import org.redisson.misc.ReferenceMap.ReferenceType;
 import org.redisson.misc.ReferenceMap.RemoveValueListener;
 
 /**
+ * Main infrastructure class allows to get access
+ * to all Redisson objects on top of Redis server.
  *
  * @author Nikita Koksharov
  *
@@ -60,24 +62,43 @@ public class Redisson {
     private final ConcurrentMap<String, RedissonMap> mapsMap = new ReferenceMap<String, RedissonMap>(ReferenceType.STRONG, ReferenceType.SOFT);
 
     private final ConnectionManager connectionManager;
+    private final Config config;
 
     private final UUID id = UUID.randomUUID();
 
     Redisson(Config config) {
-        connectionManager = new ConnectionManager(config);
+        this.config = config;
+        Config configCopy = new Config(config);
+        connectionManager = new ConnectionManager(configCopy);
     }
 
+    /**
+     * Creates an Redisson instance
+     *
+     * @return Redisson instance
+     */
     public static Redisson create() {
         Config config = new Config();
         config.addAddress("127.0.0.1:6379");
         return create(config);
     }
 
+    /**
+     * Creates an Redisson instance with configuration
+     *
+     * @param config
+     * @return Redisson instance
+     */
     public static Redisson create(Config config) {
-        Config configCopy = new Config(config);
-        return new Redisson(configCopy);
+        return new Redisson(config);
     }
 
+    /**
+     * Returns distributed list instance by name.
+     *
+     * @param name of the distributed list
+     * @return distributed list
+     */
     public <V> RList<V> getList(String name) {
         RedissonList<V> list = listsMap.get(name);
         if (list == null) {
@@ -91,6 +112,12 @@ public class Redisson {
         return list;
     }
 
+    /**
+     * Returns distributed map instance by name.
+     *
+     * @param name of the distributed map
+     * @return distributed map
+     */
     public <K, V> RMap<K, V> getMap(String name) {
         RedissonMap<K, V> map = mapsMap.get(name);
         if (map == null) {
@@ -104,6 +131,12 @@ public class Redisson {
         return map;
     }
 
+    /**
+     * Returns distributed lock instance by name.
+     *
+     * @param name of the distributed lock
+     * @return distributed lock
+     */
     public RLock getLock(String name) {
         RedissonLock lock = locksMap.get(name);
         if (lock == null) {
@@ -118,6 +151,12 @@ public class Redisson {
         return lock;
     }
 
+    /**
+     * Returns distributed set instance by name.
+     *
+     * @param name of the distributed set
+     * @return distributed set
+     */
     public <V> RSet<V> getSet(String name) {
         RedissonSet<V> set = setsMap.get(name);
         if (set == null) {
@@ -131,6 +170,12 @@ public class Redisson {
         return set;
     }
 
+    /**
+     * Returns distributed topic instance by name.
+     *
+     * @param name of the distributed topic
+     * @return distributed topic
+     */
     public <M> RTopic<M> getTopic(String name) {
         RedissonTopic<M> topic = topicsMap.get(name);
         if (topic == null) {
@@ -146,6 +191,12 @@ public class Redisson {
 
     }
 
+    /**
+     * Returns distributed queue instance by name.
+     *
+     * @param name of the distributed queue
+     * @return distributed queue
+     */
     public <V> RQueue<V> getQueue(String name) {
         RedissonQueue<V> queue = queuesMap.get(name);
         if (queue == null) {
@@ -159,6 +210,12 @@ public class Redisson {
         return queue;
     }
 
+    /**
+     * Returns distributed "atomic long" instance by name.
+     *
+     * @param name of the distributed "atomic long"
+     * @return distributed "atomic long"
+     */
     public RAtomicLong getAtomicLong(String name) {
         RedissonAtomicLong atomicLong = atomicLongsMap.get(name);
         if (atomicLong == null) {
@@ -173,6 +230,12 @@ public class Redisson {
 
     }
 
+    /**
+     * Returns distributed "count down latch" instance by name.
+     *
+     * @param name of the distributed "count down latch"
+     * @return distributed "count down latch"
+     */
     public RCountDownLatch getCountDownLatch(String name) {
         RedissonCountDownLatch latch = latchesMap.get(name);
         if (latch == null) {
@@ -187,12 +250,22 @@ public class Redisson {
         return latch;
     }
 
-    // TODO implement
-//    public void getSemaphore() {
-//    }
-
+    /**
+     * Shuts down Redisson instance <b>NOT</b> Redis server
+     */
     public void shutdown() {
         connectionManager.shutdown();
+    }
+
+    /**
+     * Allows to get configuration provided
+     * during Redisson instance creation. Further changes on
+     * this object not affect Redisson instance.
+     *
+     * @return Config object
+     */
+    public Config getConfig() {
+        return config;
     }
 
 }
