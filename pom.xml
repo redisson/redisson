@@ -7,7 +7,7 @@
  <packaging>jar</packaging>
 
  <name>Redisson</name>
- <description>Distributed java data structures on top of Redis</description>
+ <description>Distributed and scalable Java data structures on top of Redis. Advanced Redis client.</description>
  <inceptionYear>2014</inceptionYear>
 
  <licenses>
@@ -245,17 +245,9 @@
            <configuration>
                <instructions>
                    <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                   <Import-Package>
-                    com.hazelcast.*;resolution:=optional,redis.clients.jedis.*;resolution:=optional,*
-                   </Import-Package>
                    <Export-Package>
-                    com.corundumstudio.socketio;version="${project.version}",
-                    com.corundumstudio.socketio.annotation;version="${project.version}",
-                    com.corundumstudio.socketio.listener;version="${project.version}",
-                    com.corundumstudio.socketio.parser;version="${project.version}",                       
-                    com.corundumstudio.socketio.parser;version="${project.version}",                       
-                    com.corundumstudio.socketio.store;version="${project.version}",                       
-                    com.corundumstudio.socketio.store.pubsub;version="${project.version}",                       
+                    org.redisson.core;version="${project.version}",
+                    org.redisson;version="${project.version}",
                    </Export-Package>
                </instructions>
            </configuration>
