@@ -28,6 +28,11 @@ import java.util.EventListener;
  */
 public interface MessageListener<M> extends EventListener {
 
+    /**
+     * Invokes on every message in topic
+     *
+     * @param msg topic message
+     */
     void onMessage(M msg);
 
 }
