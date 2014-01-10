@@ -28,6 +28,13 @@ import org.redisson.core.RList;
 
 import com.lambdaworks.redis.RedisConnection;
 
+/**
+ * Distributed and concurrent implementation of {@link java.util.List}
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <V> value
+ */
 public class RedissonList<V> extends RedissonObject implements RList<V> {
 
     private int batchSize = 50;

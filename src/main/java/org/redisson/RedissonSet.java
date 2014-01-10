@@ -23,6 +23,13 @@ import org.redisson.core.RSet;
 
 import com.lambdaworks.redis.RedisConnection;
 
+/**
+ * Distributed and concurrent implementation of {@link java.util.Set}
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <V> value
+ */
 public class RedissonSet<V> extends RedissonObject implements RSet<V> {
 
     private final ConnectionManager connectionManager;

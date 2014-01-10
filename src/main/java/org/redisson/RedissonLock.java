@@ -31,8 +31,10 @@ import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
 /**
- * Reentrant distributed lock
+ * Distributed implementation of {@link java.util.concurrent.locks.Lock}
+ * Implements reentrant lock.
  *
+ * @author Nikita Koksharov
  *
  */
 public class RedissonLock extends RedissonObject implements RLock {

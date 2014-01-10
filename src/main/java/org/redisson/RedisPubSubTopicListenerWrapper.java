@@ -19,6 +19,13 @@ import org.redisson.core.MessageListener;
 
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <K>
+ * @param <V>
+ */
 public class RedisPubSubTopicListenerWrapper<K, V> extends RedisPubSubAdapter<K, V> {
 
     private final MessageListener<V> listener;

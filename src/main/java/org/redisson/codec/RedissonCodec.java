@@ -2,6 +2,11 @@ package org.redisson.codec;
 
 import java.nio.ByteBuffer;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface RedissonCodec {
 
     Object decodeKey(ByteBuffer bytes);

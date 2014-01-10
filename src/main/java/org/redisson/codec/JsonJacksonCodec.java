@@ -13,6 +13,11 @@ import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class JsonJacksonCodec implements RedissonCodec {
 
     private final ObjectMapper objectMapper = new ObjectMapper();

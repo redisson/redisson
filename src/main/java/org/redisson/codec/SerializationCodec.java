@@ -6,6 +6,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class SerializationCodec implements RedissonCodec {
 
     @Override

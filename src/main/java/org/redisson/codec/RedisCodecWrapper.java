@@ -4,6 +4,11 @@ import java.nio.ByteBuffer;
 
 import com.lambdaworks.redis.codec.RedisCodec;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisCodecWrapper extends RedisCodec<Object, Object> {
 
     private final RedissonCodec redissonCodec;

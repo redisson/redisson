@@ -21,6 +21,7 @@ import org.redisson.core.RAtomicLong;
 import com.lambdaworks.redis.RedisConnection;
 
 /**
+ * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
  *
  * @author Nikita Koksharov
  *

@@ -26,6 +26,15 @@ import org.redisson.core.RMap;
 
 import com.lambdaworks.redis.RedisConnection;
 
+/**
+ * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
+ * and {@link java.util.Map}
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <K> key
+ * @param <V> value
+ */
 //TODO implement watching by keys instead of map name
 public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
 

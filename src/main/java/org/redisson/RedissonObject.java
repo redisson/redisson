@@ -15,6 +15,12 @@
  */
 package org.redisson;
 
+/**
+ * Base Redisson object
+ *
+ * @author Nikita Koksharov
+ *
+ */
 abstract class RedissonObject {
 
     private String name;

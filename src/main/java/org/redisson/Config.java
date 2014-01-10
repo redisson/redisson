@@ -23,14 +23,32 @@ import java.util.List;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.RedissonCodec;
 
+/**
+ * Redisson configuration
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class Config {
 
+    /**
+     * Redis key/value codec
+     */
     private RedissonCodec codec = new JsonJacksonCodec();
 
+    /**
+     * Subscriptions per Redis connection limit
+     */
     private int subscriptionsPerConnection = 5;
 
+    /**
+     * Redis connection pool size limit
+     */
     private int connectionPoolSize = 100;
 
+    /**
+     * Password for Redis authentication. Should be null if not needed
+     */
     private String password;
 
     private List<URI> addresses = new ArrayList<URI>();
@@ -46,6 +64,12 @@ public class Config {
         setAddresses(oldConf.getAddresses());
     }
 
+    /**
+     * Redis key/value codec. Default is json
+     *
+     * @see org.redisson.codec.JsonJacksonCodec
+     * @see org.redisson.codec.SerializationCodec
+     */
     public void setCodec(RedissonCodec codec) {
         this.codec = codec;
     }
@@ -53,20 +77,38 @@ public class Config {
         return codec;
     }
 
-    public String getPassword() {
-        return password;
-    }
+    /**
+     * Password for Redis authentication. Should be null if not needed
+     * Default is <code>null</code>
+     *
+     * @param password
+     */
     public void setPassword(String password) {
         this.password = password;
     }
-
-    public int getSubscriptionsPerConnection() {
-        return subscriptionsPerConnection;
+    public String getPassword() {
+        return password;
     }
+
+    /**
+     * Subscriptions per Redis connection limit
+     * Default is 5
+     *
+     * @param subscriptionsPerConnection
+     */
     public void setSubscriptionsPerConnection(int subscriptionsPerConnection) {
         this.subscriptionsPerConnection = subscriptionsPerConnection;
     }
+    public int getSubscriptionsPerConnection() {
+        return subscriptionsPerConnection;
+    }
 
+    /**
+     * Redis connection pool size limit
+     * Default is 100
+     *
+     * @param connectionPoolSize
+     */
     public void setConnectionPoolSize(int connectionPoolSize) {
         this.connectionPoolSize = connectionPoolSize;
     }
@@ -74,6 +116,11 @@ public class Config {
         return connectionPoolSize;
     }
 
+    /**
+     * Redis server address. Use follow format -- host:port
+     *
+     * @param addressesVar
+     */
     public void addAddress(String ... addressesVar) {
         for (String address : addressesVar) {
             try {

@@ -28,6 +28,13 @@ import org.redisson.core.RTopic;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
+/**
+ * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <M> message
+ */
 public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);

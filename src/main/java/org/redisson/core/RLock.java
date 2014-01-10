@@ -19,6 +19,7 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
+ * Implements reentrant lock.
  *
  * @author Nikita Koksharov
  *

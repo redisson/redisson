@@ -27,6 +27,15 @@ import org.redisson.misc.ReclosableLatch;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
+/**
+ * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
+ *
+ * It has a advantage over {@link java.util.concurrent.CountDownLatch} --
+ * count can be reset via {@link #trySetCount}.
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonCountDownLatch extends RedissonObject implements RCountDownLatch {
 
     private final CountDownLatch subscribeLatch = new CountDownLatch(1);
