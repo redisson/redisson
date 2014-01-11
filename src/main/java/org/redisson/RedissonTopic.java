@@ -76,7 +76,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     @Override
     public void publish(M message) {
-        RedisConnection<String, Object> conn = connectionManager.acquireConnection();
+        RedisConnection<String, Object> conn = connectionManager.connection();
         try {
             conn.publish(getName(), message);
         } finally {

@@ -124,7 +124,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return;
         }
 
-        RedisConnection<String, Object> connection = connectionManager.acquireConnection();
+        RedisConnection<String, Object> connection = connectionManager.connection();
         try {
             Long val = connection.decr(getName());
             if (val == 0) {
@@ -148,7 +148,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public long getCount() {
-        RedisConnection<String, Object> connection = connectionManager.acquireConnection();
+        RedisConnection<String, Object> connection = connectionManager.connection();
         try {
             Number val = (Number) connection.get(getName());
             if (val == null) {
@@ -162,7 +162,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean trySetCount(long count) {
-        RedisConnection<String, Object> connection = connectionManager.acquireConnection();
+        RedisConnection<String, Object> connection = connectionManager.connection();
         try {
             connection.watch(getName());
             Long oldValue = (Long) connection.get(getName());

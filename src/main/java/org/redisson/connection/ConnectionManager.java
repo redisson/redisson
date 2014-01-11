@@ -22,6 +22,8 @@ import java.util.concurrent.Semaphore;
 
 import org.redisson.Config;
 import org.redisson.codec.RedisCodecWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
@@ -84,6 +86,8 @@ public class ConnectionManager {
 
     }
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final Queue<PubSubEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubEntry>();
 
@@ -100,8 +104,9 @@ public class ConnectionManager {
         this.config = config;
     }
 
-    public <K, V> RedisConnection<K, V> acquireConnection() {
-        activeConnections.acquireUninterruptibly();
+    public <K, V> RedisConnection<K, V> connection() {
+        acquireConnection();
+
         RedisConnection<K, V> conn = connections.poll();
         if (conn == null) {
             conn = redisClient.connect(codec);
@@ -119,7 +124,8 @@ public class ConnectionManager {
             }
         }
 
-        activeConnections.acquireUninterruptibly();
+        acquireConnection();
+
         RedisPubSubConnection<K, V> conn = redisClient.connectPubSub(codec);
         if (config.getPassword() != null) {
             conn.auth(config.getPassword());
@@ -128,6 +134,13 @@ public class ConnectionManager {
         entry.subscribe(listener, channel);
         pubSubConnections.add(entry);
         return entry;
+    }
+
+    private void acquireConnection() {
+        if (!activeConnections.tryAcquire()) {
+            log.warn("Connection pool gets exhausted!");
+            activeConnections.acquireUninterruptibly();
+        }
     }
 
     public <K> void unsubscribe(PubSubEntry entry, K channel) {

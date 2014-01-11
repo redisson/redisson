@@ -185,7 +185,7 @@ public class RedissonLock extends RedissonObject implements RLock {
         LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
 
-        RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
+        RedisConnection<Object, Object> connection = connectionManager.connection();
         try {
             Boolean res = connection.setnx(getKeyName(), currentLock);
             if (!res) {
@@ -222,7 +222,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     public void unlock() {
         LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
 
-        RedisConnection<Object, Object> connection = connectionManager.acquireConnection();
+        RedisConnection<Object, Object> connection = connectionManager.connection();
         try {
             LockValue lock = (LockValue) connection.get(getKeyName());
             if (lock != null && lock.equals(currentLock)) {
