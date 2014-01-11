@@ -1,6 +1,6 @@
 ##Redisson - distributed and scalable Java data structures on top of Redis server. Advanced Redis client
 
-Based on patched version of [lettuce](https://github.com/wg/lettuce) Redis client and [Netty 4](http://netty.io) framework.  
+Based on patched version of [lettuce](https://github.com/wg/lettuce) [Redis](http://redis.io) client and [Netty 4](http://netty.io) framework.  
 JDK 1.6+ compatible  
 
 Licensed under the Apache License 2.0.
