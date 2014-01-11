@@ -41,6 +41,7 @@
  </developers>
 
  <properties>
+     <skipTests>true</skipTests>
      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
  </properties>
 
@@ -196,6 +197,7 @@
             </execution>
           </executions>
           <configuration>
+            <includes>src/main/java/org/redisson/</includes>
             <consoleOutput>true</consoleOutput>
             <enableRSS>false</enableRSS>
             <configLocation>/checkstyle.xml</configLocation>
