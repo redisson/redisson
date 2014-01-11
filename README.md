@@ -8,15 +8,15 @@ Licensed under the Apache License 2.0.
 
 Features
 ================================
-* Distributed implementation of 'java.util.List'  
-* Distributed implementation of 'java.util.Set'  
-* Distributed implementation of 'java.util.Queue'  
-* Distributed implementation of 'java.util.Map'  
-* Distributed implementation of 'java.util.concurrent.ConcurrentMap'  
-* Distributed implementation of reentrant 'java.util.concurrent.locks.Lock'  
-* Distributed alternative to the 'java.util.concurrent.atomic.AtomicLong'  
-* Distributed alternative to the 'java.util.concurrent.CountDownLatch'  
-* Distributed publish/subscribe messaging via 'Topic' object  
+* Distributed implementation of `java.util.List`  
+* Distributed implementation of `java.util.Set`  
+* Distributed implementation of `java.util.Queue`  
+* Distributed implementation of `java.util.Map`  
+* Distributed implementation of `java.util.concurrent.ConcurrentMap`  
+* Distributed implementation of reentrant `java.util.concurrent.locks.Lock`  
+* Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
+* Distributed alternative to the `java.util.concurrent.CountDownLatch`  
+* Distributed publish/subscribe messaging via `org.redisson.core.RTopic` object  
 * Supports OSGi  
 * With over 70 unit tests  
 
