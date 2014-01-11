@@ -1,6 +1,6 @@
 #Redisson - distributed and scalable Java data structures on top of Redis server. Advanced Redis client
 
-Based on patched version of [lettuce](http://socket.io/) Redis client and [Netty 4](http://netty.io/) framework.  
+Based on patched version of [lettuce](https://github.com/wg/lettuce) Redis client and [Netty 4](http://netty.io) framework.  
 JDK 1.6+ compatible  
 
 Licensed under the Apache License 2.0.
@@ -8,7 +8,6 @@ Licensed under the Apache License 2.0.
 
 Features
 ================================
-* Easy api
 * Distributed implementation of 'java.util.List'  
 * Distributed implementation of 'java.util.Set'  
 * Distributed implementation of 'java.util.Queue'  
@@ -19,6 +18,7 @@ Features
 * Distributed alternative to the 'java.util.concurrent.CountDownLatch'  
 * Distributed publish/subscribe messaging via 'Topic' object  
 * Supports OSGi  
+* With over 70 unit tests  
 
 
 Recent Releases
@@ -32,7 +32,6 @@ First stable release.
 Usage examples
 ================================
 ####Simple config example
-
        
         // connects to Redis server 127.0.0.1:6379 by default
         Redisson redisson = Redisson.create();
@@ -53,7 +52,7 @@ or with initialization by Config object
 
         redisson.shutdown();
 
-####Distributed map example
+####Distributed Map example
 
         Redisson redisson = Redisson.create();
 
@@ -66,7 +65,7 @@ or with initialization by Config object
 
         redisson.shutdown();
 
-####Distributed set example
+####Distributed Set example
 
         Redisson redisson = Redisson.create();
 
@@ -78,7 +77,7 @@ or with initialization by Config object
 
         redisson.shutdown();
 
-####Distributed list example
+####Distributed List example
 
         Redisson redisson = Redisson.create();
 
@@ -91,7 +90,7 @@ or with initialization by Config object
 
         redisson.shutdown();
 
-####Distributed queue example
+####Distributed Queue example
 
         Redisson redisson = Redisson.create();
 
@@ -104,7 +103,7 @@ or with initialization by Config object
 
         redisson.shutdown();
 
-####Distributed lock example
+####Distributed Lock example
 
         Redisson redisson = Redisson.create();
 
@@ -154,4 +153,28 @@ or with initialization by Config object
         ...
 
         redisson.shutdown();
+
+
+####Distributed Topic example
+
+        Redisson redisson = Redisson.create();
+
+        RTopic<SomeObject> topic = redisson.getTopic("anyTopic");
+        topic.addListener(new MessageListener<SomeObject>() {
+
+             public void onMessage(SomeObject message) {
+                ...
+             }
+        });
+
+        // in other thread or other JVM
+
+        RTopic<SomeObject> topic = redisson.getTopic("anyTopic");
+        topic.publish(new SomeObject());
+
+
+        ...
+
+        redisson.shutdown();
+
 
