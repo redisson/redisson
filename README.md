@@ -46,7 +46,11 @@ or with initialization by Config object
 
         Config config = new Config();
         config.setConnectionPoolSize(10);
-        config.addAddress("some.server.com:8291");
+
+        // Redisson will use load balance connections between listed servers
+        config.addAddress("first.redisserver.com:8291");
+        config.addAddress("second.redisserver.com:8291");
+        config.addAddress("third.redisserver.com:8291");
 
         Redisson redisson = Redisson.create(config);
 
