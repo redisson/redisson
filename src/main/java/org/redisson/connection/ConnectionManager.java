@@ -16,6 +16,8 @@
 package org.redisson.connection;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
@@ -38,7 +40,6 @@ import com.lambdaworks.redis.pubsub.RedisPubSubListener;
  *
  */
 //TODO ping support
-//TODO multi addresses support
 public class ConnectionManager {
 
     public static class PubSubEntry {
@@ -90,15 +91,21 @@ public class ConnectionManager {
 
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final Queue<PubSubEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubEntry>();
+    private final List<RedisClient> clients = new ArrayList<RedisClient>();
 
     private final Semaphore activeConnections;
-    private final RedisClient redisClient;
     private final RedisCodec codec;
     private final Config config;
+    private final LoadBalancer balancer;
 
     public ConnectionManager(Config config) {
-        URI address = config.getAddresses().iterator().next();
-        redisClient = new RedisClient(address.getHost(), address.getPort());
+        for (URI address : config.getAddresses()) {
+            RedisClient client = new RedisClient(address.getHost(), address.getPort());
+            clients.add(client);
+        }
+        balancer = config.getLoadBalancer();
+        balancer.init(clients);
+
         codec = new RedisCodecWrapper(config.getCodec());
         activeConnections = new Semaphore(config.getConnectionPoolSize());
         this.config = config;
@@ -109,7 +116,7 @@ public class ConnectionManager {
 
         RedisConnection<K, V> conn = connections.poll();
         if (conn == null) {
-            conn = redisClient.connect(codec);
+            conn = balancer.nextClient().connect(codec);
             if (config.getPassword() != null) {
                 conn.auth(config.getPassword());
             }
@@ -126,7 +133,7 @@ public class ConnectionManager {
 
         acquireConnection();
 
-        RedisPubSubConnection<K, V> conn = redisClient.connectPubSub(codec);
+        RedisPubSubConnection<K, V> conn = balancer.nextClient().connectPubSub(codec);
         if (config.getPassword() != null) {
             conn.auth(config.getPassword());
         }
@@ -138,8 +145,11 @@ public class ConnectionManager {
 
     private void acquireConnection() {
         if (!activeConnections.tryAcquire()) {
-            log.warn("Connection pool gets exhausted!");
+            log.warn("Connection pool gets exhausted! Trying to acquire connection ...");
+            long time = System.currentTimeMillis();
             activeConnections.acquireUninterruptibly();
+            long endTime = System.currentTimeMillis() - time;
+            log.warn("Connection acquired, time spended: {} ms", endTime);
         }
     }
 
@@ -157,7 +167,9 @@ public class ConnectionManager {
     }
 
     public void shutdown() {
-        redisClient.shutdown();
+        for (RedisClient client : clients) {
+            client.shutdown();
+        }
     }
 
 }

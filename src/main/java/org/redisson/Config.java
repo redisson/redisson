@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.RedissonCodec;
+import org.redisson.connection.LoadBalancer;
+import org.redisson.connection.RoundRobinLoadBalancer;
 
 /**
  * Redisson configuration
@@ -30,6 +32,11 @@ import org.redisson.codec.RedissonCodec;
  *
  */
 public class Config {
+
+    /**
+     * Сonnection load balancer to multiple Redis servers
+     */
+    private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
 
     /**
      * Redis key/value codec
@@ -62,6 +69,7 @@ public class Config {
         setPassword(oldConf.getPassword());
         setSubscriptionsPerConnection(oldConf.getSubscriptionsPerConnection());
         setAddresses(oldConf.getAddresses());
+        setLoadBalancer(oldConf.getLoadBalancer());
     }
 
     /**
@@ -135,6 +143,22 @@ public class Config {
     }
     void setAddresses(List<URI> addresses) {
         this.addresses = addresses;
+    }
+
+    /**
+     * Сonnection load balancer to multiple Redis servers.
+     * Uses Round-robin algorithm by default
+     *
+     * @param loadBalancer
+     *
+     * @see org.redisson.connection.RoundRobinLoadBalancer
+     * @see org.redisson.connection.RandomLoadBalancer
+     */
+    public void setLoadBalancer(LoadBalancer loadBalancer) {
+        this.loadBalancer = loadBalancer;
+    }
+    public LoadBalancer getLoadBalancer() {
+        return loadBalancer;
     }
 
 }
