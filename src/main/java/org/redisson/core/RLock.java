@@ -26,4 +26,12 @@ import java.util.concurrent.locks.Lock;
  */
 public interface RLock extends Lock, RObject {
 
+    void forceUnlock();
+
+    boolean isLocked();
+
+    boolean isHeldByCurrentThread();
+
+    int getHoldCount();
+
 }

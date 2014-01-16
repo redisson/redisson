@@ -34,7 +34,7 @@ import org.redisson.connection.RoundRobinLoadBalancer;
 public class Config {
 
     /**
-     * Сonnection load balancer to multiple Redis servers
+     * Сonnection load balancer to use multiple Redis servers
      */
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
 

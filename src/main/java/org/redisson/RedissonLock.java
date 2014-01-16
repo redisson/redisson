@@ -230,16 +230,30 @@ public class RedissonLock extends RedissonObject implements RLock {
                     lock.decCounter();
                     connection.set(getKeyName(), lock);
                 } else {
-                    connection.del(getKeyName());
-                    connection.publish(getChannelName(), unlockMessage);
+                    unlock(connection);
                 }
             } else {
-                throw new IllegalMonitorStateException("Attempt to unlock lock, not locked by current thread id: "
+                throw new IllegalMonitorStateException("Attempt to unlock lock, not locked by current id: "
                         + id + " thread-id: " + Thread.currentThread().getId());
             }
         } finally {
             connectionManager.release(connection);
         }
+    }
+
+    private void unlock(RedisConnection<Object, Object> connection) {
+        int counter = 0;
+        while (counter < 5) {
+            connection.multi();
+            connection.del(getKeyName());
+            connection.publish(getChannelName(), unlockMessage);
+            if (connection.exec().size() == 2) {
+                return;
+            }
+            counter++;
+        }
+        throw new IllegalStateException("Can't unlock lock after 5 attempts. Current id: "
+                + id + " thread-id: " + Thread.currentThread().getId());
     }
 
     @Override
@@ -251,6 +265,61 @@ public class RedissonLock extends RedissonObject implements RLock {
     @Override
     public void close() {
         connectionManager.unsubscribe(pubSubEntry, getChannelName());
+    }
+
+    @Override
+    public void forceUnlock() {
+        RedisConnection<Object, Object> connection = connectionManager.connection();
+        try {
+            while (true) {
+                LockValue lock = (LockValue) connection.get(getKeyName());
+                if (lock != null) {
+                    unlock(connection);
+                }
+            }
+        } finally {
+            connectionManager.release(connection);
+        }
+    }
+
+    @Override
+    public boolean isLocked() {
+        RedisConnection<Object, Object> connection = connectionManager.connection();
+        try {
+            LockValue lock = (LockValue) connection.get(getKeyName());
+            return lock != null;
+        } finally {
+            connectionManager.release(connection);
+        }
+    }
+
+    @Override
+    public boolean isHeldByCurrentThread() {
+        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+
+        RedisConnection<Object, Object> connection = connectionManager.connection();
+        try {
+            LockValue lock = (LockValue) connection.get(getKeyName());
+            return lock != null && lock.equals(currentLock);
+        } finally {
+            connectionManager.release(connection);
+        }
+    }
+
+    @Override
+    public int getHoldCount() {
+        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+
+        RedisConnection<Object, Object> connection = connectionManager.connection();
+        try {
+            LockValue lock = (LockValue) connection.get(getKeyName());
+            if (lock != null && lock.equals(currentLock)) {
+                return lock.getCounter();
+            }
+            return 0;
+        } finally {
+            connectionManager.release(connection);
+        }
     }
 
 }
