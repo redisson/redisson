@@ -10,6 +10,13 @@
  <description>Distributed and scalable Java data structures on top of Redis. Advanced Redis client.</description>
  <inceptionYear>2014</inceptionYear>
 
+ <scm>
+    <url>scm:git:git@github.com:mrniko/redisson.git</url>
+    <connection>scm:git:git@github.com:mrniko/redisson.git</connection>
+    <developerConnection>scm:git:git@github.com:mrniko/redisson.git</developerConnection>
+    <tag>HEAD</tag>
+ </scm>
+
  <licenses>
      <license>
          <name>Apache v2</name>
