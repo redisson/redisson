@@ -9,6 +9,7 @@
  <name>Redisson</name>
  <description>Distributed and scalable Java data structures on top of Redis. Advanced Redis client.</description>
  <inceptionYear>2014</inceptionYear>
+ <url>https://github.com/mrniko/redisson</url>
 
  <scm>
     <url>scm:git:git@github.com:mrniko/redisson.git</url>
