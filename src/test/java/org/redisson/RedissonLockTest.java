@@ -1,48 +1,149 @@
 package org.redisson;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.redisson.core.RLock;
 
 public class RedissonLockTest extends BaseConcurrentTest {
 
+    Redisson redisson = Redisson.create();
+
+    @Before
+    public void before() {
+        redisson = Redisson.create();
+    }
+
+    @After
+    public void after() {
+        redisson.shutdown();
+    }
+
+    @Test
+    public void testGetHoldCount() {
+        RLock lock = redisson.getLock("lock");
+        Assert.assertEquals(0, lock.getHoldCount());
+        lock.lock();
+        Assert.assertEquals(1, lock.getHoldCount());
+        lock.unlock();
+        Assert.assertEquals(0, lock.getHoldCount());
+
+        lock.lock();
+        lock.lock();
+        Assert.assertEquals(2, lock.getHoldCount());
+        lock.unlock();
+        Assert.assertEquals(1, lock.getHoldCount());
+        lock.unlock();
+        Assert.assertEquals(0, lock.getHoldCount());
+    }
+
+    @Test
+    public void testIsHeldByCurrentThreadOtherThread() throws InterruptedException {
+        RLock lock = redisson.getLock("lock");
+        lock.lock();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        new Thread() {
+            public void run() {
+                RLock lock = redisson.getLock("lock");
+                Assert.assertFalse(lock.isHeldByCurrentThread());
+                latch.countDown();
+            };
+        }.start();
+
+        latch.await();
+        lock.unlock();
+
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        new Thread() {
+            public void run() {
+                RLock lock = redisson.getLock("lock");
+                Assert.assertFalse(lock.isHeldByCurrentThread());
+                latch2.countDown();
+            };
+        }.start();
+
+        latch2.await();
+    }
+
+    @Test
+    public void testIsHeldByCurrentThread() {
+        RLock lock = redisson.getLock("lock");
+        Assert.assertFalse(lock.isHeldByCurrentThread());
+        lock.lock();
+        Assert.assertTrue(lock.isHeldByCurrentThread());
+        lock.unlock();
+        Assert.assertFalse(lock.isHeldByCurrentThread());
+    }
+
+    @Test
+    public void testIsLockedOtherThread() throws InterruptedException {
+        RLock lock = redisson.getLock("lock");
+        lock.lock();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        new Thread() {
+            public void run() {
+                RLock lock = redisson.getLock("lock");
+                Assert.assertTrue(lock.isLocked());
+                latch.countDown();
+            };
+        }.start();
+
+        latch.await();
+        lock.unlock();
+
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        new Thread() {
+            public void run() {
+                RLock lock = redisson.getLock("lock");
+                Assert.assertFalse(lock.isLocked());
+                latch2.countDown();
+            };
+        }.start();
+
+        latch2.await();
+    }
+
+    @Test
+    public void testIsLocked() {
+        RLock lock = redisson.getLock("lock");
+        Assert.assertFalse(lock.isLocked());
+        lock.lock();
+        Assert.assertTrue(lock.isLocked());
+        lock.unlock();
+        Assert.assertFalse(lock.isLocked());
+    }
+
     @Test(expected = IllegalMonitorStateException.class)
     public void testUnlockFail() {
-        Redisson redisson = Redisson.create();
         Lock lock = redisson.getLock("lock1");
-        try {
-            lock.unlock();
-        } finally {
-            redisson.shutdown();
-        }
+        lock.unlock();
     }
 
 
     @Test
     public void testLockUnlock() {
-        Redisson redisson = Redisson.create();
         Lock lock = redisson.getLock("lock1");
         lock.lock();
         lock.unlock();
 
         lock.lock();
         lock.unlock();
-
-        redisson.shutdown();
     }
 
     @Test
     public void testReentrancy() {
-        Redisson redisson = Redisson.create();
         Lock lock = redisson.getLock("lock1");
         lock.lock();
         lock.lock();
         lock.unlock();
         lock.unlock();
-
-        redisson.shutdown();
     }
 
 
