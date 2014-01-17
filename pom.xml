@@ -3,7 +3,7 @@
 
  <groupId>org.redisson</groupId>
  <artifactId>redisson</artifactId>
- <version>1.0.1-SNAPSHOT</version>
+ <version>1.0.1</version>
  <packaging>jar</packaging>
 
  <name>Redisson</name>
@@ -15,7 +15,7 @@
     <url>scm:git:git@github.com:mrniko/redisson.git</url>
     <connection>scm:git:git@github.com:mrniko/redisson.git</connection>
     <developerConnection>scm:git:git@github.com:mrniko/redisson.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>redisson-1.0.1</tag>
  </scm>
 
   <prerequisites>
