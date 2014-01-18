@@ -39,11 +39,11 @@ First stable release.
 
 Include the following to your dependency list:
 
-<dependency>
-   <groupId>org.redisson</groupId>
-   <artifactId>redisson</artifactId>
-   <version>1.0.1</version>
-</dependency>
+   <dependency>
+      <groupId>org.redisson</groupId>
+      <artifactId>redisson</artifactId>
+      <version>1.0.1</version>
+   </dependency>
 
 Usage examples
 ================================
