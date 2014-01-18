@@ -27,9 +27,23 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####17-Jan-2014 - version 1.0.1 released
+Improvement - forceUnlock, isLocked, isHeldByCurrentThread and getHoldCount methods added to RLock
+Feature - connection load balancer to use multiple Redis servers
+Feature - published in maven central repo
+
 ####11-Jan-2014 - version 1.0.0 released
 First stable release.
 
+### Maven 
+
+Include the following to your dependency list:
+
+<dependency>
+   <groupId>org.redisson</groupId>
+   <artifactId>redisson</artifactId>
+   <version>1.0.1</version>
+</dependency>
 
 Usage examples
 ================================
