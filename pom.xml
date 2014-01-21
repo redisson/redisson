@@ -4,7 +4,7 @@
  <groupId>org.redisson</groupId>
  <artifactId>redisson</artifactId>
  <version>1.0.2-SNAPSHOT</version>
- <packaging>jar</packaging>
+ <packaging>bundle</packaging>
 
  <name>Redisson</name>
  <description>Distributed and scalable Java data structures on top of Redis. Advanced Redis client.</description>
