@@ -11,6 +11,20 @@ import org.junit.Test;
 public class RedissonSetTest extends BaseTest {
 
     @Test
+    public void testRetainAll() {
+        Redisson redisson = Redisson.create();
+        Set<Integer> set = redisson.getSet("set");
+        for (int i = 0; i < 200; i++) {
+            set.add(i);
+        }
+
+        Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
+        Assert.assertEquals(2, set.size());
+
+        clear(set, redisson);
+    }
+
+    @Test
     public void testContainsAll() {
         Redisson redisson = Redisson.create();
         Set<Integer> set = redisson.getSet("set");

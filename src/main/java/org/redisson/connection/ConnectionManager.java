@@ -162,8 +162,8 @@ public class ConnectionManager {
     }
 
     public void release(RedisConnection сonnection) {
-        activeConnections.release();
         connections.add(сonnection);
+        activeConnections.release();
     }
 
     public void shutdown() {

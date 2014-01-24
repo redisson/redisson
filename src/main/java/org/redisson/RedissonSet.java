@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSet;
@@ -69,10 +70,44 @@ public class RedissonSet<V> extends RedissonObject implements RSet<V> {
         RedisConnection<Object, Object> connection = connectionManager.connection();
         try {
             // TODO use SSCAN in case of usage Redis 2.8
-            return (Iterator<V>) connection.smembers(getName()).iterator();
+            final Iterator<V> iter = (Iterator<V>) connection.smembers(getName()).iterator();
+            return new Iterator<V>() {
+
+                private boolean removeExecuted;
+                private V value;
+
+                @Override
+                public boolean hasNext() {
+                    return iter.hasNext();
+                }
+
+                @Override
+                public V next() {
+                    if (!hasNext()) {
+                        throw new NoSuchElementException("No such element at index");
+                    }
+
+                    value = iter.next();
+                    removeExecuted = false;
+                    return value;
+                }
+
+                @Override
+                public void remove() {
+                    if (removeExecuted) {
+                        throw new IllegalStateException("Element been already deleted");
+                    }
+
+                    iter.remove();
+                    RedissonSet.this.remove(value);
+                    removeExecuted = true;
+                }
+
+            };
         } finally {
             connectionManager.release(connection);
         }
+
     }
 
     @Override
@@ -138,10 +173,9 @@ public class RedissonSet<V> extends RedissonObject implements RSet<V> {
     @Override
     public boolean retainAll(Collection<?> c) {
         boolean changed = false;
-        for (Iterator<V> iterator = iterator(); iterator.hasNext();) {
-            V object = iterator.next();
+        for (Object object : this) {
             if (!c.contains(object)) {
-                iterator.remove();
+                remove(object);
                 changed = true;
             }
         }
