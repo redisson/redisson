@@ -230,11 +230,11 @@ public class RedisConnection<K, V> {
         return await(c.exec());
     }
 
-    public String flushall() throws Exception {
+    public String flushall() {
         return await(c.flushall());
     }
 
-    public String flushdb() throws Exception {
+    public String flushdb() {
         return await(c.flushdb());
     }
 

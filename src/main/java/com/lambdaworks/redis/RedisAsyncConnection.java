@@ -254,11 +254,11 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(EXEC, multi);
     }
 
-    public Future<String> flushall() throws Exception {
+    public Future<String> flushall() {
         return dispatch(FLUSHALL, new StatusOutput<K, V>(codec));
     }
 
-    public Future<String> flushdb() throws Exception {
+    public Future<String> flushdb() {
         return dispatch(FLUSHDB, new StatusOutput<K, V>(codec));
     }
 

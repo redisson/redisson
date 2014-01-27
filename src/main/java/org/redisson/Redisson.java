@@ -291,5 +291,14 @@ public class Redisson {
         return config;
     }
 
+    public void flushdb() {
+        RedisConnection<Object, Object> connection = connectionManager.connection();
+        try {
+            connection.flushdb();
+        } finally {
+            connectionManager.release(connection);
+        }
+    }
+
 }
 
