@@ -26,10 +26,13 @@ import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RQueue;
 import org.redisson.core.RSet;
+import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 import org.redisson.misc.ReferenceMap;
 import org.redisson.misc.ReferenceMap.ReferenceType;
 import org.redisson.misc.ReferenceMap.RemoveValueListener;
+
+import com.lambdaworks.redis.RedisConnection;
 
 /**
  * Main infrastructure class allows to get access
@@ -58,6 +61,7 @@ public class Redisson {
     private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ReferenceMap<String, RedissonAtomicLong>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonQueue> queuesMap = new ReferenceMap<String, RedissonQueue>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonSet> setsMap = new ReferenceMap<String, RedissonSet>(ReferenceType.STRONG, ReferenceType.SOFT);
+    private final ConcurrentMap<String, RedissonSortedSet> sortedSetMap = new ReferenceMap<String, RedissonSortedSet>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonList> listsMap = new ReferenceMap<String, RedissonList>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonMap> mapsMap = new ReferenceMap<String, RedissonMap>(ReferenceType.STRONG, ReferenceType.SOFT);
 
@@ -162,6 +166,25 @@ public class Redisson {
         if (set == null) {
             set = new RedissonSet<V>(connectionManager, name);
             RedissonSet<V> oldSet = setsMap.putIfAbsent(name, set);
+            if (oldSet != null) {
+                set = oldSet;
+            }
+        }
+
+        return set;
+    }
+
+    /**
+     * Returns distributed sorted set instance by name.
+     *
+     * @param name of the distributed set
+     * @return distributed set
+     */
+    public <V> RSortedSet<V> getSortedSet(String name) {
+        RedissonSortedSet<V> set = sortedSetMap.get(name);
+        if (set == null) {
+            set = new RedissonSortedSet<V>(connectionManager, name);
+            RedissonSortedSet<V> oldSet = sortedSetMap.putIfAbsent(name, set);
             if (oldSet != null) {
                 set = oldSet;
             }
