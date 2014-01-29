@@ -433,6 +433,10 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         BinarySearchResult<V> res = binarySearch(value, connection);
         if (res.getIndex() < 0) {
             BinarySearchResult<V> element = getAtIndex(-res.getIndex() + indexDiff, connection);
+            if (element.getScore() == null && res.getScore() == null && tail) {
+                element = getAtIndex(-res.getIndex() - 2, connection);
+                return element.getScore();
+            }
             return element.getScore();
         }
         int ind = res.getIndex();

@@ -50,7 +50,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     private double getTailScore(RedisConnection<Object, V> connection) {
         if (tailValue != null) {
-            return redissonSortedSet.score(tailValue, connection, 0, true);
+            return redissonSortedSet.score(tailValue, connection, 1, true);
         }
         return Double.MAX_VALUE;
     }

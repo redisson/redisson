@@ -41,7 +41,7 @@ public class RedissonSortedSetTest extends BaseTest {
         SortedSet<Integer> hs = set.headSet(6);
     }
 
-//    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testTailSet() {
         RSortedSet<Integer> set = redisson.getSortedSet("set");
 
@@ -68,7 +68,7 @@ public class RedissonSortedSetTest extends BaseTest {
     }
 
 
-//    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testHeadSet() {
         RSortedSet<Integer> set = redisson.getSortedSet("set");
 
@@ -88,6 +88,8 @@ public class RedissonSortedSetTest extends BaseTest {
         MatcherAssert.assertThat(hs, Matchers.contains(0, 1));
 
         set.remove(3);
+
+        MatcherAssert.assertThat(hs, Matchers.contains(0, 1));
 
         hs.add(7);
     }
@@ -138,6 +140,8 @@ public class RedissonSortedSetTest extends BaseTest {
         MatcherAssert.assertThat(hs, Matchers.contains(0, 1));
 
         set.remove(3);
+
+        MatcherAssert.assertThat(hs, Matchers.contains(0, 1));
 
         hs.add(7);
     }
