@@ -105,7 +105,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     private final ConnectionManager connectionManager;
 
     private final UUID id;
-    private final String groupName = "redisson_lock_";
+    private final String groupName = "redisson__lock__";
 
     private static final Integer unlockMessage = 0;
 
