@@ -1,12 +1,16 @@
 package org.redisson;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -25,7 +29,6 @@ import com.lambdaworks.redis.ScoredValue;
  *
  * @param <V>
  */
-// TODO comparator setup sync
 // TODO lock up-down scores during adding an element
 public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V> {
 
@@ -76,7 +79,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private final ConnectionManager connectionManager;
-    private Comparator<V> comparator = NaturalComparator.NATURAL_ORDER;
+    private Comparator<? super V> comparator = NaturalComparator.NATURAL_ORDER;
 
     RedissonSortedSet(ConnectionManager connectionManager, String name) {
         super(name);
@@ -88,7 +91,17 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     private void loadComparator() {
         RedisConnection<Object, String> connection = connectionManager.connection();
         try {
-            String comparatorSign = connection.get(getComparatorKeyName());
+            loadComparator(connection);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        } finally {
+            connectionManager.release(connection);
+        }
+    }
+
+    private void loadComparator(RedisConnection<Object, ?> connection) {
+        try {
+            String comparatorSign = (String) connection.get(getComparatorKeyName());
             if (comparatorSign != null) {
                 String[] parts = comparatorSign.split(":");
                 String className = parts[0];
@@ -104,25 +117,22 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             }
         } catch (Exception e) {
             throw new IllegalStateException(e);
-        } finally {
-            connectionManager.release(connection);
         }
     }
 
+    // TODO cache result
     private static String calcClassSign(String name) {
         try {
             Class<?> clazz = Class.forName(name);
-            URL c = clazz.getResource(clazz.getSimpleName() + ".class");
 
-            URLConnection cc = c.openConnection();
-            byte[] classData = new byte[cc.getContentLength()];
-            DataInputStream dataIs = new DataInputStream(cc.getInputStream());
-            dataIs.readFully(classData);
-            dataIs.close();
+            ByteArrayOutputStream result = new ByteArrayOutputStream();
+            ObjectOutputStream outputStream = new ObjectOutputStream(result);
+            outputStream.writeObject(clazz);
+            outputStream.close();
 
             MessageDigest crypt = MessageDigest.getInstance("SHA-1");
             crypt.reset();
-            crypt.update(classData);
+            crypt.update(result.toByteArray());
 
             return new BigInteger(1, crypt.digest()).toString(16);
         } catch (Exception e) {
@@ -140,7 +150,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
     }
 
-    private int size(RedisConnection<Object, V> connection) {
+    private int size(RedisConnection<Object, ?> connection) {
         return connection.zcard(getName()).intValue();
     }
 
@@ -266,7 +276,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         RedisConnection<Object, V> connection = connectionManager.connection();
         try {
             while (true) {
-                connection.watch(getName());
+                connection.watch(getComparatorKeyName());
+
+                checkComparator(connection);
 
                 BinarySearchResult<V> res = binarySearch(value, connection);
                 if (res.getIndex() < 0) {
@@ -278,6 +290,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                     if (re.size() == 1) {
                         Object val = re.iterator().next();
                         return val != null && ((Number)val).intValue() > 0;
+                    } else {
+                        checkComparator(connection);
                     }
                 } else {
                     connection.unwatch();
@@ -286,6 +300,21 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             }
         } finally {
             connectionManager.release(connection);
+        }
+    }
+
+    private void checkComparator(RedisConnection<Object, V> connection) {
+        String comparatorSign = (String) connection.get(getComparatorKeyName());
+        if (comparatorSign != null) {
+            String[] vals = comparatorSign.split(":");
+            String className = vals[0];
+            if (!comparator.getClass().getName().equals(className)) {
+                try {
+                    loadComparator(connection);
+                } finally {
+                    connection.unwatch();
+                }
+            }
         }
     }
 
@@ -444,12 +473,21 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     @Override
-    public boolean trySetComparator(Comparator<V> comparator) {
+    public boolean trySetComparator(Comparator<? super V> comparator) {
         RedisConnection<Object, String> connection = connectionManager.connection();
         try {
+            connection.watch(getName(), getComparatorKeyName());
+            if (size(connection) > 0) {
+                connection.unwatch();
+                return false;
+            }
+            connection.multi();
+
             String className = comparator.getClass().getName();
             String comparatorSign = className + ":" + calcClassSign(className);
-            if (connection.setnx(getComparatorKeyName(), comparatorSign)) {
+            connection.set(getComparatorKeyName(), comparatorSign);
+            List<Object> res = connection.exec();
+            if (res.size() == 1) {
                 this.comparator = comparator;
                 return true;
             }

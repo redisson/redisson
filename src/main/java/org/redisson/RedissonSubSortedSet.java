@@ -18,6 +18,7 @@ import com.lambdaworks.redis.RedisConnection;
  *
  * @param <V>
  */
+// TODO compare tail or head value with current in case of absence this value
 class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     private ConnectionManager connectionManager;

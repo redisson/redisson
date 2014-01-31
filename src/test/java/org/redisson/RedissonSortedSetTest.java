@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -27,6 +28,35 @@ public class RedissonSortedSetTest extends BaseTest {
         redisson.flushdb();
         redisson.shutdown();
     }
+
+    @Test
+    public void testTrySetComparator() {
+        RSortedSet<Integer> set = redisson.getSortedSet("set");
+
+        boolean setRes = set.trySetComparator(Collections.reverseOrder());
+        Assert.assertTrue(setRes);
+        set.add(1);
+        set.add(2);
+        set.add(3);
+        set.add(4);
+        set.add(5);
+        MatcherAssert.assertThat(set, Matchers.contains(5, 4, 3, 2, 1));
+
+        boolean setRes2 = set.trySetComparator(Collections.reverseOrder(Collections.reverseOrder()));
+        Assert.assertFalse(setRes2);
+        MatcherAssert.assertThat(set, Matchers.contains(5, 4, 3, 2, 1));
+
+        set.clear();
+        boolean setRes3 = set.trySetComparator(Collections.reverseOrder(Collections.reverseOrder()));
+        Assert.assertTrue(setRes3);
+        set.add(3);
+        set.add(1);
+        set.add(2);
+        MatcherAssert.assertThat(set, Matchers.contains(1, 2, 3));
+
+
+    }
+
 
     @Test
     public void testOrder2() {
