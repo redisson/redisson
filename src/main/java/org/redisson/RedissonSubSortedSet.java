@@ -1,3 +1,18 @@
+/**
+ * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.redisson;
 
 import java.util.Collection;
@@ -8,6 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
 import org.redisson.RedissonSortedSet.BinarySearchResult;
+import org.redisson.RedissonSortedSet.NewScore;
 import org.redisson.connection.ConnectionManager;
 
 import com.lambdaworks.redis.RedisConnection;
@@ -127,8 +143,8 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
             BinarySearchResult<V> res = redissonSortedSet.binarySearch(e, connection);
             if (res.getScore() == null) {
-                double score = redissonSortedSet.calcNewScore(res.getIndex(), connection);
-                if (score < tailScore && score > headScore) {
+                NewScore score = redissonSortedSet.calcNewScore(res.getIndex(), connection);
+                if (score.getScore() < tailScore && score.getScore() > headScore) {
                     return redissonSortedSet.add(e);
                 } else {
                     throw new IllegalArgumentException("value out of range");
@@ -244,12 +260,13 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
     public V first() {
         RedisConnection<Object, V> connection = connectionManager.connection();
         try {
+            // TODO compare first value with headValue
             if (headValue != null) {
                 BinarySearchResult<V> res = redissonSortedSet.binarySearch(headValue, connection);
                 if (res.getIndex() < 0) {
-                    double headScore = redissonSortedSet.calcNewScore(res.getIndex(), connection);
+                    NewScore headScore = redissonSortedSet.calcNewScore(res.getIndex(), connection);
                     double tailScore = getTailScore(connection);
-                    List<V> vals = connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore);
+                    List<V> vals = connection.zrangebyscore(redissonSortedSet.getName(), headScore.getScore(), tailScore);
                     if (vals.isEmpty()) {
                         throw new NoSuchElementException();
                     }
@@ -267,12 +284,13 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
     public V last() {
         RedisConnection<Object, V> connection = connectionManager.connection();
         try {
+            // TODO compare last value with headValue
             if (tailValue != null) {
                 BinarySearchResult<V> res = redissonSortedSet.binarySearch(tailValue, connection);
                 if (res.getIndex() < 0) {
-                    double tailScore = redissonSortedSet.calcNewScore(res.getIndex(), connection);
+                    NewScore tailScore = redissonSortedSet.calcNewScore(res.getIndex(), connection);
                     double headScore = getHeadScore(connection);
-                    List<V> vals = connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore);
+                    List<V> vals = connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore.getScore());
                     if (vals.isEmpty()) {
                         throw new NoSuchElementException();
                     }

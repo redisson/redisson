@@ -1,21 +1,33 @@
+/**
+ * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.redisson;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.net.URL;
-import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSortedSet;
@@ -29,7 +41,6 @@ import com.lambdaworks.redis.ScoredValue;
  *
  * @param <V>
  */
-// TODO lock up-down scores during adding an element
 public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V> {
 
     private static class NaturalComparator<V> implements Comparator<V>, Serializable {
@@ -42,6 +53,33 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             Comparable<Object> c1co = (Comparable<Object>) c1;
             Comparable<Object> c2co = (Comparable<Object>) c2;
             return c1co.compareTo(c2co);
+        }
+
+    }
+
+    public static class NewScore {
+
+        private Double leftScore;
+        private Double rightScore;
+        private Double score;
+
+        public NewScore(Double leftScore, Double rightScore, Double score) {
+            super();
+            this.leftScore = leftScore;
+            this.rightScore = rightScore;
+            this.score = score;
+        }
+
+        public Double getLeftScore() {
+            return leftScore;
+        }
+
+        public Double getRightScore() {
+            return rightScore;
+        }
+
+        public Double getScore() {
+            return score;
         }
 
     }
@@ -86,6 +124,10 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         this.connectionManager = connectionManager;
 
         loadComparator();
+
+        RedisConnection<Object, Object> conn = connectionManager.connection();
+        conn.setnx(getCurrentVersionKey(), 0L);
+        connectionManager.release(conn);
     }
 
     private void loadComparator() {
@@ -271,25 +313,83 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
     }
 
+    private String getCurrentVersionKey() {
+        return "redisson__sortedset__version__" + getName();
+    }
+
+    private Long getCurrentVersion(RedisConnection<Object, Object> simpleConnection) {
+        return ((Number)simpleConnection.get(getCurrentVersionKey())).longValue();
+    }
+
     @Override
     public boolean add(V value) {
         RedisConnection<Object, V> connection = connectionManager.connection();
+        RedisConnection<Object, Object> simpleConnection = (RedisConnection<Object, Object>)connection;
         try {
             while (true) {
                 connection.watch(getComparatorKeyName());
 
                 checkComparator(connection);
 
+                Long version = getCurrentVersion(simpleConnection);
                 BinarySearchResult<V> res = binarySearch(value, connection);
                 if (res.getIndex() < 0) {
-                    double score = calcNewScore(res.getIndex(), connection);
+                    if (!version.equals(getCurrentVersion(simpleConnection))) {
+                        connection.unwatch();
+                        continue;
+                    }
+                    NewScore newScore = calcNewScore(res.getIndex(), connection);
+                    if (!version.equals(getCurrentVersion(simpleConnection))) {
+                        connection.unwatch();
+                        continue;
+                    }
+
+                    String leftScoreKey = getScoreKeyName(newScore.getLeftScore());
+                    String rightScoreKey = getScoreKeyName(newScore.getRightScore());
+
+                    if (simpleConnection.setnx(leftScoreKey, 1)) {
+                        if (!version.equals(getCurrentVersion(simpleConnection))) {
+                            connection.unwatch();
+
+                            connection.del(leftScoreKey);
+                            continue;
+                        }
+                        if (rightScoreKey != null) {
+
+                            if (!simpleConnection.setnx(rightScoreKey, 1)) {
+                                connection.unwatch();
+
+                                connection.del(leftScoreKey);
+                                continue;
+                            }
+                        }
+                    } else {
+                        connection.unwatch();
+                        continue;
+                    }
 
                     connection.multi();
-                    connection.zadd(getName(), score, value);
+                    connection.zadd(getName(), newScore.getScore(), value);
+                    if (rightScoreKey != null) {
+                        connection.del(leftScoreKey, rightScoreKey);
+                    } else {
+                        connection.del(leftScoreKey);
+                    }
+                    connection.incr(getCurrentVersionKey());
                     List<Object> re = connection.exec();
-                    if (re.size() == 1) {
-                        Object val = re.iterator().next();
-                        return val != null && ((Number)val).intValue() > 0;
+                    if (re.size() == 3) {
+                        Number val = (Number) re.get(0);
+                        Long delCount = (Long) re.get(1);
+                        if (rightScoreKey != null) {
+                            if (delCount != 2) {
+                                throw new IllegalStateException();
+                            }
+                        } else {
+                            if (delCount != 1) {
+                                throw new IllegalStateException();
+                            }
+                        }
+                        return val != null && val.intValue() > 0;
                     } else {
                         checkComparator(connection);
                     }
@@ -303,7 +403,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
     }
 
-    private void checkComparator(RedisConnection<Object, V> connection) {
+    private void checkComparator(RedisConnection<Object, ?> connection) {
         String comparatorSign = (String) connection.get(getComparatorKeyName());
         if (comparatorSign != null) {
             String[] vals = comparatorSign.split(":");
@@ -327,28 +427,33 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
      * @param connection
      * @return score for index
      */
-    public double calcNewScore(int index, RedisConnection<Object, V> connection) {
+    public NewScore calcNewScore(int index, RedisConnection<Object, V> connection) {
         if (index >= 0) {
             throw new IllegalStateException("index should be negative, but value is " + index);
         }
         index = -(index + 1);
 
+        Double leftScore = null;
+        Double rightScore = null;
         double score = getScoreAtIndex(index, connection);
         if (index == 0) {
             if (score < 0) {
-                score = 1000000;
+                score = (double) 1000000;
+                leftScore = score;
             } else {
-                score /= 2;
+                leftScore = score;
+                score = score / 2;
             }
         } else {
-            double beginScore = getScoreAtIndex(index-1, connection);
+            leftScore = getScoreAtIndex(index-1, connection);
             if (score < 0) {
-                score = beginScore + 1000000;
+                score = leftScore + 1000000;
             } else {
-                score = beginScore + (score - beginScore) / 2;
+                rightScore = score;
+                score = leftScore + (rightScore - leftScore) / 2;
             }
         }
-        return score;
+        return new NewScore(leftScore, rightScore, score);
     }
 
     @Override
@@ -359,7 +464,15 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             if (res.getIndex() < 0) {
                 return false;
             }
-            return connection.zremrangebyscore(getName(), res.getScore(), res.getScore()) > 0;
+            connection.multi();
+            connection.zremrangebyscore(getName(), res.getScore(), res.getScore());
+            connection.incr(getCurrentVersionKey());
+            List<Object> result = connection.exec();
+            if (result.size() == 2) {
+                return ((Number)result.get(0)).longValue() > 0;
+            } else {
+                return false;
+            }
         } finally {
             connectionManager.release(connection);
         }
@@ -421,8 +534,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public Comparator<? super V> comparator() {
-        // TODO Auto-generated method stub
-        return null;
+        return comparator;
     }
 
     @Override
@@ -466,6 +578,13 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         } finally {
             connectionManager.release(connection);
         }
+    }
+
+    private String getScoreKeyName(Double score) {
+        if (score == null) {
+            return null;
+        }
+        return "redisson__sortedset__score__" + getName() + "__" + score;
     }
 
     private String getComparatorKeyName() {

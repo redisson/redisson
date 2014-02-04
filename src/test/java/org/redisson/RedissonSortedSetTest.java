@@ -35,11 +35,11 @@ public class RedissonSortedSetTest extends BaseTest {
 
         boolean setRes = set.trySetComparator(Collections.reverseOrder());
         Assert.assertTrue(setRes);
-        set.add(1);
-        set.add(2);
-        set.add(3);
-        set.add(4);
-        set.add(5);
+        Assert.assertTrue(set.add(1));
+        Assert.assertTrue(set.add(2));
+        Assert.assertTrue(set.add(3));
+        Assert.assertTrue(set.add(4));
+        Assert.assertTrue(set.add(5));
         MatcherAssert.assertThat(set, Matchers.contains(5, 4, 3, 2, 1));
 
         boolean setRes2 = set.trySetComparator(Collections.reverseOrder(Collections.reverseOrder()));
@@ -264,11 +264,11 @@ public class RedissonSortedSetTest extends BaseTest {
     public void testDuplicates() {
         Set<TestObject> set = redisson.getSortedSet("set");
 
-        set.add(new TestObject("1", "2"));
-        set.add(new TestObject("1", "2"));
-        set.add(new TestObject("2", "3"));
-        set.add(new TestObject("3", "4"));
-        set.add(new TestObject("5", "6"));
+        Assert.assertTrue(set.add(new TestObject("1", "2")));
+        Assert.assertFalse(set.add(new TestObject("1", "2")));
+        Assert.assertTrue(set.add(new TestObject("2", "3")));
+        Assert.assertTrue(set.add(new TestObject("3", "4")));
+        Assert.assertTrue(set.add(new TestObject("5", "6")));
 
         Assert.assertEquals(4, set.size());
     }
