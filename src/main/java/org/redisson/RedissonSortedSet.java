@@ -641,7 +641,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
      * @param upperIndex
      * @return
      */
-    public BinarySearchResult<V> binarySearch(V value, RedisConnection<Object, V> connection, int lowerIndex, int upperIndex) {
+    private BinarySearchResult<V> binarySearch(V value, RedisConnection<Object, V> connection, int lowerIndex, int upperIndex) {
         while (lowerIndex <= upperIndex) {
             int index = lowerIndex + (upperIndex - lowerIndex) / 2;
 
