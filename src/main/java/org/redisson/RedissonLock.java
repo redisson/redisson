@@ -105,7 +105,6 @@ public class RedissonLock extends RedissonObject implements RLock {
     private final ConnectionManager connectionManager;
 
     private final UUID id;
-    private final String groupName = "redisson__lock__";
 
     private static final Integer unlockMessage = 0;
 
@@ -165,11 +164,11 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
 
     private String getKeyName() {
-        return groupName + getName();
+        return "redisson__lock__" + getName();
     }
 
     private String getChannelName() {
-        return groupName + getName();
+        return "redisson__lock__channel__" + getName();
     }
 
     @Override

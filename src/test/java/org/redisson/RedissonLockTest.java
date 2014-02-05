@@ -12,7 +12,7 @@ import org.redisson.core.RLock;
 
 public class RedissonLockTest extends BaseConcurrentTest {
 
-    Redisson redisson = Redisson.create();
+    Redisson redisson;
 
     @Before
     public void before() {
