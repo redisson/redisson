@@ -3,7 +3,7 @@
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
 Based on patched version of [lettuce](https://github.com/wg/lettuce) [Redis](http://redis.io) client and [Netty 4](http://netty.io) framework.  
-JDK 1.6+ compatible  
+Redis 2.4+ and JDK 1.6+ compatible  
 
 Licensed under the Apache License 2.0.
 
@@ -21,14 +21,14 @@ Features
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic` object  
 * Supports OSGi  
-* With over 70 unit tests  
+* With over 90 unit tests  
 
 
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
-####??-Feb-2014 - version 1.0.2
+####05-Feb-2014 - version 1.0.2 released
 Feature - distributed implementation of `java.util.SortedSet`  
 Fixed - OSGi compability  
 
