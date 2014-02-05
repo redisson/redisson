@@ -12,6 +12,7 @@ Features
 ================================
 * Distributed implementation of `java.util.List`  
 * Distributed implementation of `java.util.Set`  
+* Distributed implementation of `java.util.SortedSet`  
 * Distributed implementation of `java.util.Queue`  
 * Distributed implementation of `java.util.Map`  
 * Distributed implementation of `java.util.concurrent.ConcurrentMap`  
@@ -26,6 +27,10 @@ Features
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####??-Feb-2014 - version 1.0.2
+Feature - distributed implementation of `java.util.SortedSet`  
+Fixed - OSGi compability  
 
 ####17-Jan-2014 - version 1.0.1 released
 Improvement - forceUnlock, isLocked, isHeldByCurrentThread and getHoldCount methods added to RLock  
