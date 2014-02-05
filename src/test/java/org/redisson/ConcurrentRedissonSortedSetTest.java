@@ -14,7 +14,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 
     @Test
     public void testAdd_SingleInstance() throws InterruptedException {
-        final String name = "testSingleReplaceOldValue_SingleInstance";
+        final String name = "testAdd_SingleInstance";
 
         Redisson r = Redisson.create();
         RSortedSet<Integer> map = r.getSortedSet(name);
@@ -36,6 +36,8 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
             elements.add(i);
         }
         MatcherAssert.assertThat(map, Matchers.contains(elements.toArray(new Integer[elements.size()])));
+
+        map.clear();
         r.shutdown();
     }
 
