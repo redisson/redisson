@@ -15,13 +15,14 @@ import java.util.concurrent.*;
  *
  * @author Will Glozer
  */
-public class Command<K, V, T> implements Future<T> {
+public class Command<K, V, T> implements FutureWithPromise<T> {
     private static final byte[] CRLF = "\r\n".getBytes(Charsets.ASCII);
 
     public final CommandType type;
     protected CommandArgs<K, V> args;
     protected CommandOutput<K, V, T> output;
     protected CountDownLatch latch;
+    private final CompletableFuture<T> promise;
 
     /**
      * Create a new command with the supplied type and args.
@@ -36,6 +37,7 @@ public class Command<K, V, T> implements Future<T> {
         this.output = output;
         this.args   = args;
         this.latch  = new CountDownLatch(multi ? 2 : 1);
+        promise = new CompletableFuture<T>();
     }
 
     /**
@@ -53,6 +55,7 @@ public class Command<K, V, T> implements Future<T> {
             latch.countDown();
             output = null;
             cancelled = true;
+            promise.cancel(false);
         }
         return cancelled;
     }
@@ -147,6 +150,13 @@ public class Command<K, V, T> implements Future<T> {
      */
     public void complete() {
         latch.countDown();
+        if (isDone()) {
+            promise.complete(output.get());
+        }
+    }
+
+    public CompletableFuture<T> getPromise() {
+        return promise;
     }
 
     /**
