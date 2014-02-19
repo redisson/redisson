@@ -15,6 +15,8 @@
  */
 package org.redisson;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 
@@ -29,12 +31,24 @@ import com.lambdaworks.redis.RedisConnection;
 public class RedissonAtomicLong extends RedissonObject implements RAtomicLong {
 
     private final ConnectionManager connectionManager;
+    private final AtomicBoolean initOnce = new AtomicBoolean();
 
     RedissonAtomicLong(ConnectionManager connectionManager, String name) {
         super(name);
         this.connectionManager = connectionManager;
     }
 
+    public void init() {
+        if (!initOnce.compareAndSet(false, true)) {
+            return;
+        }
+        RedisConnection<String, Object> conn = connectionManager.connection();
+        try {
+            conn.setnx(getName(), 0);
+        } finally {
+            connectionManager.release(conn);
+        }
+    }
 
     @Override
     public long addAndGet(long delta) {
@@ -52,7 +66,7 @@ public class RedissonAtomicLong extends RedissonObject implements RAtomicLong {
         try {
             while (true) {
                 conn.watch(getName());
-                Long value = (Long) conn.get(getName());
+                Long value = ((Number) conn.get(getName())).longValue();
                 if (value != expect) {
                     conn.discard();
                     return false;
@@ -82,7 +96,7 @@ public class RedissonAtomicLong extends RedissonObject implements RAtomicLong {
     public long get() {
         RedisConnection<String, Object> conn = connectionManager.connection();
         try {
-            return (Long) conn.get(getName());
+            return ((Number) conn.get(getName())).longValue();
         } finally {
             connectionManager.release(conn);
         }
@@ -102,7 +116,7 @@ public class RedissonAtomicLong extends RedissonObject implements RAtomicLong {
     public long getAndSet(long newValue) {
         RedisConnection<String, Object> conn = connectionManager.connection();
         try {
-            return (Long) conn.getset(getName(), newValue);
+            return ((Number) conn.getset(getName(), newValue)).longValue();
         } finally {
             connectionManager.release(conn);
         }

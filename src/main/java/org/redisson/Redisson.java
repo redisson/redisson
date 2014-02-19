@@ -249,6 +249,7 @@ public class Redisson {
             }
         }
 
+        atomicLong.init();
         return atomicLong;
 
     }

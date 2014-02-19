@@ -3,9 +3,28 @@ package org.redisson;
 import java.util.Collection;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 
 public abstract class BaseTest {
+
+    private Redisson redisson;
+
+    public Redisson currentRedisson() {
+        return redisson;
+    }
+
+    @Before
+    public void before() {
+        redisson = Redisson.create();
+    }
+
+    @After
+    public void after() {
+        redisson.flushdb();
+        redisson.shutdown();
+    }
 
     protected void clear(Map<?, ?> map, Redisson redisson) {
         map.clear();
