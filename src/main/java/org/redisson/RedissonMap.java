@@ -209,6 +209,7 @@ public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
                         return true;
                     }
                 } else {
+                    connection.unwatch();
                     return false;
                 }
             }
@@ -231,6 +232,7 @@ public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
                         return true;
                     }
                 } else {
+                    connection.unwatch();
                     return false;
                 }
             }
@@ -252,6 +254,8 @@ public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
                     if (connection.exec().size() == 1) {
                         return prev;
                     }
+                } else {
+                    connection.unwatch();
                 }
                 return null;
             }
