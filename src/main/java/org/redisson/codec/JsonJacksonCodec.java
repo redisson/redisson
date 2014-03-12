@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
@@ -49,7 +50,32 @@ public class JsonJacksonCodec implements RedissonCodec {
         objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 
         // type info inclusion
-        TypeResolverBuilder<?> typer = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL);
+        TypeResolverBuilder<?> typer = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
+            public boolean useForType(JavaType t)
+            {
+                switch (_appliesFor) {
+                case NON_CONCRETE_AND_ARRAYS:
+                    while (t.isArrayType()) {
+                        t = t.getContentType();
+                    }
+                    // fall through
+                case OBJECT_AND_NON_CONCRETE:
+                    return (t.getRawClass() == Object.class) || !t.isConcrete();
+                case NON_FINAL:
+                    while (t.isArrayType()) {
+                        t = t.getContentType();
+                    }
+                    // to fix problem with wrong long to int conversion
+                    if (t.isPrimitive() || t.getRawClass() == Long.class) {
+                        return true;
+                    }
+                    return !t.isFinal(); // includes Object.class
+                default:
+                //case JAVA_LANG_OBJECT:
+                    return (t.getRawClass() == Object.class);
+                }
+            }
+        };
         typer.init(JsonTypeInfo.Id.CLASS, null);
         typer.inclusion(JsonTypeInfo.As.PROPERTY);
         objectMapper.setDefaultTyping(typer);
