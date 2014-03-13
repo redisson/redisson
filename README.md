@@ -20,6 +20,7 @@ Features
 * Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic` object  
+* Thread-safe implementation
 * Supports OSGi  
 * With over 90 unit tests  
 
