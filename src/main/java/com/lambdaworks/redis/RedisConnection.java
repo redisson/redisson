@@ -278,7 +278,7 @@ public class RedisConnection<K, V> {
         return await(c.hgetall(key));
     }
 
-    public List<K> hkeys(K key) {
+    public Set<K> hkeys(K key) {
         return await(c.hkeys(key));
     }
 

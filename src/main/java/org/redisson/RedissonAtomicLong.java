@@ -68,7 +68,7 @@ public class RedissonAtomicLong extends RedissonObject implements RAtomicLong {
                 conn.watch(getName());
                 Long value = ((Number) conn.get(getName())).longValue();
                 if (value != expect) {
-                    conn.discard();
+                    conn.unwatch();
                     return false;
                 }
                 conn.multi();

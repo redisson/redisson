@@ -44,10 +44,10 @@ public class CommandHandler<K, V> extends ChannelDuplexHandler {
         ByteBuf input = (ByteBuf) msg;
         try {
             if (!input.isReadable()) return;
-    
+
             buffer.discardReadBytes();
             buffer.writeBytes(input);
-    
+
             decode(ctx, buffer);
         } finally {
             input.release();
@@ -57,7 +57,6 @@ public class CommandHandler<K, V> extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         Command<?, ?, ?> cmd = (Command<?, ?, ?>) msg;
-        Channel channel = ctx.channel();
         ByteBuf buf = ctx.alloc().heapBuffer();
         cmd.encode(buf);
         ctx.write(buf, promise);

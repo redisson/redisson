@@ -245,9 +245,16 @@ public class RedissonList<V> extends RedissonObject implements RList<V> {
         checkIndex(index);
         RedisConnection<String, Object> conn = connectionManager.connection();
         try {
-            V prev = (V) conn.lindex(getName(), index);
-            conn.lset(getName(), index, element);
-            return prev;
+            while (true) {
+                conn.watch(getName());
+                V prev = (V) conn.lindex(getName(), index);
+
+                conn.multi();
+                conn.lset(getName(), index, element);
+                if (conn.exec().size() == 1) {
+                    return prev;
+                }
+            }
         } finally {
             connectionManager.release(conn);
         }

@@ -13,6 +13,17 @@ import org.junit.Test;
 
 public class RedissonListTest extends BaseTest {
 
+    @Test
+    public void testLong() {
+        Redisson redisson = Redisson.create();
+        List<Long> list = redisson.getList("list");
+        list.add(1L);
+        list.add(2L);
+
+        Assert.assertThat(list, Matchers.contains(1L, 2L));
+        clear(list, redisson);
+    }
+
     @Test(expected = IllegalStateException.class)
     public void testListIteratorSetListFail() {
         List<Integer> list = new ArrayList<Integer>();

@@ -11,6 +11,17 @@ import org.junit.Test;
 public class RedissonSetTest extends BaseTest {
 
     @Test
+    public void testLong() {
+        Redisson redisson = Redisson.create();
+        Set<Long> set = redisson.getSet("set");
+        set.add(1L);
+        set.add(2L);
+
+        Assert.assertThat(set, Matchers.containsInAnyOrder(1L, 2L));
+        clear(set, redisson);
+    }
+
+    @Test
     public void testRetainAll() {
         Redisson redisson = Redisson.create();
         Set<Integer> set = redisson.getSet("set");

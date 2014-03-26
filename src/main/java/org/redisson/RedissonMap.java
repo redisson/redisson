@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -138,7 +137,7 @@ public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
     public Set<K> keySet() {
         RedisConnection<Object, Object> connection = connectionManager.connection();
         try {
-            return new LinkedHashSet<K>((Collection<? extends K>) connection.hkeys(getName()));
+            return (Set<K>) connection.hkeys(getName());
         } finally {
             connectionManager.release(connection);
         }
@@ -146,6 +145,7 @@ public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
 
     @Override
     public Collection<V> values() {
+        // TODO fix Long
         RedisConnection<Object, Object> connection = connectionManager.connection();
         try {
             return (Collection<V>) connection.hvals(getName());
@@ -176,7 +176,7 @@ public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
             while (true) {
                 Boolean res = connection.hsetnx(getName(), key, value);
                 if (!res) {
-                    V result = get(key);
+                    V result = (V) connection.hget(getName(), key);
                     if (result != null) {
                         return result;
                     }
@@ -248,6 +248,7 @@ public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
             while (true) {
                 connection.watch(getName());
                 if (connection.hexists(getName(), key)) {
+                    // TODO fix Long
                     V prev = (V) connection.hget(getName(), key);
                     connection.multi();
                     connection.hset(getName(), key, value);

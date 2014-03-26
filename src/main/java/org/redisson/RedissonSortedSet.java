@@ -26,8 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSortedSet;
@@ -126,8 +124,11 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         loadComparator();
 
         RedisConnection<Object, Object> conn = connectionManager.connection();
-        conn.setnx(getCurrentVersionKey(), 0L);
-        connectionManager.release(conn);
+        try {
+            conn.setnx(getCurrentVersionKey(), 0L);
+        } finally {
+            connectionManager.release(conn);
+        }
     }
 
     private void loadComparator() {

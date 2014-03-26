@@ -36,6 +36,17 @@ public class CommandArgs<K, V> {
         return count;
     }
 
+    public CommandArgs<K, V> addMapKeys(K... keys) {
+        for (K key : keys) {
+            addMapKey(key);
+        }
+        return this;
+    }
+
+    public CommandArgs<K, V> addMapKey(K key) {
+        return write(codec.encodeMapKey(key));
+    }
+
     public CommandArgs<K, V> addKey(K key) {
         return write(codec.encodeKey(key));
     }
@@ -47,8 +58,19 @@ public class CommandArgs<K, V> {
         return this;
     }
 
+    public CommandArgs<K, V> addMapValue(V value) {
+        return write(codec.encodeMapValue(value));
+    }
+
     public CommandArgs<K, V> addValue(V value) {
         return write(codec.encodeValue(value));
+    }
+
+    public CommandArgs<K, V> addMapValues(V... values) {
+        for (V value : values) {
+            addMapValue(value);
+        }
+        return this;
     }
 
     public CommandArgs<K, V> addValues(V... values) {
@@ -64,8 +86,8 @@ public class CommandArgs<K, V> {
         }
 
         for (Map.Entry<K, V> entry : map.entrySet()) {
-            write(codec.encodeKey(entry.getKey()));
-            write(codec.encodeValue(entry.getValue()));
+            write(codec.encodeMapKey(entry.getKey()));
+            write(codec.encodeMapValue(entry.getValue()));
         }
 
         return this;

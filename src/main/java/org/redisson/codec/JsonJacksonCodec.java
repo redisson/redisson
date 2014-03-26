@@ -37,20 +37,18 @@ import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 public class JsonJacksonCodec implements RedissonCodec {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper mapObjectMapper = new ObjectMapper();
 
     public JsonJacksonCodec() {
-        objectMapper.setSerializationInclusion(Include.NON_NULL);
-        objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
-                                            .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                                            .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                                            .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                                            .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN, true);
-        objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        createObjectMapper(objectMapper);
+        TypeResolverBuilder<?> typer = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL);
+        typer.init(JsonTypeInfo.Id.CLASS, null);
+        typer.inclusion(JsonTypeInfo.As.PROPERTY);
+        objectMapper.setDefaultTyping(typer);
 
+        createObjectMapper(mapObjectMapper);
         // type info inclusion
-        TypeResolverBuilder<?> typer = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
+        TypeResolverBuilder<?> mapTyper = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
             public boolean useForType(JavaType t)
             {
                 switch (_appliesFor) {
@@ -66,7 +64,7 @@ public class JsonJacksonCodec implements RedissonCodec {
                         t = t.getContentType();
                     }
                     // to fix problem with wrong long to int conversion
-                    if (t.isPrimitive() || t.getRawClass() == Long.class) {
+                    if (t.getRawClass() == Long.class) {
                         return true;
                     }
                     return !t.isFinal(); // includes Object.class
@@ -76,9 +74,21 @@ public class JsonJacksonCodec implements RedissonCodec {
                 }
             }
         };
-        typer.init(JsonTypeInfo.Id.CLASS, null);
-        typer.inclusion(JsonTypeInfo.As.PROPERTY);
-        objectMapper.setDefaultTyping(typer);
+        mapTyper.init(JsonTypeInfo.Id.CLASS, null);
+        mapTyper.inclusion(JsonTypeInfo.As.PROPERTY);
+        mapObjectMapper.setDefaultTyping(mapTyper);
+    }
+
+    private void createObjectMapper(ObjectMapper objectMapper) {
+        objectMapper.setSerializationInclusion(Include.NON_NULL);
+        objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
+                                            .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                                            .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                                            .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                                            .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN, true);
+        objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
     }
 
     @Override
@@ -111,6 +121,34 @@ public class JsonJacksonCodec implements RedissonCodec {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Override
+    public byte[] encodeMapValue(Object value) {
+        try {
+            return mapObjectMapper.writeValueAsBytes(value);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public byte[] encodeMapKey(Object key) {
+        return encodeMapValue(key);
+    }
+
+    @Override
+    public Object decodeMapValue(ByteBuffer bytes) {
+        try {
+            return mapObjectMapper.readValue(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Object.class);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public Object decodeMapKey(ByteBuffer bytes) {
+        return decodeMapValue(bytes);
     }
 
 }

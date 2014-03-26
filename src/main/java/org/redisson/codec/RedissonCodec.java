@@ -32,4 +32,12 @@ public interface RedissonCodec {
 
     byte[] encodeValue(Object value);
 
+    byte[] encodeMapValue(Object value);
+
+    byte[] encodeMapKey(Object key);
+
+    Object decodeMapValue(ByteBuffer bytes);
+
+    Object decodeMapKey(ByteBuffer bytes);
+
 }

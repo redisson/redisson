@@ -2,10 +2,30 @@
 
 package com.lambdaworks.redis;
 
-import com.lambdaworks.codec.Base16;
-import com.lambdaworks.redis.codec.RedisCodec;
-import com.lambdaworks.redis.output.*;
-import com.lambdaworks.redis.protocol.*;
+import static com.lambdaworks.redis.protocol.CommandKeyword.AFTER;
+import static com.lambdaworks.redis.protocol.CommandKeyword.AND;
+import static com.lambdaworks.redis.protocol.CommandKeyword.BEFORE;
+import static com.lambdaworks.redis.protocol.CommandKeyword.ENCODING;
+import static com.lambdaworks.redis.protocol.CommandKeyword.FLUSH;
+import static com.lambdaworks.redis.protocol.CommandKeyword.GETNAME;
+import static com.lambdaworks.redis.protocol.CommandKeyword.IDLETIME;
+import static com.lambdaworks.redis.protocol.CommandKeyword.KILL;
+import static com.lambdaworks.redis.protocol.CommandKeyword.LEN;
+import static com.lambdaworks.redis.protocol.CommandKeyword.LIMIT;
+import static com.lambdaworks.redis.protocol.CommandKeyword.LIST;
+import static com.lambdaworks.redis.protocol.CommandKeyword.LOAD;
+import static com.lambdaworks.redis.protocol.CommandKeyword.NO;
+import static com.lambdaworks.redis.protocol.CommandKeyword.NOSAVE;
+import static com.lambdaworks.redis.protocol.CommandKeyword.NOT;
+import static com.lambdaworks.redis.protocol.CommandKeyword.ONE;
+import static com.lambdaworks.redis.protocol.CommandKeyword.OR;
+import static com.lambdaworks.redis.protocol.CommandKeyword.REFCOUNT;
+import static com.lambdaworks.redis.protocol.CommandKeyword.RESET;
+import static com.lambdaworks.redis.protocol.CommandKeyword.RESETSTAT;
+import static com.lambdaworks.redis.protocol.CommandKeyword.SETNAME;
+import static com.lambdaworks.redis.protocol.CommandKeyword.WITHSCORES;
+import static com.lambdaworks.redis.protocol.CommandKeyword.XOR;
+import static com.lambdaworks.redis.protocol.CommandType.*;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -13,11 +33,44 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import static com.lambdaworks.redis.protocol.CommandKeyword.*;
-import static com.lambdaworks.redis.protocol.CommandType.*;
+import com.lambdaworks.codec.Base16;
+import com.lambdaworks.redis.codec.RedisCodec;
+import com.lambdaworks.redis.output.BooleanListOutput;
+import com.lambdaworks.redis.output.BooleanOutput;
+import com.lambdaworks.redis.output.ByteArrayOutput;
+import com.lambdaworks.redis.output.DateOutput;
+import com.lambdaworks.redis.output.DoubleOutput;
+import com.lambdaworks.redis.output.IntegerOutput;
+import com.lambdaworks.redis.output.KeyListOutput;
+import com.lambdaworks.redis.output.KeyOutput;
+import com.lambdaworks.redis.output.KeyValueOutput;
+import com.lambdaworks.redis.output.MapKeyListOutput;
+import com.lambdaworks.redis.output.MapOutput;
+import com.lambdaworks.redis.output.MapValueListOutput;
+import com.lambdaworks.redis.output.MapValueOutput;
+import com.lambdaworks.redis.output.MultiOutput;
+import com.lambdaworks.redis.output.NestedMultiOutput;
+import com.lambdaworks.redis.output.ScoredValueListOutput;
+import com.lambdaworks.redis.output.StatusOutput;
+import com.lambdaworks.redis.output.StringListOutput;
+import com.lambdaworks.redis.output.ValueListOutput;
+import com.lambdaworks.redis.output.ValueOutput;
+import com.lambdaworks.redis.output.ValueSetOutput;
+import com.lambdaworks.redis.protocol.Command;
+import com.lambdaworks.redis.protocol.CommandArgs;
+import com.lambdaworks.redis.protocol.CommandOutput;
+import com.lambdaworks.redis.protocol.CommandType;
+import com.lambdaworks.redis.protocol.ConnectionWatchdog;
 
 /**
  * An asynchronous thread-safe connection to a redis server. Multiple threads may
@@ -281,18 +334,18 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Long> hdel(K key, K... fields) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKeys(fields);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapKeys(fields);
         return dispatch(HDEL, new IntegerOutput<K, V>(codec), args);
     }
 
     public Future<Boolean> hexists(K key, K field) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKey(field);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapKey(field);
         return dispatch(HEXISTS, new BooleanOutput<K, V>(codec), args);
     }
 
     public Future<V> hget(K key, K field) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKey(field);
-        return dispatch(HGET, new ValueOutput<K, V>(codec), args);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapKey(field);
+        return dispatch(HGET, new MapValueOutput<K, V>(codec), args);
     }
 
     public Future<Long> hincrby(K key, K field, long amount) {
@@ -309,8 +362,8 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(HGETALL, new MapOutput<K, V>(codec), key);
     }
 
-    public Future<List<K>> hkeys(K key) {
-        return dispatch(HKEYS, new KeyListOutput<K, V>(codec), key);
+    public Future<Set<K>> hkeys(K key) {
+        return dispatch(HKEYS, new MapKeyListOutput<K, V>(codec), key);
     }
 
     public Future<Long> hlen(K key) {
@@ -328,17 +381,17 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Boolean> hset(K key, K field, V value) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKey(field).addValue(value);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapKey(field).addMapValue(value);
         return dispatch(HSET, new BooleanOutput<K, V>(codec), args);
     }
 
     public Future<Boolean> hsetnx(K key, K field, V value) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKey(field).addValue(value);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapKey(field).addMapValue(value);
         return dispatch(HSETNX, new BooleanOutput<K, V>(codec), args);
     }
 
     public Future<List<V>> hvals(K key) {
-        return dispatch(HVALS, new ValueListOutput<K, V>(codec), key);
+        return dispatch(HVALS, new MapValueListOutput<K, V>(codec), key);
     }
 
     public Future<Long> incr(K key) {
@@ -374,7 +427,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
 
     public Future<V> lindex(K key, long index) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(index);
-        return dispatch(LINDEX, new ValueOutput<K, V>(codec), args);
+        return dispatch(LINDEX, new MapValueOutput<K, V>(codec), args);
     }
 
     public Future<Long> linsert(K key, boolean before, V pivot, V value) {
@@ -388,7 +441,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<V> lpop(K key) {
-        return dispatch(LPOP, new ValueOutput<K, V>(codec), key);
+        return dispatch(LPOP, new MapValueOutput<K, V>(codec), key);
     }
 
     public Future<Long> lpush(K key, V... values) {
@@ -405,7 +458,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Long> lrem(K key, long count, V value) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(count).addValue(value);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(count).addMapValue(value);
         return dispatch(LREM, new IntegerOutput<K, V>(codec), args);
     }
 
@@ -531,7 +584,8 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Long> rpush(K key, V... values) {
-        return dispatch(RPUSH, new IntegerOutput<K, V>(codec), key, values);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapValues(values);
+        return dispatch(RPUSH, new IntegerOutput<K, V>(codec), args);
     }
 
     public Future<Long> rpushx(K key, V value) {
@@ -539,7 +593,8 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Long> sadd(K key, V... members) {
-        return dispatch(SADD, new IntegerOutput<K, V>(codec), key, members);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapValues(members);
+        return dispatch(SADD, new IntegerOutput<K, V>(codec), args);
     }
 
     public Future<String> save() {
@@ -633,7 +688,8 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Boolean> sismember(K key, V member) {
-        return dispatch(SISMEMBER, new BooleanOutput<K, V>(codec), key, member);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapValue(member);
+        return dispatch(SISMEMBER, new BooleanOutput<K, V>(codec), args);
     }
 
     public Future<Boolean> smove(K source, K destination, V member) {
@@ -705,7 +761,8 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Long> srem(K key, V... members) {
-        return dispatch(SREM, new IntegerOutput<K, V>(codec), key, members);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapValues(members);
+        return dispatch(SREM, new IntegerOutput<K, V>(codec), args);
     }
 
     public Future<Set<V>> sunion(K... keys) {

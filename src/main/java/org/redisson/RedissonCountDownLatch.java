@@ -167,7 +167,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             connection.watch(getName());
             Long oldValue = (Long) connection.get(getName());
             if (oldValue != null) {
-                connection.discard();
+                connection.unwatch();
                 return false;
             }
             connection.multi();

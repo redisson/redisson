@@ -6,19 +6,19 @@ import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.protocol.CommandOutput;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * {@link Set} of value output.
+ * {@link List} of values output.
  *
  * @param <V> Value type.
  *
  * @author Will Glozer
  */
-public class ValueSetOutput<K, V> extends CommandOutput<K, V, Set<V>> {
-    public ValueSetOutput(RedisCodec<K, V> codec) {
-        super(codec, new HashSet<V>());
+public class MapValueListOutput<K, V> extends CommandOutput<K, V, List<V>> {
+    public MapValueListOutput(RedisCodec<K, V> codec) {
+        super(codec, new ArrayList<V>());
     }
 
     @Override

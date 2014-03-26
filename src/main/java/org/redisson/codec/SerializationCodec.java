@@ -66,4 +66,24 @@ public class SerializationCodec implements RedissonCodec {
         }
     }
 
+    @Override
+    public byte[] encodeMapValue(Object value) {
+        return encodeValue(value);
+    }
+
+    @Override
+    public byte[] encodeMapKey(Object key) {
+        return encodeKey(key);
+    }
+
+    @Override
+    public Object decodeMapValue(ByteBuffer bytes) {
+        return decodeValue(bytes);
+    }
+
+    @Override
+    public Object decodeMapKey(ByteBuffer bytes) {
+        return decodeKey(bytes);
+    }
+
 }

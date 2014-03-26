@@ -52,6 +52,26 @@ public class RedisCodecWrapper extends RedisCodec<Object, Object> {
         return redissonCodec.encodeValue(value);
     }
 
+    @Override
+    public byte[] encodeMapValue(Object value) {
+        return redissonCodec.encodeMapValue(value);
+    }
+
+    @Override
+    public byte[] encodeMapKey(Object key) {
+        return redissonCodec.encodeMapKey(key);
+    }
+
+    @Override
+    public Object decodeMapValue(ByteBuffer bytes) {
+        return redissonCodec.decodeMapValue(bytes);
+    }
+
+    @Override
+    public Object decodeMapKey(ByteBuffer bytes) {
+        return redissonCodec.decodeMapKey(bytes);
+    }
+
 
 
 }

@@ -27,11 +27,11 @@ public class MapOutput<K, V> extends CommandOutput<K, V, Map<K, V>> {
     @Override
     public void set(ByteBuffer bytes) {
         if (key == null) {
-            key = codec.decodeKey(bytes);
+            key = codec.decodeMapKey(bytes);
             return;
         }
 
-        V value = (bytes == null) ? null : codec.decodeValue(bytes);
+        V value = (bytes == null) ? null : codec.decodeMapValue(bytes);
         output.put(key, value);
         key = null;
     }

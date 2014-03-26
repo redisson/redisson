@@ -64,4 +64,24 @@ public class Utf8StringCodec extends RedisCodec<String, String> {
     private byte[] encode(String string) {
         return string.getBytes(charset);
     }
+
+    @Override
+    public byte[] encodeMapValue(String value) {
+        return encodeValue(value);
+    }
+
+    @Override
+    public byte[] encodeMapKey(String key) {
+        return encodeKey(key);
+    }
+
+    @Override
+    public String decodeMapValue(ByteBuffer bytes) {
+        return decodeValue(bytes);
+    }
+
+    @Override
+    public String decodeMapKey(ByteBuffer bytes) {
+        return decodeKey(bytes);
+    }
 }

@@ -52,4 +52,15 @@ public abstract class RedisCodec<K, V> {
      * @return The encoded value.
      */
     public abstract byte[] encodeValue(V value);
+
+
+    public abstract byte[] encodeMapValue(V value);
+
+    public abstract byte[] encodeMapKey(K key);
+
+    public abstract V decodeMapValue(ByteBuffer bytes);
+
+    public abstract K decodeMapKey(ByteBuffer bytes);
+
+
 }
