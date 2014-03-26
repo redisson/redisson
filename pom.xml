@@ -92,38 +92,38 @@
   <dependency>
   	<groupId>io.netty</groupId>
   	<artifactId>netty-buffer</artifactId>
-  	<version>4.0.14.Final</version>
+  	<version>4.0.17.Final</version>
   </dependency>
   <dependency>
   	<groupId>io.netty</groupId>
   	<artifactId>netty-common</artifactId>
-  	<version>4.0.14.Final</version>
+  	<version>4.0.17.Final</version>
   </dependency>
   <dependency>
   	<groupId>io.netty</groupId>
   	<artifactId>netty-transport</artifactId>
-  	<version>4.0.14.Final</version>
+  	<version>4.0.17.Final</version>
   </dependency>
   <dependency>
   	<groupId>io.netty</groupId>
   	<artifactId>netty-handler</artifactId>
-  	<version>4.0.14.Final</version>
+  	<version>4.0.17.Final</version>
   </dependency>
   <dependency>
   	<groupId>io.netty</groupId>
   	<artifactId>netty-codec-http</artifactId>
-  	<version>4.0.14.Final</version>
+  	<version>4.0.17.Final</version>
   </dependency>
   <dependency>
   	<groupId>io.netty</groupId>
   	<artifactId>netty-codec</artifactId>
-  	<version>4.0.14.Final</version>
+  	<version>4.0.17.Final</version>
   </dependency>
   
   <dependency>
       <groupId>com.googlecode.jmockit</groupId>
       <artifactId>jmockit</artifactId>
-      <version>1.5</version>
+      <version>1.7</version>
       <scope>test</scope>
   </dependency>
   <dependency>
@@ -142,18 +142,18 @@
   <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.5</version>
+      <version>1.7.6</version>
   </dependency>
 
   <dependency>
   	<groupId>com.fasterxml.jackson.core</groupId>
   	<artifactId>jackson-core</artifactId>
-  	<version>2.3.1</version>
+  	<version>2.3.2</version>
   </dependency>
   <dependency>
   	<groupId>com.fasterxml.jackson.core</groupId>
   	<artifactId>jackson-databind</artifactId>
-  	<version>2.3.1</version>
+  	<version>2.3.2</version>
   </dependency>
  </dependencies>
 
