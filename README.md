@@ -29,6 +29,10 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####26-Mar-2014 - version 1.0.3 released
+Fixed - RedissonAtomicLong state format  
+Fixed - Long serialization in JsonJacksonCodec  
+
 ####05-Feb-2014 - version 1.0.2 released
 Feature - distributed implementation of `java.util.SortedSet`  
 Fixed - OSGi compability  
