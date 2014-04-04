@@ -293,7 +293,7 @@ public class Redisson {
     }
 
     public void flushdb() {
-        RedisConnection<Object, Object> connection = connectionManager.connection();
+        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
             connection.flushdb();
         } finally {

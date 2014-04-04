@@ -111,7 +111,11 @@ public class ConnectionManager {
         this.config = config;
     }
 
-    public <K, V> RedisConnection<K, V> connection() {
+    public <K, V> RedisConnection<K, V> connectionWriteOp() {
+        return connectionReadOp();
+    }
+
+    public <K, V> RedisConnection<K, V> connectionReadOp() {
         acquireConnection();
 
         RedisConnection<K, V> conn = connections.poll();

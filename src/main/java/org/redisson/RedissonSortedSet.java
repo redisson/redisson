@@ -123,7 +123,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
         loadComparator();
 
-        RedisConnection<Object, Object> conn = connectionManager.connection();
+        RedisConnection<Object, Object> conn = connectionManager.connectionWriteOp();
         try {
             conn.setnx(getCurrentVersionKey(), 0L);
         } finally {
@@ -132,7 +132,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private void loadComparator() {
-        RedisConnection<Object, String> connection = connectionManager.connection();
+        RedisConnection<Object, String> connection = connectionManager.connectionReadOp();
         try {
             loadComparator(connection);
         } catch (Exception e) {
@@ -185,7 +185,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public int size() {
-        RedisConnection<Object, V> connection = connectionManager.connection();
+        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
             return size(connection);
         } finally {
@@ -204,7 +204,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean contains(Object o) {
-        RedisConnection<Object, V> connection = connectionManager.connection();
+        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
             return binarySearch((V)o, connection).getIndex() >= 0;
         } finally {
@@ -214,7 +214,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     public Iterator<V> iterator() {
         double startScore;
-        RedisConnection<Object, V> connection = connectionManager.connection();
+        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
             startScore = getScoreAtIndex(0, connection);
         } finally {
@@ -233,7 +233,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
             @Override
             public boolean hasNext() {
-                RedisConnection<Object, V> connection = connectionManager.connection();
+                RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
                 try {
                     Long remains = connection.zcount(getName(), currentScore, endScore);
                     return remains > 0;
@@ -249,7 +249,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 }
                 removeExecuted = false;
 
-                RedisConnection<Object, V> connection = connectionManager.connection();
+                RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
                 try {
                     double lastScore = getScoreAtIndex(-1, connection);
                     double scoreDiff = lastScore - currentScore;
@@ -296,7 +296,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public Object[] toArray() {
-        RedisConnection<Object, Object> connection = connectionManager.connection();
+        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
         try {
             return connection.zrange(getName(), 0, -1).toArray();
         } finally {
@@ -306,7 +306,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public <T> T[] toArray(T[] a) {
-        RedisConnection<Object, Object> connection = connectionManager.connection();
+        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
         try {
             return connection.zrange(getName(), 0, -1).toArray(a);
         } finally {
@@ -324,83 +324,87 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean add(V value) {
-        RedisConnection<Object, V> connection = connectionManager.connection();
-        RedisConnection<Object, Object> simpleConnection = (RedisConnection<Object, Object>)connection;
+        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
         try {
-            while (true) {
-                connection.watch(getComparatorKeyName());
+            return add(value, connection);
+        } finally {
+            connectionManager.release(connection);
+        }
+    }
 
-                checkComparator(connection);
+    boolean add(V value, RedisConnection<Object, V> connection) {
+        RedisConnection<Object, Object> simpleConnection = (RedisConnection<Object, Object>)connection;
+        while (true) {
+            connection.watch(getComparatorKeyName());
 
-                Long version = getCurrentVersion(simpleConnection);
-                BinarySearchResult<V> res = binarySearch(value, connection);
-                if (res.getIndex() < 0) {
+            checkComparator(connection);
+
+            Long version = getCurrentVersion(simpleConnection);
+            BinarySearchResult<V> res = binarySearch(value, connection);
+            if (res.getIndex() < 0) {
+                if (!version.equals(getCurrentVersion(simpleConnection))) {
+                    connection.unwatch();
+                    continue;
+                }
+                NewScore newScore = calcNewScore(res.getIndex(), connection);
+                if (!version.equals(getCurrentVersion(simpleConnection))) {
+                    connection.unwatch();
+                    continue;
+                }
+
+                String leftScoreKey = getScoreKeyName(newScore.getLeftScore());
+                String rightScoreKey = getScoreKeyName(newScore.getRightScore());
+
+                if (simpleConnection.setnx(leftScoreKey, 1)) {
                     if (!version.equals(getCurrentVersion(simpleConnection))) {
                         connection.unwatch();
+
+                        connection.del(leftScoreKey);
                         continue;
                     }
-                    NewScore newScore = calcNewScore(res.getIndex(), connection);
-                    if (!version.equals(getCurrentVersion(simpleConnection))) {
-                        connection.unwatch();
-                        continue;
-                    }
+                    if (rightScoreKey != null) {
 
-                    String leftScoreKey = getScoreKeyName(newScore.getLeftScore());
-                    String rightScoreKey = getScoreKeyName(newScore.getRightScore());
-
-                    if (simpleConnection.setnx(leftScoreKey, 1)) {
-                        if (!version.equals(getCurrentVersion(simpleConnection))) {
+                        if (!simpleConnection.setnx(rightScoreKey, 1)) {
                             connection.unwatch();
 
                             connection.del(leftScoreKey);
                             continue;
                         }
-                        if (rightScoreKey != null) {
-
-                            if (!simpleConnection.setnx(rightScoreKey, 1)) {
-                                connection.unwatch();
-
-                                connection.del(leftScoreKey);
-                                continue;
-                            }
-                        }
-                    } else {
-                        connection.unwatch();
-                        continue;
-                    }
-
-                    connection.multi();
-                    connection.zadd(getName(), newScore.getScore(), value);
-                    if (rightScoreKey != null) {
-                        connection.del(leftScoreKey, rightScoreKey);
-                    } else {
-                        connection.del(leftScoreKey);
-                    }
-                    connection.incr(getCurrentVersionKey());
-                    List<Object> re = connection.exec();
-                    if (re.size() == 3) {
-                        Number val = (Number) re.get(0);
-                        Long delCount = (Long) re.get(1);
-                        if (rightScoreKey != null) {
-                            if (delCount != 2) {
-                                throw new IllegalStateException();
-                            }
-                        } else {
-                            if (delCount != 1) {
-                                throw new IllegalStateException();
-                            }
-                        }
-                        return val != null && val.intValue() > 0;
-                    } else {
-                        checkComparator(connection);
                     }
                 } else {
                     connection.unwatch();
-                    return false;
+                    continue;
                 }
+
+                connection.multi();
+                connection.zadd(getName(), newScore.getScore(), value);
+                if (rightScoreKey != null) {
+                    connection.del(leftScoreKey, rightScoreKey);
+                } else {
+                    connection.del(leftScoreKey);
+                }
+                connection.incr(getCurrentVersionKey());
+                List<Object> re = connection.exec();
+                if (re.size() == 3) {
+                    Number val = (Number) re.get(0);
+                    Long delCount = (Long) re.get(1);
+                    if (rightScoreKey != null) {
+                        if (delCount != 2) {
+                            throw new IllegalStateException();
+                        }
+                    } else {
+                        if (delCount != 1) {
+                            throw new IllegalStateException();
+                        }
+                    }
+                    return val != null && val.intValue() > 0;
+                } else {
+                    checkComparator(connection);
+                }
+            } else {
+                connection.unwatch();
+                return false;
             }
-        } finally {
-            connectionManager.release(connection);
         }
     }
 
@@ -459,23 +463,27 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean remove(Object value) {
-        RedisConnection<Object, V> connection = connectionManager.connection();
+        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
         try {
-            BinarySearchResult<V> res = binarySearch((V) value, connection);
-            if (res.getIndex() < 0) {
-                return false;
-            }
-            connection.multi();
-            connection.zremrangebyscore(getName(), res.getScore(), res.getScore());
-            connection.incr(getCurrentVersionKey());
-            List<Object> result = connection.exec();
-            if (result.size() == 2) {
-                return ((Number)result.get(0)).longValue() > 0;
-            } else {
-                return false;
-            }
+            return remove(value, connection);
         } finally {
             connectionManager.release(connection);
+        }
+    }
+
+    boolean remove(Object value, RedisConnection<Object, V> connection) {
+        BinarySearchResult<V> res = binarySearch((V) value, connection);
+        if (res.getIndex() < 0) {
+            return false;
+        }
+        connection.multi();
+        connection.zremrangebyscore(getName(), res.getScore(), res.getScore());
+        connection.incr(getCurrentVersionKey());
+        List<Object> result = connection.exec();
+        if (result.size() == 2) {
+            return ((Number)result.get(0)).longValue() > 0;
+        } else {
+            return false;
         }
     }
 
@@ -525,7 +533,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public void clear() {
-        RedisConnection<Object, Object> connection = connectionManager.connection();
+        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
             connection.del(getName());
         } finally {
@@ -555,7 +563,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public V first() {
-        RedisConnection<Object, V> connection = connectionManager.connection();
+        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
             BinarySearchResult<V> res = getAtIndex(0, connection);
             if (res.getScore() == null) {
@@ -569,7 +577,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public V last() {
-        RedisConnection<Object, V> connection = connectionManager.connection();
+        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
             BinarySearchResult<V> res = getAtIndex(-1, connection);
             if (res.getScore() == null) {
@@ -594,7 +602,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean trySetComparator(Comparator<? super V> comparator) {
-        RedisConnection<Object, String> connection = connectionManager.connection();
+        RedisConnection<Object, String> connection = connectionManager.connectionWriteOp();
         try {
             connection.watch(getName(), getComparatorKeyName());
             if (size(connection) > 0) {
