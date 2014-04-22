@@ -32,7 +32,6 @@ import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
-import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 
 /**
  *
@@ -42,55 +41,10 @@ import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 //TODO ping support
 public class ConnectionManager {
 
-    public static class PubSubEntry {
-
-        private final Semaphore semaphore;
-        private final RedisPubSubConnection conn;
-        private final int subscriptionsPerConnection;
-
-        public PubSubEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
-            super();
-            this.conn = conn;
-            this.subscriptionsPerConnection = subscriptionsPerConnection;
-            this.semaphore = new Semaphore(subscriptionsPerConnection);
-        }
-
-        public void addListener(RedisPubSubListener listener) {
-            conn.addListener(listener);
-        }
-
-        public void removeListener(RedisPubSubListener listener) {
-            conn.removeListener(listener);
-        }
-
-        public boolean subscribe(RedisPubSubAdapter listener, Object channel) {
-            if (semaphore.tryAcquire()) {
-                conn.addListener(listener);
-                conn.subscribe(channel);
-                return true;
-            }
-            return false;
-        }
-
-        public void unsubscribe(Object channel) {
-            conn.unsubscribe(channel);
-            semaphore.release();
-        }
-
-        public boolean tryClose() {
-            if (semaphore.tryAcquire(subscriptionsPerConnection)) {
-                conn.close();
-                return true;
-            }
-            return false;
-        }
-
-    }
-
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
-    private final Queue<PubSubEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubEntry>();
+    private final Queue<PubSubConnectionEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
     private final List<RedisClient> clients = new ArrayList<RedisClient>();
 
     private final Semaphore activeConnections;
@@ -128,8 +82,8 @@ public class ConnectionManager {
         return conn;
     }
 
-    public <K, V> PubSubEntry subscribe(RedisPubSubAdapter<K, V> listener, K channel) {
-        for (PubSubEntry entry : pubSubConnections) {
+    public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, K channel) {
+        for (PubSubConnectionEntry entry : pubSubConnections) {
             if (entry.subscribe(listener, channel)) {
                 return entry;
             }
@@ -141,7 +95,7 @@ public class ConnectionManager {
         if (config.getPassword() != null) {
             conn.auth(config.getPassword());
         }
-        PubSubEntry entry = new PubSubEntry(conn, config.getSubscriptionsPerConnection());
+        PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
         entry.subscribe(listener, channel);
         pubSubConnections.add(entry);
         return entry;
@@ -157,7 +111,7 @@ public class ConnectionManager {
         }
     }
 
-    public <K> void unsubscribe(PubSubEntry entry, K channel) {
+    public <K> void unsubscribe(PubSubConnectionEntry entry, K channel) {
         entry.unsubscribe(channel);
         if (entry.tryClose()) {
             pubSubConnections.remove(entry);

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.ConnectionManager.PubSubEntry;
+import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.RLock;
 
 import com.lambdaworks.redis.RedisConnection;
@@ -113,7 +113,7 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     private final Semaphore msg = new Semaphore(1);
 
-    private PubSubEntry pubSubEntry;
+    private PubSubConnectionEntry pubSubEntry;
 
     RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
         super(name);

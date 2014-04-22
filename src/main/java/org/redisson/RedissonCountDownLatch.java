@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.ConnectionManager.PubSubEntry;
+import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.misc.ReclosableLatch;
 
@@ -50,7 +50,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     private final ReclosableLatch msg = new ReclosableLatch();
 
     private final ConnectionManager connectionManager;
-    private PubSubEntry pubSubEntry;
+    private PubSubConnectionEntry pubSubEntry;
 
     RedissonCountDownLatch(ConnectionManager connectionManager, String name) {
         super(name);
@@ -95,7 +95,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     public void await() throws InterruptedException {
         while (getCount() > 0) {
-            // waiting for message
+            // waiting for open state
             msg.await();
         }
     }
@@ -109,7 +109,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 return false;
             }
             long current = System.currentTimeMillis();
-            // waiting for message
+            // waiting for open state
             msg.await(time, TimeUnit.MILLISECONDS);
             long elapsed = System.currentTimeMillis() - current;
             time = time - elapsed;

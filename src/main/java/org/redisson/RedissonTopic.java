@@ -21,7 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.ConnectionManager.PubSubEntry;
+import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
 
@@ -44,7 +44,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
                                 new ConcurrentHashMap<Integer, RedisPubSubTopicListenerWrapper<String, M>>();
     private final ConnectionManager connectionManager;
 
-    private PubSubEntry pubSubEntry;
+    private PubSubConnectionEntry pubSubEntry;
 
     RedissonTopic(ConnectionManager connectionManager, String name) {
         super(name);
