@@ -35,19 +35,12 @@ import com.lambdaworks.redis.RedisConnection;
  *
  * @param <V> value
  */
-public class RedissonList<V> extends RedissonObject implements RList<V> {
+public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     private int batchSize = 50;
 
-    private final ConnectionManager connectionManager;
-
     RedissonList(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
-    }
-
-    protected ConnectionManager getConnectionManager() {
-        return connectionManager;
+        super(connectionManager, name);
     }
 
     @Override

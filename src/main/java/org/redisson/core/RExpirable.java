@@ -15,15 +15,19 @@
  */
 package org.redisson.core;
 
-import java.util.Set;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
-/**
- * Distributed and concurrent implementation of {@link java.util.Set}
- *
- * @author Nikita Koksharov
- *
- * @param <V> value
- */
-public interface RSet<V> extends Set<V>, RExpirable {
+public interface RExpirable extends RObject {
+
+    boolean expire(long timeToLive, TimeUnit timeUnit);
+
+    boolean expireAt(long timestamp);
+
+    boolean expireAt(Date timestamp);
+
+    boolean clearExpire();
+
+    long remainTimeToLive();
 
 }

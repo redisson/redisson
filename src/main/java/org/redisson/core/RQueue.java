@@ -24,6 +24,6 @@ import java.util.Queue;
  *
  * @param <V> value
  */
-public interface RQueue<V> extends Queue<V>, RObject {
+public interface RQueue<V> extends Queue<V>, RExpirable {
 
 }

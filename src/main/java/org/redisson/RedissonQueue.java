@@ -41,7 +41,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     public V getFirst() {
-        RedisConnection<String, Object> connection = getConnectionManager().connectionReadOp();
+        RedisConnection<String, Object> connection = connectionManager.connectionReadOp();
         try {
             V value = (V) connection.lindex(getName(), 0);
             if (value == null) {
@@ -49,12 +49,12 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
             }
             return value;
         } finally {
-            getConnectionManager().release(connection);
+            connectionManager.release(connection);
         }
     }
 
     public V removeFirst() {
-        RedisConnection<String, Object> connection = getConnectionManager().connectionWriteOp();
+        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
         try {
             V value = (V) connection.lpop(getName());
             if (value == null) {
@@ -62,7 +62,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
             }
             return value;
         } finally {
-            getConnectionManager().release(connection);
+            connectionManager.release(connection);
         }
     }
 
@@ -73,11 +73,11 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V poll() {
-        RedisConnection<String, Object> connection = getConnectionManager().connectionWriteOp();
+        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
         try {
             return (V) connection.lpop(getName());
         } finally {
-            getConnectionManager().release(connection);
+            connectionManager.release(connection);
         }
     }
 

@@ -26,6 +26,6 @@ import java.util.concurrent.ConcurrentMap;
  * @param <K> key
  * @param <V> value
  */
-public interface RMap<K, V> extends ConcurrentMap<K, V>, RObject {
+public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
 }

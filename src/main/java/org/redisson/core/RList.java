@@ -24,6 +24,6 @@ import java.util.List;
  *
  * @param <V> value
  */
-public interface RList<V> extends List<V>, RObject {
+public interface RList<V> extends List<V>, RExpirable {
 
 }

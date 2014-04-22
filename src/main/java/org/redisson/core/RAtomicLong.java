@@ -21,7 +21,7 @@ package org.redisson.core;
  * @author Nikita Koksharov
  *
  */
-public interface RAtomicLong extends RObject {
+public interface RAtomicLong extends RExpirable {
 
     /**
      * Atomically decrements by one the current value.

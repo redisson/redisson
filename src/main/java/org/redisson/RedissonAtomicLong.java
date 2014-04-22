@@ -28,14 +28,12 @@ import com.lambdaworks.redis.RedisConnection;
  * @author Nikita Koksharov
  *
  */
-public class RedissonAtomicLong extends RedissonObject implements RAtomicLong {
+public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong {
 
-    private final ConnectionManager connectionManager;
     private final AtomicBoolean initOnce = new AtomicBoolean();
 
     RedissonAtomicLong(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
     }
 
     public void init() {

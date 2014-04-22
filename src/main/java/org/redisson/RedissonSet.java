@@ -31,13 +31,10 @@ import com.lambdaworks.redis.RedisConnection;
  *
  * @param <V> value
  */
-public class RedissonSet<V> extends RedissonObject implements RSet<V> {
-
-    private final ConnectionManager connectionManager;
+public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     RedissonSet(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
     }
 
     @Override

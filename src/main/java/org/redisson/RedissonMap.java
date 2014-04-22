@@ -35,13 +35,10 @@ import com.lambdaworks.redis.RedisConnection;
  * @param <V> value
  */
 //TODO implement watching by keys instead of map name
-public class RedissonMap<K, V> extends RedissonObject implements RMap<K, V> {
-
-    private final ConnectionManager connectionManager;
+public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     RedissonMap(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
     }
 
     @Override
