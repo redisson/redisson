@@ -41,7 +41,7 @@ public class Config {
     /**
      * Redis key/value codec
      */
-    private RedissonCodec codec = new JsonJacksonCodec();
+    private RedissonCodec codec = null;
 
     /**
      * Subscriptions per Redis connection limit
@@ -82,6 +82,11 @@ public class Config {
         this.codec = codec;
     }
     public RedissonCodec getCodec() {
+
+        if(codec == null) {
+            return new JsonJacksonCodec();
+        }
+
         return codec;
     }
 
