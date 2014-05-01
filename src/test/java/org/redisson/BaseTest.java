@@ -9,11 +9,7 @@ import org.junit.Before;
 
 public abstract class BaseTest {
 
-    private Redisson redisson;
-
-    public Redisson currentRedisson() {
-        return redisson;
-    }
+    protected Redisson redisson;
 
     @Before
     public void before() {

@@ -10,16 +10,16 @@ public class RedissonAtomicLongTest extends BaseTest {
 
     @Test
     public void test() {
-        RAtomicLong al = currentRedisson().getAtomicLong("test");
+        RAtomicLong al = redisson.getAtomicLong("test");
         Assert.assertEquals(0, al.get());
         Assert.assertEquals(0, al.getAndIncrement());
         Assert.assertEquals(1, al.get());
 
-        long state = currentRedisson().getAtomicLong("test").get();
+        long state = redisson.getAtomicLong("test").get();
         Assert.assertEquals(1, state);
         al.set(Long.MAX_VALUE - 1000);
 
-        long newState = currentRedisson().getAtomicLong("test").get();
+        long newState = redisson.getAtomicLong("test").get();
         Assert.assertEquals(Long.MAX_VALUE - 1000, newState);
     }
 

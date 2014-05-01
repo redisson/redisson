@@ -16,7 +16,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testTrySetComparator() {
-        RSortedSet<Integer> set = currentRedisson().getSortedSet("set");
+        RSortedSet<Integer> set = redisson.getSortedSet("set");
 
         boolean setRes = set.trySetComparator(Collections.reverseOrder());
         Assert.assertTrue(setRes);
@@ -58,7 +58,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testTailSet() {
-        RSortedSet<Integer> set = currentRedisson().getSortedSet("set");
+        RSortedSet<Integer> set = redisson.getSortedSet("set");
 
         set.add(1);
         set.add(2);
@@ -85,7 +85,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testHeadSet() {
-        RSortedSet<Integer> set = currentRedisson().getSortedSet("set");
+        RSortedSet<Integer> set = redisson.getSortedSet("set");
 
         set.add(1);
         set.add(2);
@@ -163,7 +163,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testSort() {
-        RSortedSet<Integer> set = currentRedisson().getSortedSet("set");
+        RSortedSet<Integer> set = redisson.getSortedSet("set");
         Assert.assertTrue(set.add(2));
         Assert.assertTrue(set.add(3));
         Assert.assertTrue(set.add(1));
@@ -180,7 +180,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RSortedSet<Integer> set = currentRedisson().getSortedSet("set");
+        RSortedSet<Integer> set = redisson.getSortedSet("set");
         set.add(5);
         set.add(3);
         set.add(1);
@@ -195,7 +195,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testRetainAll() {
-        Set<Integer> set = currentRedisson().getSortedSet("set");
+        Set<Integer> set = redisson.getSortedSet("set");
         for (int i = 0; i < 200; i++) {
             set.add(i);
         }
@@ -206,7 +206,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testContainsAll() {
-        Set<Integer> set = currentRedisson().getSortedSet("set");
+        Set<Integer> set = redisson.getSortedSet("set");
         for (int i = 0; i < 200; i++) {
             set.add(i);
         }
@@ -217,7 +217,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testToArray() {
-        Set<String> set = currentRedisson().getSortedSet("set");
+        Set<String> set = redisson.getSortedSet("set");
         set.add("1");
         set.add("4");
         set.add("2");
@@ -232,7 +232,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testContains() {
-        Set<TestObject> set = currentRedisson().getSortedSet("set");
+        Set<TestObject> set = redisson.getSortedSet("set");
 
         set.add(new TestObject("1", "2"));
         set.add(new TestObject("1", "2"));
@@ -247,7 +247,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testDuplicates() {
-        Set<TestObject> set = currentRedisson().getSortedSet("set");
+        Set<TestObject> set = redisson.getSortedSet("set");
 
         Assert.assertTrue(set.add(new TestObject("1", "2")));
         Assert.assertFalse(set.add(new TestObject("1", "2")));
@@ -260,7 +260,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testSize() {
-        Set<Integer> set = currentRedisson().getSortedSet("set");
+        Set<Integer> set = redisson.getSortedSet("set");
         set.add(1);
         set.add(2);
         set.add(3);
