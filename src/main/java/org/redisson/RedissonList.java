@@ -87,9 +87,13 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean remove(Object o) {
+        return remove(o, 1);
+    }
+
+    protected boolean remove(Object o, int count) {
         RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
         try {
-            return connection.lrem(getName(), 1, o) > 0;
+            return connection.lrem(getName(), count, o) > 0;
         } finally {
             connectionManager.release(connection);
         }

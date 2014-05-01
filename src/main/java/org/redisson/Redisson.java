@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RCountDownLatch;
+import org.redisson.core.RDeque;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
@@ -43,7 +44,7 @@ import com.lambdaworks.redis.RedisConnection;
  */
 public class Redisson {
 
-    RemoveValueListener listener = new RemoveValueListener() {
+    private final RemoveValueListener listener = new RemoveValueListener() {
 
         @Override
         public void onRemove(Object value) {
@@ -60,6 +61,7 @@ public class Redisson {
 
     private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ReferenceMap<String, RedissonAtomicLong>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonQueue> queuesMap = new ReferenceMap<String, RedissonQueue>(ReferenceType.STRONG, ReferenceType.SOFT);
+    private final ConcurrentMap<String, RedissonDeque> dequeMap = new ReferenceMap<String, RedissonDeque>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonSet> setsMap = new ReferenceMap<String, RedissonSet>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonSortedSet> sortedSetMap = new ReferenceMap<String, RedissonSortedSet>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonList> listsMap = new ReferenceMap<String, RedissonList>(ReferenceType.STRONG, ReferenceType.SOFT);
@@ -225,6 +227,25 @@ public class Redisson {
         if (queue == null) {
             queue = new RedissonQueue<V>(connectionManager, name);
             RedissonQueue<V> oldQueue = queuesMap.putIfAbsent(name, queue);
+            if (oldQueue != null) {
+                queue = oldQueue;
+            }
+        }
+
+        return queue;
+    }
+
+    /**
+     * Returns distributed deque instance by name.
+     *
+     * @param name of the distributed queue
+     * @return distributed queue
+     */
+    public <V> RDeque<V> getDeque(String name) {
+        RedissonDeque<V> queue = dequeMap.get(name);
+        if (queue == null) {
+            queue = new RedissonDeque<V>(connectionManager, name);
+            RedissonDeque<V> oldQueue = dequeMap.putIfAbsent(name, queue);
             if (oldQueue != null) {
                 queue = oldQueue;
             }
