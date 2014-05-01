@@ -39,9 +39,9 @@ public class Config {
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
 
     /**
-     * Redis key/value codec
+     * Redis key/value codec. JsonJacksonCodec used by default
      */
-    private RedissonCodec codec = new JsonJacksonCodec();
+    private RedissonCodec codec;
 
     /**
      * Subscriptions per Redis connection limit
@@ -64,6 +64,11 @@ public class Config {
     }
 
     Config(Config oldConf) {
+        if (oldConf.getCodec() == null) {
+            // use it by default
+            oldConf.setCodec(new JsonJacksonCodec());
+        }
+
         setCodec(oldConf.getCodec());
         setConnectionPoolSize(oldConf.getConnectionPoolSize());
         setPassword(oldConf.getPassword());
