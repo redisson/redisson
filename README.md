@@ -30,6 +30,11 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####04-May-2014 - version 1.0.4 released
+Feature - distributed implementation of `java.util.Deque`  
+Feature - some objects implements `org.redisson.core.RExpirable`  
+Fixed - JsonJacksonCodec lazy init  
+
 ####26-Mar-2014 - version 1.0.3 released
 Fixed - RedissonAtomicLong state format  
 Fixed - Long serialization in JsonJacksonCodec  
