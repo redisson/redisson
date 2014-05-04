@@ -14,6 +14,7 @@ Features
 * Distributed implementation of `java.util.Set`  
 * Distributed implementation of `java.util.SortedSet`  
 * Distributed implementation of `java.util.Queue`  
+* Distributed implementation of `java.util.Deque`  
 * Distributed implementation of `java.util.Map`  
 * Distributed implementation of `java.util.concurrent.ConcurrentMap`  
 * Distributed implementation of reentrant `java.util.concurrent.locks.Lock`  
