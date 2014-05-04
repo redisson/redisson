@@ -18,10 +18,11 @@ package org.redisson.core;
 import java.util.Deque;
 
 /**
+ * {@link java.util.Deque} backed by Redis
  *
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> the type of elements held in this collection
  */
 public interface RDeque<V> extends Deque<V>, RExpirable {
 

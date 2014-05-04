@@ -18,6 +18,12 @@ package org.redisson.core;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Interface with expiration support for Redisson objects.
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface RExpirable extends RObject {
 
     boolean expire(long timeToLive, TimeUnit timeUnit);
@@ -26,8 +32,19 @@ public interface RExpirable extends RObject {
 
     boolean expireAt(Date timestamp);
 
+    /**
+     * Remove the existing timeout of Redisson object
+     *
+     * @return <code>true</code> if timeout was removed
+     *         <code>false</code> if object does not exist or does not have an associated timeout
+     */
     boolean clearExpire();
 
+    /**
+     * Remaining time in seconds to live of Redisson object that has a timeout
+     *
+     * @return time in seconds
+     */
     long remainTimeToLive();
 
 }

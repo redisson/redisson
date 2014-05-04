@@ -23,11 +23,11 @@ import org.redisson.core.RQueue;
 import com.lambdaworks.redis.RedisConnection;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.List}
+ * Distributed and concurrent implementation of {@link java.util.Queue}
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> the type of elements held in this collection
  */
 public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 

@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
 import org.redisson.connection.ConnectionManager;
@@ -26,11 +25,11 @@ import org.redisson.core.RDeque;
 import com.lambdaworks.redis.RedisConnection;
 
 /**
- *
+ * Distributed and concurrent implementation of {@link java.util.Queue}
  *
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> the type of elements held in this collection
  */
 public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 

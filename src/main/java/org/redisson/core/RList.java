@@ -22,7 +22,7 @@ import java.util.List;
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> the type of elements held in this collection
  */
 public interface RList<V> extends List<V>, RExpirable {
 

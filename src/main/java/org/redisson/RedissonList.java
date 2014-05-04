@@ -33,7 +33,7 @@ import com.lambdaworks.redis.RedisConnection;
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> the type of elements held in this collection
  */
 public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
