@@ -270,7 +270,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
 
     public <T> Future<T> eval(V script, ScriptOutputType type, K[] keys, V... values) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
-        args.addValue(script).add(keys.length).addKeys(keys).addValues(values);
+        args.add(script.toString()).add(keys.length).addKeys(keys).addValues(values);
         CommandOutput<K, V, T> output = newScriptOutput(codec, type);
         return dispatch(EVAL, output, args);
     }
