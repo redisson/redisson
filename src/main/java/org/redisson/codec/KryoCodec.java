@@ -25,7 +25,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-public class RedissonKryoCodec implements RedissonCodec {
+public class KryoCodec implements RedissonCodec {
 
     public interface KryoPool {
 
@@ -76,11 +76,11 @@ public class RedissonKryoCodec implements RedissonCodec {
 
     private final KryoPool kryoPool;
 
-    public RedissonKryoCodec() {
+    public KryoCodec() {
         this(new KryoPoolImpl());
     }
 
-    public RedissonKryoCodec(KryoPool kryoPool) {
+    public KryoCodec(KryoPool kryoPool) {
         this.kryoPool = kryoPool;
     }
 
