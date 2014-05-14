@@ -6,11 +6,14 @@ import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.protocol.Command;
 import com.lambdaworks.redis.protocol.CommandArgs;
+
 import io.netty.channel.ChannelHandlerContext;
 
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.*;
+
+import org.redisson.RedisPubSubTopicListenerWrapper;
 
 import static com.lambdaworks.redis.protocol.CommandType.*;
 
@@ -29,7 +32,7 @@ import static com.lambdaworks.redis.protocol.CommandType.*;
  * @author Will Glozer
  */
 public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
-    private List<RedisPubSubListener<K, V>> listeners;
+    private final Queue<RedisPubSubListener<K, V>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<K, V>>();
     private Set<K> channels;
     private Set<K> patterns;
 
@@ -43,7 +46,6 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
      */
     public RedisPubSubConnection(BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit) {
         super(queue, codec, timeout, unit);
-        listeners = new CopyOnWriteArrayList<RedisPubSubListener<K, V>>();
         channels  = new HashSet<K>();
         patterns  = new HashSet<K>();
     }

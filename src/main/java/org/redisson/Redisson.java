@@ -211,7 +211,6 @@ public class Redisson {
             }
         }
 
-        topic.subscribe();
         return topic;
 
     }

@@ -15,6 +15,9 @@
  */
 package org.redisson.connection;
 
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +46,7 @@ public class ConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    private final EventLoopGroup group = new NioEventLoopGroup();
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final Queue<PubSubConnectionEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
     private final List<RedisClient> clients = new ArrayList<RedisClient>();
@@ -54,7 +58,7 @@ public class ConnectionManager {
 
     public ConnectionManager(Config config) {
         for (URI address : config.getAddresses()) {
-            RedisClient client = new RedisClient(address.getHost(), address.getPort());
+            RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
             clients.add(client);
         }
         balancer = config.getLoadBalancer();
@@ -128,6 +132,10 @@ public class ConnectionManager {
         for (RedisClient client : clients) {
             client.shutdown();
         }
+    }
+
+    public EventLoopGroup getGroup() {
+        return group;
     }
 
 }

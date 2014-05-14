@@ -12,7 +12,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.concurrent.GlobalEventExecutor;
@@ -38,7 +37,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
  * @author Will Glozer
  */
 public class RedisClient {
-    private EventLoopGroup group;
+
     private Bootstrap bootstrap;
     private HashedWheelTimer timer;
     private ChannelGroup channels;
@@ -50,8 +49,8 @@ public class RedisClient {
      *
      * @param host    Server hostname.
      */
-    public RedisClient(String host) {
-        this(host, 6379);
+    public RedisClient(EventLoopGroup group, String host) {
+        this(group, host, 6379);
     }
 
     /**
@@ -62,16 +61,15 @@ public class RedisClient {
      * @param host    Server hostname.
      * @param port    Server port.
      */
-    public RedisClient(String host, int port) {
+    public RedisClient(EventLoopGroup group, String host, int port) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
 
-        group = new NioEventLoopGroup();
         bootstrap = new Bootstrap().channel(NioSocketChannel.class).group(group).remoteAddress(addr);
 
         setDefaultTimeout(60, TimeUnit.SECONDS);
 
         channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-        timer    = new HashedWheelTimer();
+        timer = new HashedWheelTimer();
         timer.start();
     }
 
@@ -201,7 +199,7 @@ public class RedisClient {
         }
         ChannelGroupFuture future = channels.close();
         future.awaitUninterruptibly();
-        group.shutdownGracefully().syncUninterruptibly();
+        bootstrap.group().shutdownGracefully().syncUninterruptibly();
         timer.stop();
     }
 }

@@ -15,10 +15,12 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.PubSubConnectionEntry;
@@ -37,8 +39,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
  */
 public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
-    private final CountDownLatch subscribeLatch = new CountDownLatch(1);
-    private final AtomicBoolean subscribeOnce = new AtomicBoolean();
+    private final AtomicReference<Promise<Boolean>> promise = new AtomicReference<Promise<Boolean>>();
 
     private final Map<Integer, RedisPubSubTopicListenerWrapper<String, M>> listeners =
                                 new ConcurrentHashMap<Integer, RedisPubSubTopicListenerWrapper<String, M>>();
@@ -51,26 +52,22 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
         this.connectionManager = connectionManager;
     }
 
-    public void subscribe() {
-        if (subscribeOnce.compareAndSet(false, true)) {
-            RedisPubSubAdapter<String, M> listener = new RedisPubSubAdapter<String, M>() {
+    private void lazySubscribe() {
+        if (promise.get() != null) {
+            return;
+        }
 
+        if (promise.compareAndSet(null, connectionManager.getGroup().next().<Boolean>newPromise())) {
+            RedisPubSubAdapter<String, M> listener = new RedisPubSubAdapter<String, M>() {
                 @Override
                 public void subscribed(String channel, long count) {
                     if (channel.equals(getName())) {
-                        subscribeLatch.countDown();
+                        promise.get().setSuccess(true);
                     }
                 }
-
             };
 
             pubSubEntry = connectionManager.subscribe(listener, getName());
-        }
-
-        try {
-            subscribeLatch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 
@@ -86,21 +83,41 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     @Override
     public int addListener(MessageListener<M> listener) {
-        RedisPubSubTopicListenerWrapper<String, M> pubSubListener = new RedisPubSubTopicListenerWrapper<String, M>(listener, getName());
+        lazySubscribe();
+        final RedisPubSubTopicListenerWrapper<String, M> pubSubListener = new RedisPubSubTopicListenerWrapper<String, M>(listener, getName());
         listeners.put(pubSubListener.hashCode(), pubSubListener);
-        pubSubEntry.addListener(pubSubListener);
+        promise.get().addListener(new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<Boolean> future) throws Exception {
+                pubSubEntry.addListener(pubSubListener);
+            }
+        });
         return pubSubListener.hashCode();
     }
 
     @Override
     public void removeListener(int listenerId) {
-        RedisPubSubTopicListenerWrapper<String, M> pubSubListener = listeners.remove(listenerId);
-        pubSubEntry.removeListener(pubSubListener);
+        final RedisPubSubTopicListenerWrapper<String, M> pubSubListener = listeners.remove(listenerId);
+        promise.get().addListener(new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<Boolean> future) throws Exception {
+                pubSubEntry.removeListener(pubSubListener);
+            }
+        });
+        // TODO lazyUnsubscribe();
     }
 
     @Override
     public void close() {
-        connectionManager.unsubscribe(pubSubEntry, getName());
+        if (promise.get() == null) {
+            return;
+        }
+        promise.get().addListener(new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<Boolean> future) throws Exception {
+                connectionManager.unsubscribe(pubSubEntry, getName());
+            }
+        });
     }
 
 }
