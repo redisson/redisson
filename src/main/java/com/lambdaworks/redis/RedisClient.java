@@ -13,7 +13,6 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.HashedWheelTimer;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 import java.net.InetSocketAddress;
@@ -39,7 +38,6 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class RedisClient {
 
     private Bootstrap bootstrap;
-    private HashedWheelTimer timer;
     private ChannelGroup channels;
     private long timeout;
     private TimeUnit unit;
@@ -69,8 +67,6 @@ public class RedisClient {
         setDefaultTimeout(60, TimeUnit.SECONDS);
 
         channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-        timer = new HashedWheelTimer();
-        timer.start();
     }
 
     /**
@@ -165,7 +161,7 @@ public class RedisClient {
 
     private <K, V, T extends RedisAsyncConnection<K, V>> T connect(final CommandHandler<K, V> handler, final T connection) {
         try {
-            final ConnectionWatchdog watchdog = new ConnectionWatchdog(bootstrap, channels, timer);
+            final ConnectionWatchdog watchdog = new ConnectionWatchdog(bootstrap, channels);
 
             ChannelFuture connect = null;
             // TODO use better concurrent workaround
@@ -200,7 +196,6 @@ public class RedisClient {
         ChannelGroupFuture future = channels.close();
         future.awaitUninterruptibly();
         bootstrap.group().shutdownGracefully().syncUninterruptibly();
-        timer.stop();
     }
 }
 
