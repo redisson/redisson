@@ -10,6 +10,7 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
@@ -21,25 +22,22 @@ import java.util.concurrent.TimeUnit;
  * @author Will Glozer
  */
 @ChannelHandler.Sharable
-public class ConnectionWatchdog extends ChannelInboundHandlerAdapter implements TimerTask {
+public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
     private Bootstrap bootstrap;
     private Channel channel;
     private ChannelGroup channels;
-    private Timer timer;
     private boolean reconnect;
-    private int attempts;
+    private static final int BACKOFF_CAP = 12;
 
     /**
      * Create a new watchdog that adds to new connections to the supplied {@link ChannelGroup}
      * and establishes a new {@link Channel} when disconnected, while reconnect is true.
      *
      * @param bootstrap Configuration for new channels.
-     * @param timer     Timer used for delayed reconnect.
      */
-    public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels, Timer timer) {
+    public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels) {
         this.bootstrap = bootstrap;
         this.channels  = channels;
-        this.timer     = timer;
     }
 
     public void setReconnect(boolean reconnect) {
@@ -50,23 +48,19 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter implements 
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         channel = ctx.channel();
         channels.add(channel);
-        attempts = 0;
         ctx.fireChannelActive();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         if (reconnect) {
-            if (attempts < 8) attempts++;
-            int timeout = 2 << attempts;
-            timer.newTimeout(this, timeout, TimeUnit.MILLISECONDS);
+            ChannelPipeline pipeLine = channel.pipeline();
+            CommandHandler<?, ?> handler = pipeLine.get(CommandHandler.class);
+            RedisAsyncConnection<?, ?> connection = pipeLine.get(RedisAsyncConnection.class);
+            EventLoop loop = ctx.channel().eventLoop();
+            reconnect(loop, handler, connection);
         }
         ctx.fireChannelInactive();
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        ctx.channel().close();
     }
 
     /**
@@ -74,26 +68,52 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter implements 
      * This creates a new {@link ChannelPipeline} with the same handler instances
      * contained in the old channel's pipeline.
      *
-     * @param timeout Timer task handle.
+     * @param loop EventLoop
+     * @param handler Redis Command handle.
+     * @param connection RedisAsyncConnection
      *
      * @throws Exception when reconnection fails.
      */
-    @Override
-    public void run(Timeout timeout) throws Exception {
-        ChannelPipeline old = channel.pipeline();
-        final CommandHandler<?, ?> handler = old.get(CommandHandler.class);
-        final RedisAsyncConnection<?, ?> connection = old.get(RedisAsyncConnection.class);
-
-        ChannelFuture connect = null;
-        // TODO use better concurrent workaround
-        synchronized (bootstrap) {
-            connect = bootstrap.handler(new ChannelInitializer<Channel>() {
-                @Override
-                protected void initChannel(Channel ch) throws Exception {
-                    ch.pipeline().addLast(this, handler, connection);
-                }
-            }).connect();
-        }
-        connect.sync();
+    private void reconnect(final EventLoop loop, final CommandHandler<?, ?> handler, final RedisAsyncConnection<?, ?> connection){
+        loop.schedule(new Runnable() {
+            @Override
+            public void run() {
+                doReConnect(loop, handler, connection, 1);
+            }
+        }, 2, TimeUnit.MILLISECONDS);
     }
+
+    private void doReConnect(final EventLoop loop, final CommandHandler<?, ?> handler, final RedisAsyncConnection<?, ?> connection, final int attempts) {
+        if (reconnect) {
+            ChannelFuture connect;
+            synchronized (bootstrap) {
+                connect = bootstrap.handler(new ChannelInitializer<Channel>() {
+                    @Override
+                    protected void initChannel(Channel ch) throws Exception {
+                        ch.pipeline().addLast(ConnectionWatchdog.this, handler, connection);
+                    }
+                }).connect();
+            }
+            connect.addListener(new GenericFutureListener<ChannelFuture>() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        int timeout = 2 << attempts;
+                        loop.schedule(new Runnable() {
+                            @Override
+                            public void run() {
+                                doReConnect(loop, handler, connection, Math.min(BACKOFF_CAP, attempts + 1));
+                            }
+                        }, timeout, TimeUnit.MILLISECONDS);
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        ctx.channel().close();
+    }
+
 }

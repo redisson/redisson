@@ -61,8 +61,10 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
             RedisPubSubAdapter<String, M> listener = new RedisPubSubAdapter<String, M>() {
                 @Override
                 public void subscribed(String channel, long count) {
-                    if (channel.equals(getName())) {
-                        promise.get().setSuccess(true);
+                    Promise<Boolean> subscribePromise = promise.get();
+                    //in case of reconnecting, promise might already be completed.
+                    if (channel.equals(getName()) && !subscribePromise.isDone()) {
+                        subscribePromise.setSuccess(true);
                     }
                 }
             };
