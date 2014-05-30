@@ -20,7 +20,7 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.connection.ConnectionManager;
@@ -77,10 +77,20 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     }
 
     @Override
-    public void publish(M message) {
+    public long publish(M message) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
         try {
-            conn.publish(getName(), message);
+            return conn.publish(getName(), message);
+        } finally {
+            connectionManager.release(conn);
+        }
+    }
+
+    @Override
+    public Future<Long> publishAsync(M message) {
+        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
+        try {
+            return conn.getAsync().publish(getName(), message);
         } finally {
             connectionManager.release(conn);
         }

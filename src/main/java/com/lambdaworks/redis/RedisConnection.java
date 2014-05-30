@@ -796,6 +796,10 @@ public class RedisConnection<K, V> {
         return await(c.zunionstore(destination, storeArgs, keys));
     }
 
+    public RedisAsyncConnection<K, V> getAsync() {
+        return c;
+    }
+
     /**
      * Close the connection.
      */

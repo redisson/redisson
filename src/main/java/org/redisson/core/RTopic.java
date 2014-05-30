@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import java.util.concurrent.Future;
+
 
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
@@ -26,11 +28,20 @@ package org.redisson.core;
 public interface RTopic<M> extends RObject {
 
     /**
+     * Publish the message to all subscribers of this topic asynchronously
+     *
+     * @param message
+     * @return the <code>Future</code> object with number of clients that received the message
+     */
+    Future<Long> publishAsync(M message);
+
+    /**
      * Publish the message to all subscribers of this topic
      *
      * @param message
+     * @return the number of clients that received the message
      */
-    void publish(M message);
+    long publish(M message);
 
     /**
      * Subscribes to this topic.
