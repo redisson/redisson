@@ -59,6 +59,10 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
         listeners.add(listener);
     }
 
+    public Queue<RedisPubSubListener<K, V>> getListeners() {
+        return listeners;
+    }
+
     /**
      * Remove an existing listener.
      *

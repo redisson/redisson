@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
@@ -36,6 +37,10 @@ public class PubSubConnectionEntry {
 
     public void addListener(RedisPubSubListener listener) {
         conn.addListener(listener);
+    }
+
+    public Queue<RedisPubSubListener> getListeners() {
+        return conn.getListeners();
     }
 
     public void removeListener(RedisPubSubListener listener) {

@@ -20,6 +20,7 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.connection.ConnectionManager;
@@ -29,6 +30,7 @@ import org.redisson.core.RTopic;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
+import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -57,18 +59,21 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
             return;
         }
 
-        if (promise.compareAndSet(null, connectionManager.getGroup().next().<Boolean>newPromise())) {
-            RedisPubSubAdapter<String, M> listener = new RedisPubSubAdapter<String, M>() {
-                @Override
-                public void subscribed(String channel, long count) {
-                    if (channel.equals(getName())) {
-                        promise.get().setSuccess(true);
-                    }
-                }
-            };
-
-            pubSubEntry = connectionManager.subscribe(listener, getName());
+        final Promise<Boolean> newPromise = connectionManager.getGroup().next().<Boolean>newPromise();
+        if (!promise.compareAndSet(null, newPromise)) {
+            return;
         }
+
+        RedisPubSubAdapter<String, M> listener = new RedisPubSubAdapter<String, M>() {
+            @Override
+            public void subscribed(String channel, long count) {
+                if (channel.equals(getName())) {
+                    newPromise.setSuccess(true);
+                }
+            }
+        };
+
+        pubSubEntry = connectionManager.subscribe(listener, getName());
     }
 
     @Override
@@ -82,10 +87,15 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     }
 
     @Override
-    public int addListener(MessageListener<M> listener) {
-        lazySubscribe();
+    public int addListener(final MessageListener<M> listener) {
         final RedisPubSubTopicListenerWrapper<String, M> pubSubListener = new RedisPubSubTopicListenerWrapper<String, M>(listener, getName());
         listeners.put(pubSubListener.hashCode(), pubSubListener);
+
+        return addListener(pubSubListener);
+    }
+
+    private int addListener(final RedisPubSubListener<String, M> pubSubListener) {
+        lazySubscribe();
         promise.get().addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<Boolean> future) throws Exception {
@@ -104,18 +114,25 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
                 pubSubEntry.removeListener(pubSubListener);
             }
         });
-        // TODO lazyUnsubscribe();
+        lazyUnsubscribe();
     }
 
-    @Override
-    public void close() {
-        if (promise.get() == null) {
+    private void lazyUnsubscribe() {
+        Promise<Boolean> oldPromise = promise.get();
+        final PubSubConnectionEntry oldPubSubEntry = pubSubEntry;
+        if (oldPromise == null || !promise.compareAndSet(oldPromise, null)) {
             return;
         }
-        promise.get().addListener(new FutureListener<Boolean>() {
+
+        oldPromise.addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<Boolean> future) throws Exception {
-                connectionManager.unsubscribe(pubSubEntry, getName());
+                connectionManager.unsubscribe(oldPubSubEntry, getName());
+
+                // reattach eventually added listeners
+                for (RedisPubSubListener listener : oldPubSubEntry.getListeners()) {
+                    addListener(listener);
+                }
             }
         });
     }
