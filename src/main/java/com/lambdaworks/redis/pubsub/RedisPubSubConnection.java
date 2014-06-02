@@ -8,6 +8,7 @@ import com.lambdaworks.redis.protocol.Command;
 import com.lambdaworks.redis.protocol.CommandArgs;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoopGroup;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -43,9 +44,10 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
      * @param codec     Codec used to encode/decode keys and values.
      * @param timeout   Maximum time to wait for a responses.
      * @param unit      Unit of time for the timeout.
+     * @param eventLoopGroup
      */
-    public RedisPubSubConnection(BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit) {
-        super(queue, codec, timeout, unit);
+    public RedisPubSubConnection(BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit, EventLoopGroup eventLoopGroup) {
+        super(queue, codec, timeout, unit, eventLoopGroup);
         channels  = new HashSet<K>();
         patterns  = new HashSet<K>();
     }

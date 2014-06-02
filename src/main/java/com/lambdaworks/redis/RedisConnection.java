@@ -5,8 +5,9 @@ package com.lambdaworks.redis;
 import com.lambdaworks.redis.protocol.Command;
 import com.lambdaworks.redis.protocol.ConnectionWatchdog;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.*;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static com.lambdaworks.redis.protocol.CommandType.MULTI;
@@ -208,6 +209,18 @@ public class RedisConnection<K, V> {
     @SuppressWarnings("unchecked")
     public <T> T evalsha(String digest, ScriptOutputType type, K[] keys, V... values) {
         return (T) await(c.evalsha(digest, type, keys, values));
+    }
+
+    public Long pfadd(K key, V... values) {
+        return await(c.pfadd(key, values));
+    }
+
+    public Long pfcount(K key, K... keys) {
+        return await(c.pfcount(key, keys));
+    }
+
+    public Long pfmerge(K destkey, K... sourceKeys) {
+        return await(c.pfmerge(destkey, sourceKeys));
     }
 
     public Boolean exists(K key) {
@@ -818,16 +831,11 @@ public class RedisConnection<K, V> {
         return c.digest(script);
     }
 
-    @SuppressWarnings("unchecked")
     private <T> T await(Future<T> future, long timeout, TimeUnit unit) {
-        Command<K, V, T> cmd = (Command<K, V, T>) future;
-        return c.await(cmd, timeout, unit);
+        return c.await(future, timeout, unit);
     }
 
-    @SuppressWarnings("unchecked")
     private <T> T await(Future<T> future) {
-        Command<K, V, T> cmd = (Command<K, V, T>) future;
-        if (c.multi != null && cmd.type != MULTI) return null;
-        return c.await(cmd, timeout, unit);
+        return c.await(future, timeout, unit);
     }
 }

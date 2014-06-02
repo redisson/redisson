@@ -30,6 +30,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -39,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -94,6 +96,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     private String password;
     private int db;
     private boolean closed;
+    private EventLoopGroup eventLoopGroup;
 
     /**
      * Initialize a new connection.
@@ -102,12 +105,14 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
      * @param codec   Codec used to encode/decode keys and values.
      * @param timeout Maximum time to wait for a response.
      * @param unit    Unit of time for the timeout.
+     * @param eventLoopGroup
      */
-    public RedisAsyncConnection(BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit) {
+    public RedisAsyncConnection(BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit, EventLoopGroup eventLoopGroup) {
         this.queue = queue;
         this.codec = codec;
         this.timeout = timeout;
         this.unit = unit;
+        this.eventLoopGroup = eventLoopGroup;
     }
 
     /**
@@ -127,7 +132,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
 
     public String auth(String password) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add(password);
-        Command<K, V, String> cmd = dispatch(AUTH, new StatusOutput<K, V>(codec), args);
+        Future<String> cmd = dispatch(AUTH, new StatusOutput<K, V>(codec), args);
         String status = await(cmd, timeout, unit);
         if ("OK".equals(status)) this.password = password;
         return status;
@@ -489,7 +494,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<String> multi() {
-        Command<K, V, String> cmd = dispatch(MULTI, new StatusOutput<K, V>(codec));
+        Future<String> cmd = dispatch(MULTI, new StatusOutput<K, V>(codec));
         multi = (multi == null ? new MultiOutput<K, V>(codec) : multi);
         return cmd;
     }
@@ -638,7 +643,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
 
     public String select(int db) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add(db);
-        Command<K, V, String> cmd = dispatch(SELECT, new StatusOutput<K, V>(codec), args);
+        Future<String> cmd = dispatch(SELECT, new StatusOutput<K, V>(codec), args);
         String status = await(cmd, timeout, unit);
         if ("OK".equals(status)) this.db = db;
         return status;
@@ -984,6 +989,21 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(ZUNIONSTORE, new IntegerOutput<K, V>(codec), args);
     }
 
+    public Future<Long> pfadd(K key, V... values) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addValues(values);
+        return dispatch(PFADD, new IntegerOutput<K, V>(codec), args);
+    }
+
+    public Future<Long> pfcount(K key, K... keys) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKeys(keys);
+        return dispatch(PFCOUNT, new IntegerOutput<K, V>(codec), args);
+    }
+
+    public Future<Long> pfmerge(K destkey, K... sourceKeys) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKeys(destkey).addKeys(sourceKeys);
+        return dispatch(PFADD, new IntegerOutput<K, V>(codec), args);
+    }
+
     /**
      * Wait until commands are complete or the connection timeout is reached.
      *
@@ -1059,19 +1079,19 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
 
         if (password != null) {
             CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add(password);
-            tmp.add(new Command<K, V, String>(AUTH, new StatusOutput<K, V>(codec), args, false));
+            tmp.add(new Command<K, V, String>(AUTH, new StatusOutput<K, V>(codec), args, false, ctx.executor().<String>newPromise()));
         }
 
         if (db != 0) {
             CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add(db);
-            tmp.add(new Command<K, V, String>(SELECT, new StatusOutput<K, V>(codec), args, false));
+            tmp.add(new Command<K, V, String>(SELECT, new StatusOutput<K, V>(codec), args, false, ctx.executor().<String>newPromise()));
         }
 
         tmp.addAll(queue);
         queue.clear();
 
         for (Command<K, V, ?> cmd : tmp) {
-            if (!cmd.isCancelled()) {
+            if (!cmd.getProimse().isCancelled()) {
                 queue.add(cmd);
                 channel.writeAndFlush(cmd);
             }
@@ -1095,27 +1115,28 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public <T> Command<K, V, T> dispatch(CommandType type, CommandOutput<K, V, T> output) {
+    public <T> Future<T> dispatch(CommandType type, CommandOutput<K, V, T> output) {
         return dispatch(type, output, (CommandArgs<K, V>) null);
     }
 
-    public <T> Command<K, V, T> dispatch(CommandType type, CommandOutput<K, V, T> output, K key) {
+    public <T> Future<T> dispatch(CommandType type, CommandOutput<K, V, T> output, K key) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key);
         return dispatch(type, output, args);
     }
 
-    public <T> Command<K, V, T> dispatch(CommandType type, CommandOutput<K, V, T> output, K key, V value) {
+    public <T> Future<T> dispatch(CommandType type, CommandOutput<K, V, T> output, K key, V value) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addValue(value);
         return dispatch(type, output, args);
     }
 
-    public <T> Command<K, V, T> dispatch(CommandType type, CommandOutput<K, V, T> output, K key, V[] values) {
+    public <T> Future<T> dispatch(CommandType type, CommandOutput<K, V, T> output, K key, V[] values) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addValues(values);
         return dispatch(type, output, args);
     }
 
-    public synchronized <T> Command<K, V, T> dispatch(CommandType type, CommandOutput<K, V, T> output, CommandArgs<K, V> args) {
-        Command<K, V, T> cmd = new Command<K, V, T>(type, output, args, multi != null);
+    public synchronized <T> Future<T> dispatch(CommandType type, CommandOutput<K, V, T> output, CommandArgs<K, V> args) {
+        Promise<T> promise = eventLoopGroup.next().<T>newPromise();
+        Command<K, V, T> cmd = new Command<K, V, T>(type, output, args, multi != null, promise);
 
         try {
             if (multi != null) {
@@ -1133,17 +1154,21 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
             throw new RedisCommandInterruptedException(e);
         }
 
-        return cmd;
+        if (multi != null && type != MULTI) {
+            return eventLoopGroup.next().newSucceededFuture(null);
+        }
+        return cmd.getProimse();
     }
 
-    public <T> T await(Command<K, V, T> cmd, long timeout, TimeUnit unit) {
-        if (!cmd.await(timeout, unit)) {
+    public <T> T await(Future<T> cmd, long timeout, TimeUnit unit) {
+        if (!cmd.awaitUninterruptibly(timeout, unit)) {
             cmd.cancel(true);
             throw new RedisException("Command timed out");
         }
-        CommandOutput<K, V, T> output = cmd.getOutput();
-        if (output.hasError()) throw new RedisException(output.getError());
-        return output.get();
+        if (!cmd.isSuccess()) {
+            throw (RedisException) cmd.cause();
+        }
+        return cmd.getNow();
     }
 
     @SuppressWarnings("unchecked")

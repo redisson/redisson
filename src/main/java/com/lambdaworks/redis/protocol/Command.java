@@ -2,10 +2,10 @@
 
 package com.lambdaworks.redis.protocol;
 
-import com.lambdaworks.redis.RedisCommandInterruptedException;
-import io.netty.buffer.ByteBuf;
+import com.lambdaworks.redis.RedisException;
 
-import java.util.concurrent.*;
+import io.netty.buffer.ByteBuf;
+import io.netty.util.concurrent.Promise;
 
 /**
  * A redis command and its result. All successfully executed commands will
@@ -15,13 +15,14 @@ import java.util.concurrent.*;
  *
  * @author Will Glozer
  */
-public class Command<K, V, T> implements Future<T> {
+public class Command<K, V, T> /*implements Future<T>*/ {
     private static final byte[] CRLF = "\r\n".getBytes(Charsets.ASCII);
 
+    private final Promise<T> proimse;
     public final CommandType type;
     protected CommandArgs<K, V> args;
-    protected CommandOutput<K, V, T> output;
-    protected CountDownLatch latch;
+    protected final CommandOutput<K, V, T> output;
+    protected int completeAmount;
 
     /**
      * Create a new command with the supplied type and args.
@@ -31,106 +32,16 @@ public class Command<K, V, T> implements Future<T> {
      * @param args      Command args, if any.
      * @param multi     Flag indicating if MULTI active.
      */
-    public Command(CommandType type, CommandOutput<K, V, T> output, CommandArgs<K, V> args, boolean multi) {
+    public Command(CommandType type, CommandOutput<K, V, T> output, CommandArgs<K, V> args, boolean multi, Promise<T> proimse) {
         this.type   = type;
         this.output = output;
         this.args   = args;
-        this.latch  = new CountDownLatch(multi ? 2 : 1);
+        this.completeAmount = multi ? 2 : 1;
+        this.proimse = proimse;
     }
 
-    /**
-     * Cancel the command and notify any waiting consumers. This does
-     * not cause the redis server to stop executing the command.
-     *
-     * @param ignored Ignored parameter.
-     *
-     * @return true if the command was cancelled.
-     */
-    @Override
-    public boolean cancel(boolean ignored) {
-        boolean cancelled = false;
-        if (latch.getCount() == 1) {
-            latch.countDown();
-            output = null;
-            cancelled = true;
-        }
-        return cancelled;
-    }
-
-    /**
-     * Check if the command has been cancelled.
-     *
-     * @return True if the command was cancelled.
-     */
-    @Override
-    public boolean isCancelled() {
-        return latch.getCount() == 0 && output == null;
-    }
-
-    /**
-     * Check if the command has completed.
-     *
-     * @return true if the command has completed.
-     */
-    @Override
-    public boolean isDone() {
-        return latch.getCount() == 0;
-    }
-
-    /**
-     * Get the command output and if the command hasn't completed
-     * yet, wait until it does.
-     *
-     * @return The command output.
-     */
-    @Override
-    public T get() {
-        try {
-            latch.await();
-            return output.get();
-        } catch (InterruptedException e) {
-            throw new RedisCommandInterruptedException(e);
-        }
-    }
-
-    /**
-     * Get the command output and if the command hasn't completed yet,
-     * wait up to the specified time until it does.
-     *
-     * @param timeout   Maximum time to wait for a result.
-     * @param unit      Unit of time for the timeout.
-     *
-     * @return The command output.
-     *
-     * @throws TimeoutException if the wait timed out.
-     */
-    @Override
-    public T get(long timeout, TimeUnit unit) throws TimeoutException {
-        try {
-            if (!latch.await(timeout, unit)) {
-                throw new TimeoutException("Command timed out");
-            }
-        } catch (InterruptedException e) {
-            throw new RedisCommandInterruptedException(e);
-        }
-        return output.get();
-    }
-
-    /**
-     * Wait up to the specified time for the command output to become
-     * available.
-     *
-     * @param timeout   Maximum time to wait for a result.
-     * @param unit      Unit of time for the timeout.
-     *
-     * @return true if the output became available.
-     */
-    public boolean await(long timeout, TimeUnit unit) {
-        try {
-            return latch.await(timeout, unit);
-        } catch (InterruptedException e) {
-            throw new RedisCommandInterruptedException(e);
-        }
+    public Promise<T> getProimse() {
+        return proimse;
     }
 
     /**
@@ -146,7 +57,17 @@ public class Command<K, V, T> implements Future<T> {
      * Mark this command complete and notify all waiting threads.
      */
     public void complete() {
-        latch.countDown();
+        completeAmount--;
+        if (completeAmount == 0) {
+            Object res = output.get();
+            if (res instanceof RedisException) {
+                proimse.setFailure((Exception)res);
+            } if (output.hasError()) {
+                proimse.setFailure(new RedisException(output.getError()));
+            } else {
+                proimse.setSuccess((T)res);
+            }
+        }
     }
 
     /**

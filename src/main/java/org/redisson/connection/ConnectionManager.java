@@ -17,6 +17,7 @@ package org.redisson.connection;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.FutureListener;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -67,6 +68,15 @@ public class ConnectionManager {
         codec = new RedisCodecWrapper(config.getCodec());
         activeConnections = new Semaphore(config.getConnectionPoolSize());
         this.config = config;
+    }
+
+    public <T> FutureListener<T> createListener(final RedisConnection conn) {
+        return new FutureListener<T>() {
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                release(conn);
+            }
+        };
     }
 
     public <K, V> RedisConnection<K, V> connectionWriteOp() {
