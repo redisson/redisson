@@ -22,6 +22,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
+import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
@@ -65,6 +66,7 @@ public class Redisson {
     private final ConcurrentMap<String, RedissonSet> setsMap = new ReferenceMap<String, RedissonSet>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonSortedSet> sortedSetMap = new ReferenceMap<String, RedissonSortedSet>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonList> listsMap = new ReferenceMap<String, RedissonList>(ReferenceType.STRONG, ReferenceType.SOFT);
+    private final ConcurrentMap<String, RedissonHyperLogLog> hyperLogLogMap = new ReferenceMap<String, RedissonHyperLogLog>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonMap> mapsMap = new ReferenceMap<String, RedissonMap>(ReferenceType.STRONG, ReferenceType.SOFT);
 
     private final ConnectionManager connectionManager;
@@ -97,6 +99,19 @@ public class Redisson {
      */
     public static Redisson create(Config config) {
         return new Redisson(config);
+    }
+
+    public <V> RHyperLogLog<V> getHyperLogLog(String name) {
+        RedissonHyperLogLog<V> logLog = hyperLogLogMap.get(name);
+        if (logLog == null) {
+            logLog = new RedissonHyperLogLog<V>(connectionManager, name);
+            RedissonHyperLogLog<V> oldLogLog = hyperLogLogMap.putIfAbsent(name, logLog);
+            if (oldLogLog != null) {
+                logLog = oldLogLog;
+            }
+        }
+
+        return logLog;
     }
 
     /**
