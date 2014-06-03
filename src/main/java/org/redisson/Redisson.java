@@ -136,7 +136,6 @@ public class Redisson {
             }
         }
 
-        lock.subscribe();
         return lock;
     }
 
