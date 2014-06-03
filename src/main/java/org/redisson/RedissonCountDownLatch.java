@@ -106,7 +106,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean await(long time, TimeUnit unit) throws InterruptedException {
-        subscribe().await(time, unit);
+        if (!subscribe().await(time, unit)) {
+            return false;
+        }
 
         time = unit.toMillis(time);
         while (getCount() > 0) {
