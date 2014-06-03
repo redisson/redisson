@@ -58,18 +58,7 @@ public class Redisson {
     };
 
     private final ConcurrentMap<String, RedissonCountDownLatch> latchesMap = new ReferenceMap<String, RedissonCountDownLatch>(ReferenceType.STRONG, ReferenceType.WEAK, listener);
-    private final ConcurrentMap<String, RedissonTopic> topicsMap = new ReferenceMap<String, RedissonTopic>(ReferenceType.STRONG, ReferenceType.WEAK);
     private final ConcurrentMap<String, RedissonLock> locksMap = new ReferenceMap<String, RedissonLock>(ReferenceType.STRONG, ReferenceType.WEAK, listener);
-
-    private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ReferenceMap<String, RedissonAtomicLong>(ReferenceType.STRONG, ReferenceType.WEAK);
-    private final ConcurrentMap<String, RedissonQueue> queuesMap = new ReferenceMap<String, RedissonQueue>(ReferenceType.STRONG, ReferenceType.WEAK);
-    private final ConcurrentMap<String, RedissonDeque> dequeMap = new ReferenceMap<String, RedissonDeque>(ReferenceType.STRONG, ReferenceType.WEAK);
-    private final ConcurrentMap<String, RedissonSet> setsMap = new ReferenceMap<String, RedissonSet>(ReferenceType.STRONG, ReferenceType.WEAK);
-    private final ConcurrentMap<String, RedissonSortedSet> sortedSetMap = new ReferenceMap<String, RedissonSortedSet>(ReferenceType.STRONG, ReferenceType.WEAK);
-    private final ConcurrentMap<String, RedissonList> listsMap = new ReferenceMap<String, RedissonList>(ReferenceType.STRONG, ReferenceType.WEAK);
-    private final ConcurrentMap<String, RedissonHyperLogLog> hyperLogLogMap = new ReferenceMap<String, RedissonHyperLogLog>(ReferenceType.STRONG, ReferenceType.WEAK);
-    private final ConcurrentMap<String, RedissonBucket> bucketMap = new ReferenceMap<String, RedissonBucket>(ReferenceType.STRONG, ReferenceType.WEAK);
-    private final ConcurrentMap<String, RedissonMap> mapsMap = new ReferenceMap<String, RedissonMap>(ReferenceType.STRONG, ReferenceType.WEAK);
 
     private final ConnectionManager connectionManager;
     private final Config config;
@@ -104,29 +93,11 @@ public class Redisson {
     }
 
     public <V> RBucket<V> getBucket(String name) {
-        RedissonBucket<V> bucket = bucketMap.get(name);
-        if (bucket == null) {
-            bucket = new RedissonBucket<V>(connectionManager, name);
-            RedissonBucket<V> oldBucket = bucketMap.putIfAbsent(name, bucket);
-            if (oldBucket != null) {
-                bucket = oldBucket;
-            }
-        }
-
-        return bucket;
+        return new RedissonBucket<V>(connectionManager, name);
     }
 
     public <V> RHyperLogLog<V> getHyperLogLog(String name) {
-        RedissonHyperLogLog<V> logLog = hyperLogLogMap.get(name);
-        if (logLog == null) {
-            logLog = new RedissonHyperLogLog<V>(connectionManager, name);
-            RedissonHyperLogLog<V> oldLogLog = hyperLogLogMap.putIfAbsent(name, logLog);
-            if (oldLogLog != null) {
-                logLog = oldLogLog;
-            }
-        }
-
-        return logLog;
+        return new RedissonHyperLogLog<V>(connectionManager, name);
     }
 
     /**
@@ -136,16 +107,7 @@ public class Redisson {
      * @return distributed list
      */
     public <V> RList<V> getList(String name) {
-        RedissonList<V> list = listsMap.get(name);
-        if (list == null) {
-            list = new RedissonList<V>(connectionManager, name);
-            RedissonList<V> oldList = listsMap.putIfAbsent(name, list);
-            if (oldList != null) {
-                list = oldList;
-            }
-        }
-
-        return list;
+        return new RedissonList<V>(connectionManager, name);
     }
 
     /**
@@ -155,16 +117,7 @@ public class Redisson {
      * @return distributed map
      */
     public <K, V> RMap<K, V> getMap(String name) {
-        RedissonMap<K, V> map = mapsMap.get(name);
-        if (map == null) {
-            map = new RedissonMap<K, V>(connectionManager, name);
-            RedissonMap<K, V> oldMap = mapsMap.putIfAbsent(name, map);
-            if (oldMap != null) {
-                map = oldMap;
-            }
-        }
-
-        return map;
+        return new RedissonMap<K, V>(connectionManager, name);
     }
 
     /**
@@ -194,16 +147,7 @@ public class Redisson {
      * @return distributed set
      */
     public <V> RSet<V> getSet(String name) {
-        RedissonSet<V> set = setsMap.get(name);
-        if (set == null) {
-            set = new RedissonSet<V>(connectionManager, name);
-            RedissonSet<V> oldSet = setsMap.putIfAbsent(name, set);
-            if (oldSet != null) {
-                set = oldSet;
-            }
-        }
-
-        return set;
+        return new RedissonSet<V>(connectionManager, name);
     }
 
     /**
@@ -213,16 +157,7 @@ public class Redisson {
      * @return distributed set
      */
     public <V> RSortedSet<V> getSortedSet(String name) {
-        RedissonSortedSet<V> set = sortedSetMap.get(name);
-        if (set == null) {
-            set = new RedissonSortedSet<V>(connectionManager, name);
-            RedissonSortedSet<V> oldSet = sortedSetMap.putIfAbsent(name, set);
-            if (oldSet != null) {
-                set = oldSet;
-            }
-        }
-
-        return set;
+        return new RedissonSortedSet<V>(connectionManager, name);
     }
 
     /**
@@ -232,17 +167,7 @@ public class Redisson {
      * @return distributed topic
      */
     public <M> RTopic<M> getTopic(String name) {
-        RedissonTopic<M> topic = topicsMap.get(name);
-        if (topic == null) {
-            topic = new RedissonTopic<M>(connectionManager, name);
-            RedissonTopic<M> oldTopic = topicsMap.putIfAbsent(name, topic);
-            if (oldTopic != null) {
-                topic = oldTopic;
-            }
-        }
-
-        return topic;
-
+        return new RedissonTopic<M>(connectionManager, name);
     }
 
     /**
@@ -252,16 +177,7 @@ public class Redisson {
      * @return distributed queue
      */
     public <V> RQueue<V> getQueue(String name) {
-        RedissonQueue<V> queue = queuesMap.get(name);
-        if (queue == null) {
-            queue = new RedissonQueue<V>(connectionManager, name);
-            RedissonQueue<V> oldQueue = queuesMap.putIfAbsent(name, queue);
-            if (oldQueue != null) {
-                queue = oldQueue;
-            }
-        }
-
-        return queue;
+        return new RedissonQueue<V>(connectionManager, name);
     }
 
     /**
@@ -271,16 +187,7 @@ public class Redisson {
      * @return distributed queue
      */
     public <V> RDeque<V> getDeque(String name) {
-        RedissonDeque<V> queue = dequeMap.get(name);
-        if (queue == null) {
-            queue = new RedissonDeque<V>(connectionManager, name);
-            RedissonDeque<V> oldQueue = dequeMap.putIfAbsent(name, queue);
-            if (oldQueue != null) {
-                queue = oldQueue;
-            }
-        }
-
-        return queue;
+        return new RedissonDeque<V>(connectionManager, name);
     }
 
     /**
@@ -290,18 +197,7 @@ public class Redisson {
      * @return distributed "atomic long"
      */
     public RAtomicLong getAtomicLong(String name) {
-        RedissonAtomicLong atomicLong = atomicLongsMap.get(name);
-        if (atomicLong == null) {
-            atomicLong = new RedissonAtomicLong(connectionManager, name);
-            RedissonAtomicLong oldAtomicLong = atomicLongsMap.putIfAbsent(name, atomicLong);
-            if (oldAtomicLong != null) {
-                atomicLong = oldAtomicLong;
-            }
-        }
-
-        atomicLong.init();
-        return atomicLong;
-
+        return new RedissonAtomicLong(connectionManager, name);
     }
 
     /**

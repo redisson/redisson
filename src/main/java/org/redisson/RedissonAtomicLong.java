@@ -15,8 +15,6 @@
  */
 package org.redisson;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 
@@ -30,16 +28,13 @@ import com.lambdaworks.redis.RedisConnection;
  */
 public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong {
 
-    private final AtomicBoolean initOnce = new AtomicBoolean();
-
     RedissonAtomicLong(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
+        // TODO make it async
+        init();
     }
 
-    public void init() {
-        if (!initOnce.compareAndSet(false, true)) {
-            return;
-        }
+    private void init() {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
         try {
             conn.setnx(getName(), 0);
