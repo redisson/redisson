@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
+import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
@@ -57,7 +58,7 @@ public class Redisson {
     };
 
     private final ConcurrentMap<String, RedissonCountDownLatch> latchesMap = new ReferenceMap<String, RedissonCountDownLatch>(ReferenceType.STRONG, ReferenceType.SOFT, listener);
-    private final ConcurrentMap<String, RedissonTopic> topicsMap = new ReferenceMap<String, RedissonTopic>(ReferenceType.STRONG, ReferenceType.SOFT, listener);
+    private final ConcurrentMap<String, RedissonTopic> topicsMap = new ReferenceMap<String, RedissonTopic>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonLock> locksMap = new ReferenceMap<String, RedissonLock>(ReferenceType.STRONG, ReferenceType.SOFT, listener);
 
     private final ConcurrentMap<String, RedissonAtomicLong> atomicLongsMap = new ReferenceMap<String, RedissonAtomicLong>(ReferenceType.STRONG, ReferenceType.SOFT);
@@ -67,6 +68,7 @@ public class Redisson {
     private final ConcurrentMap<String, RedissonSortedSet> sortedSetMap = new ReferenceMap<String, RedissonSortedSet>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonList> listsMap = new ReferenceMap<String, RedissonList>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonHyperLogLog> hyperLogLogMap = new ReferenceMap<String, RedissonHyperLogLog>(ReferenceType.STRONG, ReferenceType.SOFT);
+    private final ConcurrentMap<String, RedissonBucket> bucketMap = new ReferenceMap<String, RedissonBucket>(ReferenceType.STRONG, ReferenceType.SOFT);
     private final ConcurrentMap<String, RedissonMap> mapsMap = new ReferenceMap<String, RedissonMap>(ReferenceType.STRONG, ReferenceType.SOFT);
 
     private final ConnectionManager connectionManager;
@@ -99,6 +101,19 @@ public class Redisson {
      */
     public static Redisson create(Config config) {
         return new Redisson(config);
+    }
+
+    public <V> RBucket<V> getBucket(String name) {
+        RedissonBucket<V> bucket = bucketMap.get(name);
+        if (bucket == null) {
+            bucket = new RedissonBucket<V>(connectionManager, name);
+            RedissonBucket<V> oldBucket = bucketMap.putIfAbsent(name, bucket);
+            if (oldBucket != null) {
+                bucket = oldBucket;
+            }
+        }
+
+        return bucket;
     }
 
     public <V> RHyperLogLog<V> getHyperLogLog(String name) {

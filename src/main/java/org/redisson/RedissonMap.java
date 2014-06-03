@@ -286,7 +286,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> putAsync(K key, V value) {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
+        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
         Promise<V> promise = connectionManager.getGroup().next().newPromise();
         RedisAsyncConnection<Object, V> async = connection.getAsync();
         putAsync(key, value, promise, async);
@@ -372,7 +372,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> removeAsync(K key) {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
+        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
         Promise<V> promise = connectionManager.getGroup().next().newPromise();
         RedisAsyncConnection<Object, V> async = connection.getAsync();
         removeAsync(key, promise, async);
