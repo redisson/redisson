@@ -30,6 +30,17 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####??-June-2014 - version 1.0.5
+Feature - simple set/get object support via `org.redisson.core.RBucket`  
+Feature - hyperloglog support via `org.redisson.core.RHyperLogLog`  
+Feature - new methods `getAsync`, `putAsync` and `removeAsync` added to `org.redisson.core.RMap`  
+Feature - new method `publishAsync` added to `org.redisson.core.RTopic`  
+Feature - [Kryo](https://github.com/EsotericSoftware/kryo) codec added (thanks to mathieucarbou)  
+Fixed - `RMap.put` & `RMap.remove` result consistency fixed.  
+Fixed - `RTopic.publish` now returns the number of clients that received the message  
+Fixed - reconnection handling (thanks to renzihui)  
+Improvement - `org.redisson.core.RTopic` now use lazy apporach for subscribe/unsubscribe  
+
 ####04-May-2014 - version 1.0.4 released
 Feature - distributed implementation of `java.util.Deque`  
 Feature - some objects implements `org.redisson.core.RExpirable`  
