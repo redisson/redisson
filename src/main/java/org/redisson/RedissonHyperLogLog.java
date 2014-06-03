@@ -25,11 +25,8 @@ import com.lambdaworks.redis.RedisConnection;
 
 public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogLog<V> {
 
-    private final ConnectionManager connectionManager;
-
     RedissonHyperLogLog(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
     }
 
     @Override
@@ -85,31 +82,31 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
     @Override
     public Future<Long> addAsync(V obj) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfadd(getName(), obj).addListener(connectionManager.createListener(conn));
+        return conn.getAsync().pfadd(getName(), obj).addListener(connectionManager.createReleaseListener(conn));
     }
 
     @Override
     public Future<Long> addAllAsync(Collection<V> objects) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfadd(getName(), objects.toArray()).addListener(connectionManager.createListener(conn));
+        return conn.getAsync().pfadd(getName(), objects.toArray()).addListener(connectionManager.createReleaseListener(conn));
     }
 
     @Override
     public Future<Long> countAsync() {
         RedisConnection<String, Object> conn = connectionManager.connectionReadOp();
-        return conn.getAsync().pfcount(getName()).addListener(connectionManager.createListener(conn));
+        return conn.getAsync().pfcount(getName()).addListener(connectionManager.createReleaseListener(conn));
     }
 
     @Override
     public Future<Long> countWithAsync(String... otherLogNames) {
         RedisConnection<String, Object> conn = connectionManager.connectionReadOp();
-        return conn.getAsync().pfcount(getName(), otherLogNames).addListener(connectionManager.createListener(conn));
+        return conn.getAsync().pfcount(getName(), otherLogNames).addListener(connectionManager.createReleaseListener(conn));
     }
 
     @Override
     public Future<Long> mergeWithAsync(String... otherLogNames) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfmerge(getName(), otherLogNames).addListener(connectionManager.createListener(conn));
+        return conn.getAsync().pfmerge(getName(), otherLogNames).addListener(connectionManager.createReleaseListener(conn));
     }
 
 }

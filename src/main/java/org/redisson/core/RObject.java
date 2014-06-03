@@ -30,4 +30,9 @@ public interface RObject {
      */
     String getName();
 
+    /**
+     * Deletes the object
+     */
+    void delete();
+
 }

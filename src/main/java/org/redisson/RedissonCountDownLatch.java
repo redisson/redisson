@@ -49,12 +49,10 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     private final ReclosableLatch msg = new ReclosableLatch();
 
-    private final ConnectionManager connectionManager;
     private PubSubConnectionEntry pubSubEntry;
 
     RedissonCountDownLatch(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
     }
 
     public void subscribe() {

@@ -114,12 +114,10 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     }
 
-    private final ConnectionManager connectionManager;
     private Comparator<? super V> comparator = NaturalComparator.NATURAL_ORDER;
 
     RedissonSortedSet(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
 
         loadComparator();
 

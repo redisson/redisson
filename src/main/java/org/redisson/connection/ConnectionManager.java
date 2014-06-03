@@ -70,7 +70,7 @@ public class ConnectionManager {
         this.config = config;
     }
 
-    public <T> FutureListener<T> createListener(final RedisConnection conn) {
+    public <T> FutureListener<T> createReleaseListener(final RedisConnection conn) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {

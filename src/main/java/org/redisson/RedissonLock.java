@@ -102,8 +102,6 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     }
 
-    private final ConnectionManager connectionManager;
-
     private final UUID id;
 
     private static final Integer unlockMessage = 0;
@@ -116,8 +114,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     private PubSubConnectionEntry pubSubEntry;
 
     RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
         this.id = id;
     }
 
@@ -319,6 +316,11 @@ public class RedissonLock extends RedissonObject implements RLock {
         } finally {
             connectionManager.release(connection);
         }
+    }
+
+    @Override
+    public void delete() {
+        super.delete(getKeyName());
     }
 
 }

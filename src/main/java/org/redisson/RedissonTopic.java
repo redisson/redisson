@@ -49,13 +49,11 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     private final Map<Integer, RedisPubSubTopicListenerWrapper<String, M>> listeners =
                                 new ConcurrentHashMap<Integer, RedisPubSubTopicListenerWrapper<String, M>>();
-    private final ConnectionManager connectionManager;
 
     private PubSubConnectionEntry pubSubEntry;
 
     RedissonTopic(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
     }
 
     private void lazySubscribe() {
@@ -95,7 +93,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     @Override
     public Future<Long> publishAsync(M message) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().publish(getName(), message).addListener(connectionManager.createListener(conn));
+        return conn.getAsync().publish(getName(), message).addListener(connectionManager.createReleaseListener(conn));
     }
 
     @Override
@@ -148,6 +146,11 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
                 }
             }
         });
+    }
+
+    @Override
+    public void delete() {
+        // nothing to delete
     }
 
 }

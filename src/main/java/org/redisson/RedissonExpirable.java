@@ -25,11 +25,8 @@ import com.lambdaworks.redis.RedisConnection;
 
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
-    final ConnectionManager connectionManager;
-
     RedissonExpirable(ConnectionManager connectionManager, String name) {
-        super(name);
-        this.connectionManager = connectionManager;
+        super(connectionManager, name);
     }
 
     @Override

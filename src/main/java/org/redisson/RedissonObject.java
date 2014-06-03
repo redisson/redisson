@@ -15,22 +15,42 @@
  */
 package org.redisson;
 
+import org.redisson.connection.ConnectionManager;
+import org.redisson.core.RObject;
+
+import com.lambdaworks.redis.RedisConnection;
+
 /**
  * Base Redisson object
  *
  * @author Nikita Koksharov
  *
  */
-abstract class RedissonObject {
+abstract class RedissonObject implements RObject {
 
-    private String name;
+    final ConnectionManager connectionManager;
+    private final String name;
 
-    public RedissonObject(String name) {
+    public RedissonObject(ConnectionManager connectionManager, String name) {
+        this.connectionManager = connectionManager;
         this.name = name;
     }
 
     public String getName() {
         return name;
+    }
+
+    public void delete() {
+        delete(getName());
+    }
+
+    void delete(String name) {
+        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
+        try {
+            connection.del(getName());
+        } finally {
+            connectionManager.release(connection);
+        }
     }
 
     public void close() {
