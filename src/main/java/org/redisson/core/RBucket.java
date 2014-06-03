@@ -19,7 +19,7 @@ import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.TimeUnit;
 
-public interface RBucket<V> extends RObject {
+public interface RBucket<V> extends RExpirable {
 
     V get();
 
