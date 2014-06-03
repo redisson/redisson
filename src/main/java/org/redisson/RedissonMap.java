@@ -15,14 +15,20 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
+
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RMap;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
 
 /**
@@ -90,9 +96,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public V put(K key, V value) {
         RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
-            V prev = (V) connection.hget(getName(), key);
-            connection.hset(getName(), key, value);
-            return prev;
+            while (true) {
+                connection.watch(getName());
+                V prev = (V) connection.hget(getName(), key);
+                connection.multi();
+                connection.hset(getName(), key, value);
+                if (connection.exec().size() == 1) {
+                    return prev;
+                }
+            }
         } finally {
             connectionManager.release(connection);
         }
@@ -102,9 +114,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public V remove(Object key) {
         RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
-            V prev = (V) connection.hget(getName(), key);
-            connection.hdel(getName(), key);
-            return prev;
+            while (true) {
+                connection.watch(getName());
+                V prev = (V) connection.hget(getName(), key);
+                connection.multi();
+                connection.hdel(getName(), key);
+                if (connection.exec().size() == 1) {
+                    return prev;
+                }
+            }
         } finally {
             connectionManager.release(connection);
         }
