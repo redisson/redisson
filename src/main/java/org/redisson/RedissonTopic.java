@@ -61,7 +61,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
             return;
         }
 
-        final Promise<Boolean> newPromise = connectionManager.getGroup().next().<Boolean>newPromise();
+        final Promise<Boolean> newPromise = newPromise();
         if (!promise.compareAndSet(null, newPromise)) {
             return;
         }

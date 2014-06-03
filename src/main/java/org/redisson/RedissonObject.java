@@ -15,6 +15,8 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Promise;
+
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RObject;
 
@@ -34,6 +36,10 @@ abstract class RedissonObject implements RObject {
     public RedissonObject(ConnectionManager connectionManager, String name) {
         this.connectionManager = connectionManager;
         this.name = name;
+    }
+
+    protected <V> Promise<V> newPromise() {
+        return connectionManager.getGroup().next().<V>newPromise();
     }
 
     public String getName() {

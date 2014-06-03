@@ -216,7 +216,6 @@ public class Redisson {
             }
         }
 
-        latch.subscribe();
         return latch;
     }
 
