@@ -15,8 +15,7 @@
  */
 package org.redisson.core;
 
-import java.util.concurrent.Future;
-
+import io.netty.util.concurrent.Future;
 
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
