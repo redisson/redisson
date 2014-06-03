@@ -30,7 +30,7 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
-####??-June-2014 - version 1.0.4 released
+####??-June-2014 - version 1.0.5
 Feature - simple set/get object support via `org.redisson.core.RBucket`  
 Feature - hyperloglog support via `org.redisson.core.RHyperLogLog`  
 Feature - new methods `getAsync`, `putAsync` and `removeAsync` added to `org.redisson.core.RMap`  
