@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -27,5 +29,11 @@ import java.util.concurrent.ConcurrentMap;
  * @param <V> value
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
+
+    Future<V> getAsync(K key);
+
+    Future<V> putAsync(K key, V value);
+
+    Future<V> removeAsync(K key);
 
 }
