@@ -18,11 +18,17 @@ package org.redisson.connection;
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
+import org.redisson.RedisPubSubTopicListenerWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 
 public class PubSubConnectionEntry {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final Semaphore semaphore;
     private final RedisPubSubConnection conn;
@@ -39,24 +45,66 @@ public class PubSubConnectionEntry {
         conn.addListener(listener);
     }
 
-    public Queue<RedisPubSubListener> getListeners() {
-        return conn.getListeners();
+    // TODO optimize
+    public boolean hasListeners(String channelName) {
+        Queue<RedisPubSubListener> queue = conn.getListeners();
+        for (RedisPubSubListener listener : queue) {
+            if (!(listener instanceof RedisPubSubTopicListenerWrapper)) {
+                continue;
+            }
+
+            RedisPubSubTopicListenerWrapper entry = (RedisPubSubTopicListenerWrapper) listener;
+            if (entry.getName().equals(channelName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // TODO optimize
+    public void removeListener(int listenerId) {
+        Queue<RedisPubSubListener> queue = conn.getListeners();
+        for (RedisPubSubListener listener : queue) {
+            if (!(listener instanceof RedisPubSubTopicListenerWrapper)) {
+                continue;
+            }
+
+            RedisPubSubTopicListenerWrapper entry = (RedisPubSubTopicListenerWrapper) listener;
+            if (entry.hashCode() == listenerId) {
+                removeListener(entry);
+                break;
+            }
+        }
     }
 
     public void removeListener(RedisPubSubListener listener) {
         conn.removeListener(listener);
     }
 
-    public boolean subscribe(RedisPubSubAdapter listener, Object channel) {
-        if (semaphore.tryAcquire()) {
-            conn.addListener(listener);
-            conn.subscribe(channel);
-            return true;
-        }
-        return false;
+    public boolean tryAcquire() {
+        return semaphore.tryAcquire();
     }
 
-    public void unsubscribe(Object channel) {
+    public void release() {
+        semaphore.release();
+    }
+
+    public void subscribe(final String channelName) {
+        conn.addListener(new RedisPubSubAdapter() {
+            public void subscribed(String channel, long count) {
+                log.debug("subscribed to '{}' channel", channelName);
+            }
+        });
+        conn.subscribe(channelName);
+    }
+
+
+    public void subscribe(RedisPubSubAdapter listener, Object channel) {
+        conn.addListener(listener);
+        conn.subscribe(channel);
+    }
+
+    public void unsubscribe(String channel) {
         conn.unsubscribe(channel);
         semaphore.release();
     }

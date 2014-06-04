@@ -23,7 +23,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 
 import org.redisson.Config;
@@ -50,6 +52,7 @@ public class ConnectionManager {
     private final EventLoopGroup group = new NioEventLoopGroup();
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final Queue<PubSubConnectionEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
+    private final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
     private final List<RedisClient> clients = new ArrayList<RedisClient>();
 
     private final Semaphore activeConnections;
@@ -96,9 +99,24 @@ public class ConnectionManager {
         return conn;
     }
 
-    public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, K channel) {
+    public PubSubConnectionEntry getEntry(String channelName) {
+        return name2PubSubConnection.get(channelName);
+    }
+
+    public <K, V> PubSubConnectionEntry subscribe(String channelName) {
+        PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
+        if (сonnEntry != null) {
+            return сonnEntry;
+        }
+
         for (PubSubConnectionEntry entry : pubSubConnections) {
-            if (entry.subscribe(listener, channel)) {
+            if (entry.tryAcquire()) {
+                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+                if (oldEntry != null) {
+                    entry.release();
+                    return oldEntry;
+                }
+                entry.subscribe(channelName);
                 return entry;
             }
         }
@@ -109,8 +127,50 @@ public class ConnectionManager {
         if (config.getPassword() != null) {
             conn.auth(config.getPassword());
         }
+
         PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-        entry.subscribe(listener, channel);
+        entry.tryAcquire();
+        PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+        if (oldEntry != null) {
+            return oldEntry;
+        }
+        entry.subscribe(channelName);
+        pubSubConnections.add(entry);
+        return entry;
+    }
+
+    public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, String channelName) {
+        PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
+        if (сonnEntry != null) {
+            return сonnEntry;
+        }
+
+        for (PubSubConnectionEntry entry : pubSubConnections) {
+            if (entry.tryAcquire()) {
+                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+                if (oldEntry != null) {
+                    entry.release();
+                    return oldEntry;
+                }
+                entry.subscribe(listener, channelName);
+                return entry;
+            }
+        }
+
+        acquireConnection();
+
+        RedisPubSubConnection<K, V> conn = balancer.nextClient().connectPubSub(codec);
+        if (config.getPassword() != null) {
+            conn.auth(config.getPassword());
+        }
+
+        PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
+        entry.tryAcquire();
+        PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+        if (oldEntry != null) {
+            return oldEntry;
+        }
+        entry.subscribe(listener, channelName);
         pubSubConnections.add(entry);
         return entry;
     }
@@ -125,8 +185,13 @@ public class ConnectionManager {
         }
     }
 
-    public <K> void unsubscribe(PubSubConnectionEntry entry, K channel) {
-        entry.unsubscribe(channel);
+    public void unsubscribe(PubSubConnectionEntry entry, String channelName) {
+        if (entry.hasListeners(channelName)) {
+            return;
+        }
+        name2PubSubConnection.remove(channelName);
+        entry.unsubscribe(channelName);
+        log.debug("unsubscribed from '{}' channel", channelName);
         if (entry.tryClose()) {
             pubSubConnections.remove(entry);
             activeConnections.release();
