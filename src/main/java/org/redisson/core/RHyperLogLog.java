@@ -15,8 +15,9 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.Collection;
-import java.util.concurrent.Future;
 
 public interface RHyperLogLog<V> extends RObject {
 

@@ -15,8 +15,9 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.Collection;
-import java.util.concurrent.Future;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RHyperLogLog;
@@ -31,52 +32,27 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
 
     @Override
     public long add(V obj) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            return conn.pfadd(getName(), obj);
-        } finally {
-            connectionManager.release(conn);
-        }
+        return addAsync(obj).awaitUninterruptibly().getNow();
     }
 
     @Override
     public long addAll(Collection<V> objects) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            return conn.pfadd(getName(), objects.toArray());
-        } finally {
-            connectionManager.release(conn);
-        }
+        return addAllAsync(objects).awaitUninterruptibly().getNow();
     }
 
     @Override
     public long count() {
-        RedisConnection<String, Object> conn = connectionManager.connectionReadOp();
-        try {
-            return conn.pfcount(getName());
-        } finally {
-            connectionManager.release(conn);
-        }
+        return countAsync().awaitUninterruptibly().getNow();
     }
 
     @Override
     public long countWith(String... otherLogNames) {
-        RedisConnection<String, Object> conn = connectionManager.connectionReadOp();
-        try {
-            return conn.pfcount(getName(), otherLogNames);
-        } finally {
-            connectionManager.release(conn);
-        }
+        return countWithAsync(otherLogNames).awaitUninterruptibly().getNow();
     }
 
     @Override
     public long mergeWith(String... otherLogNames) {
-        RedisConnection<String, Object> conn = connectionManager.connectionReadOp();
-        try {
-            return conn.pfmerge(getName(), otherLogNames);
-        } finally {
-            connectionManager.release(conn);
-        }
+        return mergeWithAsync(otherLogNames).awaitUninterruptibly().getNow();
     }
 
     @Override
