@@ -71,7 +71,7 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>1.0.2</version>
+       <version>1.0.4</version>
     </dependency>
 
 Usage examples
@@ -85,21 +85,25 @@ Usage examples
 
         redisson.shutdown();
 
-or with initialization by Config object
+or with initialization by Config object for single node connection
 
         Config config = new Config();
-        config.setConnectionPoolSize(10);
-
-        // Redisson will use load balance connections between listed servers
-        config.addAddress("first.redisserver.com:8291");
-        config.addAddress("second.redisserver.com:8291");
-        config.addAddress("third.redisserver.com:8291");
+        config.useSingleConnectoin()
+              .setConnectionPoolSize(10);
 
         Redisson redisson = Redisson.create(config);
 
-        ...
+for master/slave connection
 
-        redisson.shutdown();
+        Config config = new Config();
+        config.useMasterSlaveConnection()
+              .setMasterAddress("127.0.0.1:6379")
+              .addSlaveAddress("127.0.0.1:6389")
+              .addSlaveAddress("127.0.0.1:6399");
+
+        Redisson redisson = Redisson.create(config);
+
+
 
 ####Distributed Map example
 
