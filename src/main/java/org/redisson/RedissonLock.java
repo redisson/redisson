@@ -204,7 +204,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             }
             return res;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -249,7 +249,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                         + id + " thread-id: " + Thread.currentThread().getId());
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -292,7 +292,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 }
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -305,7 +305,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             LockValue lock = (LockValue) connection.get(getKeyName());
             return lock != null;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -320,7 +320,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             LockValue lock = (LockValue) connection.get(getKeyName());
             return lock != null && lock.equals(currentLock);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -338,7 +338,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             }
             return 0;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 

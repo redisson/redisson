@@ -43,7 +43,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             return connection.scard(getName()).intValue();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -58,7 +58,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             return connection.sismember(getName(), o);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -102,7 +102,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
             };
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
 
     }
@@ -113,7 +113,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             return connection.smembers(getName()).toArray();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -123,7 +123,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             return connection.smembers(getName()).toArray(a);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -133,7 +133,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             return connection.sadd(getName(), e) > 0;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -143,7 +143,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             return connection.srem(getName(), o) > 0;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -163,7 +163,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             return connection.sadd(getName(), c.toArray()) > 0;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -185,7 +185,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             return connection.srem(getName(), c.toArray()) > 0;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -195,7 +195,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         try {
             connection.del(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 

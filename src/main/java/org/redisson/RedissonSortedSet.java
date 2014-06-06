@@ -125,7 +125,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             conn.setnx(getCurrentVersionKey(), 0L);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -136,7 +136,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         } catch (Exception e) {
             throw new IllegalStateException(e);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -187,7 +187,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             return size(connection);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -206,7 +206,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             return binarySearch((V)o, connection).getIndex() >= 0;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -216,7 +216,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             startScore = getScoreAtIndex(0, connection);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
 
         return iterator(startScore, Double.MAX_VALUE);
@@ -236,7 +236,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                     Long remains = connection.zcount(getName(), currentScore, endScore);
                     return remains > 0;
                 } finally {
-                    connectionManager.release(connection);
+                    connectionManager.releaseRead(connection);
                 }
             }
 
@@ -275,7 +275,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                         return value;
 //                    }
                 } finally {
-                    connectionManager.release(connection);
+                    connectionManager.releaseRead(connection);
                 }
             }
 
@@ -298,7 +298,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             return connection.zrange(getName(), 0, -1).toArray();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -308,7 +308,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             return connection.zrange(getName(), 0, -1).toArray(a);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -326,7 +326,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             return add(value, connection);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -465,7 +465,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             return remove(value, connection);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -535,7 +535,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         try {
             connection.del(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -569,12 +569,13 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             }
             return res.getValue();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
     @Override
     public V last() {
+        // TODO refactor to -inf +inf
         RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
             BinarySearchResult<V> res = getAtIndex(-1, connection);
@@ -583,7 +584,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             }
             return res.getValue();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -619,7 +620,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             }
             return false;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 

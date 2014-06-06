@@ -97,6 +97,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     private int db;
     private boolean closed;
     private EventLoopGroup eventLoopGroup;
+    private RedisClient redisClient;
 
     /**
      * Initialize a new connection.
@@ -107,12 +108,13 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
      * @param unit    Unit of time for the timeout.
      * @param eventLoopGroup
      */
-    public RedisAsyncConnection(BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit, EventLoopGroup eventLoopGroup) {
+    public RedisAsyncConnection(RedisClient redisClient, BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit, EventLoopGroup eventLoopGroup) {
         this.queue = queue;
         this.codec = codec;
         this.timeout = timeout;
         this.unit = unit;
         this.eventLoopGroup = eventLoopGroup;
+        this.redisClient = redisClient;
     }
 
     /**
@@ -1169,6 +1171,10 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
             throw (RedisException) cmd.cause();
         }
         return cmd.getNow();
+    }
+
+    public RedisClient getRedisClient() {
+        return redisClient;
     }
 
     @SuppressWarnings("unchecked")

@@ -45,172 +45,30 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
  *
  */
 //TODO ping support
-public class ConnectionManager {
+public interface ConnectionManager {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    <T> FutureListener<T> createReleaseWriteListener(final RedisConnection conn);
 
-    private final EventLoopGroup group = new NioEventLoopGroup();
-    private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
-    private final Queue<PubSubConnectionEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
-    private final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
-    private final List<RedisClient> clients = new ArrayList<RedisClient>();
+    <T> FutureListener<T> createReleaseReadListener(final RedisConnection conn);
 
-    private final Semaphore activeConnections;
-    private final RedisCodec codec;
-    private final Config config;
-    private final LoadBalancer balancer;
+    <K, V> RedisConnection<K, V> connectionWriteOp();
 
-    public ConnectionManager(Config config) {
-        for (URI address : config.getAddresses()) {
-            RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
-            clients.add(client);
-        }
-        balancer = config.getLoadBalancer();
-        balancer.init(clients);
+    <K, V> RedisConnection<K, V> connectionReadOp();
 
-        codec = new RedisCodecWrapper(config.getCodec());
-        activeConnections = new Semaphore(config.getConnectionPoolSize());
-        this.config = config;
-    }
+    PubSubConnectionEntry getEntry(String channelName);
 
-    public <T> FutureListener<T> createReleaseListener(final RedisConnection conn) {
-        return new FutureListener<T>() {
-            @Override
-            public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
-                release(conn);
-            }
-        };
-    }
+    <K, V> PubSubConnectionEntry subscribe(String channelName);
 
-    public <K, V> RedisConnection<K, V> connectionWriteOp() {
-        return connectionReadOp();
-    }
+    <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, String channelName);
 
-    public <K, V> RedisConnection<K, V> connectionReadOp() {
-        acquireConnection();
+    void unsubscribe(PubSubConnectionEntry entry, String channelName);
 
-        RedisConnection<K, V> conn = connections.poll();
-        if (conn == null) {
-            conn = balancer.nextClient().connect(codec);
-            if (config.getPassword() != null) {
-                conn.auth(config.getPassword());
-            }
-        }
-        return conn;
-    }
+    void releaseWrite(RedisConnection сonnection);
 
-    public PubSubConnectionEntry getEntry(String channelName) {
-        return name2PubSubConnection.get(channelName);
-    }
+    void releaseRead(RedisConnection сonnection);
 
-    public <K, V> PubSubConnectionEntry subscribe(String channelName) {
-        PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
-        if (сonnEntry != null) {
-            return сonnEntry;
-        }
+    void shutdown();
 
-        for (PubSubConnectionEntry entry : pubSubConnections) {
-            if (entry.tryAcquire()) {
-                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-                if (oldEntry != null) {
-                    entry.release();
-                    return oldEntry;
-                }
-                entry.subscribe(channelName);
-                return entry;
-            }
-        }
-
-        acquireConnection();
-
-        RedisPubSubConnection<K, V> conn = balancer.nextClient().connectPubSub(codec);
-        if (config.getPassword() != null) {
-            conn.auth(config.getPassword());
-        }
-
-        PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-        entry.tryAcquire();
-        PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-        if (oldEntry != null) {
-            return oldEntry;
-        }
-        entry.subscribe(channelName);
-        pubSubConnections.add(entry);
-        return entry;
-    }
-
-    public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, String channelName) {
-        PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
-        if (сonnEntry != null) {
-            return сonnEntry;
-        }
-
-        for (PubSubConnectionEntry entry : pubSubConnections) {
-            if (entry.tryAcquire()) {
-                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-                if (oldEntry != null) {
-                    entry.release();
-                    return oldEntry;
-                }
-                entry.subscribe(listener, channelName);
-                return entry;
-            }
-        }
-
-        acquireConnection();
-
-        RedisPubSubConnection<K, V> conn = balancer.nextClient().connectPubSub(codec);
-        if (config.getPassword() != null) {
-            conn.auth(config.getPassword());
-        }
-
-        PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-        entry.tryAcquire();
-        PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-        if (oldEntry != null) {
-            return oldEntry;
-        }
-        entry.subscribe(listener, channelName);
-        pubSubConnections.add(entry);
-        return entry;
-    }
-
-    private void acquireConnection() {
-        if (!activeConnections.tryAcquire()) {
-            log.warn("Connection pool gets exhausted! Trying to acquire connection ...");
-            long time = System.currentTimeMillis();
-            activeConnections.acquireUninterruptibly();
-            long endTime = System.currentTimeMillis() - time;
-            log.warn("Connection acquired, time spended: {} ms", endTime);
-        }
-    }
-
-    public void unsubscribe(PubSubConnectionEntry entry, String channelName) {
-        if (entry.hasListeners(channelName)) {
-            return;
-        }
-        name2PubSubConnection.remove(channelName);
-        entry.unsubscribe(channelName);
-        log.debug("unsubscribed from '{}' channel", channelName);
-        if (entry.tryClose()) {
-            pubSubConnections.remove(entry);
-            activeConnections.release();
-        }
-    }
-
-    public void release(RedisConnection сonnection) {
-        connections.add(сonnection);
-        activeConnections.release();
-    }
-
-    public void shutdown() {
-        for (RedisClient client : clients) {
-            client.shutdown();
-        }
-    }
-
-    public EventLoopGroup getGroup() {
-        return group;
-    }
+    EventLoopGroup getGroup();
 
 }

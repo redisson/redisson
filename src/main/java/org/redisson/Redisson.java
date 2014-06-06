@@ -19,6 +19,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveConnectionManager;
+import org.redisson.connection.SingleConnectionManager;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
@@ -68,7 +70,11 @@ public class Redisson {
     Redisson(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
-        connectionManager = new ConnectionManager(configCopy);
+        if (configCopy.getMasterSlaveConnectionConfig() != null) {
+            connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveConnectionConfig(), configCopy);
+        } else {
+            connectionManager = new SingleConnectionManager(configCopy.getSingleConnectionConfig(), configCopy);
+        }
     }
 
     /**
@@ -78,7 +84,8 @@ public class Redisson {
      */
     public static Redisson create() {
         Config config = new Config();
-        config.addAddress("127.0.0.1:6379");
+        config.useSingleConnection().setAddress("127.0.0.1:6379");
+//        config.useMasterSlaveConnection().setMasterAddress("127.0.0.1:6379").addSlaveAddress("127.0.0.1:6389").addSlaveAddress("127.0.0.1:6399");
         return create(config);
     }
 
@@ -241,7 +248,7 @@ public class Redisson {
         try {
             connection.flushdb();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 

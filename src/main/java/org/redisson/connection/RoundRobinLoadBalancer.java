@@ -18,23 +18,13 @@ package org.redisson.connection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.lambdaworks.redis.RedisClient;
-
-public class RoundRobinLoadBalancer implements LoadBalancer {
+public class RoundRobinLoadBalancer extends BaseLoadBalancer {
 
     private final AtomicInteger index = new AtomicInteger(-1);
 
-    private List<RedisClient> clients;
-
     @Override
-    public void init(List<RedisClient> clients) {
-        this.clients = clients;
-    }
-
-    @Override
-    public RedisClient nextClient() {
-        int ind = Math.abs(index.incrementAndGet() % clients.size());
-        return clients.get(ind);
+    int getIndex(List<ConnectionEntry> clientsCopy) {
+        return Math.abs(index.incrementAndGet() % clients.size());
     }
 
 }

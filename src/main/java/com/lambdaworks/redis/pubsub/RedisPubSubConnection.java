@@ -2,21 +2,27 @@
 
 package com.lambdaworks.redis.pubsub;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.codec.RedisCodec;
-import com.lambdaworks.redis.protocol.Command;
-import com.lambdaworks.redis.protocol.CommandArgs;
-
+import static com.lambdaworks.redis.protocol.CommandType.PSUBSCRIBE;
+import static com.lambdaworks.redis.protocol.CommandType.PUNSUBSCRIBE;
+import static com.lambdaworks.redis.protocol.CommandType.SUBSCRIBE;
+import static com.lambdaworks.redis.protocol.CommandType.UNSUBSCRIBE;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 
 import java.lang.reflect.Array;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
-import org.redisson.RedisPubSubTopicListenerWrapper;
-
-import static com.lambdaworks.redis.protocol.CommandType.*;
+import com.lambdaworks.redis.RedisAsyncConnection;
+import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.codec.RedisCodec;
+import com.lambdaworks.redis.protocol.Command;
+import com.lambdaworks.redis.protocol.CommandArgs;
 
 /**
  * An asynchronous thread-safe pub/sub connection to a redis server. After one or
@@ -46,8 +52,8 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
      * @param unit      Unit of time for the timeout.
      * @param eventLoopGroup
      */
-    public RedisPubSubConnection(BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit, EventLoopGroup eventLoopGroup) {
-        super(queue, codec, timeout, unit, eventLoopGroup);
+    public RedisPubSubConnection(RedisClient client, BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit, EventLoopGroup eventLoopGroup) {
+        super(client, queue, codec, timeout, unit, eventLoopGroup);
         channels  = new HashSet<K>();
         patterns  = new HashSet<K>();
     }

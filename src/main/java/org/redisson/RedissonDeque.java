@@ -48,7 +48,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
         try {
             conn.lpush(getName(), e);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -98,7 +98,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
             }
             return (V) list.get(0);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -109,7 +109,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
             conn.lpush(getName(), e);
             return true;
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -133,7 +133,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
             }
             return (V) list.get(0);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -149,7 +149,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
             V value = (V) connection.rpop(getName());
             return value;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -178,7 +178,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
             }
             return value;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 

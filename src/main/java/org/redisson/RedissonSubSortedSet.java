@@ -61,7 +61,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
             return connection.zcount(redissonSortedSet.getName(), headScore, tailScore).intValue();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -94,7 +94,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             BinarySearchResult<V> res = redissonSortedSet.binarySearch((V)o, connection);
             return res.getScore() < tailScore && res.getScore() > headScore;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -106,7 +106,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             double tailScore = getTailScore(connection);
             return redissonSortedSet.iterator(headScore, tailScore);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -118,7 +118,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             double tailScore = getTailScore(connection);
             return connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore).toArray();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -130,7 +130,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             double tailScore = getTailScore(connection);
             return connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore).toArray(a);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -152,7 +152,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             }
             return false;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -169,7 +169,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             }
             return false;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -226,7 +226,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             double tailScore = getTailScore(connection);
             connection.zremrangebyscore(redissonSortedSet.getName(), headScore, tailScore);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -277,7 +277,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             }
             return redissonSortedSet.first();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -301,7 +301,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
             }
             return redissonSortedSet.last();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 

@@ -17,12 +17,20 @@ package org.redisson.connection;
 
 import java.util.List;
 
-import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.codec.RedisCodec;
+import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public interface LoadBalancer {
 
-    void init(List<RedisClient> clients);
+    void init(List<ConnectionEntry> clients, RedisCodec codec);
 
-    RedisClient nextClient();
+    RedisConnection nextConnection();
+
+    RedisPubSubConnection nextPubSubConnection();
+
+    void returnConnection(RedisConnection connection);
+
+    void returnSubscribeConnection(RedisPubSubConnection connection);
 
 }

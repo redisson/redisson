@@ -49,7 +49,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         try {
             return connection.llen(getName()).intValue();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -95,7 +95,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         try {
             return connection.lrem(getName(), count, o) > 0;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -122,7 +122,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
             return copy.isEmpty();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
 
     }
@@ -134,7 +134,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             conn.rpush(getName(), c.toArray());
             return true;
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -157,7 +157,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                     }
                 }
             } finally {
-                connectionManager.release(conn);
+                connectionManager.releaseWrite(conn);
             }
         } else {
             return addAll(coll);
@@ -177,7 +177,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             }
             return result;
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
 
     }
@@ -201,7 +201,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         try {
             conn.del(getName());
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -212,7 +212,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         try {
             return (V) conn.lindex(getName(), index);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseRead(conn);
         }
     }
 
@@ -253,7 +253,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 }
             }
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -295,7 +295,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 }
             }
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -318,7 +318,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
             return -1;
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseRead(conn);
         }
     }
 
@@ -343,7 +343,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
             return -1;
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseRead(conn);
         }
     }
 
@@ -442,7 +442,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         try {
             return (List<V>) conn.lrange(getName(), fromIndex, toIndex - 1);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseRead(conn);
         }
     }
 

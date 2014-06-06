@@ -35,7 +35,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         try {
             return connection.expire(getName(), timeUnit.toSeconds(timeToLive));
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -45,7 +45,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         try {
             return connection.expireat(getName(), timestamp);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -55,7 +55,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         try {
             return connection.expireat(getName(), timestamp);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -65,7 +65,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         try {
             return connection.persist(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -75,7 +75,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         try {
             return connection.ttl(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 

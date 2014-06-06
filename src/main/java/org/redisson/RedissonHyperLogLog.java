@@ -58,31 +58,31 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
     @Override
     public Future<Long> addAsync(V obj) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfadd(getName(), obj).addListener(connectionManager.createReleaseListener(conn));
+        return conn.getAsync().pfadd(getName(), obj).addListener(connectionManager.createReleaseWriteListener(conn));
     }
 
     @Override
     public Future<Long> addAllAsync(Collection<V> objects) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfadd(getName(), objects.toArray()).addListener(connectionManager.createReleaseListener(conn));
+        return conn.getAsync().pfadd(getName(), objects.toArray()).addListener(connectionManager.createReleaseWriteListener(conn));
     }
 
     @Override
     public Future<Long> countAsync() {
-        RedisConnection<String, Object> conn = connectionManager.connectionReadOp();
-        return conn.getAsync().pfcount(getName()).addListener(connectionManager.createReleaseListener(conn));
+        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
+        return conn.getAsync().pfcount(getName()).addListener(connectionManager.createReleaseWriteListener(conn));
     }
 
     @Override
     public Future<Long> countWithAsync(String... otherLogNames) {
-        RedisConnection<String, Object> conn = connectionManager.connectionReadOp();
-        return conn.getAsync().pfcount(getName(), otherLogNames).addListener(connectionManager.createReleaseListener(conn));
+        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
+        return conn.getAsync().pfcount(getName(), otherLogNames).addListener(connectionManager.createReleaseWriteListener(conn));
     }
 
     @Override
     public Future<Long> mergeWithAsync(String... otherLogNames) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfmerge(getName(), otherLogNames).addListener(connectionManager.createReleaseListener(conn));
+        return conn.getAsync().pfmerge(getName(), otherLogNames).addListener(connectionManager.createReleaseWriteListener(conn));
     }
 
 }

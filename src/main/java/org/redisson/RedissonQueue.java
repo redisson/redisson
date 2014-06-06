@@ -49,7 +49,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
             }
             return value;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -62,7 +62,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
             }
             return value;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -77,7 +77,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
         try {
             return (V) connection.lpop(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 

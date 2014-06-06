@@ -1,7 +1,5 @@
 package org.redisson;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RAtomicLong;

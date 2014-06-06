@@ -15,15 +15,8 @@
  */
 package org.redisson;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.RedissonCodec;
-import org.redisson.connection.LoadBalancer;
-import org.redisson.connection.RoundRobinLoadBalancer;
 
 /**
  * Redisson configuration
@@ -33,32 +26,14 @@ import org.redisson.connection.RoundRobinLoadBalancer;
  */
 public class Config {
 
-    /**
-     * Сonnection load balancer to use multiple Redis servers
-     */
-    private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
+    private MasterSlaveConnectionConfig masterSlaveConnectionConfig;
+
+    private SingleConnectionConfig singleConnectionConfig;
 
     /**
      * Redis key/value codec. JsonJacksonCodec used by default
      */
     private RedissonCodec codec;
-
-    /**
-     * Subscriptions per Redis connection limit
-     */
-    private int subscriptionsPerConnection = 5;
-
-    /**
-     * Redis connection pool size limit
-     */
-    private int connectionPoolSize = 100;
-
-    /**
-     * Password for Redis authentication. Should be null if not needed
-     */
-    private String password;
-
-    private List<URI> addresses = new ArrayList<URI>();
 
     public Config() {
     }
@@ -70,11 +45,12 @@ public class Config {
         }
 
         setCodec(oldConf.getCodec());
-        setConnectionPoolSize(oldConf.getConnectionPoolSize());
-        setPassword(oldConf.getPassword());
-        setSubscriptionsPerConnection(oldConf.getSubscriptionsPerConnection());
-        setAddresses(oldConf.getAddresses());
-        setLoadBalancer(oldConf.getLoadBalancer());
+        if (oldConf.getSingleConnectionConfig() != null) {
+            setSingleConnectionConfig(new SingleConnectionConfig(oldConf.getSingleConnectionConfig()));
+        }
+        if (oldConf.getMasterSlaveConnectionConfig() != null) {
+            setMasterSlaveConnectionConfig(new MasterSlaveConnectionConfig(oldConf.getMasterSlaveConnectionConfig()));
+        }
     }
 
     /**
@@ -83,87 +59,44 @@ public class Config {
      * @see org.redisson.codec.JsonJacksonCodec
      * @see org.redisson.codec.SerializationCodec
      */
-    public void setCodec(RedissonCodec codec) {
+    public Config setCodec(RedissonCodec codec) {
         this.codec = codec;
+        return this;
     }
     public RedissonCodec getCodec() {
         return codec;
     }
 
-    /**
-     * Password for Redis authentication. Should be null if not needed
-     * Default is <code>null</code>
-     *
-     * @param password
-     */
-    public void setPassword(String password) {
-        this.password = password;
-    }
-    public String getPassword() {
-        return password;
-    }
-
-    /**
-     * Subscriptions per Redis connection limit
-     * Default is 5
-     *
-     * @param subscriptionsPerConnection
-     */
-    public void setSubscriptionsPerConnection(int subscriptionsPerConnection) {
-        this.subscriptionsPerConnection = subscriptionsPerConnection;
-    }
-    public int getSubscriptionsPerConnection() {
-        return subscriptionsPerConnection;
-    }
-
-    /**
-     * Redis connection pool size limit
-     * Default is 100
-     *
-     * @param connectionPoolSize
-     */
-    public void setConnectionPoolSize(int connectionPoolSize) {
-        this.connectionPoolSize = connectionPoolSize;
-    }
-    public int getConnectionPoolSize() {
-        return connectionPoolSize;
-    }
-
-    /**
-     * Redis server address. Use follow format -- host:port
-     *
-     * @param addressesVar
-     */
-    public void addAddress(String ... addressesVar) {
-        for (String address : addressesVar) {
-            try {
-                addresses.add(new URI("//" + address));
-            } catch (URISyntaxException e) {
-                throw new IllegalArgumentException("Can't parse " + address);
-            }
+    public SingleConnectionConfig useSingleConnection() {
+        if (masterSlaveConnectionConfig != null) {
+            throw new IllegalStateException("master/slave connection already used!");
         }
+        if (singleConnectionConfig == null) {
+            singleConnectionConfig = new SingleConnectionConfig();
+        }
+        return singleConnectionConfig;
     }
-    public List<URI> getAddresses() {
-        return addresses;
+    SingleConnectionConfig getSingleConnectionConfig() {
+        return singleConnectionConfig;
     }
-    void setAddresses(List<URI> addresses) {
-        this.addresses = addresses;
+    void setSingleConnectionConfig(SingleConnectionConfig singleConnectionConfig) {
+        this.singleConnectionConfig = singleConnectionConfig;
     }
 
-    /**
-     * Сonnection load balancer to multiple Redis servers.
-     * Uses Round-robin algorithm by default
-     *
-     * @param loadBalancer
-     *
-     * @see org.redisson.connection.RoundRobinLoadBalancer
-     * @see org.redisson.connection.RandomLoadBalancer
-     */
-    public void setLoadBalancer(LoadBalancer loadBalancer) {
-        this.loadBalancer = loadBalancer;
+    public MasterSlaveConnectionConfig useMasterSlaveConnection() {
+        if (singleConnectionConfig != null) {
+            throw new IllegalStateException("single connection already used!");
+        }
+        if (masterSlaveConnectionConfig == null) {
+            masterSlaveConnectionConfig = new MasterSlaveConnectionConfig();
+        }
+        return masterSlaveConnectionConfig;
     }
-    public LoadBalancer getLoadBalancer() {
-        return loadBalancer;
+    MasterSlaveConnectionConfig getMasterSlaveConnectionConfig() {
+        return masterSlaveConnectionConfig;
+    }
+    void setMasterSlaveConnectionConfig(MasterSlaveConnectionConfig masterSlaveConnectionConfig) {
+        this.masterSlaveConnectionConfig = masterSlaveConnectionConfig;
     }
 
 }

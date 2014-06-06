@@ -53,7 +53,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         try {
             return connection.hlen(getName()).intValue();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -68,7 +68,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         try {
             return connection.hexists(getName(), key);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -78,7 +78,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         try {
             return connection.hvals(getName()).contains(value);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -88,7 +88,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         try {
             return (V) connection.hget(getName(), key);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -106,7 +106,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 }
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -124,7 +124,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 }
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -134,7 +134,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         try {
             connection.hmset(getName(), (Map<Object, Object>) map);
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -144,7 +144,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         try {
             connection.del(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -154,7 +154,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         try {
             return (Set<K>) connection.hkeys(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -164,7 +164,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         try {
             return (Collection<V>) connection.hvals(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -179,7 +179,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
             return result.entrySet();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -199,7 +199,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 }
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
 
     }
@@ -228,7 +228,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 }
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -251,7 +251,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 }
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -274,14 +274,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 return null;
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
     @Override
     public Future<V> getAsync(K key) {
         RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        return connection.getAsync().hget(getName(), key).addListener(connectionManager.createReleaseListener(connection));
+        return connection.getAsync().hget(getName(), key).addListener(connectionManager.createReleaseReadListener(connection));
     }
 
     @Override
@@ -290,7 +290,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         Promise<V> promise = connectionManager.getGroup().next().newPromise();
         RedisAsyncConnection<Object, V> async = connection.getAsync();
         putAsync(key, value, promise, async);
-        promise.addListener(connectionManager.createReleaseListener(connection));
+        promise.addListener(connectionManager.createReleaseReadListener(connection));
         return promise;
     }
 
@@ -376,7 +376,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         Promise<V> promise = connectionManager.getGroup().next().newPromise();
         RedisAsyncConnection<Object, V> async = connection.getAsync();
         removeAsync(key, promise, async);
-        promise.addListener(connectionManager.createReleaseListener(connection));
+        promise.addListener(connectionManager.createReleaseWriteListener(connection));
         return promise;
     }
 

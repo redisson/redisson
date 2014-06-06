@@ -55,7 +55,7 @@ abstract class RedissonObject implements RObject {
         try {
             connection.del(getName());
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 

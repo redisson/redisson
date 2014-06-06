@@ -117,4 +117,8 @@ public class PubSubConnectionEntry {
         return false;
     }
 
+    public RedisPubSubConnection getConnection() {
+        return conn;
+    }
+
 }

@@ -147,7 +147,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 connection.del(getName());
             }
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -167,7 +167,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             }
             return val.longValue();
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -188,7 +188,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             connection.publish(getChannelName(), newCountMessage);
             return connection.exec().size() == 2;
         } finally {
-            connectionManager.release(connection);
+            connectionManager.releaseWrite(connection);
         }
     }
 

@@ -45,7 +45,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     @Override
     public Future<Long> publishAsync(M message) {
         RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().publish(getName(), message).addListener(connectionManager.createReleaseListener(conn));
+        return conn.getAsync().publish(getName(), message).addListener(connectionManager.createReleaseWriteListener(conn));
     }
 
     @Override

@@ -30,6 +30,10 @@ public class RedisConnection<K, V> {
     protected long timeout;
     protected TimeUnit unit;
 
+    public RedisClient getRedisClient() {
+        return c.getRedisClient();
+    }
+
     /**
      * Initialize a new connection.
      *

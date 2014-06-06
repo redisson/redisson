@@ -39,7 +39,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         try {
             conn.setnx(getName(), 0);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -49,7 +49,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         try {
             return conn.incrby(getName(), delta);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -71,7 +71,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
                 }
             }
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -81,7 +81,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         try {
             return conn.decr(getName());
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -91,7 +91,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         try {
             return ((Number) conn.get(getName())).longValue();
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseRead(conn);
         }
     }
 
@@ -111,7 +111,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         try {
             return ((Number) conn.getset(getName(), newValue)).longValue();
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -121,7 +121,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         try {
             return conn.incr(getName());
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 
@@ -140,7 +140,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         try {
             conn.set(getName(), newValue);
         } finally {
-            connectionManager.release(conn);
+            connectionManager.releaseWrite(conn);
         }
     }
 

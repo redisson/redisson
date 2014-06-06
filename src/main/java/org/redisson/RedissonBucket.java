@@ -34,28 +34,18 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public V get() {
-        RedisConnection<String, V> conn = connectionManager.connectionReadOp();
-        try {
-            return conn.get(getName());
-        } finally {
-            connectionManager.release(conn);
-        }
+        return getAsync().awaitUninterruptibly().getNow();
     }
 
     @Override
     public Future<V> getAsync() {
         RedisConnection<String, V> conn = connectionManager.connectionReadOp();
-        return conn.getAsync().get(getName()).addListener(connectionManager.createReleaseListener(conn));
+        return conn.getAsync().get(getName()).addListener(connectionManager.createReleaseReadListener(conn));
     }
 
     @Override
     public void set(V value) {
-        RedisConnection<String, V> conn = connectionManager.connectionWriteOp();
-        try {
-            conn.set(getName(), value);
-        } finally {
-            connectionManager.release(conn);
-        }
+        setAsync(value).awaitUninterruptibly().getNow();
     }
 
     @Override
@@ -64,18 +54,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         Promise<Void> promise = connectionManager.getGroup().next().newPromise();
         Future<String> f = connection.getAsync().set(getName(), value);
         addListener(f, promise);
-        promise.addListener(connectionManager.createReleaseListener(connection));
+        promise.addListener(connectionManager.createReleaseWriteListener(connection));
         return promise;
     }
 
     @Override
     public void set(V value, long timeToLive, TimeUnit timeUnit) {
-        RedisConnection<String, V> conn = connectionManager.connectionWriteOp();
-        try {
-            conn.setex(getName(), timeUnit.toSeconds(timeToLive), value);
-        } finally {
-            connectionManager.release(conn);
-        }
+        setAsync(value, timeToLive, timeUnit).awaitUninterruptibly().getNow();
     }
 
     private void addListener(Future<String> future, final Promise<Void> promise) {
@@ -100,7 +85,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         Promise<Void> promise = connectionManager.getGroup().next().newPromise();
         Future<String> f = connection.getAsync().setex(getName(), timeUnit.toSeconds(timeToLive), value);
         addListener(f, promise);
-        promise.addListener(connectionManager.createReleaseListener(connection));
+        promise.addListener(connectionManager.createReleaseWriteListener(connection));
         return promise;
     }
 
