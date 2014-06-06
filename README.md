@@ -98,7 +98,7 @@ for master/slave connection
         Config config = new Config();
         config.useMasterSlaveConnection()
               .setMasterAddress("127.0.0.1:6379")
-              .addSlaveAddress("127.0.0.1:6389")
+              .addSlaveAddress("127.0.0.1:6389", "127.0.0.1:6332", "127.0.0.1:6419")
               .addSlaveAddress("127.0.0.1:6399");
 
         Redisson redisson = Redisson.create(config);
