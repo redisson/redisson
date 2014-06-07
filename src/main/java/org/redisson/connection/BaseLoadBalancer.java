@@ -31,13 +31,17 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     private RedisCodec codec;
 
+    private String password;
+
     List<ConnectionEntry> clients;
 
-    public void init(List<ConnectionEntry> clients, RedisCodec codec) {
+    public void init(List<ConnectionEntry> clients, RedisCodec codec, String password) {
         this.clients = clients;
         this.codec = codec;
+        this.password = password;
     }
 
+    @SuppressWarnings("unchecked")
     public RedisPubSubConnection nextPubSubConnection() {
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
         while (true) {
@@ -60,7 +64,11 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 if (conn != null) {
                     return conn;
                 }
-                return entry.getClient().connectPubSub(codec);
+                conn = entry.getClient().connectPubSub(codec);
+                if (password != null) {
+                    conn.auth(password);
+                }
+                return conn;
             }
         }
     }
@@ -87,7 +95,11 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 if (conn != null) {
                     return conn;
                 }
-                return entry.getClient().connect(codec);
+                conn = entry.getClient().connect(codec);
+                if (password != null) {
+                    conn.auth(password);
+                }
+                return conn;
             }
         }
     }

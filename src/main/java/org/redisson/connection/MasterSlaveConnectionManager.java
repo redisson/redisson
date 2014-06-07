@@ -87,7 +87,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         codec = new RedisCodecWrapper(cfg.getCodec());
         balancer = config.getLoadBalancer();
-        balancer.init(slaveConnections, codec);
+        balancer.init(slaveConnections, codec, config.getPassword());
 
         masterConnectionsSemaphore = new Semaphore(this.config.getMasterConnectionPoolSize());
     }
