@@ -20,7 +20,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
 import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.Comparator;
@@ -489,11 +488,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 score = BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(calcIncrement(leftScore))).doubleValue();
             } else {
                 rightScore = score;
-                if (rightScore < leftScore) {
-                    double rs = rightScore;
-                    leftScore = rs;
-                    rightScore = leftScore;
-                }
                 double s = BigDecimal.valueOf(rightScore).add(BigDecimal.valueOf(leftScore).negate()).doubleValue();
                 if (s == 1) {
                     score = BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(0.1)).doubleValue();
