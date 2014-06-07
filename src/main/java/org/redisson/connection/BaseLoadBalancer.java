@@ -46,12 +46,12 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
         while (true) {
             if (clientsCopy.isEmpty()) {
-                log.warn("Slave connection pool gets exhausted! Trying to acquire connection ...");
-                long time = System.currentTimeMillis();
-                // TODO wait
-                //entry.getPoolSize().acquireUninterruptibly();
-                long endTime = System.currentTimeMillis() - time;
-                log.warn("Connection acquired, time spended: {} ms", endTime);
+                // TODO refactor
+                log.warn("Slave subscribe-connection pool gets exhausted! Trying to acquire connection again...");
+                return nextPubSubConnection();
+//                long time = System.currentTimeMillis();
+//                long endTime = System.currentTimeMillis() - time;
+//                log.warn("Connection acquired, time spended: {} ms", endTime);
             }
 
             int index = getIndex(clientsCopy);
@@ -77,12 +77,12 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
         while (true) {
             if (clientsCopy.isEmpty()) {
+                // TODO refactor
                 log.warn("Slave connection pool gets exhausted! Trying to acquire connection ...");
-                long time = System.currentTimeMillis();
-                // TODO wait
-                //entry.getPoolSize().acquireUninterruptibly();
-                long endTime = System.currentTimeMillis() - time;
-                log.warn("Connection acquired, time spended: {} ms", endTime);
+                return nextConnection();
+//                long time = System.currentTimeMillis();
+//                long endTime = System.currentTimeMillis() - time;
+//                log.warn("Connection acquired, time spended: {} ms", endTime);
             }
 
             int index = getIndex(clientsCopy);
