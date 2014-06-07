@@ -23,7 +23,7 @@ Features
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic` object  
 * Thread-safe implementation
 * Supports OSGi  
-* With over 90 unit tests  
+* With over 110 unit tests  
 
 
 Recent Releases
@@ -89,6 +89,7 @@ or with initialization by Config object for single node connection
 
         Config config = new Config();
         config.useSingleConnectoin()
+              .setAddress("127.0.0.1:6379")
               .setConnectionPoolSize(10);
 
         Redisson redisson = Redisson.create(config);
