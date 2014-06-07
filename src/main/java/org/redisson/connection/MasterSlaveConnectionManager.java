@@ -51,7 +51,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private RedisCodec codec;
 
-    private final EventLoopGroup group = new NioEventLoopGroup();
+    private EventLoopGroup group;
 
     private final List<ConnectionEntry> slaveConnections = new ArrayList<ConnectionEntry>();
     private final Queue<RedisConnection> masterConnections = new ConcurrentLinkedQueue<RedisConnection>();
@@ -75,6 +75,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     void init(MasterSlaveConnectionConfig config, Config cfg) {
+        this.group = new NioEventLoopGroup(cfg.getThreads());
         this.config = config;
         for (URI address : this.config.getSlaveAddresses()) {
             RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
@@ -240,6 +241,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     public void shutdown() {
+        masterClient.shutdown();
         for (RedisClient client : slaveClients) {
             client.shutdown();
         }

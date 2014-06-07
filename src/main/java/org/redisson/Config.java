@@ -31,6 +31,11 @@ public class Config {
     private SingleConnectionConfig singleConnectionConfig;
 
     /**
+     * Threads amount shared between all redis node clients
+     */
+    private int threads = 0; // 0 = current_processors_amount * 2
+
+    /**
      * Redis key/value codec. JsonJacksonCodec used by default
      */
     private RedissonCodec codec;
@@ -44,6 +49,7 @@ public class Config {
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
+        setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
         if (oldConf.getSingleConnectionConfig() != null) {
             setSingleConnectionConfig(new SingleConnectionConfig(oldConf.getSingleConnectionConfig()));
@@ -97,6 +103,15 @@ public class Config {
     }
     void setMasterSlaveConnectionConfig(MasterSlaveConnectionConfig masterSlaveConnectionConfig) {
         this.masterSlaveConnectionConfig = masterSlaveConnectionConfig;
+    }
+
+    public int getThreads() {
+        return threads;
+    }
+
+    public Config setThreads(int threads) {
+        this.threads = threads;
+        return this;
     }
 
 }
