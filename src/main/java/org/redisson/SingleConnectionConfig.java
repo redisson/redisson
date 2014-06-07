@@ -26,10 +26,14 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
      */
     private URI address;
 
+    /**
+     * Redis subscription connection pool size
+     *
+     */
     private int subscriptionConnectionPoolSize = 25;
 
     /**
-     * Redis connection pool size limit
+     * Redis connection pool size
      */
     private int connectionPoolSize = 100;
 
@@ -44,7 +48,7 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
     }
 
     /**
-     * Redis connection pool size limit
+     * Redis connection pool size
      * Default is 100
      *
      * @param connectionPoolSize
