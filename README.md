@@ -20,7 +20,8 @@ Features
 * Distributed implementation of reentrant `java.util.concurrent.locks.Lock`  
 * Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
-* Distributed publish/subscribe messaging via `org.redisson.core.RTopic` object  
+* Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
+* Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
 * Thread-safe implementation
 * Supports OSGi  
 * With over 110 unit tests  
