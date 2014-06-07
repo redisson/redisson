@@ -31,11 +31,13 @@ Recent Releases
 ####Please Note: trunk is current development branch.
 
 ####??-June-2014 - version 1.0.5
+Feature - master/slave connection management  
 Feature - simple set/get object support via `org.redisson.core.RBucket`  
 Feature - hyperloglog support via `org.redisson.core.RHyperLogLog`  
 Feature - new methods `getAsync`, `putAsync` and `removeAsync` added to `org.redisson.core.RMap`  
 Feature - new method `publishAsync` added to `org.redisson.core.RTopic`  
 Feature - [Kryo](https://github.com/EsotericSoftware/kryo) codec added (thanks to mathieucarbou)  
+__Breaking api change__ - `org.redisson.Config` model changed  
 Fixed - `RMap.put` & `RMap.remove` result consistency fixed.  
 Fixed - `RTopic.publish` now returns the number of clients that received the message  
 Fixed - reconnection handling (thanks to renzihui)  
@@ -69,7 +71,7 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>1.0.2</version>
+       <version>1.0.4</version>
     </dependency>
 
 Usage examples
@@ -83,21 +85,25 @@ Usage examples
 
         redisson.shutdown();
 
-or with initialization by Config object
+or with initialization by Config object for single node connection
 
         Config config = new Config();
-        config.setConnectionPoolSize(10);
-
-        // Redisson will use load balance connections between listed servers
-        config.addAddress("first.redisserver.com:8291");
-        config.addAddress("second.redisserver.com:8291");
-        config.addAddress("third.redisserver.com:8291");
+        config.useSingleConnectoin()
+              .setConnectionPoolSize(10);
 
         Redisson redisson = Redisson.create(config);
 
-        ...
+for master/slave connection
 
-        redisson.shutdown();
+        Config config = new Config();
+        config.useMasterSlaveConnection()
+              .setMasterAddress("127.0.0.1:6379")
+              .addSlaveAddress("127.0.0.1:6389", "127.0.0.1:6332", "127.0.0.1:6419")
+              .addSlaveAddress("127.0.0.1:6399");
+
+        Redisson redisson = Redisson.create(config);
+
+
 
 ####Distributed Map example
 
