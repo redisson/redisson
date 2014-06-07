@@ -18,7 +18,9 @@ package org.redisson;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.Comparator;
@@ -211,12 +213,29 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     public Iterator<V> iterator() {
-        double startScore;
+        Double startScore;
         RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
             startScore = getScoreAtIndex(0, connection);
         } finally {
             connectionManager.releaseRead(connection);
+        }
+        if (startScore == null) {
+            return new Iterator<V>() {
+                @Override
+                public boolean hasNext() {
+                    return false;
+                }
+
+                @Override
+                public V next() {
+                    throw new NoSuchElementException();
+                }
+
+                @Override
+                public void remove() {
+                }
+            };
         }
 
         return iterator(startScore, Double.MAX_VALUE);
@@ -266,6 +285,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                         ScoredValue<V> val = values.get(0);
                         value = val.value;
 
+//                        System.out.println("value: "  + value + " currentScore: " + currentScore);
                         if (values.size() > 1) {
                             ScoredValue<V> nextVal = values.get(1);
                             currentScore = nextVal.score;
@@ -375,6 +395,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 }
 
                 connection.multi();
+//                System.out.println("adding: " + newScore.getScore() + " " + value);
                 connection.zadd(getName(), newScore.getScore(), value);
                 if (rightScoreKey != null) {
                     connection.del(leftScoreKey, rightScoreKey);
@@ -421,16 +442,27 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
     }
 
+    public static double calcIncrement(double value) {
+        BigDecimal b = BigDecimal.valueOf(value);
+        BigDecimal r = b.remainder(BigDecimal.ONE);
+        if (r.compareTo(BigDecimal.ZERO) == 0) {
+            return 1;
+        }
+        double res = 1/Math.pow(10, r.scale());
+        return res;
+    }
+
     /**
-     * score for entry added before head = head / 2
-     * score for entry added after tail = tail + 1000000
+     * score for first entry = 0
+     * score for entry added before = head - calcIncrement(head)
+     * score for entry added after = tail + calcIncrement(head)
      * score for entry inserted between head and tail = head + (tail - head) / 2
      *
      * @param index
      * @param connection
      * @return score for index
      */
-    public NewScore calcNewScore(int index, RedisConnection<Object, V> connection) {
+    protected NewScore calcNewScore(int index, RedisConnection<Object, V> connection) {
         if (index >= 0) {
             throw new IllegalStateException("index should be negative, but value is " + index);
         }
@@ -438,24 +470,51 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
         Double leftScore = null;
         Double rightScore = null;
-        double score = getScoreAtIndex(index, connection);
+        Double score = getScoreAtIndex(index, connection);
+        // check is upper postion
         if (index == 0) {
-            if (score < 0) {
-                score = (double) 1000000;
+            if (score == null) {
+                // first score
+                score = 0D;
                 leftScore = score;
             } else {
+                // before head
                 leftScore = score;
-                score = score / 2;
+                score = BigDecimal.valueOf(score).add(BigDecimal.valueOf(calcIncrement(score)).negate()).doubleValue();
             }
         } else {
             leftScore = getScoreAtIndex(index-1, connection);
-            if (score < 0) {
-                score = leftScore + 1000000;
+            if (score == null) {
+                // after tail
+                score = BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(calcIncrement(leftScore))).doubleValue();
             } else {
                 rightScore = score;
-                score = leftScore + (rightScore - leftScore) / 2;
+                if (rightScore < leftScore) {
+                    double rs = rightScore;
+                    leftScore = rs;
+                    rightScore = leftScore;
+                }
+                double s = BigDecimal.valueOf(rightScore).add(BigDecimal.valueOf(leftScore).negate()).doubleValue();
+                if (s == 1) {
+                    score = BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(0.1)).doubleValue();
+                } else if (s > 1) {
+                    score = leftScore + 1;
+                } else if (s < 1) {
+                    double inc = calcIncrement(s);
+                    if (BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(inc)).compareTo(BigDecimal.valueOf(rightScore)) >= 0) {
+                      // TODO check strange behavior
+//                    if (leftScore + inc >= rightScore) {
+                        if (inc == 0) {
+                            inc = 0.1;
+                        }
+                        score = BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(inc).divide(BigDecimal.TEN)).doubleValue();
+                    } else {
+                        score = BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(inc)).doubleValue();
+                    }
+                }
             }
         }
+//        System.out.println("score: " + score + " left: " + leftScore + " right: " + rightScore);
         return new NewScore(leftScore, rightScore, score);
     }
 
@@ -624,10 +683,10 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
     }
 
-    private double getScoreAtIndex(int index, RedisConnection<Object, V> connection) {
+    private Double getScoreAtIndex(int index, RedisConnection<Object, V> connection) {
         List<ScoredValue<V>> res = connection.zrangeWithScores(getName(), index, index);
         if (res.isEmpty()) {
-            return -1;
+            return null;
         }
         return res.get(0).score;
     }
