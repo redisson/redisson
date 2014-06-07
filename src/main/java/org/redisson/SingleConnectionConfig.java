@@ -26,6 +26,8 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
      */
     private URI address;
 
+    private int subscriptionConnectionPoolSize = 25;
+
     /**
      * Redis connection pool size limit
      */
@@ -38,6 +40,7 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
         super(config);
         setAddress(config.getAddress());
         setConnectionPoolSize(config.getConnectionPoolSize());
+        setSubscriptionConnectionPoolSize(config.getSubscriptionConnectionPoolSize());
     }
 
     /**
@@ -52,6 +55,21 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
     }
     public int getConnectionPoolSize() {
         return connectionPoolSize;
+    }
+
+    /**
+     * Redis subscription-connection pool size limit
+     * Default is 25
+     *
+     * @param connectionPoolSize
+     * @return
+     */
+    public SingleConnectionConfig setSubscriptionConnectionPoolSize(int subscriptionConnectionPoolSize) {
+        this.subscriptionConnectionPoolSize = subscriptionConnectionPoolSize;
+        return this;
+    }
+    public int getSubscriptionConnectionPoolSize() {
+        return subscriptionConnectionPoolSize;
     }
 
     /**
@@ -70,7 +88,7 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
     public URI getAddress() {
         return address;
     }
-    public void setAddress(URI address) {
+    void setAddress(URI address) {
         this.address = address;
     }
 

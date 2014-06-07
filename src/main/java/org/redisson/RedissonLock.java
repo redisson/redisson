@@ -110,6 +110,7 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     private final AtomicReference<Promise<Boolean>> promise = new AtomicReference<Promise<Boolean>>();
 
+    // TODO use lazy init map
     private final Semaphore msg = new Semaphore(1);
 
     private PubSubConnectionEntry pubSubEntry;

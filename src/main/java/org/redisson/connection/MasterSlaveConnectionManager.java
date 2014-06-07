@@ -49,7 +49,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private RedisCodec codec;
+    protected RedisCodec codec;
 
     private EventLoopGroup group;
 
@@ -59,13 +59,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final Queue<PubSubConnectionEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
     private final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
 
+    private LoadBalancer balancer;
     private final List<RedisClient> slaveClients = new ArrayList<RedisClient>();
-    private RedisClient masterClient;
+    protected RedisClient masterClient;
 
     private Semaphore masterConnectionsSemaphore;
 
-    private MasterSlaveConnectionConfig config;
-    private LoadBalancer balancer;
+    protected MasterSlaveConnectionConfig config;
 
     MasterSlaveConnectionManager() {
     }
@@ -87,8 +87,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         masterClient = new RedisClient(group, this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
 
         codec = new RedisCodecWrapper(cfg.getCodec());
-        balancer = config.getLoadBalancer();
-        balancer.init(slaveConnections, codec, config.getPassword());
+        if (!slaveConnections.isEmpty()) {
+            balancer = config.getLoadBalancer();
+            balancer.init(slaveConnections, codec, config.getPassword());
+        }
 
         masterConnectionsSemaphore = new Semaphore(this.config.getMasterConnectionPoolSize());
     }
@@ -150,12 +152,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        acquireMasterConnection();
-
-        RedisPubSubConnection<K, V> conn = balancer.nextPubSubConnection();
-        if (config.getPassword() != null) {
-            conn.auth(config.getPassword());
-        }
+        RedisPubSubConnection<K, V> conn = nextPubSubConnection();
 
         PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
         entry.tryAcquire();
@@ -166,6 +163,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         entry.subscribe(channelName);
         pubSubConnections.add(entry);
         return entry;
+    }
+
+    RedisPubSubConnection nextPubSubConnection() {
+        return balancer.nextPubSubConnection();
     }
 
     public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, String channelName) {
@@ -186,12 +187,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        acquireMasterConnection();
-
-        RedisPubSubConnection<K, V> conn = balancer.nextPubSubConnection();
-        if (config.getPassword() != null) {
-            conn.auth(config.getPassword());
-        }
+        RedisPubSubConnection<K, V> conn = nextPubSubConnection();
 
         PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
         entry.tryAcquire();
@@ -227,8 +223,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         log.debug("unsubscribed from '{}' channel", channelName);
         if (entry.tryClose()) {
             pubSubConnections.remove(entry);
-            balancer.returnSubscribeConnection(entry.getConnection());
+            returnSubscribeConnection(entry);
         }
+    }
+
+    protected void returnSubscribeConnection(PubSubConnectionEntry entry) {
+        balancer.returnSubscribeConnection(entry.getConnection());
     }
 
     public void releaseWrite(RedisConnection сonnection) {
