@@ -38,9 +38,13 @@ public class PubSubCommandHandler<K, V> extends CommandHandler<K, V> {
     protected void decode(ChannelHandlerContext ctx, ByteBuf buffer) throws InterruptedException {
         while (output.type() == null && !queue.isEmpty()) {
             CommandOutput<K, V, ?> output = queue.peek().getOutput();
-            if (!rsm.decode(buffer, output)) return;
+            if (!rsm.decode(buffer, output)) {
+                return;
+            }
             queue.take().complete();
-            if (output instanceof PubSubOutput) ctx.fireChannelRead(output);
+            if (output instanceof PubSubOutput && ((PubSubOutput) output).type() != null) {
+                ctx.fireChannelRead(output);
+            }
         }
 
         while (rsm.decode(buffer, output)) {

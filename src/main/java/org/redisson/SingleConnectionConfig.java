@@ -40,7 +40,7 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
     SingleConnectionConfig() {
     }
 
-    public SingleConnectionConfig(SingleConnectionConfig config) {
+    SingleConnectionConfig(SingleConnectionConfig config) {
         super(config);
         setAddress(config.getAddress());
         setConnectionPoolSize(config.getConnectionPoolSize());

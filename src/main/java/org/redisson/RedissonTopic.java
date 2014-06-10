@@ -50,7 +50,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     @Override
     public int addListener(MessageListener<M> listener) {
-        RedisPubSubTopicListenerWrapper<M> pubSubListener = new RedisPubSubTopicListenerWrapper<M>(listener, getName());
+        RedisPubSubTopicListenerWrapper<String, M> pubSubListener = new RedisPubSubTopicListenerWrapper<String, M>(listener, getName());
         PubSubConnectionEntry entry = connectionManager.subscribe(getName());
         synchronized (entry) {
             entry.addListener(pubSubListener);

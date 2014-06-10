@@ -26,7 +26,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
  * @param <K>
  * @param <V>
  */
-public class RedisPubSubTopicListenerWrapper<V> extends RedisPubSubAdapter<String, V> {
+public class RedisPubSubTopicListenerWrapper<K, V> extends RedisPubSubAdapter<K, V> {
 
     private final MessageListener<V> listener;
     private final String name;
@@ -42,7 +42,7 @@ public class RedisPubSubTopicListenerWrapper<V> extends RedisPubSubAdapter<Strin
     }
 
     @Override
-    public void message(String channel, V message) {
+    public void message(K channel, V message) {
         // could be subscribed to multiple channels
         if (name.equals(channel)) {
             listener.onMessage(message);

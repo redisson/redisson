@@ -61,7 +61,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private LoadBalancer balancer;
     private final List<RedisClient> slaveClients = new ArrayList<RedisClient>();
-    protected RedisClient masterClient;
+    protected volatile RedisClient masterClient;
 
     private Semaphore masterConnectionsSemaphore;
 
@@ -95,6 +95,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         masterConnectionsSemaphore = new Semaphore(this.config.getMasterConnectionPoolSize());
     }
 
+    public void changeMaster(String host, int port) {
+        // TODO async
+        masterClient.shutdown();
+
+        masterClient = new RedisClient(group, host, port);
+        // TODO
+        // 1. remove slave
+        // 2. re-attach listeners
+        // 3. remove dead slave
+    }
+
+    @Override
     public <T> FutureListener<T> createReleaseWriteListener(final RedisConnection conn) {
         return new FutureListener<T>() {
             @Override
@@ -104,6 +116,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         };
     }
 
+    @Override
     public <T> FutureListener<T> createReleaseReadListener(final RedisConnection conn) {
         return new FutureListener<T>() {
             @Override
@@ -113,6 +126,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         };
     }
 
+    @Override
     public <K, V> RedisConnection<K, V> connectionWriteOp() {
         acquireMasterConnection();
 
@@ -126,15 +140,19 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return conn;
     }
 
+    @Override
     public <K, V> RedisConnection<K, V> connectionReadOp() {
         return balancer.nextConnection();
     }
 
+    @Override
     public PubSubConnectionEntry getEntry(String channelName) {
         return name2PubSubConnection.get(channelName);
     }
 
+    @Override
     public <K, V> PubSubConnectionEntry subscribe(String channelName) {
+        // multiple channel names per PubSubConnections allowed
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
             return сonnEntry;
@@ -158,6 +176,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         entry.tryAcquire();
         PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
         if (oldEntry != null) {
+            returnSubscribeConnection(entry);
             return oldEntry;
         }
         entry.subscribe(channelName);
@@ -169,6 +188,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return balancer.nextPubSubConnection();
     }
 
+    @Override
     public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, String channelName) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
@@ -193,6 +213,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         entry.tryAcquire();
         PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
         if (oldEntry != null) {
+            returnSubscribeConnection(entry);
             return oldEntry;
         }
         entry.subscribe(listener, channelName);
@@ -214,13 +235,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         masterConnectionsSemaphore.release();
     }
 
+    @Override
     public void unsubscribe(PubSubConnectionEntry entry, String channelName) {
         if (entry.hasListeners(channelName)) {
             return;
         }
         name2PubSubConnection.remove(channelName);
         entry.unsubscribe(channelName);
-        log.debug("unsubscribed from '{}' channel", channelName);
         if (entry.tryClose()) {
             pubSubConnections.remove(entry);
             returnSubscribeConnection(entry);
@@ -240,6 +261,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         balancer.returnConnection(сonnection);
     }
 
+    @Override
     public void shutdown() {
         masterClient.shutdown();
         for (RedisClient client : slaveClients) {
@@ -247,6 +269,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    @Override
     public EventLoopGroup getGroup() {
         return group;
     }

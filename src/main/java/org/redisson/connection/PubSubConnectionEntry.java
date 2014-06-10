@@ -30,7 +30,7 @@ public class PubSubConnectionEntry {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final Semaphore semaphore;
+    private final Semaphore subscribedChannelsAmount;
     private final RedisPubSubConnection conn;
     private final int subscriptionsPerConnection;
 
@@ -38,7 +38,7 @@ public class PubSubConnectionEntry {
         super();
         this.conn = conn;
         this.subscriptionsPerConnection = subscriptionsPerConnection;
-        this.semaphore = new Semaphore(subscriptionsPerConnection);
+        this.subscribedChannelsAmount = new Semaphore(subscriptionsPerConnection);
     }
 
     public void addListener(RedisPubSubListener listener) {
@@ -82,17 +82,23 @@ public class PubSubConnectionEntry {
     }
 
     public boolean tryAcquire() {
-        return semaphore.tryAcquire();
+        return subscribedChannelsAmount.tryAcquire();
     }
 
     public void release() {
-        semaphore.release();
+        subscribedChannelsAmount.release();
     }
 
     public void subscribe(final String channelName) {
         conn.addListener(new RedisPubSubAdapter() {
-            public void subscribed(String channel, long count) {
+            @Override
+            public void subscribed(Object channel, long count) {
                 log.debug("subscribed to '{}' channel", channelName);
+            }
+
+            @Override
+            public void unsubscribed(Object channel, long count) {
+                log.debug("unsubscribed from '{}' channel", channelName);
             }
         });
         conn.subscribe(channelName);
@@ -106,11 +112,11 @@ public class PubSubConnectionEntry {
 
     public void unsubscribe(String channel) {
         conn.unsubscribe(channel);
-        semaphore.release();
+        subscribedChannelsAmount.release();
     }
 
     public boolean tryClose() {
-        if (semaphore.tryAcquire(subscriptionsPerConnection)) {
+        if (subscribedChannelsAmount.tryAcquire(subscriptionsPerConnection)) {
             conn.close();
             return true;
         }
