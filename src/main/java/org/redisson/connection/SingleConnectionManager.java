@@ -60,7 +60,12 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     RedisPubSubConnection nextPubSubConnection() {
         acquireSubscribeConnection();
 
-        RedisPubSubConnection conn = masterClient.connectPubSub(codec);
+        RedisPubSubConnection conn = subscribeConnections.poll();
+        if (conn != null) {
+            return conn;
+        }
+
+        conn = masterClient.connectPubSub(codec);
         if (config.getPassword() != null) {
             conn.auth(config.getPassword());
         }
