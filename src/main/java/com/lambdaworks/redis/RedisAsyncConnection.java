@@ -56,6 +56,7 @@ import com.lambdaworks.redis.output.IntegerOutput;
 import com.lambdaworks.redis.output.KeyListOutput;
 import com.lambdaworks.redis.output.KeyOutput;
 import com.lambdaworks.redis.output.KeyValueOutput;
+import com.lambdaworks.redis.output.ListMapOutput;
 import com.lambdaworks.redis.output.MapKeyListOutput;
 import com.lambdaworks.redis.output.MapOutput;
 import com.lambdaworks.redis.output.MapValueListOutput;
@@ -1004,6 +1005,16 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     public Future<Long> pfmerge(K destkey, K... sourceKeys) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKeys(destkey).addKeys(sourceKeys);
         return dispatch(PFADD, new IntegerOutput<K, V>(codec), args);
+    }
+
+    public Future<List<V>> getMasterAddrByKey(K name) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add("get-master-addr-by-name").addKey(name);
+        return dispatch(SENTINEL, new ValueListOutput<K, V>(codec), args);
+    }
+
+    public Future<List<Map<K, V>>> slaves(K key) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add("slaves").addKey(key);
+        return dispatch(SENTINEL, new ListMapOutput<K, V>(codec), args);
     }
 
     /**

@@ -26,6 +26,8 @@ import org.redisson.codec.RedissonCodec;
  */
 public class Config {
 
+    private SentinelConnectionConfig sentinelConnectionConfig;
+
     private MasterSlaveConnectionConfig masterSlaveConnectionConfig;
 
     private SingleConnectionConfig singleConnectionConfig;
@@ -57,6 +59,9 @@ public class Config {
         if (oldConf.getMasterSlaveConnectionConfig() != null) {
             setMasterSlaveConnectionConfig(new MasterSlaveConnectionConfig(oldConf.getMasterSlaveConnectionConfig()));
         }
+        if (oldConf.getSentinelConnectionConfig() != null ) {
+            setSentinelConnectionConfig(new SentinelConnectionConfig(oldConf.getSentinelConnectionConfig()));
+        }
     }
 
     /**
@@ -87,6 +92,22 @@ public class Config {
     }
     void setSingleConnectionConfig(SingleConnectionConfig singleConnectionConfig) {
         this.singleConnectionConfig = singleConnectionConfig;
+    }
+
+    public SentinelConnectionConfig useSentinelConnection() {
+        if (singleConnectionConfig != null) {
+            throw new IllegalStateException("single connection already used!");
+        }
+        if (sentinelConnectionConfig == null) {
+            sentinelConnectionConfig = new SentinelConnectionConfig();
+        }
+        return sentinelConnectionConfig;
+    }
+    SentinelConnectionConfig getSentinelConnectionConfig() {
+        return sentinelConnectionConfig;
+    }
+    void setSentinelConnectionConfig(SentinelConnectionConfig sentinelConnectionConfig) {
+        this.sentinelConnectionConfig = sentinelConnectionConfig;
     }
 
     public MasterSlaveConnectionConfig useMasterSlaveConnection() {

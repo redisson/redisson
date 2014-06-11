@@ -41,6 +41,7 @@ public class RedisClient {
     private ChannelGroup channels;
     private long timeout;
     private TimeUnit unit;
+    private InetSocketAddress addr;
 
     /**
      * Create a new client that connects to the supplied host on the default port.
@@ -60,7 +61,7 @@ public class RedisClient {
      * @param port    Server port.
      */
     public RedisClient(EventLoopGroup group, String host, int port) {
-        InetSocketAddress addr = new InetSocketAddress(host, port);
+        addr = new InetSocketAddress(host, port);
 
         bootstrap = new Bootstrap().channel(NioSocketChannel.class).group(group).remoteAddress(addr);
 
@@ -179,7 +180,7 @@ public class RedisClient {
 
             return connection;
         } catch (Throwable e) {
-            throw new RedisException("Unable to connect", e);
+            throw new RedisConnectionException("Unable to connect", e);
         }
     }
 
@@ -198,6 +199,9 @@ public class RedisClient {
         bootstrap.group().shutdownGracefully().syncUninterruptibly();
     }
 
+    public InetSocketAddress getAddr() {
+        return addr;
+    }
 
 }
 

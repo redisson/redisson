@@ -23,7 +23,11 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public interface LoadBalancer {
 
-    void init(List<ConnectionEntry> clients, RedisCodec codec, String password);
+    void init(RedisCodec codec, String password);
+
+    void add(ConnectionEntry entry);
+
+    void remove(String host, int port);
 
     RedisConnection nextConnection();
 

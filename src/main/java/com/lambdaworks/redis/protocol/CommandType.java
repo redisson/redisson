@@ -71,7 +71,9 @@ public enum CommandType {
     BITCOUNT, BITOP, GETBIT, SETBIT,
 
     // HyperLogLog
-    PFADD, PFCOUNT, PFMERGE;
+    PFADD, PFCOUNT, PFMERGE,
+
+    SENTINEL;
 
     public byte[] bytes;
 

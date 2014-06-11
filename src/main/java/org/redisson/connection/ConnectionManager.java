@@ -47,6 +47,8 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 //TODO ping support
 public interface ConnectionManager {
 
+    void changeMaster(String host, int port);
+
     <T> FutureListener<T> createReleaseWriteListener(final RedisConnection conn);
 
     <T> FutureListener<T> createReleaseReadListener(final RedisConnection conn);

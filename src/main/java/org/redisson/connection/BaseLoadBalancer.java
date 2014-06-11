@@ -15,13 +15,18 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisConnectionException;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
@@ -33,12 +38,35 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     private String password;
 
-    List<ConnectionEntry> clients;
+    final Queue<ConnectionEntry> clients = new ConcurrentLinkedQueue<ConnectionEntry>();
 
-    public void init(List<ConnectionEntry> clients, RedisCodec codec, String password) {
-        this.clients = clients;
+    public void init(RedisCodec codec, String password) {
         this.codec = codec;
         this.password = password;
+    }
+
+    public void add(ConnectionEntry entry) {
+        clients.add(entry);
+    }
+
+    public void remove(String host, int port) {
+        InetSocketAddress addr = new InetSocketAddress(host, port);
+        for (Iterator<ConnectionEntry> iterator = clients.iterator(); iterator.hasNext();) {
+            ConnectionEntry entry = iterator.next();
+            if (!entry.getClient().getAddr().equals(addr)) {
+                continue;
+            }
+
+            log.info("slave {} removed", entry.getClient().getAddr());
+            iterator.remove();
+            // TODO re-attach listeners
+            for (RedisPubSubConnection conn : entry.getSubscribeConnections()) {
+                conn.getListeners();
+            }
+            entry.shutdown();
+            log.info("slave {} shutdown", entry.getClient().getAddr());
+            break;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -60,15 +88,21 @@ abstract class BaseLoadBalancer implements LoadBalancer {
             if (!entry.getSubscribeConnectionsSemaphore().tryAcquire()) {
                 clientsCopy.remove(index);
             } else {
-                RedisPubSubConnection conn = entry.getSubscribeConnections().poll();
-                if (conn != null) {
+                try {
+                    RedisPubSubConnection conn = entry.getSubscribeConnections().poll();
+                    if (conn != null) {
+                        return conn;
+                    }
+                    conn = entry.getClient().connectPubSub(codec);
+                    if (password != null) {
+                        conn.auth(password);
+                    }
                     return conn;
+                } catch (RedisConnectionException e) {
+                    // TODO connection scoring
+                    log.warn("Can't connect to {}, trying next connection!", entry.getClient().getAddr());
+                    clientsCopy.remove(index);
                 }
-                conn = entry.getClient().connectPubSub(codec);
-                if (password != null) {
-                    conn.auth(password);
-                }
-                return conn;
             }
         }
     }
@@ -95,11 +129,17 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 if (conn != null) {
                     return conn;
                 }
-                conn = entry.getClient().connect(codec);
-                if (password != null) {
-                    conn.auth(password);
+                try {
+                    conn = entry.getClient().connect(codec);
+                    if (password != null) {
+                        conn.auth(password);
+                    }
+                    return conn;
+                } catch (RedisConnectionException e) {
+                    // TODO connection scoring
+                    log.warn("Can't connect to {}, trying next connection!", entry.getClient().getAddr());
+                    clientsCopy.remove(index);
                 }
-                return conn;
             }
         }
     }

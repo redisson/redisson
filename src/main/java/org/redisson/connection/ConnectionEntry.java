@@ -33,15 +33,23 @@ public class ConnectionEntry {
     private final Queue<RedisPubSubConnection> subscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
 
+    private final int poolSize;
+
     public ConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize) {
         super();
         this.client = client;
+        this.poolSize = poolSize;
         this.connectionsSemaphore = new Semaphore(poolSize);
         this.subscribeConnectionsSemaphore = new Semaphore(subscribePoolSize);
     }
 
     public RedisClient getClient() {
         return client;
+    }
+
+    public void shutdown() {
+        connectionsSemaphore.acquireUninterruptibly(poolSize);
+        client.shutdown();
     }
 
     public Semaphore getSubscribeConnectionsSemaphore() {

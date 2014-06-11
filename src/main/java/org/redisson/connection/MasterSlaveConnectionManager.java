@@ -53,7 +53,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private EventLoopGroup group;
 
-    private final List<ConnectionEntry> slaveConnections = new ArrayList<ConnectionEntry>();
     private final Queue<RedisConnection> masterConnections = new ConcurrentLinkedQueue<RedisConnection>();
 
     private final Queue<PubSubConnectionEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
@@ -77,33 +76,28 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     void init(MasterSlaveConnectionConfig config, Config cfg) {
         this.group = new NioEventLoopGroup(cfg.getThreads());
         this.config = config;
+        this.codec = new RedisCodecWrapper(cfg.getCodec());
+
+        balancer = config.getLoadBalancer();
+        balancer.init(codec, config.getPassword());
         for (URI address : this.config.getSlaveAddresses()) {
             RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
             slaveClients.add(client);
-            slaveConnections.add(new ConnectionEntry(client,
+            balancer.add(new ConnectionEntry(client,
                                         this.config.getSlaveConnectionPoolSize(),
                                         this.config.getSlaveSubscriptionConnectionPoolSize()));
         }
+
         masterClient = new RedisClient(group, this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
-
-        codec = new RedisCodecWrapper(cfg.getCodec());
-        if (!slaveConnections.isEmpty()) {
-            balancer = config.getLoadBalancer();
-            balancer.init(slaveConnections, codec, config.getPassword());
-        }
-
         masterConnectionsSemaphore = new Semaphore(this.config.getMasterConnectionPoolSize());
     }
 
     public void changeMaster(String host, int port) {
-        // TODO async
-        masterClient.shutdown();
-
+        RedisClient oldMaster = masterClient;
         masterClient = new RedisClient(group, host, port);
-        // TODO
-        // 1. remove slave
-        // 2. re-attach listeners
-        // 3. remove dead slave
+        // TODO async & re-attach listeners
+        balancer.remove(host, port);
+        oldMaster.shutdown();
     }
 
     @Override
@@ -131,11 +125,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         acquireMasterConnection();
 
         RedisConnection<K, V> conn = masterConnections.poll();
-        if (conn == null) {
-            conn = masterClient.connect(codec);
-            if (config.getPassword() != null) {
-                conn.auth(config.getPassword());
-            }
+        if (conn != null) {
+            return conn;
+        }
+
+        conn = masterClient.connect(codec);
+        if (config.getPassword() != null) {
+            conn.auth(config.getPassword());
         }
         return conn;
     }
@@ -231,10 +227,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    void releaseMasterConnection() {
-        masterConnectionsSemaphore.release();
-    }
-
     @Override
     public void unsubscribe(PubSubConnectionEntry entry, String channelName) {
         if (entry.hasListeners(channelName)) {
@@ -254,7 +246,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public void releaseWrite(RedisConnection сonnection) {
         masterConnections.add(сonnection);
-        releaseMasterConnection();
+        masterConnectionsSemaphore.release();
     }
 
     public void releaseRead(RedisConnection сonnection) {

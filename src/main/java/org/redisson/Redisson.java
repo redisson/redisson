@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
+import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBucket;
@@ -72,8 +73,10 @@ public class Redisson {
         Config configCopy = new Config(config);
         if (configCopy.getMasterSlaveConnectionConfig() != null) {
             connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveConnectionConfig(), configCopy);
-        } else {
+        } else if (configCopy.getSingleConnectionConfig() != null) {
             connectionManager = new SingleConnectionManager(configCopy.getSingleConnectionConfig(), configCopy);
+        } else {
+            connectionManager = new SentinelConnectionManager(configCopy.getSentinelConnectionConfig(), configCopy);
         }
     }
 
@@ -86,6 +89,7 @@ public class Redisson {
         Config config = new Config();
         config.useSingleConnection().setAddress("127.0.0.1:6379");
 //        config.useMasterSlaveConnection().setMasterAddress("127.0.0.1:6379").addSlaveAddress("127.0.0.1:6389").addSlaveAddress("127.0.0.1:6399");
+//        config.useSentinelConnection().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26389", "127.0.0.1:26379");
         return create(config);
     }
 
