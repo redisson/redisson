@@ -38,6 +38,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     public SingleConnectionManager(SingleConnectionConfig cfg, Config config) {
         MasterSlaveConnectionConfig newconfig = new MasterSlaveConnectionConfig();
         String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
+        newconfig.setPassword(cfg.getPassword());
         newconfig.setMasterAddress(addr);
         newconfig.setMasterConnectionPoolSize(cfg.getConnectionPoolSize());
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
