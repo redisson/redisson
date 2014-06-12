@@ -290,7 +290,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         Promise<V> promise = connectionManager.getGroup().next().newPromise();
         RedisAsyncConnection<Object, V> async = connection.getAsync();
         putAsync(key, value, promise, async);
-        promise.addListener(connectionManager.createReleaseReadListener(connection));
+        promise.addListener(connectionManager.createReleaseWriteListener(connection));
         return promise;
     }
 

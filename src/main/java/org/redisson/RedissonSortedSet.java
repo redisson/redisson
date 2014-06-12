@@ -498,9 +498,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                     if (BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(inc)).compareTo(BigDecimal.valueOf(rightScore)) >= 0) {
                       // TODO check strange behavior
 //                    if (leftScore + inc >= rightScore) {
-                        if (inc == 0) {
-                            inc = 0.1;
-                        }
                         score = BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(inc).divide(BigDecimal.TEN)).doubleValue();
                     } else {
                         score = BigDecimal.valueOf(leftScore).add(BigDecimal.valueOf(inc)).doubleValue();
