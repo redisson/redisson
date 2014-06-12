@@ -196,7 +196,6 @@ public class RedisClient {
         }
         ChannelGroupFuture future = channels.close();
         future.awaitUninterruptibly();
-        bootstrap.group().shutdownGracefully().syncUninterruptibly();
     }
 
     public InetSocketAddress getAddr() {

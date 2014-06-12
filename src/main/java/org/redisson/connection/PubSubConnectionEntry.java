@@ -15,6 +15,8 @@
  */
 package org.redisson.connection;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
@@ -28,8 +30,11 @@ import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 
 public class PubSubConnectionEntry {
 
+    public enum Status {ACTIVE, INACTIVE}
+
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    private volatile Status status = Status.ACTIVE;
     private final Semaphore subscribedChannelsAmount;
     private final RedisPubSubConnection conn;
     private final int subscriptionsPerConnection;
@@ -45,8 +50,16 @@ public class PubSubConnectionEntry {
         conn.addListener(listener);
     }
 
-    // TODO optimize
-    public boolean hasListeners(String channelName) {
+    public boolean isActive() {
+        return status == Status.ACTIVE;
+    }
+
+    public void close() {
+        status = Status.INACTIVE;
+    }
+
+    public List<RedisPubSubListener> getListeners(String channelName) {
+        List<RedisPubSubListener> result = new ArrayList<RedisPubSubListener>();
         Queue<RedisPubSubListener> queue = conn.getListeners();
         for (RedisPubSubListener listener : queue) {
             if (!(listener instanceof RedisPubSubTopicListenerWrapper)) {
@@ -55,10 +68,15 @@ public class PubSubConnectionEntry {
 
             RedisPubSubTopicListenerWrapper entry = (RedisPubSubTopicListenerWrapper) listener;
             if (entry.getName().equals(channelName)) {
-                return true;
+                result.add(entry);
             }
         }
-        return false;
+        return result;
+    }
+
+    // TODO optimize
+    public boolean hasListeners(String channelName) {
+        return !getListeners(channelName).isEmpty();
     }
 
     // TODO optimize

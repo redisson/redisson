@@ -15,7 +15,7 @@
  */
 package org.redisson.connection;
 
-import java.util.List;
+import java.util.Queue;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.codec.RedisCodec;
@@ -27,7 +27,7 @@ public interface LoadBalancer {
 
     void add(ConnectionEntry entry);
 
-    void remove(String host, int port);
+    Queue<RedisPubSubConnection> remove(String host, int port);
 
     RedisConnection nextConnection();
 

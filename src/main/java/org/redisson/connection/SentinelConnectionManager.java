@@ -16,6 +16,8 @@
 package org.redisson.connection;
 
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -25,31 +27,31 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveConnectionConfig;
-import org.redisson.Redisson;
 import org.redisson.SentinelConnectionConfig;
-import org.redisson.codec.StringCodec;
-import org.redisson.core.MessageListener;
-import org.redisson.core.RTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
+import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final List<Redisson> sentinels = new ArrayList<Redisson>();
+    private final List<RedisClient> sentinels = new ArrayList<RedisClient>();
 
     public SentinelConnectionManager(final SentinelConnectionConfig cfg, Config config) {
         init(cfg, config);
     }
 
     private void init(final SentinelConnectionConfig cfg, final Config config) {
+        init(config);
+
         final MasterSlaveConnectionConfig c = new MasterSlaveConnectionConfig();
         for (URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = new RedisClient(new NioEventLoopGroup(1), addr.getHost(), addr.getPort());
+            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
             RedisAsyncConnection<String, String> connection = client.connectAsync();
 
             // TODO async
@@ -75,46 +77,61 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             break;
         }
 
+        init(c);
+
         final AtomicReference<String> master = new AtomicReference<String>();
         for (final URI addr : cfg.getSentinelAddresses()) {
-            Config sc = new Config();
-            sc.setCodec(new StringCodec());
-            sc.useSingleConnection().setAddress(addr.getHost() + ":" + addr.getPort());
-            Redisson r = Redisson.create(sc);
-            sentinels.add(r);
+            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
+            sentinels.add(client);
 
-            final RTopic<String> t = r.getTopic("+switch-master");
-            t.addListener(new MessageListener<String>() {
-                @Override
-                public void onMessage(String msg) {
-                    String[] parts = msg.split(" ");
+            RedisPubSubConnection<String, String> pubsub = client.connectPubSub();
+//            Future<RedisPubSubConnection<String, String>> pubsubFuture = client.connectAsyncPubSub();
+//            pubsubFuture.addListener(new FutureListener<RedisPubSubConnection<String, String>>() {
+//                @Override
+//                public void operationComplete(Future<RedisPubSubConnection<String, String>> future)
+//                        throws Exception {
+//                    if (!future.isSuccess()) {
+//                        log.error("Can't connect to Sentinel {}:{}", addr.getHost(), addr.getPort());
+//                        return;
+//                    }
+//                    RedisPubSubConnection<String, String> pubsub = future.get();
+                    pubsub.addListener(new RedisPubSubAdapter<String, String>() {
+                        @Override
+                        public void subscribed(String channel, long count) {
+                            log.info("subscribed to channel: {} from Sentinel {}:{}", channel, addr.getHost(), addr.getPort());
+                        }
 
-                    if (parts.length > 3) {
-                        if (cfg.getMasterName().equals(parts[0])) {
-                            String ip = parts[3];
-                            String port = parts[4];
+                        @Override
+                        public void message(String channel, String msg) {
+                            String[] parts = msg.split(" ");
 
-                            String current = master.get();
-                            String newMaster = ip + ":" + port;
-                            if (!newMaster.equals(current)
-                                    && master.compareAndSet(current, newMaster)) {
-                                log.debug("changing master to {}:{}", ip, port);
-                                changeMaster(ip, Integer.valueOf(port));
+                            if (parts.length > 3) {
+                                if (cfg.getMasterName().equals(parts[0])) {
+                                    String ip = parts[3];
+                                    String port = parts[4];
+
+                                    String current = master.get();
+                                    String newMaster = ip + ":" + port;
+                                    if (!newMaster.equals(current)
+                                            && master.compareAndSet(current, newMaster)) {
+                                        log.debug("changing master to {}:{}", ip, port);
+                                        changeMaster(ip, Integer.valueOf(port));
+                                    }
+                                }
+                            } else {
+                                log.error("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
                             }
                         }
-                    } else {
-                        log.error("Invalid message: {} from Sentinel({}:{}) on channel {}", msg, addr.getHost(), addr.getPort(), t.getName());
-                    }
-                }
-            });
+                    });
+                    pubsub.subscribe("+switch-master");
+//                }
+//            });
         }
-
-        init(c, config);
     }
 
     @Override
     public void shutdown() {
-        for (Redisson sentinel : sentinels) {
+        for (RedisClient sentinel : sentinels) {
             sentinel.shutdown();
         }
 

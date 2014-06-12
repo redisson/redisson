@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.redisson.misc.ReclosableLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     private String password;
 
+    private final ReclosableLatch clientsEmpty = new ReclosableLatch();
     final Queue<ConnectionEntry> clients = new ConcurrentLinkedQueue<ConnectionEntry>();
 
     public void init(RedisCodec codec, String password) {
@@ -47,9 +49,10 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public void add(ConnectionEntry entry) {
         clients.add(entry);
+        clientsEmpty.open();
     }
 
-    public void remove(String host, int port) {
+    public Queue<RedisPubSubConnection> remove(String host, int port) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         for (Iterator<ConnectionEntry> iterator = clients.iterator(); iterator.hasNext();) {
             ConnectionEntry entry = iterator.next();
@@ -59,19 +62,23 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
             log.info("slave {} removed", entry.getClient().getAddr());
             iterator.remove();
-            // TODO re-attach listeners
-            for (RedisPubSubConnection conn : entry.getSubscribeConnections()) {
-                conn.getListeners();
+            if (clients.isEmpty()) {
+                clientsEmpty.close();
             }
             entry.shutdown();
             log.info("slave {} shutdown", entry.getClient().getAddr());
-            break;
+
+            return entry.getSubscribeConnections();
         }
+        throw new IllegalStateException("Can't find " + addr + " in slaves!");
     }
 
     @SuppressWarnings("unchecked")
     public RedisPubSubConnection nextPubSubConnection() {
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
+        if (clientsCopy.isEmpty()) {
+            clientsEmpty.awaitUninterruptibly();
+        }
         while (true) {
             if (clientsCopy.isEmpty()) {
                 // TODO refactor
@@ -109,6 +116,9 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public RedisConnection nextConnection() {
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
+        if (clientsCopy.isEmpty()) {
+            clientsEmpty.awaitUninterruptibly();
+        }
         while (true) {
             if (clientsCopy.isEmpty()) {
                 // TODO refactor

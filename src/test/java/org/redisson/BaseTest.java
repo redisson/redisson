@@ -18,8 +18,11 @@ public abstract class BaseTest {
 
     @After
     public void after() {
-        redisson.flushdb();
-        redisson.shutdown();
+        try {
+            redisson.flushdb();
+        } finally {
+            redisson.shutdown();
+        }
     }
 
     protected void clear(Map<?, ?> map, Redisson redisson) {

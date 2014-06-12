@@ -21,8 +21,13 @@ import io.netty.util.concurrent.FutureListener;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -39,6 +44,7 @@ import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
+import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 
 /**
  *
@@ -51,11 +57,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
     protected RedisCodec codec;
 
-    private EventLoopGroup group;
+    protected EventLoopGroup group;
 
     private final Queue<RedisConnection> masterConnections = new ConcurrentLinkedQueue<RedisConnection>();
 
-    private final Queue<PubSubConnectionEntry> pubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
     private final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
 
     private LoadBalancer balancer;
@@ -73,11 +78,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         init(cfg, config);
     }
 
-    void init(MasterSlaveConnectionConfig config, Config cfg) {
-        this.group = new NioEventLoopGroup(cfg.getThreads());
-        this.config = config;
-        this.codec = new RedisCodecWrapper(cfg.getCodec());
+    protected void init(MasterSlaveConnectionConfig config, Config cfg) {
+        init(cfg);
 
+        init(config);
+    }
+
+    protected void init(MasterSlaveConnectionConfig config) {
+        this.config = config;
         balancer = config.getLoadBalancer();
         balancer.init(codec, config.getPassword());
         for (URI address : this.config.getSlaveAddresses()) {
@@ -92,12 +100,43 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         masterConnectionsSemaphore = new Semaphore(this.config.getMasterConnectionPoolSize());
     }
 
+    protected void init(Config cfg) {
+        this.group = new NioEventLoopGroup(cfg.getThreads());
+        this.codec = new RedisCodecWrapper(cfg.getCodec());
+    }
+
     public void changeMaster(String host, int port) {
         RedisClient oldMaster = masterClient;
         masterClient = new RedisClient(group, host, port);
-        // TODO async & re-attach listeners
-        balancer.remove(host, port);
+        Queue<RedisPubSubConnection> connections = balancer.remove(host, port);
+        reattachListeners(connections);
         oldMaster.shutdown();
+    }
+
+    private void reattachListeners(Queue<RedisPubSubConnection> connections) {
+        for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
+            for (RedisPubSubConnection redisPubSubConnection : connections) {
+                if (!mapEntry.getValue().getConnection().equals(redisPubSubConnection)) {
+                    continue;
+                }
+
+                PubSubConnectionEntry entry = mapEntry.getValue();
+                String channelName = mapEntry.getKey();
+
+                synchronized (entry) {
+                    entry.close();
+                    unsubscribeEntry(entry, channelName);
+
+                    List<RedisPubSubListener> listeners = entry.getListeners(channelName);
+                    if (!listeners.isEmpty()) {
+                        PubSubConnectionEntry newEntry = subscribe(mapEntry.getKey());
+                        for (RedisPubSubListener redisPubSubListener : listeners) {
+                            newEntry.addListener(redisPubSubListener);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -154,7 +193,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return сonnEntry;
         }
 
-        for (PubSubConnectionEntry entry : pubSubConnections) {
+        Set<PubSubConnectionEntry> entries = new HashSet<PubSubConnectionEntry>(name2PubSubConnection.values());
+        for (PubSubConnectionEntry entry : entries) {
             if (entry.tryAcquire()) {
                 PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
                 if (oldEntry != null) {
@@ -176,7 +216,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return oldEntry;
         }
         entry.subscribe(channelName);
-        pubSubConnections.add(entry);
         return entry;
     }
 
@@ -191,7 +230,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return сonnEntry;
         }
 
-        for (PubSubConnectionEntry entry : pubSubConnections) {
+        Set<PubSubConnectionEntry> entries = new HashSet<PubSubConnectionEntry>(name2PubSubConnection.values());
+        for (PubSubConnectionEntry entry : entries) {
             if (entry.tryAcquire()) {
                 PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
                 if (oldEntry != null) {
@@ -213,7 +253,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return oldEntry;
         }
         entry.subscribe(listener, channelName);
-        pubSubConnections.add(entry);
         return entry;
     }
 
@@ -232,10 +271,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry.hasListeners(channelName)) {
             return;
         }
+
+        unsubscribeEntry(entry, channelName);
+    }
+
+    private void unsubscribeEntry(PubSubConnectionEntry entry, String channelName) {
         name2PubSubConnection.remove(channelName);
         entry.unsubscribe(channelName);
         if (entry.tryClose()) {
-            pubSubConnections.remove(entry);
             returnSubscribeConnection(entry);
         }
     }
@@ -259,6 +302,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (RedisClient client : slaveClients) {
             client.shutdown();
         }
+
+        group.shutdownGracefully().syncUninterruptibly();
     }
 
     @Override

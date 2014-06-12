@@ -24,7 +24,7 @@ public class RoundRobinLoadBalancer extends BaseLoadBalancer {
 
     @Override
     int getIndex(List<ConnectionEntry> clientsCopy) {
-        return Math.abs(index.incrementAndGet() % clients.size());
+        return Math.abs(index.incrementAndGet() % clientsCopy.size());
     }
 
 }
