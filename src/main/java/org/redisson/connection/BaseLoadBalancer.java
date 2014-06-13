@@ -78,6 +78,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
         if (clientsCopy.isEmpty()) {
             clientsEmpty.awaitUninterruptibly();
+            return nextPubSubConnection();
         }
         while (true) {
             if (clientsCopy.isEmpty()) {
@@ -118,6 +119,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
         if (clientsCopy.isEmpty()) {
             clientsEmpty.awaitUninterruptibly();
+            return nextConnection();
         }
         while (true) {
             if (clientsCopy.isEmpty()) {
