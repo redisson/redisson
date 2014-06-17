@@ -34,7 +34,6 @@ Recent Releases
 
 ####17-June-2014 - version 1.1.1 released
 Feature - sentinel servers support  
-__Breaking api change__ - `Config.useMasterSlaveConnection` and `Config.useSentinelConnection` settings renamed  
 Fixed - connection leak in `RTopic`  
 Fixed - setted password not used in single server connection  
 
@@ -94,16 +93,16 @@ Usage examples
 
         redisson.shutdown();
 
-or with initialization by Config object for single node connection
+or with initialization by Config object for single server connection
 
         Config config = new Config();
-        config.useSingleConnectoin()
+        config.useSingleServer()
               .setAddress("127.0.0.1:6379")
               .setConnectionPoolSize(10);
 
         Redisson redisson = Redisson.create(config);
 
-for master/slave connection
+or master/slave servers connection
 
         Config config = new Config();
         config.useMasterSlaveConnection()
@@ -113,6 +112,15 @@ for master/slave connection
 
         Redisson redisson = Redisson.create(config);
 
+for sentinel servers connection
+
+        Config config = new Config();
+        config.useSentinelConnection()
+              .setMasterName("mymaster")
+              .addSentinelAddress("127.0.0.1:26389", "127.0.0.1:26379")
+              .addSentinelAddress("127.0.0.1:26319";
+
+        Redisson redisson = Redisson.create(config);
 
 
 ####Distributed Map example
