@@ -10,6 +10,7 @@ Licensed under the Apache License 2.0.
 
 Features
 ================================
+* Sentinel // Master slave // Single servers connection support  
 * Distributed implementation of `java.util.List`  
 * Distributed implementation of `java.util.Set`  
 * Distributed implementation of `java.util.SortedSet`  
@@ -30,6 +31,12 @@ Features
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####17-June-2014 - version 1.1.1 released
+Feature - sentinel servers support  
+__Breaking api change__ - `Config.useMasterSlaveConnection` and `Config.useSentinelConnection` settings renamed  
+Fixed - connection leak in `RTopic`  
+Fixed - setted password not used in single server connection  
 
 ####07-June-2014 - version 1.1.0 released
 Feature - master/slave connection management  
