@@ -202,5 +202,10 @@ public class RedisClient {
         return addr;
     }
 
+    @Override
+    public String toString() {
+        return "RedisClient [addr=" + addr + "]";
+    }
+
 }
 
