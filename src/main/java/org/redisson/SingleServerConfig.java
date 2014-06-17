@@ -18,7 +18,7 @@ package org.redisson;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
+public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Redis server address
@@ -37,10 +37,10 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
      */
     private int connectionPoolSize = 100;
 
-    SingleConnectionConfig() {
+    SingleServerConfig() {
     }
 
-    SingleConnectionConfig(SingleConnectionConfig config) {
+    SingleServerConfig(SingleServerConfig config) {
         super(config);
         setAddress(config.getAddress());
         setConnectionPoolSize(config.getConnectionPoolSize());
@@ -53,7 +53,7 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
      *
      * @param connectionPoolSize
      */
-    public SingleConnectionConfig setConnectionPoolSize(int connectionPoolSize) {
+    public SingleServerConfig setConnectionPoolSize(int connectionPoolSize) {
         this.connectionPoolSize = connectionPoolSize;
         return this;
     }
@@ -68,7 +68,7 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
      * @param connectionPoolSize
      * @return
      */
-    public SingleConnectionConfig setSubscriptionConnectionPoolSize(int subscriptionConnectionPoolSize) {
+    public SingleServerConfig setSubscriptionConnectionPoolSize(int subscriptionConnectionPoolSize) {
         this.subscriptionConnectionPoolSize = subscriptionConnectionPoolSize;
         return this;
     }
@@ -81,7 +81,7 @@ public class SingleConnectionConfig extends BaseConfig<SingleConnectionConfig> {
      *
      * @param address
      */
-    public SingleConnectionConfig setAddress(String address) {
+    public SingleServerConfig setAddress(String address) {
         try {
             this.address = new URI("//" + address);
         } catch (URISyntaxException e) {

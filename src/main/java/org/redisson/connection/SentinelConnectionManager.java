@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
-import org.redisson.MasterSlaveConnectionConfig;
-import org.redisson.SentinelConnectionConfig;
+import org.redisson.MasterSlaveServersConfig;
+import org.redisson.SentinelServersConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +42,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private final List<RedisClient> sentinels = new ArrayList<RedisClient>();
 
-    public SentinelConnectionManager(final SentinelConnectionConfig cfg, Config config) {
+    public SentinelConnectionManager(final SentinelServersConfig cfg, Config config) {
         init(cfg, config);
     }
 
-    private void init(final SentinelConnectionConfig cfg, final Config config) {
+    private void init(final SentinelServersConfig cfg, final Config config) {
         init(config);
 
-        final MasterSlaveConnectionConfig c = new MasterSlaveConnectionConfig();
+        final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
             RedisAsyncConnection<String, String> connection = client.connectAsync();

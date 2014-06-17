@@ -26,11 +26,11 @@ import org.redisson.codec.RedissonCodec;
  */
 public class Config {
 
-    private SentinelConnectionConfig sentinelConnectionConfig;
+    private SentinelServersConfig sentinelServersConfig;
 
-    private MasterSlaveConnectionConfig masterSlaveConnectionConfig;
+    private MasterSlaveServersConfig masterSlaveServersConfig;
 
-    private SingleConnectionConfig singleConnectionConfig;
+    private SingleServerConfig singleServerConfig;
 
     /**
      * Threads amount shared between all redis node clients
@@ -53,14 +53,14 @@ public class Config {
 
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
-        if (oldConf.getSingleConnectionConfig() != null) {
-            setSingleConnectionConfig(new SingleConnectionConfig(oldConf.getSingleConnectionConfig()));
+        if (oldConf.getSingleServerConfig() != null) {
+            setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
         }
-        if (oldConf.getMasterSlaveConnectionConfig() != null) {
-            setMasterSlaveConnectionConfig(new MasterSlaveConnectionConfig(oldConf.getMasterSlaveConnectionConfig()));
+        if (oldConf.getMasterSlaveServersConfig() != null) {
+            setMasterSlaveServersConfig(new MasterSlaveServersConfig(oldConf.getMasterSlaveServersConfig()));
         }
-        if (oldConf.getSentinelConnectionConfig() != null ) {
-            setSentinelConnectionConfig(new SentinelConnectionConfig(oldConf.getSentinelConnectionConfig()));
+        if (oldConf.getSentinelServersConfig() != null ) {
+            setSentinelServersConfig(new SentinelServersConfig(oldConf.getSentinelServersConfig()));
         }
     }
 
@@ -78,52 +78,54 @@ public class Config {
         return codec;
     }
 
-    public SingleConnectionConfig useSingleConnection() {
-        if (masterSlaveConnectionConfig != null) {
-            throw new IllegalStateException("master/slave connection already used!");
+    public SingleServerConfig useSingleServer() {
+        checkMasterSlaveServersConfig();
+        checkSentinelServersConfig();
+
+        if (singleServerConfig == null) {
+            singleServerConfig = new SingleServerConfig();
         }
-        if (singleConnectionConfig == null) {
-            singleConnectionConfig = new SingleConnectionConfig();
-        }
-        return singleConnectionConfig;
-    }
-    SingleConnectionConfig getSingleConnectionConfig() {
-        return singleConnectionConfig;
-    }
-    void setSingleConnectionConfig(SingleConnectionConfig singleConnectionConfig) {
-        this.singleConnectionConfig = singleConnectionConfig;
+        return singleServerConfig;
     }
 
-    public SentinelConnectionConfig useSentinelConnection() {
-        if (singleConnectionConfig != null) {
-            throw new IllegalStateException("single connection already used!");
-        }
-        if (sentinelConnectionConfig == null) {
-            sentinelConnectionConfig = new SentinelConnectionConfig();
-        }
-        return sentinelConnectionConfig;
+    SingleServerConfig getSingleServerConfig() {
+        return singleServerConfig;
     }
-    SentinelConnectionConfig getSentinelConnectionConfig() {
-        return sentinelConnectionConfig;
-    }
-    void setSentinelConnectionConfig(SentinelConnectionConfig sentinelConnectionConfig) {
-        this.sentinelConnectionConfig = sentinelConnectionConfig;
+    void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
+        this.singleServerConfig = singleConnectionConfig;
     }
 
-    public MasterSlaveConnectionConfig useMasterSlaveConnection() {
-        if (singleConnectionConfig != null) {
-            throw new IllegalStateException("single connection already used!");
+    public SentinelServersConfig useSentinelConnection() {
+        checkSingleServerConfig();
+        checkMasterSlaveServersConfig();
+
+        if (sentinelServersConfig == null) {
+            sentinelServersConfig = new SentinelServersConfig();
         }
-        if (masterSlaveConnectionConfig == null) {
-            masterSlaveConnectionConfig = new MasterSlaveConnectionConfig();
+        return sentinelServersConfig;
+    }
+
+    SentinelServersConfig getSentinelServersConfig() {
+        return sentinelServersConfig;
+    }
+    void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
+        this.sentinelServersConfig = sentinelConnectionConfig;
+    }
+
+    public MasterSlaveServersConfig useMasterSlaveConnection() {
+        checkSingleServerConfig();
+        checkSentinelServersConfig();
+
+        if (masterSlaveServersConfig == null) {
+            masterSlaveServersConfig = new MasterSlaveServersConfig();
         }
-        return masterSlaveConnectionConfig;
+        return masterSlaveServersConfig;
     }
-    MasterSlaveConnectionConfig getMasterSlaveConnectionConfig() {
-        return masterSlaveConnectionConfig;
+    MasterSlaveServersConfig getMasterSlaveServersConfig() {
+        return masterSlaveServersConfig;
     }
-    void setMasterSlaveConnectionConfig(MasterSlaveConnectionConfig masterSlaveConnectionConfig) {
-        this.masterSlaveConnectionConfig = masterSlaveConnectionConfig;
+    void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
+        this.masterSlaveServersConfig = masterSlaveConnectionConfig;
     }
 
     public int getThreads() {
@@ -133,6 +135,24 @@ public class Config {
     public Config setThreads(int threads) {
         this.threads = threads;
         return this;
+    }
+
+    private void checkSentinelServersConfig() {
+        if (sentinelServersConfig != null) {
+            throw new IllegalStateException("sentinel servers config already used!");
+        }
+    }
+
+    private void checkMasterSlaveServersConfig() {
+        if (masterSlaveServersConfig != null) {
+            throw new IllegalStateException("master/slave servers already used!");
+        }
+    }
+
+    private void checkSingleServerConfig() {
+        if (singleServerConfig != null) {
+            throw new IllegalStateException("single server config already used!");
+        }
     }
 
 }

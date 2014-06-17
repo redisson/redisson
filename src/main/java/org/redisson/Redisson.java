@@ -71,12 +71,12 @@ public class Redisson {
     Redisson(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
-        if (configCopy.getMasterSlaveConnectionConfig() != null) {
-            connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveConnectionConfig(), configCopy);
-        } else if (configCopy.getSingleConnectionConfig() != null) {
-            connectionManager = new SingleConnectionManager(configCopy.getSingleConnectionConfig(), configCopy);
+        if (configCopy.getMasterSlaveServersConfig() != null) {
+            connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
+        } else if (configCopy.getSingleServerConfig() != null) {
+            connectionManager = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
         } else {
-            connectionManager = new SentinelConnectionManager(configCopy.getSentinelConnectionConfig(), configCopy);
+            connectionManager = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
         }
     }
 
@@ -87,7 +87,7 @@ public class Redisson {
      */
     public static Redisson create() {
         Config config = new Config();
-        config.useSingleConnection().setAddress("127.0.0.1:6379");
+        config.useSingleServer().setAddress("127.0.0.1:6379");
 //        config.useMasterSlaveConnection().setMasterAddress("127.0.0.1:6379").addSlaveAddress("127.0.0.1:6389").addSlaveAddress("127.0.0.1:6399");
 //        config.useSentinelConnection().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26389", "127.0.0.1:26379");
         return create(config);

@@ -20,21 +20,21 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SentinelConnectionConfig {
+public class SentinelServersConfig {
 
     private List<URI> sentinelAddresses = new ArrayList<URI>();
 
     private String masterName;
 
-    public SentinelConnectionConfig() {
+    public SentinelServersConfig() {
     }
 
-    SentinelConnectionConfig(SentinelConnectionConfig config) {
+    SentinelServersConfig(SentinelServersConfig config) {
         setSentinelAddresses(config.getSentinelAddresses());
         setMasterName(config.getMasterName());
     }
 
-    public SentinelConnectionConfig setMasterName(String masterName) {
+    public SentinelServersConfig setMasterName(String masterName) {
         this.masterName = masterName;
         return this;
     }
@@ -42,7 +42,7 @@ public class SentinelConnectionConfig {
         return masterName;
     }
 
-    public SentinelConnectionConfig addSentinelAddress(String ... addresses) {
+    public SentinelServersConfig addSentinelAddress(String ... addresses) {
         for (String address : addresses) {
             try {
                 sentinelAddresses.add(new URI("//" + address));

@@ -20,8 +20,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 import org.redisson.Config;
-import org.redisson.MasterSlaveConnectionConfig;
-import org.redisson.SingleConnectionConfig;
+import org.redisson.MasterSlaveServersConfig;
+import org.redisson.SingleServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +35,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     private final Semaphore subscribeConnectionsSemaphore;
     private final Queue<RedisPubSubConnection> subscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
 
-    public SingleConnectionManager(SingleConnectionConfig cfg, Config config) {
-        MasterSlaveConnectionConfig newconfig = new MasterSlaveConnectionConfig();
+    public SingleConnectionManager(SingleServerConfig cfg, Config config) {
+        MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
         newconfig.setPassword(cfg.getPassword());
         newconfig.setMasterAddress(addr);

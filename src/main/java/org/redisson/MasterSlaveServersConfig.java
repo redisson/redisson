@@ -23,7 +23,7 @@ import java.util.List;
 import org.redisson.connection.LoadBalancer;
 import org.redisson.connection.RoundRobinLoadBalancer;
 
-public class MasterSlaveConnectionConfig extends BaseConfig<MasterSlaveConnectionConfig> {
+public class MasterSlaveServersConfig extends BaseConfig<MasterSlaveServersConfig> {
 
     /**
      * Сonnection load balancer for multiple Redis slave servers
@@ -55,10 +55,10 @@ public class MasterSlaveConnectionConfig extends BaseConfig<MasterSlaveConnectio
      */
     private int masterConnectionPoolSize = 100;
 
-    public MasterSlaveConnectionConfig() {
+    public MasterSlaveServersConfig() {
     }
 
-    MasterSlaveConnectionConfig(MasterSlaveConnectionConfig config) {
+    MasterSlaveServersConfig(MasterSlaveServersConfig config) {
         super(config);
         setLoadBalancer(config.getLoadBalancer());
         setMasterAddress(config.getMasterAddress());
@@ -73,7 +73,7 @@ public class MasterSlaveConnectionConfig extends BaseConfig<MasterSlaveConnectio
      *
      * @param masterAddress
      */
-    public MasterSlaveConnectionConfig setMasterAddress(String masterAddress) {
+    public MasterSlaveServersConfig setMasterAddress(String masterAddress) {
         try {
             this.masterAddress = new URI("//" + masterAddress);
         } catch (URISyntaxException e) {
@@ -94,7 +94,7 @@ public class MasterSlaveConnectionConfig extends BaseConfig<MasterSlaveConnectio
      * @param addresses
      * @return
      */
-    public MasterSlaveConnectionConfig addSlaveAddress(String ... sAddresses) {
+    public MasterSlaveServersConfig addSlaveAddress(String ... sAddresses) {
         for (String address : sAddresses) {
             try {
                 slaveAddresses.add(new URI("//" + address));
@@ -119,7 +119,7 @@ public class MasterSlaveConnectionConfig extends BaseConfig<MasterSlaveConnectio
      * @param slaveConnectionPoolSize
      * @return
      */
-    public MasterSlaveConnectionConfig setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
+    public MasterSlaveServersConfig setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
         this.slaveConnectionPoolSize = slaveConnectionPoolSize;
         return this;
     }
@@ -134,7 +134,7 @@ public class MasterSlaveConnectionConfig extends BaseConfig<MasterSlaveConnectio
      * @param masterConnectionPoolSize
      * @return
      */
-    public MasterSlaveConnectionConfig setMasterConnectionPoolSize(int masterConnectionPoolSize) {
+    public MasterSlaveServersConfig setMasterConnectionPoolSize(int masterConnectionPoolSize) {
         this.masterConnectionPoolSize = masterConnectionPoolSize;
         return this;
     }
@@ -152,7 +152,7 @@ public class MasterSlaveConnectionConfig extends BaseConfig<MasterSlaveConnectio
      * @see org.redisson.connection.RoundRobinLoadBalancer
      * @see org.redisson.connection.BaseLoadBalancer
      */
-    public MasterSlaveConnectionConfig setLoadBalancer(LoadBalancer loadBalancer) {
+    public MasterSlaveServersConfig setLoadBalancer(LoadBalancer loadBalancer) {
         this.loadBalancer = loadBalancer;
         return this;
     }
@@ -167,7 +167,7 @@ public class MasterSlaveConnectionConfig extends BaseConfig<MasterSlaveConnectio
      * @param slaveSubscriptionConnectionPoolSize
      * @return
      */
-    public MasterSlaveConnectionConfig setSlaveSubscriptionConnectionPoolSize(int slaveSubscriptionConnectionPoolSize) {
+    public MasterSlaveServersConfig setSlaveSubscriptionConnectionPoolSize(int slaveSubscriptionConnectionPoolSize) {
         this.slaveSubscriptionConnectionPoolSize = slaveSubscriptionConnectionPoolSize;
         return this;
     }

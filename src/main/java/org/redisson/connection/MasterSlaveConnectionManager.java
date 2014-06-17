@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 
 import org.redisson.Config;
-import org.redisson.MasterSlaveConnectionConfig;
+import org.redisson.MasterSlaveServersConfig;
 import org.redisson.codec.RedisCodecWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,22 +69,22 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private Semaphore masterConnectionsSemaphore;
 
-    protected MasterSlaveConnectionConfig config;
+    protected MasterSlaveServersConfig config;
 
     MasterSlaveConnectionManager() {
     }
 
-    public MasterSlaveConnectionManager(MasterSlaveConnectionConfig cfg, Config config) {
+    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         init(cfg, config);
     }
 
-    protected void init(MasterSlaveConnectionConfig config, Config cfg) {
+    protected void init(MasterSlaveServersConfig config, Config cfg) {
         init(cfg);
 
         init(config);
     }
 
-    protected void init(MasterSlaveConnectionConfig config) {
+    protected void init(MasterSlaveServersConfig config) {
         this.config = config;
         balancer = config.getLoadBalancer();
         balancer.init(codec, config.getPassword());
