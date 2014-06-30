@@ -10,6 +10,7 @@ Licensed under the Apache License 2.0.
 
 Features
 ================================
+* Sentinel // Master slave // Single servers connection support  
 * Distributed implementation of `java.util.List`  
 * Distributed implementation of `java.util.Set`  
 * Distributed implementation of `java.util.SortedSet`  
@@ -30,6 +31,11 @@ Features
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####17-June-2014 - version 1.1.1 released
+Feature - sentinel servers support  
+Fixed - connection leak in `RTopic`  
+Fixed - setted password not used in single server connection  
 
 ####07-June-2014 - version 1.1.0 released
 Feature - master/slave connection management  
@@ -73,7 +79,7 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>1.0.4</version>
+       <version>1.1.1</version>
     </dependency>
 
 Usage examples
@@ -87,16 +93,16 @@ Usage examples
 
         redisson.shutdown();
 
-or with initialization by Config object for single node connection
+or with initialization by Config object for single server connection
 
         Config config = new Config();
-        config.useSingleConnectoin()
+        config.useSingleServer()
               .setAddress("127.0.0.1:6379")
               .setConnectionPoolSize(10);
 
         Redisson redisson = Redisson.create(config);
 
-for master/slave connection
+or master/slave servers connection
 
         Config config = new Config();
         config.useMasterSlaveConnection()
@@ -106,6 +112,15 @@ for master/slave connection
 
         Redisson redisson = Redisson.create(config);
 
+for sentinel servers connection
+
+        Config config = new Config();
+        config.useSentinelConnection()
+              .setMasterName("mymaster")
+              .addSentinelAddress("127.0.0.1:26389", "127.0.0.1:26379")
+              .addSentinelAddress("127.0.0.1:26319";
+
+        Redisson redisson = Redisson.create(config);
 
 
 ####Distributed Map example
