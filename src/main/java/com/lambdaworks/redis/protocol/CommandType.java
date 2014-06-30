@@ -73,7 +73,9 @@ public enum CommandType {
     // HyperLogLog
     PFADD, PFCOUNT, PFMERGE,
 
-    SENTINEL;
+    SENTINEL,
+    
+    SSCAN;
 
     public byte[] bytes;
 

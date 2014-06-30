@@ -63,6 +63,8 @@ import com.lambdaworks.redis.output.MapValueListOutput;
 import com.lambdaworks.redis.output.MapValueOutput;
 import com.lambdaworks.redis.output.MultiOutput;
 import com.lambdaworks.redis.output.NestedMultiOutput;
+import com.lambdaworks.redis.output.ScanOutput;
+import com.lambdaworks.redis.output.ScanResult;
 import com.lambdaworks.redis.output.ScoredValueListOutput;
 import com.lambdaworks.redis.output.StatusOutput;
 import com.lambdaworks.redis.output.StringListOutput;
@@ -1015,6 +1017,11 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     public Future<List<Map<K, V>>> slaves(K key) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add("slaves").addKey(key);
         return dispatch(SENTINEL, new ListMapOutput<K, V>(codec), args);
+    }
+    
+    public Future<ScanResult<V>> sscan(K key, long startValue) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(startValue);
+        return dispatch(SSCAN, new ScanOutput<K, V>(codec), args);
     }
 
     /**

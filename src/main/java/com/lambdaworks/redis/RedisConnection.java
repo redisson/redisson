@@ -2,17 +2,18 @@
 
 package com.lambdaworks.redis;
 
-import com.lambdaworks.redis.protocol.Command;
-import com.lambdaworks.redis.protocol.ConnectionWatchdog;
-
-import io.netty.util.concurrent.Future;
-
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import static com.lambdaworks.redis.protocol.CommandType.MULTI;
 import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import io.netty.util.concurrent.Future;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import com.lambdaworks.redis.output.ScanResult;
+import com.lambdaworks.redis.protocol.ConnectionWatchdog;
 
 /**
  * A synchronous thread-safe connection to a redis server. Multiple threads may
@@ -811,6 +812,10 @@ public class RedisConnection<K, V> {
 
     public Long zunionstore(K destination, ZStoreArgs storeArgs, K... keys) {
         return await(c.zunionstore(destination, storeArgs, keys));
+    }
+    
+    public ScanResult<V> sscan(K key, long startValue) {
+        return await(c.sscan(key, startValue));
     }
 
     public RedisAsyncConnection<K, V> getAsync() {

@@ -11,14 +11,6 @@ import java.util.Map;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.protocol.CommandOutput;
 
-/**
- * {@link Map} of keys and values output.
- *
- * @param <K> Key type.
- * @param <V> Value type.
- *
- * @author Will Glozer
- */
 public class ListMapOutput<K, V> extends CommandOutput<K, V, List<Map<K, V>>> {
     private K key;
     private int index = 0;

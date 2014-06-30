@@ -23,6 +23,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSet;
 
 import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.output.ScanResult;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -62,49 +63,64 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         }
     }
 
-    @Override
-    public Iterator<V> iterator() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
+    private ScanResult<V> scanIterator(long startPos) {
+        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
-            // TODO use SSCAN in case of usage Redis 2.8
-            final Iterator<V> iter = (Iterator<V>) connection.smembers(getName()).iterator();
-            return new Iterator<V>() {
-
-                private boolean removeExecuted;
-                private V value;
-
-                @Override
-                public boolean hasNext() {
-                    return iter.hasNext();
-                }
-
-                @Override
-                public V next() {
-                    if (!hasNext()) {
-                        throw new NoSuchElementException("No such element at index");
-                    }
-
-                    value = iter.next();
-                    removeExecuted = false;
-                    return value;
-                }
-
-                @Override
-                public void remove() {
-                    if (removeExecuted) {
-                        throw new IllegalStateException("Element been already deleted");
-                    }
-
-                    iter.remove();
-                    RedissonSet.this.remove(value);
-                    removeExecuted = true;
-                }
-
-            };
+            return connection.sscan(getName(), startPos);
         } finally {
             connectionManager.releaseRead(connection);
         }
+    }
+    
+    @Override
+    public Iterator<V> iterator() {
+        return new Iterator<V>() {
 
+            private Iterator<V> iter;
+            private Long iterPos;
+            
+            private boolean removeExecuted;
+            private V value;
+
+            @Override
+            public boolean hasNext() {
+                if (iter == null) {
+                    ScanResult<V> res = scanIterator(0);
+                    iter = res.getValues().iterator();
+                    iterPos = res.getPos();
+                } else if (!iter.hasNext() && iterPos != 0) {
+                    ScanResult<V> res = scanIterator(iterPos);
+                    iter = res.getValues().iterator();
+                    iterPos = res.getPos();
+                }
+                return iter.hasNext();
+            }
+
+            @Override
+            public V next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException("No such element at index");
+                }
+
+                value = iter.next();
+                removeExecuted = false;
+                return value;
+            }
+
+            @Override
+            public void remove() {
+                if (removeExecuted) {
+                    throw new IllegalStateException("Element been already deleted");
+                }
+
+                // lazy init iterator
+                hasNext();
+                iter.remove();
+                RedissonSet.this.remove(value);
+                removeExecuted = true;
+            }
+
+        };
     }
 
     @Override
