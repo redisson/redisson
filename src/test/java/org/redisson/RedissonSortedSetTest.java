@@ -2,6 +2,8 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -14,6 +16,63 @@ import org.redisson.core.RSortedSet;
 
 public class RedissonSortedSetTest extends BaseTest {
 
+    @Test
+    public void testIteratorRemove() {
+        RSortedSet<String> list = redisson.getSortedSet("list");
+        list.add("1");
+        list.add("4");
+        list.add("2");
+        list.add("5");
+        list.add("3");
+
+        for (Iterator<String> iterator = list.iterator(); iterator.hasNext();) {
+            String value = iterator.next();
+            if (value.equals("2")) {
+                iterator.remove();
+            }
+        }
+
+        Assert.assertThat(list, Matchers.containsInAnyOrder("1", "4", "5", "3"));
+
+        int iteration = 0;
+        for (Iterator<String> iterator = list.iterator(); iterator.hasNext();) {
+            iterator.next();
+            iterator.remove();
+            iteration++;
+        }
+
+        Assert.assertEquals(4, iteration);
+
+        Assert.assertEquals(0, list.size());
+        Assert.assertTrue(list.isEmpty());
+    }
+    
+    @Test
+    public void testIteratorSequence() {
+        Set<Integer> set = redisson.getSortedSet("set");
+        for (int i = 0; i < 1000; i++) {
+            set.add(Integer.valueOf(i));
+        }
+
+        Set<Integer> setCopy = new HashSet<Integer>();
+        for (int i = 0; i < 1000; i++) {
+            setCopy.add(Integer.valueOf(i));
+        }
+        
+        checkIterator(set, setCopy);
+    }
+
+    private void checkIterator(Set<Integer> set, Set<Integer> setCopy) {
+        for (Iterator<Integer> iterator = set.iterator(); iterator.hasNext();) {
+            Integer value = iterator.next();
+            if (!setCopy.remove(value)) {
+                Assert.fail();
+            }
+        }
+
+        Assert.assertEquals(0, setCopy.size());
+    }
+    
     @Test
     public void testTrySetComparator() {
         RSortedSet<Integer> set = redisson.getSortedSet("set");
@@ -38,8 +97,6 @@ public class RedissonSortedSetTest extends BaseTest {
         set.add(1);
         set.add(2);
         MatcherAssert.assertThat(set, Matchers.contains(1, 2, 3));
-
-
     }
 
 

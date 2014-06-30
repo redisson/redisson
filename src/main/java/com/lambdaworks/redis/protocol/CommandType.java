@@ -75,7 +75,7 @@ public enum CommandType {
 
     SENTINEL,
     
-    SSCAN;
+    SSCAN, ZSCAN;
 
     public byte[] bytes;
 

@@ -243,16 +243,45 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     public Iterator<V> iterator(final double startScore, final double endScore) {
         return new Iterator<V>() {
 
-            private double currentScore = startScore;
+            private boolean readNext = true;
+            private Double currentScore;
             private boolean removeExecuted;
             private V value;
 
             @Override
             public boolean hasNext() {
+                if (!readNext) {
+                    return true;
+                }
                 RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
                 try {
-                    Long remains = connection.zcount(getName(), currentScore, endScore);
-                    return remains > 0;
+                    Double score = startScore;
+                    if (currentScore != null) {
+                        score = currentScore;
+                    }
+                    // get next two values
+                    List<ScoredValue<V>> values = connection.zrangebyscoreWithScores(getName(), score, endScore, 0, 2);
+                    if (values.isEmpty()) {
+                        return false;
+                    }
+
+                    int index = 0;
+                    if (currentScore != null) {
+                        ScoredValue<V> val = values.get(0);
+                        if (currentScore.equals(val.score)) {
+                            if (values.size() > 1) {
+                                index = 1;
+                            } else {
+                                return false;
+                            }
+                        }
+                    }
+                    
+                    ScoredValue<V> val = values.get(index);
+                    value = val.value;
+                    currentScore = val.score;
+                    readNext = false;
+                    return true;
                 } finally {
                     connectionManager.releaseRead(connection);
                 }
@@ -260,42 +289,14 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
             @Override
             public V next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index " + currentScore);
+                if (value == null) {
+                    if (!hasNext()) {
+                        throw new NoSuchElementException("Exhausted iterator");
+                    }
                 }
                 removeExecuted = false;
-
-                RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-                try {
-                    double lastScore = getScoreAtIndex(-1, connection);
-                    double scoreDiff = lastScore - currentScore;
-
-                    Long remains = connection.zcount(getName(), currentScore, lastScore);
-                    if (remains == 0) {
-                        throw new NoSuchElementException("No more elements!");
-                    }
-                    // TODO don't load whole set in memory
-//                    if (remains < 50) {
-                        List<ScoredValue<V>> values = connection.zrangebyscoreWithScores(getName(), currentScore, Double.MAX_VALUE);
-                        if (values.isEmpty()) {
-                            throw new NoSuchElementException("No more elements!");
-                        }
-
-                        ScoredValue<V> val = values.get(0);
-                        value = val.value;
-
-//                        System.out.println("value: "  + value + " currentScore: " + currentScore);
-                        if (values.size() > 1) {
-                            ScoredValue<V> nextVal = values.get(1);
-                            currentScore = nextVal.score;
-                        } else {
-                            currentScore = endScore;
-                        }
-                        return value;
-//                    }
-                } finally {
-                    connectionManager.releaseRead(connection);
-                }
+                readNext = true;
+                return value;
             }
 
             @Override

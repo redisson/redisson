@@ -1024,6 +1024,11 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(SSCAN, new ScanOutput<K, V>(codec), args);
     }
 
+    public Future<ScanResult<V>> zscan(K key, long startValue) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(startValue);
+        return dispatch(ZSCAN, new ScanOutput<K, V>(codec), args);
+    }
+    
     /**
      * Wait until commands are complete or the connection timeout is reached.
      *

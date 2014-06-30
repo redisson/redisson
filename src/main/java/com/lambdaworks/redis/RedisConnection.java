@@ -817,6 +817,10 @@ public class RedisConnection<K, V> {
     public ScanResult<V> sscan(K key, long startValue) {
         return await(c.sscan(key, startValue));
     }
+    
+    public ScanResult<V> zscan(K key, long startValue) {
+        return await(c.zscan(key, startValue));
+    }
 
     public RedisAsyncConnection<K, V> getAsync() {
         return c;
