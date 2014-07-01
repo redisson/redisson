@@ -498,6 +498,10 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(MOVE, new BooleanOutput<K, V>(codec), args);
     }
 
+    public boolean isMultiMode() {
+        return multi != null;
+    }
+    
     public Future<String> multi() {
         Future<String> cmd = dispatch(MULTI, new StatusOutput<K, V>(codec));
         multi = (multi == null ? new MultiOutput<K, V>(codec) : multi);

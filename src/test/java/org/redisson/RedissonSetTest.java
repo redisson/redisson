@@ -1,5 +1,7 @@
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -7,14 +9,45 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.core.RSet;
+import org.redisson.core.RSortedSet;
 
 public class RedissonSetTest extends BaseTest {
 
+    @Test
+    public void testAddAsync() throws InterruptedException, ExecutionException {
+        RSet<Integer> set = redisson.getSet("simple");
+        Future<Boolean> future = set.addAsync(2);
+        Assert.assertTrue(future.get());
+
+        Assert.assertTrue(set.contains(2));
+    }
+
+    @Test
+    public void testRemoveAsync() throws InterruptedException, ExecutionException {
+        RSet<Integer> set = redisson.getSet("simple");
+        set.add(1);
+        set.add(3);
+        set.add(7);
+
+        Assert.assertTrue(set.removeAsync(1).get());
+        Assert.assertFalse(set.contains(1));
+        Assert.assertThat(set, Matchers.containsInAnyOrder(3, 7));
+
+        Assert.assertFalse(set.removeAsync(1).get());
+        Assert.assertThat(set, Matchers.containsInAnyOrder(3, 7));
+        
+        set.removeAsync(3).get();
+        Assert.assertFalse(set.contains(3));
+        Assert.assertThat(set, Matchers.contains(7));
+    }
+    
     @Test
     public void testIteratorRemove() {
         Set<String> list = redisson.getSet("list");

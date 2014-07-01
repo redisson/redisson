@@ -15,6 +15,10 @@
  */
 package org.redisson;
 
+import io.netty.channel.EventLoop;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
+
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -289,7 +293,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
             @Override
             public V next() {
-                if (value == null) {
+                if (value == null || readNext) {
                     if (!hasNext()) {
                         throw new NoSuchElementException("Exhausted iterator");
                     }
@@ -348,6 +352,25 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         } finally {
             connectionManager.releaseWrite(connection);
         }
+    }
+    
+    public Future<Boolean> addAsync(final V value) {
+        EventLoop loop = connectionManager.getGroup().next();
+        final Promise<Boolean> promise = loop.newPromise();
+        
+        loop.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean result = add(value);
+                    promise.setSuccess(result);
+                } catch (Exception e) {
+                    promise.setFailure(e);
+                }
+            }
+        });
+        
+        return promise;
     }
 
     boolean add(V value, RedisConnection<Object, V> connection) {
@@ -510,6 +533,26 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return new NewScore(leftScore, rightScore, score);
     }
 
+    @Override
+    public Future<Boolean> removeAsync(final V value) {
+        EventLoop loop = connectionManager.getGroup().next();
+        final Promise<Boolean> promise = loop.newPromise();
+        
+        loop.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean result = remove(value);
+                    promise.setSuccess(result);
+                } catch (Exception e) {
+                    promise.setFailure(e);
+                }
+            }
+        });
+        
+        return promise;
+    }
+    
     @Override
     public boolean remove(Object value) {
         RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
@@ -727,7 +770,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return binarySearch(value, connection, 0, upperIndex);
     }
 
-    public double score(V value, RedisConnection<Object, V> connection, int indexDiff, boolean tail) {
+    double score(V value, RedisConnection<Object, V> connection, int indexDiff, boolean tail) {
         BinarySearchResult<V> res = binarySearch(value, connection);
         if (res.getIndex() < 0) {
             BinarySearchResult<V> element = getAtIndex(-res.getIndex() + indexDiff, connection);

@@ -15,6 +15,10 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -152,12 +156,50 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
             connectionManager.releaseWrite(connection);
         }
     }
+    
+    @Override
+    public Future<Boolean> addAsync(V e) {
+        final Promise<Boolean> promise = connectionManager.getGroup().next().newPromise();
+        
+        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+        connection.getAsync().sadd(getName(), e).addListener(new FutureListener<Long>() {
+            @Override
+            public void operationComplete(Future<Long> future) throws Exception {
+                if (future.isSuccess()) {
+                    promise.setSuccess(future.get() > 0);
+                } else {
+                    promise.setFailure(future.cause());
+                }
+            }
+        }).addListener(connectionManager.createReleaseWriteListener(connection));
+        
+        return promise;
+    }
 
     @Override
-    public boolean remove(Object o) {
+    public Future<Boolean> removeAsync(V value) {
+        final Promise<Boolean> promise = connectionManager.getGroup().next().newPromise();
+        
+        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+        connection.getAsync().srem(getName(), value).addListener(new FutureListener<Long>() {
+            @Override
+            public void operationComplete(Future<Long> future) throws Exception {
+                if (future.isSuccess()) {
+                    promise.setSuccess(future.get() > 0);
+                } else {
+                    promise.setFailure(future.cause());
+                }
+            }
+        }).addListener(connectionManager.createReleaseWriteListener(connection));
+        
+        return promise;
+    }
+    
+    @Override
+    public boolean remove(Object value) {
         RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
-            return connection.srem(getName(), o) > 0;
+            return connection.srem(getName(), value) > 0;
         } finally {
             connectionManager.releaseWrite(connection);
         }

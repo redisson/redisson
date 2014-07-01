@@ -16,7 +16,6 @@
 package org.redisson;
 
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Collection;
@@ -296,61 +295,26 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     private void putAsync(final K key, final V value, final Promise<V> promise,
             final RedisAsyncConnection<Object, V> async) {
-        async.watch(getName()).addListener(new FutureListener<String>() {
+        async.watch(getName()).addListener(new OperationListener<V, String>(promise, async) {
             @Override
-            public void operationComplete(Future<String> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
-                    return;
-                }
-
-                if (promise.isCancelled()) {
-                    return;
-                }
-                async.hget(getName(), key).addListener(new FutureListener<V>() {
+            public void onOperationComplete(Future<String> future) throws Exception {
+                
+                async.hget(getName(), key).addListener(new OperationListener<V, V>(promise, async) {
                     @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            promise.setFailure(future.cause());
-                            return;
-                        }
-                        if (promise.isCancelled()) {
-                            return;
-                        }
+                    public void onOperationComplete(Future<V> future) throws Exception {
 
                         final V prev = future.get();
-                        async.multi().addListener(new FutureListener<String>() {
+                        async.multi().addListener(new OperationListener<V, String>(promise, async) {
                             @Override
-                            public void operationComplete(Future<String> future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    promise.setFailure(future.cause());
-                                    return;
-                                }
-                                if (promise.isCancelled()) {
-                                    return;
-                                }
+                            public void onOperationComplete(Future<String> future) throws Exception {
 
-                                async.hset(getName(), key, value).addListener(new FutureListener<Boolean>() {
+                                async.hset(getName(), key, value).addListener(new OperationListener<V, Boolean>(promise, async) {
                                     @Override
-                                    public void operationComplete(Future<Boolean> future) throws Exception {
-                                        if (!future.isSuccess()) {
-                                            promise.setFailure(future.cause());
-                                            return;
-                                        }
-                                        if (promise.isCancelled()) {
-                                            return;
-                                        }
+                                    public void onOperationComplete(Future<Boolean> future) throws Exception {
 
-                                        async.exec().addListener(new FutureListener<List<Object>>() {
+                                        async.exec().addListener(new OperationListener<V, List<Object>>(promise, async) {
                                             @Override
-                                            public void operationComplete(Future<List<Object>> future) throws Exception {
-                                                if (!future.isSuccess()) {
-                                                    promise.setFailure(future.cause());
-                                                    return;
-                                                }
-                                                if (promise.isCancelled()) {
-                                                    return;
-                                                }
+                                            public void onOperationComplete(Future<List<Object>> future) throws Exception {
 
                                                 if (future.get().size() == 1) {
                                                     promise.setSuccess(prev);
@@ -359,7 +323,6 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                                                 }
                                             }
                                         });
-
                                     }
                                 });
                             }
@@ -367,6 +330,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                     }
                 });
             }
+
         });
     }
 
@@ -382,61 +346,26 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     private void removeAsync(final K key, final Promise<V> promise,
             final RedisAsyncConnection<Object, V> async) {
-        async.watch(getName()).addListener(new FutureListener<String>() {
+        async.watch(getName()).addListener(new OperationListener<V, String>(promise, async) {
             @Override
-            public void operationComplete(Future<String> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
-                    return;
-                }
+            public void onOperationComplete(Future<String> future) throws Exception {
 
-                if (promise.isCancelled()) {
-                    return;
-                }
-                async.hget(getName(), key).addListener(new FutureListener<V>() {
+                async.hget(getName(), key).addListener(new OperationListener<V, V>(promise, async) {
                     @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            promise.setFailure(future.cause());
-                            return;
-                        }
-                        if (promise.isCancelled()) {
-                            return;
-                        }
-
+                    public void onOperationComplete(Future<V> future) throws Exception {
                         final V prev = future.get();
-                        async.multi().addListener(new FutureListener<String>() {
+                        
+                        async.multi().addListener(new OperationListener<V, String>(promise, async) {
                             @Override
-                            public void operationComplete(Future<String> future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    promise.setFailure(future.cause());
-                                    return;
-                                }
-                                if (promise.isCancelled()) {
-                                    return;
-                                }
+                            public void onOperationComplete(Future<String> future) throws Exception {
 
-                                async.hdel(getName(), key).addListener(new FutureListener<Long>() {
+                                async.hdel(getName(), key).addListener(new OperationListener<V, Long>(promise, async) {
                                     @Override
-                                    public void operationComplete(Future<Long> future) throws Exception {
-                                        if (!future.isSuccess()) {
-                                            promise.setFailure(future.cause());
-                                            return;
-                                        }
-                                        if (promise.isCancelled()) {
-                                            return;
-                                        }
+                                    public void onOperationComplete(Future<Long> future) throws Exception {
 
-                                        async.exec().addListener(new FutureListener<List<Object>>() {
+                                        async.exec().addListener(new OperationListener<V, List<Object>>(promise, async) {
                                             @Override
-                                            public void operationComplete(Future<List<Object>> future) throws Exception {
-                                                if (!future.isSuccess()) {
-                                                    promise.setFailure(future.cause());
-                                                    return;
-                                                }
-                                                if (promise.isCancelled()) {
-                                                    return;
-                                                }
+                                            public void onOperationComplete(Future<List<Object>> future) throws Exception {
 
                                                 if (future.get().size() == 1) {
                                                     promise.setSuccess(prev);

@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.Set;
 
 /**
@@ -26,4 +28,8 @@ import java.util.Set;
  */
 public interface RSet<V> extends Set<V>, RExpirable {
 
+    Future<Boolean> addAsync(V value);
+    
+    Future<Boolean> removeAsync(V value);
+    
 }

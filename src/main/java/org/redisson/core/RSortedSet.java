@@ -15,11 +15,17 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.Comparator;
 import java.util.SortedSet;
 
 public interface RSortedSet<V> extends SortedSet<V>, RObject {
 
+    Future<Boolean> addAsync(V value);
+    
+    Future<Boolean> removeAsync(V value);
+    
     /**
      * Sets new comparator only if current set is empty
      *
