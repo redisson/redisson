@@ -41,9 +41,11 @@ public interface RExpirable extends RObject {
     boolean clearExpire();
 
     /**
-     * Remaining time in seconds to live of Redisson object that has a timeout
+     * Remaining time to live of Redisson object that has a timeout
      *
      * @return time in seconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
      */
     long remainTimeToLive();
 
