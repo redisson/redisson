@@ -120,13 +120,13 @@ public class RedissonLockTest extends BaseConcurrentTest {
         Assert.assertFalse(lock.isLocked());
     }
 
-    @Test(expected = IllegalMonitorStateException.class)
-    public void testUnlockFail() {
-        Lock lock = redisson.getLock("lock1");
-        lock.unlock();
-    }
-
-
+//    @Test(expected = IllegalMonitorStateException.class)
+//    public void testUnlockFail() {
+//        Lock lock = redisson.getLock("lock1");
+//        lock.unlock();
+//    }
+//
+//
     @Test
     public void testLockUnlock() {
         Lock lock = redisson.getLock("lock1");

@@ -102,6 +102,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     private void release() {
         while (true) {
             RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
+            if (entry == null) {
+                return;
+            }
             RedissonCountDownLatchEntry newEntry = new RedissonCountDownLatchEntry(entry);
             newEntry.release();
             if (ENTRIES.replace(getName(), entry, newEntry)) {
@@ -130,9 +133,12 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         try {
             promise.await();
             
-            while (getCount() > 0) {
+            while (getCountInner() > 0) {
                 // waiting for open state
-                ENTRIES.get(getName()).getLatch().await();
+                RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
+                if (entry != null) {
+                    entry.getLatch().await();
+                }
             }
         } finally {
             close();
@@ -149,13 +155,17 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             }
             
             time = unit.toMillis(time);
-            while (getCount() > 0) {
+            while (getCountInner() > 0) {
                 if (time <= 0) {
                     return false;
                 }
                 long current = System.currentTimeMillis();
                 // waiting for open state
-                ENTRIES.get(getName()).getLatch().await(time, TimeUnit.MILLISECONDS);
+                RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
+                if (entry != null) {
+                    entry.getLatch().await(time, TimeUnit.MILLISECONDS);
+                }
+
                 long elapsed = System.currentTimeMillis() - current;
                 time = time - elapsed;
             }
@@ -207,18 +217,22 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         try {
             promise.awaitUninterruptibly();
             
-            RedisConnection<String, Object> connection = connectionManager.connectionReadOp();
-            try {
-                Number val = (Number) connection.get(getName());
-                if (val == null) {
-                    return 0;
-                }
-                return val.longValue();
-            } finally {
-                connectionManager.releaseRead(connection);
-            }
+            return getCountInner();
         } finally {
             close();
+        }
+    }
+
+    private long getCountInner() {
+        RedisConnection<String, Object> connection = connectionManager.connectionReadOp();
+        try {
+            Number val = (Number) connection.get(getName());
+            if (val == null) {
+                return 0;
+            }
+            return val.longValue();
+        } finally {
+            connectionManager.releaseRead(connection);
         }
     }
 
@@ -279,8 +293,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             @Override
             public void run() {
                 RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
-                if (entry.isFree() 
-                        && ENTRIES.remove(getName(), entry)) {
+                if (entry != null 
+                        && entry.isFree() 
+                            && ENTRIES.remove(getName(), entry)) {
                     connectionManager.unsubscribe(pubSubEntry, getChannelName());
                 }
             }

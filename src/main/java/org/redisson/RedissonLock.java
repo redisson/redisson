@@ -120,6 +120,9 @@ public class RedissonLock extends RedissonObject implements RLock {
     private void release() {
         while (true) {
             RedissonLockEntry entry = ENTRIES.get(getName());
+            if (entry == null) {
+                return;
+            }
             RedissonLockEntry newEntry = new RedissonLockEntry(entry);
             newEntry.release();
             if (ENTRIES.replace(getName(), entry, newEntry)) {
@@ -207,7 +210,10 @@ public class RedissonLock extends RedissonObject implements RLock {
     public void lockInterruptibly() throws InterruptedException {
         while (!tryLock()) {
             // waiting for message
-            ENTRIES.get(getName()).getLatch().acquire();
+            RedissonLockEntry entry = ENTRIES.get(getName());
+            if (entry != null) {
+                entry.getLatch().acquire();
+            }
         }
     }
 
@@ -217,26 +223,30 @@ public class RedissonLock extends RedissonObject implements RLock {
         try {
             promise.awaitUninterruptibly();
             
-            LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-            currentLock.incCounter();
-            
-            RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-            try {
-                Boolean res = connection.setnx(getKeyName(), currentLock);
-                if (!res) {
-                    LockValue lock = (LockValue) connection.get(getKeyName());
-                    if (lock != null && lock.equals(currentLock)) {
-                        lock.incCounter();
-                        connection.set(getKeyName(), lock);
-                        return true;
-                    }
-                }
-                return res;
-            } finally {
-                connectionManager.releaseWrite(connection);
-            }
+            return tryLockInner();
         } finally {
             close();
+        }
+    }
+
+    private boolean tryLockInner() {
+        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+        currentLock.incCounter();
+        
+        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+        try {
+            Boolean res = connection.setnx(getKeyName(), currentLock);
+            if (!res) {
+                LockValue lock = (LockValue) connection.get(getKeyName());
+                if (lock != null && lock.equals(currentLock)) {
+                    lock.incCounter();
+                    connection.set(getKeyName(), lock);
+                    return true;
+                }
+            }
+            return res;
+        } finally {
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -249,13 +259,16 @@ public class RedissonLock extends RedissonObject implements RLock {
             }
             
             time = unit.toMillis(time);
-            while (!tryLock()) {
+            while (!tryLockInner()) {
                 if (time <= 0) {
                     return false;
                 }
                 long current = System.currentTimeMillis();
                 // waiting for message
-                ENTRIES.get(getName()).getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
+                RedissonLockEntry entry = ENTRIES.get(getName());
+                if (entry != null) {
+                    entry.getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
+                }
                 long elapsed = System.currentTimeMillis() - current;
                 time -= elapsed;
             }
@@ -408,8 +421,9 @@ public class RedissonLock extends RedissonObject implements RLock {
             @Override
             public void run() {
                 RedissonLockEntry entry = ENTRIES.get(getName());
-                if (entry.isFree() 
-                        && ENTRIES.remove(getName(), entry)) {
+                if (entry != null 
+                        && entry.isFree() 
+                            && ENTRIES.remove(getName(), entry)) {
                     connectionManager.unsubscribe(pubSubEntry, getChannelName());
                 }
             }
