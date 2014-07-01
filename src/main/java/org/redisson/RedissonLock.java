@@ -20,9 +20,9 @@ import io.netty.util.concurrent.Promise;
 
 import java.io.Serializable;
 import java.util.UUID;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 
 import org.redisson.connection.ConnectionManager;
@@ -108,10 +108,7 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     private static final Integer unlockMessage = 0;
 
-    private final AtomicReference<Promise<Boolean>> promise = new AtomicReference<Promise<Boolean>>();
-
-    // TODO use lazy init map
-    private final Semaphore msg = new Semaphore(1);
+    private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = new ConcurrentHashMap<String, RedissonLockEntry>();
 
     private PubSubConnectionEntry pubSubEntry;
 
@@ -120,32 +117,65 @@ public class RedissonLock extends RedissonObject implements RLock {
         this.id = id;
     }
 
+    private void release() {
+        while (true) {
+            RedissonLockEntry entry = ENTRIES.get(getName());
+            RedissonLockEntry newEntry = new RedissonLockEntry(entry);
+            newEntry.release();
+            if (ENTRIES.replace(getName(), entry, newEntry)) {
+                return;
+            }
+        }
+    }
+    
+    private Promise<Boolean> aquire() {
+        while (true) {
+            RedissonLockEntry entry = ENTRIES.get(getName());
+            if (entry != null) {
+                RedissonLockEntry newEntry = new RedissonLockEntry(entry);
+                newEntry.aquire();
+                if (ENTRIES.replace(getName(), entry, newEntry)) {
+                    return newEntry.getPromise();
+                }
+            } else {
+                return null;
+            }
+        }
+    }
+    
     private Future<Boolean> subscribe() {
-        Promise<Boolean> p = promise.get();
-        if (p != null) {
-            return p;
+        Promise<Boolean> promise = aquire();
+        if (promise != null) {
+            return promise;
         }
 
-        final Promise<Boolean> newPromise = newPromise();
-        if (!promise.compareAndSet(null, newPromise)) {
-            return promise.get();
+        Promise<Boolean> newPromise = newPromise();
+        final RedissonLockEntry value = new RedissonLockEntry(newPromise);
+        value.aquire();
+        RedissonLockEntry oldValue = ENTRIES.putIfAbsent(getName(), value);
+        if (oldValue != null) {
+            Promise<Boolean> oldPromise = aquire();
+            if (oldPromise == null) {
+                return subscribe();
+            }
+            return oldPromise;
         }
 
-        msg.acquireUninterruptibly();
+        value.getLatch().acquireUninterruptibly();
 
         RedisPubSubAdapter<String, Integer> listener = new RedisPubSubAdapter<String, Integer>() {
 
             @Override
             public void subscribed(String channel, long count) {
                 if (getChannelName().equals(channel)) {
-                    newPromise.setSuccess(true);
+                    value.getPromise().setSuccess(true);
                 }
             }
 
             @Override
             public void message(String channel, Integer message) {
                 if (message.equals(unlockMessage) && getChannelName().equals(channel)) {
-                    msg.release();
+                    value.getLatch().release();
                 }
             }
 
@@ -157,8 +187,6 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void lock() {
-        subscribe().awaitUninterruptibly();
-
         try {
             lockInterruptibly();
         } catch (InterruptedException e) {
@@ -177,80 +205,93 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void lockInterruptibly() throws InterruptedException {
-        subscribe().awaitUninterruptibly();
-
         while (!tryLock()) {
             // waiting for message
-            msg.acquire();
+            ENTRIES.get(getName()).getLatch().acquire();
         }
     }
 
     @Override
     public boolean tryLock() {
-        subscribe().awaitUninterruptibly();
-
-        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-        currentLock.incCounter();
-
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+        Future<Boolean> promise = subscribe();
         try {
-            Boolean res = connection.setnx(getKeyName(), currentLock);
-            if (!res) {
-                LockValue lock = (LockValue) connection.get(getKeyName());
-                if (lock != null && lock.equals(currentLock)) {
-                    lock.incCounter();
-                    connection.set(getKeyName(), lock);
-                    return true;
+            promise.awaitUninterruptibly();
+            
+            LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+            currentLock.incCounter();
+            
+            RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+            try {
+                Boolean res = connection.setnx(getKeyName(), currentLock);
+                if (!res) {
+                    LockValue lock = (LockValue) connection.get(getKeyName());
+                    if (lock != null && lock.equals(currentLock)) {
+                        lock.incCounter();
+                        connection.set(getKeyName(), lock);
+                        return true;
+                    }
                 }
+                return res;
+            } finally {
+                connectionManager.releaseWrite(connection);
             }
-            return res;
         } finally {
-            connectionManager.releaseWrite(connection);
+            close();
         }
     }
 
     @Override
     public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-        if (!subscribe().awaitUninterruptibly(time, unit)) {
-            return false;
-        }
-
-        time = unit.toMillis(time);
-        while (!tryLock()) {
-            if (time <= 0) {
+        Future<Boolean> promise = subscribe();
+        try {
+            if (!promise.awaitUninterruptibly(time, unit)) {
                 return false;
             }
-            long current = System.currentTimeMillis();
-            // waiting for message
-            msg.tryAcquire(time, TimeUnit.MILLISECONDS);
-            long elapsed = System.currentTimeMillis() - current;
-            time -= elapsed;
+            
+            time = unit.toMillis(time);
+            while (!tryLock()) {
+                if (time <= 0) {
+                    return false;
+                }
+                long current = System.currentTimeMillis();
+                // waiting for message
+                ENTRIES.get(getName()).getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
+                long elapsed = System.currentTimeMillis() - current;
+                time -= elapsed;
+            }
+            return true;
+        } finally {
+            close();
         }
-        return true;
     }
 
     @Override
     public void unlock() {
-        subscribe().awaitUninterruptibly();
-
-        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+        Future<Boolean> promise = subscribe();
         try {
-            LockValue lock = (LockValue) connection.get(getKeyName());
-            if (lock != null && lock.equals(currentLock)) {
-                if (lock.getCounter() > 1) {
-                    lock.decCounter();
-                    connection.set(getKeyName(), lock);
+            promise.awaitUninterruptibly();
+            
+            RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+            try {
+                LockValue lock = (LockValue) connection.get(getKeyName());
+                LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+                if (lock != null && lock.equals(currentLock)) {
+                    if (lock.getCounter() > 1) {
+                        lock.decCounter();
+                        connection.set(getKeyName(), lock);
+                    } else {
+                        unlock(connection);
+                    }
                 } else {
-                    unlock(connection);
+                    // could be deleted
+//                    throw new IllegalMonitorStateException("Attempt to unlock lock, not locked by current id: "
+//                            + id + " thread-id: " + Thread.currentThread().getId());
                 }
-            } else {
-                throw new IllegalMonitorStateException("Attempt to unlock lock, not locked by current id: "
-                        + id + " thread-id: " + Thread.currentThread().getId());
+            } finally {
+                connectionManager.releaseWrite(connection);
             }
         } finally {
-            connectionManager.releaseWrite(connection);
+            close();
         }
     }
 
@@ -276,76 +317,103 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
 
     @Override
-    public void close() {
-        connectionManager.unsubscribe(pubSubEntry, getChannelName());
-    }
-
-    @Override
     public void forceUnlock() {
-        subscribe().awaitUninterruptibly();
-
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+        Future<Boolean> promise = subscribe();
         try {
-            while (true) {
+            promise.awaitUninterruptibly();
+            
+            RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+            try {
                 LockValue lock = (LockValue) connection.get(getKeyName());
                 if (lock != null) {
                     unlock(connection);
                 }
+            } finally {
+                connectionManager.releaseWrite(connection);
             }
         } finally {
-            connectionManager.releaseWrite(connection);
+            close();
         }
     }
 
     @Override
     public boolean isLocked() {
-        subscribe().awaitUninterruptibly();
-
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
+        Future<Boolean> promise = subscribe();
         try {
-            LockValue lock = (LockValue) connection.get(getKeyName());
-            return lock != null;
+            promise.awaitUninterruptibly();
+            
+            RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
+            try {
+                LockValue lock = (LockValue) connection.get(getKeyName());
+                return lock != null;
+            } finally {
+                connectionManager.releaseRead(connection);
+            }
         } finally {
-            connectionManager.releaseRead(connection);
+            close();
         }
     }
 
     @Override
     public boolean isHeldByCurrentThread() {
-        subscribe().awaitUninterruptibly();
-
-        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
+        Future<Boolean> promise = subscribe();
         try {
-            LockValue lock = (LockValue) connection.get(getKeyName());
-            return lock != null && lock.equals(currentLock);
+            promise.awaitUninterruptibly();
+            
+            RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
+            try {
+                LockValue lock = (LockValue) connection.get(getKeyName());
+                LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+                return lock != null && lock.equals(currentLock);
+            } finally {
+                connectionManager.releaseRead(connection);
+            }
         } finally {
-            connectionManager.releaseRead(connection);
+            close();
         }
     }
 
     @Override
     public int getHoldCount() {
-        subscribe().awaitUninterruptibly();
-
-        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
+        Future<Boolean> promise = subscribe();
         try {
-            LockValue lock = (LockValue) connection.get(getKeyName());
-            if (lock != null && lock.equals(currentLock)) {
-                return lock.getCounter();
+            promise.awaitUninterruptibly();
+            
+            RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
+            try {
+                LockValue lock = (LockValue) connection.get(getKeyName());
+                LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+                if (lock != null && lock.equals(currentLock)) {
+                    return lock.getCounter();
+                }
+                return 0;
+            } finally {
+                connectionManager.releaseRead(connection);
             }
-            return 0;
         } finally {
-            connectionManager.releaseRead(connection);
+            close();
         }
     }
 
     @Override
     public void delete() {
-        super.delete(getKeyName());
+        forceUnlock();
+        ENTRIES.remove(getName());
     }
 
+    public void close() {
+        release();
+        
+        connectionManager.getGroup().schedule(new Runnable() {
+            @Override
+            public void run() {
+                RedissonLockEntry entry = ENTRIES.get(getName());
+                if (entry.isFree() 
+                        && ENTRIES.remove(getName(), entry)) {
+                    connectionManager.unsubscribe(pubSubEntry, getChannelName());
+                }
+            }
+        }, 15, TimeUnit.SECONDS);
+    }
+    
 }

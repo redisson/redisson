@@ -68,6 +68,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             if (oldPromise == null) {
                 return subscribe();
             }
+            return oldPromise;
         }
         
         RedisPubSubAdapter<String, Integer> listener = new RedisPubSubAdapter<String, Integer>() {
@@ -246,6 +247,29 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             close();
         }
 
+    }
+    
+    @Override
+    public void delete() {
+        Future<Boolean> promise = subscribe();
+        try {
+            promise.awaitUninterruptibly();
+            
+            RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
+            try {
+                connection.multi();
+                connection.del(getName());
+                connection.publish(getChannelName(), zeroCountMessage);
+                if (connection.exec().size() != 2) {
+                    throw new IllegalStateException();
+                }
+            } finally {
+                connectionManager.releaseWrite(connection);
+            }
+        } finally {
+            close();
+            ENTRIES.remove(getName());
+        }
     }
 
     public void close() {

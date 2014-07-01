@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
@@ -34,9 +33,6 @@ import org.redisson.core.RQueue;
 import org.redisson.core.RSet;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
-import org.redisson.misc.ReferenceMap;
-import org.redisson.misc.ReferenceMap.ReferenceType;
-import org.redisson.misc.ReferenceMap.RemoveValueListener;
 
 import com.lambdaworks.redis.RedisConnection;
 
@@ -48,19 +44,6 @@ import com.lambdaworks.redis.RedisConnection;
  *
  */
 public class Redisson {
-
-    private final RemoveValueListener listener = new RemoveValueListener() {
-
-        @Override
-        public void onRemove(Object value) {
-            if (value instanceof RedissonObject) {
-                ((RedissonObject)value).close();
-            }
-        }
-
-    };
-
-    private final ConcurrentMap<String, RedissonLock> locksMap = new ReferenceMap<String, RedissonLock>(ReferenceType.STRONG, ReferenceType.WEAK, listener);
 
     private final ConnectionManager connectionManager;
     private final Config config;
@@ -137,16 +120,7 @@ public class Redisson {
      * @return distributed lock
      */
     public RLock getLock(String name) {
-        RedissonLock lock = locksMap.get(name);
-        if (lock == null) {
-            lock = new RedissonLock(connectionManager, name, id);
-            RedissonLock oldLock = locksMap.putIfAbsent(name, lock);
-            if (oldLock != null) {
-                lock = oldLock;
-            }
-        }
-
-        return lock;
+        return new RedissonLock(connectionManager, name, id);
     }
 
     /**
