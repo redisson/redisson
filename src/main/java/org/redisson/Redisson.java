@@ -60,7 +60,6 @@ public class Redisson {
 
     };
 
-    private final ConcurrentMap<String, RedissonCountDownLatch> latchesMap = new ReferenceMap<String, RedissonCountDownLatch>(ReferenceType.STRONG, ReferenceType.WEAK, listener);
     private final ConcurrentMap<String, RedissonLock> locksMap = new ReferenceMap<String, RedissonLock>(ReferenceType.STRONG, ReferenceType.WEAK, listener);
 
     private final ConnectionManager connectionManager;
@@ -217,16 +216,7 @@ public class Redisson {
      * @return distributed "count down latch"
      */
     public RCountDownLatch getCountDownLatch(String name) {
-        RedissonCountDownLatch latch = latchesMap.get(name);
-        if (latch == null) {
-            latch = new RedissonCountDownLatch(connectionManager, name);
-            RedissonCountDownLatch oldLatch = latchesMap.putIfAbsent(name, latch);
-            if (oldLatch != null) {
-                latch = oldLatch;
-            }
-        }
-
-        return latch;
+        return new RedissonCountDownLatch(connectionManager, name);
     }
 
     /**
