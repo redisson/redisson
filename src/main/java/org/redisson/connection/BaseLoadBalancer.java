@@ -59,6 +59,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 continue;
             }
             connectionEntry.setFreezed(false);
+            return;
         }
         throw new IllegalStateException("Can't find " + addr + " in slaves!");
     }
