@@ -21,10 +21,9 @@ import io.netty.util.concurrent.FutureListener;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
@@ -63,7 +62,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
 
-    private LoadBalancer balancer;
+    protected LoadBalancer balancer;
     private final List<RedisClient> slaveClients = new ArrayList<RedisClient>();
     protected volatile RedisClient masterClient;
 
@@ -105,7 +104,22 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this.codec = new RedisCodecWrapper(cfg.getCodec());
     }
 
-    public void changeMaster(String host, int port) {
+    protected void slaveDown(String host, int port) {
+        Queue<RedisPubSubConnection> connections = balancer.freeze(host, port);
+        reattachListeners(connections);
+    }
+    
+    protected void slaveUp(String host, int port) {
+        balancer.unfreeze(host, port);
+    }
+
+    /**
+     * Remove slave with <code>host:port</code> from slaves list.
+     * Re-attach pub/sub listeners from it to other slave.
+     * Shutdown old master client.
+     * 
+     */
+    protected void changeMaster(String host, int port) {
         RedisClient oldMaster = masterClient;
         masterClient = new RedisClient(group, host, port);
         Queue<RedisPubSubConnection> connections = balancer.remove(host, port);
@@ -116,22 +130,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private void reattachListeners(Queue<RedisPubSubConnection> connections) {
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
             for (RedisPubSubConnection redisPubSubConnection : connections) {
-                if (!mapEntry.getValue().getConnection().equals(redisPubSubConnection)) {
-                    continue;
-                }
-
                 PubSubConnectionEntry entry = mapEntry.getValue();
                 String channelName = mapEntry.getKey();
 
+                if (!entry.getConnection().equals(redisPubSubConnection)) {
+                    continue;
+                }
+
+
                 synchronized (entry) {
                     entry.close();
-                    unsubscribeEntry(entry, channelName);
+                    unsubscribe(channelName);
 
-                    List<RedisPubSubListener> listeners = entry.getListeners(channelName);
+                    Collection<RedisPubSubListener> listeners = entry.getListeners(channelName);
                     if (!listeners.isEmpty()) {
-                        PubSubConnectionEntry newEntry = subscribe(mapEntry.getKey());
+                        PubSubConnectionEntry newEntry = subscribe(channelName);
                         for (RedisPubSubListener redisPubSubListener : listeners) {
-                            newEntry.addListener(redisPubSubListener);
+                            newEntry.addListener(channelName, redisPubSubListener);
                         }
                     }
                 }
@@ -224,7 +239,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, String channelName) {
+    public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
             return сonnEntry;
@@ -267,16 +282,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public void unsubscribe(PubSubConnectionEntry entry, String channelName) {
-        if (entry.hasListeners(channelName)) {
+    public void unsubscribe(String channelName) {
+        PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
+        if (entry == null) {
             return;
         }
-
-        unsubscribeEntry(entry, channelName);
-    }
-
-    private void unsubscribeEntry(PubSubConnectionEntry entry, String channelName) {
-        name2PubSubConnection.remove(channelName);
+        
         entry.unsubscribe(channelName);
         if (entry.tryClose()) {
             returnSubscribeConnection(entry);

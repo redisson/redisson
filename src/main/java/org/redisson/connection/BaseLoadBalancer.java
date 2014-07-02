@@ -52,6 +52,30 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         clientsEmpty.open();
     }
 
+    public void unfreeze(String host, int port) {
+        InetSocketAddress addr = new InetSocketAddress(host, port);
+        for (ConnectionEntry connectionEntry : clients) {
+            if (!connectionEntry.getClient().getAddr().equals(addr)) {
+                continue;
+            }
+            connectionEntry.setFreezed(false);
+        }
+        throw new IllegalStateException("Can't find " + addr + " in slaves!");
+    }
+    
+    public Queue<RedisPubSubConnection> freeze(String host, int port) {
+        InetSocketAddress addr = new InetSocketAddress(host, port);
+        for (ConnectionEntry connectionEntry : clients) {
+            if (!connectionEntry.getClient().getAddr().equals(addr)) {
+                continue;
+            }
+            
+            connectionEntry.setFreezed(true);
+            return connectionEntry.getSubscribeConnections();
+        }
+        throw new IllegalStateException("Can't find " + addr + " in slaves!");
+    }
+
     public Queue<RedisPubSubConnection> remove(String host, int port) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         for (Iterator<ConnectionEntry> iterator = clients.iterator(); iterator.hasNext();) {
@@ -60,8 +84,8 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 continue;
             }
 
-            log.info("slave {} removed", entry.getClient().getAddr());
             iterator.remove();
+            log.info("slave {} removed", entry.getClient().getAddr());
             if (clients.isEmpty()) {
                 clientsEmpty.close();
             }
@@ -93,7 +117,8 @@ abstract class BaseLoadBalancer implements LoadBalancer {
             int index = getIndex(clientsCopy);
             ConnectionEntry entry = clientsCopy.get(index);
 
-            if (!entry.getSubscribeConnectionsSemaphore().tryAcquire()) {
+            if (!entry.getSubscribeConnectionsSemaphore().tryAcquire()
+                    || entry.isFreezed()) {
                 clientsCopy.remove(index);
             } else {
                 try {
@@ -134,7 +159,8 @@ abstract class BaseLoadBalancer implements LoadBalancer {
             int index = getIndex(clientsCopy);
             ConnectionEntry entry = clientsCopy.get(index);
 
-            if (!entry.getConnectionsSemaphore().tryAcquire()) {
+            if (!entry.getConnectionsSemaphore().tryAcquire()
+                    || entry.isFreezed()) {
                 clientsCopy.remove(index);
             } else {
                 RedisConnection conn = entry.getConnections().poll();

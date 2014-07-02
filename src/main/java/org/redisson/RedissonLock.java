@@ -19,6 +19,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -26,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.RLock;
 
 import com.lambdaworks.redis.RedisConnection;
@@ -110,8 +110,6 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = new ConcurrentHashMap<String, RedissonLockEntry>();
 
-    private PubSubConnectionEntry pubSubEntry;
-
     RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
         super(connectionManager, name);
         this.id = id;
@@ -119,25 +117,29 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     private void release() {
         while (true) {
-            RedissonLockEntry entry = ENTRIES.get(getName());
+            RedissonLockEntry entry = ENTRIES.get(getEntryName());
             if (entry == null) {
                 return;
             }
             RedissonLockEntry newEntry = new RedissonLockEntry(entry);
             newEntry.release();
-            if (ENTRIES.replace(getName(), entry, newEntry)) {
+            if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                 return;
             }
         }
     }
+
+    private String getEntryName() {
+        return id + getName();
+    }
     
     private Promise<Boolean> aquire() {
         while (true) {
-            RedissonLockEntry entry = ENTRIES.get(getName());
+            RedissonLockEntry entry = ENTRIES.get(getEntryName());
             if (entry != null) {
                 RedissonLockEntry newEntry = new RedissonLockEntry(entry);
                 newEntry.aquire();
-                if (ENTRIES.replace(getName(), entry, newEntry)) {
+                if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                     return newEntry.getPromise();
                 }
             } else {
@@ -155,7 +157,7 @@ public class RedissonLock extends RedissonObject implements RLock {
         Promise<Boolean> newPromise = newPromise();
         final RedissonLockEntry value = new RedissonLockEntry(newPromise);
         value.aquire();
-        RedissonLockEntry oldValue = ENTRIES.putIfAbsent(getName(), value);
+        RedissonLockEntry oldValue = ENTRIES.putIfAbsent(getEntryName(), value);
         if (oldValue != null) {
             Promise<Boolean> oldPromise = aquire();
             if (oldPromise == null) {
@@ -164,9 +166,10 @@ public class RedissonLock extends RedissonObject implements RLock {
             return oldPromise;
         }
 
+//        init();
         value.getLatch().acquireUninterruptibly();
 
-        RedisPubSubAdapter<String, Integer> listener = new RedisPubSubAdapter<String, Integer>() {
+        RedisPubSubAdapter<Object> listener = new RedisPubSubAdapter<Object>() {
 
             @Override
             public void subscribed(String channel, long count) {
@@ -176,7 +179,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             }
 
             @Override
-            public void message(String channel, Integer message) {
+            public void message(String channel, Object message) {
                 if (message.equals(unlockMessage) && getChannelName().equals(channel)) {
                     value.getLatch().release();
                 }
@@ -184,10 +187,43 @@ public class RedissonLock extends RedissonObject implements RLock {
 
         };
 
-        pubSubEntry = connectionManager.subscribe(listener, getChannelName());
+        connectionManager.subscribe(listener, getChannelName());
+        
+        RedisPubSubAdapter<Object> expireListener = new RedisPubSubAdapter<Object>() {
+
+            @Override
+            public void message(String channel, Object message) {
+                if (getExpireChannelName().equals(channel)
+                        && "expired".equals(message)) {
+                    forceUnlock();
+                }
+            }
+
+        };
+
+        connectionManager.subscribe(expireListener, getExpireChannelName());
         return newPromise;
     }
 
+    private String getExpireChannelName() {
+        return "__keyspace@0__:\"" + getName() + "\"";
+    }
+
+    /**
+     * Turning on the notify-keyspace-events for Keyevent events from Expired keys 
+     * 
+     */
+    private void init() {
+        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
+        try {
+            if (!conn.configSet("notify-keyspace-events", "KEx").equals("OK")) {
+                throw new IllegalStateException();
+            }
+        } finally {
+            connectionManager.releaseWrite(conn);
+        }
+    }
+    
     @Override
     public void lock() {
         try {
@@ -198,10 +234,6 @@ public class RedissonLock extends RedissonObject implements RLock {
         }
     }
 
-    private String getKeyName() {
-        return "redisson__lock__" + getName();
-    }
-
     private String getChannelName() {
         return "redisson__lock__channel__" + getName();
     }
@@ -210,7 +242,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     public void lockInterruptibly() throws InterruptedException {
         while (!tryLock()) {
             // waiting for message
-            RedissonLockEntry entry = ENTRIES.get(getName());
+            RedissonLockEntry entry = ENTRIES.get(getEntryName());
             if (entry != null) {
                 entry.getLatch().acquire();
             }
@@ -235,12 +267,12 @@ public class RedissonLock extends RedissonObject implements RLock {
         
         RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
-            Boolean res = connection.setnx(getKeyName(), currentLock);
+            Boolean res = connection.setnx(getName(), currentLock);
             if (!res) {
-                LockValue lock = (LockValue) connection.get(getKeyName());
+                LockValue lock = (LockValue) connection.get(getName());
                 if (lock != null && lock.equals(currentLock)) {
                     lock.incCounter();
-                    connection.set(getKeyName(), lock);
+                    connection.set(getName(), lock);
                     return true;
                 }
             }
@@ -265,7 +297,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 }
                 long current = System.currentTimeMillis();
                 // waiting for message
-                RedissonLockEntry entry = ENTRIES.get(getName());
+                RedissonLockEntry entry = ENTRIES.get(getEntryName());
                 if (entry != null) {
                     entry.getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                 }
@@ -286,12 +318,12 @@ public class RedissonLock extends RedissonObject implements RLock {
             
             RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
             try {
-                LockValue lock = (LockValue) connection.get(getKeyName());
+                LockValue lock = (LockValue) connection.get(getName());
                 LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
                 if (lock != null && lock.equals(currentLock)) {
                     if (lock.getCounter() > 1) {
                         lock.decCounter();
-                        connection.set(getKeyName(), lock);
+                        connection.set(getName(), lock);
                     } else {
                         unlock(connection);
                     }
@@ -312,9 +344,10 @@ public class RedissonLock extends RedissonObject implements RLock {
         int counter = 0;
         while (counter < 5) {
             connection.multi();
-            connection.del(getKeyName());
+            connection.del(getName());
             connection.publish(getChannelName(), unlockMessage);
-            if (connection.exec().size() == 2) {
+            List<Object> res = connection.exec();
+            if (res.size() == 2) {
                 return;
             }
             counter++;
@@ -337,10 +370,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             
             RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
             try {
-                LockValue lock = (LockValue) connection.get(getKeyName());
-                if (lock != null) {
-                    unlock(connection);
-                }
+                unlock(connection);
             } finally {
                 connectionManager.releaseWrite(connection);
             }
@@ -357,7 +387,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             
             RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
             try {
-                LockValue lock = (LockValue) connection.get(getKeyName());
+                LockValue lock = (LockValue) connection.get(getName());
                 return lock != null;
             } finally {
                 connectionManager.releaseRead(connection);
@@ -375,7 +405,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             
             RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
             try {
-                LockValue lock = (LockValue) connection.get(getKeyName());
+                LockValue lock = (LockValue) connection.get(getName());
                 LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
                 return lock != null && lock.equals(currentLock);
             } finally {
@@ -394,7 +424,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             
             RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
             try {
-                LockValue lock = (LockValue) connection.get(getKeyName());
+                LockValue lock = (LockValue) connection.get(getName());
                 LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
                 if (lock != null && lock.equals(currentLock)) {
                     return lock.getCounter();
@@ -411,7 +441,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     @Override
     public void delete() {
         forceUnlock();
-        ENTRIES.remove(getName());
+        ENTRIES.remove(getEntryName());
     }
 
     public void close() {
@@ -420,11 +450,12 @@ public class RedissonLock extends RedissonObject implements RLock {
         connectionManager.getGroup().schedule(new Runnable() {
             @Override
             public void run() {
-                RedissonLockEntry entry = ENTRIES.get(getName());
+                RedissonLockEntry entry = ENTRIES.get(getEntryName());
                 if (entry != null 
                         && entry.isFree() 
-                            && ENTRIES.remove(getName(), entry)) {
-                    connectionManager.unsubscribe(pubSubEntry, getChannelName());
+                            && ENTRIES.remove(getEntryName(), entry)) {
+                    connectionManager.unsubscribe(getChannelName());
+//                    connectionManager.unsubscribe(getExpireChannelName());
                 }
             }
         }, 15, TimeUnit.SECONDS);

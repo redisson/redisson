@@ -4,6 +4,7 @@ package com.lambdaworks.redis.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
+import io.netty.util.CharsetUtil;
 
 import java.util.concurrent.BlockingQueue;
 
@@ -59,6 +60,8 @@ public class CommandHandler<K, V> extends ChannelDuplexHandler {
         Command<?, ?, ?> cmd = (Command<?, ?, ?>) msg;
         ByteBuf buf = ctx.alloc().heapBuffer();
         cmd.encode(buf);
+//        System.out.println("out: " + buf.toString(CharsetUtil.UTF_8));
+        
         ctx.write(buf, promise);
     }
 

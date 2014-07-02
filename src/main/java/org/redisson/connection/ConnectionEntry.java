@@ -25,6 +25,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class ConnectionEntry {
 
+    private volatile boolean freezed;
     private final RedisClient client;
 
     private final Semaphore subscribeConnectionsSemaphore;
@@ -45,6 +46,14 @@ public class ConnectionEntry {
 
     public RedisClient getClient() {
         return client;
+    }
+
+    public boolean isFreezed() {
+        return freezed;
+    }
+
+    public void setFreezed(boolean freezed) {
+        this.freezed = freezed;
     }
 
     public void shutdown() {

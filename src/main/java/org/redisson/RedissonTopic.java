@@ -50,15 +50,15 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     @Override
     public int addListener(MessageListener<M> listener) {
-        RedisPubSubTopicListenerWrapper<String, M> pubSubListener = new RedisPubSubTopicListenerWrapper<String, M>(listener, getName());
+        RedisPubSubTopicListenerWrapper<M> pubSubListener = new RedisPubSubTopicListenerWrapper<M>(listener, getName());
         return addListener(pubSubListener);
     }
 
-    private int addListener(RedisPubSubTopicListenerWrapper<String, M> pubSubListener) {
+    private int addListener(RedisPubSubTopicListenerWrapper<M> pubSubListener) {
         PubSubConnectionEntry entry = connectionManager.subscribe(getName());
         synchronized (entry) {
             if (entry.isActive()) {
-                entry.addListener(pubSubListener);
+                entry.addListener(getName(), pubSubListener);
                 return pubSubListener.hashCode();
             }
         }
@@ -74,8 +74,8 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
         }
         synchronized (entry) {
             if (entry.isActive()) {
-                entry.removeListener(listenerId);
-                connectionManager.unsubscribe(entry, getName());
+                entry.removeListener(getName(), listenerId);
+                connectionManager.unsubscribe(getName());
                 return;
             }
         }

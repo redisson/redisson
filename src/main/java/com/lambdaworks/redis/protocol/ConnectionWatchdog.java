@@ -15,6 +15,9 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * A netty {@link ChannelHandler} responsible for monitoring the channel and
  * reconnecting when the connection is lost.
@@ -23,6 +26,9 @@ import java.util.concurrent.TimeUnit;
  */
 @ChannelHandler.Sharable
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
+    
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    
     private Bootstrap bootstrap;
     private Channel channel;
     private ChannelGroup channels;
@@ -84,31 +90,35 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
     }
 
     private void doReConnect(final EventLoop loop, final CommandHandler<?, ?> handler, final RedisAsyncConnection<?, ?> connection, final int attempts) {
-        if (reconnect) {
-            ChannelFuture connect;
-            synchronized (bootstrap) {
-                connect = bootstrap.handler(new ChannelInitializer<Channel>() {
-                    @Override
-                    protected void initChannel(Channel ch) throws Exception {
-                        ch.pipeline().addLast(ConnectionWatchdog.this, handler, connection);
-                    }
-                }).connect();
-            }
-            connect.addListener(new GenericFutureListener<ChannelFuture>() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        int timeout = 2 << attempts;
-                        loop.schedule(new Runnable() {
-                            @Override
-                            public void run() {
-                                doReConnect(loop, handler, connection, Math.min(BACKOFF_CAP, attempts + 1));
-                            }
-                        }, timeout, TimeUnit.MILLISECONDS);
-                    }
-                }
-            });
+        if (!reconnect) {
+            return;
         }
+        
+        log.debug("trying to reconnect {}", bootstrap);
+        
+        ChannelFuture connect;
+        synchronized (bootstrap) {
+            connect = bootstrap.handler(new ChannelInitializer<Channel>() {
+                @Override
+                protected void initChannel(Channel ch) throws Exception {
+                    ch.pipeline().addLast(ConnectionWatchdog.this, handler, connection);
+                }
+            }).connect();
+        }
+        connect.addListener(new GenericFutureListener<ChannelFuture>() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    int timeout = 2 << attempts;
+                    loop.schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            doReConnect(loop, handler, connection, Math.min(BACKOFF_CAP, attempts + 1));
+                        }
+                    }, timeout, TimeUnit.MILLISECONDS);
+                }
+            }
+        });
     }
 
     @Override

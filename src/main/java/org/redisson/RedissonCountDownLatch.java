@@ -18,12 +18,12 @@ package org.redisson;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.RCountDownLatch;
 
 import com.lambdaworks.redis.RedisConnection;
@@ -46,11 +46,12 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     private static final Integer newCountMessage = 1;
 
     private static final ConcurrentMap<String, RedissonCountDownLatchEntry> ENTRIES = new ConcurrentHashMap<String, RedissonCountDownLatchEntry>();
+    
+    private final UUID id;
 
-    private PubSubConnectionEntry pubSubEntry;
-
-    RedissonCountDownLatch(ConnectionManager connectionManager, String name) {
+    RedissonCountDownLatch(ConnectionManager connectionManager, String name, UUID id) {
         super(connectionManager, name);
+        this.id = id;
     }
 
     private Future<Boolean> subscribe() {
@@ -62,7 +63,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         Promise<Boolean> newPromise = newPromise();
         final RedissonCountDownLatchEntry value = new RedissonCountDownLatchEntry(newPromise);
         value.aquire();
-        RedissonCountDownLatchEntry oldValue = ENTRIES.putIfAbsent(getName(), value);
+        RedissonCountDownLatchEntry oldValue = ENTRIES.putIfAbsent(getEntryName(), value);
         if (oldValue != null) {
             Promise<Boolean> oldPromise = aquire();
             if (oldPromise == null) {
@@ -71,7 +72,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return oldPromise;
         }
         
-        RedisPubSubAdapter<String, Integer> listener = new RedisPubSubAdapter<String, Integer>() {
+        RedisPubSubAdapter<Integer> listener = new RedisPubSubAdapter<Integer>() {
 
             @Override
             public void subscribed(String channel, long count) {
@@ -95,19 +96,19 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
         };
 
-        pubSubEntry = connectionManager.subscribe(listener, getChannelName());
+        connectionManager.subscribe(listener, getChannelName());
         return newPromise;
     }
 
     private void release() {
         while (true) {
-            RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
+            RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
             if (entry == null) {
                 return;
             }
             RedissonCountDownLatchEntry newEntry = new RedissonCountDownLatchEntry(entry);
             newEntry.release();
-            if (ENTRIES.replace(getName(), entry, newEntry)) {
+            if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                 return;
             }
         }
@@ -115,11 +116,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     
     private Promise<Boolean> aquire() {
         while (true) {
-            RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
+            RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
             if (entry != null) {
                 RedissonCountDownLatchEntry newEntry = new RedissonCountDownLatchEntry(entry);
                 newEntry.aquire();
-                if (ENTRIES.replace(getName(), entry, newEntry)) {
+                if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                     return newEntry.getPromise();
                 }
             } else {
@@ -135,7 +136,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             
             while (getCountInner() > 0) {
                 // waiting for open state
-                RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
+                RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
                 if (entry != null) {
                     entry.getLatch().await();
                 }
@@ -161,7 +162,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 }
                 long current = System.currentTimeMillis();
                 // waiting for open state
-                RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
+                RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
                 if (entry != null) {
                     entry.getLatch().await(time, TimeUnit.MILLISECONDS);
                 }
@@ -207,6 +208,10 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         }
     }
 
+    private String getEntryName() {
+        return id + getName();
+    }
+    
     private String getChannelName() {
         return groupName + getName();
     }
@@ -282,7 +287,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             }
         } finally {
             close();
-            ENTRIES.remove(getName());
+            ENTRIES.remove(getEntryName());
         }
     }
 
@@ -292,11 +297,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         connectionManager.getGroup().schedule(new Runnable() {
             @Override
             public void run() {
-                RedissonCountDownLatchEntry entry = ENTRIES.get(getName());
+                RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
                 if (entry != null 
                         && entry.isFree() 
-                            && ENTRIES.remove(getName(), entry)) {
-                    connectionManager.unsubscribe(pubSubEntry, getChannelName());
+                            && ENTRIES.remove(getEntryName(), entry)) {
+                    connectionManager.unsubscribe(getChannelName());
                 }
             }
         }, 15, TimeUnit.SECONDS);

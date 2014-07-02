@@ -180,7 +180,7 @@ public class RedisClient {
 
             return connection;
         } catch (Throwable e) {
-            throw new RedisConnectionException("Unable to connect", e);
+            throw new RedisConnectionException("Unable to connect " + addr, e);
         }
     }
 

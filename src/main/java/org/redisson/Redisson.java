@@ -190,7 +190,7 @@ public class Redisson {
      * @return distributed "count down latch"
      */
     public RCountDownLatch getCountDownLatch(String name) {
-        return new RedissonCountDownLatch(connectionManager, name);
+        return new RedissonCountDownLatch(connectionManager, name, id);
     }
 
     /**

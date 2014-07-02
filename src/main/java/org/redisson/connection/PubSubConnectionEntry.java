@@ -15,12 +15,14 @@
  */
 package org.redisson.connection;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 
-import org.redisson.RedisPubSubTopicListenerWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,7 @@ public class PubSubConnectionEntry {
     private final Semaphore subscribedChannelsAmount;
     private final RedisPubSubConnection conn;
     private final int subscriptionsPerConnection;
+    private final ConcurrentMap<String, Queue<RedisPubSubListener>> channelListeners = new ConcurrentHashMap<String, Queue<RedisPubSubListener>>(); 
 
     public PubSubConnectionEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
         super();
@@ -46,7 +49,32 @@ public class PubSubConnectionEntry {
         this.subscribedChannelsAmount = new Semaphore(subscriptionsPerConnection);
     }
 
-    public void addListener(RedisPubSubListener listener) {
+    public Collection<RedisPubSubListener> getListeners(String channelName) {
+        Collection<RedisPubSubListener> result = channelListeners.get(channelName);
+        if (result == null) {
+            return Collections.emptyList();
+        }
+        return result;
+    }
+    
+    public void addListener(String channelName, RedisPubSubListener listener) {
+        Queue<RedisPubSubListener> queue = channelListeners.get(channelName);
+        if (queue == null) {
+            queue = new ConcurrentLinkedQueue<RedisPubSubListener>();
+            Queue<RedisPubSubListener> oldQueue = channelListeners.putIfAbsent(channelName, queue);
+            if (oldQueue != null) {
+                queue = oldQueue;
+            }
+        }
+
+        synchronized (queue) {
+            if (channelListeners.get(channelName) != queue) {
+                addListener(channelName, listener);
+                return;
+            }
+            queue.add(listener);
+        }
+        
         conn.addListener(listener);
     }
 
@@ -58,44 +86,24 @@ public class PubSubConnectionEntry {
         status = Status.INACTIVE;
     }
 
-    public List<RedisPubSubListener> getListeners(String channelName) {
-        List<RedisPubSubListener> result = new ArrayList<RedisPubSubListener>();
-        Queue<RedisPubSubListener> queue = conn.getListeners();
-        for (RedisPubSubListener listener : queue) {
-            if (!(listener instanceof RedisPubSubTopicListenerWrapper)) {
-                continue;
-            }
-
-            RedisPubSubTopicListenerWrapper entry = (RedisPubSubTopicListenerWrapper) listener;
-            if (entry.getName().equals(channelName)) {
-                result.add(entry);
-            }
-        }
-        return result;
-    }
-
     // TODO optimize
-    public boolean hasListeners(String channelName) {
-        return !getListeners(channelName).isEmpty();
-    }
-
-    // TODO optimize
-    public void removeListener(int listenerId) {
-        Queue<RedisPubSubListener> queue = conn.getListeners();
-        for (RedisPubSubListener listener : queue) {
-            if (!(listener instanceof RedisPubSubTopicListenerWrapper)) {
-                continue;
-            }
-
-            RedisPubSubTopicListenerWrapper entry = (RedisPubSubTopicListenerWrapper) listener;
-            if (entry.hashCode() == listenerId) {
-                removeListener(entry);
+    public void removeListener(String channelName, int listenerId) {
+        Queue<RedisPubSubListener> listeners = channelListeners.get(channelName);
+        for (RedisPubSubListener listener : listeners) {
+            if (listener.hashCode() == listenerId) {
+                removeListener(channelName, listener);
                 break;
             }
         }
     }
 
-    public void removeListener(RedisPubSubListener listener) {
+    public void removeListener(String channelName, RedisPubSubListener listener) {
+        Queue<RedisPubSubListener> queue = channelListeners.get(channelName);
+        synchronized (queue) {
+            if (queue.remove(listener)) {
+                channelListeners.remove(channelName, new ConcurrentLinkedQueue<RedisPubSubListener>());
+            }
+        }
         conn.removeListener(listener);
     }
 
@@ -110,12 +118,12 @@ public class PubSubConnectionEntry {
     public void subscribe(final String channelName) {
         conn.addListener(new RedisPubSubAdapter() {
             @Override
-            public void subscribed(Object channel, long count) {
+            public void subscribed(String channel, long count) {
                 log.debug("subscribed to '{}' channel", channelName);
             }
 
             @Override
-            public void unsubscribed(Object channel, long count) {
+            public void unsubscribed(String channel, long count) {
                 log.debug("unsubscribed from '{}' channel", channelName);
             }
         });
@@ -123,7 +131,7 @@ public class PubSubConnectionEntry {
     }
 
 
-    public void subscribe(RedisPubSubAdapter listener, Object channel) {
+    public void subscribe(RedisPubSubAdapter listener, String channel) {
         conn.addListener(listener);
         conn.subscribe(channel);
     }

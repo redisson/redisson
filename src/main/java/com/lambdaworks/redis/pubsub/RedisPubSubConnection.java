@@ -39,9 +39,9 @@ import com.lambdaworks.redis.protocol.CommandArgs;
  * @author Will Glozer
  */
 public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
-    private final Queue<RedisPubSubListener<K, V>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<K, V>>();
-    private Set<K> channels;
-    private Set<K> patterns;
+    private final Queue<RedisPubSubListener<V>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<V>>();
+    private Set<String> channels;
+    private Set<String> patterns;
 
     /**
      * Initialize a new connection.
@@ -54,8 +54,8 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
      */
     public RedisPubSubConnection(RedisClient client, BlockingQueue<Command<K, V, ?>> queue, RedisCodec<K, V> codec, long timeout, TimeUnit unit, EventLoopGroup eventLoopGroup) {
         super(client, queue, codec, timeout, unit, eventLoopGroup);
-        channels  = new HashSet<K>();
-        patterns  = new HashSet<K>();
+        channels  = new HashSet<String>();
+        patterns  = new HashSet<String>();
     }
 
     /**
@@ -63,12 +63,8 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
      *
      * @param listener Listener.
      */
-    public void addListener(RedisPubSubListener<K, V> listener) {
+    public void addListener(RedisPubSubListener<V> listener) {
         listeners.add(listener);
-    }
-
-    public Queue<RedisPubSubListener<K, V>> getListeners() {
-        return listeners;
     }
 
     /**
@@ -76,23 +72,23 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
      *
      * @param listener Listener.
      */
-    public void removeListener(RedisPubSubListener<K, V> listener) {
+    public void removeListener(RedisPubSubListener<V> listener) {
         listeners.remove(listener);
     }
 
-    public void psubscribe(K... patterns) {
+    public void psubscribe(String... patterns) {
         dispatch(PSUBSCRIBE, new PubSubOutput<K, V>(codec), args(patterns));
     }
 
-    public void punsubscribe(K... patterns) {
+    public void punsubscribe(String... patterns) {
         dispatch(PUNSUBSCRIBE, new PubSubOutput<K, V>(codec), args(patterns));
     }
 
-    public void subscribe(K... channels) {
+    public void subscribe(String... channels) {
         dispatch(SUBSCRIBE, new PubSubOutput<K, V>(codec), args(channels));
     }
 
-    public void unsubscribe(K... channels) {
+    public void unsubscribe(String... channels) {
         dispatch(UNSUBSCRIBE, new PubSubOutput<K, V>(codec), args(channels));
     }
 
@@ -101,7 +97,7 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
         super.channelActive(ctx);
 
         if (channels.size() > 0) {
-            subscribe(toArray(channels));
+            subscribe(channels.toArray(new String[channels.size()]));
             channels.clear();
         }
 
@@ -115,7 +111,7 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
     @SuppressWarnings("unchecked")
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         PubSubOutput<K, V> output = (PubSubOutput<K, V>) msg;
-        for (RedisPubSubListener<K, V> listener : listeners) {
+        for (RedisPubSubListener<V> listener : listeners) {
             switch (output.type()) {
                 case message:
                     listener.message(output.channel(), output.get());
@@ -143,9 +139,11 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
         }
     }
 
-    private CommandArgs<K, V> args(K... keys) {
+    private CommandArgs<K, V> args(String... keys) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
-        args.addKeys(keys);
+        for (String key : keys) {
+            args.add(key.toString());
+        }
         return args;
     }
 

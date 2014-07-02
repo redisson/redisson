@@ -19,8 +19,8 @@ public class PubSubOutput<K, V> extends CommandOutput<K, V, V> {
     enum Type { message, pmessage, psubscribe, punsubscribe, subscribe, unsubscribe }
 
     private Type type;
-    private K channel;
-    private K pattern;
+    private String channel;
+    private String pattern;
     private long count;
 
     public PubSubOutput(RedisCodec<K, V> codec) {
@@ -31,11 +31,11 @@ public class PubSubOutput<K, V> extends CommandOutput<K, V, V> {
         return type;
     }
 
-    public K channel() {
+    public String channel() {
         return channel;
     }
 
-    public K pattern() {
+    public String pattern() {
         return pattern;
     }
 
@@ -54,23 +54,28 @@ public class PubSubOutput<K, V> extends CommandOutput<K, V, V> {
         switch (type) {
             case pmessage:
                 if (pattern == null) {
-                    pattern = codec.decodeKey(bytes);
+                    pattern = decodeAscii(bytes);
                     break;
                 }
             case message:
                 if (channel == null) {
-                    channel = codec.decodeKey(bytes);
+                    channel = decodeAscii(bytes);
                     break;
                 }
-                output = codec.decodeValue(bytes);
+                if (channel.startsWith("__keyspace@")
+                        || channel.startsWith("__keyevent@")) {
+                    output = (V)decodeAscii(bytes);
+                } else {
+                    output = codec.decodeValue(bytes);
+                }
                 break;
             case psubscribe:
             case punsubscribe:
-                pattern = codec.decodeKey(bytes);
+                pattern = decodeAscii(bytes);
                 break;
             case subscribe:
             case unsubscribe:
-                channel = codec.decodeKey(bytes);
+                channel = decodeAscii(bytes);
                 break;
         }
     }

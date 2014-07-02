@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
@@ -21,9 +22,34 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
     @After
     public void after() {
-        redisson.shutdown();
+        try {
+            redisson.flushdb();
+        } finally {
+            redisson.shutdown();
+        }
     }
 
+//    @Test
+    public void testExpire() throws InterruptedException {
+        RLock lock = redisson.getLock("lock");
+        lock.lock();
+//        lock.expire(2, TimeUnit.SECONDS);
+        
+        final CountDownLatch latch = new CountDownLatch(1);
+        new Thread() {
+            public void run() {
+                RLock lock1 = redisson.getLock("lock");
+                lock1.lock();
+                lock1.unlock();
+                latch.countDown();
+            };
+        }.start();
+
+        latch.await();
+
+        lock.unlock();
+    }
+    
     @Test
     public void testGetHoldCount() {
         RLock lock = redisson.getLock("lock");
@@ -156,9 +182,14 @@ public class RedissonLockTest extends BaseConcurrentTest {
             @Override
             public void run(Redisson redisson) {
                 Lock lock = redisson.getLock("testConcurrency_SingleInstance");
+                System.out.println("lock1 " + Thread.currentThread().getId());
                 lock.lock();
+                System.out.println("lock2 "+ Thread.currentThread().getId());
                 lockedCounter.set(lockedCounter.get() + 1);
+                System.out.println("lockedCounter " + lockedCounter);
+                System.out.println("unlock1 "+ Thread.currentThread().getId());
                 lock.unlock();
+                System.out.println("unlock2 "+ Thread.currentThread().getId());
             }
         });
 

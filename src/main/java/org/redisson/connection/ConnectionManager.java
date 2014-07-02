@@ -16,28 +16,10 @@
 package org.redisson.connection;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.FutureListener;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Semaphore;
-
-import org.redisson.Config;
-import org.redisson.codec.RedisCodecWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 /**
  *
@@ -46,8 +28,6 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
  */
 //TODO ping support
 public interface ConnectionManager {
-
-    void changeMaster(String host, int port);
 
     <T> FutureListener<T> createReleaseWriteListener(final RedisConnection conn);
 
@@ -61,9 +41,9 @@ public interface ConnectionManager {
 
     <K, V> PubSubConnectionEntry subscribe(String channelName);
 
-    <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<K, V> listener, String channelName);
+    <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName);
 
-    void unsubscribe(PubSubConnectionEntry entry, String channelName);
+    void unsubscribe(String channelName);
 
     void releaseWrite(RedisConnection сonnection);
 
