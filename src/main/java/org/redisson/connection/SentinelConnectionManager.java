@@ -58,6 +58,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String masterHost = master.get(0) + ":" + master.get(1);
             c.setMasterAddress(masterHost);
             log.info("master: {}", masterHost);
+            c.addSlaveAddress(masterHost);
 
             // TODO async
             List<Map<String, String>> slaves = connection.slaves(cfg.getMasterName()).awaitUninterruptibly().getNow();
@@ -66,10 +67,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String port = map.get("port");
                 log.info("slave: {}:{}", ip, port);
                 c.addSlaveAddress(ip + ":" + port);
-            }
-            if (slaves.isEmpty()) {
-                log.info("master added as slave");
-                c.addSlaveAddress(masterHost);
             }
 
             client.shutdown();
@@ -84,6 +81,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private void monitorMasterChange(final SentinelServersConfig cfg) {
         final AtomicReference<String> master = new AtomicReference<String>();
         final Set<String> freezeSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+        final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+        
         for (final URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
             sentinels.add(client);
@@ -97,6 +96,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                 @Override
                 public void message(String channel, String msg) {
+                    if ("+slave".equals(channel)) {
+                        onSlaveAdded(addedSlaves, addr, msg);
+                    }
                     if ("+sdown".equals(channel)) {
                         onSlaveDown(freezeSlaves, addr, msg);
                     }
@@ -109,7 +111,27 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
 
             });
-            pubsub.subscribe("+switch-master", "+sdown", "-sdown");
+            pubsub.subscribe("+switch-master", "+sdown", "-sdown", "+slave");
+        }
+    }
+
+    protected void onSlaveAdded(Set<String> addedSlaves, URI addr, String msg) {
+        String[] parts = msg.split(" ");
+
+        if (parts.length > 4 
+                 && "slave".equals(parts[0])) {
+            String ip = parts[2];
+            String port = parts[3];
+
+            String slaveAddr = ip + ":" + port;
+            
+            // to avoid addition twice
+            if (addedSlaves.add(slaveAddr)) {
+                log.debug("Slave has been added - {}", slaveAddr);
+                addSlave(ip, Integer.valueOf(port));
+            }
+        } else {
+            log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
     }
 
@@ -122,6 +144,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String port = parts[3];
 
             String slaveAddr = ip + ":" + port;
+            
+            // to avoid freeze twice
             if (freezeSlaves.add(slaveAddr)) {
                 log.debug("Slave has down - {}", slaveAddr);
                 slaveDown(ip, Integer.valueOf(port));

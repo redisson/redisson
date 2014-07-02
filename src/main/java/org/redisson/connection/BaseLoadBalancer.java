@@ -17,7 +17,8 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -47,64 +48,56 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         this.password = password;
     }
 
-    public void add(ConnectionEntry entry) {
+    public synchronized void add(ConnectionEntry entry) {
         clients.add(entry);
         clientsEmpty.open();
     }
 
-    public void unfreeze(String host, int port) {
+    public synchronized void unfreeze(String host, int port) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         for (ConnectionEntry connectionEntry : clients) {
             if (!connectionEntry.getClient().getAddr().equals(addr)) {
                 continue;
             }
             connectionEntry.setFreezed(false);
+            clientsEmpty.open();
             return;
         }
         throw new IllegalStateException("Can't find " + addr + " in slaves!");
     }
     
-    public Queue<RedisPubSubConnection> freeze(String host, int port) {
+    public synchronized Collection<RedisPubSubConnection> freeze(String host, int port) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         for (ConnectionEntry connectionEntry : clients) {
-            if (!connectionEntry.getClient().getAddr().equals(addr)) {
+            if (connectionEntry.isFreezed() 
+                    || !connectionEntry.getClient().getAddr().equals(addr)) {
                 continue;
             }
             
+            log.debug("{} freezed", addr);
             connectionEntry.setFreezed(true);
-            return connectionEntry.getSubscribeConnections();
-        }
-        throw new IllegalStateException("Can't find " + addr + " in slaves!");
-    }
-
-    public Queue<RedisPubSubConnection> remove(String host, int port) {
-        InetSocketAddress addr = new InetSocketAddress(host, port);
-        for (Iterator<ConnectionEntry> iterator = clients.iterator(); iterator.hasNext();) {
-            ConnectionEntry entry = iterator.next();
-            if (!entry.getClient().getAddr().equals(addr)) {
-                continue;
+            // TODO shutdown watchdog
+            
+            boolean allFreezed = true;
+            for (ConnectionEntry entry : clients) {
+                if (!entry.isFreezed()) {
+                    allFreezed = false;
+                    break;
+                }
             }
-
-            iterator.remove();
-            log.info("slave {} removed", entry.getClient().getAddr());
-            if (clients.isEmpty()) {
+            if (allFreezed) {
                 clientsEmpty.close();
             }
-            entry.shutdown();
-            log.info("slave {} shutdown", entry.getClient().getAddr());
-
-            return entry.getSubscribeConnections();
+            return connectionEntry.getSubscribeConnections();
         }
-        throw new IllegalStateException("Can't find " + addr + " in slaves!");
+
+        return Collections.emptyList();
     }
 
     @SuppressWarnings("unchecked")
     public RedisPubSubConnection nextPubSubConnection() {
+        clientsEmpty.awaitUninterruptibly();
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
-        if (clientsCopy.isEmpty()) {
-            clientsEmpty.awaitUninterruptibly();
-            return nextPubSubConnection();
-        }
         while (true) {
             if (clientsCopy.isEmpty()) {
                 // TODO refactor
@@ -142,11 +135,8 @@ abstract class BaseLoadBalancer implements LoadBalancer {
     }
 
     public RedisConnection nextConnection() {
+        clientsEmpty.awaitUninterruptibly();
         List<ConnectionEntry> clientsCopy = new ArrayList<ConnectionEntry>(clients);
-        if (clientsCopy.isEmpty()) {
-            clientsEmpty.awaitUninterruptibly();
-            return nextConnection();
-        }
         while (true) {
             if (clientsCopy.isEmpty()) {
                 // TODO refactor
@@ -205,4 +195,10 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         }
     }
 
+    public void shutdown() {
+        for (ConnectionEntry entry : clients) {
+            entry.getClient().shutdown();
+        }
+    }
+    
 }

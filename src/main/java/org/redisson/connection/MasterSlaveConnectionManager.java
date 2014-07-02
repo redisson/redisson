@@ -20,10 +20,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.FutureListener;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
@@ -63,7 +61,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
 
     protected LoadBalancer balancer;
-    private final List<RedisClient> slaveClients = new ArrayList<RedisClient>();
     protected volatile RedisClient masterClient;
 
     private Semaphore masterConnectionsSemaphore;
@@ -89,10 +86,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         balancer.init(codec, config.getPassword());
         for (URI address : this.config.getSlaveAddresses()) {
             RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
-            slaveClients.add(client);
-            balancer.add(new ConnectionEntry(client,
+            ConnectionEntry entry = new ConnectionEntry(client,
                                         this.config.getSlaveConnectionPoolSize(),
-                                        this.config.getSlaveSubscriptionConnectionPoolSize()));
+                                        this.config.getSlaveSubscriptionConnectionPoolSize());
+            balancer.add(entry);
+        }
+        if (this.config.getSlaveAddresses().size() > 1) {
+            slaveDown(this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
         }
 
         masterClient = new RedisClient(group, this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
@@ -105,8 +105,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void slaveDown(String host, int port) {
-        Queue<RedisPubSubConnection> connections = balancer.freeze(host, port);
+        Collection<RedisPubSubConnection> connections = balancer.freeze(host, port);
         reattachListeners(connections);
+    }
+
+    protected void addSlave(String host, int port) {
+        slaveDown(masterClient.getAddr().getHostName(), port);
+        
+        RedisClient client = new RedisClient(group, host, port);
+        balancer.add(new ConnectionEntry(client,
+                this.config.getSlaveConnectionPoolSize(),
+                this.config.getSlaveSubscriptionConnectionPoolSize()));
     }
     
     protected void slaveUp(String host, int port) {
@@ -114,7 +123,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     /**
-     * Remove slave with <code>host:port</code> from slaves list.
+     * Freeze slave with <code>host:port</code> from slaves list.
      * Re-attach pub/sub listeners from it to other slave.
      * Shutdown old master client.
      * 
@@ -122,12 +131,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void changeMaster(String host, int port) {
         RedisClient oldMaster = masterClient;
         masterClient = new RedisClient(group, host, port);
-        Queue<RedisPubSubConnection> connections = balancer.remove(host, port);
-        reattachListeners(connections);
+        slaveDown(host, port);
         oldMaster.shutdown();
     }
 
-    private void reattachListeners(Queue<RedisPubSubConnection> connections) {
+    private void reattachListeners(Collection<RedisPubSubConnection> connections) {
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
             for (RedisPubSubConnection redisPubSubConnection : connections) {
                 PubSubConnectionEntry entry = mapEntry.getValue();
@@ -310,9 +318,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public void shutdown() {
         masterClient.shutdown();
-        for (RedisClient client : slaveClients) {
-            client.shutdown();
-        }
+        balancer.shutdown();
 
         group.shutdownGracefully().syncUninterruptibly();
     }
