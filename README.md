@@ -39,6 +39,13 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####03-Jul-2014 - version 1.1.2 released
+Improvement - RedissonSet.iterator implemented with sscan  
+Improvement - RedissonSortedSet.iterator optimization  
+Feature - RSortedSet.removeAsync, RSortedSet.addAsync, RSet.removeAsync, RSet.addAsync methods added  
+Feature - slave up/down detection in Sentinel servers connection mode  
+Feature - new-slave automatic discovery in Sentinel servers connection mode  
+
 ####17-June-2014 - version 1.1.1 released
 Feature - sentinel servers support  
 Fixed - connection leak in `RTopic`  
