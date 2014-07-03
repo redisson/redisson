@@ -10,7 +10,14 @@ Licensed under the Apache License 2.0.
 
 Features
 ================================
-* Sentinel // Master slave // Single servers connection support  
+* Sentinel servers mode: 
+*    1. read and write data using single server
+*    2. automatic master and slave servers info gathering
+*    3. automatic new master server info gathering
+*    4. automatic new slave servers info gathering
+*    5. automatic slave servers offline/online info gathering
+* Master with Slave servers mode: read using slave servers, write using master server
+* Single server mode: read and write data using single server
 * Distributed implementation of `java.util.List`  
 * Distributed implementation of `java.util.Set`  
 * Distributed implementation of `java.util.SortedSet`  
