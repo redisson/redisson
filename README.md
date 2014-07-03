@@ -11,10 +11,10 @@ Licensed under the Apache License 2.0.
 Features
 ================================
 * Sentinel servers mode: 
-    1. automatic master and slave servers info gathering
-    2. automatic new master server info gathering
-    3. automatic new slave servers info gathering
-    4. automatic slave servers offline/online info gathering
+    1. automatic master and slave servers discovery
+    2. automatic new master server discovery
+    3. automatic new slave servers discovery
+    4. automatic slave servers offline/online discovery
     5. read data using slave servers, write data using master server
 * Master with Slave servers mode: read data using slave servers, write data using master server
 * Single server mode: read and write data using single server
