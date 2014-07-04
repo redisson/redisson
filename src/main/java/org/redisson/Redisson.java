@@ -85,6 +85,15 @@ public class Redisson {
         return new Redisson(config);
     }
 
+    /**
+     * Returns the connection manager associated with this instance
+     *
+     * @return ConnectionManager instance
+     */
+    public ConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+
     public <V> RBucket<V> getBucket(String name) {
         return new RedissonBucket<V>(connectionManager, name);
     }
