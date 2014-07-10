@@ -11,10 +11,10 @@ Licensed under the Apache License 2.0.
 Features
 ================================
 * Sentinel servers mode: 
-    1. automatic master and slave servers info gathering
-    2. automatic new master server info gathering
-    3. automatic new slave servers info gathering
-    4. automatic slave servers offline/online info gathering
+    1. automatic master and slave servers discovery
+    2. automatic new master server discovery
+    3. automatic new slave servers discovery
+    4. automatic slave servers offline/online discovery
     5. read data using slave servers, write data using master server
 * Master with Slave servers mode: read data using slave servers, write data using master server
 * Single server mode: read and write data using single server
@@ -38,6 +38,13 @@ Features
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####03-Jul-2014 - version 1.1.2 released
+Improvement - RedissonSet.iterator implemented with sscan  
+Improvement - RedissonSortedSet.iterator optimization  
+Feature - RSortedSet.removeAsync, RSortedSet.addAsync, RSet.removeAsync, RSet.addAsync methods added  
+Feature - slave up/down detection in Sentinel servers connection mode  
+Feature - new-slave automatic discovery in Sentinel servers connection mode  
 
 ####17-June-2014 - version 1.1.1 released
 Feature - sentinel servers support  
