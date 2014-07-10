@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RLock;
@@ -108,6 +110,7 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     private static final Integer unlockMessage = 0;
 
+    private static final ReadWriteLock lock = new ReentrantReadWriteLock();
     private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = new ConcurrentHashMap<String, RedissonLockEntry>();
 
     RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
@@ -119,18 +122,34 @@ public class RedissonLock extends RedissonObject implements RLock {
         while (true) {
             RedissonLockEntry entry = ENTRIES.get(getEntryName());
             if (entry == null) {
+                lock.readLock().unlock();
                 return;
             }
             RedissonLockEntry newEntry = new RedissonLockEntry(entry);
             newEntry.release();
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
+                if (!newEntry.isFree()) {
+                    lock.readLock().unlock();
+                    return;
+                }
+                lock.readLock().unlock();
+
+                lock.writeLock().lock();
+                try {
+                    if (ENTRIES.remove(getEntryName(), newEntry)) {
+                        Future future = connectionManager.unsubscribe(getChannelName());
+                        future.awaitUninterruptibly();
+                    }
+                } finally {
+                    lock.writeLock().unlock();
+                }
                 return;
             }
         }
     }
 
     private String getEntryName() {
-        return id + getName();
+        return getName();
     }
     
     private Promise<Boolean> aquire() {
@@ -149,6 +168,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
     
     private Future<Boolean> subscribe() {
+        lock.readLock().lock();
         Promise<Boolean> promise = aquire();
         if (promise != null) {
             return promise;
@@ -161,7 +181,11 @@ public class RedissonLock extends RedissonObject implements RLock {
         if (oldValue != null) {
             Promise<Boolean> oldPromise = aquire();
             if (oldPromise == null) {
-                return subscribe();
+                try {
+                    return subscribe();
+                } finally {
+                    lock.readLock().unlock();
+                }
             }
             return oldPromise;
         }
@@ -189,19 +213,19 @@ public class RedissonLock extends RedissonObject implements RLock {
 
         connectionManager.subscribe(listener, getChannelName());
         
-        RedisPubSubAdapter<Object> expireListener = new RedisPubSubAdapter<Object>() {
-
-            @Override
-            public void message(String channel, Object message) {
-                if (getExpireChannelName().equals(channel)
-                        && "expired".equals(message)) {
-                    forceUnlock();
-                }
-            }
-
-        };
-
-        connectionManager.subscribe(expireListener, getExpireChannelName());
+//        RedisPubSubAdapter<Object> expireListener = new RedisPubSubAdapter<Object>() {
+//
+//            @Override
+//            public void message(String channel, Object message) {
+//                if (getExpireChannelName().equals(channel)
+//                        && "expired".equals(message)) {
+//                    forceUnlock();
+//                }
+//            }
+//
+//        };
+//
+//        connectionManager.subscribe(expireListener, getExpireChannelName());
         return newPromise;
     }
 
@@ -240,12 +264,19 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void lockInterruptibly() throws InterruptedException {
-        while (!tryLock()) {
-            // waiting for message
-            RedissonLockEntry entry = ENTRIES.get(getEntryName());
-            if (entry != null) {
-                entry.getLatch().acquire();
+        Future<Boolean> promise = subscribe();
+        try {
+            promise.awaitUninterruptibly();
+            
+            while (!tryLock()) {
+                // waiting for message
+                RedissonLockEntry entry = ENTRIES.get(getEntryName());
+                if (entry != null) {
+                    entry.getLatch().acquire();
+                }
             }
+        } finally {
+            release();
         }
     }
 
@@ -257,7 +288,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             
             return tryLockInner();
         } finally {
-            close();
+            release();
         }
     }
 
@@ -306,7 +337,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             }
             return true;
         } finally {
-            close();
+            release();
         }
     }
 
@@ -336,7 +367,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 connectionManager.releaseWrite(connection);
             }
         } finally {
-            close();
+            release();
         }
     }
 
@@ -375,7 +406,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 connectionManager.releaseWrite(connection);
             }
         } finally {
-            close();
+            release();
         }
     }
 
@@ -393,7 +424,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 connectionManager.releaseRead(connection);
             }
         } finally {
-            close();
+            release();
         }
     }
 
@@ -412,7 +443,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 connectionManager.releaseRead(connection);
             }
         } finally {
-            close();
+            release();
         }
     }
 
@@ -434,31 +465,15 @@ public class RedissonLock extends RedissonObject implements RLock {
                 connectionManager.releaseRead(connection);
             }
         } finally {
-            close();
+            release();
         }
     }
 
     @Override
     public void delete() {
         forceUnlock();
-        ENTRIES.remove(getEntryName());
+        lock.readLock().lock();
+        release();
     }
 
-    public void close() {
-        release();
-        
-        connectionManager.getGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RedissonLockEntry entry = ENTRIES.get(getEntryName());
-                if (entry != null 
-                        && entry.isFree() 
-                            && ENTRIES.remove(getEntryName(), entry)) {
-                    connectionManager.unsubscribe(getChannelName());
-//                    connectionManager.unsubscribe(getExpireChannelName());
-                }
-            }
-        }, 15, TimeUnit.SECONDS);
-    }
-    
 }

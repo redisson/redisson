@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
 import com.lambdaworks.redis.RedisConnection;
@@ -43,7 +44,7 @@ public interface ConnectionManager {
 
     <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName);
 
-    void unsubscribe(String channelName);
+    Future unsubscribe(String channelName);
 
     void releaseWrite(RedisConnection сonnection);
 

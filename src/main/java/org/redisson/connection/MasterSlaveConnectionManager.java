@@ -17,6 +17,7 @@ package org.redisson.connection;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
 import java.net.URI;
@@ -38,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisConnectionClosedException;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
@@ -224,8 +226,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     entry.release();
                     return oldEntry;
                 }
-                entry.subscribe(channelName);
-                return entry;
+                
+                synchronized (entry) {
+                    if (!entry.isActive()) {
+                        entry.release();
+                        return subscribe(channelName);
+                    }
+                    entry.subscribe(channelName);
+                    return entry;
+                }
             }
         }
 
@@ -238,8 +247,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             returnSubscribeConnection(entry);
             return oldEntry;
         }
-        entry.subscribe(channelName);
-        return entry;
+
+        synchronized (entry) {
+            if (!entry.isActive()) {
+                entry.release();
+                return subscribe(channelName);
+            }
+            entry.subscribe(channelName);
+            return entry;
+        }
     }
 
     RedisPubSubConnection nextPubSubConnection() {
@@ -253,30 +269,42 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return сonnEntry;
         }
 
-        Set<PubSubConnectionEntry> entries = new HashSet<PubSubConnectionEntry>(name2PubSubConnection.values());
-        for (PubSubConnectionEntry entry : entries) {
-            if (entry.tryAcquire()) {
-                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-                if (oldEntry != null) {
+            Set<PubSubConnectionEntry> entries = new HashSet<PubSubConnectionEntry>(name2PubSubConnection.values());
+            for (PubSubConnectionEntry entry : entries) {
+                if (entry.tryAcquire()) {
+                    PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+                    if (oldEntry != null) {
+                        entry.release();
+                        return oldEntry;
+                    }
+                    synchronized (entry) {
+                        if (!entry.isActive()) {
+                            entry.release();
+                            return subscribe(listener, channelName);
+                        }
+                        entry.subscribe(listener, channelName);
+                        return entry;
+                    }
+                }
+            }
+            
+            RedisPubSubConnection<K, V> conn = nextPubSubConnection();
+            
+            PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
+            entry.tryAcquire();
+            PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+            if (oldEntry != null) {
+                returnSubscribeConnection(entry);
+                return oldEntry;
+            }
+            synchronized (entry) {
+                if (!entry.isActive()) {
                     entry.release();
-                    return oldEntry;
+                    return subscribe(listener, channelName);
                 }
                 entry.subscribe(listener, channelName);
                 return entry;
             }
-        }
-
-        RedisPubSubConnection<K, V> conn = nextPubSubConnection();
-
-        PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-        entry.tryAcquire();
-        PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-        if (oldEntry != null) {
-            returnSubscribeConnection(entry);
-            return oldEntry;
-        }
-        entry.subscribe(listener, channelName);
-        return entry;
     }
 
     void acquireMasterConnection() {
@@ -290,16 +318,24 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public void unsubscribe(String channelName) {
-        PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
+    public Future unsubscribe(String channelName) {
+        final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
-            return;
+            return group.next().newSucceededFuture(null);
         }
         
-        entry.unsubscribe(channelName);
-        if (entry.tryClose()) {
-            returnSubscribeConnection(entry);
-        }
+        Future future = entry.unsubscribe(channelName);
+        future.addListener(new FutureListener() {
+            @Override
+            public void operationComplete(Future future) throws Exception {
+                synchronized (entry) {
+                    if (entry.tryClose()) {
+                        returnSubscribeConnection(entry);
+                    }
+                }
+            }
+        });
+        return future;
     }
 
     protected void returnSubscribeConnection(PubSubConnectionEntry entry) {

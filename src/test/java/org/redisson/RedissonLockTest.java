@@ -206,6 +206,11 @@ public class RedissonLockTest extends BaseConcurrentTest {
             public void run(Redisson redisson) {
                 for (int i = 0; i < iterations; i++) {
                     redisson.getLock("testConcurrency_MultiInstance1").lock();
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     lockedCounter.set(lockedCounter.get() + 1);
                     redisson.getLock("testConcurrency_MultiInstance1").unlock();
                 }

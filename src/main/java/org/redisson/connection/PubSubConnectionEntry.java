@@ -15,6 +15,9 @@
  */
 package org.redisson.connection;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Queue;
@@ -26,6 +29,7 @@ import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lambdaworks.redis.RedisConnectionClosedException;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubListener;
@@ -132,18 +136,31 @@ public class PubSubConnectionEntry {
 
 
     public void subscribe(RedisPubSubAdapter listener, String channel) {
-        conn.addListener(listener);
+        addListener(channel, listener);
         conn.subscribe(channel);
     }
 
-    public void unsubscribe(String channel) {
-        conn.unsubscribe(channel);
-        subscribedChannelsAmount.release();
+    public Future unsubscribe(final String channel) {
+        Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
+        if (listeners != null) {
+            for (RedisPubSubListener listener : listeners) {
+                removeListener(channel, listener);
+            }
+        }
+
+        Future future = conn.unsubscribe(channel);
+        future.addListener(new FutureListener() {
+            @Override
+            public void operationComplete(Future future) throws Exception {
+                subscribedChannelsAmount.release();
+            }
+        });
+        return future;
     }
 
     public boolean tryClose() {
         if (subscribedChannelsAmount.tryAcquire(subscriptionsPerConnection)) {
-            conn.close();
+            close();
             return true;
         }
         return false;

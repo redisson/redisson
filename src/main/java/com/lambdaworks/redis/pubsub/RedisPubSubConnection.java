@@ -8,6 +8,7 @@ import static com.lambdaworks.redis.protocol.CommandType.SUBSCRIBE;
 import static com.lambdaworks.redis.protocol.CommandType.UNSUBSCRIBE;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
@@ -88,8 +89,8 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
         dispatch(SUBSCRIBE, new PubSubOutput<K, V>(codec), args(channels));
     }
 
-    public void unsubscribe(String... channels) {
-        dispatch(UNSUBSCRIBE, new PubSubOutput<K, V>(codec), args(channels));
+    public Future<V> unsubscribe(String... channels) {
+        return dispatch(UNSUBSCRIBE, new PubSubOutput<K, V>(codec), args(channels));
     }
 
     @Override
