@@ -42,24 +42,27 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private final List<RedisClient> sentinels = new ArrayList<RedisClient>();
 
     public SentinelConnectionManager(final SentinelServersConfig cfg, Config config) {
-        init(cfg, config);
-    }
-
-    private void init(final SentinelServersConfig cfg, final Config config) {
         init(config);
-
+        
         final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
+        c.setLoadBalancer(cfg.getLoadBalancer());
+        c.setPassword(cfg.getPassword());
+        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
+        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
+        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
+        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
             RedisAsyncConnection<String, String> connection = client.connectAsync();
-
+            
             // TODO async
             List<String> master = connection.getMasterAddrByKey(cfg.getMasterName()).awaitUninterruptibly().getNow();
             String masterHost = master.get(0) + ":" + master.get(1);
             c.setMasterAddress(masterHost);
             log.info("master: {}", masterHost);
             c.addSlaveAddress(masterHost);
-
+            
             // TODO async
             List<Map<String, String>> slaves = connection.slaves(cfg.getMasterName()).awaitUninterruptibly().getNow();
             for (Map<String, String> map : slaves) {
@@ -68,13 +71,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 log.info("slave: {}:{}", ip, port);
                 c.addSlaveAddress(ip + ":" + port);
             }
-
+            
             client.shutdown();
             break;
         }
-
+        
         init(c);
-
+        
         monitorMasterChange(cfg);
     }
 

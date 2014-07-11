@@ -20,7 +20,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SentinelServersConfig {
+public class SentinelServersConfig extends BaseMasterSlaveServersConfig<SentinelServersConfig> {
 
     private List<URI> sentinelAddresses = new ArrayList<URI>();
 
@@ -30,6 +30,7 @@ public class SentinelServersConfig {
     }
 
     SentinelServersConfig(SentinelServersConfig config) {
+        super(config);
         setSentinelAddresses(config.getSentinelAddresses());
         setMasterName(config.getMasterName());
     }
