@@ -263,14 +263,7 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public boolean tryLock() {
-        Future<Boolean> promise = subscribe();
-        try {
-            promise.awaitUninterruptibly();
-            
-            return tryLockInner();
-        } finally {
-            release();
-        }
+        return tryLockInner();
     }
 
     private boolean tryLockInner() {
@@ -324,31 +317,24 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void unlock() {
-        Future<Boolean> promise = subscribe();
+        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
-            promise.awaitUninterruptibly();
-            
-            RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-            try {
-                LockValue lock = (LockValue) connection.get(getName());
-                LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-                if (lock != null && lock.equals(currentLock)) {
-                    if (lock.getCounter() > 1) {
-                        lock.decCounter();
-                        connection.set(getName(), lock);
-                    } else {
-                        unlock(connection);
-                    }
+            LockValue lock = (LockValue) connection.get(getName());
+            LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+            if (lock != null && lock.equals(currentLock)) {
+                if (lock.getCounter() > 1) {
+                    lock.decCounter();
+                    connection.set(getName(), lock);
                 } else {
-                    // could be deleted
+                    unlock(connection);
+                }
+            } else {
+                // could be deleted
 //                    throw new IllegalMonitorStateException("Attempt to unlock lock, not locked by current id: "
 //                            + id + " thread-id: " + Thread.currentThread().getId());
-                }
-            } finally {
-                connectionManager.releaseWrite(connection);
             }
         } finally {
-            release();
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -376,77 +362,49 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void forceUnlock() {
-        Future<Boolean> promise = subscribe();
+        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
-            promise.awaitUninterruptibly();
-            
-            RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-            try {
-                unlock(connection);
-            } finally {
-                connectionManager.releaseWrite(connection);
-            }
+            unlock(connection);
         } finally {
-            release();
+            connectionManager.releaseWrite(connection);
         }
     }
 
     @Override
     public boolean isLocked() {
-        Future<Boolean> promise = subscribe();
+        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
         try {
-            promise.awaitUninterruptibly();
-            
-            RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-            try {
-                LockValue lock = (LockValue) connection.get(getName());
-                return lock != null;
-            } finally {
-                connectionManager.releaseRead(connection);
-            }
+            LockValue lock = (LockValue) connection.get(getName());
+            return lock != null;
         } finally {
-            release();
+            connectionManager.releaseRead(connection);
         }
     }
 
     @Override
     public boolean isHeldByCurrentThread() {
-        Future<Boolean> promise = subscribe();
+        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
         try {
-            promise.awaitUninterruptibly();
-            
-            RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-            try {
-                LockValue lock = (LockValue) connection.get(getName());
-                LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-                return lock != null && lock.equals(currentLock);
-            } finally {
-                connectionManager.releaseRead(connection);
-            }
+            LockValue lock = (LockValue) connection.get(getName());
+            LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+            return lock != null && lock.equals(currentLock);
         } finally {
-            release();
+            connectionManager.releaseRead(connection);
         }
     }
 
     @Override
     public int getHoldCount() {
-        Future<Boolean> promise = subscribe();
+        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
         try {
-            promise.awaitUninterruptibly();
-            
-            RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-            try {
-                LockValue lock = (LockValue) connection.get(getName());
-                LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-                if (lock != null && lock.equals(currentLock)) {
-                    return lock.getCounter();
-                }
-                return 0;
-            } finally {
-                connectionManager.releaseRead(connection);
+            LockValue lock = (LockValue) connection.get(getName());
+            LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+            if (lock != null && lock.equals(currentLock)) {
+                return lock.getCounter();
             }
+            return 0;
         } finally {
-            release();
+            connectionManager.releaseRead(connection);
         }
     }
 
