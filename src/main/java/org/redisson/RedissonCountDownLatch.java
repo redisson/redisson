@@ -109,6 +109,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             RedissonCountDownLatchEntry newEntry = new RedissonCountDownLatchEntry(entry);
             newEntry.release();
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
+                if (newEntry.isFree() 
+                        && ENTRIES.remove(getEntryName(), newEntry)) {
+                    Future future = connectionManager.unsubscribe(getChannelName());
+                    future.awaitUninterruptibly();
+                }
                 return;
             }
         }
@@ -142,7 +147,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 }
             }
         } finally {
-            close();
+            release();
         }
     }
 
@@ -173,7 +178,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             
             return true;
         } finally {
-            close();
+            release();
         }
     }
 
@@ -183,28 +188,21 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return;
         }
 
-        Future<Boolean> promise = subscribe();
+        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
         try {
-            promise.awaitUninterruptibly();
-            
-            RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-            try {
-                Long val = connection.decr(getName());
-                if (val == 0) {
-                    connection.multi();
-                    connection.del(getName());
-                    connection.publish(getChannelName(), zeroCountMessage);
-                    if (connection.exec().size() != 2) {
-                        throw new IllegalStateException();
-                    }
-                } else if (val < 0) {
-                    connection.del(getName());
+            Long val = connection.decr(getName());
+            if (val == 0) {
+                connection.multi();
+                connection.del(getName());
+                connection.publish(getChannelName(), zeroCountMessage);
+                if (connection.exec().size() != 2) {
+                    throw new IllegalStateException();
                 }
-            } finally {
-                connectionManager.releaseWrite(connection);
+            } else if (val < 0) {
+                connection.del(getName());
             }
         } finally {
-            close();
+            connectionManager.releaseWrite(connection);
         }
     }
 
@@ -218,14 +216,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public long getCount() {
-        Future<Boolean> promise = subscribe();
-        try {
-            promise.awaitUninterruptibly();
-            
-            return getCountInner();
-        } finally {
-            close();
-        }
+        return getCountInner();
     }
 
     private long getCountInner() {
@@ -243,68 +234,36 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean trySetCount(long count) {
-        Future<Boolean> promise = subscribe();
+        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
         try {
-            promise.awaitUninterruptibly();
-            
-            RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-            try {
-                connection.watch(getName());
-                Long oldValue = (Long) connection.get(getName());
-                if (oldValue != null) {
-                    connection.unwatch();
-                    return false;
-                }
-                connection.multi();
-                connection.set(getName(), count);
-                connection.publish(getChannelName(), newCountMessage);
-                return connection.exec().size() == 2;
-            } finally {
-                connectionManager.releaseWrite(connection);
+            connection.watch(getName());
+            Long oldValue = (Long) connection.get(getName());
+            if (oldValue != null) {
+                connection.unwatch();
+                return false;
             }
+            connection.multi();
+            connection.set(getName(), count);
+            connection.publish(getChannelName(), newCountMessage);
+            return connection.exec().size() == 2;
         } finally {
-            close();
+            connectionManager.releaseWrite(connection);
         }
-
     }
     
     @Override
     public void delete() {
-        Future<Boolean> promise = subscribe();
+        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
         try {
-            promise.awaitUninterruptibly();
-            
-            RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-            try {
-                connection.multi();
-                connection.del(getName());
-                connection.publish(getChannelName(), zeroCountMessage);
-                if (connection.exec().size() != 2) {
-                    throw new IllegalStateException();
-                }
-            } finally {
-                connectionManager.releaseWrite(connection);
+            connection.multi();
+            connection.del(getName());
+            connection.publish(getChannelName(), zeroCountMessage);
+            if (connection.exec().size() != 2) {
+                throw new IllegalStateException();
             }
         } finally {
-            close();
-            ENTRIES.remove(getEntryName());
+            connectionManager.releaseWrite(connection);
         }
-    }
-
-    public void close() {
-        release();
-        
-        connectionManager.getGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
-                if (entry != null 
-                        && entry.isFree() 
-                            && ENTRIES.remove(getEntryName(), entry)) {
-                    connectionManager.unsubscribe(getChannelName());
-                }
-            }
-        }, 15, TimeUnit.SECONDS);
     }
 
 }
