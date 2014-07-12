@@ -23,7 +23,7 @@ import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
-public class ConnectionEntry {
+public class SlaveConnectionEntry {
 
     private volatile boolean freezed;
     private final RedisClient client;
@@ -36,7 +36,7 @@ public class ConnectionEntry {
 
     private final int poolSize;
 
-    public ConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize) {
+    public SlaveConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize) {
         super();
         this.client = client;
         this.poolSize = poolSize;

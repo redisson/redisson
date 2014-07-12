@@ -86,7 +86,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         balancer.init(codec, config.getPassword());
         for (URI address : this.config.getSlaveAddresses()) {
             RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
-            ConnectionEntry entry = new ConnectionEntry(client,
+            SlaveConnectionEntry entry = new SlaveConnectionEntry(client,
                                         this.config.getSlaveConnectionPoolSize(),
                                         this.config.getSlaveSubscriptionConnectionPoolSize());
             balancer.add(entry);
@@ -113,7 +113,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         slaveDown(masterClient.getAddr().getHostName(), masterClient.getAddr().getPort());
         
         RedisClient client = new RedisClient(group, host, port);
-        balancer.add(new ConnectionEntry(client,
+        balancer.add(new SlaveConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSlaveSubscriptionConnectionPoolSize()));
     }

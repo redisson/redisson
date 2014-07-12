@@ -31,7 +31,7 @@ public interface LoadBalancer {
     
     void init(RedisCodec codec, String password);
 
-    void add(ConnectionEntry entry);
+    void add(SlaveConnectionEntry entry);
 
     RedisConnection nextConnection();
 
