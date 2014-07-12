@@ -19,6 +19,13 @@ import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Any object holder
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> - the type of object
+ */
 public interface RBucket<V> extends RExpirable {
 
     V get();
