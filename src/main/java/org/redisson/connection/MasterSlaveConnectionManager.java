@@ -57,14 +57,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected EventLoopGroup group;
 
-    private final Queue<RedisConnection> masterConnections = new ConcurrentLinkedQueue<RedisConnection>();
-
+    protected LoadBalancer balancer;
     private final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
 
-    protected LoadBalancer balancer;
     protected volatile RedisClient masterClient;
-
+    private final Queue<RedisConnection> masterConnections = new ConcurrentLinkedQueue<RedisConnection>();
     private Semaphore masterConnectionsSemaphore;
+
 
     protected MasterSlaveServersConfig config;
 
@@ -111,7 +110,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void addSlave(String host, int port) {
-        slaveDown(masterClient.getAddr().getHostName(), port);
+        slaveDown(masterClient.getAddr().getHostName(), masterClient.getAddr().getPort());
         
         RedisClient client = new RedisClient(group, host, port);
         balancer.add(new ConnectionEntry(client,
