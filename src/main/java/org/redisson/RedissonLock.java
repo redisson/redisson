@@ -124,10 +124,8 @@ public class RedissonLock extends RedissonObject implements RLock {
             RedissonLockEntry newEntry = new RedissonLockEntry(entry);
             newEntry.release();
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
-                if (!newEntry.isFree()) {
-                    return;
-                }
-                if (ENTRIES.remove(getEntryName(), newEntry)) {
+                if (newEntry.isFree() 
+                        && ENTRIES.remove(getEntryName(), newEntry)) {
                     Future future = connectionManager.unsubscribe(getChannelName());
                     future.awaitUninterruptibly();
                 }
