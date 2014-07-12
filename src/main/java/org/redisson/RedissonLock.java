@@ -455,7 +455,6 @@ public class RedissonLock extends RedissonObject implements RLock {
     @Override
     public void delete() {
         forceUnlock();
-        release();
     }
 
 }
