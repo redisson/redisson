@@ -25,8 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RLock;
@@ -110,7 +108,6 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     private static final Integer unlockMessage = 0;
 
-    private static final ReadWriteLock lock = new ReentrantReadWriteLock();
     private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = new ConcurrentHashMap<String, RedissonLockEntry>();
 
     RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
@@ -122,26 +119,17 @@ public class RedissonLock extends RedissonObject implements RLock {
         while (true) {
             RedissonLockEntry entry = ENTRIES.get(getEntryName());
             if (entry == null) {
-                lock.readLock().unlock();
                 return;
             }
             RedissonLockEntry newEntry = new RedissonLockEntry(entry);
             newEntry.release();
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                 if (!newEntry.isFree()) {
-                    lock.readLock().unlock();
                     return;
                 }
-                lock.readLock().unlock();
-
-                lock.writeLock().lock();
-                try {
-                    if (ENTRIES.remove(getEntryName(), newEntry)) {
-                        Future future = connectionManager.unsubscribe(getChannelName());
-                        future.awaitUninterruptibly();
-                    }
-                } finally {
-                    lock.writeLock().unlock();
+                if (ENTRIES.remove(getEntryName(), newEntry)) {
+                    Future future = connectionManager.unsubscribe(getChannelName());
+                    future.awaitUninterruptibly();
                 }
                 return;
             }
@@ -149,7 +137,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
 
     private String getEntryName() {
-        return getName();
+        return id + ":" + getName();
     }
     
     private Promise<Boolean> aquire() {
@@ -168,7 +156,6 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
     
     private Future<Boolean> subscribe() {
-        lock.readLock().lock();
         Promise<Boolean> promise = aquire();
         if (promise != null) {
             return promise;
@@ -181,17 +168,12 @@ public class RedissonLock extends RedissonObject implements RLock {
         if (oldValue != null) {
             Promise<Boolean> oldPromise = aquire();
             if (oldPromise == null) {
-                try {
-                    return subscribe();
-                } finally {
-                    lock.readLock().unlock();
-                }
+                return subscribe();
             }
             return oldPromise;
         }
 
 //        init();
-        value.getLatch().acquireUninterruptibly();
 
         RedisPubSubAdapter<Object> listener = new RedisPubSubAdapter<Object>() {
 
@@ -213,24 +195,25 @@ public class RedissonLock extends RedissonObject implements RLock {
 
         connectionManager.subscribe(listener, getChannelName());
         
-//        RedisPubSubAdapter<Object> expireListener = new RedisPubSubAdapter<Object>() {
-//
-//            @Override
-//            public void message(String channel, Object message) {
-//                if (getExpireChannelName().equals(channel)
+        RedisPubSubAdapter<Object> expireListener = new RedisPubSubAdapter<Object>() {
+
+            @Override
+            public void message(String channel, Object message) {
+//                System.out.println("channel " + channel + " message " + message);
+//                if (getExpireChannelName().equals(channel)) {
 //                        && "expired".equals(message)) {
-//                    forceUnlock();
+                    forceUnlock();
 //                }
-//            }
-//
-//        };
-//
+            }
+
+        };
+
 //        connectionManager.subscribe(expireListener, getExpireChannelName());
         return newPromise;
     }
 
     private String getExpireChannelName() {
-        return "__keyspace@0__:\"" + getName() + "\"";
+        return "__keyevent@0__:expired";
     }
 
     /**
@@ -472,7 +455,6 @@ public class RedissonLock extends RedissonObject implements RLock {
     @Override
     public void delete() {
         forceUnlock();
-        lock.readLock().lock();
         release();
     }
 
