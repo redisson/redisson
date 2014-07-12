@@ -263,10 +263,6 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public boolean tryLock() {
-        return tryLockInner();
-    }
-
-    private boolean tryLockInner() {
         LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
         
@@ -296,7 +292,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             }
             
             time = unit.toMillis(time);
-            while (!tryLockInner()) {
+            while (!tryLock()) {
                 if (time <= 0) {
                     return false;
                 }
