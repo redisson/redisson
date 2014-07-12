@@ -85,10 +85,22 @@ public class Redisson {
         return new Redisson(config);
     }
 
+    /**
+     * Returns object holder by name
+     * 
+     * @param name of object
+     * @return
+     */
     public <V> RBucket<V> getBucket(String name) {
         return new RedissonBucket<V>(connectionManager, name);
     }
 
+    /**
+     * Returns HyperLogLog object
+     * 
+     * @param name of object
+     * @return
+     */
     public <V> RHyperLogLog<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLog<V>(connectionManager, name);
     }
