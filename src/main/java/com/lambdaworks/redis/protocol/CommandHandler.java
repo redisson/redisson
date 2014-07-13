@@ -66,8 +66,14 @@ public class CommandHandler<K, V> extends ChannelDuplexHandler {
     }
 
     protected void decode(ChannelHandlerContext ctx, ByteBuf buffer) throws InterruptedException {
-        while(!queue.isEmpty() && rsm.decode(buffer, queue.peek().getOutput())) {
-            Command<K, V, ?> cmd = queue.take();
+        while (true) {
+            Command<K, V, ?> cmd = queue.peek();
+            if (cmd == null
+                    || !rsm.decode(buffer, cmd.getOutput())) {
+                break;
+            }
+            
+            cmd = queue.take();
             cmd.complete();
         }
     }

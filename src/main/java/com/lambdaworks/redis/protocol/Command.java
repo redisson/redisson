@@ -15,7 +15,7 @@ import io.netty.util.concurrent.Promise;
  *
  * @author Will Glozer
  */
-public class Command<K, V, T> /*implements Future<T>*/ {
+public class Command<K, V, T> {
     private static final byte[] CRLF = "\r\n".getBytes(Charsets.ASCII);
 
     private final Promise<T> proimse;
