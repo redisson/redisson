@@ -90,7 +90,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
 
         ConcurrentMap<Integer, Integer> testMap = Redisson.create().getMap(name);
         for (Integer value : testMap.values()) {
-            Assert.assertTrue(2 == value);
+            Assert.assertEquals(2, (int)value);
         }
         assertMapSize(5, name);
 
