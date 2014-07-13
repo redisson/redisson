@@ -60,10 +60,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected LoadBalancer balancer;
     private final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
 
-    protected volatile RedisClient masterClient;
-    private final Queue<RedisConnection> masterConnections = new ConcurrentLinkedQueue<RedisConnection>();
-    private Semaphore masterConnectionsSemaphore;
-
+    protected volatile ConnectionEntry masterEntry;
 
     protected MasterSlaveServersConfig config;
 
@@ -95,8 +92,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             slaveDown(this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
         }
 
-        masterClient = new RedisClient(group, this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
-        masterConnectionsSemaphore = new Semaphore(this.config.getMasterConnectionPoolSize());
+        RedisClient masterClient = new RedisClient(group, this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
+        masterEntry = new ConnectionEntry(masterClient, this.config.getMasterConnectionPoolSize());
     }
 
     protected void init(Config cfg) {
@@ -110,7 +107,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void addSlave(String host, int port) {
-        slaveDown(masterClient.getAddr().getHostName(), masterClient.getAddr().getPort());
+        slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
         
         RedisClient client = new RedisClient(group, host, port);
         balancer.add(new SlaveConnectionEntry(client,
@@ -129,10 +126,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
      * 
      */
     protected void changeMaster(String host, int port) {
-        RedisClient oldMaster = masterClient;
-        masterClient = new RedisClient(group, host, port);
+        ConnectionEntry oldMaster = masterEntry;
+        RedisClient client = new RedisClient(group, host, port);
+        masterEntry = new ConnectionEntry(client, this.config.getMasterConnectionPoolSize());
         slaveDown(host, port);
-        oldMaster.shutdown();
+        oldMaster.getClient().shutdown();
     }
 
     private void reattachListeners(Collection<RedisPubSubConnection> connections) {
@@ -186,12 +184,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public <K, V> RedisConnection<K, V> connectionWriteOp() {
         acquireMasterConnection();
 
-        RedisConnection<K, V> conn = masterConnections.poll();
+        RedisConnection<K, V> conn = masterEntry.getConnections().poll();
         if (conn != null) {
             return conn;
         }
 
-        conn = masterClient.connect(codec);
+        conn = masterEntry.getClient().connect(codec);
         if (config.getPassword() != null) {
             conn.auth(config.getPassword());
         }
@@ -306,10 +304,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     void acquireMasterConnection() {
-        if (!masterConnectionsSemaphore.tryAcquire()) {
+        if (!masterEntry.getConnectionsSemaphore().tryAcquire()) {
             log.warn("Master connection pool gets exhausted! Trying to acquire connection ...");
             long time = System.currentTimeMillis();
-            masterConnectionsSemaphore.acquireUninterruptibly();
+            masterEntry.getConnectionsSemaphore().acquireUninterruptibly();
             long endTime = System.currentTimeMillis() - time;
             log.warn("Master connection acquired, time spended: {} ms", endTime);
         }
@@ -341,8 +339,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     public void releaseWrite(RedisConnection сonnection) {
-        masterConnections.add(сonnection);
-        masterConnectionsSemaphore.release();
+        if (!masterEntry.getClient().equals(сonnection.getRedisClient())) {
+            return;
+        }
+        masterEntry.getConnections().add(сonnection);
+        masterEntry.getConnectionsSemaphore().release();
     }
 
     public void releaseRead(RedisConnection сonnection) {
@@ -351,7 +352,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
-        masterClient.shutdown();
+        masterEntry.getClient().shutdown();
         balancer.shutdown();
 
         group.shutdownGracefully().syncUninterruptibly();

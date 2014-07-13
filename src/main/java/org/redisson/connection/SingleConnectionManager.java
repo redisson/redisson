@@ -66,7 +66,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
             return conn;
         }
 
-        conn = masterClient.connectPubSub(codec);
+        conn = masterEntry.getClient().connectPubSub(codec);
         if (config.getPassword() != null) {
             conn.auth(config.getPassword());
         }

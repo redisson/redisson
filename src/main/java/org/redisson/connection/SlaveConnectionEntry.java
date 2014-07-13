@@ -20,61 +20,26 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
-public class SlaveConnectionEntry {
-
-    private volatile boolean freezed;
-    private final RedisClient client;
-
+public class SlaveConnectionEntry extends ConnectionEntry {
+    
     private final Semaphore subscribeConnectionsSemaphore;
-    private final Semaphore connectionsSemaphore;
-
     private final Queue<RedisPubSubConnection> subscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
-    private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
-
-    private final int poolSize;
 
     public SlaveConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize) {
-        super();
-        this.client = client;
-        this.poolSize = poolSize;
-        this.connectionsSemaphore = new Semaphore(poolSize);
+        super(client, poolSize);
         this.subscribeConnectionsSemaphore = new Semaphore(subscribePoolSize);
     }
 
-    public RedisClient getClient() {
-        return client;
-    }
-
-    public boolean isFreezed() {
-        return freezed;
-    }
-
-    public void setFreezed(boolean freezed) {
-        this.freezed = freezed;
-    }
-
-    public void shutdown() {
-        connectionsSemaphore.acquireUninterruptibly(poolSize);
-        client.shutdown();
-    }
-
-    public Semaphore getSubscribeConnectionsSemaphore() {
-        return subscribeConnectionsSemaphore;
-    }
-
-    public Semaphore getConnectionsSemaphore() {
-        return connectionsSemaphore;
-    }
 
     public Queue<RedisPubSubConnection> getSubscribeConnections() {
         return subscribeConnections;
     }
-
-    public Queue<RedisConnection> getConnections() {
-        return connections;
+    
+    public Semaphore getSubscribeConnectionsSemaphore() {
+        return subscribeConnectionsSemaphore;
     }
-
+    
 }
+
