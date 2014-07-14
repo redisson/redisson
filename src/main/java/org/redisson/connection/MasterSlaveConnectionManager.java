@@ -24,12 +24,9 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Semaphore;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
@@ -102,8 +99,32 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void slaveDown(String host, int port) {
-        Collection<RedisPubSubConnection> connections = balancer.freeze(host, port);
-        reattachListeners(connections);
+        Collection<RedisPubSubConnection> allPubSubConnections = balancer.freeze(host, port);
+
+        // reattach listeners to other channels
+        for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
+            for (RedisPubSubConnection redisPubSubConnection : allPubSubConnections) {
+                PubSubConnectionEntry entry = mapEntry.getValue();
+                String channelName = mapEntry.getKey();
+
+                if (!entry.getConnection().equals(redisPubSubConnection)) {
+                    continue;
+                }
+
+                synchronized (entry) {
+                    entry.close();
+                    unsubscribe(channelName);
+
+                    Collection<RedisPubSubListener> listeners = entry.getListeners(channelName);
+                    if (!listeners.isEmpty()) {
+                        PubSubConnectionEntry newEntry = subscribe(channelName);
+                        for (RedisPubSubListener redisPubSubListener : listeners) {
+                            newEntry.addListener(channelName, redisPubSubListener);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     protected void addSlave(String host, int port) {
@@ -131,33 +152,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         masterEntry = new ConnectionEntry(client, this.config.getMasterConnectionPoolSize());
         slaveDown(host, port);
         oldMaster.getClient().shutdown();
-    }
-
-    private void reattachListeners(Collection<RedisPubSubConnection> connections) {
-        for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
-            for (RedisPubSubConnection redisPubSubConnection : connections) {
-                PubSubConnectionEntry entry = mapEntry.getValue();
-                String channelName = mapEntry.getKey();
-
-                if (!entry.getConnection().equals(redisPubSubConnection)) {
-                    continue;
-                }
-
-
-                synchronized (entry) {
-                    entry.close();
-                    unsubscribe(channelName);
-
-                    Collection<RedisPubSubListener> listeners = entry.getListeners(channelName);
-                    if (!listeners.isEmpty()) {
-                        PubSubConnectionEntry newEntry = subscribe(channelName);
-                        for (RedisPubSubListener redisPubSubListener : listeners) {
-                            newEntry.addListener(channelName, redisPubSubListener);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     @Override

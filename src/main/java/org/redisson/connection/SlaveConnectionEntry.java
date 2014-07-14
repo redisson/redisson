@@ -25,16 +25,28 @@ import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 public class SlaveConnectionEntry extends ConnectionEntry {
     
     private final Semaphore subscribeConnectionsSemaphore;
-    private final Queue<RedisPubSubConnection> subscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
+    private final Queue<RedisPubSubConnection> allSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
+    private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
 
     public SlaveConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize) {
         super(client, poolSize);
         this.subscribeConnectionsSemaphore = new Semaphore(subscribePoolSize);
     }
 
-
-    public Queue<RedisPubSubConnection> getSubscribeConnections() {
-        return subscribeConnections;
+    public Queue<RedisPubSubConnection> getAllSubscribeConnections() {
+        return allSubscribeConnections;
+    }
+    
+    public void registerSubscribeConnection(RedisPubSubConnection connection) {
+        allSubscribeConnections.offer(connection);
+    }
+    
+    public RedisPubSubConnection pollFreeSubscribeConnection() {
+        return freeSubscribeConnections.poll();
+    }
+    
+    public void offerFreeSubscribeConnection(RedisPubSubConnection connection) {
+        freeSubscribeConnections.offer(connection);
     }
     
     public Semaphore getSubscribeConnectionsSemaphore() {

@@ -86,6 +86,16 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 connection.close();
             }
             
+            // close all pub/sub connections
+            while (true) {
+                RedisPubSubConnection connection = connectionEntry.pollFreeSubscribeConnection();
+                if (connection == null) {
+                    break;
+                }
+                connection.close();
+            }
+
+            
             boolean allFreezed = true;
             for (SlaveConnectionEntry entry : clients) {
                 if (!entry.isFreezed()) {
@@ -96,7 +106,10 @@ abstract class BaseLoadBalancer implements LoadBalancer {
             if (allFreezed) {
                 clientsEmpty.close();
             }
-            return connectionEntry.getSubscribeConnections();
+            
+            List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
+            connectionEntry.getAllSubscribeConnections().clear();
+            return list;
         }
 
         return Collections.emptyList();
@@ -124,7 +137,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 clientsCopy.remove(index);
             } else {
                 try {
-                    RedisPubSubConnection conn = entry.getSubscribeConnections().poll();
+                    RedisPubSubConnection conn = entry.pollFreeSubscribeConnection();
                     if (conn != null) {
                         return conn;
                     }
@@ -132,6 +145,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     if (password != null) {
                         conn.auth(password);
                     }
+                    entry.registerSubscribeConnection(conn);
                     return conn;
                 } catch (RedisConnectionException e) {
                     // TODO connection scoring
@@ -189,7 +203,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 if (entry.isFreezed()) {
                     connection.close();
                 } else {
-                    entry.getSubscribeConnections().add(connection);
+                    entry.offerFreeSubscribeConnection(connection);
                 }
                 entry.getSubscribeConnectionsSemaphore().release();
                 break;
