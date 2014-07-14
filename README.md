@@ -39,6 +39,13 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####13-Jul-2014 - version 1.1.3 released
+Improvement - RedissonCountDownLatch optimization  
+Improvement - RedissonLock optimization  
+Fixed - RedissonLock thread-safety  
+Fixed - master/slave auth using Sentinel servers  
+Fixed - slave down handling using Sentinel servers  
+
 ####03-Jul-2014 - version 1.1.2 released
 Improvement - RedissonSet.iterator implemented with sscan  
 Improvement - RedissonSortedSet.iterator optimization  
