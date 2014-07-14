@@ -76,7 +76,15 @@ abstract class BaseLoadBalancer implements LoadBalancer {
             
             log.debug("{} freezed", addr);
             connectionEntry.setFreezed(true);
-            // TODO shutdown watchdog
+
+            // close all connections
+            while (true) {
+                RedisConnection connection = connectionEntry.getConnections().poll();
+                if (connection == null) {
+                    break;
+                }
+                connection.close();
+            }
             
             boolean allFreezed = true;
             for (SlaveConnectionEntry entry : clients) {
@@ -111,8 +119,8 @@ abstract class BaseLoadBalancer implements LoadBalancer {
             int index = getIndex(clientsCopy);
             SlaveConnectionEntry entry = clientsCopy.get(index);
 
-            if (!entry.getSubscribeConnectionsSemaphore().tryAcquire()
-                    || entry.isFreezed()) {
+            if (entry.isFreezed()
+                    || !entry.getSubscribeConnectionsSemaphore().tryAcquire()) {
                 clientsCopy.remove(index);
             } else {
                 try {
@@ -150,8 +158,8 @@ abstract class BaseLoadBalancer implements LoadBalancer {
             int index = getIndex(clientsCopy);
             SlaveConnectionEntry entry = clientsCopy.get(index);
 
-            if (!entry.getConnectionsSemaphore().tryAcquire()
-                    || entry.isFreezed()) {
+            if (entry.isFreezed()
+                    || !entry.getConnectionsSemaphore().tryAcquire()) {
                 clientsCopy.remove(index);
             } else {
                 RedisConnection conn = entry.getConnections().poll();
@@ -178,7 +186,11 @@ abstract class BaseLoadBalancer implements LoadBalancer {
     public void returnSubscribeConnection(RedisPubSubConnection connection) {
         for (SlaveConnectionEntry entry : clients) {
             if (entry.getClient().equals(connection.getRedisClient())) {
-                entry.getSubscribeConnections().add(connection);
+                if (entry.isFreezed()) {
+                    connection.close();
+                } else {
+                    entry.getSubscribeConnections().add(connection);
+                }
                 entry.getSubscribeConnectionsSemaphore().release();
                 break;
             }
@@ -188,7 +200,11 @@ abstract class BaseLoadBalancer implements LoadBalancer {
     public void returnConnection(RedisConnection connection) {
         for (SlaveConnectionEntry entry : clients) {
             if (entry.getClient().equals(connection.getRedisClient())) {
-                entry.getConnections().add(connection);
+                if (entry.isFreezed()) {
+                    connection.close();
+                } else {
+                    entry.getConnections().add(connection);
+                }
                 entry.getConnectionsSemaphore().release();
                 break;
             }
