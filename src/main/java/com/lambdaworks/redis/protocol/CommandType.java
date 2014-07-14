@@ -26,7 +26,7 @@ public enum CommandType {
     // String
 
     APPEND, GET, GETRANGE, GETSET, MGET, MSET, MSETNX, SET, SETEX, SETNX,
-    SETRANGE, STRLEN,
+    SETRANGE, STRLEN, PSETEX,
 
     // Numeric
 

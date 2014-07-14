@@ -15,6 +15,7 @@
  */
 package org.redisson.core;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -27,6 +28,12 @@ import java.util.concurrent.locks.Lock;
  */
 public interface RLock extends Lock, RObject {
 
+    void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException;
+    
+    boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException;
+    
+    void lock(long leaseTime, TimeUnit unit);
+    
     /**
      * Unlocks lock independently of state
      *

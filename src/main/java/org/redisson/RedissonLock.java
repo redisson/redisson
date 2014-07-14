@@ -171,8 +171,6 @@ public class RedissonLock extends RedissonObject implements RLock {
             return oldPromise;
         }
 
-//        init();
-
         RedisPubSubAdapter<Object> listener = new RedisPubSubAdapter<Object>() {
 
             @Override
@@ -192,41 +190,11 @@ public class RedissonLock extends RedissonObject implements RLock {
         };
 
         connectionManager.subscribe(listener, getChannelName());
-        
-        RedisPubSubAdapter<Object> expireListener = new RedisPubSubAdapter<Object>() {
-
-            @Override
-            public void message(String channel, Object message) {
-//                System.out.println("channel " + channel + " message " + message);
-//                if (getExpireChannelName().equals(channel)) {
-//                        && "expired".equals(message)) {
-                    forceUnlock();
-//                }
-            }
-
-        };
-
-//        connectionManager.subscribe(expireListener, getExpireChannelName());
         return newPromise;
     }
 
-    private String getExpireChannelName() {
-        return "__keyevent@0__:expired";
-    }
-
-    /**
-     * Turning on the notify-keyspace-events for Keyevent events from Expired keys 
-     * 
-     */
-    private void init() {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            if (!conn.configSet("notify-keyspace-events", "KEx").equals("OK")) {
-                throw new IllegalStateException();
-            }
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+    private String getChannelName() {
+        return "redisson__lock__channel__" + getName();
     }
     
     @Override
@@ -239,20 +207,43 @@ public class RedissonLock extends RedissonObject implements RLock {
         }
     }
 
-    private String getChannelName() {
-        return "redisson__lock__channel__" + getName();
+    @Override
+    public void lock(long leaseTime, TimeUnit unit) {
+        try {
+            lockInterruptibly(leaseTime, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
     }
 
+    
     @Override
     public void lockInterruptibly() throws InterruptedException {
+        lockInterruptibly(-1, null);
+    }
+    
+    @Override
+    public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
         Future<Boolean> promise = subscribe();
         try {
             promise.awaitUninterruptibly();
             
-            while (!tryLock()) {
+            while (true) {
+                Long ttl;
+                if (leaseTime != -1) {
+                    ttl = tryLockInner(leaseTime, unit);
+                } else {
+                    ttl = tryLockInner();
+                }
+                if (ttl == null) {
+                    break;
+                }
                 // waiting for message
                 RedissonLockEntry entry = ENTRIES.get(getEntryName());
-                if (entry != null) {
+                if (ttl >= 0) {
+                    entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                } else {
                     entry.getLatch().acquire();
                 }
             }
@@ -263,6 +254,10 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public boolean tryLock() {
+        return tryLockInner() == null;
+    }
+    
+    private Long tryLockInner() {
         LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
         
@@ -274,34 +269,78 @@ public class RedissonLock extends RedissonObject implements RLock {
                 if (lock != null && lock.equals(currentLock)) {
                     lock.incCounter();
                     connection.set(getName(), lock);
-                    return true;
+                    return null;
                 }
+
+                Long ttl = connection.pttl(getName());
+                return ttl;
             }
-            return res;
+            return null;
         } finally {
             connectionManager.releaseWrite(connection);
         }
     }
 
-    @Override
-    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+    private Long tryLockInner(long leaseTime, TimeUnit unit) {
+        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+        currentLock.incCounter();
+        
+        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
+        try {
+            //set sdf asdf px 1231231 nx
+            long time = unit.toMillis(leaseTime);
+            String res = connection.setexnx(getName(), currentLock, time);
+            if ("OK".equals(res)) {
+                return null;
+            } else {
+                LockValue lock = (LockValue) connection.get(getName());
+                if (lock != null && lock.equals(currentLock)) {
+                    lock.incCounter();
+                    connection.psetex(getName(), time, lock);
+                    return null;
+                }
+                
+                Long ttl = connection.pttl(getName());
+                return ttl;
+            }
+        } finally {
+            connectionManager.releaseWrite(connection);
+        }
+    }
+    
+    public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         Future<Boolean> promise = subscribe();
         try {
-            if (!promise.awaitUninterruptibly(time, unit)) {
+            if (!promise.awaitUninterruptibly(waitTime, unit)) {
                 return false;
             }
             
-            time = unit.toMillis(time);
-            while (!tryLock()) {
+            long time = unit.toMillis(waitTime);
+            
+            while (true) {
+                Long ttl;
+                if (leaseTime != -1) {
+                    ttl = tryLockInner(leaseTime, unit);
+                } else {
+                    ttl = tryLockInner();
+                }
+                if (ttl == null) {
+                    break;
+                }
+                
                 if (time <= 0) {
                     return false;
                 }
                 long current = System.currentTimeMillis();
                 // waiting for message
                 RedissonLockEntry entry = ENTRIES.get(getEntryName());
-                if (entry != null) {
+                
+                if (ttl >= 0 && ttl < time) {
+                    entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                } else {
                     entry.getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                 }
+                
                 long elapsed = System.currentTimeMillis() - current;
                 time -= elapsed;
             }
@@ -309,6 +348,11 @@ public class RedissonLock extends RedissonObject implements RLock {
         } finally {
             release();
         }
+    }
+    
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        return tryLock(time, -1, unit);
     }
 
     @Override

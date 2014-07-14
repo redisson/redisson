@@ -545,8 +545,16 @@ public class RedisConnection<K, V> {
         return await(c.setex(key, seconds, value));
     }
 
+    public String psetex(K key, long millis, V value) {
+        return await(c.psetex(key, millis, value));
+    }
+    
     public Boolean setnx(K key, V value) {
         return await(c.setnx(key, value));
+    }
+    
+    public String setexnx(K key, V value, long millis) {
+        return await(c.setexnx(key, value, millis));
     }
 
     public Long setrange(K key, long offset, V value) {

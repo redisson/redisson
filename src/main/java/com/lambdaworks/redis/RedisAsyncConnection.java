@@ -672,8 +672,18 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(SETEX, new StatusOutput<K, V>(codec), args);
     }
 
+    public Future<String> psetex(K key, long millis, V value) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(millis).addValue(value);
+        return dispatch(PSETEX, new StatusOutput<K, V>(codec), args);
+    }
+    
     public Future<Boolean> setnx(K key, V value) {
         return dispatch(SETNX, new BooleanOutput<K, V>(codec), key, value);
+    }
+    
+    public Future<String> setexnx(K key, V value, long millis) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addValue(value).add("px").add(millis).add("nx");
+        return dispatch(SET, new StatusOutput<K, V>(codec), args);
     }
 
     public Future<Long> setrange(K key, long offset, V value) {
