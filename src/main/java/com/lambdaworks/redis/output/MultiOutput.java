@@ -29,7 +29,7 @@ public class MultiOutput<K, V> extends CommandOutput<K, V, List<Object>> {
 
     public void cancel() {
         for (Command<K, V, ?> c : queue) {
-            c.complete();
+            c.cancel();
         }
     }
 

@@ -53,9 +53,10 @@ public class Command<K, V, T> {
         return output;
     }
 
-    /**
-     * Mark this command complete and notify all waiting threads.
-     */
+    public void cancel() {
+        proimse.cancel(true);
+    }
+    
     public void complete() {
         completeAmount--;
         if (completeAmount == 0) {
