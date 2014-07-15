@@ -39,6 +39,13 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####15-Jul-2014 - version 1.1.4 released
+Feature - new RLock.lockInterruptibly, RLock.tryLock, RLock.lock methods with TTL support  
+Fixed - pub/sub connections reattach then slave/master down  
+Fixed - turn off connection watchdog then slave/master down  
+Fixed - sentinel master switch  
+Fixed - slave down connection closing  
+
 ####13-Jul-2014 - version 1.1.3 released
 Improvement - RedissonCountDownLatch optimization  
 Improvement - RedissonLock optimization  
