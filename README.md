@@ -25,7 +25,7 @@ Features
 * Distributed implementation of `java.util.Deque`  
 * Distributed implementation of `java.util.Map`  
 * Distributed implementation of `java.util.concurrent.ConcurrentMap`  
-* Distributed implementation of reentrant `java.util.concurrent.locks.Lock`  
+* Distributed implementation of reentrant `java.util.concurrent.locks.Lock` with TTL support  
 * Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
