@@ -287,7 +287,6 @@ public class RedissonLock extends RedissonObject implements RLock {
         
         RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
         try {
-            //set sdf asdf px 1231231 nx
             long time = unit.toMillis(leaseTime);
             String res = connection.setexnx(getName(), currentLock, time);
             if ("OK".equals(res)) {
