@@ -45,6 +45,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.lambdaworks.codec.Base16;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.output.BooleanListOutput;
@@ -90,6 +93,9 @@ import com.lambdaworks.redis.protocol.ConnectionWatchdog;
  */
 @ChannelHandler.Sharable
 public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
+    
+    private Logger log = LoggerFactory.getLogger(getClass());
+    
     protected BlockingQueue<Command<K, V, ?>> queue;
     protected RedisCodec<K, V> codec;
     protected Channel channel;
@@ -101,6 +107,16 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     private boolean closed;
     private EventLoopGroup eventLoopGroup;
     private RedisClient redisClient;
+
+    private volatile boolean reconnect;
+
+    public void setReconnect(boolean reconnect) {
+        this.reconnect = reconnect;
+    }
+    
+    public boolean isReconnect() {
+        return reconnect;
+    }
 
     /**
      * Initialize a new connection.
@@ -1092,9 +1108,8 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
      * Close the connection.
      */
     public synchronized void close() {
+        setReconnect(false);
         if (!closed && channel != null) {
-            ConnectionWatchdog watchdog = channel.pipeline().get(ConnectionWatchdog.class);
-            watchdog.setReconnect(false);
             closed = true;
             channel.close();
         }
@@ -1153,7 +1168,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
             channel = null;
         }
     }
-
+    
     public <T> Future<T> dispatch(CommandType type, CommandOutput<K, V, T> output) {
         return dispatch(type, output, (CommandArgs<K, V>) null);
     }

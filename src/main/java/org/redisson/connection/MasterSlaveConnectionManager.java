@@ -332,11 +332,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         balancer.returnSubscribeConnection(entry.getConnection());
     }
 
-    public void releaseWrite(RedisConnection сonnection) {
-        if (!masterEntry.getClient().equals(сonnection.getRedisClient())) {
+    public void releaseWrite(RedisConnection connection) {
+        // may changed during changeMaster call
+        if (!masterEntry.getClient().equals(connection.getRedisClient())) {
+            connection.close();
             return;
         }
-        masterEntry.getConnections().add(сonnection);
+
+        masterEntry.getConnections().add(connection);
         masterEntry.getConnectionsSemaphore().release();
     }
 

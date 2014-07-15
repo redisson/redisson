@@ -52,6 +52,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
         c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         
+        final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
             RedisAsyncConnection<String, String> connection = client.connectAsync();
@@ -70,6 +71,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String port = map.get("port");
                 log.info("slave: {}:{}", ip, port);
                 c.addSlaveAddress(ip + ":" + port);
+                String host = ip + ":" + port;
+                addedSlaves.add(host);
             }
             
             client.shutdown();
@@ -78,13 +81,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         
         init(c);
         
-        monitorMasterChange(cfg);
+        monitorMasterChange(cfg, addedSlaves);
     }
 
-    private void monitorMasterChange(final SentinelServersConfig cfg) {
+    private void monitorMasterChange(final SentinelServersConfig cfg, final Set<String> addedSlaves) {
         final AtomicReference<String> master = new AtomicReference<String>();
         final Set<String> freezeSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-        final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         
         for (final URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());

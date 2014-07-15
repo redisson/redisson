@@ -2,21 +2,24 @@
 
 package com.lambdaworks.redis.protocol;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
-
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoop;
 import io.netty.channel.group.ChannelGroup;
-import io.netty.util.Timeout;
-import io.netty.util.Timer;
-import io.netty.util.TimerTask;
 import io.netty.util.concurrent.GenericFutureListener;
 
-import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.lambdaworks.redis.RedisAsyncConnection;
 
 /**
  * A netty {@link ChannelHandler} responsible for monitoring the channel and
@@ -32,7 +35,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
     private Bootstrap bootstrap;
     private Channel channel;
     private ChannelGroup channels;
-    private boolean reconnect;
     private static final int BACKOFF_CAP = 12;
 
     /**
@@ -46,10 +48,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
         this.channels  = channels;
     }
 
-    public void setReconnect(boolean reconnect) {
-        this.reconnect = reconnect;
-    }
-
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         channel = ctx.channel();
@@ -59,10 +57,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        if (reconnect) {
-            ChannelPipeline pipeLine = channel.pipeline();
-            CommandHandler<?, ?> handler = pipeLine.get(CommandHandler.class);
-            RedisAsyncConnection<?, ?> connection = pipeLine.get(RedisAsyncConnection.class);
+        ChannelPipeline pipeLine = channel.pipeline();
+        CommandHandler<?, ?> handler = pipeLine.get(CommandHandler.class);
+        RedisAsyncConnection<?, ?> connection = pipeLine.get(RedisAsyncConnection.class);
+        if (connection.isReconnect()) {
             EventLoop loop = ctx.channel().eventLoop();
             reconnect(loop, handler, connection);
         }
@@ -90,7 +88,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
     }
 
     private void doReConnect(final EventLoop loop, final CommandHandler<?, ?> handler, final RedisAsyncConnection<?, ?> connection, final int attempts) {
-        if (!reconnect) {
+        if (!connection.isReconnect()) {
             return;
         }
         
@@ -109,6 +107,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (!future.isSuccess()) {
+                    if (!connection.isReconnect()) {
+                        return;
+                    }
+
                     int timeout = 2 << attempts;
                     loop.schedule(new Runnable() {
                         @Override
@@ -126,4 +128,9 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
         ctx.channel().close();
     }
 
+    @Override
+    public String toString() {
+        return super.toString() + " - bootstrap: " + bootstrap;
+    }
+    
 }

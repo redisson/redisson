@@ -176,7 +176,7 @@ public class RedisClient {
             }
             connect.sync();
 
-            watchdog.setReconnect(true);
+            connection.setReconnect(true);
 
             return connection;
         } catch (Throwable e) {
