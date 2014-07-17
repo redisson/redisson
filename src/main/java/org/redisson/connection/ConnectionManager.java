@@ -15,6 +15,8 @@
  */
 package org.redisson.connection;
 
+import org.redisson.AsyncOperation;
+
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -30,6 +32,10 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 //TODO ping support
 public interface ConnectionManager {
 
+    <V, T> Future<T> readAsync(AsyncOperation<V, T> asyncOperation);
+    
+    <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation);
+    
     <T> FutureListener<T> createReleaseWriteListener(final RedisConnection conn);
 
     <T> FutureListener<T> createReleaseReadListener(final RedisConnection conn);

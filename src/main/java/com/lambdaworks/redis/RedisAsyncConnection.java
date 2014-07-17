@@ -32,6 +32,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 import java.security.MessageDigest;
@@ -40,8 +41,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -1145,7 +1148,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         queue.clear();
 
         for (Command<K, V, ?> cmd : tmp) {
-            if (!cmd.getProimse().isCancelled()) {
+            if (!cmd.getPromise().isCancelled()) {
                 queue.add(cmd);
                 channel.writeAndFlush(cmd);
             }
@@ -1188,7 +1191,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(type, output, args);
     }
 
-    public synchronized <T> Future<T> dispatch(CommandType type, CommandOutput<K, V, T> output, CommandArgs<K, V> args) {
+    public synchronized <T> Promise<T> dispatch(CommandType type, CommandOutput<K, V, T> output, CommandArgs<K, V> args) {
         Promise<T> promise = eventLoopGroup.next().<T>newPromise();
         Command<K, V, T> cmd = new Command<K, V, T>(type, output, args, multi != null, promise);
 
@@ -1196,9 +1199,9 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
             if (multi != null) {
                 multi.add(cmd);
             }
-
+            
             queue.put(cmd);
-
+            
             if (channel != null) {
                 channel.writeAndFlush(cmd);
             }
@@ -1209,15 +1212,19 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         }
 
         if (multi != null && type != MULTI) {
-            return eventLoopGroup.next().newSucceededFuture(null);
+            Promise<T> p = eventLoopGroup.next().<T>newPromise();
+            p.setSuccess(null);
+            return p;
         }
-        return cmd.getProimse();
+        return promise;
     }
 
     public <T> T await(Future<T> cmd, long timeout, TimeUnit unit) {
         if (!cmd.awaitUninterruptibly(timeout, unit)) {
-            cmd.cancel(true);
-            throw new RedisException("Command timed out");
+            Promise<T> promise = (Promise<T>)cmd;
+            RedisTimeoutException ex = new RedisTimeoutException();
+            promise.setFailure(ex);
+            throw ex;
         }
         if (!cmd.isSuccess()) {
             throw (RedisException) cmd.cause();

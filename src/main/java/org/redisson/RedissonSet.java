@@ -16,7 +16,6 @@
 package org.redisson;
 
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 import java.util.Collection;
@@ -26,6 +25,7 @@ import java.util.NoSuchElementException;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSet;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.output.ScanResult;
 
@@ -158,43 +158,35 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
     
     @Override
-    public Future<Boolean> addAsync(V e) {
-        final Promise<Boolean> promise = connectionManager.getGroup().next().newPromise();
-        
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        connection.getAsync().sadd(getName(), e).addListener(new FutureListener<Long>() {
+    public Future<Boolean> addAsync(final V e) {
+        return connectionManager.writeAsync(new AsyncOperation<V, Boolean>() {
             @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (future.isSuccess()) {
-                    promise.setSuccess(future.get() > 0);
-                } else {
-                    promise.setFailure(future.cause());
-                }
+            public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, V> async) {
+                async.sadd(getName(), e).addListener(new OperationListener<V, Boolean, Long>(promise, async, this) {
+                    @Override
+                    public void onOperationComplete(Future<Long> future) throws Exception {
+                        promise.setSuccess(future.get() > 0);
+                    }
+                });
             }
-        }).addListener(connectionManager.createReleaseWriteListener(connection));
-        
-        return promise;
+        });
     }
 
     @Override
-    public Future<Boolean> removeAsync(V value) {
-        final Promise<Boolean> promise = connectionManager.getGroup().next().newPromise();
-        
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        connection.getAsync().srem(getName(), value).addListener(new FutureListener<Long>() {
+    public Future<Boolean> removeAsync(final V e) {
+        return connectionManager.writeAsync(new AsyncOperation<V, Boolean>() {
             @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (future.isSuccess()) {
-                    promise.setSuccess(future.get() > 0);
-                } else {
-                    promise.setFailure(future.cause());
-                }
+            public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, V> async) {
+                async.srem(getName(), e).addListener(new OperationListener<V, Boolean, Long>(promise, async, this) {
+                    @Override
+                    public void onOperationComplete(Future<Long> future) throws Exception {
+                        promise.setSuccess(future.get() > 0);
+                    }
+                });
             }
-        }).addListener(connectionManager.createReleaseWriteListener(connection));
-        
-        return promise;
+        });
     }
-    
+
     @Override
     public boolean remove(Object value) {
         RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();

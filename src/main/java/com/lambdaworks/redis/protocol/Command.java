@@ -18,7 +18,7 @@ import io.netty.util.concurrent.Promise;
 public class Command<K, V, T> {
     private static final byte[] CRLF = "\r\n".getBytes(Charsets.ASCII);
 
-    private final Promise<T> proimse;
+    private final Promise<T> promise;
     public final CommandType type;
     protected CommandArgs<K, V> args;
     protected final CommandOutput<K, V, T> output;
@@ -37,11 +37,11 @@ public class Command<K, V, T> {
         this.output = output;
         this.args   = args;
         this.completeAmount = multi ? 2 : 1;
-        this.proimse = proimse;
+        this.promise = proimse;
     }
 
-    public Promise<T> getProimse() {
-        return proimse;
+    public Promise<T> getPromise() {
+        return promise;
     }
 
     /**
@@ -54,19 +54,22 @@ public class Command<K, V, T> {
     }
 
     public void cancel() {
-        proimse.cancel(true);
+        promise.cancel(true);
     }
     
     public void complete() {
         completeAmount--;
         if (completeAmount == 0) {
             Object res = output.get();
+            if (promise.isCancelled()) {
+                return;
+            }
             if (res instanceof RedisException) {
-                proimse.setFailure((Exception)res);
+                promise.setFailure((Exception)res);
             } if (output.hasError()) {
-                proimse.setFailure(new RedisException(output.getError()));
+                promise.setFailure(new RedisException(output.getError()));
             } else {
-                proimse.setSuccess((T)res);
+                promise.setSuccess((T)res);
             }
         }
     }

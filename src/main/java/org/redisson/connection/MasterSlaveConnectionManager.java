@@ -17,8 +17,12 @@ package org.redisson.connection;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
 import java.net.URI;
 import java.util.Collection;
@@ -27,15 +31,20 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
+import org.redisson.AsyncOperation;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.codec.RedisCodecWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisConnectionException;
+import com.lambdaworks.redis.RedisTimeoutException;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
@@ -50,6 +59,9 @@ import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+    
+    private final HashedWheelTimer timer = new HashedWheelTimer();
+    
     protected RedisCodec codec;
 
     protected EventLoopGroup group;
@@ -174,6 +186,96 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         };
     }
 
+    public <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation) {
+        Promise<T> mainPromise = getGroup().next().newPromise();
+        writeAsync(asyncOperation, mainPromise);
+        return mainPromise;
+    }
+
+    private <V, T> void writeAsync(final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise) {
+        final Promise<T> promise = getGroup().next().newPromise();
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                if (promise.isDone()) {
+                    return;
+                }
+                promise.cancel(true);
+                
+                writeAsync(asyncOperation, mainPromise);
+            }
+        };
+        
+        try {
+            RedisConnection<Object, V> connection = connectionWriteOp();
+            RedisAsyncConnection<Object, V> async = connection.getAsync();
+            asyncOperation.execute(promise, async);
+            timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
+            promise.addListener(createReleaseWriteListener(connection));
+        } catch (RedisConnectionException e) {
+            timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
+        }
+        promise.addListener(new FutureListener<T>() {
+            @Override
+            public void operationComplete(Future<T> future) throws Exception {
+                if (future.isCancelled()) {
+                    return;
+                }
+                
+                if (future.isSuccess()) {
+                    mainPromise.setSuccess(future.getNow());
+                } else {
+                    mainPromise.setFailure(future.cause());
+                }
+            }
+        });
+    }
+    
+    public <V, T> Future<T> readAsync(final AsyncOperation<V, T> asyncOperation) {
+        Promise<T> mainPromise = getGroup().next().newPromise();
+        readAsync(asyncOperation, mainPromise);
+        return mainPromise;
+    }
+
+    private <V, T> void readAsync(final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise) {
+        final Promise<T> promise = getGroup().next().newPromise();
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                if (promise.isDone()) {
+                    return;
+                }
+                promise.cancel(true);
+                
+                readAsync(asyncOperation, mainPromise);
+            }
+        };
+        
+        try {
+            RedisConnection<Object, V> connection = connectionReadOp();
+            RedisAsyncConnection<Object, V> async = connection.getAsync();
+            asyncOperation.execute(promise, async);
+            timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
+            promise.addListener(createReleaseReadListener(connection));
+        } catch (RedisConnectionException e) {
+            timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
+        }
+        promise.addListener(new FutureListener<T>() {
+            @Override
+            public void operationComplete(Future<T> future) throws Exception {
+                if (future.isCancelled()) {
+                    return;
+                }
+                
+                if (future.isSuccess()) {
+                    mainPromise.setSuccess(future.getNow());
+                } else {
+                    mainPromise.setFailure(future.cause());
+                }
+            }
+        });
+    }
+    
     @Override
     public <K, V> RedisConnection<K, V> connectionWriteOp() {
         acquireMasterConnection();

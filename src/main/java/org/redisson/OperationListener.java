@@ -15,21 +15,24 @@
  */
 package org.redisson;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
-
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
-public abstract class OperationListener<V, F> implements FutureListener<F> {
+import com.lambdaworks.redis.RedisAsyncConnection;
+import com.lambdaworks.redis.RedisTimeoutException;
 
-    private Promise<V> promise;
-    private RedisAsyncConnection<Object, V> async;
+public abstract class OperationListener<V, P, F> implements FutureListener<F> {
 
-    public OperationListener(Promise<V> promise, RedisAsyncConnection<Object, V> async) {
+    private final Promise<P> promise;
+    private final RedisAsyncConnection<Object, V> async;
+    private final AsyncOperation<V, P> timeoutCallback;
+
+    public OperationListener(Promise<P> promise, RedisAsyncConnection<Object, V> async, AsyncOperation<V, P> timeoutCallback) {
         super();
         this.promise = promise;
         this.async = async;
+        this.timeoutCallback = timeoutCallback;
     }
 
     @Override
@@ -43,11 +46,17 @@ public abstract class OperationListener<V, F> implements FutureListener<F> {
     
     public abstract void onOperationComplete(Future<F> future) throws Exception;
 
-    protected boolean isBreak(RedisAsyncConnection<Object, V> async, Promise<V> promise, Future<F> future) {
+    protected boolean isBreak(RedisAsyncConnection<Object, V> async, Promise<P> promise, Future<F> future) {
         if (!future.isSuccess()) {
-            promise.setFailure(future.cause());
-            return true;
+            if (future.cause() instanceof RedisTimeoutException) {
+                timeoutCallback.execute(promise, async);
+                return false;
+            } else {
+                promise.setFailure(future.cause());
+                return true;
+            }
         }
+        
         if (promise.isCancelled()) {
             if (async.isMultiMode()) {
                 async.discard();

@@ -278,48 +278,57 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<V> getAsync(K key) {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        return connection.getAsync().hget(getName(), key).addListener(connectionManager.createReleaseReadListener(connection));
+    public Future<V> getAsync(final K key) {
+        return connectionManager.readAsync(new AsyncOperation<V, V>() {
+            @Override
+            public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
+                async.hget(getName(), key).addListener(new OperationListener<V, V, V>(promise, async, this) {
+                    @Override
+                    public void onOperationComplete(Future<V> future) throws Exception {
+                        promise.setSuccess(future.get());
+                    }
+                });
+            }
+        });
     }
 
     @Override
-    public Future<V> putAsync(K key, V value) {
-        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
-        Promise<V> promise = connectionManager.getGroup().next().newPromise();
-        RedisAsyncConnection<Object, V> async = connection.getAsync();
-        putAsync(key, value, promise, async);
-        promise.addListener(connectionManager.createReleaseWriteListener(connection));
-        return promise;
+    public Future<V> putAsync(final K key, final V value) {
+        return connectionManager.writeAsync(new AsyncOperation<V, V>() {
+            @Override
+            public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
+                putAsync(key, value, promise, async, this);
+            }
+        });
     }
 
     private void putAsync(final K key, final V value, final Promise<V> promise,
-            final RedisAsyncConnection<Object, V> async) {
-        async.watch(getName()).addListener(new OperationListener<V, String>(promise, async) {
+            final RedisAsyncConnection<Object, V> async, final AsyncOperation<V, V> timeoutCallback) {
+        async.watch(getName()).addListener(new OperationListener<V, V, String>(promise, async, timeoutCallback) {
             @Override
             public void onOperationComplete(Future<String> future) throws Exception {
                 
-                async.hget(getName(), key).addListener(new OperationListener<V, V>(promise, async) {
+                async.hget(getName(), key).addListener(new OperationListener<V, V, V>(promise, async, timeoutCallback) {
                     @Override
                     public void onOperationComplete(Future<V> future) throws Exception {
 
                         final V prev = future.get();
-                        async.multi().addListener(new OperationListener<V, String>(promise, async) {
+                        async.multi().addListener(new OperationListener<V, V, String>(promise, async, timeoutCallback) {
                             @Override
                             public void onOperationComplete(Future<String> future) throws Exception {
 
-                                async.hset(getName(), key, value).addListener(new OperationListener<V, Boolean>(promise, async) {
+                                async.hset(getName(), key, value).addListener(new OperationListener<V, V, Boolean>(promise, async, timeoutCallback) {
                                     @Override
                                     public void onOperationComplete(Future<Boolean> future) throws Exception {
 
-                                        async.exec().addListener(new OperationListener<V, List<Object>>(promise, async) {
+                                        async.exec().addListener(new OperationListener<V, V, List<Object>>(promise, async, timeoutCallback) {
                                             @Override
                                             public void onOperationComplete(Future<List<Object>> future) throws Exception {
 
                                                 if (future.get().size() == 1) {
                                                     promise.setSuccess(prev);
                                                 } else {
-                                                    putAsync(key, value, promise, async);
+                                                    timeoutCallback.execute(promise, async);
                                                 }
                                             }
                                         });
@@ -335,42 +344,42 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<V> removeAsync(K key) {
-        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
-        Promise<V> promise = connectionManager.getGroup().next().newPromise();
-        RedisAsyncConnection<Object, V> async = connection.getAsync();
-        removeAsync(key, promise, async);
-        promise.addListener(connectionManager.createReleaseWriteListener(connection));
-        return promise;
+    public Future<V> removeAsync(final K key) {
+        return connectionManager.writeAsync(new AsyncOperation<V, V>() {
+            @Override
+            public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
+                removeAsync(key, promise, async, this);
+            }
+        });
     }
 
-    private void removeAsync(final K key, final Promise<V> promise,
-            final RedisAsyncConnection<Object, V> async) {
-        async.watch(getName()).addListener(new OperationListener<V, String>(promise, async) {
+    private void removeAsync(final K key, final Promise<V> promise, 
+            final RedisAsyncConnection<Object, V> async, final AsyncOperation<V, V> timeoutCallback) {
+        async.watch(getName()).addListener(new OperationListener<V, V, String>(promise, async, timeoutCallback) {
             @Override
             public void onOperationComplete(Future<String> future) throws Exception {
 
-                async.hget(getName(), key).addListener(new OperationListener<V, V>(promise, async) {
+                async.hget(getName(), key).addListener(new OperationListener<V, V, V>(promise, async, timeoutCallback) {
                     @Override
                     public void onOperationComplete(Future<V> future) throws Exception {
                         final V prev = future.get();
                         
-                        async.multi().addListener(new OperationListener<V, String>(promise, async) {
+                        async.multi().addListener(new OperationListener<V, V, String>(promise, async, timeoutCallback) {
                             @Override
                             public void onOperationComplete(Future<String> future) throws Exception {
 
-                                async.hdel(getName(), key).addListener(new OperationListener<V, Long>(promise, async) {
+                                async.hdel(getName(), key).addListener(new OperationListener<V, V, Long>(promise, async, timeoutCallback) {
                                     @Override
                                     public void onOperationComplete(Future<Long> future) throws Exception {
 
-                                        async.exec().addListener(new OperationListener<V, List<Object>>(promise, async) {
+                                        async.exec().addListener(new OperationListener<V, V, List<Object>>(promise, async, timeoutCallback) {
                                             @Override
                                             public void onOperationComplete(Future<List<Object>> future) throws Exception {
 
                                                 if (future.get().size() == 1) {
                                                     promise.setSuccess(prev);
                                                 } else {
-                                                    removeAsync(key, promise, async);
+                                                    timeoutCallback.execute(promise, async);
                                                 }
                                             }
                                         });
