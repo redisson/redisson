@@ -24,9 +24,9 @@ import com.lambdaworks.redis.RedisTimeoutException;
 
 public abstract class OperationListener<V, P, F> implements FutureListener<F> {
 
-    private final Promise<P> promise;
-    private final RedisAsyncConnection<Object, V> async;
-    private final AsyncOperation<V, P> timeoutCallback;
+    final Promise<P> promise;
+    final RedisAsyncConnection<Object, V> async;
+    final AsyncOperation<V, P> timeoutCallback;
 
     public OperationListener(Promise<P> promise, RedisAsyncConnection<Object, V> async, AsyncOperation<V, P> timeoutCallback) {
         super();
