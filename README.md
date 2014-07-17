@@ -25,7 +25,7 @@ Features
 * Distributed implementation of `java.util.Deque`  
 * Distributed implementation of `java.util.Map`  
 * Distributed implementation of `java.util.concurrent.ConcurrentMap`  
-* Distributed implementation of reentrant `java.util.concurrent.locks.Lock`  
+* Distributed implementation of reentrant `java.util.concurrent.locks.Lock` with TTL support  
 * Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
@@ -38,6 +38,13 @@ Features
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####15-Jul-2014 - version 1.1.4 released
+Feature - new RLock.lockInterruptibly, RLock.tryLock, RLock.lock methods with TTL support  
+Fixed - pub/sub connections reattach then slave/master down  
+Fixed - turn off connection watchdog then slave/master down  
+Fixed - sentinel master switch  
+Fixed - slave down connection closing  
 
 ####13-Jul-2014 - version 1.1.3 released
 Improvement - RedissonCountDownLatch optimization  
