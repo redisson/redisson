@@ -33,9 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.AsyncOperation;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.async.AsyncOperation;
 import org.redisson.codec.RedisCodecWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,8 +230,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         });
     }
+
+    public <V, R> R write(AsyncOperation<V, R> asyncOperation) {
+        return writeAsync(asyncOperation).awaitUninterruptibly().getNow();
+    }
     
-    public <V, T> Future<T> readAsync(final AsyncOperation<V, T> asyncOperation) {
+    public <V, T> T read(AsyncOperation<V, T> asyncOperation) {
+        return readAsync(asyncOperation).awaitUninterruptibly().getNow();
+    }
+    
+    public <V, T> Future<T> readAsync(AsyncOperation<V, T> asyncOperation) {
         Promise<T> mainPromise = getGroup().next().newPromise();
         readAsync(asyncOperation, mainPromise);
         return mainPromise;

@@ -1,4 +1,4 @@
-package org.redisson;
+package org.redisson.async;
 
 import io.netty.util.concurrent.Promise;
 

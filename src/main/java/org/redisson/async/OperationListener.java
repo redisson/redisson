@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.async;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;

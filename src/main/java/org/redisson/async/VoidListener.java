@@ -1,11 +1,11 @@
-package org.redisson;
+package org.redisson.async;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
 
-public class VoidListener<V, T> extends OperationListener<V, Void, String> {
+public class VoidListener<V, T> extends BaseResultListener<V, Void, T> {
 
     public VoidListener(Promise<Void> promise, RedisAsyncConnection<Object, V> async,
             AsyncOperation<V, Void> timeoutCallback) {
@@ -13,7 +13,7 @@ public class VoidListener<V, T> extends OperationListener<V, Void, String> {
     }
 
     @Override
-    public void onOperationComplete(Future<String> future) throws Exception {
+    public void onOperationComplete(Future<T> future) throws Exception {
         promise.setSuccess(null);
     }
 
