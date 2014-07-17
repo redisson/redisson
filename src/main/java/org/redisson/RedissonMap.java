@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.redisson.async.AsyncOperation;
+import org.redisson.async.OperationListener;
+import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RMap;
 
@@ -48,12 +51,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public int size() {
-        RedisConnection<String, Object> connection = connectionManager.connectionReadOp();
-        try {
-            return connection.hlen(getName()).intValue();
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        return connectionManager.read(new ResultOperation<Long, V>() {
+            @Override
+            public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hlen(getName());
+            }
+        }).intValue();
     }
 
     @Override
@@ -62,109 +65,74 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public boolean containsKey(Object key) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            return connection.hexists(getName(), key);
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+    public boolean containsKey(final Object key) {
+        return connectionManager.read(new ResultOperation<Boolean, V>() {
+            @Override
+            public Future<Boolean> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hexists(getName(), key);
+            }
+        });
     }
 
     @Override
-    public boolean containsValue(Object value) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            return connection.hvals(getName()).contains(value);
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+    public boolean containsValue(final Object value) {
+        List<V> list = connectionManager.read(new ResultOperation<List<V>, V>() {
+            @Override
+            public Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hvals(getName());
+            }
+        });
+        return list.contains(value);
     }
 
     @Override
     public V get(Object key) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            return (V) connection.hget(getName(), key);
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        return getAsync((K)key).awaitUninterruptibly().getNow();
     }
 
     @Override
     public V put(K key, V value) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            while (true) {
-                connection.watch(getName());
-                V prev = (V) connection.hget(getName(), key);
-                connection.multi();
-                connection.hset(getName(), key, value);
-                if (connection.exec().size() == 1) {
-                    return prev;
-                }
-            }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        return putAsync(key, value).awaitUninterruptibly().getNow();
     }
 
     @Override
     public V remove(Object key) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            while (true) {
-                connection.watch(getName());
-                V prev = (V) connection.hget(getName(), key);
-                connection.multi();
-                connection.hdel(getName(), key);
-                if (connection.exec().size() == 1) {
-                    return prev;
-                }
-            }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        return removeAsync((K)key).awaitUninterruptibly().getNow();
     }
 
     @Override
-    public void putAll(Map<? extends K, ? extends V> map) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            connection.hmset(getName(), (Map<Object, Object>) map);
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+    public void putAll(final Map<? extends K, ? extends V> map) {
+        connectionManager.write(new ResultOperation<String, Object>() {
+            @Override
+            public Future<String> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.hmset(getName(), (Map<Object, Object>) map);
+            }
+        });
     }
 
     @Override
     public void clear() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            connection.del(getName());
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        delete();
     }
 
     @Override
     public Set<K> keySet() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            return (Set<K>) connection.hkeys(getName());
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        return (Set<K>) connectionManager.read(new ResultOperation<Set<Object>, V>() {
+            @Override
+            public Future<Set<Object>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hkeys(getName());
+            }
+        });
     }
 
     @Override
     public Collection<V> values() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            return (Collection<V>) connection.hvals(getName());
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        return connectionManager.read(new ResultOperation<List<V>, V>() {
+            @Override
+            public Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hvals(getName());
+            }
+        });
     }
 
     @Override
@@ -279,21 +247,26 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> getAsync(final K key) {
-        return connectionManager.readAsync(new AsyncOperation<V, V>() {
+        return connectionManager.readAsync(new ResultOperation<V, V>() {
             @Override
-            public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
-                async.hget(getName(), key).addListener(new OperationListener<V, V, V>(promise, async, this) {
-                    @Override
-                    public void onOperationComplete(Future<V> future) throws Exception {
-                        promise.setSuccess(future.get());
-                    }
-                });
+            public Future<V> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hget(getName(), key);
             }
         });
     }
 
     @Override
     public Future<V> putAsync(final K key, final V value) {
+//        while (true) {
+//            connection.watch(getName());
+//            V prev = (V) connection.hget(getName(), key);
+//            connection.multi();
+//            connection.hset(getName(), key, value);
+//            if (connection.exec().size() == 1) {
+//                return prev;
+//            }
+//        }
+
         return connectionManager.writeAsync(new AsyncOperation<V, V>() {
             @Override
             public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
@@ -345,6 +318,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> removeAsync(final K key) {
+//        while (true) {
+//            connection.watch(getName());
+//            V prev = (V) connection.hget(getName(), key);
+//            connection.multi();
+//            connection.hdel(getName(), key);
+//            if (connection.exec().size() == 1) {
+//                return prev;
+//            }
+//        }
+        
         return connectionManager.writeAsync(new AsyncOperation<V, V>() {
             @Override
             public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
