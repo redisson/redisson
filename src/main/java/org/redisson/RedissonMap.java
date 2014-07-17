@@ -137,38 +137,61 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            Map<Object, Object> map = connection.hgetall(getName());
-            Map<K, V> result = new HashMap<K, V>();
-            for (java.util.Map.Entry<Object, Object> entry : map.entrySet()) {
-                result.put((K)entry.getKey(), (V)entry.getValue());
+        Map<Object, Object> map = connectionManager.read(new ResultOperation<Map<Object, Object>, Object>() {
+            @Override
+            public Future<Map<Object, Object>> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.hgetall(getName());
             }
-            return result.entrySet();
-        } finally {
-            connectionManager.releaseRead(connection);
+        });
+        
+        Map<K, V> result = new HashMap<K, V>();
+        for (java.util.Map.Entry<Object, Object> entry : map.entrySet()) {
+            result.put((K)entry.getKey(), (V)entry.getValue());
         }
+        return result.entrySet();
     }
 
     @Override
-    public V putIfAbsent(K key, V value) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            while (true) {
-                Boolean res = connection.hsetnx(getName(), key, value);
-                if (!res) {
-                    V result = (V) connection.hget(getName(), key);
-                    if (result != null) {
-                        return result;
-                    }
-                } else {
-                    return null;
-                }
-            }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+    public V putIfAbsent(final K key, final V value) {
+//        while (true) {
+//            Boolean res = connection.hsetnx(getName(), key, value);
+//            if (!res) {
+//                V result = (V) connection.hget(getName(), key);
+//                if (result != null) {
+//                    return result;
+//                }
+//            } else {
+//                return null;
+//            }
+//        }
 
+        return connectionManager.write(new AsyncOperation<V, V>() {
+            @Override
+            public void execute(final Promise<V> promise, final RedisAsyncConnection<Object, V> async) {
+                final AsyncOperation<V, V> timeoutCallback = this;
+                async.hsetnx(getName(), key, value).addListener(new OperationListener<V, V, Boolean>(promise, async, timeoutCallback) {
+                    @Override
+                    public void onOperationComplete(Future<Boolean> future) throws Exception {
+                        if (future.get()) {
+                            promise.setSuccess(null);
+                            return;
+                        }
+                        
+                        async.hget(getName(), key).addListener(new OperationListener<V, V, V>(promise, async, timeoutCallback) {
+                            @Override
+                            public void onOperationComplete(Future<V> future) throws Exception {
+                                V prev = future.get();
+                                if (prev != null) {
+                                    promise.setSuccess(prev);
+                                } else {
+                                    timeoutCallback.execute(promise, async);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
     }
 
     private boolean isEquals(RedisConnection<Object, Object> connection, Object key, Object value) {
