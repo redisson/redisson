@@ -30,6 +30,10 @@ import java.util.concurrent.ConcurrentMap;
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
+    long fastRemove(K ... keys);
+    
+    Future<Long> fastRemoveAsync(K ... keys);
+    
     Future<Boolean> fastPutAsync(K key, V value);
     
     boolean fastPut(K key, V value);

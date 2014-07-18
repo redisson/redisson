@@ -403,7 +403,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<Boolean> fastPutAsync(final K key, final V value) {
-        return connectionManager.readAsync(new ResultOperation<Boolean, V>() {
+        return connectionManager.writeAsync(new ResultOperation<Boolean, V>() {
             @Override
             public Future<Boolean> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hset(getName(), key, value);
@@ -414,6 +414,21 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public boolean fastPut(K key, V value) {
         return fastPutAsync(key, value).awaitUninterruptibly().getNow();
+    }
+    
+    @Override
+    public Future<Long> fastRemoveAsync(final K ... keys) {
+        return connectionManager.writeAsync(new ResultOperation<Long, V>() {
+            @Override
+            public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hdel(getName(), keys);
+            }
+        });
+    }
+
+    @Override
+    public long fastRemove(K ... keys) {
+        return fastRemoveAsync(keys).awaitUninterruptibly().getNow();
     }
 
 }

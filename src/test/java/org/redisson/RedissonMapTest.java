@@ -373,4 +373,17 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertEquals((Integer)8, map.removeAsync(7).get());
     }
 
+    @Test
+    public void testFastRemoveAsync() throws InterruptedException, ExecutionException {
+        RMap<Integer, Integer> map = redisson.getMap("simple");
+        map.put(1, 3);
+        map.put(3, 5);
+        map.put(4, 6);
+        map.put(7, 8);
+
+        Assert.assertEquals((Long)3L, map.fastRemoveAsync(1, 3, 7).get());
+        Thread.sleep(1);
+        Assert.assertEquals(1, map.size());
+    }
+    
 }
