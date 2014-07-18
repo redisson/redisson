@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.async.AsyncOperation;
+import org.redisson.async.SyncOperation;
 import org.redisson.codec.RedisCodecWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -213,7 +214,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
             promise.addListener(createReleaseWriteListener(connection));
         } catch (RedisConnectionException e) {
-            timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
+            timer.newTimeout(timerTask, 1, TimeUnit.SECONDS);
         }
         promise.addListener(new FutureListener<T>() {
             @Override
@@ -231,6 +232,26 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
     }
 
+    public <V, R> R write(SyncOperation<V, R> operation) {
+        try {
+            RedisConnection<Object, V> connection = connectionWriteOp();
+            try {
+                return operation.execute(connection);
+            } catch (RedisTimeoutException e) {
+                return write(operation);
+            } finally {
+                releaseWrite(connection);
+            }
+        } catch (RedisConnectionException e) {
+            try {
+                Thread.sleep(1*1000);
+            } catch (InterruptedException e1) {
+                Thread.currentThread().interrupt();
+            }
+            return write(operation);
+        }
+    }
+    
     public <V, R> R write(AsyncOperation<V, R> asyncOperation) {
         return writeAsync(asyncOperation).awaitUninterruptibly().getNow();
     }

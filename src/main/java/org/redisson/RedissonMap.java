@@ -27,6 +27,7 @@ import java.util.Set;
 import org.redisson.async.AsyncOperation;
 import org.redisson.async.OperationListener;
 import org.redisson.async.ResultOperation;
+import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RMap;
 
@@ -200,72 +201,72 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public boolean remove(Object key, Object value) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            while (true) {
-                connection.watch(getName());
-                if (connection.hexists(getName(), key)
-                        && isEquals(connection, key, value)) {
-                    connection.multi();
-                    connection.hdel(getName(), key);
-                    if (connection.exec().size() == 1) {
-                        return true;
+    public boolean remove(final Object key, final Object value) {
+        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+            @Override
+            public Boolean execute(RedisConnection<Object, Object> connection) {
+                while (true) {
+                    connection.watch(getName());
+                    if (connection.hexists(getName(), key)
+                            && isEquals(connection, key, value)) {
+                        connection.multi();
+                        connection.hdel(getName(), key);
+                        if (connection.exec().size() == 1) {
+                            return true;
+                        }
+                    } else {
+                        connection.unwatch();
+                        return false;
                     }
-                } else {
-                    connection.unwatch();
-                    return false;
                 }
             }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
 
     @Override
-    public boolean replace(K key, V oldValue, V newValue) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            while (true) {
-                connection.watch(getName());
-                if (connection.hexists(getName(), key)
-                        && isEquals(connection, key, oldValue)) {
-                    connection.multi();
-                    connection.hset(getName(), key, newValue);
-                    if (connection.exec().size() == 1) {
-                        return true;
+    public boolean replace(final K key, final V oldValue, final V newValue) {
+        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+            @Override
+            public Boolean execute(RedisConnection<Object, Object> connection) {
+                while (true) {
+                    connection.watch(getName());
+                    if (connection.hexists(getName(), key)
+                            && isEquals(connection, key, oldValue)) {
+                        connection.multi();
+                        connection.hset(getName(), key, newValue);
+                        if (connection.exec().size() == 1) {
+                            return true;
+                        }
+                    } else {
+                        connection.unwatch();
+                        return false;
                     }
-                } else {
-                    connection.unwatch();
-                    return false;
                 }
             }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
 
     @Override
-    public V replace(K key, V value) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            while (true) {
-                connection.watch(getName());
-                if (connection.hexists(getName(), key)) {
-                    V prev = (V) connection.hget(getName(), key);
-                    connection.multi();
-                    connection.hset(getName(), key, value);
-                    if (connection.exec().size() == 1) {
-                        return prev;
+    public V replace(final K key, final V value) {
+        return connectionManager.write(new SyncOperation<V, V>() {
+            @Override
+            public V execute(RedisConnection<Object, V> connection) {
+                while (true) {
+                    connection.watch(getName());
+                    if (connection.hexists(getName(), key)) {
+                        V prev = connection.hget(getName(), key);
+                        connection.multi();
+                        connection.hset(getName(), key, value);
+                        if (connection.exec().size() == 1) {
+                            return prev;
+                        }
+                    } else {
+                        connection.unwatch();
                     }
-                } else {
-                    connection.unwatch();
+                    return null;
                 }
-                return null;
             }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
 
     @Override
