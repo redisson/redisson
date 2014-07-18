@@ -15,9 +15,14 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
+
+import org.redisson.async.ResultOperation;
+import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
 
 /**
@@ -30,69 +35,70 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     RedissonAtomicLong(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
-        // TODO make it async
+
         init();
     }
 
     private void init() {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            conn.setnx(getName(), 0);
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+        connectionManager.writeAsync(new ResultOperation<Boolean, Object>() {
+            @Override
+            protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.setnx(getName(), 0);
+            }
+        });
     }
 
     @Override
-    public long addAndGet(long delta) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            return conn.incrby(getName(), delta);
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+    public long addAndGet(final long delta) {
+        return connectionManager.write(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.incrby(getName(), delta);
+            }
+        });
     }
 
     @Override
-    public boolean compareAndSet(long expect, long update) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            while (true) {
-                conn.watch(getName());
-                Long value = ((Number) conn.get(getName())).longValue();
-                if (value != expect) {
-                    conn.unwatch();
-                    return false;
-                }
-                conn.multi();
-                conn.set(getName(), update);
-                if (conn.exec().size() == 1) {
-                    return true;
+    public boolean compareAndSet(final long expect, final long update) {
+        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+            @Override
+            public Boolean execute(RedisConnection<Object, Object> conn) {
+                while (true) {
+                    conn.watch(getName());
+                    Long value = ((Number) conn.get(getName())).longValue();
+                    if (value != expect) {
+                        conn.unwatch();
+                        return false;
+                    }
+                    conn.multi();
+                    conn.set(getName(), update);
+                    if (conn.exec().size() == 1) {
+                        return true;
+                    }
                 }
             }
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+        });
     }
 
     @Override
     public long decrementAndGet() {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            return conn.decr(getName());
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+        return connectionManager.write(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.decr(getName());
+            }
+        });
     }
 
     @Override
     public long get() {
-        RedisConnection<String, Object> conn = connectionManager.connectionReadOp();
-        try {
-            return ((Number) conn.get(getName())).longValue();
-        } finally {
-            connectionManager.releaseRead(conn);
-        }
+        Number res = connectionManager.read(new ResultOperation<Number, Number>() {
+            @Override
+            protected Future<Number> execute(RedisAsyncConnection<Object, Number> async) {
+                return async.get(getName());
+            }
+        });
+        return res.longValue();
     }
 
     @Override
@@ -106,23 +112,24 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public long getAndSet(long newValue) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            return ((Number) conn.getset(getName(), newValue)).longValue();
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+    public long getAndSet(final long newValue) {
+        Number res = connectionManager.write(new ResultOperation<Number, Number>() {
+            @Override
+            protected Future<Number> execute(RedisAsyncConnection<Object, Number> async) {
+                return async.getset(getName(), newValue);
+            }
+        });
+        return res.longValue();
     }
 
     @Override
     public long incrementAndGet() {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            return conn.incr(getName());
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+        return connectionManager.write(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.incr(getName());
+            }
+        });
     }
 
     @Override
@@ -135,13 +142,13 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public void set(long newValue) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            conn.set(getName(), newValue);
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+    public void set(final long newValue) {
+        connectionManager.write(new ResultOperation<String, Object>() {
+            @Override
+            protected Future<String> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.set(getName(), newValue);
+            }
+        });
     }
 
     public String toString() {

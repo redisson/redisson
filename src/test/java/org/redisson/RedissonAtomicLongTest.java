@@ -12,6 +12,12 @@ public class RedissonAtomicLongTest extends BaseTest {
         Assert.assertEquals(0, al.get());
         Assert.assertEquals(0, al.getAndIncrement());
         Assert.assertEquals(1, al.get());
+        Assert.assertEquals(1, al.getAndDecrement());
+        Assert.assertEquals(0, al.get());
+        Assert.assertEquals(0, al.getAndIncrement());
+        Assert.assertEquals(1, al.getAndSet(12));
+        Assert.assertEquals(12, al.get());
+        al.set(1);
 
         long state = redisson.getAtomicLong("test").get();
         Assert.assertEquals(1, state);

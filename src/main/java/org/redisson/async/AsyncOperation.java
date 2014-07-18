@@ -4,8 +4,8 @@ import io.netty.util.concurrent.Promise;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
 
-public interface AsyncOperation<V, T> {
+public interface AsyncOperation<V, R> {
 
-    void execute(Promise<T> promise, RedisAsyncConnection<Object, V> async);
+    void execute(Promise<R> promise, RedisAsyncConnection<Object, V> async);
     
 }
