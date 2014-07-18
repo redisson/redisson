@@ -19,10 +19,11 @@ import io.netty.util.concurrent.Future;
 
 import java.util.Collection;
 
+import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RHyperLogLog;
 
-import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisAsyncConnection;
 
 public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogLog<V> {
 
@@ -56,33 +57,53 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
     }
 
     @Override
-    public Future<Long> addAsync(V obj) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfadd(getName(), obj).addListener(connectionManager.createReleaseWriteListener(conn));
+    public Future<Long> addAsync(final V obj) {
+        return connectionManager.writeAsync(new ResultOperation<Long, V>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
+                return async.pfadd(getName(), obj);
+            }
+        });
     }
 
     @Override
-    public Future<Long> addAllAsync(Collection<V> objects) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfadd(getName(), objects.toArray()).addListener(connectionManager.createReleaseWriteListener(conn));
+    public Future<Long> addAllAsync(final Collection<V> objects) {
+        return connectionManager.writeAsync(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.pfadd(getName(), objects.toArray());
+            }
+        });
     }
 
     @Override
     public Future<Long> countAsync() {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfcount(getName()).addListener(connectionManager.createReleaseWriteListener(conn));
+        return connectionManager.writeAsync(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.pfcount(getName());
+            }
+        });
     }
 
     @Override
-    public Future<Long> countWithAsync(String... otherLogNames) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfcount(getName(), otherLogNames).addListener(connectionManager.createReleaseWriteListener(conn));
+    public Future<Long> countWithAsync(final String... otherLogNames) {
+        return connectionManager.writeAsync(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.pfcount(getName(), otherLogNames);
+            }
+        });
     }
 
     @Override
-    public Future<Long> mergeWithAsync(String... otherLogNames) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().pfmerge(getName(), otherLogNames).addListener(connectionManager.createReleaseWriteListener(conn));
+    public Future<Long> mergeWithAsync(final String... otherLogNames) {
+        return connectionManager.writeAsync(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.pfmerge(getName(), otherLogNames);
+            }
+        });
     }
 
 }
