@@ -17,11 +17,13 @@ package org.redisson;
 
 import io.netty.util.concurrent.Future;
 
+import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
 
 /**
@@ -43,9 +45,13 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     }
 
     @Override
-    public Future<Long> publishAsync(M message) {
-        RedisConnection<String, Object> conn = connectionManager.connectionWriteOp();
-        return conn.getAsync().publish(getName(), message).addListener(connectionManager.createReleaseWriteListener(conn));
+    public Future<Long> publishAsync(final M message) {
+        return connectionManager.writeAsync(new ResultOperation<Long, M>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, M> async) {
+                return async.publish(getName(), message);
+            }
+        });
     }
 
     @Override
