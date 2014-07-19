@@ -15,12 +15,15 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.NoSuchElementException;
 
+import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RQueue;
 
-import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisAsyncConnection;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -41,29 +44,24 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     public V getFirst() {
-        RedisConnection<String, Object> connection = connectionManager.connectionReadOp();
-        try {
-            V value = (V) connection.lindex(getName(), 0);
-            if (value == null) {
-                throw new NoSuchElementException();
+        V value = connectionManager.read(new ResultOperation<V, V>() {
+            @Override
+            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
+                return async.lindex(getName(), 0);
             }
-            return value;
-        } finally {
-            connectionManager.releaseRead(connection);
+        });
+        if (value == null) {
+            throw new NoSuchElementException();
         }
+        return value;
     }
 
     public V removeFirst() {
-        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            V value = (V) connection.lpop(getName());
-            if (value == null) {
-                throw new NoSuchElementException();
-            }
-            return value;
-        } finally {
-            connectionManager.releaseWrite(connection);
+        V value = poll();
+        if (value == null) {
+            throw new NoSuchElementException();
         }
+        return value;
     }
 
     @Override
@@ -73,12 +71,12 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V poll() {
-        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            return (V) connection.lpop(getName());
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        return connectionManager.write(new ResultOperation<V, V>() {
+            @Override
+            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
+                return async.lpop(getName());
+            }
+        });
     }
 
     @Override
