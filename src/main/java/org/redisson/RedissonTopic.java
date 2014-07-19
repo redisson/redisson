@@ -24,7 +24,6 @@ import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.RedisConnection;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
