@@ -4,6 +4,6 @@ import com.lambdaworks.redis.RedisConnection;
 
 public interface SyncOperation<V, R> {
 
-    R execute(RedisConnection<Object, V> async);
+    R execute(RedisConnection<Object, V> conn);
     
 }

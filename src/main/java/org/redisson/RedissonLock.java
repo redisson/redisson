@@ -26,9 +26,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
+import org.redisson.async.ResultOperation;
+import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RLock;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
@@ -258,53 +261,54 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
     
     private Long tryLockInner() {
-        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+        final LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
         
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            Boolean res = connection.setnx(getName(), currentLock);
-            if (!res) {
-                LockValue lock = (LockValue) connection.get(getName());
-                if (lock != null && lock.equals(currentLock)) {
-                    lock.incCounter();
-                    connection.set(getName(), lock);
-                    return null;
-                }
+        return connectionManager.write(new SyncOperation<LockValue, Long>() {
 
-                Long ttl = connection.pttl(getName());
-                return ttl;
+            @Override
+            public Long execute(RedisConnection<Object, LockValue> connection) {
+                Boolean res = connection.setnx(getName(), currentLock);
+                if (!res) {
+                    LockValue lock = (LockValue) connection.get(getName());
+                    if (lock != null && lock.equals(currentLock)) {
+                        lock.incCounter();
+                        connection.set(getName(), lock);
+                        return null;
+                    }
+                    
+                    Long ttl = connection.pttl(getName());
+                    return ttl;
+                }
+                return null;
             }
-            return null;
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
 
-    private Long tryLockInner(long leaseTime, TimeUnit unit) {
-        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+    private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
+        final LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
         
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            long time = unit.toMillis(leaseTime);
-            String res = connection.setexnx(getName(), currentLock, time);
-            if ("OK".equals(res)) {
-                return null;
-            } else {
-                LockValue lock = (LockValue) connection.get(getName());
-                if (lock != null && lock.equals(currentLock)) {
-                    lock.incCounter();
-                    connection.psetex(getName(), time, lock);
+        return connectionManager.write(new SyncOperation<Object, Long>() {
+            @Override
+            public Long execute(RedisConnection<Object, Object> connection) {
+                long time = unit.toMillis(leaseTime);
+                String res = connection.setexnx(getName(), currentLock, time);
+                if ("OK".equals(res)) {
                     return null;
+                } else {
+                    LockValue lock = (LockValue) connection.get(getName());
+                    if (lock != null && lock.equals(currentLock)) {
+                        lock.incCounter();
+                        connection.psetex(getName(), time, lock);
+                        return null;
+                    }
+                    
+                    Long ttl = connection.pttl(getName());
+                    return ttl;
                 }
-                
-                Long ttl = connection.pttl(getName());
-                return ttl;
             }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
     
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
@@ -356,25 +360,29 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void unlock() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            LockValue lock = (LockValue) connection.get(getName());
-            LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-            if (lock != null && lock.equals(currentLock)) {
-                if (lock.getCounter() > 1) {
-                    lock.decCounter();
-                    connection.set(getName(), lock);
+        connectionManager.write(new SyncOperation<Object, Void>() {
+            @Override
+            public Void execute(RedisConnection<Object, Object> connection) {
+                LockValue lock = (LockValue) connection.get(getName());
+                if (lock != null) {
+                    LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+                    if (lock.equals(currentLock)) {
+                        if (lock.getCounter() > 1) {
+                            lock.decCounter();
+                            connection.set(getName(), lock);
+                        } else {
+                            unlock(connection);
+                        }
+                    } else {
+                        throw new IllegalMonitorStateException("Attempt to unlock lock, not locked by current id: "
+                                + id + " thread-id: " + Thread.currentThread().getId());
+                    }
                 } else {
-                    unlock(connection);
+                    // could be deleted
                 }
-            } else {
-                // could be deleted
-//                    throw new IllegalMonitorStateException("Attempt to unlock lock, not locked by current id: "
-//                            + id + " thread-id: " + Thread.currentThread().getId());
+                return null;
             }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
 
     private void unlock(RedisConnection<Object, Object> connection) {
@@ -401,50 +409,45 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void forceUnlock() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            unlock(connection);
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        connectionManager.write(new SyncOperation<Object, Void>() {
+            @Override
+            public Void execute(RedisConnection<Object, Object> connection) {
+                unlock(connection);
+                return null;
+            }
+        });
     }
 
     @Override
     public boolean isLocked() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            LockValue lock = (LockValue) connection.get(getName());
-            return lock != null;
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        return getCurrentLock() != null;
+    }
+
+    private LockValue getCurrentLock() {
+        LockValue lock = connectionManager.read(new ResultOperation<LockValue, LockValue>() {
+            @Override
+            protected Future<LockValue> execute(RedisAsyncConnection<Object, LockValue> async) {
+                return async.get(getName());
+            }
+        });
+        return lock;
     }
 
     @Override
     public boolean isHeldByCurrentThread() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            LockValue lock = (LockValue) connection.get(getName());
-            LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-            return lock != null && lock.equals(currentLock);
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        LockValue lock = getCurrentLock();
+        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+        return lock != null && lock.equals(currentLock);
     }
 
     @Override
     public int getHoldCount() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            LockValue lock = (LockValue) connection.get(getName());
-            LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
-            if (lock != null && lock.equals(currentLock)) {
-                return lock.getCounter();
-            }
-            return 0;
-        } finally {
-            connectionManager.releaseRead(connection);
+        LockValue lock = getCurrentLock();
+        LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
+        if (lock != null && lock.equals(currentLock)) {
+            return lock.getCounter();
         }
+        return 0;
     }
 
     @Override
