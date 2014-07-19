@@ -15,12 +15,14 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
+import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RObject;
 
-import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisAsyncConnection;
 
 /**
  * Base Redisson object
@@ -51,15 +53,12 @@ abstract class RedissonObject implements RObject {
     }
 
     void delete(String name) {
-        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            connection.del(getName());
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
-    }
-
-    public void close() {
+        connectionManager.write(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.del(getName());
+            }
+        });
     }
 
 }
