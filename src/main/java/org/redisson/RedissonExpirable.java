@@ -15,13 +15,16 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RExpirable;
 
-import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisAsyncConnection;
 
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
@@ -30,53 +33,53 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     @Override
-    public boolean expire(long timeToLive, TimeUnit timeUnit) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            return connection.expire(getName(), timeUnit.toSeconds(timeToLive));
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+    public boolean expire(final long timeToLive, final TimeUnit timeUnit) {
+        return connectionManager.write(new ResultOperation<Boolean, Object>() {
+            @Override
+            protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.expire(getName(), timeUnit.toSeconds(timeToLive));
+            }
+        });
     }
 
     @Override
-    public boolean expireAt(long timestamp) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            return connection.expireat(getName(), timestamp);
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+    public boolean expireAt(final long timestamp) {
+        return connectionManager.write(new ResultOperation<Boolean, Object>() {
+            @Override
+            protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.expireat(getName(), timestamp);
+            }
+        });
     }
 
     @Override
-    public boolean expireAt(Date timestamp) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            return connection.expireat(getName(), timestamp);
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+    public boolean expireAt(final Date timestamp) {
+        return connectionManager.write(new ResultOperation<Boolean, Object>() {
+            @Override
+            protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.expireat(getName(), timestamp);
+            }
+        });
     }
 
     @Override
     public boolean clearExpire() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            return connection.persist(getName());
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        return connectionManager.write(new ResultOperation<Boolean, Object>() {
+            @Override
+            protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.persist(getName());
+            }
+        });
     }
 
     @Override
     public long remainTimeToLive() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            return connection.ttl(getName());
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        return connectionManager.write(new ResultOperation<Long, Object>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.ttl(getName());
+            }
+        });
     }
 
 }
