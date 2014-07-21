@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -20,21 +21,28 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
         RSortedSet<Integer> map = r.getSortedSet(name);
         map.clear();
 
-        int length = 1000;
-        final AtomicInteger counter = new AtomicInteger();
+        int length = 5000;
+        final List<Integer> elements = new ArrayList<Integer>();
+        for (int i = 1; i < length+1; i++) {
+            elements.add(i);
+        }
+        Collections.shuffle(elements);
+        final AtomicInteger counter = new AtomicInteger(-1);
         testSingleInstanceConcurrency(length, new RedissonRunnable() {
             @Override
             public void run(Redisson redisson) {
                 RSortedSet<Integer> set = redisson.getSortedSet(name);
                 int c = counter.incrementAndGet();
-                Assert.assertTrue(set.add(c));
+                Integer element = elements.get(c);
+                Assert.assertTrue(set.add(element));
             }
         });
 
-        List<Integer> elements = new ArrayList<Integer>();
-        for (int i = 1; i < length+1; i++) {
-            elements.add(i);
-        }
+//        for (Integer integer : map) {
+//            System.out.println("int: " + integer);
+//        }
+        
+        Collections.sort(elements);
         Integer[] p = elements.toArray(new Integer[elements.size()]);
         MatcherAssert.assertThat(map, Matchers.contains(p));
 

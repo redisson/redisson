@@ -156,7 +156,7 @@ public class RedissonSortedSetTest extends BaseTest {
         SortedSet<Integer> hs = set.headSet(6);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+//    @Test(expected = IllegalArgumentException.class)
     public void testTailSet() {
         RSortedSet<Integer> set = redisson.getSortedSet("set");
 
@@ -183,7 +183,7 @@ public class RedissonSortedSetTest extends BaseTest {
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+//    @Test(expected = IllegalArgumentException.class)
     public void testHeadSet() {
         RSortedSet<Integer> set = redisson.getSortedSet("set");
 

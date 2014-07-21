@@ -18,12 +18,9 @@ package org.redisson;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
 import org.redisson.RedissonSortedSet.BinarySearchResult;
-import org.redisson.RedissonSortedSet.NewScore;
 import org.redisson.connection.ConnectionManager;
 
 import com.lambdaworks.redis.RedisConnection;
@@ -65,18 +62,20 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
         }
     }
 
-    private double getTailScore(RedisConnection<Object, V> connection) {
-        if (tailValue != null) {
-            return redissonSortedSet.score(tailValue, connection, 1, true);
+    private int getTailScore(RedisConnection<Object, V> connection) {
+        BinarySearchResult<V> res = redissonSortedSet.binarySearch(tailValue, connection);
+        if (res.getIndex() < 0) {
+            return 0;
         }
-        return Double.MAX_VALUE;
+        return res.getIndex();
     }
 
-    private double getHeadScore(RedisConnection<Object, V> connection) {
-        if (headValue != null) {
-            return redissonSortedSet.score(headValue, connection, -1, false);
+    private int getHeadScore(RedisConnection<Object, V> connection) {
+        BinarySearchResult<V> res = redissonSortedSet.binarySearch(headValue, connection);
+        if (res.getIndex() < 0) {
+            return 0;
         }
-        return 0;
+        return res.getIndex();
     }
 
     @Override
@@ -88,11 +87,11 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
     public boolean contains(Object o) {
         RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
         try {
-            double headScore = getHeadScore(connection);
-            double tailScore = getTailScore(connection);
+            int headScore = getHeadScore(connection);
+            int tailScore = getTailScore(connection);
 
             BinarySearchResult<V> res = redissonSortedSet.binarySearch((V)o, connection);
-            return res.getScore() < tailScore && res.getScore() > headScore;
+            return res.getIndex() < tailScore && res.getIndex() > headScore;
         } finally {
             connectionManager.releaseRead(connection);
         }
@@ -100,14 +99,15 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     @Override
     public Iterator<V> iterator() {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        try {
-            double headScore = getHeadScore(connection);
-            double tailScore = getTailScore(connection);
-            return redissonSortedSet.iterator(headScore, tailScore);
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
+//        try {
+//            double headScore = getHeadScore(connection);
+//            double tailScore = getTailScore(connection);
+//            return redissonSortedSet.iterator(headScore, tailScore);
+//        } finally {
+//            connectionManager.releaseRead(connection);
+//        }
     }
 
     @Override
@@ -136,41 +136,43 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     @Override
     public boolean add(V e) {
-        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
-        try {
-            double headScore = getHeadScore(connection);
-            double tailScore = getTailScore(connection);
-
-            BinarySearchResult<V> res = redissonSortedSet.binarySearch(e, connection);
-            if (res.getScore() == null) {
-                NewScore score = redissonSortedSet.calcNewScore(res.getIndex(), connection);
-                if (score.getScore() < tailScore && score.getScore() > headScore) {
-                    return redissonSortedSet.add(e, connection);
-                } else {
-                    throw new IllegalArgumentException("value out of range");
-                }
-            }
-            return false;
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
+//        try {
+//            double headScore = getHeadScore(connection);
+//            double tailScore = getTailScore(connection);
+//
+//            BinarySearchResult<V> res = redissonSortedSet.binarySearch(e, connection);
+//            if (res.getScore() == null) {
+//                NewScore score = redissonSortedSet.calcNewScore(res.getIndex(), connection);
+//                if (score.getScore() < tailScore && score.getScore() > headScore) {
+//                    return redissonSortedSet.add(e, connection);
+//                } else {
+//                    throw new IllegalArgumentException("value out of range");
+//                }
+//            }
+//            return false;
+//        } finally {
+//            connectionManager.releaseWrite(connection);
+//        }
     }
 
     @Override
     public boolean remove(Object o) {
-        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
-        try {
-            double headScore = getHeadScore(connection);
-            double tailScore = getTailScore(connection);
-
-            BinarySearchResult<V> res = redissonSortedSet.binarySearch((V)o, connection);
-            if (res.getScore() != null && res.getScore() < tailScore && res.getScore() > headScore) {
-                return redissonSortedSet.remove(o, connection);
-            }
-            return false;
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
+//        try {
+//            double headScore = getHeadScore(connection);
+//            double tailScore = getTailScore(connection);
+//
+//            BinarySearchResult<V> res = redissonSortedSet.binarySearch((V)o, connection);
+//            if (res.getScore() != null && res.getScore() < tailScore && res.getScore() > headScore) {
+//                return redissonSortedSet.remove(o, connection);
+//            }
+//            return false;
+//        } finally {
+//            connectionManager.releaseWrite(connection);
+//        }
     }
 
     @Override
@@ -219,15 +221,17 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     @Override
     public void clear() {
-        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
-        try {
-            // TODO sync
-            double headScore = getHeadScore(connection);
-            double tailScore = getTailScore(connection);
-            connection.zremrangebyscore(redissonSortedSet.getName(), headScore, tailScore);
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        throw new UnsupportedOperationException();        
+//        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
+//        try {
+//            // TODO sync
+//            int headScore = getHeadScore(connection);
+//            int tailScore = getTailScore(connection);
+//            connection.ltrim(redissonSortedSet.getName(), 0, index - 1);
+//            connection.zremrangebyscore(redissonSortedSet.getName(), headScore, tailScore);
+//        } finally {
+//            connectionManager.releaseWrite(connection);
+//        }
     }
 
     @Override
@@ -259,50 +263,53 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     @Override
     public V first() {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        try {
-            // TODO compare first value with headValue
-            if (headValue != null) {
-                BinarySearchResult<V> res = redissonSortedSet.binarySearch(headValue, connection);
-                if (res.getIndex() < 0) {
-                    NewScore headScore = redissonSortedSet.calcNewScore(res.getIndex(), connection);
-                    double tailScore = getTailScore(connection);
-                    List<V> vals = connection.zrangebyscore(redissonSortedSet.getName(), headScore.getScore(), tailScore);
-                    if (vals.isEmpty()) {
-                        throw new NoSuchElementException();
-                    }
-                    return vals.get(0);
-                }
-                return res.getValue();
-            }
-            return redissonSortedSet.first();
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
+//        try {
+//            // TODO compare first value with headValue
+//            if (headValue != null) {
+//                BinarySearchResult<V> res = redissonSortedSet.binarySearch(headValue, connection);
+//                if (res.getIndex() < 0) {
+//                    NewScore headScore = redissonSortedSet.calcNewScore(res.getIndex(), connection);
+//                    double tailScore = getTailScore(connection);
+//                    List<V> vals = connection.zrangebyscore(redissonSortedSet.getName(), headScore.getScore(), tailScore);
+//                    if (vals.isEmpty()) {
+//                        throw new NoSuchElementException();
+//                    }
+//                    return vals.get(0);
+//                }
+//                return res.getValue();
+//            }
+//            return redissonSortedSet.first();
+//        } finally {
+//            connectionManager.releaseRead(connection);
+//        }
     }
 
     @Override
     public V last() {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        try {
-            // TODO compare last value with headValue
-            if (tailValue != null) {
-                BinarySearchResult<V> res = redissonSortedSet.binarySearch(tailValue, connection);
-                if (res.getIndex() < 0) {
-                    NewScore tailScore = redissonSortedSet.calcNewScore(res.getIndex(), connection);
-                    double headScore = getHeadScore(connection);
-                    List<V> vals = connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore.getScore());
-                    if (vals.isEmpty()) {
-                        throw new NoSuchElementException();
-                    }
-                    return vals.get(0);
-                }
-                return res.getValue();
-            }
-            return redissonSortedSet.last();
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
+//        try {
+//            // TODO compare last value with headValue
+//            if (tailValue != null) {
+//                BinarySearchResult<V> res = redissonSortedSet.binarySearch(tailValue, connection);
+//                if (res.getIndex() < 0) {
+//                    connection.lrange(redissonSortedSet.getName(), index + 1, size());
+//                    NewScore tailScore = redissonSortedSet.calcNewScore(res.getIndex(), connection);
+//                    double headScore = getHeadScore(connection);
+//                    List<V> vals = connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore.getScore());
+//                    if (vals.isEmpty()) {
+//                        throw new NoSuchElementException();
+//                    }
+//                    return vals.get(0);
+//                }
+//                return res.getValue();
+//            }
+//            return redissonSortedSet.last();
+//        } finally {
+//            connectionManager.releaseRead(connection);
+//        }
     }
 
     public String toString() {
