@@ -23,9 +23,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.async.ResultOperation;
+import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RCountDownLatch;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
@@ -188,22 +191,23 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return;
         }
 
-        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            Long val = connection.decr(getName());
-            if (val == 0) {
-                connection.multi();
-                connection.del(getName());
-                connection.publish(getChannelName(), zeroCountMessage);
-                if (connection.exec().size() != 2) {
-                    throw new IllegalStateException();
+        connectionManager.write(new SyncOperation<Object, Void>() {
+            @Override
+            public Void execute(RedisConnection<Object, Object> conn) {
+                Long val = conn.decr(getName());
+                if (val == 0) {
+                    conn.multi();
+                    conn.del(getName());
+                    conn.publish(getChannelName(), zeroCountMessage);
+                    if (conn.exec().size() != 2) {
+                        throw new IllegalStateException();
+                    }
+                } else if (val < 0) {
+                    conn.del(getName());
                 }
-            } else if (val < 0) {
-                connection.del(getName());
+                return null;
             }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
 
     private String getEntryName() {
@@ -220,50 +224,53 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private long getCountInner() {
-        RedisConnection<String, Object> connection = connectionManager.connectionReadOp();
-        try {
-            Number val = (Number) connection.get(getName());
-            if (val == null) {
-                return 0;
+        Number val = connectionManager.read(new ResultOperation<Number, Number>() {
+            @Override
+            protected Future<Number> execute(RedisAsyncConnection<Object, Number> async) {
+                return async.get(getName());
             }
-            return val.longValue();
-        } finally {
-            connectionManager.releaseRead(connection);
+        });
+        
+        if (val == null) {
+            return 0;
         }
+        return val.longValue();
     }
 
     @Override
-    public boolean trySetCount(long count) {
-        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            connection.watch(getName());
-            Long oldValue = (Long) connection.get(getName());
-            if (oldValue != null) {
-                connection.unwatch();
-                return false;
+    public boolean trySetCount(final long count) {
+        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+
+            @Override
+            public Boolean execute(RedisConnection<Object, Object> conn) {
+                conn.watch(getName());
+                Long oldValue = (Long) conn.get(getName());
+                if (oldValue != null) {
+                    conn.unwatch();
+                    return false;
+                }
+                conn.multi();
+                conn.set(getName(), count);
+                conn.publish(getChannelName(), newCountMessage);
+                return conn.exec().size() == 2;
             }
-            connection.multi();
-            connection.set(getName(), count);
-            connection.publish(getChannelName(), newCountMessage);
-            return connection.exec().size() == 2;
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
     
     @Override
     public void delete() {
-        RedisConnection<String, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            connection.multi();
-            connection.del(getName());
-            connection.publish(getChannelName(), zeroCountMessage);
-            if (connection.exec().size() != 2) {
-                throw new IllegalStateException();
+        connectionManager.write(new SyncOperation<Object, Void>() {
+            @Override
+            public Void execute(RedisConnection<Object, Object> conn) {
+                conn.multi();
+                conn.del(getName());
+                conn.publish(getChannelName(), zeroCountMessage);
+                if (conn.exec().size() != 2) {
+                    throw new IllegalStateException();
+                }
+                return null;
             }
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
 
 }
