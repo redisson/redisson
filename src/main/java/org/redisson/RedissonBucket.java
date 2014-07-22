@@ -34,7 +34,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public V get() {
-        return getAsync().awaitUninterruptibly().getNow();
+        return connectionManager.get(getAsync());
     }
 
     @Override
@@ -49,7 +49,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public void set(V value) {
-        setAsync(value).awaitUninterruptibly().getNow();
+        connectionManager.get(setAsync(value));
     }
 
     @Override
@@ -64,7 +64,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public void set(V value, long timeToLive, TimeUnit timeUnit) {
-        setAsync(value, timeToLive, timeUnit).awaitUninterruptibly().getNow();
+        connectionManager.get(setAsync(value, timeToLive, timeUnit));
     }
 
     @Override

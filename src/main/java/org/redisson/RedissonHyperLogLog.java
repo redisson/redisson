@@ -33,27 +33,27 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
 
     @Override
     public long add(V obj) {
-        return addAsync(obj).awaitUninterruptibly().getNow();
+        return connectionManager.get(addAsync(obj));
     }
 
     @Override
     public long addAll(Collection<V> objects) {
-        return addAllAsync(objects).awaitUninterruptibly().getNow();
+        return connectionManager.get(addAllAsync(objects));
     }
 
     @Override
     public long count() {
-        return countAsync().awaitUninterruptibly().getNow();
+        return connectionManager.get(countAsync());
     }
 
     @Override
     public long countWith(String... otherLogNames) {
-        return countWithAsync(otherLogNames).awaitUninterruptibly().getNow();
+        return connectionManager.get(countWithAsync(otherLogNames));
     }
 
     @Override
     public long mergeWith(String... otherLogNames) {
-        return mergeWithAsync(otherLogNames).awaitUninterruptibly().getNow();
+        return connectionManager.get(mergeWithAsync(otherLogNames));
     }
 
     @Override

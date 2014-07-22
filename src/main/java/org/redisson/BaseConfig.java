@@ -18,6 +18,10 @@ package org.redisson;
 
 class BaseConfig<T extends BaseConfig<T>> {
 
+    private int retryAttempts = 5;
+    
+    private int retryInterval = 1000;
+    
     /**
      * Password for Redis authentication. Should be null if not needed
      */
@@ -34,6 +38,8 @@ class BaseConfig<T extends BaseConfig<T>> {
     BaseConfig(T config) {
         setPassword(config.getPassword());
         setSubscriptionsPerConnection(config.getSubscriptionsPerConnection());
+        setRetryAttempts(config.getRetryAttempts());
+        setRetryInterval(config.getRetryInterval());
     }
 
     /**
@@ -64,4 +70,18 @@ class BaseConfig<T extends BaseConfig<T>> {
         return password;
     }
 
+    public void setRetryAttempts(int retryAttempts) {
+        this.retryAttempts = retryAttempts;
+    }
+    public int getRetryAttempts() {
+        return retryAttempts;
+    }
+    
+    public void setRetryInterval(int retryInterval) {
+        this.retryInterval = retryInterval;
+    }
+    public int getRetryInterval() {
+        return retryInterval;
+    }
+    
 }

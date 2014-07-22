@@ -88,17 +88,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public V get(Object key) {
-        return getAsync((K)key).awaitUninterruptibly().getNow();
+        return connectionManager.get(getAsync((K)key));
     }
 
     @Override
     public V put(K key, V value) {
-        return putAsync(key, value).awaitUninterruptibly().getNow();
+        return connectionManager.get(putAsync(key, value));
     }
 
     @Override
     public V remove(Object key) {
-        return removeAsync((K)key).awaitUninterruptibly().getNow();
+        return connectionManager.get(removeAsync((K)key));
     }
 
     @Override
@@ -413,7 +413,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean fastPut(K key, V value) {
-        return fastPutAsync(key, value).awaitUninterruptibly().getNow();
+        return connectionManager.get(fastPutAsync(key, value));
     }
     
     @Override
@@ -428,7 +428,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public long fastRemove(K ... keys) {
-        return fastRemoveAsync(keys).awaitUninterruptibly().getNow();
+        return connectionManager.get(fastRemoveAsync(keys));
     }
 
 }

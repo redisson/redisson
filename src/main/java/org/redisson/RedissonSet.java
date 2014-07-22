@@ -154,7 +154,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean add(final V e) {
-        return addAsync(e).awaitUninterruptibly().getNow();
+        return connectionManager.get(addAsync(e));
     }
     
     @Override
@@ -189,7 +189,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean remove(Object value) {
-        return removeAsync((V)value).awaitUninterruptibly().getNow();
+        return connectionManager.get(removeAsync((V)value));
     }
 
     @Override

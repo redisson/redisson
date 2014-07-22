@@ -40,7 +40,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     @Override
     public long publish(M message) {
-        return publishAsync(message).awaitUninterruptibly().getNow();
+        return connectionManager.get(publishAsync(message));
     }
 
     @Override

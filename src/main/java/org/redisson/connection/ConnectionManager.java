@@ -33,6 +33,8 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 //TODO ping support
 public interface ConnectionManager {
 
+    <V> V get(Future<V> future);
+    
     <V, R> R read(SyncOperation<V, R> operation);
     
     <V, R> R write(SyncOperation<V, R> operation);
@@ -58,8 +60,6 @@ public interface ConnectionManager {
     <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName);
 
     Future unsubscribe(String channelName);
-
-    void releaseWrite(RedisConnection сonnection);
 
     void releaseRead(RedisConnection сonnection);
 
