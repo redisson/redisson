@@ -33,6 +33,8 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 //TODO ping support
 public interface ConnectionManager {
 
+    <V, R> R read(SyncOperation<V, R> operation);
+    
     <V, R> R write(SyncOperation<V, R> operation);
     
     <V, R> R write(AsyncOperation<V, R> asyncOperation);
@@ -43,9 +45,9 @@ public interface ConnectionManager {
     
     <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation);
     
-    <T> FutureListener<T> createReleaseWriteListener(final RedisConnection conn);
+    <T> FutureListener<T> createReleaseWriteListener(RedisConnection conn);
 
-    <T> FutureListener<T> createReleaseReadListener(final RedisConnection conn);
+    <T> FutureListener<T> createReleaseReadListener(RedisConnection conn);
 
     <K, V> RedisConnection<K, V> connectionWriteOp();
 

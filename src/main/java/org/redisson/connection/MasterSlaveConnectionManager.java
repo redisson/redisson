@@ -252,6 +252,26 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
     
+    public <V, R> R read(SyncOperation<V, R> operation) {
+        try {
+            RedisConnection<Object, V> connection = connectionReadOp();
+            try {
+                return operation.execute(connection);
+            } catch (RedisTimeoutException e) {
+                return read(operation);
+            } finally {
+                releaseRead(connection);
+            }
+        } catch (RedisConnectionException e) {
+            try {
+                Thread.sleep(1*1000);
+            } catch (InterruptedException e1) {
+                Thread.currentThread().interrupt();
+            }
+            return read(operation);
+        }
+    }
+    
     public <V, R> R write(AsyncOperation<V, R> asyncOperation) {
         return writeAsync(asyncOperation).awaitUninterruptibly().getNow();
     }

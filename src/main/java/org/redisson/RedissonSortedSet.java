@@ -96,23 +96,22 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
         loadComparator();
 
-        RedisConnection<Object, Object> conn = connectionManager.connectionWriteOp();
-        try {
-            conn.setnx(getCurrentVersionKey(), 0L);
-        } finally {
-            connectionManager.releaseWrite(conn);
-        }
+        connectionManager.write(new ResultOperation<Boolean, Object>() {
+            @Override
+            protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.setnx(getCurrentVersionKey(), 0L);
+            }
+        });
     }
 
     private void loadComparator() {
-        RedisConnection<Object, String> connection = connectionManager.connectionReadOp();
-        try {
-            loadComparator(connection);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        connectionManager.read(new SyncOperation<V, Void>() {
+            @Override
+            public Void execute(RedisConnection<Object, V> conn) {
+                loadComparator(conn);
+                return null;
+            }
+        });
     }
 
     private void loadComparator(RedisConnection<Object, ?> connection) {
@@ -158,12 +157,13 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public int size() {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        try {
-            return size(connection);
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        return connectionManager.read(new ResultOperation<Long, V>() {
+
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
+                return async.llen(getName());
+            }
+        }).intValue();
     }
 
     private int size(RedisConnection<Object, ?> connection) {
@@ -176,13 +176,13 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     @Override
-    public boolean contains(Object o) {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        try {
-            return binarySearch((V)o, connection).getIndex() >= 0;
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+    public boolean contains(final Object o) {
+        return connectionManager.read(new SyncOperation<V, Boolean>() {
+            @Override
+            public Boolean execute(RedisConnection<Object, V> conn) {
+                return binarySearch((V)o, conn).getIndex() >= 0;
+            }
+        });
     }
 
     public Iterator<V> iterator() {
@@ -285,22 +285,24 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     
     @Override
     public Object[] toArray() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            return connection.lrange(getName(), 0, -1).toArray();
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        List<V> res = connectionManager.read(new ResultOperation<List<V>, V>() {
+            @Override
+            protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.lrange(getName(), 0, -1);
+            }
+        });
+        return res.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        RedisConnection<Object, Object> connection = connectionManager.connectionReadOp();
-        try {
-            return connection.lrange(getName(), 0, -1).toArray(a);
-        } finally {
-            connectionManager.releaseRead(connection);
-        }
+        List<V> res = connectionManager.read(new ResultOperation<List<V>, V>() {
+            @Override
+            protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.lrange(getName(), 0, -1);
+            }
+        });
+        return res.toArray(a);
     }
 
     private String getCurrentVersionKey() {
@@ -312,13 +314,13 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     @Override
-    public boolean add(V value) {
-        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
-        try {
-            return add(value, connection);
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+    public boolean add(final V value) {
+        return connectionManager.write(new SyncOperation<V, Boolean>() {
+            @Override
+            public Boolean execute(RedisConnection<Object, V> conn) {
+                return add(value, conn);
+            }
+        });
     }
     
     public Future<Boolean> addAsync(final V value) {
@@ -479,13 +481,13 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
     
     @Override
-    public boolean remove(Object value) {
-        RedisConnection<Object, V> connection = connectionManager.connectionWriteOp();
-        try {
-            return remove(value, connection);
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+    public boolean remove(final Object value) {
+        return connectionManager.write(new SyncOperation<V, Boolean>() {
+            @Override
+            public Boolean execute(RedisConnection<Object, V> conn) {
+                return remove(value, conn);
+            }
+        });
     }
 
     boolean remove(Object value, RedisConnection<Object, V> conn) {
@@ -569,12 +571,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public void clear() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            connection.del(getName());
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        delete();
     }
 
     @Override
@@ -600,31 +597,30 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public V first() {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        try {
-            V res = getAtIndex(0, connection);
-            if (res == null) {
-                throw new NoSuchElementException();
+        V res = connectionManager.read(new ResultOperation<V, V>() {
+            @Override
+            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
+                return async.lindex(getName(), 0);
             }
-            return res;
-        } finally {
-            connectionManager.releaseRead(connection);
+        });
+        if (res == null) {
+            throw new NoSuchElementException();
         }
+        return res;
     }
 
     @Override
     public V last() {
-        // TODO refactor to -inf +inf
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-        try {
-            V res = getAtIndex(-1, connection);
-            if (res == null) {
-                throw new NoSuchElementException();
+        V res = connectionManager.read(new ResultOperation<V, V>() {
+            @Override
+            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
+                return async.lindex(getName(), -1);
             }
-            return res;
-        } finally {
-            connectionManager.releaseRead(connection);
+        });
+        if (res == null) {
+            throw new NoSuchElementException();
         }
+        return res;
     }
 
     private String getScoreKeyName(int index) {
@@ -636,28 +632,28 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     @Override
-    public boolean trySetComparator(Comparator<? super V> comparator) {
-        RedisConnection<Object, String> connection = connectionManager.connectionWriteOp();
-        try {
-            connection.watch(getName(), getComparatorKeyName());
-            if (size(connection) > 0) {
-                connection.unwatch();
+    public boolean trySetComparator(final Comparator<? super V> comparator) {
+        return connectionManager.write(new SyncOperation<String, Boolean>() {
+            @Override
+            public Boolean execute(RedisConnection<Object, String> connection) {
+                connection.watch(getName(), getComparatorKeyName());
+                if (size(connection) > 0) {
+                    connection.unwatch();
+                    return false;
+                }
+                connection.multi();
+                
+                String className = comparator.getClass().getName();
+                String comparatorSign = className + ":" + calcClassSign(className);
+                connection.set(getComparatorKeyName(), comparatorSign);
+                List<Object> res = connection.exec();
+                if (res.size() == 1) {
+                    RedissonSortedSet.this.comparator = comparator;
+                    return true;
+                }
                 return false;
             }
-            connection.multi();
-
-            String className = comparator.getClass().getName();
-            String comparatorSign = className + ":" + calcClassSign(className);
-            connection.set(getComparatorKeyName(), comparatorSign);
-            List<Object> res = connection.exec();
-            if (res.size() == 1) {
-                this.comparator = comparator;
-                return true;
-            }
-            return false;
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        });
     }
 
     private V getAtIndex(int index, RedisConnection<Object, V> connection) {

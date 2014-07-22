@@ -15,8 +15,11 @@
  */
 package org.redisson;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.UUID;
 
+import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
@@ -34,7 +37,7 @@ import org.redisson.core.RSet;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
-import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisAsyncConnection;
 
 /**
  * Main infrastructure class allows to get access
@@ -224,12 +227,12 @@ public class Redisson {
     }
 
     public void flushdb() {
-        RedisConnection<Object, Object> connection = connectionManager.connectionWriteOp();
-        try {
-            connection.flushdb();
-        } finally {
-            connectionManager.releaseWrite(connection);
-        }
+        connectionManager.write(new ResultOperation<String, Object>() {
+            @Override
+            protected Future<String> execute(RedisAsyncConnection<Object, Object> conn) {
+                return conn.flushdb();
+            }
+        });
     }
 
 }
