@@ -325,8 +325,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
     }
     
-    @Override
-    public <K, V> RedisConnection<K, V> connectionWriteOp() {
+    private <K, V> RedisConnection<K, V> connectionWriteOp() {
         acquireMasterConnection();
 
         RedisConnection<K, V> conn = masterEntry.getConnections().poll();

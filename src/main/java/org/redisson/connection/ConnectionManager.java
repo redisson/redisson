@@ -49,8 +49,6 @@ public interface ConnectionManager {
 
     <T> FutureListener<T> createReleaseReadListener(RedisConnection conn);
 
-    <K, V> RedisConnection<K, V> connectionWriteOp();
-
     <K, V> RedisConnection<K, V> connectionReadOp();
 
     PubSubConnectionEntry getEntry(String channelName);
