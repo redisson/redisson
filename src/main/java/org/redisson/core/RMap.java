@@ -32,6 +32,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
+    Map<K, V> filterValues(Predicate<V> predicate);
+    
     Map<K, V> filterKeys(Predicate<K> predicate);
     
     /**
