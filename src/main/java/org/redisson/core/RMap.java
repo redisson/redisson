@@ -34,7 +34,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
     /**
      * Gets a map slice contains the mappings with defined <code>keys</code>
-     * by one operation
+     * by one operation. This operation <b>NOT</b> traverses all map entries
+     * like any other <code>filter*</code> method, so works faster.
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
@@ -45,7 +46,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
     /**
      * Returns a map slice containing the mappings in whose <code>Map.Entry&lt;K, V&gt; entries</code>
-     * satisfy a predicate. Traverses all map entries.
+     * satisfy a predicate. This operation traverses all map entries.
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
