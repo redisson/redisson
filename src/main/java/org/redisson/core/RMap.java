@@ -17,7 +17,9 @@ package org.redisson.core;
 
 import io.netty.util.concurrent.Future;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -31,7 +33,11 @@ import java.util.concurrent.ConcurrentMap;
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
+    Map<K, V> filterValues(Collection<V> values);
+    
     Map<K, V> filterValues(Predicate<V> predicate);
+    
+    Map<K, V> filterKeys(Set<K> keys);
     
     Map<K, V> filterKeys(Predicate<K> predicate);
     

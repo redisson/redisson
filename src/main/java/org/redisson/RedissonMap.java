@@ -490,6 +490,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         };
     }
+
+    public Map<K, V> filterKeys(final Set<K> keys) {
+        return filterKeys(new Predicate<K>() {
+            @Override
+            public boolean apply(K input) {
+                return keys.contains(input);
+            }
+        });
+    }
     
     @Override
     public Map<K, V> filterKeys(Predicate<K> predicate) {
@@ -503,6 +512,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return result;
     }
 
+    public Map<K, V> filterValues(final Collection<V> values) {
+        return filterValues(new Predicate<V>() {
+            @Override
+            public boolean apply(V input) {
+                return values.contains(input);
+            }
+        });
+    }
+    
     @Override
     public Map<K, V> filterValues(Predicate<V> predicate) {
         Map<K, V> result = new HashMap<K, V>();
