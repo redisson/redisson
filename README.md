@@ -3,7 +3,7 @@
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
 Based on patched version of [lettuce](https://github.com/wg/lettuce) [Redis](http://redis.io) client and [Netty 4](http://netty.io) framework.  
-Redis 2.4+ and JDK 1.6+ compatible  
+Redis 2.6+ and JDK 1.6+ compatible  
 
 Licensed under the Apache License 2.0.
 
@@ -39,8 +39,15 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####??-Jul-2014 - version 1.1.5
+Feature - operations auto-retry. `retryAttempts` and `retryInterval` params added for each connection type  
+Feature - `RMap.getAll`, `RMap.filterKeys`, `RMap.filterValues` methods added  
+Feature - `RMap.fastRemove`, `RMap.fastRemoveAsync`, `RMap.fastPut` & `RMap.fastPutAsync` methods added  
+Fixed - async operations timeout handling  
+Fixed - sorting algorithm used in `RSortedSet`.  
+
 ####15-Jul-2014 - version 1.1.4 released
-Feature - new RLock.lockInterruptibly, RLock.tryLock, RLock.lock methods with TTL support  
+Feature - new `RLock.lockInterruptibly`, `RLock.tryLock`, `RLock.lock` methods with TTL support  
 Fixed - pub/sub connections reattach then slave/master down  
 Fixed - turn off connection watchdog then slave/master down  
 Fixed - sentinel master switch  
@@ -56,7 +63,7 @@ Fixed - slave down handling using Sentinel servers
 ####03-Jul-2014 - version 1.1.2 released
 Improvement - RedissonSet.iterator implemented with sscan  
 Improvement - RedissonSortedSet.iterator optimization  
-Feature - RSortedSet.removeAsync, RSortedSet.addAsync, RSet.removeAsync, RSet.addAsync methods added  
+Feature - `RSortedSet.removeAsync`, `RSortedSet.addAsync`, `RSet.removeAsync`, RSet.addAsync methods added  
 Feature - slave up/down detection in Sentinel servers connection mode  
 Feature - new-slave automatic discovery in Sentinel servers connection mode  
 
