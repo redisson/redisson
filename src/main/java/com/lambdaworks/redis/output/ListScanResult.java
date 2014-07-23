@@ -3,7 +3,7 @@ package com.lambdaworks.redis.output;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ScanResult<V> {
+public class ListScanResult<V> {
 
     private Long pos;
     private List<V> values = new ArrayList<V>();

@@ -17,6 +17,8 @@ package org.redisson.core;
 
 import io.netty.util.concurrent.Future;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -30,6 +32,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
+    Map<K, V> filterKeys(Predicate<K> predicate);
+    
     /**
      * Removes <code>keys</code> from map by one operation.
      * 

@@ -3,14 +3,14 @@ package org.redisson;
 import io.netty.util.concurrent.Future;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
 
 public class RedissonMapTest extends BaseTest {
@@ -118,8 +118,28 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testFilterKeys() {
+        RMap<Integer, Integer> map = redisson.getMap("filterKeys");
+        map.put(1, 100);
+        map.put(2, 200);
+        map.put(3, 300);
+        map.put(4, 400);
+
+        Map<Integer, Integer> filtered = map.filterKeys(new Predicate<Integer>() {
+            @Override
+            public boolean apply(Integer input) {
+                return input >= 2 && input <= 3;
+            }
+        });
+
+        Map<Integer, Integer> expectedMap = new HashMap<Integer, Integer>();
+        expectedMap.put(2, 200);
+        expectedMap.put(3, 300);
+        Assert.assertEquals(expectedMap, filtered);
+    }
+    
+    @Test
     public void testInteger() {
-        Redisson redisson = Redisson.create();
         Map<Integer, Integer> map = redisson.getMap("test_int");
         map.put(1, 2);
         map.put(3, 4);
@@ -130,8 +150,6 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertEquals(2, val.intValue());
         Integer val2 = map.get(3);
         Assert.assertEquals(4, val2.intValue());
-
-        clear(map, redisson);
     }
 
     @Test

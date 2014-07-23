@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.lambdaworks.redis.output.ScanResult;
+import com.lambdaworks.redis.output.ListScanResult;
 import com.lambdaworks.redis.protocol.ConnectionWatchdog;
 
 /**
@@ -826,11 +826,11 @@ public class RedisConnection<K, V> {
         return await(c.zunionstore(destination, storeArgs, keys));
     }
     
-    public ScanResult<V> sscan(K key, long startValue) {
+    public ListScanResult<V> sscan(K key, long startValue) {
         return await(c.sscan(key, startValue));
     }
     
-    public ScanResult<V> zscan(K key, long startValue) {
+    public ListScanResult<V> zscan(K key, long startValue) {
         return await(c.zscan(key, startValue));
     }
 

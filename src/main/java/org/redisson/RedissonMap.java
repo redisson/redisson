@@ -20,8 +20,10 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.redisson.async.AsyncOperation;
@@ -29,10 +31,12 @@ import org.redisson.async.OperationListener;
 import org.redisson.async.ResultOperation;
 import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.output.MapScanResult;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
@@ -429,6 +433,74 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public long fastRemove(K ... keys) {
         return connectionManager.get(fastRemoveAsync(keys));
+    }
+
+    private MapScanResult<Object, V> scanIterator(final long startPos) {
+        return connectionManager.read(new ResultOperation<MapScanResult<Object, V>, V>() {
+            @Override
+            public Future<MapScanResult<Object, V>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hscan(getName(), startPos);
+            }
+        });
+    }
+    
+    private Iterator<Map.Entry<K, V>> iterator() {
+        return new Iterator<Map.Entry<K, V>>() {
+
+            private Iterator<Map.Entry<K, V>> iter;
+            private long iterPos = 0;
+            
+            private boolean removeExecuted;
+            private Map.Entry<K,V> value;
+
+            @Override
+            public boolean hasNext() {
+                if (iter == null
+                        || (!iter.hasNext() && iterPos != 0)) {
+                    MapScanResult<Object, V> res = scanIterator(iterPos);
+                    iter = ((Map<K, V>)res.getMap()).entrySet().iterator();
+                    iterPos = res.getPos();
+                }
+                return iter.hasNext();
+            }
+
+            @Override
+            public Map.Entry<K, V> next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException("No such element at index");
+                }
+
+                value = iter.next();
+                removeExecuted = false;
+                return value;
+            }
+
+            @Override
+            public void remove() {
+                if (removeExecuted) {
+                    throw new IllegalStateException("Element been already deleted");
+                }
+
+                // lazy init iterator
+                hasNext();
+                iter.remove();
+                RedissonMap.this.fastRemove(value.getKey());
+                removeExecuted = true;
+            }
+
+        };
+    }
+    
+    @Override
+    public Map<K, V> filterKeys(Predicate<K> predicate) {
+        Map<K, V> result = new HashMap<K, V>();
+        for (Iterator<Map.Entry<K, V>> iterator = iterator(); iterator.hasNext();) {
+            Map.Entry<K, V> entry = iterator.next();
+            if (predicate.apply(entry.getKey())) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return result;
     }
 
 }

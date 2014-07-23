@@ -30,7 +30,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSet;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.output.ScanResult;
+import com.lambdaworks.redis.output.ListScanResult;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -70,10 +70,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         });
     }
 
-    private ScanResult<V> scanIterator(final long startPos) {
-        return connectionManager.read(new ResultOperation<ScanResult<V>, V>() {
+    private ListScanResult<V> scanIterator(final long startPos) {
+        return connectionManager.read(new ResultOperation<ListScanResult<V>, V>() {
             @Override
-            public Future<ScanResult<V>> execute(RedisAsyncConnection<Object, V> async) {
+            public Future<ListScanResult<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.sscan(getName(), startPos);
             }
         });
@@ -92,11 +92,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
             @Override
             public boolean hasNext() {
                 if (iter == null) {
-                    ScanResult<V> res = scanIterator(0);
+                    ListScanResult<V> res = scanIterator(0);
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 } else if (!iter.hasNext() && iterPos != 0) {
-                    ScanResult<V> res = scanIterator(iterPos);
+                    ListScanResult<V> res = scanIterator(iterPos);
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 }

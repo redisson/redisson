@@ -5,10 +5,10 @@ import java.nio.ByteBuffer;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.protocol.CommandOutput;
 
-public class ScanOutput<K, V> extends CommandOutput<K, V, ScanResult<V>> {
+public class ListScanOutput<K, V> extends CommandOutput<K, V, ListScanResult<V>> {
 
-    public ScanOutput(RedisCodec<K, V> codec) {
-        super(codec, new ScanResult<V>());
+    public ListScanOutput(RedisCodec<K, V> codec) {
+        super(codec, new ListScanResult<V>());
     }
     
     @Override

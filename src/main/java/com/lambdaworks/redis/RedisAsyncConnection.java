@@ -62,12 +62,14 @@ import com.lambdaworks.redis.output.KeyValueOutput;
 import com.lambdaworks.redis.output.ListMapOutput;
 import com.lambdaworks.redis.output.MapKeyListOutput;
 import com.lambdaworks.redis.output.MapOutput;
+import com.lambdaworks.redis.output.MapScanOutput;
+import com.lambdaworks.redis.output.MapScanResult;
 import com.lambdaworks.redis.output.MapValueListOutput;
 import com.lambdaworks.redis.output.MapValueOutput;
 import com.lambdaworks.redis.output.MultiOutput;
 import com.lambdaworks.redis.output.NestedMultiOutput;
-import com.lambdaworks.redis.output.ScanOutput;
-import com.lambdaworks.redis.output.ScanResult;
+import com.lambdaworks.redis.output.ListScanOutput;
+import com.lambdaworks.redis.output.ListScanResult;
 import com.lambdaworks.redis.output.ScoredValueListOutput;
 import com.lambdaworks.redis.output.StatusOutput;
 import com.lambdaworks.redis.output.StringListOutput;
@@ -1053,14 +1055,19 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(SENTINEL, new ListMapOutput<K, V>(codec), args);
     }
     
-    public Future<ScanResult<V>> sscan(K key, long startValue) {
+    public Future<ListScanResult<V>> sscan(K key, long startValue) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(startValue);
-        return dispatch(SSCAN, new ScanOutput<K, V>(codec), args);
+        return dispatch(SSCAN, new ListScanOutput<K, V>(codec), args);
+    }
+    
+    public Future<MapScanResult<K, V>> hscan(K key, long startValue) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(startValue);
+        return dispatch(HSCAN, new MapScanOutput<K, V>(codec), args);
     }
 
-    public Future<ScanResult<V>> zscan(K key, long startValue) {
+    public Future<ListScanResult<V>> zscan(K key, long startValue) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(startValue);
-        return dispatch(ZSCAN, new ScanOutput<K, V>(codec), args);
+        return dispatch(ZSCAN, new ListScanOutput<K, V>(codec), args);
     }
     
     /**
