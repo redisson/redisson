@@ -32,7 +32,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 import java.security.MessageDigest;
@@ -41,10 +40,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -973,6 +970,10 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return zrevrangebyscore(key, string(max), string(min));
     }
 
+    public Future<List<String>> time() {
+        return dispatch(TIME, new StringListOutput<K, V>(codec));
+    }
+    
     public Future<List<V>> zrevrangebyscore(K key, String max, String min) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(max).add(min);
         return dispatch(ZREVRANGEBYSCORE, new ValueListOutput<K, V>(codec), args);

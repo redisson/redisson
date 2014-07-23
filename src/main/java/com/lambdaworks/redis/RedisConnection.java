@@ -766,6 +766,10 @@ public class RedisConnection<K, V> {
         return await(c.zremrangebyscore(key, min, max));
     }
 
+    public List<String> time() {
+        return await(c.time());
+    }
+    
     public List<V> zrevrange(K key, long start, long stop) {
         return await(c.zrevrange(key, start, stop));
     }
