@@ -19,9 +19,9 @@ package org.redisson;
 class BaseConfig<T extends BaseConfig<T>> {
 
     private int retryAttempts = 5;
-    
+
     private int retryInterval = 1000;
-    
+
     /**
      * Password for Redis authentication. Should be null if not needed
      */
@@ -70,18 +70,34 @@ class BaseConfig<T extends BaseConfig<T>> {
         return password;
     }
 
+    /**
+     * Reconnection attempts amount.
+     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
+     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     *
+     * Used then connection with redis server is down.
+     *
+     * @param retryAttempts
+     */
     public void setRetryAttempts(int retryAttempts) {
         this.retryAttempts = retryAttempts;
     }
     public int getRetryAttempts() {
         return retryAttempts;
     }
-    
+
+    /**
+     * Time pause before next reconnection attempt.
+     *
+     * Used then connection with redis server is down.
+     *
+     * @param retryInterval - time in milliseconds
+     */
     public void setRetryInterval(int retryInterval) {
         this.retryInterval = retryInterval;
     }
     public int getRetryInterval() {
         return retryInterval;
     }
-    
+
 }
