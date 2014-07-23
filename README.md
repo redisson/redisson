@@ -39,7 +39,7 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
-####??-Jul-2014 - version 1.1.5
+####23-Jul-2014 - version 1.1.5 released
 Feature - operations auto-retry. `retryAttempts` and `retryInterval` params added for each connection type  
 Feature - `RMap.filterEntries`, `RMap.getAll`, `RMap.filterKeys`, `RMap.filterValues` methods added  
 Feature - `RMap.fastRemove`, `RMap.fastRemoveAsync`, `RMap.fastPut` & `RMap.fastPutAsync` methods added  
