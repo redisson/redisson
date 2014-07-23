@@ -534,4 +534,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return result;
     }
 
+    public Map<K, V> filterEntries(Predicate<Map.Entry<K, V>> predicate) {
+        Map<K, V> result = new HashMap<K, V>();
+        for (Iterator<Map.Entry<K, V>> iterator = iterator(); iterator.hasNext();) {
+            Map.Entry<K, V> entry = iterator.next();
+            if (predicate.apply(entry)) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return result;
+    }
+
 }

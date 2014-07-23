@@ -44,8 +44,19 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
     Map<K, V> getAll(Set<K> keys);
 
     /**
+     * Returns a map slice containing the mappings in whose <code>Map.Entry&lt;K, V&gt; entries</code>
+     * satisfy a predicate. Traverses all map entries.
+     *
+     * The returned map is <b>NOT</b> backed by the original map.
+     *
+     * @param predicate
+     * @return
+     */
+    Map<K, V> filterEntries(Predicate<Map.Entry<K, V>> predicate);
+
+    /**
      * Returns a map slice containing the mappings in whose <code>values</code>
-     * satisfy a predicate.
+     * satisfy a predicate. Traverses all map entries.
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
@@ -56,7 +67,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
     /**
      * Returns a map slice containing the mappings in whose <code>keys</code>
-     * satisfy a predicate.
+     * satisfy a predicate. Traverses all map entries.
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
