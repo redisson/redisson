@@ -17,7 +17,6 @@ package org.redisson.core;
 
 import io.netty.util.concurrent.Future;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
