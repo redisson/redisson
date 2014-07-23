@@ -91,6 +91,25 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public Map<K, V> getAll(final Set<K> keys) {
+        List<V> list = connectionManager.read(new ResultOperation<List<V>, V>() {
+            @Override
+            protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.hmget(getName(), keys.toArray());
+            }
+        });
+
+        Map<K, V> result = new HashMap<K, V>(list.size());
+        int index = 0;
+        for (K key : keys) {
+            V value = list.get(index);
+            result.put(key, value);
+            index++;
+        }
+        return result;
+    }
+
+    @Override
     public V get(Object key) {
         return connectionManager.get(getAsync((K)key));
     }
@@ -148,7 +167,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 return async.hgetall(getName());
             }
         });
-        
+
         Map<K, V> result = new HashMap<K, V>();
         for (java.util.Map.Entry<Object, Object> entry : map.entrySet()) {
             result.put((K)entry.getKey(), (V)entry.getValue());
@@ -181,7 +200,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                             promise.setSuccess(null);
                             return;
                         }
-                        
+
                         async.hget(getName(), key).addListener(new OperationListener<V, V, V>(promise, async, timeoutCallback) {
                             @Override
                             public void onOperationComplete(Future<V> future) throws Exception {
@@ -308,7 +327,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         async.watch(getName()).addListener(new OperationListener<V, V, String>(promise, async, timeoutCallback) {
             @Override
             public void onOperationComplete(Future<String> future) throws Exception {
-                
+
                 async.hget(getName(), key).addListener(new OperationListener<V, V, V>(promise, async, timeoutCallback) {
                     @Override
                     public void onOperationComplete(Future<V> future) throws Exception {
@@ -355,7 +374,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 //                return prev;
 //            }
 //        }
-        
+
         return connectionManager.writeAsync(new AsyncOperation<V, V>() {
             @Override
             public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
@@ -364,7 +383,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         });
     }
 
-    private void removeAsync(final K key, final Promise<V> promise, 
+    private void removeAsync(final K key, final Promise<V> promise,
             final RedisAsyncConnection<Object, V> async, final AsyncOperation<V, V> timeoutCallback) {
         async.watch(getName()).addListener(new OperationListener<V, V, String>(promise, async, timeoutCallback) {
             @Override
@@ -374,7 +393,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                     @Override
                     public void onOperationComplete(Future<V> future) throws Exception {
                         final V prev = future.get();
-                        
+
                         async.multi().addListener(new OperationListener<V, V, String>(promise, async, timeoutCallback) {
                             @Override
                             public void onOperationComplete(Future<String> future) throws Exception {
@@ -419,7 +438,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public boolean fastPut(K key, V value) {
         return connectionManager.get(fastPutAsync(key, value));
     }
-    
+
     @Override
     public Future<Long> fastRemoveAsync(final K ... keys) {
         return connectionManager.writeAsync(new ResultOperation<Long, V>() {
@@ -443,13 +462,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
         });
     }
-    
+
     private Iterator<Map.Entry<K, V>> iterator() {
         return new Iterator<Map.Entry<K, V>>() {
 
             private Iterator<Map.Entry<K, V>> iter;
             private long iterPos = 0;
-            
+
             private boolean removeExecuted;
             private Map.Entry<K,V> value;
 
@@ -491,15 +510,6 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         };
     }
 
-    public Map<K, V> filterKeys(final Set<K> keys) {
-        return filterKeys(new Predicate<K>() {
-            @Override
-            public boolean apply(K input) {
-                return keys.contains(input);
-            }
-        });
-    }
-    
     @Override
     public Map<K, V> filterKeys(Predicate<K> predicate) {
         Map<K, V> result = new HashMap<K, V>();
@@ -512,15 +522,6 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return result;
     }
 
-    public Map<K, V> filterValues(final Collection<V> values) {
-        return filterValues(new Predicate<V>() {
-            @Override
-            public boolean apply(V input) {
-                return values.contains(input);
-            }
-        });
-    }
-    
     @Override
     public Map<K, V> filterValues(Predicate<V> predicate) {
         Map<K, V> result = new HashMap<K, V>();
@@ -532,5 +533,5 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
         return result;
     }
-    
+
 }

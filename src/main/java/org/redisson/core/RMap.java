@@ -33,20 +33,24 @@ import java.util.concurrent.ConcurrentMap;
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
-    Map<K, V> filterValues(Collection<V> values);
-    
+    /**
+     * Gets map slice contains values with defined <code>keys</code>
+     *
+     * @param keys map keys
+     * @return
+     */
+    Map<K, V> getAll(Set<K> keys);
+
     Map<K, V> filterValues(Predicate<V> predicate);
-    
-    Map<K, V> filterKeys(Set<K> keys);
-    
+
     Map<K, V> filterKeys(Predicate<K> predicate);
-    
+
     /**
      * Removes <code>keys</code> from map by one operation.
-     * 
+     *
      * Works faster than <code>RMap.remove</code> but not returning
      * the value associated with <code>key</code>
-     * 
+     *
      * @param keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
@@ -54,10 +58,10 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
     /**
      * Removes <code>keys</code> from map by one operation in async manner
-     * 
+     *
      * Works faster than <code>RMap.removeAsync</code> but not returning
      * the value associated with <code>key</code>
-     * 
+     *
      * @param keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
@@ -66,10 +70,10 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
      * in async manner.
-     * 
+     *
      * Works faster than <code>RMap.putAsync</code> but not returning
      * the previous value associated with <code>key</code>
-     * 
+     *
      * @param key
      * @param value
      * @return <code>true</code> if key is a new key in the hash and value was set.
@@ -79,17 +83,17 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>.
-     * 
+     *
      * Works faster than <code>RMap.put</code> but not returning
      * the previous value associated with <code>key</code>
-     * 
+     *
      * @param key
      * @param value
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
     boolean fastPut(K key, V value);
-    
+
     Future<V> getAsync(K key);
 
     Future<V> putAsync(K key, V value);

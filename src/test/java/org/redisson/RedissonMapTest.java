@@ -3,7 +3,9 @@ package org.redisson;
 import io.netty.util.concurrent.Future;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -118,6 +120,22 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testGetAll() {
+        RMap<Integer, Integer> map = redisson.getMap("getAll");
+        map.put(1, 100);
+        map.put(2, 200);
+        map.put(3, 300);
+        map.put(4, 400);
+
+        Map<Integer, Integer> filtered = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3)));
+
+        Map<Integer, Integer> expectedMap = new HashMap<Integer, Integer>();
+        expectedMap.put(2, 200);
+        expectedMap.put(3, 300);
+        Assert.assertEquals(expectedMap, filtered);
+    }
+
+    @Test
     public void testFilterKeys() {
         RMap<Integer, Integer> map = redisson.getMap("filterKeys");
         map.put(1, 100);
@@ -137,7 +155,7 @@ public class RedissonMapTest extends BaseTest {
         expectedMap.put(3, 300);
         Assert.assertEquals(expectedMap, filtered);
     }
-    
+
     @Test
     public void testInteger() {
         Map<Integer, Integer> map = redisson.getMap("test_int");
@@ -403,5 +421,5 @@ public class RedissonMapTest extends BaseTest {
         Thread.sleep(1);
         Assert.assertEquals(1, map.size());
     }
-    
+
 }
