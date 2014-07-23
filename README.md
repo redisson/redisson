@@ -41,7 +41,7 @@ Recent Releases
 
 ####??-Jul-2014 - version 1.1.5
 Feature - operations auto-retry. `retryAttempts` and `retryInterval` params added for each connection type  
-Feature - `RMap.getAll`, `RMap.filterKeys`, `RMap.filterValues` methods added  
+Feature - `RMap.filterEntries`, `RMap.getAll`, `RMap.filterKeys`, `RMap.filterValues` methods added  
 Feature - `RMap.fastRemove`, `RMap.fastRemoveAsync`, `RMap.fastPut` & `RMap.fastPutAsync` methods added  
 Fixed - async operations timeout handling  
 Fixed - sorting algorithm used in `RSortedSet`.  
