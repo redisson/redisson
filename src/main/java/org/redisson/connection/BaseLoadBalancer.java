@@ -148,6 +148,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     entry.registerSubscribeConnection(conn);
                     return conn;
                 } catch (RedisConnectionException e) {
+                    entry.getConnectionsSemaphore().release();
                     // TODO connection scoring
                     log.warn("Can't connect to {}, trying next connection!", entry.getClient().getAddr());
                     clientsCopy.remove(index);
@@ -187,6 +188,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     }
                     return conn;
                 } catch (RedisConnectionException e) {
+                    entry.getConnectionsSemaphore().release();
                     // TODO connection scoring
                     log.warn("Can't connect to {}, trying next connection!", entry.getClient().getAddr());
                     clientsCopy.remove(index);

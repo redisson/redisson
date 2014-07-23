@@ -387,11 +387,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return conn;
         }
 
-        conn = masterEntry.getClient().connect(codec);
-        if (config.getPassword() != null) {
-            conn.auth(config.getPassword());
+        try {
+            conn = masterEntry.getClient().connect(codec);
+            if (config.getPassword() != null) {
+                conn.auth(config.getPassword());
+            }
+            return conn;
+        } catch (RedisConnectionException e) {
+            masterEntry.getConnectionsSemaphore().release();
+            throw e;
         }
-        return conn;
     }
 
     @Override

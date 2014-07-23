@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisConnectionException;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class SingleConnectionManager extends MasterSlaveConnectionManager {
@@ -66,11 +67,16 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
             return conn;
         }
 
-        conn = masterEntry.getClient().connectPubSub(codec);
-        if (config.getPassword() != null) {
-            conn.auth(config.getPassword());
+        try {
+            conn = masterEntry.getClient().connectPubSub(codec);
+            if (config.getPassword() != null) {
+                conn.auth(config.getPassword());
+            }
+            return conn;
+        } catch (RedisConnectionException e) {
+            masterEntry.getConnectionsSemaphore().release();
+            throw e;
         }
-        return conn;
     }
 
     @Override
