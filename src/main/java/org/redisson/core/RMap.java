@@ -17,7 +17,6 @@ package org.redisson.core;
 
 import io.netty.util.concurrent.Future;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -34,19 +33,40 @@ import java.util.concurrent.ConcurrentMap;
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
     /**
-     * Gets map slice contains values with defined <code>keys</code>
+     * Gets a map slice contains the mappings with defined <code>keys</code>
+     * by one operation
+     *
+     * The returned map is <b>NOT</b> backed by the original map.
      *
      * @param keys map keys
      * @return
      */
     Map<K, V> getAll(Set<K> keys);
 
+    /**
+     * Returns a map slice containing the mappings in whose <code>values</code>
+     * satisfy a predicate.
+     *
+     * The returned map is <b>NOT</b> backed by the original map.
+     *
+     * @param predicate
+     * @return
+     */
     Map<K, V> filterValues(Predicate<V> predicate);
 
+    /**
+     * Returns a map slice containing the mappings in whose <code>keys</code>
+     * satisfy a predicate.
+     *
+     * The returned map is <b>NOT</b> backed by the original map.
+     *
+     * @param predicate
+     * @return
+     */
     Map<K, V> filterKeys(Predicate<K> predicate);
 
     /**
-     * Removes <code>keys</code> from map by one operation.
+     * Removes <code>keys</code> from map by one operation
      *
      * Works faster than <code>RMap.remove</code> but not returning
      * the value associated with <code>key</code>
