@@ -162,7 +162,7 @@ for sentinel servers connection
 
         Redisson redisson = Redisson.create();
 
-        ConcurrentMap<String, SomeObject> map = redisson.getMap("anyMap");
+        RMap<String, SomeObject> map = redisson.getMap("anyMap");
         map.put("123", new SomeObject());
         map.putIfAbsent("323", new SomeObject());
         map.remove("123");
@@ -175,7 +175,7 @@ for sentinel servers connection
 
         Redisson redisson = Redisson.create();
 
-        Set<SomeObject> set = redisson.getSet("anySet");
+        RSet<SomeObject> set = redisson.getSet("anySet");
         set.add(new SomeObject());
         set.remove(new SomeObject());
 
@@ -187,7 +187,7 @@ for sentinel servers connection
 
         Redisson redisson = Redisson.create();
 
-        List<SomeObject> list = redisson.getList("anyList");
+        RList<SomeObject> list = redisson.getList("anyList");
         list.add(new SomeObject());
         list.get(0);
         list.remove(new SomeObject());
@@ -200,7 +200,7 @@ for sentinel servers connection
 
         Redisson redisson = Redisson.create();
 
-        Queue<SomeObject> queue = redisson.getQueue("anyQueue");
+        RQueue<SomeObject> queue = redisson.getQueue("anyQueue");
         queue.add(new SomeObject());
         queue.peek();
         queue.pool();
@@ -213,7 +213,7 @@ for sentinel servers connection
 
         Redisson redisson = Redisson.create();
 
-        Lock lock = redisson.getLock("anyLock");
+        RLock lock = redisson.getLock("anyLock");
         lock.lock();
         lock.unlock();
 
