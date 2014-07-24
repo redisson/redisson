@@ -33,6 +33,18 @@ import java.util.concurrent.ConcurrentMap;
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
     /**
+     * Atomically adds the given <code>delta</code> to the current value
+     * by mapped <code>key</code>.
+     *
+     * Works only for <b>numeric</b> values!
+     *
+     * @param key
+     * @param delta the value to add
+     * @return the updated value
+     */
+    V addAndGet(K key, V delta);
+
+    /**
      * Gets a map slice contains the mappings with defined <code>keys</code>
      * by one operation. This operation <b>NOT</b> traverses all map entries
      * like any other <code>filter*</code> method, so works faster.

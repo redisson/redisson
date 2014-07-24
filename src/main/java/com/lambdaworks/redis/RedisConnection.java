@@ -288,7 +288,7 @@ public class RedisConnection<K, V> {
         return await(c.hincrby(key, field, amount));
     }
 
-    public Double hincrbyfloat(K key, K field, double amount) {
+    public String hincrbyfloat(K key, K field, String amount) {
         return await(c.hincrbyfloat(key, field, amount));
     }
 
@@ -332,7 +332,7 @@ public class RedisConnection<K, V> {
         return await(c.incrby(key, amount));
     }
 
-    public Double incrbyfloat(K key, double amount) {
+    public String incrbyfloat(K key, String amount) {
         return await(c.incrbyfloat(key, amount));
     }
 
@@ -548,11 +548,11 @@ public class RedisConnection<K, V> {
     public String psetex(K key, long millis, V value) {
         return await(c.psetex(key, millis, value));
     }
-    
+
     public Boolean setnx(K key, V value) {
         return await(c.setnx(key, value));
     }
-    
+
     public String setexnx(K key, V value, long millis) {
         return await(c.setexnx(key, value, millis));
     }
@@ -769,7 +769,7 @@ public class RedisConnection<K, V> {
     public List<String> time() {
         return await(c.time());
     }
-    
+
     public List<V> zrevrange(K key, long start, long stop) {
         return await(c.zrevrange(key, start, stop));
     }
@@ -825,11 +825,11 @@ public class RedisConnection<K, V> {
     public Long zunionstore(K destination, ZStoreArgs storeArgs, K... keys) {
         return await(c.zunionstore(destination, storeArgs, keys));
     }
-    
+
     public ListScanResult<V> sscan(K key, long startValue) {
         return await(c.sscan(key, startValue));
     }
-    
+
     public ListScanResult<V> zscan(K key, long startValue) {
         return await(c.zscan(key, startValue));
     }
