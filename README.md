@@ -5,6 +5,10 @@ Use familiar Java data structures with power of [Redis](http://redis.io).
 Based on patched version of [lettuce](https://github.com/wg/lettuce) [Redis](http://redis.io) client and [Netty 4](http://netty.io) framework.  
 Redis 2.6+ and JDK 1.6+ compatible  
 
+
+Read [wiki](https://github.com/mrniko/redisson/wiki) for more Redisson usage details
+
+
 Licensed under the Apache License 2.0.
 
 
@@ -116,6 +120,3 @@ Include the following to your dependency list:
        <artifactId>redisson</artifactId>
        <version>1.1.5</version>
     </dependency>
-
-
-Read [wiki](https://github.com/mrniko/redisson/wiki) for more Redisson usage details
