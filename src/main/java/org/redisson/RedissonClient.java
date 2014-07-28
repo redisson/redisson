@@ -2,7 +2,7 @@ package org.redisson;
 
 import org.redisson.core.*;
 
-public interface IRedisson {
+public interface RedissonClient {
     <V> RBucket<V> getBucket(String name);
 
     <V> RHyperLogLog<V> getHyperLogLog(String name);
