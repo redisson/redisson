@@ -18,6 +18,7 @@ package org.redisson;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -543,6 +544,41 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
         }
         return result;
+    }
+
+    @Override
+    public V addAndGet(final K key, final V value) {
+        String res = connectionManager.write(new ResultOperation<String, V>() {
+
+            @Override
+            protected Future<String> execute(RedisAsyncConnection<Object, V> async) {
+                Number val = (Number) value;
+                return async.hincrbyfloat(getName(), key, new BigDecimal(val.toString()).toPlainString());
+            }
+        });
+
+        //long
+        if (value instanceof Long) {
+            Object obj = Long.parseLong(res);
+            return (V)obj;
+        }
+        if (value instanceof Integer) {
+            Object obj = Integer.parseInt(res);
+            return (V)obj;
+        }
+        if (value instanceof Float) {
+            Object obj = Float.parseFloat(res);
+            return (V)obj;
+        }
+        if (value instanceof Double) {
+            Object obj = Double.parseDouble(res);
+            return (V)obj;
+        }
+        if (value instanceof BigDecimal) {
+            Object obj = new BigDecimal(res);
+            return (V)obj;
+        }
+        throw new IllegalStateException("Wrong value type!");
     }
 
 }

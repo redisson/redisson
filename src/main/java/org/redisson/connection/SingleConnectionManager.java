@@ -15,16 +15,13 @@
  */
 package org.redisson.connection;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
-
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.SingleServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.RedisConnectionException;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
@@ -33,9 +30,6 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final Semaphore subscribeConnectionsSemaphore;
-    private final Queue<RedisPubSubConnection> subscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
-
     public SingleConnectionManager(SingleServerConfig cfg, Config config) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
@@ -43,16 +37,22 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setMasterAddress(addr);
         newconfig.setMasterConnectionPoolSize(cfg.getConnectionPoolSize());
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        newconfig.setSlaveSubscriptionConnectionPoolSize(cfg.getSubscriptionConnectionPoolSize());
 
-        subscribeConnectionsSemaphore = new Semaphore(cfg.getSubscriptionConnectionPoolSize());
         init(newconfig, config);
     }
 
+    @Override
+    protected void setupMasterEntry(String host, int port) {
+        RedisClient masterClient = new RedisClient(group, host, port);
+        masterEntry = new SubscribesConnectionEntry(masterClient, config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize());
+    }
+
     private void acquireSubscribeConnection() {
-        if (!subscribeConnectionsSemaphore.tryAcquire()) {
+        if (!((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().tryAcquire()) {
             log.warn("Subscribe connection pool gets exhausted! Trying to acquire connection ...");
             long time = System.currentTimeMillis();
-            subscribeConnectionsSemaphore.acquireUninterruptibly();
+            ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().acquireUninterruptibly();
             long endTime = System.currentTimeMillis() - time;
             log.warn("Subscribe connection acquired, time spended: {} ms", endTime);
         }
@@ -62,7 +62,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     RedisPubSubConnection nextPubSubConnection() {
         acquireSubscribeConnection();
 
-        RedisPubSubConnection conn = subscribeConnections.poll();
+        RedisPubSubConnection conn = ((SubscribesConnectionEntry)masterEntry).pollFreeSubscribeConnection();
         if (conn != null) {
             return conn;
         }
@@ -74,15 +74,15 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
             }
             return conn;
         } catch (RedisConnectionException e) {
-            masterEntry.getConnectionsSemaphore().release();
+            ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().release();
             throw e;
         }
     }
 
     @Override
     protected void returnSubscribeConnection(PubSubConnectionEntry entry) {
-        subscribeConnections.add(entry.getConnection());
-        subscribeConnectionsSemaphore.release();
+        ((SubscribesConnectionEntry)masterEntry).offerFreeSubscribeConnection(entry.getConnection());
+        ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().release();
     }
 
     @Override

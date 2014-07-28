@@ -62,9 +62,9 @@ import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
-    
+
     private final HashedWheelTimer timer = new HashedWheelTimer();
-    
+
     protected RedisCodec codec;
 
     protected EventLoopGroup group;
@@ -95,7 +95,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         balancer.init(codec, config.getPassword());
         for (URI address : this.config.getSlaveAddresses()) {
             RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
-            SlaveConnectionEntry entry = new SlaveConnectionEntry(client,
+            SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                                         this.config.getSlaveConnectionPoolSize(),
                                         this.config.getSlaveSubscriptionConnectionPoolSize());
             balancer.add(entry);
@@ -104,8 +104,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             slaveDown(this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
         }
 
-        RedisClient masterClient = new RedisClient(group, this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
-        masterEntry = new ConnectionEntry(masterClient, this.config.getMasterConnectionPoolSize());
+        setupMasterEntry(this.config.getMasterAddress().getHost(), this.config.getMasterAddress().getPort());
+    }
+
+    protected void setupMasterEntry(String host, int port) {
+        RedisClient masterClient = new RedisClient(group, host, port);
+        masterEntry = new ConnectionEntry(masterClient, config.getMasterConnectionPoolSize());
     }
 
     protected void init(Config cfg) {
@@ -144,13 +148,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected void addSlave(String host, int port) {
         slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
-        
+
         RedisClient client = new RedisClient(group, host, port);
-        balancer.add(new SlaveConnectionEntry(client,
+        balancer.add(new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSlaveSubscriptionConnectionPoolSize()));
     }
-    
+
     protected void slaveUp(String host, int port) {
         balancer.unfreeze(host, port);
     }
@@ -159,12 +163,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
      * Freeze slave with <code>host:port</code> from slaves list.
      * Re-attach pub/sub listeners from it to other slave.
      * Shutdown old master client.
-     * 
+     *
      */
     protected void changeMaster(String host, int port) {
         ConnectionEntry oldMaster = masterEntry;
-        RedisClient client = new RedisClient(group, host, port);
-        masterEntry = new ConnectionEntry(client, this.config.getMasterConnectionPoolSize());
+        setupMasterEntry(host, port);
         slaveDown(host, port);
         oldMaster.getClient().shutdown();
     }
@@ -198,7 +201,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private <V, T> void writeAsync(final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise, final int attempt) {
         final Promise<T> promise = getGroup().next().newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
-        
+
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -210,17 +213,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     return;
                 }
                 promise.cancel(true);
-                
+
                 int count = attempt + 1;
                 writeAsync(asyncOperation, mainPromise, count);
             }
         };
-        
+
         try {
             RedisConnection<Object, V> connection = connectionWriteOp();
             RedisAsyncConnection<Object, V> async = connection.getAsync();
             asyncOperation.execute(promise, async);
-            
+
             ex.set(new RedisTimeoutException());
             timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
             promise.addListener(createReleaseWriteListener(connection));
@@ -234,7 +237,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (future.isCancelled()) {
                     return;
                 }
-                
+
                 if (future.isSuccess()) {
                     mainPromise.setSuccess(future.getNow());
                 } else {
@@ -247,7 +250,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public <V, R> R write(SyncOperation<V, R> operation) {
         return write(operation, 0);
     }
-    
+
     private <V, R> R write(SyncOperation<V, R> operation, int attempt) {
         try {
             RedisConnection<Object, V> connection = connectionWriteOp();
@@ -275,11 +278,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return write(operation, attempt);
         }
     }
-    
+
     public <V, R> R read(SyncOperation<V, R> operation) {
         return read(operation, 0);
     }
-    
+
     private <V, R> R read(SyncOperation<V, R> operation, int attempt) {
         try {
             RedisConnection<Object, V> connection = connectionReadOp();
@@ -307,11 +310,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return read(operation, attempt);
         }
     }
-    
+
     public <V, R> R write(AsyncOperation<V, R> asyncOperation) {
         return writeAsync(asyncOperation).awaitUninterruptibly().getNow();
     }
-    
+
     public <V> V get(Future<V> future) {
         future.awaitUninterruptibly();
         if (future.isSuccess()) {
@@ -319,11 +322,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         throw ((RedisException)future.cause());
     }
-    
+
     public <V, T> T read(AsyncOperation<V, T> asyncOperation) {
         return readAsync(asyncOperation).awaitUninterruptibly().getNow();
     }
-    
+
     public <V, T> Future<T> readAsync(AsyncOperation<V, T> asyncOperation) {
         Promise<T> mainPromise = getGroup().next().newPromise();
         readAsync(asyncOperation, mainPromise, 0);
@@ -345,17 +348,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     return;
                 }
                 promise.cancel(true);
-                
+
                 int count = attempt + 1;
                 readAsync(asyncOperation, mainPromise, count);
             }
         };
-        
+
         try {
             RedisConnection<Object, V> connection = connectionReadOp();
             RedisAsyncConnection<Object, V> async = connection.getAsync();
             asyncOperation.execute(promise, async);
-            
+
             ex.set(new RedisTimeoutException());
             timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
             promise.addListener(createReleaseReadListener(connection));
@@ -369,7 +372,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (future.isCancelled()) {
                     return;
                 }
-                
+
                 if (future.isSuccess()) {
                     mainPromise.setSuccess(future.getNow());
                 } else {
@@ -378,7 +381,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         });
     }
-    
+
     protected <K, V> RedisConnection<K, V> connectionWriteOp() {
         acquireMasterConnection();
 
@@ -425,7 +428,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     entry.release();
                     return oldEntry;
                 }
-                
+
                 synchronized (entry) {
                     if (!entry.isActive()) {
                         entry.release();
@@ -486,9 +489,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     }
                 }
             }
-            
+
             RedisPubSubConnection<K, V> conn = nextPubSubConnection();
-            
+
             PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
             entry.tryAcquire();
             PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
@@ -522,7 +525,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             return group.next().newSucceededFuture(null);
         }
-        
+
         Future future = entry.unsubscribe(channelName);
         future.addListener(new FutureListener() {
             @Override

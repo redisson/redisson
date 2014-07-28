@@ -22,7 +22,7 @@ public class RandomLoadBalancer extends BaseLoadBalancer {
 
     private final Random random = new Random();
 
-    int getIndex(List<SlaveConnectionEntry> clientsCopy) {
+    int getIndex(List<SubscribesConnectionEntry> clientsCopy) {
         return random.nextInt(clientsCopy.size());
     }
 

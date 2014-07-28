@@ -22,13 +22,13 @@ import java.util.concurrent.Semaphore;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
-public class SlaveConnectionEntry extends ConnectionEntry {
+public class SubscribesConnectionEntry extends ConnectionEntry {
     
     private final Semaphore subscribeConnectionsSemaphore;
     private final Queue<RedisPubSubConnection> allSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
 
-    public SlaveConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize) {
+    public SubscribesConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize) {
         super(client, poolSize);
         this.subscribeConnectionsSemaphore = new Semaphore(subscribePoolSize);
     }
