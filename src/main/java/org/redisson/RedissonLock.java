@@ -118,7 +118,7 @@ public class RedissonLock extends RedissonObject implements RLock {
         this.id = id;
     }
 
-    private void release() {
+    private void unsubscribe() {
         while (true) {
             RedissonLockEntry entry = ENTRIES.get(getEntryName());
             if (entry == null) {
@@ -127,7 +127,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             RedissonLockEntry newEntry = new RedissonLockEntry(entry);
             newEntry.release();
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
-                if (newEntry.isFree() 
+                if (newEntry.isFree()
                         && ENTRIES.remove(getEntryName(), newEntry)) {
                     Future future = connectionManager.unsubscribe(getChannelName());
                     future.awaitUninterruptibly();
@@ -140,7 +140,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     private String getEntryName() {
         return id + ":" + getName();
     }
-    
+
     private Promise<Boolean> aquire() {
         while (true) {
             RedissonLockEntry entry = ENTRIES.get(getEntryName());
@@ -155,7 +155,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             }
         }
     }
-    
+
     private Future<Boolean> subscribe() {
         Promise<Boolean> promise = aquire();
         if (promise != null) {
@@ -199,7 +199,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     private String getChannelName() {
         return "redisson__lock__channel__" + getName();
     }
-    
+
     @Override
     public void lock() {
         try {
@@ -220,18 +220,16 @@ public class RedissonLock extends RedissonObject implements RLock {
         }
     }
 
-    
+
     @Override
     public void lockInterruptibly() throws InterruptedException {
         lockInterruptibly(-1, null);
     }
-    
+
     @Override
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
-        Future<Boolean> promise = subscribe();
+        boolean subscribed = false;
         try {
-            promise.awaitUninterruptibly();
-            
             while (true) {
                 Long ttl;
                 if (leaseTime != -1) {
@@ -242,6 +240,9 @@ public class RedissonLock extends RedissonObject implements RLock {
                 if (ttl == null) {
                     break;
                 }
+
+                subscribe().awaitUninterruptibly();
+                subscribed = true;
                 // waiting for message
                 RedissonLockEntry entry = ENTRIES.get(getEntryName());
                 if (ttl >= 0) {
@@ -251,7 +252,9 @@ public class RedissonLock extends RedissonObject implements RLock {
                 }
             }
         } finally {
-            release();
+            if (subscribed) {
+                unsubscribe();
+            }
         }
     }
 
@@ -259,11 +262,11 @@ public class RedissonLock extends RedissonObject implements RLock {
     public boolean tryLock() {
         return tryLockInner() == null;
     }
-    
+
     private Long tryLockInner() {
         final LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
-        
+
         return connectionManager.write(new SyncOperation<LockValue, Long>() {
 
             @Override
@@ -276,7 +279,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                         connection.set(getName(), lock);
                         return null;
                     }
-                    
+
                     Long ttl = connection.pttl(getName());
                     return ttl;
                 }
@@ -288,7 +291,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
         final LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
-        
+
         return connectionManager.write(new SyncOperation<Object, Long>() {
             @Override
             public Long execute(RedisConnection<Object, Object> connection) {
@@ -303,23 +306,18 @@ public class RedissonLock extends RedissonObject implements RLock {
                         connection.psetex(getName(), time, lock);
                         return null;
                     }
-                    
+
                     Long ttl = connection.pttl(getName());
                     return ttl;
                 }
             }
         });
     }
-    
+
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
-        Future<Boolean> promise = subscribe();
+        long time = unit.toMillis(waitTime);
+        boolean subscribed = false;
         try {
-            if (!promise.awaitUninterruptibly(waitTime, unit)) {
-                return false;
-            }
-            
-            long time = unit.toMillis(waitTime);
-            
             while (true) {
                 Long ttl;
                 if (leaseTime != -1) {
@@ -330,29 +328,36 @@ public class RedissonLock extends RedissonObject implements RLock {
                 if (ttl == null) {
                     break;
                 }
-                
+
                 if (time <= 0) {
                     return false;
                 }
-                long current = System.currentTimeMillis();
+
+                if (!subscribe().awaitUninterruptibly(time, unit)) {
+                    return false;
+                }
+                subscribed = true;
                 // waiting for message
+                long current = System.currentTimeMillis();
                 RedissonLockEntry entry = ENTRIES.get(getEntryName());
-                
+
                 if (ttl >= 0 && ttl < time) {
                     entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                 } else {
                     entry.getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                 }
-                
+
                 long elapsed = System.currentTimeMillis() - current;
                 time -= elapsed;
             }
             return true;
         } finally {
-            release();
+            if (subscribed) {
+                unsubscribe();
+            }
         }
     }
-    
+
     @Override
     public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
         return tryLock(time, -1, unit);
