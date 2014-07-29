@@ -15,29 +15,16 @@
  */
 package org.redisson;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
 import io.netty.util.concurrent.Future;
-
-import java.util.UUID;
-
 import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
-import org.redisson.core.RAtomicLong;
-import org.redisson.core.RBucket;
-import org.redisson.core.RCountDownLatch;
-import org.redisson.core.RDeque;
-import org.redisson.core.RHyperLogLog;
-import org.redisson.core.RList;
-import org.redisson.core.RLock;
-import org.redisson.core.RMap;
-import org.redisson.core.RQueue;
-import org.redisson.core.RSet;
-import org.redisson.core.RSortedSet;
-import org.redisson.core.RTopic;
+import org.redisson.core.*;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
+import java.util.UUID;
 
 /**
  * Main infrastructure class allows to get access
@@ -46,7 +33,7 @@ import com.lambdaworks.redis.RedisAsyncConnection;
  * @author Nikita Koksharov
  *
  */
-public class Redisson {
+public class Redisson implements RedissonClient {
 
     private final ConnectionManager connectionManager;
     private final Config config;
@@ -94,6 +81,7 @@ public class Redisson {
      * @param name of object
      * @return
      */
+    @Override
     public <V> RBucket<V> getBucket(String name) {
         return new RedissonBucket<V>(connectionManager, name);
     }
@@ -104,6 +92,7 @@ public class Redisson {
      * @param name of object
      * @return
      */
+    @Override
     public <V> RHyperLogLog<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLog<V>(connectionManager, name);
     }
@@ -114,6 +103,7 @@ public class Redisson {
      * @param name of the distributed list
      * @return distributed list
      */
+    @Override
     public <V> RList<V> getList(String name) {
         return new RedissonList<V>(connectionManager, name);
     }
@@ -124,6 +114,7 @@ public class Redisson {
      * @param name of the distributed map
      * @return distributed map
      */
+    @Override
     public <K, V> RMap<K, V> getMap(String name) {
         return new RedissonMap<K, V>(connectionManager, name);
     }
@@ -134,6 +125,7 @@ public class Redisson {
      * @param name of the distributed lock
      * @return distributed lock
      */
+    @Override
     public RLock getLock(String name) {
         return new RedissonLock(connectionManager, name, id);
     }
@@ -144,6 +136,7 @@ public class Redisson {
      * @param name of the distributed set
      * @return distributed set
      */
+    @Override
     public <V> RSet<V> getSet(String name) {
         return new RedissonSet<V>(connectionManager, name);
     }
@@ -154,6 +147,7 @@ public class Redisson {
      * @param name of the distributed set
      * @return distributed set
      */
+    @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
         return new RedissonSortedSet<V>(connectionManager, name);
     }
@@ -164,6 +158,7 @@ public class Redisson {
      * @param name of the distributed topic
      * @return distributed topic
      */
+    @Override
     public <M> RTopic<M> getTopic(String name) {
         return new RedissonTopic<M>(connectionManager, name);
     }
@@ -174,6 +169,7 @@ public class Redisson {
      * @param name of the distributed queue
      * @return distributed queue
      */
+    @Override
     public <V> RQueue<V> getQueue(String name) {
         return new RedissonQueue<V>(connectionManager, name);
     }
@@ -184,6 +180,7 @@ public class Redisson {
      * @param name of the distributed queue
      * @return distributed queue
      */
+    @Override
     public <V> RDeque<V> getDeque(String name) {
         return new RedissonDeque<V>(connectionManager, name);
     }
@@ -194,6 +191,7 @@ public class Redisson {
      * @param name of the distributed "atomic long"
      * @return distributed "atomic long"
      */
+    @Override
     public RAtomicLong getAtomicLong(String name) {
         return new RedissonAtomicLong(connectionManager, name);
     }
@@ -204,6 +202,7 @@ public class Redisson {
      * @param name of the distributed "count down latch"
      * @return distributed "count down latch"
      */
+    @Override
     public RCountDownLatch getCountDownLatch(String name) {
         return new RedissonCountDownLatch(connectionManager, name, id);
     }
