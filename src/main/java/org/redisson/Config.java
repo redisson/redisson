@@ -31,6 +31,8 @@ public class Config {
     private MasterSlaveServersConfig masterSlaveServersConfig;
 
     private SingleServerConfig singleServerConfig;
+    
+    private ClusterServersConfig clusterServersConfig;
 
     /**
      * Threads amount shared between all redis node clients
@@ -62,6 +64,9 @@ public class Config {
         if (oldConf.getSentinelServersConfig() != null ) {
             setSentinelServersConfig(new SentinelServersConfig(oldConf.getSentinelServersConfig()));
         }
+        if (oldConf.getClusterServersConfig() != null ) {
+            setClusterServersConfig(new ClusterServersConfig(oldConf.getClusterServersConfig()));
+        }
     }
 
     /**
@@ -78,7 +83,26 @@ public class Config {
         return codec;
     }
 
+    public ClusterServersConfig useClusterServers() {
+        checkMasterSlaveServersConfig();
+        checkSentinelServersConfig();
+        checkSingleServerConfig();
+
+        if (clusterServersConfig == null) {
+            clusterServersConfig = new ClusterServersConfig();
+        }
+        return clusterServersConfig;
+    }
+
+    ClusterServersConfig getClusterServersConfig() {
+        return clusterServersConfig;
+    }
+    void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
+        this.clusterServersConfig = clusterServersConfig;
+    }
+    
     public SingleServerConfig useSingleServer() {
+        checkClusterServersConfig();
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
 
@@ -96,6 +120,7 @@ public class Config {
     }
 
     public SentinelServersConfig useSentinelConnection() {
+        checkClusterServersConfig();
         checkSingleServerConfig();
         checkMasterSlaveServersConfig();
 
@@ -113,6 +138,7 @@ public class Config {
     }
 
     public MasterSlaveServersConfig useMasterSlaveConnection() {
+        checkClusterServersConfig();
         checkSingleServerConfig();
         checkSentinelServersConfig();
 
@@ -137,6 +163,12 @@ public class Config {
         return this;
     }
 
+    private void checkClusterServersConfig() {
+        if (clusterServersConfig != null) {
+            throw new IllegalStateException("cluster servers config already used!");
+        }
+    }
+    
     private void checkSentinelServersConfig() {
         if (sentinelServersConfig != null) {
             throw new IllegalStateException("sentinel servers config already used!");

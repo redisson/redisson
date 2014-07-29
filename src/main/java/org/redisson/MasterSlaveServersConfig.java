@@ -96,11 +96,7 @@ public class MasterSlaveServersConfig extends BaseConfig<MasterSlaveServersConfi
      */
     public MasterSlaveServersConfig addSlaveAddress(String ... sAddresses) {
         for (String address : sAddresses) {
-            try {
-                slaveAddresses.add(new URI("//" + address));
-            } catch (URISyntaxException e) {
-                throw new IllegalArgumentException("Can't parse " + address);
-            }
+            slaveAddresses.add(URI.create("//" + address));
         }
         return this;
     }

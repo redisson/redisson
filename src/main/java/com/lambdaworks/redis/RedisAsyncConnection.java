@@ -78,6 +78,7 @@ import com.lambdaworks.redis.output.ValueOutput;
 import com.lambdaworks.redis.output.ValueSetOutput;
 import com.lambdaworks.redis.protocol.Command;
 import com.lambdaworks.redis.protocol.CommandArgs;
+import com.lambdaworks.redis.protocol.CommandKeyword;
 import com.lambdaworks.redis.protocol.CommandOutput;
 import com.lambdaworks.redis.protocol.CommandType;
 import com.lambdaworks.redis.protocol.ConnectionWatchdog;
@@ -1070,6 +1071,11 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(ZSCAN, new ListScanOutput<K, V>(codec), args);
     }
 
+    public Future<String> clusterNodes() {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add(CommandKeyword.NODES);
+        return dispatch(CLUSTER, new StatusOutput<K, V>(codec), args);
+    }
+
     /**
      * Wait until commands are complete or the connection timeout is reached.
      *
@@ -1200,6 +1206,10 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public synchronized <T> Promise<T> dispatch(CommandType type, CommandOutput<K, V, T> output, CommandArgs<K, V> args) {
+        if (queue == null) {
+            throw new RedisConnectionClosedException("Connection is closed");
+        }
+
         Promise<T> promise = eventLoopGroup.next().<T>newPromise();
         Command<K, V, T> cmd = new Command<K, V, T>(type, output, args, multi != null, promise);
 
@@ -1213,8 +1223,6 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
             if (channel != null) {
                 channel.writeAndFlush(cmd);
             }
-        } catch (NullPointerException e) {
-            throw new RedisException("Connection is closed");
         } catch (InterruptedException e) {
             throw new RedisCommandInterruptedException(e);
         }

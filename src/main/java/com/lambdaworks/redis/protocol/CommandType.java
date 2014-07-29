@@ -61,7 +61,7 @@ public enum CommandType {
     ZADD, ZCARD, ZCOUNT, ZINCRBY, ZINTERSTORE, ZRANGE, ZRANGEBYSCORE,
     ZRANK, ZREM, ZREMRANGEBYRANK, ZREMRANGEBYSCORE, ZREVRANGE,
     ZREVRANGEBYSCORE, ZREVRANK, ZSCORE, ZUNIONSTORE,
-    
+
     TIME,
 
     // Scripting
@@ -76,8 +76,10 @@ public enum CommandType {
     PFADD, PFCOUNT, PFMERGE,
 
     SENTINEL,
-    
-    SSCAN, ZSCAN, HSCAN;
+
+    SSCAN, ZSCAN, HSCAN,
+
+    ASKING, CLUSTER;
 
     public byte[] bytes;
 

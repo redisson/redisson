@@ -16,8 +16,11 @@
 package org.redisson;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
+
 import io.netty.util.concurrent.Future;
+
 import org.redisson.async.ResultOperation;
+import org.redisson.connection.ClusterConnectionManager;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
@@ -47,8 +50,12 @@ public class Redisson implements RedissonClient {
             connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
         } else if (configCopy.getSingleServerConfig() != null) {
             connectionManager = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
-        } else {
+        } else if (configCopy.getSentinelServersConfig() != null) {
             connectionManager = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
+        } else if (configCopy.getClusterServersConfig() != null) {
+            connectionManager = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
+        } else {
+            throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
     }
 
@@ -77,7 +84,7 @@ public class Redisson implements RedissonClient {
 
     /**
      * Returns object holder by name
-     * 
+     *
      * @param name of object
      * @return
      */
@@ -88,7 +95,7 @@ public class Redisson implements RedissonClient {
 
     /**
      * Returns HyperLogLog object
-     * 
+     *
      * @param name of object
      * @return
      */
