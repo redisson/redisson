@@ -76,7 +76,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
         for (URI addr : cfg.getNodeAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
+            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
             RedisAsyncConnection<String, String> connection = client.connectAsync();
             String nodes = connection.clusterNodes().awaitUninterruptibly().getNow();
             parse(nodes);
@@ -113,7 +113,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
         for (final URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
+            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
             nodes.add(client);
 
             RedisPubSubConnection<String, String> pubsub = client.connectPubSub();

@@ -18,6 +18,13 @@ package org.redisson;
 
 class BaseConfig<T extends BaseConfig<T>> {
 
+    /**
+     * Redis operation execution timeout.
+     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
+     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     */
+    private int timeout = 60000;
+
     private int retryAttempts = 5;
 
     private int retryInterval = 1000;
@@ -46,6 +53,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         setRetryAttempts(config.getRetryAttempts());
         setRetryInterval(config.getRetryInterval());
         setDatabase(config.getDatabase());
+        setTimeout(config.getTimeout());
     }
 
     /**
@@ -120,6 +128,21 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
     public int getDatabase() {
         return database;
+    }
+
+    /**
+     * Redis operation execution timeout.
+     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
+     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     *
+     * @param timeout in milliseconds
+     */
+    public T setTimeout(int timeout) {
+        this.timeout = timeout;
+        return (T) this;
+    }
+    public int getTimeout() {
+        return timeout;
     }
 
 }

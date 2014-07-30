@@ -55,7 +55,7 @@ public class MasterSlaveEntry {
         slaveBalancer = config.getLoadBalancer();
         slaveBalancer.init(codec, config);
         for (URI address : config.getSlaveAddresses()) {
-            RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
+            RedisClient client = new RedisClient(group, address.getHost(), address.getPort(), config.getTimeout());
             SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                     config.getSlaveConnectionPoolSize(),
                     config.getSlaveSubscriptionConnectionPoolSize());
@@ -69,7 +69,7 @@ public class MasterSlaveEntry {
     }
 
     public void setupMasterEntry(String host, int port) {
-        RedisClient masterClient = new RedisClient(group, host, port);
+        RedisClient masterClient = new RedisClient(group, host, port, config.getTimeout());
         masterEntry = new ConnectionEntry(masterClient, config.getMasterConnectionPoolSize());
     }
 
@@ -80,7 +80,7 @@ public class MasterSlaveEntry {
     public void addSlave(String host, int port) {
         slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
 
-        RedisClient client = new RedisClient(group, host, port);
+        RedisClient client = new RedisClient(group, host, port, config.getTimeout());
         slaveBalancer.add(new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSlaveSubscriptionConnectionPoolSize()));

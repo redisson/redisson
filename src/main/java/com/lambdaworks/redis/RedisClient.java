@@ -49,7 +49,7 @@ public class RedisClient {
      * @param host    Server hostname.
      */
     public RedisClient(EventLoopGroup group, String host) {
-        this(group, host, 6379);
+        this(group, host, 6379, 60000);
     }
 
     /**
@@ -60,12 +60,12 @@ public class RedisClient {
      * @param host    Server hostname.
      * @param port    Server port.
      */
-    public RedisClient(EventLoopGroup group, String host, int port) {
+    public RedisClient(EventLoopGroup group, String host, int port, int timeout) {
         addr = new InetSocketAddress(host, port);
 
         bootstrap = new Bootstrap().channel(NioSocketChannel.class).group(group).remoteAddress(addr);
 
-        setDefaultTimeout(60, TimeUnit.SECONDS);
+        setDefaultTimeout(timeout, TimeUnit.MILLISECONDS);
 
         channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
     }

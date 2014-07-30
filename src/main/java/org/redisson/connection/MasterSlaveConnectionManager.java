@@ -148,7 +148,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             asyncOperation.execute(promise, async);
 
             ex.set(new RedisTimeoutException());
-            timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
+            timer.newTimeout(timerTask, config.getTimeout(), TimeUnit.MILLISECONDS);
             promise.addListener(createReleaseWriteListener(connection));
         } catch (RedisConnectionException e) {
             ex.set(e);
@@ -283,7 +283,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             asyncOperation.execute(promise, async);
 
             ex.set(new RedisTimeoutException());
-            timer.newTimeout(timerTask, 60, TimeUnit.SECONDS);
+            timer.newTimeout(timerTask, config.getTimeout(), TimeUnit.MILLISECONDS);
             promise.addListener(createReleaseReadListener(connection));
         } catch (RedisConnectionException e) {
             ex.set(e);
@@ -295,6 +295,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (future.isCancelled()) {
                     return;
                 }
+                // TODO cancel timeout
 
                 if (future.isSuccess()) {
                     mainPromise.setSuccess(future.getNow());
