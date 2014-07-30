@@ -43,27 +43,28 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     public SentinelConnectionManager(final SentinelServersConfig cfg, Config config) {
         init(config);
-        
+
         final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
+        c.setDatabase(cfg.getDatabase());
         c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
         c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
-        
+
         final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
             RedisAsyncConnection<String, String> connection = client.connectAsync();
-            
+
             // TODO async
             List<String> master = connection.getMasterAddrByKey(cfg.getMasterName()).awaitUninterruptibly().getNow();
             String masterHost = master.get(0) + ":" + master.get(1);
             c.setMasterAddress(masterHost);
             log.info("master: {}", masterHost);
             c.addSlaveAddress(masterHost);
-            
+
             // TODO async
             List<Map<String, String>> slaves = connection.slaves(cfg.getMasterName()).awaitUninterruptibly().getNow();
             for (Map<String, String> map : slaves) {
@@ -74,20 +75,20 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String host = ip + ":" + port;
                 addedSlaves.add(host);
             }
-            
+
             client.shutdown();
             break;
         }
-        
+
         init(c);
-        
+
         monitorMasterChange(cfg, addedSlaves);
     }
 
     private void monitorMasterChange(final SentinelServersConfig cfg, final Set<String> addedSlaves) {
         final AtomicReference<String> master = new AtomicReference<String>();
         final Set<String> freezeSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-        
+
         for (final URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
             sentinels.add(client);
@@ -123,13 +124,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     protected void onSlaveAdded(Set<String> addedSlaves, URI addr, String msg) {
         String[] parts = msg.split(" ");
 
-        if (parts.length > 4 
+        if (parts.length > 4
                  && "slave".equals(parts[0])) {
             String ip = parts[2];
             String port = parts[3];
 
             String slaveAddr = ip + ":" + port;
-            
+
             // to avoid addition twice
             if (addedSlaves.add(slaveAddr)) {
                 log.debug("Slave has been added - {}", slaveAddr);
@@ -143,13 +144,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private void onSlaveDown(final Set<String> freezeSlaves, final URI addr, String msg) {
         String[] parts = msg.split(" ");
 
-        if (parts.length > 4 
+        if (parts.length > 4
                  && "slave".equals(parts[0])) {
             String ip = parts[2];
             String port = parts[3];
 
             String slaveAddr = ip + ":" + port;
-            
+
             // to avoid freeze twice
             if (freezeSlaves.add(slaveAddr)) {
                 log.debug("Slave has down - {}", slaveAddr);
@@ -163,7 +164,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     protected void onSlaveUp(Set<String> freezeSlaves, URI addr, String msg) {
         String[] parts = msg.split(" ");
 
-        if (parts.length > 4 
+        if (parts.length > 4
                  && "slave".equals(parts[0])) {
             String ip = parts[2];
             String port = parts[3];
@@ -181,12 +182,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private void onMasterChange(final SentinelServersConfig cfg,
             final AtomicReference<String> master, final URI addr, String msg) {
         String[] parts = msg.split(" ");
-        
+
         if (parts.length > 3) {
             if (cfg.getMasterName().equals(parts[0])) {
                 String ip = parts[3];
                 String port = parts[4];
-                
+
                 String current = master.get();
                 String newMaster = ip + ":" + port;
                 if (!newMaster.equals(current)
@@ -199,7 +200,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
     }
-    
+
     @Override
     public void shutdown() {
         for (RedisClient sentinel : sentinels) {

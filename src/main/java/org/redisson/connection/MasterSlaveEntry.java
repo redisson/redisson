@@ -53,7 +53,7 @@ public class MasterSlaveEntry {
         this.config = config;
 
         slaveBalancer = config.getLoadBalancer();
-        slaveBalancer.init(codec, config.getPassword());
+        slaveBalancer.init(codec, config);
         for (URI address : config.getSlaveAddresses()) {
             RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
             SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
@@ -115,6 +115,9 @@ public class MasterSlaveEntry {
             conn = masterEntry.getClient().connect(codec);
             if (config.getPassword() != null) {
                 conn.auth(config.getPassword());
+            }
+            if (config.getDatabase() != 0) {
+                conn.select(config.getDatabase());
             }
             return conn;
         } catch (RedisConnectionException e) {
