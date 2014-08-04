@@ -501,6 +501,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public void shutdown() {
         entry.shutdown();
 
+        timer.stop();
+
         group.shutdownGracefully().syncUninterruptibly();
     }
 
