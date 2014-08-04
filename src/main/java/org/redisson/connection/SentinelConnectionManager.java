@@ -63,7 +63,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String masterHost = master.get(0) + ":" + master.get(1);
             c.setMasterAddress(masterHost);
             log.info("master: {}", masterHost);
-            c.addSlaveAddress(masterHost);
+//            c.addSlaveAddress(masterHost);
 
             // TODO async
             List<Map<String, String>> slaves = connection.slaves(cfg.getMasterName()).awaitUninterruptibly().getNow();

@@ -18,7 +18,9 @@ package org.redisson.connection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,6 +29,7 @@ import org.redisson.ClusterServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.SentinelServersConfig;
+import org.redisson.connection.ClusterNodeInfo.Flag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,33 +42,41 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final List<RedisClient> nodes = new ArrayList<RedisClient>();
+    private final List<RedisClient> nodeClients = new ArrayList<RedisClient>();
 
-    public ClusterConnectionManager(final ClusterServersConfig cfg, Config config) {
+    public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         init(cfg, config);
     }
 
-    private List<ClusterNode> parse(String nodesResponse) {
-        List<ClusterNode> nodes = new ArrayList<ClusterNode>();
+    private List<ClusterNodeInfo> parse(String nodesResponse) {
+        List<ClusterNodeInfo> nodes = new ArrayList<ClusterNodeInfo>();
         for (String nodeInfo : nodesResponse.split("\n")) {
-            ClusterNode node = new ClusterNode();
+            ClusterNodeInfo node = new ClusterNodeInfo();
             String[] params = nodeInfo.split(" ");
 
             String nodeId = params[0];
             node.setNodeId(nodeId);
 
             String addr = params[1];
-            node.setAddress(URI.create("//" + addr));
+            node.setAddress(addr);
 
             String flags = params[2];
             for (String flag : flags.split(",")) {
-                node.addFlag(ClusterNode.Flag.valueOf(flag.toUpperCase()));
+                node.addFlag(ClusterNodeInfo.Flag.valueOf(flag.toUpperCase()));
             }
 
             String slaveOf = params[3];
             if (!"-".equals(slaveOf)) {
                 node.setSlaveOf(slaveOf);
             }
+
+            if (params.length > 8) {
+                String slots = params[8];
+                String[] parts = slots.split("-");
+                node.setStartSlot(Integer.valueOf(parts[0]));
+                node.setEndSlot(Integer.valueOf(parts[1]));
+            }
+
             nodes.add(node);
         }
         return nodes;
@@ -74,30 +85,51 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private void init(final ClusterServersConfig cfg, final Config config) {
         init(config);
 
+        Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
+
         final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
         for (URI addr : cfg.getNodeAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
             RedisAsyncConnection<String, String> connection = client.connectAsync();
-            String nodes = connection.clusterNodes().awaitUninterruptibly().getNow();
-            parse(nodes);
-            System.out.println("nodes: " + nodes);
+            String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
+            System.out.println(nodesValue);
 
-//            // TODO async
-//            List<String> master = connection.getMasterAddrByKey(cfg.getMasterName()).awaitUninterruptibly().getNow();
-//            String masterHost = master.get(0) + ":" + master.get(1);
-//            c.setMasterAddress(masterHost);
-//            log.info("master: {}", masterHost);
-//            c.addSlaveAddress(masterHost);
-//
-//            // TODO async
-//            List<Map<String, String>> slaves = connection.slaves(cfg.getMasterName()).awaitUninterruptibly().getNow();
-//            for (Map<String, String> map : slaves) {
-//                String ip = map.get("ip");
-//                String port = map.get("port");
-//                log.info("slave: {}:{}", ip, port);
-//                c.addSlaveAddress(ip + ":" + port);
-//            }
-//
+            List<ClusterNodeInfo> nodes = parse(nodesValue);
+            for (ClusterNodeInfo clusterNodeInfo : nodes) {
+                String id = clusterNodeInfo.getNodeId();
+                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                    id = clusterNodeInfo.getSlaveOf();
+                }
+                ClusterPartition partition = partitions.get(id);
+                if (partition == null) {
+                    partition = new ClusterPartition();
+                    partitions.put(id, partition);
+                }
+
+                if (clusterNodeInfo.getFlags().contains(Flag.FAIL)) {
+                    partition.setMasterFail(true);
+                }
+
+                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                    partition.addSlaveAddress(clusterNodeInfo.getAddress());
+                } else {
+                    partition.setStartSlot(clusterNodeInfo.getStartSlot());
+                    partition.setMasterAddress(clusterNodeInfo.getAddress());
+                }
+            }
+
+            for (ClusterPartition partition : partitions.values()) {
+                if (partition.isMasterFail()) {
+                    continue;
+                }
+                log.info("master: {}", partition.getMasterAddress());
+                c.setMasterAddress(partition.getMasterAddress());
+                for (String slaveAddress : partition.getSlaveAddresses()) {
+                    log.info("slave: {}", slaveAddress);
+                    c.addSlaveAddress(slaveAddress);
+                }
+            }
+
             client.shutdown();
             break;
         }
@@ -114,7 +146,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         for (final URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
-            nodes.add(client);
+            nodeClients.add(client);
 
             RedisPubSubConnection<String, String> pubsub = client.connectPubSub();
             pubsub.addListener(new RedisPubSubAdapter<String>() {
@@ -226,7 +258,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public void shutdown() {
-        for (RedisClient sentinel : nodes) {
+        for (RedisClient sentinel : nodeClients) {
             sentinel.shutdown();
         }
 

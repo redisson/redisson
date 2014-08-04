@@ -15,33 +15,35 @@
  */
 package org.redisson.connection;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClusterNode {
+public class ClusterNodeInfo {
 
-    public enum Flag {SLAVE, MASTER, MYSELF};
-    
+    public enum Flag {SLAVE, MASTER, MYSELF, FAIL};
+
     private String nodeId;
-    private URI address;
+    private String address;
     private List<Flag> flags = new ArrayList<Flag>();
     private String slaveOf;
-    
+
+    private int startSlot;
+    private int endSlot;
+
     public String getNodeId() {
         return nodeId;
     }
     public void setNodeId(String nodeId) {
         this.nodeId = nodeId;
     }
-    
-    public URI getAddress() {
+
+    public String getAddress() {
         return address;
     }
-    public void setAddress(URI address) {
+    public void setAddress(String address) {
         this.address = address;
     }
-    
+
     public List<Flag> getFlags() {
         return flags;
     }
@@ -55,5 +57,19 @@ public class ClusterNode {
     public void setSlaveOf(String slaveOf) {
         this.slaveOf = slaveOf;
     }
-    
+
+    public int getStartSlot() {
+        return startSlot;
+    }
+    public void setStartSlot(int startSlot) {
+        this.startSlot = startSlot;
+    }
+
+    public int getEndSlot() {
+        return endSlot;
+    }
+    public void setEndSlot(int endSlot) {
+        this.endSlot = endSlot;
+    }
+
 }

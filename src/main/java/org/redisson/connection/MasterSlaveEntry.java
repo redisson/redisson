@@ -18,7 +18,9 @@ package org.redisson.connection;
 import io.netty.channel.EventLoopGroup;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.slf4j.Logger;
@@ -54,7 +56,10 @@ public class MasterSlaveEntry {
 
         slaveBalancer = config.getLoadBalancer();
         slaveBalancer.init(codec, config);
-        for (URI address : config.getSlaveAddresses()) {
+
+        List<URI> addresses = new ArrayList<URI>(config.getSlaveAddresses());
+        addresses.add(config.getMasterAddress());
+        for (URI address : addresses) {
             RedisClient client = new RedisClient(group, address.getHost(), address.getPort(), config.getTimeout());
             SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                     config.getSlaveConnectionPoolSize(),
