@@ -107,6 +107,9 @@ public abstract class CommandOutput<K, V, T> {
     }
 
     protected String decodeAscii(ByteBuffer bytes) {
+        if (bytes == null) {
+            return null;
+        }
         char[] chars = new char[bytes.remaining()];
         for (int i = 0; i < chars.length; i++) {
             chars[i] = (char) bytes.get();
