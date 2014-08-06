@@ -44,6 +44,36 @@ public class RedissonTopicTest {
     }
 
     @Test
+    public void testUnsubscribe() throws InterruptedException {
+        final CountDownLatch messageRecieved = new CountDownLatch(1);
+
+        Redisson redisson = Redisson.create();
+        RTopic<Message> topic1 = redisson.getTopic("topic1");
+        int listenerId = topic1.addListener(new MessageListener<Message>() {
+            @Override
+            public void onMessage(Message msg) {
+                Assert.fail();
+            }
+        });
+        topic1.addListener(new MessageListener<Message>() {
+            @Override
+            public void onMessage(Message msg) {
+                Assert.assertEquals(new Message("123"), msg);
+                messageRecieved.countDown();
+            }
+        });
+        topic1.removeListener(listenerId);
+
+        topic1 = redisson.getTopic("topic1");
+        topic1.publish(new Message("123"));
+
+        messageRecieved.await();
+
+        redisson.shutdown();
+    }
+
+
+    @Test
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
