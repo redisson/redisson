@@ -5,7 +5,7 @@ import java.util.List;
 
 public class ClusterPartition {
 
-    private int startSlot;
+    private int endSlot;
     private boolean masterFail;
     private String masterAddress;
     private List<String> slaveAddresses = new ArrayList<String>();
@@ -17,11 +17,11 @@ public class ClusterPartition {
         return masterFail;
     }
 
-    public void setStartSlot(int startSlot) {
-        this.startSlot = startSlot;
+    public int getEndSlot() {
+        return endSlot;
     }
-    public int getStartSlot() {
-        return startSlot;
+    public void setEndSlot(int endSlot) {
+        this.endSlot = endSlot;
     }
 
     public String getMasterAddress() {

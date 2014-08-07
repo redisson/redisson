@@ -26,11 +26,14 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
@@ -45,6 +48,7 @@ import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.RedisConnectionException;
 import com.lambdaworks.redis.RedisException;
+import com.lambdaworks.redis.RedisMovedException;
 import com.lambdaworks.redis.RedisTimeoutException;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
@@ -70,7 +74,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected MasterSlaveServersConfig config;
 
-    protected MasterSlaveEntry entry;
+    protected NavigableMap<Integer, MasterSlaveEntry> entries = new ConcurrentSkipListMap<Integer, MasterSlaveEntry>();
 
     MasterSlaveConnectionManager() {
     }
@@ -87,7 +91,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
-        entry = new MasterSlaveEntry(codec, group, config);
+        MasterSlaveEntry entry = new MasterSlaveEntry(codec, group, config);
+        entries.put(Integer.MAX_VALUE, entry);
     }
 
     protected void init(Config cfg) {
@@ -95,33 +100,34 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this.codec = new RedisCodecWrapper(cfg.getCodec());
     }
 
-    @Override
-    public <T> FutureListener<T> createReleaseWriteListener(final RedisConnection conn) {
+    public <T> FutureListener<T> createReleaseWriteListener(final int slot, final RedisConnection conn) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
-                releaseWrite(conn);
+                releaseWrite(slot, conn);
             }
         };
     }
 
-    @Override
-    public <T> FutureListener<T> createReleaseReadListener(final RedisConnection conn) {
+    public <T> FutureListener<T> createReleaseReadListener(final int slot, final RedisConnection conn) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
-                releaseRead(conn);
+                releaseRead(slot, conn);
             }
         };
     }
 
-    public <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation) {
+    public <V, T> Future<T> writeAllAsync(AsyncOperation<V, T> asyncOperation) {
         Promise<T> mainPromise = getGroup().next().newPromise();
-        writeAsync(asyncOperation, mainPromise, 0);
+        AtomicInteger counter = new AtomicInteger(entries.keySet().size());
+        for (Integer slot : entries.keySet()) {
+            writeAllAsync(slot, asyncOperation, counter, mainPromise, 0);
+        }
         return mainPromise;
     }
 
-    private <V, T> void writeAsync(final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise, final int attempt) {
+    private <V, T> void writeAllAsync(final int slot, final AsyncOperation<V, T> asyncOperation, final AtomicInteger counter, final Promise<T> mainPromise, final int attempt) {
         final Promise<T> promise = getGroup().next().newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
 
@@ -138,18 +144,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 promise.cancel(true);
 
                 int count = attempt + 1;
-                writeAsync(asyncOperation, mainPromise, count);
+                writeAllAsync(slot, asyncOperation, counter, mainPromise, count);
             }
         };
 
         try {
-            RedisConnection<Object, V> connection = connectionWriteOp();
+            RedisConnection<Object, V> connection = connectionWriteOp(slot);
             RedisAsyncConnection<Object, V> async = connection.getAsync();
             asyncOperation.execute(promise, async);
 
             ex.set(new RedisTimeoutException());
             timer.newTimeout(timerTask, config.getTimeout(), TimeUnit.MILLISECONDS);
-            promise.addListener(createReleaseWriteListener(connection));
+            promise.addListener(createReleaseWriteListener(slot, connection));
         } catch (RedisConnectionException e) {
             ex.set(e);
             timer.newTimeout(timerTask, config.getRetryInterval(), TimeUnit.MILLISECONDS);
@@ -158,6 +164,76 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             @Override
             public void operationComplete(Future<T> future) throws Exception {
                 if (future.isCancelled()) {
+                    return;
+                }
+
+                if (future.cause() instanceof RedisMovedException) {
+                    RedisMovedException ex = (RedisMovedException)future.cause();
+                    writeAllAsync(ex.getSlot(), asyncOperation, counter, mainPromise, attempt);
+                    return;
+                }
+
+                if (future.isSuccess()) {
+                    if (counter.decrementAndGet() == 0
+                            && !mainPromise.isDone()) {
+                        mainPromise.setSuccess(future.getNow());
+                    }
+                } else {
+                    mainPromise.setFailure(future.cause());
+                }
+            }
+        });
+    }
+
+    public <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation) {
+        Promise<T> mainPromise = getGroup().next().newPromise();
+        writeAsync(-1, asyncOperation, mainPromise, 0);
+        return mainPromise;
+    }
+
+    private <V, T> void writeAsync(final int slot, final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise, final int attempt) {
+        final Promise<T> promise = getGroup().next().newPromise();
+        final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
+
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                if (promise.isDone()) {
+                    return;
+                }
+                if (attempt == config.getRetryAttempts()) {
+                    promise.setFailure(ex.get());
+                    return;
+                }
+                promise.cancel(true);
+
+                int count = attempt + 1;
+                writeAsync(slot, asyncOperation, mainPromise, count);
+            }
+        };
+
+        try {
+            RedisConnection<Object, V> connection = connectionWriteOp(slot);
+            RedisAsyncConnection<Object, V> async = connection.getAsync();
+            asyncOperation.execute(promise, async);
+
+            ex.set(new RedisTimeoutException());
+            timer.newTimeout(timerTask, config.getTimeout(), TimeUnit.MILLISECONDS);
+            promise.addListener(createReleaseWriteListener(slot, connection));
+        } catch (RedisConnectionException e) {
+            ex.set(e);
+            timer.newTimeout(timerTask, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+        }
+        promise.addListener(new FutureListener<T>() {
+            @Override
+            public void operationComplete(Future<T> future) throws Exception {
+                if (future.isCancelled()) {
+                    return;
+                }
+
+                if (future.cause() instanceof RedisMovedException) {
+                    RedisMovedException ex = (RedisMovedException)future.cause();
+                    writeAsync(ex.getSlot(), asyncOperation, mainPromise, attempt);
                     return;
                 }
 
@@ -171,22 +247,24 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     public <V, R> R write(SyncOperation<V, R> operation) {
-        return write(operation, 0);
+        return write(-1, operation, 0);
     }
 
-    private <V, R> R write(SyncOperation<V, R> operation, int attempt) {
+    private <V, R> R write(int slot, SyncOperation<V, R> operation, int attempt) {
         try {
-            RedisConnection<Object, V> connection = connectionWriteOp();
+            RedisConnection<Object, V> connection = connectionWriteOp(slot);
             try {
                 return operation.execute(connection);
+            } catch (RedisMovedException e) {
+                return write(e.getSlot(), operation, attempt);
             } catch (RedisTimeoutException e) {
                 if (attempt == config.getRetryAttempts()) {
                     throw e;
                 }
                 attempt++;
-                return write(operation, attempt);
+                return write(slot, operation, attempt);
             } finally {
-                releaseWrite(connection);
+                releaseWrite(slot, connection);
             }
         } catch (RedisConnectionException e) {
             if (attempt == config.getRetryAttempts()) {
@@ -198,27 +276,29 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 Thread.currentThread().interrupt();
             }
             attempt++;
-            return write(operation, attempt);
+            return write(slot, operation, attempt);
         }
     }
 
     public <V, R> R read(SyncOperation<V, R> operation) {
-        return read(operation, 0);
+        return read(-1, operation, 0);
     }
 
-    private <V, R> R read(SyncOperation<V, R> operation, int attempt) {
+    private <V, R> R read(int slot, SyncOperation<V, R> operation, int attempt) {
         try {
-            RedisConnection<Object, V> connection = connectionReadOp();
+            RedisConnection<Object, V> connection = connectionReadOp(slot);
             try {
                 return operation.execute(connection);
+            } catch (RedisMovedException e) {
+                return read(e.getSlot(), operation, attempt);
             } catch (RedisTimeoutException e) {
                 if (attempt == config.getRetryAttempts()) {
                     throw e;
                 }
                 attempt++;
-                return read(operation, attempt);
+                return read(slot, operation, attempt);
             } finally {
-                releaseRead(connection);
+                releaseRead(slot, connection);
             }
         } catch (RedisConnectionException e) {
             if (attempt == config.getRetryAttempts()) {
@@ -230,7 +310,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 Thread.currentThread().interrupt();
             }
             attempt++;
-            return read(operation, attempt);
+            return read(slot, operation, attempt);
         }
     }
 
@@ -252,11 +332,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public <V, T> Future<T> readAsync(AsyncOperation<V, T> asyncOperation) {
         Promise<T> mainPromise = getGroup().next().newPromise();
-        readAsync(asyncOperation, mainPromise, 0);
+        readAsync(-1, asyncOperation, mainPromise, 0);
         return mainPromise;
     }
 
-    private <V, T> void readAsync(final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise, final int attempt) {
+    private <V, T> void readAsync(final int slot, final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise, final int attempt) {
         final Promise<T> promise = getGroup().next().newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
 
@@ -273,18 +353,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 promise.cancel(true);
 
                 int count = attempt + 1;
-                readAsync(asyncOperation, mainPromise, count);
+                readAsync(slot, asyncOperation, mainPromise, count);
             }
         };
 
         try {
-            RedisConnection<Object, V> connection = connectionReadOp();
+            RedisConnection<Object, V> connection = connectionReadOp(slot);
             RedisAsyncConnection<Object, V> async = connection.getAsync();
             asyncOperation.execute(promise, async);
 
             ex.set(new RedisTimeoutException());
             timer.newTimeout(timerTask, config.getTimeout(), TimeUnit.MILLISECONDS);
-            promise.addListener(createReleaseReadListener(connection));
+            promise.addListener(createReleaseReadListener(slot, connection));
         } catch (RedisConnectionException e) {
             ex.set(e);
             timer.newTimeout(timerTask, config.getRetryInterval(), TimeUnit.MILLISECONDS);
@@ -296,6 +376,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     return;
                 }
                 // TODO cancel timeout
+
+                if (future.cause() instanceof RedisMovedException) {
+                    RedisMovedException ex = (RedisMovedException)future.cause();
+                    readAsync(ex.getSlot(), asyncOperation, mainPromise, attempt);
+                    return;
+                }
 
                 if (future.isSuccess()) {
                     mainPromise.setSuccess(future.getNow());
@@ -339,13 +425,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        RedisPubSubConnection<K, V> conn = nextPubSubConnection();
+        int slot = -1;
+        RedisPubSubConnection<K, V> conn = nextPubSubConnection(slot);
 
         PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
         entry.tryAcquire();
         PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
         if (oldEntry != null) {
-            returnSubscribeConnection(entry);
+            returnSubscribeConnection(slot, entry);
             return oldEntry;
         }
 
@@ -385,13 +472,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
             }
 
-            RedisPubSubConnection<K, V> conn = nextPubSubConnection();
+            int slot = -1;
+            RedisPubSubConnection<K, V> conn = nextPubSubConnection(slot);
 
             PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
             entry.tryAcquire();
             PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
             if (oldEntry != null) {
-                returnSubscribeConnection(entry);
+                returnSubscribeConnection(slot, entry);
                 return oldEntry;
             }
             synchronized (entry) {
@@ -417,7 +505,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             public void operationComplete(Future future) throws Exception {
                 synchronized (entry) {
                     if (entry.tryClose()) {
-                        returnSubscribeConnection(entry);
+                        returnSubscribeConnection(-1, entry);
                     }
                 }
             }
@@ -425,8 +513,19 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return future;
     }
 
+    protected MasterSlaveEntry getEntry() {
+        return getEntry(0);
+    }
+
+    protected MasterSlaveEntry getEntry(int slot) {
+        if (slot == -1) {
+            slot = 0;
+        }
+        return entries.ceilingEntry(slot).getValue();
+    }
+
     protected void slaveDown(String host, int port) {
-        Collection<RedisPubSubConnection> allPubSubConnections = entry.slaveDown(host, port);
+        Collection<RedisPubSubConnection> allPubSubConnections = getEntry().slaveDown(host, port);
 
         // reattach listeners to other channels
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
@@ -455,11 +554,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void addSlave(String host, int port) {
-        entry.addSlave(host, port);
+        getEntry().addSlave(host, port);
     }
 
     protected void slaveUp(String host, int port) {
-        entry.slaveUp(host, port);
+        getEntry().slaveUp(host, port);
     }
 
     /**
@@ -469,37 +568,39 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
      *
      */
     protected void changeMaster(String host, int port) {
-        entry.changeMaster(host, port);
+        getEntry().changeMaster(host, port);
     }
 
-    protected <K, V> RedisConnection<K, V> connectionWriteOp() {
-        return entry.connectionWriteOp();
+    protected <K, V> RedisConnection<K, V> connectionWriteOp(int slot) {
+        return getEntry(slot).connectionWriteOp();
     }
 
     @Override
-    public <K, V> RedisConnection<K, V> connectionReadOp() {
-        return entry.connectionReadOp();
+    public <K, V> RedisConnection<K, V> connectionReadOp(int slot) {
+        return getEntry(slot).connectionReadOp();
     }
 
-    RedisPubSubConnection nextPubSubConnection() {
-        return entry.nextPubSubConnection();
+    RedisPubSubConnection nextPubSubConnection(int slot) {
+        return getEntry(slot).nextPubSubConnection();
     }
 
-    protected void returnSubscribeConnection(PubSubConnectionEntry entry) {
-        this.entry.returnSubscribeConnection(entry);
+    protected void returnSubscribeConnection(int slot, PubSubConnectionEntry entry) {
+        this.getEntry(slot).returnSubscribeConnection(entry);
     }
 
-    protected void releaseWrite(RedisConnection connection) {
-        entry.releaseWrite(connection);
+    protected void releaseWrite(int slot, RedisConnection connection) {
+        getEntry(slot).releaseWrite(connection);
     }
 
-    public void releaseRead(RedisConnection сonnection) {
-        entry.releaseRead(сonnection);
+    public void releaseRead(int slot, RedisConnection connection) {
+        getEntry(slot).releaseRead(connection);
     }
 
     @Override
     public void shutdown() {
-        entry.shutdown();
+        for (MasterSlaveEntry entry : entries.values()) {
+            entry.shutdown();
+        }
 
         group.shutdownGracefully().syncUninterruptibly();
     }

@@ -39,6 +39,7 @@ import org.redisson.core.RSortedSet;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisMovedException;
 
 /**
  *
@@ -130,6 +131,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 Class<?> clazz = Class.forName(className);
                 comparator = (Comparator<V>) clazz.newInstance();
             }
+        } catch (RedisMovedException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -273,7 +276,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             }
         });
     }
-    
+
     private V get(final int index) {
         return connectionManager.read(new ResultOperation<V, V>() {
             @Override
@@ -282,7 +285,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             }
         });
     }
-    
+
     @Override
     public Object[] toArray() {
         List<V> res = connectionManager.read(new ResultOperation<List<V>, V>() {
@@ -322,11 +325,11 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             }
         });
     }
-    
+
     public Future<Boolean> addAsync(final V value) {
         EventLoop loop = connectionManager.getGroup().next();
         final Promise<Boolean> promise = loop.newPromise();
-        
+
         loop.execute(new Runnable() {
             @Override
             public void run() {
@@ -338,7 +341,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 }
             }
         });
-        
+
         return promise;
     }
 
@@ -396,7 +399,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                     before = true;
                     pivot = connection.lindex(getName(), index);
                 }
-                
+
                 connection.multi();
                 if (index >= size()) {
                     connection.rpush(getName(), value);
@@ -464,7 +467,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     public Future<Boolean> removeAsync(final V value) {
         EventLoop loop = connectionManager.getGroup().next();
         final Promise<Boolean> promise = loop.newPromise();
-        
+
         loop.execute(new Runnable() {
             @Override
             public void run() {
@@ -476,10 +479,10 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 }
             }
         });
-        
+
         return promise;
     }
-    
+
     @Override
     public boolean remove(final Object value) {
         return connectionManager.write(new SyncOperation<V, Boolean>() {
@@ -498,7 +501,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 conn.unwatch();
                 return false;
             }
-            
+
             if (res.getIndex() == 0) {
                 conn.multi();
                 conn.lpop(getName());
@@ -506,7 +509,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                     return true;
                 }
             }
-            
+
             RedisConnection<Object, Object> сonnection = (RedisConnection<Object, Object>)conn;
             List<Object> tail = сonnection.lrange(getName(), res.getIndex() + 1, size());
             сonnection.multi();
@@ -642,7 +645,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                     return false;
                 }
                 connection.multi();
-                
+
                 String className = comparator.getClass().getName();
                 String comparatorSign = className + ":" + calcClassSign(className);
                 connection.set(getComparatorKeyName(), comparatorSign);

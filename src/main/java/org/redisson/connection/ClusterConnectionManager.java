@@ -45,7 +45,74 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private final List<RedisClient> nodeClients = new ArrayList<RedisClient>();
 
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
-        init(cfg, config);
+        init(config);
+
+        Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
+
+        for (URI addr : cfg.getNodeAddresses()) {
+            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
+            RedisAsyncConnection<String, String> connection = client.connectAsync();
+            String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
+            System.out.println(nodesValue);
+
+            List<ClusterNodeInfo> nodes = parse(nodesValue);
+            for (ClusterNodeInfo clusterNodeInfo : nodes) {
+                String id = clusterNodeInfo.getNodeId();
+                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                    id = clusterNodeInfo.getSlaveOf();
+                }
+                ClusterPartition partition = partitions.get(id);
+                if (partition == null) {
+                    partition = new ClusterPartition();
+                    partitions.put(id, partition);
+                }
+
+                if (clusterNodeInfo.getFlags().contains(Flag.FAIL)) {
+                    partition.setMasterFail(true);
+                }
+
+                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                    partition.addSlaveAddress(clusterNodeInfo.getAddress());
+                } else {
+                    partition.setEndSlot(clusterNodeInfo.getEndSlot());
+                    partition.setMasterAddress(clusterNodeInfo.getAddress());
+                }
+            }
+
+            for (ClusterPartition partition : partitions.values()) {
+                if (partition.isMasterFail()) {
+                    continue;
+                }
+
+                MasterSlaveServersConfig c = create(cfg);
+                log.info("master: {}", partition.getMasterAddress());
+                c.setMasterAddress(partition.getMasterAddress());
+                for (String slaveAddress : partition.getSlaveAddresses()) {
+                    log.info("slave: {}", slaveAddress);
+                    c.addSlaveAddress(slaveAddress);
+                }
+
+                MasterSlaveEntry entry = new MasterSlaveEntry(codec, group, c);
+                entries.put(partition.getEndSlot(), entry);
+            }
+
+            client.shutdown();
+            break;
+        }
+
+        this.config = create(cfg);
+    }
+
+    private MasterSlaveServersConfig create(ClusterServersConfig cfg) {
+        MasterSlaveServersConfig c = new MasterSlaveServersConfig();
+        c.setLoadBalancer(cfg.getLoadBalancer());
+        c.setPassword(cfg.getPassword());
+        c.setDatabase(cfg.getDatabase());
+        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
+        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
+        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
+        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        return c;
     }
 
     private List<ClusterNodeInfo> parse(String nodesResponse) {
@@ -82,60 +149,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return nodes;
     }
 
-    private void init(final ClusterServersConfig cfg, final Config config) {
-        init(config);
-
-        Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
-
-        final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
-        for (URI addr : cfg.getNodeAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
-            RedisAsyncConnection<String, String> connection = client.connectAsync();
-            String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
-            System.out.println(nodesValue);
-
-            List<ClusterNodeInfo> nodes = parse(nodesValue);
-            for (ClusterNodeInfo clusterNodeInfo : nodes) {
-                String id = clusterNodeInfo.getNodeId();
-                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
-                    id = clusterNodeInfo.getSlaveOf();
-                }
-                ClusterPartition partition = partitions.get(id);
-                if (partition == null) {
-                    partition = new ClusterPartition();
-                    partitions.put(id, partition);
-                }
-
-                if (clusterNodeInfo.getFlags().contains(Flag.FAIL)) {
-                    partition.setMasterFail(true);
-                }
-
-                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
-                    partition.addSlaveAddress(clusterNodeInfo.getAddress());
-                } else {
-                    partition.setStartSlot(clusterNodeInfo.getStartSlot());
-                    partition.setMasterAddress(clusterNodeInfo.getAddress());
-                }
-            }
-
-            for (ClusterPartition partition : partitions.values()) {
-                if (partition.isMasterFail()) {
-                    continue;
-                }
-                log.info("master: {}", partition.getMasterAddress());
-                c.setMasterAddress(partition.getMasterAddress());
-                for (String slaveAddress : partition.getSlaveAddresses()) {
-                    log.info("slave: {}", slaveAddress);
-                    c.addSlaveAddress(slaveAddress);
-                }
-            }
-
-            client.shutdown();
-            break;
-        }
-
-        init(c);
-
+    private void init(ClusterServersConfig cfg, Config config) {
 //        monitorMasterChange(cfg);
     }
 
