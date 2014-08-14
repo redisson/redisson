@@ -3,6 +3,7 @@
 package com.lambdaworks.redis.protocol;
 
 import com.lambdaworks.redis.RedisException;
+import com.lambdaworks.redis.RedisMovedException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Promise;
@@ -56,7 +57,7 @@ public class Command<K, V, T> {
     public void cancel() {
         promise.cancel(true);
     }
-    
+
     public void complete() {
         completeAmount--;
         if (completeAmount == 0) {
@@ -67,7 +68,13 @@ public class Command<K, V, T> {
             if (res instanceof RedisException) {
                 promise.setFailure((Exception)res);
             } if (output.hasError()) {
-                promise.setFailure(new RedisException(output.getError()));
+                if (output.getError().startsWith("MOVED")) {
+                    String[] parts = output.getError().split(" ");
+                    int slot = Integer.valueOf(parts[1]);
+                    promise.setFailure(new RedisMovedException(slot));
+                } else {
+                    promise.setFailure(new RedisException(output.getError()));
+                }
             } else {
                 promise.setSuccess((T)res);
             }

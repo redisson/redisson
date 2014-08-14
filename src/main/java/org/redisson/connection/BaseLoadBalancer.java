@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.redisson.MasterSlaveServersConfig;
 import org.redisson.misc.ReclosableLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +39,14 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     private RedisCodec codec;
 
-    private String password;
+    private MasterSlaveServersConfig config;
 
     private final ReclosableLatch clientsEmpty = new ReclosableLatch();
     final Queue<SubscribesConnectionEntry> clients = new ConcurrentLinkedQueue<SubscribesConnectionEntry>();
 
-    public void init(RedisCodec codec, String password) {
+    public void init(RedisCodec codec, MasterSlaveServersConfig config) {
         this.codec = codec;
-        this.password = password;
+        this.config = config;
     }
 
     public synchronized void add(SubscribesConnectionEntry entry) {
@@ -142,9 +143,13 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                         return conn;
                     }
                     conn = entry.getClient().connectPubSub(codec);
-                    if (password != null) {
-                        conn.auth(password);
+                    if (config.getPassword() != null) {
+                        conn.auth(config.getPassword());
                     }
+                    if (config.getDatabase() != 0) {
+                        conn.select(config.getDatabase());
+                    }
+
                     entry.registerSubscribeConnection(conn);
                     return conn;
                 } catch (RedisConnectionException e) {
@@ -183,9 +188,13 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 }
                 try {
                     conn = entry.getClient().connect(codec);
-                    if (password != null) {
-                        conn.auth(password);
+                    if (config.getPassword() != null) {
+                        conn.auth(config.getPassword());
                     }
+                    if (config.getDatabase() != 0) {
+                        conn.select(config.getDatabase());
+                    }
+
                     return conn;
                 } catch (RedisConnectionException e) {
                     entry.getConnectionsSemaphore().release();

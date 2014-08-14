@@ -15,12 +15,11 @@
  */
 package org.redisson.connection;
 
-import org.redisson.async.AsyncOperation;
-import org.redisson.async.SyncOperation;
-
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
+
+import org.redisson.async.AsyncOperation;
+import org.redisson.async.SyncOperation;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
@@ -34,24 +33,22 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 public interface ConnectionManager {
 
     <V> V get(Future<V> future);
-    
+
     <V, R> R read(SyncOperation<V, R> operation);
-    
+
     <V, R> R write(SyncOperation<V, R> operation);
-    
+
     <V, R> R write(AsyncOperation<V, R> asyncOperation);
-    
+
+    <V, T> Future<T> writeAllAsync(AsyncOperation<V, T> asyncOperation);
+
     <V, T> T read(AsyncOperation<V, T> asyncOperation);
-    
+
     <V, T> Future<T> readAsync(AsyncOperation<V, T> asyncOperation);
-    
+
     <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation);
-    
-    <T> FutureListener<T> createReleaseWriteListener(RedisConnection conn);
 
-    <T> FutureListener<T> createReleaseReadListener(RedisConnection conn);
-
-    <K, V> RedisConnection<K, V> connectionReadOp();
+    <K, V> RedisConnection<K, V> connectionReadOp(int slot);
 
     PubSubConnectionEntry getEntry(String channelName);
 
@@ -61,7 +58,7 @@ public interface ConnectionManager {
 
     Future unsubscribe(String channelName);
 
-    void releaseRead(RedisConnection сonnection);
+    void releaseRead(int slot, RedisConnection сonnection);
 
     void shutdown();
 

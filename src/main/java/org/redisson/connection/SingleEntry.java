@@ -37,7 +37,7 @@ public class SingleEntry extends MasterSlaveEntry {
 
     @Override
     public void setupMasterEntry(String host, int port) {
-        RedisClient masterClient = new RedisClient(group, host, port);
+        RedisClient masterClient = new RedisClient(group, host, port, config.getTimeout());
         masterEntry = new SubscribesConnectionEntry(masterClient, config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize());
     }
 
@@ -64,6 +64,9 @@ public class SingleEntry extends MasterSlaveEntry {
             conn = masterEntry.getClient().connectPubSub(codec);
             if (config.getPassword() != null) {
                 conn.auth(config.getPassword());
+            }
+            if (config.getDatabase() != 0) {
+                conn.select(config.getDatabase());
             }
             return conn;
         } catch (RedisConnectionException e) {

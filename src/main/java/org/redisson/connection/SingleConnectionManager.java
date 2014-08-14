@@ -25,6 +25,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
         newconfig.setPassword(cfg.getPassword());
+        newconfig.setDatabase(cfg.getDatabase());
         newconfig.setMasterAddress(addr);
         newconfig.setMasterConnectionPoolSize(cfg.getConnectionPoolSize());
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
@@ -37,7 +38,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
-        entry = new SingleEntry(codec, group, config);
+        SingleEntry entry = new SingleEntry(codec, group, config);
+        entries.put(Integer.MAX_VALUE, entry);
     }
 
 

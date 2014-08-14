@@ -18,7 +18,9 @@ package org.redisson.connection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,6 +29,7 @@ import org.redisson.ClusterServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.SentinelServersConfig;
+import org.redisson.connection.ClusterNodeInfo.Flag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,71 +42,114 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final List<RedisClient> nodes = new ArrayList<RedisClient>();
+    private final List<RedisClient> nodeClients = new ArrayList<RedisClient>();
 
-    public ClusterConnectionManager(final ClusterServersConfig cfg, Config config) {
-        init(cfg, config);
+    public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
+        init(config);
+
+        Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
+
+        for (URI addr : cfg.getNodeAddresses()) {
+            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
+            RedisAsyncConnection<String, String> connection = client.connectAsync();
+            String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
+            System.out.println(nodesValue);
+
+            List<ClusterNodeInfo> nodes = parse(nodesValue);
+            for (ClusterNodeInfo clusterNodeInfo : nodes) {
+                String id = clusterNodeInfo.getNodeId();
+                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                    id = clusterNodeInfo.getSlaveOf();
+                }
+                ClusterPartition partition = partitions.get(id);
+                if (partition == null) {
+                    partition = new ClusterPartition();
+                    partitions.put(id, partition);
+                }
+
+                if (clusterNodeInfo.getFlags().contains(Flag.FAIL)) {
+                    partition.setMasterFail(true);
+                }
+
+                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                    partition.addSlaveAddress(clusterNodeInfo.getAddress());
+                } else {
+                    partition.setEndSlot(clusterNodeInfo.getEndSlot());
+                    partition.setMasterAddress(clusterNodeInfo.getAddress());
+                }
+            }
+
+            for (ClusterPartition partition : partitions.values()) {
+                if (partition.isMasterFail()) {
+                    continue;
+                }
+
+                MasterSlaveServersConfig c = create(cfg);
+                log.info("master: {}", partition.getMasterAddress());
+                c.setMasterAddress(partition.getMasterAddress());
+                for (String slaveAddress : partition.getSlaveAddresses()) {
+                    log.info("slave: {}", slaveAddress);
+                    c.addSlaveAddress(slaveAddress);
+                }
+
+                MasterSlaveEntry entry = new MasterSlaveEntry(codec, group, c);
+                entries.put(partition.getEndSlot(), entry);
+            }
+
+            client.shutdown();
+            break;
+        }
+
+        this.config = create(cfg);
     }
 
-    private List<ClusterNode> parse(String nodesResponse) {
-        List<ClusterNode> nodes = new ArrayList<ClusterNode>();
+    private MasterSlaveServersConfig create(ClusterServersConfig cfg) {
+        MasterSlaveServersConfig c = new MasterSlaveServersConfig();
+        c.setLoadBalancer(cfg.getLoadBalancer());
+        c.setPassword(cfg.getPassword());
+        c.setDatabase(cfg.getDatabase());
+        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
+        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
+        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
+        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        return c;
+    }
+
+    private List<ClusterNodeInfo> parse(String nodesResponse) {
+        List<ClusterNodeInfo> nodes = new ArrayList<ClusterNodeInfo>();
         for (String nodeInfo : nodesResponse.split("\n")) {
-            ClusterNode node = new ClusterNode();
+            ClusterNodeInfo node = new ClusterNodeInfo();
             String[] params = nodeInfo.split(" ");
 
             String nodeId = params[0];
             node.setNodeId(nodeId);
 
             String addr = params[1];
-            node.setAddress(URI.create("//" + addr));
+            node.setAddress(addr);
 
             String flags = params[2];
             for (String flag : flags.split(",")) {
-                node.addFlag(ClusterNode.Flag.valueOf(flag.toUpperCase()));
+                node.addFlag(ClusterNodeInfo.Flag.valueOf(flag.toUpperCase()));
             }
 
             String slaveOf = params[3];
             if (!"-".equals(slaveOf)) {
                 node.setSlaveOf(slaveOf);
             }
+
+            if (params.length > 8) {
+                String slots = params[8];
+                String[] parts = slots.split("-");
+                node.setStartSlot(Integer.valueOf(parts[0]));
+                node.setEndSlot(Integer.valueOf(parts[1]));
+            }
+
             nodes.add(node);
         }
         return nodes;
     }
 
-    private void init(final ClusterServersConfig cfg, final Config config) {
-        init(config);
-
-        final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
-        for (URI addr : cfg.getNodeAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
-            RedisAsyncConnection<String, String> connection = client.connectAsync();
-            String nodes = connection.clusterNodes().awaitUninterruptibly().getNow();
-            parse(nodes);
-            System.out.println("nodes: " + nodes);
-
-//            // TODO async
-//            List<String> master = connection.getMasterAddrByKey(cfg.getMasterName()).awaitUninterruptibly().getNow();
-//            String masterHost = master.get(0) + ":" + master.get(1);
-//            c.setMasterAddress(masterHost);
-//            log.info("master: {}", masterHost);
-//            c.addSlaveAddress(masterHost);
-//
-//            // TODO async
-//            List<Map<String, String>> slaves = connection.slaves(cfg.getMasterName()).awaitUninterruptibly().getNow();
-//            for (Map<String, String> map : slaves) {
-//                String ip = map.get("ip");
-//                String port = map.get("port");
-//                log.info("slave: {}:{}", ip, port);
-//                c.addSlaveAddress(ip + ":" + port);
-//            }
-//
-            client.shutdown();
-            break;
-        }
-
-        init(c);
-
+    private void init(ClusterServersConfig cfg, Config config) {
 //        monitorMasterChange(cfg);
     }
 
@@ -113,8 +159,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
         for (final URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort());
-            nodes.add(client);
+            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
+            nodeClients.add(client);
 
             RedisPubSubConnection<String, String> pubsub = client.connectPubSub();
             pubsub.addListener(new RedisPubSubAdapter<String>() {
@@ -226,7 +272,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public void shutdown() {
-        for (RedisClient sentinel : nodes) {
+        for (RedisClient sentinel : nodeClients) {
             sentinel.shutdown();
         }
 

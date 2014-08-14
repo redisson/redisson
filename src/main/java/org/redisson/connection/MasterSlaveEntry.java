@@ -18,7 +18,9 @@ package org.redisson.connection;
 import io.netty.channel.EventLoopGroup;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.slf4j.Logger;
@@ -53,9 +55,12 @@ public class MasterSlaveEntry {
         this.config = config;
 
         slaveBalancer = config.getLoadBalancer();
-        slaveBalancer.init(codec, config.getPassword());
-        for (URI address : config.getSlaveAddresses()) {
-            RedisClient client = new RedisClient(group, address.getHost(), address.getPort());
+        slaveBalancer.init(codec, config);
+
+        List<URI> addresses = new ArrayList<URI>(config.getSlaveAddresses());
+        addresses.add(config.getMasterAddress());
+        for (URI address : addresses) {
+            RedisClient client = new RedisClient(group, address.getHost(), address.getPort(), config.getTimeout());
             SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                     config.getSlaveConnectionPoolSize(),
                     config.getSlaveSubscriptionConnectionPoolSize());
@@ -69,7 +74,7 @@ public class MasterSlaveEntry {
     }
 
     public void setupMasterEntry(String host, int port) {
-        RedisClient masterClient = new RedisClient(group, host, port);
+        RedisClient masterClient = new RedisClient(group, host, port, config.getTimeout());
         masterEntry = new ConnectionEntry(masterClient, config.getMasterConnectionPoolSize());
     }
 
@@ -80,7 +85,7 @@ public class MasterSlaveEntry {
     public void addSlave(String host, int port) {
         slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
 
-        RedisClient client = new RedisClient(group, host, port);
+        RedisClient client = new RedisClient(group, host, port, config.getTimeout());
         slaveBalancer.add(new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSlaveSubscriptionConnectionPoolSize()));
@@ -115,6 +120,9 @@ public class MasterSlaveEntry {
             conn = masterEntry.getClient().connect(codec);
             if (config.getPassword() != null) {
                 conn.auth(config.getPassword());
+            }
+            if (config.getDatabase() != 0) {
+                conn.select(config.getDatabase());
             }
             return conn;
         } catch (RedisConnectionException e) {

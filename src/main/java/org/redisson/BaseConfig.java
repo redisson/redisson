@@ -18,9 +18,21 @@ package org.redisson;
 
 class BaseConfig<T extends BaseConfig<T>> {
 
+    /**
+     * Redis operation execution timeout.
+     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
+     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     */
+    private int timeout = 60000;
+
     private int retryAttempts = 5;
 
     private int retryInterval = 1000;
+
+    /**
+     * Database index used for Redis connection
+     */
+    private int database = 0;
 
     /**
      * Password for Redis authentication. Should be null if not needed
@@ -40,6 +52,8 @@ class BaseConfig<T extends BaseConfig<T>> {
         setSubscriptionsPerConnection(config.getSubscriptionsPerConnection());
         setRetryAttempts(config.getRetryAttempts());
         setRetryInterval(config.getRetryInterval());
+        setDatabase(config.getDatabase());
+        setTimeout(config.getTimeout());
     }
 
     /**
@@ -79,8 +93,9 @@ class BaseConfig<T extends BaseConfig<T>> {
      *
      * @param retryAttempts
      */
-    public void setRetryAttempts(int retryAttempts) {
+    public T setRetryAttempts(int retryAttempts) {
         this.retryAttempts = retryAttempts;
+        return (T) this;
     }
     public int getRetryAttempts() {
         return retryAttempts;
@@ -93,11 +108,41 @@ class BaseConfig<T extends BaseConfig<T>> {
      *
      * @param retryInterval - time in milliseconds
      */
-    public void setRetryInterval(int retryInterval) {
+    public T setRetryInterval(int retryInterval) {
         this.retryInterval = retryInterval;
+        return (T) this;
     }
     public int getRetryInterval() {
         return retryInterval;
+    }
+
+    /**
+     * Database index used for Redis connection
+     * Default is <code>0</code>
+     *
+     * @param database
+     */
+    public T setDatabase(int database) {
+        this.database = database;
+        return (T) this;
+    }
+    public int getDatabase() {
+        return database;
+    }
+
+    /**
+     * Redis operation execution timeout.
+     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
+     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     *
+     * @param timeout in milliseconds
+     */
+    public T setTimeout(int timeout) {
+        this.timeout = timeout;
+        return (T) this;
+    }
+    public int getTimeout() {
+        return timeout;
     }
 
 }
