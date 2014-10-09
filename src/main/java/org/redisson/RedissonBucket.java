@@ -77,4 +77,19 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         });
     }
 
+    @Override
+    public boolean exists() {
+        return connectionManager.get(existsAsync());
+    }
+
+    @Override
+    public Future<Boolean> existsAsync() {
+        return connectionManager.readAsync(new ResultOperation<Boolean, V>() {
+            @Override
+            public Future<Boolean> execute(RedisAsyncConnection<Object, V> async) {
+                return async.exists(getName());
+            }
+        });
+    }
+
 }

@@ -25,4 +25,31 @@ public class RedissonBucketTest extends BaseTest {
         Assert.assertNull(bucket.get());
     }
 
+
+    @Test
+    public void testSetExist() {
+        RBucket<String> bucket = redisson.getBucket("test");
+        Assert.assertNull(bucket.get());
+        String value = "somevalue";
+        bucket.set(value);
+        Assert.assertEquals(value, bucket.get());
+
+        Assert.assertTrue(bucket.exists());
+    }
+
+    @Test
+    public void testSetDeleteNotExist() {
+        RBucket<String> bucket = redisson.getBucket("test");
+        Assert.assertNull(bucket.get());
+        String value = "somevalue";
+        bucket.set(value);
+        Assert.assertEquals(value, bucket.get());
+
+        Assert.assertTrue(bucket.exists());
+
+        bucket.delete();
+
+        Assert.assertFalse(bucket.exists());
+    }
+
 }

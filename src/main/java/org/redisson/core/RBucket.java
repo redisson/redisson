@@ -40,4 +40,7 @@ public interface RBucket<V> extends RExpirable {
 
     Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
 
+    boolean exists();
+
+    Future<Boolean> existsAsync();
 }
