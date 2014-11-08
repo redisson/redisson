@@ -34,7 +34,7 @@ public class RedissonLockEntry {
     
     public RedissonLockEntry(Promise<Boolean> promise) {
         super();
-        this.latch = new Semaphore(1);
+        this.latch = new Semaphore(0);
         this.promise = promise;
     }
     
