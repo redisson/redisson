@@ -33,7 +33,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
     public void testExpire() throws InterruptedException {
         RLock lock = redisson.getLock("lock");
         lock.lock(2, TimeUnit.SECONDS);
-        
+
         final long startTime = System.currentTimeMillis();
         final CountDownLatch latch = new CountDownLatch(1);
         new Thread() {
@@ -41,7 +41,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 RLock lock1 = redisson.getLock("lock");
                 lock1.lock();
                 long spendTime = System.currentTimeMillis() - startTime;
-                Assert.assertTrue(spendTime < 2005);
+                Assert.assertTrue(spendTime < 2010);
                 lock1.unlock();
                 latch.countDown();
             };
@@ -51,7 +51,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         lock.unlock();
     }
-    
+
     @Test
     public void testGetHoldCount() {
         RLock lock = redisson.getLock("lock");

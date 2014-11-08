@@ -178,7 +178,8 @@ public class RedissonLock extends RedissonObject implements RLock {
 
             @Override
             public void subscribed(String channel, long count) {
-                if (getChannelName().equals(channel)) {
+                if (getChannelName().equals(channel)
+                        && !value.getPromise().isSuccess()) {
                     value.getPromise().setSuccess(true);
                 }
             }
