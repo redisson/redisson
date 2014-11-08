@@ -301,12 +301,17 @@ public class RedissonLock extends RedissonObject implements RLock {
                 if ("OK".equals(res)) {
                     return null;
                 } else {
+                    connection.watch(getName());
                     LockValue lock = (LockValue) connection.get(getName());
                     if (lock != null && lock.equals(currentLock)) {
                         lock.incCounter();
+                        connection.multi();
                         connection.psetex(getName(), time, lock);
-                        return null;
+                        if (connection.exec().size() == 1) {
+                            return null;
+                        }
                     }
+                    connection.unwatch();
 
                     Long ttl = connection.pttl(getName());
                     return ttl;
