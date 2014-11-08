@@ -274,12 +274,17 @@ public class RedissonLock extends RedissonObject implements RLock {
             public Long execute(RedisConnection<Object, LockValue> connection) {
                 Boolean res = connection.setnx(getName(), currentLock);
                 if (!res) {
+                    connection.watch(getName());
                     LockValue lock = (LockValue) connection.get(getName());
                     if (lock != null && lock.equals(currentLock)) {
                         lock.incCounter();
+                        connection.multi();
                         connection.set(getName(), lock);
-                        return null;
+                        if (connection.exec().size() == 1) {
+                            return null;
+                        }
                     }
+                    connection.unwatch();
 
                     Long ttl = connection.pttl(getName());
                     return ttl;

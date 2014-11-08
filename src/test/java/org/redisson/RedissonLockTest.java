@@ -41,7 +41,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 RLock lock1 = redisson.getLock("lock");
                 lock1.lock();
                 long spendTime = System.currentTimeMillis() - startTime;
-                Assert.assertTrue(spendTime < 2010);
+                Assert.assertTrue(spendTime < 2020);
                 lock1.unlock();
                 latch.countDown();
             };
