@@ -16,6 +16,7 @@
 package org.redisson.codec;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -40,13 +41,13 @@ public class JsonJacksonCodec implements RedissonCodec {
     private ObjectMapper mapObjectMapper = new ObjectMapper();
 
     public JsonJacksonCodec() {
-        createObjectMapper(objectMapper);
+        init(objectMapper);
         TypeResolverBuilder<?> typer = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL);
         typer.init(JsonTypeInfo.Id.CLASS, null);
         typer.inclusion(JsonTypeInfo.As.PROPERTY);
         objectMapper.setDefaultTyping(typer);
 
-        createObjectMapper(mapObjectMapper);
+        init(mapObjectMapper);
         // type info inclusion
         TypeResolverBuilder<?> mapTyper = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
             public boolean useForType(JavaType t)
@@ -79,7 +80,7 @@ public class JsonJacksonCodec implements RedissonCodec {
         mapObjectMapper.setDefaultTyping(mapTyper);
     }
 
-    private void createObjectMapper(ObjectMapper objectMapper) {
+    private void init(ObjectMapper objectMapper) {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
                                             .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
@@ -93,7 +94,7 @@ public class JsonJacksonCodec implements RedissonCodec {
 
     @Override
     public Object decodeKey(ByteBuffer bytes) {
-        return decode(bytes);
+        return new String(bytes.array(), Charset.forName("ASCII"));
     }
 
     @Override
@@ -111,7 +112,7 @@ public class JsonJacksonCodec implements RedissonCodec {
 
     @Override
     public byte[] encodeKey(Object key) {
-        return encodeValue(key);
+        return key.toString().getBytes(Charset.forName("ASCII"));
     }
 
     @Override
