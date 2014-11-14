@@ -100,11 +100,13 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
         };
 
-        connectionManager.subscribe(listener, getChannelName());
+        synchronized (connectionManager) {
+            connectionManager.subscribe(listener, getChannelName());
+        }
         return newPromise;
     }
 
-    private void release() {
+    private void unsubscribe() {
         while (true) {
             RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
             if (entry == null) {
@@ -115,8 +117,10 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                 if (newEntry.isFree()
                         && ENTRIES.remove(getEntryName(), newEntry)) {
-                    Future future = connectionManager.unsubscribe(getChannelName());
-                    future.awaitUninterruptibly();
+                    synchronized (connectionManager) {
+                        Future future = connectionManager.unsubscribe(getChannelName());
+                        future.awaitUninterruptibly();
+                    }
                 }
                 return;
             }
@@ -151,7 +155,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 }
             }
         } finally {
-            release();
+            unsubscribe();
         }
     }
 
@@ -182,7 +186,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
             return true;
         } finally {
-            release();
+            unsubscribe();
         }
     }
 

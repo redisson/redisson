@@ -129,8 +129,10 @@ public class RedissonLock extends RedissonObject implements RLock {
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                 if (newEntry.isFree()
                         && ENTRIES.remove(getEntryName(), newEntry)) {
-                    Future future = connectionManager.unsubscribe(getChannelName());
-                    future.awaitUninterruptibly();
+                    synchronized (connectionManager) {
+                        Future future = connectionManager.unsubscribe(getChannelName());
+                        future.awaitUninterruptibly();
+                    }
                 }
                 return;
             }
@@ -193,7 +195,9 @@ public class RedissonLock extends RedissonObject implements RLock {
 
         };
 
-        connectionManager.subscribe(listener, getChannelName());
+        synchronized (connectionManager) {
+            connectionManager.subscribe(listener, getChannelName());
+        }
         return newPromise;
     }
 
@@ -238,6 +242,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 } else {
                     ttl = tryLockInner();
                 }
+                // lock acquired
                 if (ttl == null) {
                     break;
                 }
@@ -336,6 +341,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 } else {
                     ttl = tryLockInner();
                 }
+                // lock acquired
                 if (ttl == null) {
                     break;
                 }
