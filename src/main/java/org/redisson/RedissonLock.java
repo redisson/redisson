@@ -233,10 +233,21 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
-        boolean subscribed = false;
+        Long ttl;
+        if (leaseTime != -1) {
+            ttl = tryLockInner(leaseTime, unit);
+        } else {
+            ttl = tryLockInner();
+        }
+        // lock acquired
+        if (ttl == null) {
+            return;
+        }
+
+        subscribe().awaitUninterruptibly();
+
         try {
             while (true) {
-                Long ttl;
                 if (leaseTime != -1) {
                     ttl = tryLockInner(leaseTime, unit);
                 } else {
@@ -247,8 +258,6 @@ public class RedissonLock extends RedissonObject implements RLock {
                     break;
                 }
 
-                subscribe().awaitUninterruptibly();
-                subscribed = true;
                 // waiting for message
                 RedissonLockEntry entry = ENTRIES.get(getEntryName());
                 if (ttl >= 0) {
@@ -258,9 +267,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 }
             }
         } finally {
-            if (subscribed) {
-                unsubscribe();
-            }
+            unsubscribe();
         }
     }
 
@@ -332,10 +339,23 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         long time = unit.toMillis(waitTime);
-        boolean subscribed = false;
+        Long ttl;
+        if (leaseTime != -1) {
+            ttl = tryLockInner(leaseTime, unit);
+        } else {
+            ttl = tryLockInner();
+        }
+        // lock acquired
+        if (ttl == null) {
+            return true;
+        }
+
+        if (!subscribe().awaitUninterruptibly(time, unit)) {
+            return false;
+        }
+
         try {
             while (true) {
-                Long ttl;
                 if (leaseTime != -1) {
                     ttl = tryLockInner(leaseTime, unit);
                 } else {
@@ -350,10 +370,6 @@ public class RedissonLock extends RedissonObject implements RLock {
                     return false;
                 }
 
-                if (!subscribe().awaitUninterruptibly(time, unit)) {
-                    return false;
-                }
-                subscribed = true;
                 // waiting for message
                 long current = System.currentTimeMillis();
                 RedissonLockEntry entry = ENTRIES.get(getEntryName());
@@ -369,9 +385,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             }
             return true;
         } finally {
-            if (subscribed) {
-                unsubscribe();
-            }
+            unsubscribe();
         }
     }
 
