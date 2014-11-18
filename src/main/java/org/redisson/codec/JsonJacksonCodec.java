@@ -80,7 +80,7 @@ public class JsonJacksonCodec implements RedissonCodec {
         mapObjectMapper.setDefaultTyping(mapTyper);
     }
 
-    private void init(ObjectMapper objectMapper) {
+    protected void init(ObjectMapper objectMapper) {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
                                             .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
