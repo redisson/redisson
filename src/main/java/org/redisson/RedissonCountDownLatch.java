@@ -52,7 +52,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     private final UUID id;
 
-    RedissonCountDownLatch(ConnectionManager connectionManager, String name, UUID id) {
+    protected RedissonCountDownLatch(ConnectionManager connectionManager, String name, UUID id) {
         super(connectionManager, name);
         this.id = id;
     }

@@ -44,7 +44,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     private int batchSize = 50;
 
-    RedissonList(ConnectionManager connectionManager, String name) {
+    protected RedissonList(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
     }
 
@@ -183,7 +183,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 }
                 return result;
             }
-            
+
         });
     }
 
@@ -245,14 +245,14 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public V set(final int index, final V element) {
         checkIndex(index);
-        
+
         return connectionManager.write(new SyncOperation<V, V>() {
             @Override
             public V execute(RedisConnection<Object, V> conn) {
                 while (true) {
                     conn.watch(getName());
                     V prev = (V) conn.lindex(getName(), index);
-                    
+
                     conn.multi();
                     conn.lset(getName(), index, element);
                     if (conn.exec().size() == 1) {
@@ -293,7 +293,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                     conn.watch(getName());
                     V prev = (V) conn.lindex(getName(), index);
                     List<Object> tail = conn.lrange(getName(), index + 1, size());
-                    
+
                     conn.multi();
                     conn.ltrim(getName(), 0, index - 1);
                     conn.rpush(getName(), tail.toArray());

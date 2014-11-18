@@ -113,7 +113,7 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = new ConcurrentHashMap<String, RedissonLockEntry>();
 
-    RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
+    protected RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
         super(connectionManager, name);
         this.id = id;
     }
@@ -131,6 +131,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 if (newEntry.isFree()
                         && ENTRIES.remove(getEntryName(), newEntry)) {
                     synchronized (ENTRIES) {
+                        // maybe added during subscription
                         if (!ENTRIES.containsKey(getEntryName())) {
                             connectionManager.unsubscribe(getChannelName());
                         }

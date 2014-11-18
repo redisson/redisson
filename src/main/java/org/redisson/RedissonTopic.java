@@ -34,7 +34,7 @@ import com.lambdaworks.redis.RedisAsyncConnection;
  */
 public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
-    RedissonTopic(ConnectionManager connectionManager, String name) {
+    protected RedissonTopic(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
     }
 

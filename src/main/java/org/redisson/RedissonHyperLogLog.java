@@ -27,7 +27,7 @@ import com.lambdaworks.redis.RedisAsyncConnection;
 
 public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogLog<V> {
 
-    RedissonHyperLogLog(ConnectionManager connectionManager, String name) {
+    protected RedissonHyperLogLog(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
     }
 

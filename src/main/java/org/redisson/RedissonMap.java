@@ -51,7 +51,7 @@ import com.lambdaworks.redis.output.MapScanResult;
 //TODO implement watching by keys instead of map name
 public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
-    RedissonMap(ConnectionManager connectionManager, String name) {
+    protected RedissonMap(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
     }
 

@@ -37,7 +37,7 @@ import com.lambdaworks.redis.RedisAsyncConnection;
  */
 public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
-    RedissonDeque(ConnectionManager connectionManager, String name) {
+    protected RedissonDeque(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
     }
 

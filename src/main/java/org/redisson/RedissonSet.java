@@ -41,7 +41,7 @@ import com.lambdaworks.redis.output.ListScanResult;
  */
 public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
-    RedissonSet(ConnectionManager connectionManager, String name) {
+    protected RedissonSet(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
     }
 
@@ -78,14 +78,14 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
             }
         });
     }
-    
+
     @Override
     public Iterator<V> iterator() {
         return new Iterator<V>() {
 
             private Iterator<V> iter;
             private Long iterPos;
-            
+
             private boolean removeExecuted;
             private V value;
 
@@ -156,7 +156,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     public boolean add(final V e) {
         return connectionManager.get(addAsync(e));
     }
-    
+
     @Override
     public Future<Boolean> addAsync(final V e) {
         return connectionManager.writeAsync(new AsyncOperation<V, Boolean>() {

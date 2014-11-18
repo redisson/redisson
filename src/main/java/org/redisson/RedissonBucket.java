@@ -28,7 +28,7 @@ import com.lambdaworks.redis.RedisAsyncConnection;
 
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
-    RedissonBucket(ConnectionManager connectionManager, String name) {
+    protected RedissonBucket(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
     }
 

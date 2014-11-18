@@ -33,7 +33,7 @@ import com.lambdaworks.redis.RedisConnection;
  */
 public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong {
 
-    RedissonAtomicLong(ConnectionManager connectionManager, String name) {
+    protected RedissonAtomicLong(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
 
         init();
