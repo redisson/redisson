@@ -450,6 +450,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public <K, V> PubSubConnectionEntry subscribeOnce(RedisPubSubAdapter<V> listener, String channelName) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
+            сonnEntry.subscribe(listener, channelName);
             return сonnEntry;
         }
 
