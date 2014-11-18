@@ -20,15 +20,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.redisson.connection.LoadBalancer;
-import org.redisson.connection.RoundRobinLoadBalancer;
-
-public class MasterSlaveServersConfig extends BaseConfig<MasterSlaveServersConfig> {
-
-    /**
-     * Сonnection load balancer for multiple Redis slave servers
-     */
-    private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
+public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<MasterSlaveServersConfig> {
 
     /**
      * Redis slave servers addresses
@@ -39,21 +31,6 @@ public class MasterSlaveServersConfig extends BaseConfig<MasterSlaveServersConfi
      * Redis master server address
      */
     private URI masterAddress;
-
-    /**
-     * Redis 'slave' servers subscription (pub/sub) connection pool size for <b>each</b> slave node
-     */
-    private int slaveSubscriptionConnectionPoolSize = 25;
-
-    /**
-     * Redis 'slave' servers connection pool size for <b>each</b> slave node
-     */
-    private int slaveConnectionPoolSize = 100;
-
-    /**
-     * Redis 'master' server connection pool size
-     */
-    private int masterConnectionPoolSize = 100;
 
     public MasterSlaveServersConfig() {
     }
@@ -106,69 +83,6 @@ public class MasterSlaveServersConfig extends BaseConfig<MasterSlaveServersConfi
     }
     void setSlaveAddresses(List<URI> readAddresses) {
         this.slaveAddresses = readAddresses;
-    }
-
-    /**
-     * Redis 'slave' servers connection pool size for <b>each</b> slave node
-     * Default is 100
-     *
-     * @param slaveConnectionPoolSize
-     * @return
-     */
-    public MasterSlaveServersConfig setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
-        this.slaveConnectionPoolSize = slaveConnectionPoolSize;
-        return this;
-    }
-    public int getSlaveConnectionPoolSize() {
-        return slaveConnectionPoolSize;
-    }
-
-    /**
-     * Redis 'master' server connection pool size
-     * Default is 100
-     *
-     * @param masterConnectionPoolSize
-     * @return
-     */
-    public MasterSlaveServersConfig setMasterConnectionPoolSize(int masterConnectionPoolSize) {
-        this.masterConnectionPoolSize = masterConnectionPoolSize;
-        return this;
-    }
-    public int getMasterConnectionPoolSize() {
-        return masterConnectionPoolSize;
-    }
-
-    /**
-     * Сonnection load balancer to multiple Redis slave servers.
-     * Uses Round-robin algorithm by default
-     *
-     * @param loadBalancer
-     * @return
-     *
-     * @see org.redisson.connection.RoundRobinLoadBalancer
-     * @see org.redisson.connection.BaseLoadBalancer
-     */
-    public MasterSlaveServersConfig setLoadBalancer(LoadBalancer loadBalancer) {
-        this.loadBalancer = loadBalancer;
-        return this;
-    }
-    public LoadBalancer getLoadBalancer() {
-        return loadBalancer;
-    }
-
-    /**
-     * Redis 'slave' servers subscription connection pool size for <b>each</b> slave node
-     * Default is 25
-     *
-     * @param slaveSubscriptionConnectionPoolSize
-     * @return
-     */
-    public MasterSlaveServersConfig setSlaveSubscriptionConnectionPoolSize(int slaveSubscriptionConnectionPoolSize) {
-        this.slaveSubscriptionConnectionPoolSize = slaveSubscriptionConnectionPoolSize;
-        return this;
-    }
-    public int getSlaveSubscriptionConnectionPoolSize() {
-        return slaveSubscriptionConnectionPoolSize;
     }
 
 }
