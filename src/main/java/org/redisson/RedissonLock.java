@@ -124,14 +124,16 @@ public class RedissonLock extends RedissonObject implements RLock {
             if (entry == null) {
                 return;
             }
+
             RedissonLockEntry newEntry = new RedissonLockEntry(entry);
             newEntry.release();
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                 if (newEntry.isFree()
                         && ENTRIES.remove(getEntryName(), newEntry)) {
-                    synchronized (connectionManager) {
-                        Future future = connectionManager.unsubscribe(getChannelName());
-                        future.awaitUninterruptibly();
+                    synchronized (ENTRIES) {
+                        if (!ENTRIES.containsKey(getEntryName())) {
+                            connectionManager.unsubscribe(getChannelName());
+                        }
                     }
                 }
                 return;
@@ -146,14 +148,14 @@ public class RedissonLock extends RedissonObject implements RLock {
     private Promise<Boolean> aquire() {
         while (true) {
             RedissonLockEntry entry = ENTRIES.get(getEntryName());
-            if (entry != null) {
-                RedissonLockEntry newEntry = new RedissonLockEntry(entry);
-                newEntry.aquire();
-                if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
-                    return newEntry.getPromise();
-                }
-            } else {
+            if (entry == null) {
                 return null;
+            }
+
+            RedissonLockEntry newEntry = new RedissonLockEntry(entry);
+            newEntry.aquire();
+            if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
+                return newEntry.getPromise();
             }
         }
     }
@@ -195,8 +197,8 @@ public class RedissonLock extends RedissonObject implements RLock {
 
         };
 
-        synchronized (connectionManager) {
-            connectionManager.subscribe(listener, getChannelName());
+        synchronized (ENTRIES) {
+            connectionManager.subscribeOnce(listener, getChannelName());
         }
         return newPromise;
     }

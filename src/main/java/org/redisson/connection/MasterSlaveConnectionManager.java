@@ -447,49 +447,49 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName) {
+    public <K, V> PubSubConnectionEntry subscribeOnce(RedisPubSubAdapter<V> listener, String channelName) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
             return сonnEntry;
         }
 
-            Set<PubSubConnectionEntry> entries = new HashSet<PubSubConnectionEntry>(name2PubSubConnection.values());
-            for (PubSubConnectionEntry entry : entries) {
-                if (entry.tryAcquire()) {
-                    PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-                    if (oldEntry != null) {
-                        entry.release();
-                        return oldEntry;
-                    }
-                    synchronized (entry) {
-                        if (!entry.isActive()) {
-                            entry.release();
-                            return subscribe(listener, channelName);
-                        }
-                        entry.subscribe(listener, channelName);
-                        return entry;
-                    }
-                }
-            }
-
-            int slot = -1;
-            RedisPubSubConnection<K, V> conn = nextPubSubConnection(slot);
-
-            PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-            entry.tryAcquire();
-            PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-            if (oldEntry != null) {
-                returnSubscribeConnection(slot, entry);
-                return oldEntry;
-            }
-            synchronized (entry) {
-                if (!entry.isActive()) {
+        Set<PubSubConnectionEntry> entries = new HashSet<PubSubConnectionEntry>(name2PubSubConnection.values());
+        for (PubSubConnectionEntry entry : entries) {
+            if (entry.tryAcquire()) {
+                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+                if (oldEntry != null) {
                     entry.release();
-                    return subscribe(listener, channelName);
+                    return oldEntry;
                 }
-                entry.subscribe(listener, channelName);
-                return entry;
+                synchronized (entry) {
+                    if (!entry.isActive()) {
+                        entry.release();
+                        return subscribeOnce(listener, channelName);
+                    }
+                    entry.subscribe(listener, channelName);
+                    return entry;
+                }
             }
+        }
+
+        int slot = -1;
+        RedisPubSubConnection<K, V> conn = nextPubSubConnection(slot);
+
+        PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
+        entry.tryAcquire();
+        PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+        if (oldEntry != null) {
+            returnSubscribeConnection(slot, entry);
+            return oldEntry;
+        }
+        synchronized (entry) {
+            if (!entry.isActive()) {
+                entry.release();
+                return subscribeOnce(listener, channelName);
+            }
+            entry.subscribe(listener, channelName);
+            return entry;
+        }
     }
 
     @Override
