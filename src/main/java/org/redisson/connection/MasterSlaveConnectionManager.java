@@ -601,7 +601,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
-
+        timer.stop();
         group.shutdownGracefully().syncUninterruptibly();
     }
 
