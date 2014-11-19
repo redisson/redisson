@@ -38,6 +38,10 @@ Features
 * Supports OSGi  
 * With over 110 unit tests  
 
+Projects using Redisson
+================================
+Monits: [monits.com](https://monits.com/)  
+Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
 
 Recent Releases
 ================================
