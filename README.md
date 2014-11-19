@@ -42,6 +42,7 @@ Projects using Redisson
 ================================
 Monits: [monits.com](https://monits.com/)  
 Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
+Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
 
 Recent Releases
 ================================
