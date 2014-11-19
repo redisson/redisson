@@ -47,8 +47,8 @@ Recent Releases
 Feature - `RBucket.exists` and `RBucket.existsAsync` methods added  
 Feature - `RMap.addAndGet` method added  
 Feature -  database index via `database` and operation timeout via `timeout` config params added  
-Improvement - Redisson now uses `RedissonClient` interface  
 Improvement - `RLock` optimization  
+__Breaking api change__ - Redisson now uses `RedissonClient` interface  
 Fixed - NPE in `CommandOutput`  
 Fixed - unsubscribing during `RTopic.removeListener`  
 Fixed - all object names encoding, no more quotes  
