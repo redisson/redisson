@@ -40,7 +40,7 @@ Features
 
 Projects using Redisson
 ================================
-Monits: [monits.com](https://monits.com/)  
+Monits: [monits.com](http://monits.com/)  
 Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
 Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
 
