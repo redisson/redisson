@@ -451,6 +451,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
             сonnEntry.addListener(channelName, listener);
+            // notify subscribed manually
+            listener.subscribed(channelName, 1);
+            listener.psubscribed(channelName, 1);
             return сonnEntry;
         }
 
