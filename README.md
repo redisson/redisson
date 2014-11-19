@@ -43,6 +43,19 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####18-Nov-2014 - version 1.1.6 released
+Feature - `RBucket.exists` and `RBucket.existsAsync` methods added  
+Feature - `RMap.addAndGet` method added  
+Feature -  database index via `database` and operation timeout via `timeout` config params added  
+Improvement - Redisson now uses `RedissonClient` interface  
+Improvement - `RLock` optimization  
+Fixed - NPE in `CommandOutput`  
+Fixed - unsubscribing during `RTopic.removeListener`  
+Fixed - all object names encoding, no more quotes  
+Fixed - HashedWheelTimer shutdown  
+Fixed - `RLock` race conditions (thanks to jsotuyod and AndrewKolpakov)  
+Fixed - `RCountDownLatch` race conditions  
+
 ####23-Jul-2014 - version 1.1.5 released
 Feature - operations auto-retry. `retryAttempts` and `retryInterval` params added for each connection type  
 Feature - `RMap.filterEntries`, `RMap.getAll`, `RMap.filterKeys`, `RMap.filterValues` methods added  
