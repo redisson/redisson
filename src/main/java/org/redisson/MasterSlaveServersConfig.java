@@ -39,10 +39,7 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
         super(config);
         setLoadBalancer(config.getLoadBalancer());
         setMasterAddress(config.getMasterAddress());
-        setMasterConnectionPoolSize(config.getMasterConnectionPoolSize());
         setSlaveAddresses(config.getSlaveAddresses());
-        setSlaveConnectionPoolSize(config.getSlaveConnectionPoolSize());
-        setSlaveSubscriptionConnectionPoolSize(config.getSlaveSubscriptionConnectionPoolSize());
     }
 
     /**
