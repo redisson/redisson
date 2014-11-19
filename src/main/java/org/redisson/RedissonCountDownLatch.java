@@ -100,7 +100,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
         };
 
-        synchronized (connectionManager) {
+        synchronized (ENTRIES) {
             connectionManager.subscribeOnce(listener, getChannelName());
         }
         return newPromise;
@@ -117,9 +117,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
                 if (newEntry.isFree()
                         && ENTRIES.remove(getEntryName(), newEntry)) {
-                    synchronized (connectionManager) {
-                        Future future = connectionManager.unsubscribe(getChannelName());
-                        future.awaitUninterruptibly();
+                    synchronized (ENTRIES) {
+                        // maybe added during subscription
+                        if (!ENTRIES.containsKey(getEntryName())) {
+                            connectionManager.unsubscribe(getChannelName());
+                        }
                     }
                 }
                 return;
