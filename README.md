@@ -131,5 +131,5 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>1.1.5</version>
+       <version>1.1.6</version>
     </dependency>
