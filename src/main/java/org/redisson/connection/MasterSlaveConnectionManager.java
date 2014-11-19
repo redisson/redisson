@@ -447,13 +447,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public <K, V> PubSubConnectionEntry subscribeOnce(RedisPubSubAdapter<V> listener, String channelName) {
+    public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
-            сonnEntry.addListener(channelName, listener);
-            // notify subscribed manually
-            listener.subscribed(channelName, 1);
-            listener.psubscribed(channelName, 1);
+            сonnEntry.subscribe(listener, channelName);
             return сonnEntry;
         }
 
@@ -468,7 +465,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 synchronized (entry) {
                     if (!entry.isActive()) {
                         entry.release();
-                        return subscribeOnce(listener, channelName);
+                        return subscribe(listener, channelName);
                     }
                     entry.subscribe(listener, channelName);
                     return entry;
@@ -489,7 +486,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         synchronized (entry) {
             if (!entry.isActive()) {
                 entry.release();
-                return subscribeOnce(listener, channelName);
+                return subscribe(listener, channelName);
             }
             entry.subscribe(listener, channelName);
             return entry;

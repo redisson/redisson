@@ -54,7 +54,7 @@ public interface ConnectionManager {
 
     <K, V> PubSubConnectionEntry subscribe(String channelName);
 
-    <K, V> PubSubConnectionEntry subscribeOnce(RedisPubSubAdapter<V> listener, String channelName);
+    <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName);
 
     Future unsubscribe(String channelName);
 

@@ -199,7 +199,7 @@ public class RedissonLock extends RedissonObject implements RLock {
         };
 
         synchronized (ENTRIES) {
-            connectionManager.subscribeOnce(listener, getChannelName());
+            connectionManager.subscribe(listener, getChannelName());
         }
         return newPromise;
     }

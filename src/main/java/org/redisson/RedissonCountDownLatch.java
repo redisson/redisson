@@ -101,7 +101,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         };
 
         synchronized (ENTRIES) {
-            connectionManager.subscribeOnce(listener, getChannelName());
+            connectionManager.subscribe(listener, getChannelName());
         }
         return newPromise;
     }
