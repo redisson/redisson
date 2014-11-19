@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class BaseConcurrentTest {
 
     protected void testMultiInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
 
         final Map<Integer, Redisson> instances = new HashMap<Integer, Redisson>();
         for (int i = 0; i < iterations; i++) {
