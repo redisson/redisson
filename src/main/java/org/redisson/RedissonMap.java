@@ -19,13 +19,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 import org.redisson.async.AsyncOperation;
 import org.redisson.async.OperationListener;
@@ -93,6 +87,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Map<K, V> getAll(final Set<K> keys) {
+        if (keys.size() == 0) {
+            return Collections.emptyMap();
+        }
         List<V> list = connectionManager.read(new ResultOperation<List<V>, V>() {
             @Override
             protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
@@ -104,6 +101,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         int index = 0;
         for (K key : keys) {
             V value = list.get(index);
+            if (value == null) {
+                continue;
+            }
             result.put(key, value);
             index++;
         }
@@ -442,12 +442,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<Long> fastRemoveAsync(final K ... keys) {
-        return connectionManager.writeAsync(new ResultOperation<Long, V>() {
-            @Override
-            public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hdel(getName(), keys);
-            }
-        });
+        if (keys != null && keys.length > 0) {
+            return connectionManager.writeAsync(new ResultOperation<Long, V>() {
+                @Override
+                public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
+                    return async.hdel(getName(), keys);
+                }
+            });
+        } else {
+            return connectionManager.getGroup().next().newSucceededFuture(0L);
+        }
     }
 
     @Override
