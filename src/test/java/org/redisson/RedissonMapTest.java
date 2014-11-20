@@ -136,7 +136,7 @@ public class RedissonMapTest extends BaseTest {
         map.put(3, 300);
         map.put(4, 400);
 
-        Map<Integer, Integer> filtered = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3)));
+        Map<Integer, Integer> filtered = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3, 5)));
 
         Map<Integer, Integer> expectedMap = new HashMap<Integer, Integer>();
         expectedMap.put(2, 200);
@@ -431,4 +431,11 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertEquals(1, map.size());
     }
 
+    @Test
+    public void testFastRemoveEmpty() throws Exception {
+        RMap<Integer, Integer> map = redisson.getMap("simple");
+        map.put(1, 3);
+        Assert.assertEquals(0, map.fastRemove());
+        Assert.assertEquals(1, map.size());
+    }
 }
