@@ -40,7 +40,7 @@ Features
 
 Projects using Redisson
 ================================
-Merchantry: [merchantry.com](http://www.merchantry.com/)  
+Setronica: [setronica.com](http://setronica.com/)  
 Monits: [monits.com](http://monits.com/)  
 Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
 Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
