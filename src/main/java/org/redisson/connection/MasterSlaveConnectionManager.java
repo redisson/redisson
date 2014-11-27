@@ -540,14 +540,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
                 synchronized (entry) {
                     entry.close();
-                    unsubscribe(channelName);
 
                     Collection<RedisPubSubListener> listeners = entry.getListeners(channelName);
+                    unsubscribe(channelName);
                     if (!listeners.isEmpty()) {
                         PubSubConnectionEntry newEntry = subscribe(channelName);
                         for (RedisPubSubListener redisPubSubListener : listeners) {
                             newEntry.addListener(channelName, redisPubSubListener);
                         }
+                        log.debug("resubscribed listeners for '{}' channel", channelName);
                     }
                 }
             }

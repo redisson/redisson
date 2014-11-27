@@ -18,6 +18,7 @@ package org.redisson.connection;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Queue;
@@ -43,7 +44,7 @@ public class PubSubConnectionEntry {
     private final Semaphore subscribedChannelsAmount;
     private final RedisPubSubConnection conn;
     private final int subscriptionsPerConnection;
-    private final ConcurrentMap<String, Queue<RedisPubSubListener>> channelListeners = new ConcurrentHashMap<String, Queue<RedisPubSubListener>>(); 
+    private final ConcurrentMap<String, Queue<RedisPubSubListener>> channelListeners = new ConcurrentHashMap<String, Queue<RedisPubSubListener>>();
 
     public PubSubConnectionEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
         super();
@@ -52,14 +53,18 @@ public class PubSubConnectionEntry {
         this.subscribedChannelsAmount = new Semaphore(subscriptionsPerConnection);
     }
 
+    public boolean hasListeners(String channelName) {
+        return channelListeners.containsKey(channelName);
+    }
+
     public Collection<RedisPubSubListener> getListeners(String channelName) {
         Collection<RedisPubSubListener> result = channelListeners.get(channelName);
         if (result == null) {
             return Collections.emptyList();
         }
-        return result;
+        return new ArrayList<RedisPubSubListener>(result);
     }
-    
+
     public void addListener(String channelName, RedisPubSubListener listener) {
         Queue<RedisPubSubListener> queue = channelListeners.get(channelName);
         if (queue == null) {
@@ -77,7 +82,7 @@ public class PubSubConnectionEntry {
             }
             queue.add(listener);
         }
-        
+
         conn.addListener(listener);
     }
 
@@ -122,12 +127,12 @@ public class PubSubConnectionEntry {
         conn.addListener(new RedisPubSubAdapter() {
             @Override
             public void subscribed(String channel, long count) {
-                log.debug("subscribed to '{}' channel", channelName);
+                log.debug("subscribed to '{}' channel on server '{}'", channelName, conn.getRedisClient().getAddr());
             }
 
             @Override
             public void unsubscribed(String channel, long count) {
-                log.debug("unsubscribed from '{}' channel", channelName);
+                log.debug("unsubscribed from '{}' channel on server '{}'", channelName, conn.getRedisClient().getAddr());
             }
         });
         conn.subscribe(channelName);

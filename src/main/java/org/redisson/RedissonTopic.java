@@ -80,7 +80,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
         synchronized (entry) {
             if (entry.isActive()) {
                 entry.removeListener(getName(), listenerId);
-                if (entry.getListeners(getName()).isEmpty()) {
+                if (!entry.hasListeners(getName())) {
                     connectionManager.unsubscribe(getName());
                 }
                 return;
