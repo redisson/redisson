@@ -38,10 +38,29 @@ Features
 * Supports OSGi  
 * With over 110 unit tests  
 
+Projects using Redisson
+================================
+Setronica: [setronica.com](http://setronica.com/)  
+Monits: [monits.com](http://monits.com/)  
+Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
+Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
 
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####18-Nov-2014 - version 1.1.6 released
+Feature - `RBucket.exists` and `RBucket.existsAsync` methods added  
+Feature - `RMap.addAndGet` method added  
+Feature -  database index via `database` and operation timeout via `timeout` config params added  
+Improvement - `RLock` optimization  
+__Breaking api change__ - Redisson now uses `RedissonClient` interface  
+Fixed - NPE in `CommandOutput`  
+Fixed - unsubscribing during `RTopic.removeListener`  
+Fixed - all object names encoding, no more quotes  
+Fixed - HashedWheelTimer shutdown  
+Fixed - `RLock` race conditions (thanks to jsotuyod and AndrewKolpakov)  
+Fixed - `RCountDownLatch` race conditions  
 
 ####23-Jul-2014 - version 1.1.5 released
 Feature - operations auto-retry. `retryAttempts` and `retryInterval` params added for each connection type  
@@ -118,5 +137,5 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>1.1.5</version>
+       <version>1.1.6</version>
     </dependency>
