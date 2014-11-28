@@ -15,10 +15,13 @@
  */
 package org.redisson;
 
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,15 +37,21 @@ import org.redisson.core.RLock;
 import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
- * Implements reentrant lock.
+ * Implements reentrant lock.<br>
+ * Lock will be removed automatically if client disconnects.
  *
  * @author Nikita Koksharov
  *
  */
-public class RedissonLock extends RedissonObject implements RLock {
+public class RedissonLock extends RedissonExpirable implements RLock {
+
+    public static final long LOCK_EXPIRATION_INTERVAL_SECONDS = 30;
+    private static final ConcurrentMap<String, Timeout> refreshTaskMap = new ConcurrentHashMap<String, Timeout>();
 
     public static class LockValue implements Serializable {
 
@@ -287,14 +296,14 @@ public class RedissonLock extends RedissonObject implements RLock {
 
             @Override
             public Long execute(RedisConnection<Object, LockValue> connection) {
-                Boolean res = connection.setnx(getName(), currentLock);
-                if (!res) {
+                String res = connection.setexnx(getName(), currentLock, TimeUnit.SECONDS.toMillis(LOCK_EXPIRATION_INTERVAL_SECONDS));
+                if (!"OK".equals(res)) {
                     connection.watch(getName());
-                    LockValue lock = (LockValue) connection.get(getName());
+                    LockValue lock = connection.get(getName());
                     if (lock != null && lock.equals(currentLock)) {
                         lock.incCounter();
                         connection.multi();
-                        connection.set(getName(), lock);
+                        connection.setex(getName(), LOCK_EXPIRATION_INTERVAL_SECONDS, lock);
                         if (connection.exec().size() == 1) {
                             return null;
                         }
@@ -304,10 +313,38 @@ public class RedissonLock extends RedissonObject implements RLock {
                     Long ttl = connection.pttl(getName());
                     return ttl;
                 }
+                newRefreshTask();
                 return null;
             }
         });
     }
+
+    private void newRefreshTask() {
+        Timeout task = connectionManager.newTimeout(new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                try {
+                    expire(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    throw e;
+                }
+                newRefreshTask(); // reschedule itself
+            }
+        }, LOCK_EXPIRATION_INTERVAL_SECONDS / 2, TimeUnit.SECONDS);
+        if (refreshTaskMap.putIfAbsent(getName(), task) != null) {
+            task.cancel();
+        }
+    }
+
+    /**
+     * Stop refresh timer
+     * @return true if timer was stopped successfully
+     */
+    private boolean stopRefreshTask() {
+        Timeout task = refreshTaskMap.remove(getName());
+        return task != null && task.cancel();
+    }
+
 
     private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
         final LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
@@ -321,6 +358,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                 if ("OK".equals(res)) {
                     return null;
                 } else {
+                    boolean refreshWasActive = stopRefreshTask();
                     connection.watch(getName());
                     LockValue lock = (LockValue) connection.get(getName());
                     if (lock != null && lock.equals(currentLock)) {
@@ -408,7 +446,7 @@ public class RedissonLock extends RedissonObject implements RLock {
                     if (lock.equals(currentLock)) {
                         if (lock.getCounter() > 1) {
                             lock.decCounter();
-                            connection.set(getName(), lock);
+                            connection.setex(getName(), LOCK_EXPIRATION_INTERVAL_SECONDS, lock);
                         } else {
                             unlock(connection);
                         }
@@ -432,6 +470,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             connection.publish(getChannelName(), unlockMessage);
             List<Object> res = connection.exec();
             if (res.size() == 2) {
+                stopRefreshTask();
                 return;
             }
             counter++;

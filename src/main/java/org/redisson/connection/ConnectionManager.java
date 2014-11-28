@@ -16,6 +16,8 @@
 package org.redisson.connection;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 
 import org.redisson.async.AsyncOperation;
@@ -23,6 +25,8 @@ import org.redisson.async.SyncOperation;
 
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -76,4 +80,5 @@ public interface ConnectionManager {
 
     EventLoopGroup getGroup();
 
+    Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);
 }

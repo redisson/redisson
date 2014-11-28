@@ -51,6 +51,23 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         lock.unlock();
     }
+    @Test
+    public void testAutoExpire() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        testSingleInstanceConcurrency(1, new RedissonRunnable() {
+            @Override
+            public void run(Redisson redisson) {
+                RLock lock = redisson.getLock("lock");
+                lock.lock();
+                latch.countDown();
+            }
+        });
+
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        RLock lock = redisson.getLock("lock");
+        Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS + 1));
+        Assert.assertFalse("Transient lock expired automatically", lock.isLocked());
+    }
 
     @Test
     public void testGetHoldCount() {
@@ -187,7 +204,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 System.out.println("lock1 " + Thread.currentThread().getId());
                 lock.lock();
                 System.out.println("lock2 "+ Thread.currentThread().getId());
-                lockedCounter.set(lockedCounter.get() + 1);
+                lockedCounter.incrementAndGet();
                 System.out.println("lockedCounter " + lockedCounter);
                 System.out.println("unlock1 "+ Thread.currentThread().getId());
                 lock.unlock();
