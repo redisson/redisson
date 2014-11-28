@@ -1,6 +1,8 @@
 package org.redisson;
 
-public class TestObject implements Comparable<TestObject> {
+import java.io.Serializable;
+
+public class TestObject implements Comparable<TestObject>, Serializable {
 
     private String name;
     private String value;

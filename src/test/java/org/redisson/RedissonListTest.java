@@ -3,12 +3,7 @@ package org.redisson;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -38,7 +33,7 @@ public class RedissonListTest extends BaseTest {
             public void operationComplete(Future<Boolean> future) throws Exception {
                 list.addAsync(2L);
             }
-        });
+        }).awaitUninterruptibly();
 
         Assert.assertThat(list, Matchers.contains(1L, 2L));
     }
@@ -465,6 +460,44 @@ public class RedissonListTest extends BaseTest {
         Assert.assertTrue(list.isEmpty());
     }
 
+    @Test
+    public void testRetainAll() {
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        Assert.assertTrue(list.retainAll(Arrays.asList(3, 2, 10, 6)));
+
+        Assert.assertThat(list, Matchers.contains(2, 3));
+        Assert.assertEquals(2, list.size());
+    }
+
+    @Test
+    public void testRetainAllEmpty() {
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        Assert.assertTrue(list.retainAll(Collections.<Integer>emptyList()));
+        Assert.assertEquals(0, list.size());
+    }
+
+    @Test
+    public void testRetainAllNoModify() {
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+
+        Assert.assertFalse(list.retainAll(Arrays.asList(1, 2))); // nothing changed
+        Assert.assertThat(list, Matchers.contains(1, 2));
+    }
+
 
     @Test
     public void testAddAllIndex() {
@@ -487,7 +520,7 @@ public class RedissonListTest extends BaseTest {
 
         Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
 
-        list.addAll(0, Arrays.asList(6,7));
+        list.addAll(0, Arrays.asList(6, 7));
 
         Assert.assertThat(list, Matchers.contains(6,7,1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
     }
@@ -501,7 +534,7 @@ public class RedissonListTest extends BaseTest {
         list.add(4);
         list.add(5);
 
-        list.addAll(2, Arrays.asList(7,8,9));
+        list.addAll(2, Arrays.asList(7, 8, 9));
 
         list.addAll(list.size()-1, Arrays.asList(9, 1, 9));
 
@@ -526,11 +559,18 @@ public class RedissonListTest extends BaseTest {
         list.add(4);
         list.add(5);
 
-        list.addAll(Arrays.asList(7,8,9));
+        Assert.assertTrue(list.addAll(Arrays.asList(7, 8, 9)));
 
-        list.addAll(Arrays.asList(9, 1, 9));
+        Assert.assertTrue(list.addAll(Arrays.asList(9, 1, 9)));
 
         Assert.assertThat(list, Matchers.contains(1, 2, 3, 4, 5, 7, 8, 9, 9, 1, 9));
+    }
+
+    @Test
+    public void testAddAllEmpty() throws Exception {
+        List<Integer> list = redisson.getList("list");
+        Assert.assertFalse(list.addAll(Collections.<Integer>emptyList()));
+        Assert.assertEquals(0, list.size());
     }
 
     @Test
@@ -553,10 +593,10 @@ public class RedissonListTest extends BaseTest {
         list.add("5");
         list.add("3");
 
-        Assert.assertArrayEquals(list.toArray(), new Object[] {"1", "4", "2", "5", "3"});
+        Assert.assertArrayEquals(list.toArray(), new Object[]{"1", "4", "2", "5", "3"});
 
         String[] strs = list.toArray(new String[0]);
-        Assert.assertArrayEquals(strs, new String[] {"1", "4", "2", "5", "3"});
+        Assert.assertArrayEquals(strs, new String[]{"1", "4", "2", "5", "3"});
     }
 
 
@@ -694,4 +734,14 @@ public class RedissonListTest extends BaseTest {
         Assert.assertThat(list, Matchers.contains("1", "3", "5", "6"));
     }
 
+    @Test
+    public void testCodec() {
+        List<Object> list = redisson.getList("list");
+        list.add(1);
+        list.add(2L);
+        list.add("3");
+        list.add("e");
+
+        Assert.assertThat(list, Matchers.<Object>contains(1, 2L, "3", "e"));
+    }
 }

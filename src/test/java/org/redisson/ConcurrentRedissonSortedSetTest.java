@@ -17,7 +17,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
     public void testAdd_SingleInstance() throws InterruptedException {
         final String name = "testAdd_SingleInstance";
 
-        Redisson r = Redisson.create();
+        Redisson r = BaseTest.createInstance();
         RSortedSet<Integer> map = r.getSortedSet(name);
         map.clear();
 
@@ -54,7 +54,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
     public void testAddNegative_SingleInstance() throws InterruptedException {
         final String name = "testAddNegative_SingleInstance";
 
-        Redisson r = Redisson.create();
+        Redisson r = BaseTest.createInstance();
         RSortedSet<Integer> map = r.getSortedSet(name);
         map.clear();
 

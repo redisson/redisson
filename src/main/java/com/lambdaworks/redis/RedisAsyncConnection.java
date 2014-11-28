@@ -36,11 +36,7 @@ import io.netty.util.concurrent.Promise;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -308,6 +304,31 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     public <T> Future<T> eval(V script, ScriptOutputType type, List<K> keys, V... values) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
         args.add(script.toString()).add(keys.size()).addKeys(keys).addMapValues(values);
+        CommandOutput<K, V, T> output = newScriptOutput(codec, type);
+        return dispatch(EVAL, output, args);
+    }
+
+    public <T> Future<T> evalR(V script, ScriptOutputType type, List<K> keys, List<?> values, List<?> rawValues) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
+        args.add(script.toString()).add(keys.size()).addKeys(keys);
+        for (Object value : values) {
+            args.addMapValue((V) value);
+        }
+        for (Object value : rawValues) {
+            if (value instanceof String) {
+                args.add((String) value);
+            } else if (value instanceof Integer) {
+                args.add((Integer) value);
+            } else if (value instanceof Long) {
+                args.add((Long) value);
+            } else if (value instanceof Double) {
+                args.add((Double) value);
+            } else if (value instanceof byte[]) {
+                args.add((byte[]) value);
+            } else {
+                throw new IllegalArgumentException("Unsupported raw value type: " + value.getClass());
+            }
+        }
         CommandOutput<K, V, T> output = newScriptOutput(codec, type);
         return dispatch(EVAL, output, args);
     }

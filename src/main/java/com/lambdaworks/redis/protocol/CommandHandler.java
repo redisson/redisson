@@ -3,8 +3,10 @@
 package com.lambdaworks.redis.protocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufProcessor;
 import io.netty.channel.*;
 import io.netty.util.CharsetUtil;
+import io.netty.util.internal.StringUtil;
 
 import java.util.concurrent.BlockingQueue;
 
@@ -63,8 +65,26 @@ public class CommandHandler<K, V> extends ChannelDuplexHandler {
         ByteBuf buf = ctx.alloc().heapBuffer();
         cmd.encode(buf);
 //        System.out.println("out: " + buf.toString(CharsetUtil.UTF_8));
+//        System.out.println("out: " + toHexString(buf));
 
         ctx.write(buf, promise);
+    }
+
+    private String toHexString(ByteBuf buf) {
+        final StringBuilder builder = new StringBuilder(buf.readableBytes() * 2);
+        buf.forEachByte(new ByteBufProcessor() {
+            @Override
+            public boolean process(byte value) throws Exception {
+                char b = (char) value;
+                if ((b < ' ' && b != '\n' && b != '\r') || b > '~') {
+                    builder.append("\\x").append(StringUtil.byteToHexStringPadded(value));
+                } else {
+                    builder.append(b);
+                }
+                return true;
+            }
+        });
+        return builder.toString();
     }
 
     protected void decode(ChannelHandlerContext ctx, ByteBuf buffer) throws InterruptedException {

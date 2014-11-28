@@ -152,4 +152,36 @@ public class RedissonBlockingQueueTest extends BaseTest {
         assertThat(counter.get(), equalTo(total));
         queue.delete();
     }
+
+    @Test
+    public void testDrainToCollection() throws Exception {
+        RBlockingQueue<Object> queue1 = redisson.getBlockingQueue("queue1");
+        queue1.put(1);
+        queue1.put(2L);
+        queue1.put("e");
+
+        ArrayList<Object> dst = new ArrayList<Object>();
+        queue1.drainTo(dst);
+        MatcherAssert.assertThat(dst, Matchers.<Object>contains(1, 2L, "e"));
+        Assert.assertEquals(0, queue1.size());
+    }
+
+    @Test
+    public void testDrainToCollectionLimited() throws Exception {
+        RBlockingQueue<Object> queue1 = redisson.getBlockingQueue("queue1");
+        queue1.put(1);
+        queue1.put(2L);
+        queue1.put("e");
+
+        ArrayList<Object> dst = new ArrayList<Object>();
+        queue1.drainTo(dst, 2);
+        MatcherAssert.assertThat(dst, Matchers.<Object>contains(1, 2L));
+        Assert.assertEquals(1, queue1.size());
+
+        dst.clear();
+        queue1.drainTo(dst, 2);
+        MatcherAssert.assertThat(dst, Matchers.<Object>contains("e"));
+
+
+    }
 }

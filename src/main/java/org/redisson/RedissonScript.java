@@ -71,6 +71,21 @@ public class RedissonScript implements RScript {
     }
 
     @Override
+    public <R> R evalR(String luaScript, ReturnType returnType, List<Object> keys, List<?> values, List<?> rawValues) {
+        return (R) connectionManager.get(evalAsyncR(luaScript, returnType, keys, values, rawValues));
+    }
+
+    @Override
+    public <R> Future<R> evalAsyncR(final String luaScript, final ReturnType returnType, final List<Object> keys, final List<?> values, final List<?> rawValues) {
+        return connectionManager.writeAsync(new ResultOperation<R, Object>() {
+            @Override
+            protected Future<R> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.evalR(luaScript, ScriptOutputType.valueOf(returnType.toString()), keys, values, rawValues);
+            }
+        });
+    }
+
+    @Override
     public <R> R evalSha(String shaDigest, ReturnType returnType) {
         return evalSha(shaDigest, returnType, Collections.emptyList());
     }

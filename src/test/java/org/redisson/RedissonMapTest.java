@@ -389,6 +389,22 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testPutIfAbsent() throws Exception {
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        SimpleKey key = new SimpleKey("1");
+        SimpleValue value = new SimpleValue("2");
+        map.put(key, value);
+        Assert.assertEquals(value, map.putIfAbsent(key, new SimpleValue("3")));
+        Assert.assertEquals(value, map.get(key));
+
+        SimpleKey key1 = new SimpleKey("2");
+        SimpleValue value1 = new SimpleValue("4");
+        Assert.assertNull(map.putIfAbsent(key1, value1));
+        Assert.assertEquals(value1, map.get(key1));
+
+    }
+
+    @Test
     public void testSize() {
         Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
 

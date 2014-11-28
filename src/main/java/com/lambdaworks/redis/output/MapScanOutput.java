@@ -16,7 +16,7 @@ public class MapScanOutput<K, V> extends CommandOutput<K, V, MapScanResult<K, V>
     @Override
     public void set(ByteBuffer bytes) {
         if (output.getPos() == null) {
-            output.setPos(((Number) codec.decodeValue(bytes)).longValue());
+            output.setPos(toLong(bytes));
         } else {
             if (counter % 2 == 0) {
                 output.addValue(codec.decodeMapValue(bytes));
@@ -26,5 +26,10 @@ public class MapScanOutput<K, V> extends CommandOutput<K, V, MapScanResult<K, V>
         }
         counter++;
     }
+
+    private Long toLong(ByteBuffer bytes) {
+        return bytes == null ? null : new Long(new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit()));
+    }
+
 
 }

@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RBlockingQueue;
 
 import com.lambdaworks.redis.RedisConnection;
+import org.redisson.core.RScript;
 
 /**
  * Offers blocking queue facilities through an intermediary
@@ -97,49 +99,39 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public int drainTo(Collection<? super V> c) {
-        List<V> list = connectionManager.write(getName(), new SyncOperation<V, List<V>>() {
-            @Override
-            public List<V> execute(RedisConnection<Object, V> conn) {
-                while (true) {
-                    conn.watch(getName());
-                    conn.multi();
-                    conn.lrange(getName(), 0, -1);
-                    conn.ltrim(getName(), 0, -1);
-                    List<Object> res = conn.exec();
-                    if (res.size() == 2) {
-                        List<V> items = (List<V>) res.get(0);
-                        return items;
-                    }
-                }
-            }
-        });
+        if (c == null) {
+            throw new NullPointerException();
+        }
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        List<V> list = new RedissonScript(connectionManager).eval(
+                "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
+                        "redis.call('ltrim', KEYS[1], -1, 0); " +
+                        "return vals",
+                RScript.ReturnType.MAPVALUELIST,
+                keys);
         c.addAll(list);
         return list.size();
     }
 
     @Override
     public int drainTo(Collection<? super V> c, final int maxElements) {
-        List<V> list = connectionManager.write(getName(), new SyncOperation<V, List<V>>() {
-            @Override
-            public List<V> execute(RedisConnection<Object, V> conn) {
-                while (true) {
-                    conn.watch(getName());
-                    Long len = Math.min(conn.llen(getName()), maxElements);
-                    if (len == 0) {
-                        conn.unwatch();
-                        return Collections.emptyList();
-                    }
-                    conn.multi();
-                    conn.lrange(getName(), 0, len - 1);
-                    conn.ltrim(getName(), len, -1);
-                    List<Object> res = conn.exec();
-                    if (res.size() == 2) {
-                        List<V> items = (List<V>) res.get(0);
-                        return items;
-                    }
-                }
-            }
-        });
+        if (maxElements <= 0) {
+            return 0;
+        }
+        if (c == null) {
+            throw new NullPointerException();
+        }
+
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        List<V> list = new RedissonScript(connectionManager).evalR(
+                "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
+                        "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
+                        "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
+                        "return vals",
+                RScript.ReturnType.MAPVALUELIST,
+                keys, Collections.emptyList(), Collections.singletonList(maxElements));
         c.addAll(list);
         return list.size();
     }

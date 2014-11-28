@@ -14,10 +14,14 @@ public class ValueSetScanOutput<K, V> extends CommandOutput<K, V, ListScanResult
     @Override
     public void set(ByteBuffer bytes) {
         if (output.getPos() == null) {
-            output.setPos(Long.valueOf(codec.decodeMapValue(bytes).toString()));
+            output.setPos(toLong(bytes));
         } else {
             output.addValue(codec.decodeMapValue(bytes));
         }
+    }
+
+    private Long toLong(ByteBuffer bytes) {
+        return bytes == null ? null : new Long(new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit()));
     }
 
 }

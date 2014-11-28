@@ -11,11 +11,11 @@ import java.util.concurrent.TimeUnit;
 public abstract class BaseConcurrentTest {
 
     protected void testMultiInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
+        ExecutorService executor = Executors.newCachedThreadPool();
 
         final Map<Integer, Redisson> instances = new HashMap<Integer, Redisson>();
         for (int i = 0; i < iterations; i++) {
-            instances.put(i, Redisson.create());
+            instances.put(i, BaseTest.createInstance());
         }
 
         long watch = System.currentTimeMillis();
@@ -35,7 +35,7 @@ public abstract class BaseConcurrentTest {
 
         System.out.println("multi: " + (System.currentTimeMillis() - watch));
 
-        executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        executor = Executors.newCachedThreadPool();
 
         for (final Redisson redisson : instances.values()) {
             executor.execute(new Runnable() {
@@ -53,7 +53,7 @@ public abstract class BaseConcurrentTest {
     protected void testSingleInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-        final Redisson redisson = Redisson.create();
+        final Redisson redisson = BaseTest.createInstance();
         long watch = System.currentTimeMillis();
         for (int i = 0; i < iterations; i++) {
             executor.execute(new Runnable() {

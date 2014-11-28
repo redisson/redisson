@@ -15,22 +15,20 @@
  */
 package org.redisson;
 
+import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.core.RCountDownLatch;
+import org.redisson.core.RScript;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-
-import org.redisson.async.ResultOperation;
-import org.redisson.async.SyncOperation;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.core.RCountDownLatch;
-
-import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
 /**
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
@@ -195,24 +193,15 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         if (getCount() <= 0) {
             return;
         }
-
-        connectionManager.write(getName(), new SyncOperation<Object, Void>() {
-            @Override
-            public Void execute(RedisConnection<Object, Object> conn) {
-                Long val = conn.decr(getName());
-                if (val == 0) {
-                    conn.multi();
-                    conn.del(getName());
-                    conn.publish(getChannelName(), zeroCountMessage);
-                    if (conn.exec().size() != 2) {
-                        throw new IllegalStateException();
-                    }
-                } else if (val < 0) {
-                    conn.del(getName());
-                }
-                return null;
-            }
-        });
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        new RedissonScript(connectionManager).evalR(
+                "local v = redis.call('decr', KEYS[1]);" +
+                        "if v <= 0 then redis.call('del', KEYS[1]) end;" +
+                        "if v == 0 then redis.call('publish', ARGV[2], ARGV[1]) end;" +
+                        "return 'OK'",
+                RScript.ReturnType.STATUS,
+                keys, Collections.singletonList(zeroCountMessage), Collections.singletonList(getChannelName()));
     }
 
     private String getEntryName() {
@@ -229,53 +218,42 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private long getCountInner() {
-        Number val = connectionManager.read(getName(), new ResultOperation<Number, Number>() {
-            @Override
-            protected Future<Number> execute(RedisAsyncConnection<Object, Number> async) {
-                return async.get(getName());
-            }
-        });
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        Long val = new RedissonScript(connectionManager).eval(
+                "return redis.call('get', KEYS[1])",
+                RScript.ReturnType.INTEGER,
+                keys);
+
 
         if (val == null) {
             return 0;
         }
-        return val.longValue();
+        return val;
     }
 
     @Override
     public boolean trySetCount(final long count) {
-        return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
-
-            @Override
-            public Boolean execute(RedisConnection<Object, Object> conn) {
-                conn.watch(getName());
-                Number oldValue = (Number) conn.get(getName());
-                if (oldValue != null) {
-                    conn.unwatch();
-                    return false;
-                }
-                conn.multi();
-                conn.set(getName(), count);
-                conn.publish(getChannelName(), newCountMessage);
-                return conn.exec().size() == 2;
-            }
-        });
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        return new RedissonScript(connectionManager).evalR(
+                "if redis.call('exists', KEYS[1]) == 0 then redis.call('set', KEYS[1], ARGV[2]); redis.call('publish', ARGV[3], ARGV[1]); return true else return false end",
+                RScript.ReturnType.BOOLEAN,
+                keys, Collections.singletonList(newCountMessage), Arrays.asList(count, getChannelName()));
     }
 
     @Override
     public boolean delete() {
-        return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
-            @Override
-            public Boolean execute(RedisConnection<Object, Object> conn) {
-                conn.multi();
-                conn.del(getName());
-                conn.publish(getChannelName(), zeroCountMessage);
-                if (conn.exec().size() != 2) {
-                    throw new IllegalStateException();
-                }
-                return true;
-            }
-        });
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        Boolean deleted = new RedissonScript(connectionManager).evalR(
+                "if redis.call('del', KEYS[1]) == 1 then redis.call('publish', ARGV[2], ARGV[1]); return true else return false end",
+                RScript.ReturnType.BOOLEAN,
+                keys, Collections.singletonList(newCountMessage), Collections.singletonList(getChannelName()));
+        if (!deleted) {
+            throw new IllegalStateException();
+        }
+        return true;
     }
 
 }
