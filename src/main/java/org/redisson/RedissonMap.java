@@ -90,22 +90,21 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         if (keys.size() == 0) {
             return Collections.emptyMap();
         }
+        final Object[] keysArray = keys.toArray();
         List<V> list = connectionManager.read(new ResultOperation<List<V>, V>() {
             @Override
             protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hmget(getName(), keys.toArray());
+                return async.hmget(getName(), keysArray);
             }
         });
 
         Map<K, V> result = new HashMap<K, V>(list.size());
-        int index = 0;
-        for (K key : keys) {
+        for (int index = 0; index < keysArray.length; index++) {
             V value = list.get(index);
             if (value == null) {
                 continue;
             }
-            result.put(key, value);
-            index++;
+            result.put((K) keysArray[index], value);
         }
         return result;
     }
