@@ -20,6 +20,29 @@ import org.redisson.core.RSortedSet;
 
 public class RedissonSetTest extends BaseTest {
 
+    public static class SimpleBean {
+
+        private Long lng;
+
+        public Long getLng() {
+            return lng;
+        }
+
+        public void setLng(Long lng) {
+            this.lng = lng;
+        }
+
+    }
+
+    @Test
+    public void testAddBean() throws InterruptedException, ExecutionException {
+        SimpleBean sb = new SimpleBean();
+        sb.setLng(1L);
+        RSet<SimpleBean> set = redisson.getSet("simple");
+        set.add(sb);
+        Assert.assertEquals(sb.getLng(), set.iterator().next().getLng());
+    }
+
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
         RSet<Integer> set = redisson.getSet("simple");
@@ -42,12 +65,12 @@ public class RedissonSetTest extends BaseTest {
 
         Assert.assertFalse(set.removeAsync(1).get());
         Assert.assertThat(set, Matchers.containsInAnyOrder(3, 7));
-        
+
         set.removeAsync(3).get();
         Assert.assertFalse(set.contains(3));
         Assert.assertThat(set, Matchers.contains(7));
     }
-    
+
     @Test
     public void testIteratorRemove() {
         Set<String> list = redisson.getSet("list");
@@ -78,7 +101,7 @@ public class RedissonSetTest extends BaseTest {
         Assert.assertEquals(0, list.size());
         Assert.assertTrue(list.isEmpty());
     }
-    
+
     @Test
     public void testIteratorSequence() {
         Set<Long> set = redisson.getSet("set");
@@ -90,7 +113,7 @@ public class RedissonSetTest extends BaseTest {
         for (int i = 0; i < 1000; i++) {
             setCopy.add(Long.valueOf(i));
         }
-        
+
         checkIterator(set, setCopy);
     }
 
@@ -104,7 +127,7 @@ public class RedissonSetTest extends BaseTest {
 
         Assert.assertEquals(0, setCopy.size());
     }
-    
+
     @Test
     public void testLong() {
         Set<Long> set = redisson.getSet("set");

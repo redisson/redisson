@@ -626,7 +626,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Long> sadd(K key, V... members) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapValues(members);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addValues(members);
         return dispatch(SADD, new IntegerOutput<K, V>(codec), args);
     }
 
