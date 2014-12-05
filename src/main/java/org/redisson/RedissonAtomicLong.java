@@ -55,17 +55,8 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
                 while (true) {
                     conn.watch(getName());
 
-                    Number n = (Number) conn.get(getName());
-                    Long value = null;
-                    if (n != null) {
-                        value = n.longValue();
-                    }
-                    if (value == null) {
-                        if (expect != 0) {
-                            conn.unwatch();
-                            return false;
-                        }
-                    } else if (value != expect) {
+                    Long value = getLongSafe(conn);
+                    if (value != expect) {
                         conn.unwatch();
                         return false;
                     }
@@ -103,11 +94,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
                 while (true) {
                     conn.watch(getName());
 
-                    Number n = (Number) conn.get(getName());
-                    Long value = 0L;
-                    if (n != null) {
-                        value = n.longValue();
-                    }
+                    Long value = getLongSafe(conn);
 
                     conn.multi();
                     conn.set(getName(), value + delta);
@@ -116,7 +103,16 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
                     }
                 }
             }
+
         });
+    }
+
+    private Long getLongSafe(RedisConnection<Object, Object> conn) {
+        Number n = (Number) conn.get(getName());
+        if (n != null) {
+            return n.longValue();
+        }
+        return 0L;
     }
 
     @Override
@@ -127,11 +123,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
                 while (true) {
                     conn.watch(getName());
 
-                    Number n = (Number) conn.get(getName());
-                    Long value = 0L;
-                    if (n != null) {
-                        value = n.longValue();
-                    }
+                    Long value = getLongSafe(conn);
 
                     conn.multi();
                     conn.set(getName(), newValue);
