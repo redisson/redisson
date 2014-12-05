@@ -35,17 +35,6 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     protected RedissonAtomicLong(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
-
-        init();
-    }
-
-    private void init() {
-        connectionManager.writeAsync(new ResultOperation<Boolean, Object>() {
-            @Override
-            protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.setnx(getName(), 0);
-            }
-        });
     }
 
     @Override
@@ -65,11 +54,22 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
             public Boolean execute(RedisConnection<Object, Object> conn) {
                 while (true) {
                     conn.watch(getName());
-                    Long value = ((Number) conn.get(getName())).longValue();
-                    if (value != expect) {
+
+                    Number n = (Number) conn.get(getName());
+                    Long value = null;
+                    if (n != null) {
+                        value = n.longValue();
+                    }
+                    if (value == null) {
+                        if (expect != 0) {
+                            conn.unwatch();
+                            return false;
+                        }
+                    } else if (value != expect) {
                         conn.unwatch();
                         return false;
                     }
+
                     conn.multi();
                     conn.set(getName(), update);
                     if (conn.exec().size() == 1) {
@@ -92,18 +92,13 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long get() {
-        Number res = connectionManager.read(new ResultOperation<Number, Number>() {
-            @Override
-            protected Future<Number> execute(RedisAsyncConnection<Object, Number> async) {
-                return async.get(getName());
-            }
-        });
-        return res.longValue();
+        return addAndGet(0);
     }
 
     @Override
     public long getAndAdd(long delta) {
         while (true) {
+            // TODO optimize
             long current = get();
             long next = current + delta;
             if (compareAndSet(current, next))
@@ -113,13 +108,26 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long getAndSet(final long newValue) {
-        Number res = connectionManager.write(new ResultOperation<Number, Number>() {
+        return connectionManager.write(new SyncOperation<Object, Long>() {
             @Override
-            protected Future<Number> execute(RedisAsyncConnection<Object, Number> async) {
-                return async.getset(getName(), newValue);
+            public Long execute(RedisConnection<Object, Object> conn) {
+                while (true) {
+                    conn.watch(getName());
+
+                    Number n = (Number) conn.get(getName());
+                    Long value = 0L;
+                    if (n != null) {
+                        value = n.longValue();
+                    }
+
+                    conn.multi();
+                    conn.set(getName(), newValue);
+                    if (conn.exec().size() == 1) {
+                        return value;
+                    }
+                }
             }
         });
-        return res.longValue();
     }
 
     @Override
