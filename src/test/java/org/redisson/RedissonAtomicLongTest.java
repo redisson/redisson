@@ -7,6 +7,15 @@ import org.redisson.core.RAtomicLong;
 public class RedissonAtomicLongTest extends BaseTest {
 
     @Test
+    public void testCompareAndSet() {
+        RAtomicLong al = redisson.getAtomicLong("test");
+        Assert.assertFalse(al.compareAndSet(-1, 2));
+        Assert.assertEquals(0, al.get());
+        Assert.assertTrue(al.compareAndSet(0, 2));
+        Assert.assertEquals(2, al.get());
+    }
+
+    @Test
     public void test() {
         RAtomicLong al = redisson.getAtomicLong("test");
         Assert.assertEquals(0, al.get());
