@@ -96,14 +96,27 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public long getAndAdd(long delta) {
-        while (true) {
-            // TODO optimize
-            long current = get();
-            long next = current + delta;
-            if (compareAndSet(current, next))
-                return current;
-        }
+    public long getAndAdd(final long delta) {
+        return connectionManager.write(new SyncOperation<Object, Long>() {
+            @Override
+            public Long execute(RedisConnection<Object, Object> conn) {
+                while (true) {
+                    conn.watch(getName());
+
+                    Number n = (Number) conn.get(getName());
+                    Long value = 0L;
+                    if (n != null) {
+                        value = n.longValue();
+                    }
+
+                    conn.multi();
+                    conn.set(getName(), value + delta);
+                    if (conn.exec().size() == 1) {
+                        return value;
+                    }
+                }
+            }
+        });
     }
 
     @Override
