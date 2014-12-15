@@ -122,12 +122,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         List<SubscribesConnectionEntry> clientsCopy = new ArrayList<SubscribesConnectionEntry>(clients);
         while (true) {
             if (clientsCopy.isEmpty()) {
-                // TODO refactor
-                log.warn("Slave subscribe-connection pool gets exhausted! Trying to acquire connection again...");
-                return nextPubSubConnection();
-//                long time = System.currentTimeMillis();
-//                long endTime = System.currentTimeMillis() - time;
-//                log.warn("Connection acquired, time spended: {} ms", endTime);
+                throw new RedisConnectionException("Slave subscribe-connection pool gets exhausted!");
             }
 
             int index = getIndex(clientsCopy);
@@ -167,12 +162,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         List<SubscribesConnectionEntry> clientsCopy = new ArrayList<SubscribesConnectionEntry>(clients);
         while (true) {
             if (clientsCopy.isEmpty()) {
-                // TODO refactor
-                log.warn("Slave connection pool gets exhausted! Trying to acquire connection ...");
-                return nextConnection();
-//                long time = System.currentTimeMillis();
-//                long endTime = System.currentTimeMillis() - time;
-//                log.warn("Connection acquired, time spended: {} ms", endTime);
+                throw new RedisConnectionException("Slave connection pool gets exhausted!");
             }
 
             int index = getIndex(clientsCopy);
