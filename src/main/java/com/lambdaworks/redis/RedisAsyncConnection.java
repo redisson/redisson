@@ -76,6 +76,7 @@ import com.lambdaworks.redis.output.StringListOutput;
 import com.lambdaworks.redis.output.ValueListOutput;
 import com.lambdaworks.redis.output.ValueOutput;
 import com.lambdaworks.redis.output.ValueSetOutput;
+import com.lambdaworks.redis.output.ValueSetScanOutput;
 import com.lambdaworks.redis.protocol.Command;
 import com.lambdaworks.redis.protocol.CommandArgs;
 import com.lambdaworks.redis.protocol.CommandKeyword;
@@ -626,7 +627,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Long> sadd(K key, V... members) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addValues(members);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapValues(members);
         return dispatch(SADD, new IntegerOutput<K, V>(codec), args);
     }
 
@@ -1058,7 +1059,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
 
     public Future<ListScanResult<V>> sscan(K key, long startValue) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(startValue);
-        return dispatch(SSCAN, new ListScanOutput<K, V>(codec), args);
+        return dispatch(SSCAN, new ValueSetScanOutput<K, V>(codec), args);
     }
 
     public Future<MapScanResult<K, V>> hscan(K key, long startValue) {

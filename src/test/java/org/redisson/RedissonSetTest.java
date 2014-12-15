@@ -44,6 +44,24 @@ public class RedissonSetTest extends BaseTest {
     }
 
     @Test
+    public void testAddLong() throws InterruptedException, ExecutionException {
+        Long sb = 1l;
+
+        RSet<Long> set = redisson.getSet("simple_longs");
+        set.add(sb);
+
+        for (Long l : set) {
+            Assert.assertEquals(sb.getClass(), l.getClass());
+        }
+
+        Object[] arr = set.toArray();
+
+        for (Object o : arr) {
+            Assert.assertEquals(sb.getClass(), o.getClass());
+        }
+    }
+
+    @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
         RSet<Integer> set = redisson.getSet("simple");
         Future<Boolean> future = set.addAsync(2);
