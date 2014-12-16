@@ -49,6 +49,17 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####16-Dec-2014 - version 1.1.7 released
+Improvement - `RAtomicLong` optimization  
+Fixed - `RMap.fastRemove` and `RMap.getAll` methods  
+Fixed - `RTopic` listeners re-subscribing in sentinel mode  
+Fixed - `RSet.toArray` and `RSet.iterator` values order  
+Fixed - keys iteration in `RMap.getAll`  
+Fixed - `RSet` iteration  
+Fixed - `RAtomicLong` NPE  
+Fixed - infinity loop during master/slave connection acquiring  
+Fixed - `RedissonList.addAll` result  
+
 ####18-Nov-2014 - version 1.1.6 released
 Feature - `RBucket.exists` and `RBucket.existsAsync` methods added  
 Feature - `RMap.addAndGet` method added  
