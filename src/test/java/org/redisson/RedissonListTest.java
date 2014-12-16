@@ -456,6 +456,10 @@ public class RedissonListTest extends BaseTest {
         list.addAll(list.size(), Arrays.asList(0, 5));
 
         Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
+
+        list.addAll(0, Arrays.asList(6,7));
+
+        Assert.assertThat(list, Matchers.contains(6,7,1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
     }
 
     @Test
@@ -476,6 +480,10 @@ public class RedissonListTest extends BaseTest {
         list.addAll(list.size(), Arrays.asList(0, 5));
 
         Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
+
+        list.addAll(0, Arrays.asList(6,7));
+
+        Assert.assertThat(list, Matchers.contains(6,7,1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
     }
 
 
