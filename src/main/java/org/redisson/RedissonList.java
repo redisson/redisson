@@ -153,9 +153,17 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                     while (true) {
                         conn.watch(getName());
                         List<Object> tail = conn.lrange(getName(), index, size());
-
+                        int first = 0;
+                        int last = 0;
+                        if (index == 0){
+                        	first = size();//truncate the list
+                        	last = 0;
+                        }else{
+                        	first = 0;
+                        	last = index - 1;
+                        }
                         conn.multi();
-                        conn.ltrim(getName(), 0, index - 1);
+                        conn.ltrim(getName(), first, last);
                         conn.rpush(getName(), coll.toArray());
                         conn.rpush(getName(), tail.toArray());
                         if (conn.exec().size() == 3) {

@@ -10,12 +10,13 @@ import java.util.ListIterator;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.core.RList;
 
 public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLong() {
-        List<Long> list = redisson.getList("list");
+        RList<Long> list = redisson.getList("list");
         list.add(1L);
         list.add(2L);
 
@@ -24,7 +25,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testListIteratorSetListFail() {
-        List<Integer> list = new ArrayList<Integer>();
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
 
         ListIterator<Integer> iterator = list.listIterator();
@@ -36,7 +37,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testListIteratorSetFail() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
 
         ListIterator<Integer> iterator = list.listIterator();
@@ -48,7 +49,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorGetSetList() {
-        List<Integer> list = new ArrayList<Integer>();
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -74,7 +75,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorGetSet() {
-        List<Integer> list = redisson.getList("list");
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -100,7 +101,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorPreviousList() {
-        List<Integer> list = new LinkedList<Integer>();
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -135,7 +136,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorIndexList() {
-        List<Integer> list = new LinkedList<Integer>();
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -168,7 +169,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorIndex() {
-        List<Integer> list = redisson.getList("list");
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -201,7 +202,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorPrevious() {
-        List<Integer> list = redisson.getList("list");
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -236,7 +237,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLastIndexOf2() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -254,7 +255,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLastIndexOf1() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -272,7 +273,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLastIndexOf() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -290,7 +291,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLastIndexOfList() {
-        List<Integer> list = new LinkedList<Integer>();
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -308,7 +309,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSubListList() {
-        List<Integer> list = new LinkedList<Integer>();
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -327,7 +328,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSubList() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -345,7 +346,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testIndexOf() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         for (int i = 1; i < 200; i++) {
             list.add(i);
         }
@@ -359,7 +360,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -374,7 +375,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSet() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -388,7 +389,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testSetFail() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -400,7 +401,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSetList() {
-        List<Integer> list = new LinkedList<Integer>();
+    	RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -415,7 +416,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testRemoveAll() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -438,7 +439,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testAddAllIndex() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -456,11 +457,18 @@ public class RedissonListTest extends BaseTest {
         list.addAll(list.size(), Arrays.asList(0, 5));
 
         Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
+        
+        list.addAll(0,Arrays.asList(6));
+        
+        Assert.assertThat(list, Matchers.contains(6,1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
+        
+        
+        
     }
 
     @Test
     public void testAddAllIndexList() {
-        List<Integer> list = new LinkedList<Integer>();
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -476,12 +484,16 @@ public class RedissonListTest extends BaseTest {
         list.addAll(list.size(), Arrays.asList(0, 5));
 
         Assert.assertThat(list, Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
+        
+        list.addAll(0,Arrays.asList(6,7));
+        
+        Assert.assertThat(list, Matchers.contains(6,7,1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
     }
 
 
     @Test
     public void testAddAll() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -497,7 +509,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testContainsAll() {
-        List<Integer> list = redisson.getList("list");
+        RList<Integer> list = redisson.getList("list");
         for (int i = 0; i < 200; i++) {
             list.add(i);
         }
@@ -508,7 +520,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testToArray() {
-        List<String> list = redisson.getList("list");
+        RList<String> list = redisson.getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -524,7 +536,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testIteratorRemove() {
-        List<String> list = redisson.getList("list");
+        RList<String> list = redisson.getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -555,7 +567,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testIteratorSequence() {
-        List<String> list = redisson.getList("list");
+        RList<String> list = redisson.getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -567,7 +579,7 @@ public class RedissonListTest extends BaseTest {
         checkIterator(list);
     }
 
-    private void checkIterator(List<String> list) {
+    private void checkIterator(RList<String> list) {
         int iteration = 0;
         for (Iterator<String> iterator = list.iterator(); iterator.hasNext();) {
             String value = iterator.next();
@@ -582,7 +594,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testContains() {
-        List<String> list = redisson.getList("list");
+        RList<String> list = redisson.getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -596,21 +608,21 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testGetFail2() {
-        List<String> list = redisson.getList("list");
+        RList<String> list = redisson.getList("list");
 
         list.get(0);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testGetFail() {
-        List<String> list = redisson.getList("list");
+        RList<String> list = redisson.getList("list");
 
         list.get(0);
     }
 
     @Test
     public void testAddGet() {
-        List<String> list = redisson.getList("list");
+        RList<String> list = redisson.getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -626,7 +638,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testDuplicates() {
-        List<TestObject> list = redisson.getList("list");
+        RList<TestObject> list = redisson.getList("list");
 
         list.add(new TestObject("1", "2"));
         list.add(new TestObject("1", "2"));
@@ -639,7 +651,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSize() {
-        List<String> list = redisson.getList("list");
+        RList<String> list = redisson.getList("list");
 
         list.add("1");
         list.add("2");
