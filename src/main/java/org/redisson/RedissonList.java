@@ -223,6 +223,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public V get(final int index) {
         checkIndex(index);
+        return getValue(index);
+    }
+
+    private V getValue(final int index) {
         return connectionManager.read(new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
@@ -374,50 +378,69 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public ListIterator<V> listIterator(final int ind) {
         return new ListIterator<V>() {
 
+            private V prevCurrentValue;
+            private V nextCurrentValue;
+            private V currentValueHasRead;
             private int currentIndex = ind - 1;
             private boolean removeExecuted;
 
             @Override
             public boolean hasNext() {
-                int size = size();
-                return currentIndex+1 < size && size > 0;
+                V val = RedissonList.this.getValue(currentIndex+1);
+                if (val != null) {
+                    nextCurrentValue = val;
+                }
+                return val != null;
             }
 
             @Override
             public V next() {
-                if (!hasNext()) {
+                if (nextCurrentValue == null && !hasNext()) {
                     throw new NoSuchElementException("No such element at index " + currentIndex);
                 }
                 currentIndex++;
+                currentValueHasRead = nextCurrentValue;
+                nextCurrentValue = null;
                 removeExecuted = false;
-                return RedissonList.this.get(currentIndex);
+                return currentValueHasRead;
             }
 
             @Override
             public void remove() {
+                if (currentValueHasRead == null) {
+                    throw new IllegalStateException("Neither next nor previous have been called");
+                }
                 if (removeExecuted) {
                     throw new IllegalStateException("Element been already deleted");
                 }
-                RedissonList.this.remove(currentIndex);
+                RedissonList.this.remove(currentValueHasRead);
                 currentIndex--;
                 removeExecuted = true;
+                currentValueHasRead = null;
             }
 
             @Override
             public boolean hasPrevious() {
-                int size = size();
-                return currentIndex-1 < size && size > 0 && currentIndex >= 0;
+                if (currentIndex < 0) {
+                    return false;
+                }
+                V val = RedissonList.this.getValue(currentIndex);
+                if (val != null) {
+                    prevCurrentValue = val;
+                }
+                return val != null;
             }
 
             @Override
             public V previous() {
-                if (!hasPrevious()) {
+                if (prevCurrentValue == null && !hasPrevious()) {
                     throw new NoSuchElementException("No such element at index " + currentIndex);
                 }
-                removeExecuted = false;
-                V res = RedissonList.this.get(currentIndex);
                 currentIndex--;
-                return res;
+                removeExecuted = false;
+                currentValueHasRead = prevCurrentValue;
+                prevCurrentValue = null;
+                return currentValueHasRead;
             }
 
             @Override
