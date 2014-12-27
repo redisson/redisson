@@ -39,7 +39,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<V> getAsync() {
-        return connectionManager.readAsync(new ResultOperation<V, V>() {
+        return connectionManager.readAsync(getName(), new ResultOperation<V, V>() {
             @Override
             public Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.get(getName());
@@ -54,7 +54,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Void> setAsync(final V value) {
-        return connectionManager.writeAsync(new VoidOperation<V, String>() {
+        return connectionManager.writeAsync(getName(), new VoidOperation<V, String>() {
             @Override
             public Future<String> execute(RedisAsyncConnection<Object, V> async) {
                 return async.set(getName(), value);
@@ -69,7 +69,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Void> setAsync(final V value, final long timeToLive, final TimeUnit timeUnit) {
-        return connectionManager.writeAsync(new VoidOperation<V, String>() {
+        return connectionManager.writeAsync(getName(), new VoidOperation<V, String>() {
             @Override
             public Future<String> execute(RedisAsyncConnection<Object, V> async) {
                 return async.setex(getName(), timeUnit.toSeconds(timeToLive), value);
@@ -84,7 +84,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Boolean> existsAsync() {
-        return connectionManager.readAsync(new ResultOperation<Boolean, V>() {
+        return connectionManager.readAsync(getName(), new ResultOperation<Boolean, V>() {
             @Override
             public Future<Boolean> execute(RedisAsyncConnection<Object, V> async) {
                 return async.exists(getName());

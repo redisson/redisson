@@ -34,7 +34,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public boolean expire(final long timeToLive, final TimeUnit timeUnit) {
-        return connectionManager.write(new ResultOperation<Boolean, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Boolean, Object>() {
             @Override
             protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.expire(getName(), timeUnit.toSeconds(timeToLive));
@@ -44,7 +44,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public boolean expireAt(final long timestamp) {
-        return connectionManager.write(new ResultOperation<Boolean, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Boolean, Object>() {
             @Override
             protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.expireat(getName(), timestamp);
@@ -54,7 +54,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public boolean expireAt(final Date timestamp) {
-        return connectionManager.write(new ResultOperation<Boolean, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Boolean, Object>() {
             @Override
             protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.expireat(getName(), timestamp);
@@ -64,7 +64,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public boolean clearExpire() {
-        return connectionManager.write(new ResultOperation<Boolean, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Boolean, Object>() {
             @Override
             protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.persist(getName());

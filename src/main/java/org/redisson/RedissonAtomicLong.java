@@ -39,7 +39,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long addAndGet(final long delta) {
-        return connectionManager.write(new ResultOperation<Long, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.incrby(getName(), delta);
@@ -49,7 +49,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public boolean compareAndSet(final long expect, final long update) {
-        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, Object> conn) {
                 while (true) {
@@ -73,7 +73,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long decrementAndGet() {
-        return connectionManager.write(new ResultOperation<Long, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.decr(getName());
@@ -88,7 +88,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long getAndAdd(final long delta) {
-        return connectionManager.write(new SyncOperation<Object, Long>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Long>() {
             @Override
             public Long execute(RedisConnection<Object, Object> conn) {
                 while (true) {
@@ -117,7 +117,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long getAndSet(final long newValue) {
-        return connectionManager.write(new SyncOperation<Object, Long>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Long>() {
             @Override
             public Long execute(RedisConnection<Object, Object> conn) {
                 while (true) {
@@ -137,7 +137,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long incrementAndGet() {
-        return connectionManager.write(new ResultOperation<Long, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.incr(getName());
@@ -156,7 +156,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public void set(final long newValue) {
-        connectionManager.write(new ResultOperation<String, Object>() {
+        connectionManager.write(getName(), new ResultOperation<String, Object>() {
             @Override
             protected Future<String> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.set(getName(), newValue);

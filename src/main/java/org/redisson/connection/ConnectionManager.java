@@ -34,17 +34,29 @@ public interface ConnectionManager {
 
     <V> V get(Future<V> future);
 
+    <V, R> R read(String key, SyncOperation<V, R> operation);
+
     <V, R> R read(SyncOperation<V, R> operation);
 
+    <V, R> R write(String key, SyncOperation<V, R> operation);
+
     <V, R> R write(SyncOperation<V, R> operation);
+
+    <V, R> R write(String key, AsyncOperation<V, R> asyncOperation);
 
     <V, R> R write(AsyncOperation<V, R> asyncOperation);
 
     <V, T> Future<T> writeAllAsync(AsyncOperation<V, T> asyncOperation);
 
+    <V, T> T read(String key, AsyncOperation<V, T> asyncOperation);
+
     <V, T> T read(AsyncOperation<V, T> asyncOperation);
 
+    <V, T> Future<T> readAsync(String key, AsyncOperation<V, T> asyncOperation);
+
     <V, T> Future<T> readAsync(AsyncOperation<V, T> asyncOperation);
+
+    <V, T> Future<T> writeAsync(String key, AsyncOperation<V, T> asyncOperation);
 
     <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation);
 

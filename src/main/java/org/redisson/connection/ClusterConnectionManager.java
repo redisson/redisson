@@ -87,12 +87,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 MasterSlaveServersConfig c = create(cfg);
                 log.info("master: {}", partition.getMasterAddress());
                 c.setMasterAddress(partition.getMasterAddress());
-                for (String slaveAddress : partition.getSlaveAddresses()) {
-                    log.info("slave: {}", slaveAddress);
-                    c.addSlaveAddress(slaveAddress);
-                }
+//                for (String slaveAddress : partition.getSlaveAddresses()) {
+//                    log.info("slave: {}", slaveAddress);
+//                    c.addSlaveAddress(slaveAddress);
+//                }
 
-                MasterSlaveEntry entry = new MasterSlaveEntry(codec, group, c);
+                SingleEntry entry = new SingleEntry(codec, group, c);
                 entries.put(partition.getEndSlot(), entry);
             }
 

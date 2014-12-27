@@ -51,7 +51,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public int size() {
-        return connectionManager.read(new ResultOperation<Long, V>() {
+        return connectionManager.read(getName(), new ResultOperation<Long, V>() {
             @Override
             public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hlen(getName());
@@ -66,7 +66,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean containsKey(final Object key) {
-        return connectionManager.read(new ResultOperation<Boolean, V>() {
+        return connectionManager.read(getName(), new ResultOperation<Boolean, V>() {
             @Override
             public Future<Boolean> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hexists(getName(), key);
@@ -76,7 +76,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean containsValue(final Object value) {
-        List<V> list = connectionManager.read(new ResultOperation<List<V>, V>() {
+        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
             @Override
             public Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hvals(getName());
@@ -91,7 +91,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return Collections.emptyMap();
         }
         final Object[] keysArray = keys.toArray();
-        List<V> list = connectionManager.read(new ResultOperation<List<V>, V>() {
+        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
             @Override
             protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hmget(getName(), keysArray);
@@ -126,7 +126,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public void putAll(final Map<? extends K, ? extends V> map) {
-        connectionManager.write(new ResultOperation<String, Object>() {
+        connectionManager.write(getName(), new ResultOperation<String, Object>() {
             @Override
             public Future<String> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.hmset(getName(), (Map<Object, Object>) map);
@@ -141,7 +141,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Set<K> keySet() {
-        return (Set<K>) connectionManager.read(new ResultOperation<Set<Object>, V>() {
+        return (Set<K>) connectionManager.read(getName(), new ResultOperation<Set<Object>, V>() {
             @Override
             public Future<Set<Object>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hkeys(getName());
@@ -151,7 +151,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Collection<V> values() {
-        return connectionManager.read(new ResultOperation<List<V>, V>() {
+        return connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
             @Override
             public Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hvals(getName());
@@ -161,7 +161,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet() {
-        Map<Object, Object> map = connectionManager.read(new ResultOperation<Map<Object, Object>, Object>() {
+        Map<Object, Object> map = connectionManager.read(getName(), new ResultOperation<Map<Object, Object>, Object>() {
             @Override
             public Future<Map<Object, Object>> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.hgetall(getName());
@@ -189,7 +189,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 //            }
 //        }
 
-        return connectionManager.write(new AsyncOperation<V, V>() {
+        return connectionManager.write(getName(), new AsyncOperation<V, V>() {
             @Override
             public void execute(final Promise<V> promise, final RedisAsyncConnection<Object, V> async) {
                 final AsyncOperation<V, V> timeoutCallback = this;
@@ -225,7 +225,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean remove(final Object key, final Object value) {
-        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, Object> connection) {
                 while (true) {
@@ -248,7 +248,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean replace(final K key, final V oldValue, final V newValue) {
-        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, Object> connection) {
                 while (true) {
@@ -271,7 +271,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public V replace(final K key, final V value) {
-        return connectionManager.write(new SyncOperation<V, V>() {
+        return connectionManager.write(getName(), new SyncOperation<V, V>() {
             @Override
             public V execute(RedisConnection<Object, V> connection) {
                 while (true) {
@@ -294,7 +294,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> getAsync(final K key) {
-        return connectionManager.readAsync(new ResultOperation<V, V>() {
+        return connectionManager.readAsync(getName(), new ResultOperation<V, V>() {
             @Override
             public Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hget(getName(), key);
@@ -314,7 +314,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 //            }
 //        }
 
-        return connectionManager.writeAsync(new AsyncOperation<V, V>() {
+        return connectionManager.writeAsync(getName(), new AsyncOperation<V, V>() {
             @Override
             public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
                 putAsync(key, value, promise, async, this);
@@ -375,7 +375,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 //            }
 //        }
 
-        return connectionManager.writeAsync(new AsyncOperation<V, V>() {
+        return connectionManager.writeAsync(getName(), new AsyncOperation<V, V>() {
             @Override
             public void execute(final Promise<V> promise, RedisAsyncConnection<Object, V> async) {
                 removeAsync(key, promise, async, this);
@@ -426,7 +426,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<Boolean> fastPutAsync(final K key, final V value) {
-        return connectionManager.writeAsync(new ResultOperation<Boolean, V>() {
+        return connectionManager.writeAsync(getName(), new ResultOperation<Boolean, V>() {
             @Override
             public Future<Boolean> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hset(getName(), key, value);
@@ -442,7 +442,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Future<Long> fastRemoveAsync(final K ... keys) {
         if (keys != null && keys.length > 0) {
-            return connectionManager.writeAsync(new ResultOperation<Long, V>() {
+            return connectionManager.writeAsync(getName(), new ResultOperation<Long, V>() {
                 @Override
                 public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
                     return async.hdel(getName(), keys);
@@ -459,7 +459,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     private MapScanResult<Object, V> scanIterator(final long startPos) {
-        return connectionManager.read(new ResultOperation<MapScanResult<Object, V>, V>() {
+        return connectionManager.read(getName(), new ResultOperation<MapScanResult<Object, V>, V>() {
             @Override
             public Future<MapScanResult<Object, V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.hscan(getName(), startPos);
@@ -551,7 +551,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public V addAndGet(final K key, final V value) {
-        String res = connectionManager.write(new ResultOperation<String, V>() {
+        String res = connectionManager.write(getName(), new ResultOperation<String, V>() {
 
             @Override
             protected Future<String> execute(RedisAsyncConnection<Object, V> async) {
@@ -560,7 +560,6 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
         });
 
-        //long
         if (value instanceof Long) {
             Object obj = Long.parseLong(res);
             return (V)obj;

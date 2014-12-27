@@ -53,7 +53,7 @@ abstract class RedissonObject implements RObject {
     }
 
     void delete(String name) {
-        connectionManager.write(new ResultOperation<Long, Object>() {
+        connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.del(getName());

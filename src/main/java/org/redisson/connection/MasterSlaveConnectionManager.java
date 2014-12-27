@@ -74,7 +74,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected MasterSlaveServersConfig config;
 
-    protected NavigableMap<Integer, MasterSlaveEntry> entries = new ConcurrentSkipListMap<Integer, MasterSlaveEntry>();
+    protected final NavigableMap<Integer, MasterSlaveEntry> entries = new ConcurrentSkipListMap<Integer, MasterSlaveEntry>();
 
     MasterSlaveConnectionManager() {
     }
@@ -185,6 +185,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
     }
 
+    public <V, T> Future<T> writeAsync(String key, AsyncOperation<V, T> asyncOperation) {
+        Promise<T> mainPromise = getGroup().next().newPromise();
+        int slot = calcSlot(key);
+        writeAsync(slot, asyncOperation, mainPromise, 0);
+        return mainPromise;
+    }
+
     public <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation) {
         Promise<T> mainPromise = getGroup().next().newPromise();
         writeAsync(-1, asyncOperation, mainPromise, 0);
@@ -215,6 +222,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         try {
             RedisConnection<Object, V> connection = connectionWriteOp(slot);
             RedisAsyncConnection<Object, V> async = connection.getAsync();
+            log.debug("writeAsync for slot {} using {}", slot, connection.getRedisClient().getAddr());
             asyncOperation.execute(promise, async);
 
             ex.set(new RedisTimeoutException());
@@ -244,6 +252,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
             }
         });
+    }
+
+    public <V, R> R write(String key, SyncOperation<V, R> operation) {
+        int slot = calcSlot(key);
+        return write(slot, operation, 0);
     }
 
     public <V, R> R write(SyncOperation<V, R> operation) {
@@ -280,6 +293,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    public <V, R> R read(String key, SyncOperation<V, R> operation) {
+        int slot = calcSlot(key);
+        return read(slot, operation, 0);
+    }
+
     public <V, R> R read(SyncOperation<V, R> operation) {
         return read(-1, operation, 0);
     }
@@ -314,6 +332,22 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    private int calcSlot(String key) {
+        if (entries.size() == 1) {
+            return -1;
+        }
+        int result = CRC16.crc16(key.getBytes()) % 16384;
+        log.debug("slot {} for {}", result, key);
+        return result;
+    }
+
+    public <V, R> R write(String key, AsyncOperation<V, R> asyncOperation) {
+        Promise<R> mainPromise = getGroup().next().newPromise();
+        int slot = calcSlot(key);
+        writeAsync(slot, asyncOperation, mainPromise, 0);
+        return mainPromise.awaitUninterruptibly().getNow();
+    }
+
     public <V, R> R write(AsyncOperation<V, R> asyncOperation) {
         return writeAsync(asyncOperation).awaitUninterruptibly().getNow();
     }
@@ -326,8 +360,22 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         throw ((RedisException)future.cause());
     }
 
+    public <V, T> T read(String key, AsyncOperation<V, T> asyncOperation) {
+        Promise<T> mainPromise = getGroup().next().newPromise();
+        int slot = calcSlot(key);
+        readAsync(slot, asyncOperation, mainPromise, 0);
+        return mainPromise.awaitUninterruptibly().getNow();
+    }
+
     public <V, T> T read(AsyncOperation<V, T> asyncOperation) {
         return readAsync(asyncOperation).awaitUninterruptibly().getNow();
+    }
+
+    public <V, T> Future<T> readAsync(String key, AsyncOperation<V, T> asyncOperation) {
+        Promise<T> mainPromise = getGroup().next().newPromise();
+        int slot = calcSlot(key);
+        readAsync(slot, asyncOperation, mainPromise, 0);
+        return mainPromise;
     }
 
     public <V, T> Future<T> readAsync(AsyncOperation<V, T> asyncOperation) {
@@ -360,6 +408,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         try {
             RedisConnection<Object, V> connection = connectionReadOp(slot);
             RedisAsyncConnection<Object, V> async = connection.getAsync();
+            log.debug("readAsync for slot {} using {}", slot, connection.getRedisClient().getAddr());
             asyncOperation.execute(promise, async);
 
             ex.set(new RedisTimeoutException());
