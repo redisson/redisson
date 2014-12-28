@@ -43,8 +43,6 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
  */
 public class RedissonCountDownLatch extends RedissonObject implements RCountDownLatch {
 
-    private final String groupName = "redisson_countdownlatch_";
-
     private static final Integer zeroCountMessage = 0;
     private static final Integer newCountMessage = 1;
 
@@ -198,7 +196,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return;
         }
 
-        connectionManager.write(new SyncOperation<Object, Void>() {
+        connectionManager.write(getName(), new SyncOperation<Object, Void>() {
             @Override
             public Void execute(RedisConnection<Object, Object> conn) {
                 Long val = conn.decr(getName());
@@ -222,7 +220,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private String getChannelName() {
-        return groupName + getName();
+        return "redisson_countdownlatch_{" + getName() + "}";
     }
 
     @Override
@@ -231,7 +229,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private long getCountInner() {
-        Number val = connectionManager.read(new ResultOperation<Number, Number>() {
+        Number val = connectionManager.read(getName(), new ResultOperation<Number, Number>() {
             @Override
             protected Future<Number> execute(RedisAsyncConnection<Object, Number> async) {
                 return async.get(getName());
@@ -246,7 +244,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean trySetCount(final long count) {
-        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
 
             @Override
             public Boolean execute(RedisConnection<Object, Object> conn) {
@@ -266,7 +264,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public void delete() {
-        connectionManager.write(new SyncOperation<Object, Void>() {
+        connectionManager.write(getName(), new SyncOperation<Object, Void>() {
             @Override
             public Void execute(RedisConnection<Object, Object> conn) {
                 conn.multi();

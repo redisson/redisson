@@ -45,7 +45,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     @Override
     public Future<Long> publishAsync(final M message) {
-        return connectionManager.writeAsync(new ResultOperation<Long, M>() {
+        return connectionManager.writeAsync(getName(), new ResultOperation<Long, M>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, M> async) {
                 return async.publish(getName(), message);

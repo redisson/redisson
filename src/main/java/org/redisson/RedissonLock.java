@@ -205,7 +205,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
 
     private String getChannelName() {
-        return "redisson__lock__channel__" + getName();
+        return "redisson__lock__channel__{" + getName() + "}";
     }
 
     @Override
@@ -283,7 +283,7 @@ public class RedissonLock extends RedissonObject implements RLock {
         final LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
 
-        return connectionManager.write(new SyncOperation<LockValue, Long>() {
+        return connectionManager.write(getName(), new SyncOperation<LockValue, Long>() {
 
             @Override
             public Long execute(RedisConnection<Object, LockValue> connection) {
@@ -313,7 +313,7 @@ public class RedissonLock extends RedissonObject implements RLock {
         final LockValue currentLock = new LockValue(id, Thread.currentThread().getId());
         currentLock.incCounter();
 
-        return connectionManager.write(new SyncOperation<Object, Long>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Long>() {
             @Override
             public Long execute(RedisConnection<Object, Object> connection) {
                 long time = unit.toMillis(leaseTime);
@@ -399,7 +399,7 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void unlock() {
-        connectionManager.write(new SyncOperation<Object, Void>() {
+        connectionManager.write(getName(), new SyncOperation<Object, Void>() {
             @Override
             public Void execute(RedisConnection<Object, Object> connection) {
                 LockValue lock = (LockValue) connection.get(getName());
@@ -448,7 +448,7 @@ public class RedissonLock extends RedissonObject implements RLock {
 
     @Override
     public void forceUnlock() {
-        connectionManager.write(new SyncOperation<Object, Void>() {
+        connectionManager.write(getName(), new SyncOperation<Object, Void>() {
             @Override
             public Void execute(RedisConnection<Object, Object> connection) {
                 unlock(connection);
@@ -463,7 +463,7 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
 
     private LockValue getCurrentLock() {
-        LockValue lock = connectionManager.read(new ResultOperation<LockValue, LockValue>() {
+        LockValue lock = connectionManager.read(getName(), new ResultOperation<LockValue, LockValue>() {
             @Override
             protected Future<LockValue> execute(RedisAsyncConnection<Object, LockValue> async) {
                 return async.get(getName());
