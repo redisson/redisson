@@ -97,7 +97,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
         loadComparator();
 
-        connectionManager.write(new ResultOperation<Boolean, Object>() {
+        connectionManager.write(getName(), new ResultOperation<Boolean, Object>() {
             @Override
             protected Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.setnx(getCurrentVersionKey(), 0L);
@@ -106,7 +106,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private void loadComparator() {
-        connectionManager.read(new SyncOperation<V, Void>() {
+        connectionManager.read(getName(), new SyncOperation<V, Void>() {
             @Override
             public Void execute(RedisConnection<Object, V> conn) {
                 loadComparator(conn);
@@ -160,7 +160,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public int size() {
-        return connectionManager.read(new ResultOperation<Long, V>() {
+        return connectionManager.read(getName(), new ResultOperation<Long, V>() {
 
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
@@ -180,7 +180,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean contains(final Object o) {
-        return connectionManager.read(new SyncOperation<V, Boolean>() {
+        return connectionManager.read(getName(), new SyncOperation<V, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, V> conn) {
                 return binarySearch((V)o, conn).getIndex() >= 0;
@@ -251,7 +251,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private void remove(final int index) {
-        connectionManager.write(new SyncOperation<Object, V>() {
+        connectionManager.write(getName(), new SyncOperation<Object, V>() {
             @Override
             public V execute(RedisConnection<Object, Object> conn) {
                 if (index == 0) {
@@ -278,7 +278,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private V get(final int index) {
-        return connectionManager.read(new ResultOperation<V, V>() {
+        return connectionManager.read(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lindex(getName(), index);
@@ -288,7 +288,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public Object[] toArray() {
-        List<V> res = connectionManager.read(new ResultOperation<List<V>, V>() {
+        List<V> res = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
             @Override
             protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lrange(getName(), 0, -1);
@@ -299,7 +299,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<V> res = connectionManager.read(new ResultOperation<List<V>, V>() {
+        List<V> res = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
             @Override
             protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lrange(getName(), 0, -1);
@@ -309,7 +309,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private String getCurrentVersionKey() {
-        return "redisson__sortedset__version__" + getName();
+        return "redisson__sortedset__version__{" + getName() + "}";
     }
 
     private Long getCurrentVersion(RedisConnection<Object, Object> simpleConnection) {
@@ -318,7 +318,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean add(final V value) {
-        return connectionManager.write(new SyncOperation<V, Boolean>() {
+        return connectionManager.write(getName(), new SyncOperation<V, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, V> conn) {
                 return add(value, conn);
@@ -485,7 +485,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean remove(final Object value) {
-        return connectionManager.write(new SyncOperation<V, Boolean>() {
+        return connectionManager.write(getName(), new SyncOperation<V, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, V> conn) {
                 return remove(value, conn);
@@ -600,7 +600,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public V first() {
-        V res = connectionManager.read(new ResultOperation<V, V>() {
+        V res = connectionManager.read(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lindex(getName(), 0);
@@ -614,7 +614,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public V last() {
-        V res = connectionManager.read(new ResultOperation<V, V>() {
+        V res = connectionManager.read(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lindex(getName(), -1);
@@ -631,12 +631,12 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private String getComparatorKeyName() {
-        return "redisson__sortedset__comparator__" + getName();
+        return "redisson__sortedset__comparator__{" + getName() + "}";
     }
 
     @Override
     public boolean trySetComparator(final Comparator<? super V> comparator) {
-        return connectionManager.write(new SyncOperation<String, Boolean>() {
+        return connectionManager.write(getName(), new SyncOperation<String, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, String> connection) {
                 connection.watch(getName(), getComparatorKeyName());

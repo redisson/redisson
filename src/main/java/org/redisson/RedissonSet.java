@@ -47,7 +47,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public int size() {
-        return connectionManager.read(new ResultOperation<Long, V>() {
+        return connectionManager.read(getName(), new ResultOperation<Long, V>() {
             @Override
             public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
                 return async.scard(getName());
@@ -62,7 +62,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean contains(final Object o) {
-        return connectionManager.read(new ResultOperation<Boolean, Object>() {
+        return connectionManager.read(getName(), new ResultOperation<Boolean, Object>() {
             @Override
             public Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.sismember(getName(), o);
@@ -71,7 +71,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     private ListScanResult<V> scanIterator(final long startPos) {
-        return connectionManager.read(new ResultOperation<ListScanResult<V>, V>() {
+        return connectionManager.read(getName(), new ResultOperation<ListScanResult<V>, V>() {
             @Override
             public Future<ListScanResult<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.sscan(getName(), startPos);
@@ -132,7 +132,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Object[] toArray() {
-        Set<V> res = connectionManager.read(new ResultOperation<Set<V>, V>() {
+        Set<V> res = connectionManager.read(getName(), new ResultOperation<Set<V>, V>() {
             @Override
             public Future<Set<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.smembers(getName());
@@ -143,7 +143,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public <T> T[] toArray(T[] a) {
-        Set<V> res = connectionManager.read(new ResultOperation<Set<V>, V>() {
+        Set<V> res = connectionManager.read(getName(), new ResultOperation<Set<V>, V>() {
             @Override
             public Future<Set<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.smembers(getName());
@@ -159,7 +159,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> addAsync(final V e) {
-        return connectionManager.writeAsync(new AsyncOperation<V, Boolean>() {
+        return connectionManager.writeAsync(getName(), new AsyncOperation<V, Boolean>() {
             @Override
             public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, V> async) {
                 async.sadd(getName(), e).addListener(new OperationListener<V, Boolean, Long>(promise, async, this) {
@@ -174,7 +174,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> removeAsync(final V e) {
-        return connectionManager.writeAsync(new AsyncOperation<V, Boolean>() {
+        return connectionManager.writeAsync(getName(), new AsyncOperation<V, Boolean>() {
             @Override
             public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, V> async) {
                 async.srem(getName(), e).addListener(new OperationListener<V, Boolean, Long>(promise, async, this) {
@@ -204,7 +204,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean addAll(final Collection<? extends V> c) {
-        Long res = connectionManager.write(new ResultOperation<Long, Object>() {
+        Long res = connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             public Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.sadd(getName(), c.toArray());
@@ -227,7 +227,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean removeAll(final Collection<?> c) {
-        Long res = connectionManager.write(new ResultOperation<Long, Object>() {
+        Long res = connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             public Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.srem(getName(), c.toArray());

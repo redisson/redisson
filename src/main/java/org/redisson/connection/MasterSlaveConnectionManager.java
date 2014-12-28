@@ -336,6 +336,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entries.size() == 1) {
             return -1;
         }
+
+        int start = key.indexOf('{');
+        if (start != -1) {
+            int end = key.indexOf('}');
+            key = key.substring(start+1, end);
+        }
+
         int result = CRC16.crc16(key.getBytes()) % 16384;
         log.debug("slot {} for {}", result, key);
         return result;

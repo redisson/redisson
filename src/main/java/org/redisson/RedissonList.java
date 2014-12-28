@@ -50,7 +50,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public int size() {
-        return connectionManager.read(new ResultOperation<Long, V>() {
+        return connectionManager.read(getName(), new ResultOperation<Long, V>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
                 return async.llen(getName());
@@ -96,7 +96,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     protected boolean remove(final Object o, final int count) {
-        return connectionManager.write(new ResultOperation<Long, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.lrem(getName(), count, o);
@@ -114,7 +114,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             int to = div(size(), batchSize);
             for (int i = 0; i < to; i++) {
                 final int j = i;
-                List<Object> range = connectionManager.read(new ResultOperation<List<Object>, Object>() {
+                List<Object> range = connectionManager.read(getName(), new ResultOperation<List<Object>, Object>() {
                     @Override
                     protected Future<List<Object>> execute(RedisAsyncConnection<Object, Object> async) {
                         return async.lrange(getName(), j*batchSize, j*batchSize + batchSize - 1);
@@ -134,7 +134,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean addAll(final Collection<? extends V> c) {
-        connectionManager.write(new ResultOperation<Long, Object>() {
+        connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.rpush(getName(), c.toArray());
@@ -147,7 +147,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public boolean addAll(final int index, final Collection<? extends V> coll) {
         checkPosition(index);
         if (index < size()) {
-            return connectionManager.write(new SyncOperation<Object, Boolean>() {
+            return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
                 @Override
                 public Boolean execute(RedisConnection<Object, Object> conn) {
                     while (true) {
@@ -181,7 +181,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean removeAll(final Collection<?> c) {
-        return connectionManager.write(new SyncOperation<Object, Boolean>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, Object> conn) {
                 boolean result = false;
@@ -212,7 +212,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public void clear() {
-        connectionManager.write(new ResultOperation<Long, V>() {
+        connectionManager.write(getName(), new ResultOperation<Long, V>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
                 return async.del(getName());
@@ -227,7 +227,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     private V getValue(final int index) {
-        return connectionManager.read(new ResultOperation<V, V>() {
+        return connectionManager.read(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lindex(getName(), index);
@@ -260,7 +260,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public V set(final int index, final V element) {
         checkIndex(index);
 
-        return connectionManager.write(new SyncOperation<V, V>() {
+        return connectionManager.write(getName(), new SyncOperation<V, V>() {
             @Override
             public V execute(RedisConnection<Object, V> conn) {
                 while (true) {
@@ -297,7 +297,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public V remove(final int index) {
         checkIndex(index);
 
-        return connectionManager.write(new SyncOperation<Object, V>() {
+        return connectionManager.write(getName(), new SyncOperation<Object, V>() {
             @Override
             public V execute(RedisConnection<Object, Object> conn) {
                 if (index == 0) {
@@ -328,7 +328,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         int to = div(size(), batchSize);
         for (int i = 0; i < to; i++) {
             final int j = i;
-            List<Object> range = connectionManager.read(new ResultOperation<List<Object>, Object>() {
+            List<Object> range = connectionManager.read(getName(), new ResultOperation<List<Object>, Object>() {
                 @Override
                 protected Future<List<Object>> execute(RedisAsyncConnection<Object, Object> async) {
                     return async.lrange(getName(), j*batchSize, j*batchSize + batchSize - 1);
@@ -354,7 +354,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         for (int i = 1; i <= to; i++) {
             final int j = i;
             final int startIndex = -i*batchSize;
-            List<Object> range = connectionManager.read(new ResultOperation<List<Object>, Object>() {
+            List<Object> range = connectionManager.read(getName(), new ResultOperation<List<Object>, Object>() {
                 @Override
                 protected Future<List<Object>> execute(RedisAsyncConnection<Object, Object> async) {
                     return async.lrange(getName(), startIndex, size - (j-1)*batchSize);
@@ -479,7 +479,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             throw new IllegalArgumentException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
         }
 
-        return connectionManager.read(new ResultOperation<List<V>, V>() {
+        return connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
 
             @Override
             protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {

@@ -58,7 +58,7 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
 
     @Override
     public Future<Long> addAsync(final V obj) {
-        return connectionManager.writeAsync(new ResultOperation<Long, V>() {
+        return connectionManager.writeAsync(getName(), new ResultOperation<Long, V>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
                 return async.pfadd(getName(), obj);
@@ -68,7 +68,7 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
 
     @Override
     public Future<Long> addAllAsync(final Collection<V> objects) {
-        return connectionManager.writeAsync(new ResultOperation<Long, Object>() {
+        return connectionManager.writeAsync(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.pfadd(getName(), objects.toArray());
@@ -78,7 +78,7 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
 
     @Override
     public Future<Long> countAsync() {
-        return connectionManager.writeAsync(new ResultOperation<Long, Object>() {
+        return connectionManager.writeAsync(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.pfcount(getName());
@@ -88,7 +88,7 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
 
     @Override
     public Future<Long> countWithAsync(final String... otherLogNames) {
-        return connectionManager.writeAsync(new ResultOperation<Long, Object>() {
+        return connectionManager.writeAsync(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.pfcount(getName(), otherLogNames);
@@ -98,7 +98,7 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
 
     @Override
     public Future<Long> mergeWithAsync(final String... otherLogNames) {
-        return connectionManager.writeAsync(new ResultOperation<Long, Object>() {
+        return connectionManager.writeAsync(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.pfmerge(getName(), otherLogNames);

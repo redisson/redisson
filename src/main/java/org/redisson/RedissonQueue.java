@@ -44,7 +44,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     public V getFirst() {
-        V value = connectionManager.read(new ResultOperation<V, V>() {
+        V value = connectionManager.read(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lindex(getName(), 0);
@@ -71,7 +71,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V poll() {
-        return connectionManager.write(new ResultOperation<V, V>() {
+        return connectionManager.write(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lpop(getName());
