@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisClient;
+import com.lambdaworks.redis.RedisConnectionException;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
@@ -47,57 +48,61 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         init(config);
 
-        Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
 
         for (URI addr : cfg.getNodeAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
-            RedisAsyncConnection<String, String> connection = client.connectAsync();
-            String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
-            System.out.println(nodesValue);
+            try {
+                RedisAsyncConnection<String, String> connection = client.connectAsync();
+                String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
+                List<ClusterNodeInfo> nodes = parse(nodesValue);
 
-            List<ClusterNodeInfo> nodes = parse(nodesValue);
-            for (ClusterNodeInfo clusterNodeInfo : nodes) {
-                String id = clusterNodeInfo.getNodeId();
-                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
-                    id = clusterNodeInfo.getSlaveOf();
-                }
-                ClusterPartition partition = partitions.get(id);
-                if (partition == null) {
-                    partition = new ClusterPartition();
-                    partitions.put(id, partition);
-                }
+                Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
+                for (ClusterNodeInfo clusterNodeInfo : nodes) {
+                    String id = clusterNodeInfo.getNodeId();
+                    if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                        id = clusterNodeInfo.getSlaveOf();
+                    }
+                    ClusterPartition partition = partitions.get(id);
+                    if (partition == null) {
+                        partition = new ClusterPartition();
+                        partitions.put(id, partition);
+                    }
 
-                if (clusterNodeInfo.getFlags().contains(Flag.FAIL)) {
-                    partition.setMasterFail(true);
-                }
+                    if (clusterNodeInfo.getFlags().contains(Flag.FAIL)) {
+                        partition.setMasterFail(true);
+                    }
 
-                if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
-                    partition.addSlaveAddress(clusterNodeInfo.getAddress());
-                } else {
-                    partition.setEndSlot(clusterNodeInfo.getEndSlot());
-                    partition.setMasterAddress(clusterNodeInfo.getAddress());
-                }
-            }
-
-            for (ClusterPartition partition : partitions.values()) {
-                if (partition.isMasterFail()) {
-                    continue;
+                    if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                        partition.addSlaveAddress(clusterNodeInfo.getAddress());
+                    } else {
+                        partition.setEndSlot(clusterNodeInfo.getEndSlot());
+                        partition.setMasterAddress(clusterNodeInfo.getAddress());
+                    }
                 }
 
-                MasterSlaveServersConfig c = create(cfg);
-                log.info("master: {}", partition.getMasterAddress());
-                c.setMasterAddress(partition.getMasterAddress());
+                for (ClusterPartition partition : partitions.values()) {
+                    if (partition.isMasterFail()) {
+                        continue;
+                    }
+
+                    MasterSlaveServersConfig c = create(cfg);
+                    log.info("master: {}", partition.getMasterAddress());
+                    c.setMasterAddress(partition.getMasterAddress());
 //                for (String slaveAddress : partition.getSlaveAddresses()) {
 //                    log.info("slave: {}", slaveAddress);
 //                    c.addSlaveAddress(slaveAddress);
 //                }
 
-                SingleEntry entry = new SingleEntry(codec, group, c);
-                entries.put(partition.getEndSlot(), entry);
-            }
+                    SingleEntry entry = new SingleEntry(codec, group, c);
+                    entries.put(partition.getEndSlot(), entry);
+                }
+                break;
 
-            client.shutdown();
-            break;
+            } catch (RedisConnectionException e) {
+                log.warn(e.getMessage(), e);
+            } finally {
+                client.shutdown();
+            }
         }
 
         this.config = create(cfg);
