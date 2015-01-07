@@ -15,20 +15,20 @@
  */
 package org.redisson.connection;
 
+import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.ScheduledFuture;
+
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.ClusterServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
-import org.redisson.SentinelServersConfig;
 import org.redisson.connection.ClusterNodeInfo.Flag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +36,6 @@ import org.slf4j.LoggerFactory;
 import com.lambdaworks.redis.RedisAsyncConnection;
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnectionException;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
@@ -45,42 +43,21 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final List<RedisClient> nodeClients = new ArrayList<RedisClient>();
 
+    private Collection<ClusterPartition> lastPartitions;
+
+    private ScheduledFuture<?> monitorFuture;
+
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         init(config);
-
 
         for (URI addr : cfg.getNodeAddresses()) {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
             try {
                 RedisAsyncConnection<String, String> connection = client.connectAsync();
                 String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
-                List<ClusterNodeInfo> nodes = parse(nodesValue);
 
-                Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
-                for (ClusterNodeInfo clusterNodeInfo : nodes) {
-                    String id = clusterNodeInfo.getNodeId();
-                    if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
-                        id = clusterNodeInfo.getSlaveOf();
-                    }
-                    ClusterPartition partition = partitions.get(id);
-                    if (partition == null) {
-                        partition = new ClusterPartition();
-                        partitions.put(id, partition);
-                    }
-
-                    if (clusterNodeInfo.getFlags().contains(Flag.FAIL)) {
-                        partition.setMasterFail(true);
-                    }
-
-                    if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
-                        partition.addSlaveAddress(clusterNodeInfo.getAddress());
-                    } else {
-                        partition.setEndSlot(clusterNodeInfo.getEndSlot());
-                        partition.setMasterAddress(clusterNodeInfo.getAddress());
-                    }
-                }
-
-                for (ClusterPartition partition : partitions.values()) {
+                Collection<ClusterPartition> partitions = extractPartitions(nodesValue);
+                for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
                         continue;
                     }
@@ -88,14 +65,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     MasterSlaveServersConfig c = create(cfg);
                     log.info("master: {}", partition.getMasterAddress());
                     c.setMasterAddress(partition.getMasterAddress());
-//                for (String slaveAddress : partition.getSlaveAddresses()) {
-//                    log.info("slave: {}", slaveAddress);
-//                    c.addSlaveAddress(slaveAddress);
-//                }
 
                     SingleEntry entry = new SingleEntry(codec, group, c);
                     entries.put(partition.getEndSlot(), entry);
                 }
+
+                lastPartitions = partitions;
                 break;
 
             } catch (RedisConnectionException e) {
@@ -106,6 +81,98 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         this.config = create(cfg);
+
+        monitorClusterChange(cfg);
+    }
+
+    private void monitorClusterChange(final ClusterServersConfig cfg) {
+        monitorFuture = GlobalEventExecutor.INSTANCE.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    for (URI addr : cfg.getNodeAddresses()) {
+                        final RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
+                        try {
+                            RedisAsyncConnection<String, String> connection = client.connectAsync();
+                            String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
+
+                            Collection<ClusterPartition> partitions = extractPartitions(nodesValue);
+                            for (ClusterPartition newPart : partitions) {
+                                boolean found = false;
+                                for (ClusterPartition part : lastPartitions) {
+                                    if (newPart.getMasterAddress().equals(part.getMasterAddress())) {
+                                        log.debug("found endslot {} for {} fail {}", newPart.getEndSlot(), newPart.getMasterAddress(), newPart.isMasterFail());
+                                        found = true;
+                                        if (newPart.isMasterFail() && !part.isMasterFail()) {
+                                            for (ClusterPartition newMasterPart : partitions) {
+                                                if (!newMasterPart.getMasterAddress().equals(part.getMasterAddress())
+                                                        && newMasterPart.getEndSlot() == part.getEndSlot()) {
+
+                                                    log.debug("changing master from {} to {} for {}",
+                                                            part.getMasterAddress(), newMasterPart.getMasterAddress(), newMasterPart.getEndSlot());
+                                                    URI newUri = toURI(newMasterPart.getMasterAddress());
+                                                    URI oldUri = toURI(part.getMasterAddress());
+
+                                                    changeMaster(newMasterPart.getEndSlot(), newUri.getHost(), newUri.getPort());
+                                                    slaveDown(newMasterPart.getEndSlot(), oldUri.getHost(), oldUri.getPort());
+                                                    part.setMasterFail(true);
+
+                                                    monitorFuture.cancel(true);
+                                                }
+                                            }
+
+                                        }
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    // TODO slot changed
+                                }
+                            }
+
+                            break;
+
+                        } catch (RedisConnectionException e) {
+                            // skip it
+                        } finally {
+                            client.shutdownAsync();
+                        }
+                    }
+
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+
+            }
+        }, cfg.getScanInterval(), cfg.getScanInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    private Collection<ClusterPartition> extractPartitions(String nodesValue) {
+        Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
+        List<ClusterNodeInfo> nodes = parse(nodesValue);
+        for (ClusterNodeInfo clusterNodeInfo : nodes) {
+            String id = clusterNodeInfo.getNodeId();
+            if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                id = clusterNodeInfo.getSlaveOf();
+            }
+            ClusterPartition partition = partitions.get(id);
+            if (partition == null) {
+                partition = new ClusterPartition();
+                partitions.put(id, partition);
+            }
+
+            if (clusterNodeInfo.getFlags().contains(Flag.FAIL)) {
+                partition.setMasterFail(true);
+            }
+
+            if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
+                partition.addSlaveAddress(clusterNodeInfo.getAddress());
+            } else {
+                partition.setEndSlot(clusterNodeInfo.getEndSlot());
+                partition.setMasterAddress(clusterNodeInfo.getAddress());
+            }
+        }
+        return partitions.values();
     }
 
     private MasterSlaveServersConfig create(ClusterServersConfig cfg) {
@@ -118,6 +185,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
         c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         return c;
+    }
+
+    public static void main(String[] args) {
+        String s = "FAIL?".replaceAll("\\?", "");
+        System.out.println(s);
     }
 
     private List<ClusterNodeInfo> parse(String nodesResponse) {
@@ -134,7 +206,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             String flags = params[2];
             for (String flag : flags.split(",")) {
-                node.addFlag(ClusterNodeInfo.Flag.valueOf(flag.toUpperCase()));
+                String flagValue = flag.toUpperCase().replaceAll("\\?", "");
+                node.addFlag(ClusterNodeInfo.Flag.valueOf(flagValue));
             }
 
             String slaveOf = params[3];
@@ -154,129 +227,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return nodes;
     }
 
-    private void init(ClusterServersConfig cfg, Config config) {
-//        monitorMasterChange(cfg);
-    }
-
-    private void monitorMasterChange(final SentinelServersConfig cfg) {
-        final AtomicReference<String> master = new AtomicReference<String>();
-        final Set<String> freezeSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-        final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-
-        for (final URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
-            nodeClients.add(client);
-
-            RedisPubSubConnection<String, String> pubsub = client.connectPubSub();
-            pubsub.addListener(new RedisPubSubAdapter<String>() {
-                @Override
-                public void subscribed(String channel, long count) {
-                    log.info("subscribed to channel: {} from Sentinel {}:{}", channel, addr.getHost(), addr.getPort());
-                }
-
-                @Override
-                public void message(String channel, String msg) {
-                    if ("+slave".equals(channel)) {
-                        onSlaveAdded(addedSlaves, addr, msg);
-                    }
-                    if ("+sdown".equals(channel)) {
-                        onSlaveDown(freezeSlaves, addr, msg);
-                    }
-                    if ("-sdown".equals(channel)) {
-                        onSlaveUp(freezeSlaves, addr, msg);
-                    }
-                    if ("+switch-master".equals(channel)) {
-                        onMasterChange(cfg, master, addr, msg);
-                    }
-                }
-
-            });
-            pubsub.subscribe("+switch-master", "+sdown", "-sdown", "+slave");
-        }
-    }
-
-    protected void onSlaveAdded(Set<String> addedSlaves, URI addr, String msg) {
-        String[] parts = msg.split(" ");
-
-        if (parts.length > 4
-                 && "slave".equals(parts[0])) {
-            String ip = parts[2];
-            String port = parts[3];
-
-            String slaveAddr = ip + ":" + port;
-
-            // to avoid addition twice
-            if (addedSlaves.add(slaveAddr)) {
-                log.debug("Slave has been added - {}", slaveAddr);
-                addSlave(ip, Integer.valueOf(port));
-            }
-        } else {
-            log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
-        }
-    }
-
-    private void onSlaveDown(final Set<String> freezeSlaves, final URI addr, String msg) {
-        String[] parts = msg.split(" ");
-
-        if (parts.length > 4
-                 && "slave".equals(parts[0])) {
-            String ip = parts[2];
-            String port = parts[3];
-
-            String slaveAddr = ip + ":" + port;
-
-            // to avoid freeze twice
-            if (freezeSlaves.add(slaveAddr)) {
-                log.debug("Slave has down - {}", slaveAddr);
-                slaveDown(ip, Integer.valueOf(port));
-            }
-        } else {
-            log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
-        }
-    }
-
-    protected void onSlaveUp(Set<String> freezeSlaves, URI addr, String msg) {
-        String[] parts = msg.split(" ");
-
-        if (parts.length > 4
-                 && "slave".equals(parts[0])) {
-            String ip = parts[2];
-            String port = parts[3];
-
-            String slaveAddr = ip + ":" + port;
-            if (freezeSlaves.remove(slaveAddr)) {
-                log.debug("Slave has up - {}", slaveAddr);
-                slaveUp(ip, Integer.valueOf(port));
-            }
-        } else {
-            log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
-        }
-    }
-
-    private void onMasterChange(final SentinelServersConfig cfg,
-            final AtomicReference<String> master, final URI addr, String msg) {
-        String[] parts = msg.split(" ");
-
-        if (parts.length > 3) {
-            if (cfg.getMasterName().equals(parts[0])) {
-                String ip = parts[3];
-                String port = parts[4];
-
-                String current = master.get();
-                String newMaster = ip + ":" + port;
-                if (!newMaster.equals(current)
-                        && master.compareAndSet(current, newMaster)) {
-                    log.debug("changing master from {} to {}", current, newMaster);
-                    changeMaster(ip, Integer.valueOf(port));
-                }
-            }
-        } else {
-            log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
-        }
-    }
-
     @Override
     public void shutdown() {
+        monitorFuture.cancel(true);
+
         for (RedisClient sentinel : nodeClients) {
             sentinel.shutdown();
         }

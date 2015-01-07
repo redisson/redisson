@@ -154,7 +154,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             // to avoid freeze twice
             if (freezeSlaves.add(slaveAddr)) {
                 log.debug("Slave has down - {}", slaveAddr);
-                slaveDown(ip, Integer.valueOf(port));
+                slaveDown(-1, ip, Integer.valueOf(port));
             }
         } else {
             log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
@@ -193,7 +193,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 if (!newMaster.equals(current)
                         && master.compareAndSet(current, newMaster)) {
                     log.debug("changing master from {} to {}", current, newMaster);
-                    changeMaster(ip, Integer.valueOf(port));
+                    changeMaster(-1, ip, Integer.valueOf(port));
                 }
             }
         } else {

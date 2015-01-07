@@ -24,6 +24,8 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -581,8 +583,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entries.ceilingEntry(slot).getValue();
     }
 
-    protected void slaveDown(String host, int port) {
-        Collection<RedisPubSubConnection> allPubSubConnections = getEntry().slaveDown(host, port);
+    protected void slaveDown(int slot, String host, int port) {
+        Collection<RedisPubSubConnection> allPubSubConnections = getEntry(slot).slaveDown(host, port);
 
         // reattach listeners to other channels
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
@@ -619,14 +621,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         getEntry().slaveUp(host, port);
     }
 
-    /**
-     * Freeze slave with <code>host:port</code> from slaves list.
-     * Re-attach pub/sub listeners from it to other slave.
-     * Shutdown old master client.
-     *
-     */
-    protected void changeMaster(String host, int port) {
-        getEntry().changeMaster(host, port);
+    protected void changeMaster(int endSlot, String host, int port) {
+        getEntry(endSlot).changeMaster(host, port);
     }
 
     protected <K, V> RedisConnection<K, V> connectionWriteOp(int slot) {
@@ -640,6 +636,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     RedisPubSubConnection nextPubSubConnection(int slot) {
         return getEntry(slot).nextPubSubConnection();
+    }
+
+    protected URI toURI(String url) {
+        try {
+            return new URI("//" + url);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Can't parse " + url);
+        }
     }
 
     protected void returnSubscribeConnection(int slot, PubSubConnectionEntry entry) {

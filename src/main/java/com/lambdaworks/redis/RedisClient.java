@@ -189,13 +189,19 @@ public class RedisClient {
      * discarded after calling shutdown.
      */
     public void shutdown() {
+        ChannelGroupFuture future = shutdownAsync();
+        future.awaitUninterruptibly();
+    }
+
+    public ChannelGroupFuture shutdownAsync() {
+        bootstrap.attr(ConnectionWatchdog.SHUTDOWN_KEY, true);
+
         for (Channel c : channels) {
             ChannelPipeline pipeline = c.pipeline();
             RedisAsyncConnection<?, ?> connection = pipeline.get(RedisAsyncConnection.class);
             connection.close();
         }
-        ChannelGroupFuture future = channels.close();
-        future.awaitUninterruptibly();
+        return channels.close();
     }
 
     public InetSocketAddress getAddr() {

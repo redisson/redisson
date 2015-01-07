@@ -12,6 +12,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.concurrent.TimeUnit;
@@ -29,9 +30,11 @@ import com.lambdaworks.redis.RedisAsyncConnection;
  */
 @ChannelHandler.Sharable
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
-    
+
+    public static final AttributeKey<Boolean> SHUTDOWN_KEY = AttributeKey.valueOf("shutdown");
+
     private final Logger log = LoggerFactory.getLogger(getClass());
-    
+
     private Bootstrap bootstrap;
     private Channel channel;
     private ChannelGroup channels;
@@ -84,16 +87,16 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
             public void run() {
                 doReConnect(loop, handler, connection, 1);
             }
-        }, 2, TimeUnit.MILLISECONDS);
+        }, 100, TimeUnit.MILLISECONDS);
     }
 
     private void doReConnect(final EventLoop loop, final CommandHandler<?, ?> handler, final RedisAsyncConnection<?, ?> connection, final int attempts) {
         if (!connection.isReconnect()) {
             return;
         }
-        
-        log.debug("trying to reconnect {}", bootstrap);
-        
+
+        log.debug("trying to reconnect {}", connection.getRedisClient().getAddr());
+
         ChannelFuture connect;
         synchronized (bootstrap) {
             connect = bootstrap.handler(new ChannelInitializer<Channel>() {
@@ -103,9 +106,15 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
                 }
             }).connect();
         }
+
         connect.addListener(new GenericFutureListener<ChannelFuture>() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
+                if (future.channel().attr(SHUTDOWN_KEY).get() != null) {
+                    future.channel().pipeline().remove(ConnectionWatchdog.this);
+                    return;
+                }
+
                 if (!future.isSuccess()) {
                     if (!connection.isReconnect()) {
                         return;
@@ -132,5 +141,5 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter{
     public String toString() {
         return super.toString() + " - bootstrap: " + bootstrap;
     }
-    
+
 }

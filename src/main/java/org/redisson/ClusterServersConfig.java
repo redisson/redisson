@@ -24,12 +24,15 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
 
     private List<URI> nodeAddresses = new ArrayList<URI>();
 
+    private int scanInterval = 1000;
+
     public ClusterServersConfig() {
     }
 
     ClusterServersConfig(ClusterServersConfig config) {
         super(config);
         setNodeAddresses(config.getNodeAddresses());
+        setScanInterval(config.getScanInterval());
     }
 
     public ClusterServersConfig addNodeAddress(String ... addresses) {
@@ -48,5 +51,15 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     void setNodeAddresses(List<URI> nodeAddresses) {
         this.nodeAddresses = nodeAddresses;
     }
+
+    public int getScanInterval() {
+        return scanInterval;
+    }
+    public ClusterServersConfig setScanInterval(int scanInterval) {
+        this.scanInterval = scanInterval;
+        return this;
+    }
+
+
 
 }
