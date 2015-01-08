@@ -91,6 +91,10 @@ public class MasterSlaveEntry {
                 this.config.getSlaveSubscriptionConnectionPoolSize()));
     }
 
+    public RedisClient getClient() {
+        return masterEntry.getClient();
+    }
+
     public void slaveUp(String host, int port) {
         slaveBalancer.unfreeze(host, port);
     }
@@ -106,6 +110,11 @@ public class MasterSlaveEntry {
         setupMasterEntry(host, port);
         slaveDown(host, port);
         oldMaster.getClient().shutdown();
+    }
+
+    public void shutdownMasterAsync() {
+        masterEntry.getClient().shutdownAsync();
+        slaveBalancer.shutdown();
     }
 
     public <K, V> RedisConnection<K, V> connectionWriteOp() {

@@ -625,6 +625,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         getEntry(endSlot).changeMaster(host, port);
     }
 
+    protected MasterSlaveEntry removeMaster(int endSlot) {
+        return entries.remove(endSlot);
+    }
+
     protected <K, V> RedisConnection<K, V> connectionWriteOp(int slot) {
         return getEntry(slot).connectionWriteOp();
     }

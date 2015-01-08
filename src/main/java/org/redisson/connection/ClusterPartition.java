@@ -20,6 +20,7 @@ import java.util.List;
 
 public class ClusterPartition {
 
+    private int startSlot;
     private int endSlot;
     private boolean masterFail;
     private String masterAddress;
@@ -30,6 +31,13 @@ public class ClusterPartition {
     }
     public boolean isMasterFail() {
         return masterFail;
+    }
+
+    public int getStartSlot() {
+        return startSlot;
+    }
+    public void setStartSlot(int startSlot) {
+        this.startSlot = startSlot;
     }
 
     public int getEndSlot() {
