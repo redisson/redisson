@@ -42,8 +42,13 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public void addFirst(V e) {
-        add(e);
+    public void addFirst(final V e) {
+        connectionManager.write(new VoidOperation<V, Long>() {
+            @Override
+            protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
+                return async.lpush(getName(), e);
+            }
+        });
     }
 
     @Override
@@ -51,7 +56,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
         connectionManager.write(new VoidOperation<V, Long>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
-                return async.lpush(getName(), e);
+                return async.rpush(getName(), e);
             }
         });
     }

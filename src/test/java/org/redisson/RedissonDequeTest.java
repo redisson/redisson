@@ -14,6 +14,46 @@ import org.redisson.core.RDeque;
 public class RedissonDequeTest extends BaseTest {
 
     @Test
+    public void testAddFirstOrigin() {
+        Deque<Integer> queue = new ArrayDeque<Integer>();
+        queue.addFirst(1);
+        queue.addFirst(2);
+        queue.addFirst(3);
+
+        MatcherAssert.assertThat(queue, Matchers.contains(3, 2, 1));
+    }
+
+    @Test
+    public void testAddFirst() {
+        RDeque<Integer> queue = redisson.getDeque("deque");
+        queue.addFirst(1);
+        queue.addFirst(2);
+        queue.addFirst(3);
+
+        MatcherAssert.assertThat(queue, Matchers.contains(3, 2, 1));
+    }
+
+    @Test
+    public void testAddLastOrigin() {
+        Deque<Integer> queue = new ArrayDeque<Integer>();
+        queue.addLast(1);
+        queue.addLast(2);
+        queue.addLast(3);
+
+        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3));
+    }
+
+    @Test
+    public void testAddLast() {
+        RDeque<Integer> queue = redisson.getDeque("deque");
+        queue.addLast(1);
+        queue.addLast(2);
+        queue.addLast(3);
+
+        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3));
+    }
+
+    @Test
     public void testOfferFirstOrigin() {
         Deque<Integer> queue = new ArrayDeque<Integer>();
         queue.offerFirst(1);
