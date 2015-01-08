@@ -22,8 +22,14 @@ import java.util.List;
 
 public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterServersConfig> {
 
+    /**
+     * Redis cluster node urls list
+     */
     private List<URI> nodeAddresses = new ArrayList<URI>();
 
+    /**
+     * Redis cluster scan interval in milliseconds
+     */
     private int scanInterval = 1000;
 
     public ClusterServersConfig() {
@@ -35,6 +41,12 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         setScanInterval(config.getScanInterval());
     }
 
+    /**
+     * Add Redis cluster node address. Use follow format -- <code>host:port</code>
+     *
+     * @param addresses in <code>host:port</code> format
+     * @return
+     */
     public ClusterServersConfig addNodeAddress(String ... addresses) {
         for (String address : addresses) {
             try {
@@ -55,6 +67,12 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     public int getScanInterval() {
         return scanInterval;
     }
+    /**
+     * Redis cluster scan interval in milliseconds
+     *
+     * @param scanInterval in milliseconds
+     * @return
+     */
     public ClusterServersConfig setScanInterval(int scanInterval) {
         this.scanInterval = scanInterval;
         return this;
