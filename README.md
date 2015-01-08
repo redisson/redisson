@@ -14,6 +14,10 @@ Licensed under the Apache License 2.0.
 
 Features
 ================================
+* Cluster servers mode:
+    1. automatic master discovery
+    2. automatic new master server discovery
+    3. automatic slots change discovery
 * Sentinel servers mode: 
     1. automatic master and slave servers discovery
     2. automatic new master server discovery
@@ -48,6 +52,12 @@ Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####??-Jan-2015 - version 1.2
+Feature - cluster mode support  
+Fixed - `RList` iterator race conditions  
+Fixed - `RDeque.addFirst` `RDeque.addLast` methods  
+Fixed - OSGi support
 
 ####16-Dec-2014 - version 1.1.7 released
 Improvement - `RAtomicLong` optimization  
