@@ -279,6 +279,7 @@
                <instructions>
                    <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                    <Export-Package>
+                    org.redisson.codec;version="${project.version}",
                     org.redisson.core;version="${project.version}",
                     org.redisson;version="${project.version}",
                    </Export-Package>
