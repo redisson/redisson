@@ -56,6 +56,7 @@ Recent Releases
 ####??-Jan-2015 - version 1.2
 Feature - cluster mode support  
 Fixed - `RList` iterator race conditions  
+Fixed - `RDeque.addFirst` `RDeque.addLast` methods  
 Fixed - OSGi support
 
 ####16-Dec-2014 - version 1.1.7 released
