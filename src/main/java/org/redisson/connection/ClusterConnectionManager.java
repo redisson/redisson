@@ -61,10 +61,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 Map<Integer, ClusterPartition> partitions = extractPartitions(nodesValue);
                 for (ClusterPartition partition : partitions.values()) {
-                    if (partition.isMasterFail()) {
-                        continue;
-                    }
-
                     addMasterEntry(partition, cfg);
                 }
 
@@ -83,6 +79,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
+        if (partition.isMasterFail()) {
+            return;
+        }
+
         MasterSlaveServersConfig c = create(cfg);
         log.info("master: {} for slot range: {}-{} added", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
         c.setMasterAddress(partition.getMasterAddress());
@@ -103,11 +103,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             RedisAsyncConnection<String, String> connection = client.connectAsync();
                             String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
 
+                            log.debug("cluster nodes state: {}", nodesValue);
+
                             Map<Integer, ClusterPartition> partitions = extractPartitions(nodesValue);
                             for (ClusterPartition newPart : partitions.values()) {
                                 for (ClusterPartition part : lastPartitions.values()) {
                                     if (newPart.getMasterAddress().equals(part.getMasterAddress())) {
+
                                         log.debug("found endslot {} for {} fail {}", part.getEndSlot(), part.getMasterAddress(), newPart.isMasterFail());
+
                                         if (newPart.isMasterFail()) {
                                             ClusterPartition newMasterPart = partitions.get(part.getEndSlot());
                                             if (!newMasterPart.getMasterAddress().equals(part.getMasterAddress())) {
