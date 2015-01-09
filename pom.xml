@@ -141,7 +141,7 @@
   <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
-      <version>1.7.7</version>
+      <version>1.7.10</version>
       <scope>test</scope>
   </dependency>
 
@@ -154,18 +154,18 @@
   <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.7</version>
+      <version>1.7.10</version>
   </dependency>
 
   <dependency>
   	<groupId>com.fasterxml.jackson.core</groupId>
   	<artifactId>jackson-core</artifactId>
-  	<version>2.4.3</version>
+  	<version>2.4.4</version>
   </dependency>
   <dependency>
   	<groupId>com.fasterxml.jackson.core</groupId>
   	<artifactId>jackson-databind</artifactId>
-  	<version>2.4.3</version>
+  	<version>2.4.4</version>
   </dependency>
  </dependencies>
 
