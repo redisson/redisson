@@ -53,7 +53,7 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
-####??-Jan-2015 - version 1.2
+####09-Jan-2015 - version 1.2.0 released
 Feature - cluster mode support  
 Fixed - `RList` iterator race conditions  
 Fixed - `RDeque.addFirst` `RDeque.addLast` methods  
@@ -158,5 +158,5 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>1.1.7</version>
+       <version>1.2.0</version>
     </dependency>
