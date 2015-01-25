@@ -249,7 +249,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             @Override
             public Boolean execute(RedisConnection<Object, Object> conn) {
                 conn.watch(getName());
-                Long oldValue = (Long) conn.get(getName());
+                Number oldValue = (Number) conn.get(getName());
                 if (oldValue != null) {
                     conn.unwatch();
                     return false;
