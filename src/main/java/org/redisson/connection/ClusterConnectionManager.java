@@ -215,6 +215,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private MasterSlaveServersConfig create(ClusterServersConfig cfg) {
         MasterSlaveServersConfig c = new MasterSlaveServersConfig();
+        c.setRetryInterval(cfg.getRetryInterval());
+        c.setRetryAttempts(cfg.getRetryAttempts());
+        c.setTimeout(cfg.getTimeout());
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
         c.setDatabase(cfg.getDatabase());

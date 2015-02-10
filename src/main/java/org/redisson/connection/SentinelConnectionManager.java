@@ -45,6 +45,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         init(config);
 
         final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
+        c.setRetryInterval(cfg.getRetryInterval());
+        c.setRetryAttempts(cfg.getRetryAttempts());
+        c.setTimeout(cfg.getTimeout());
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
         c.setDatabase(cfg.getDatabase());

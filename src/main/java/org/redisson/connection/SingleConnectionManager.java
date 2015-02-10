@@ -24,6 +24,9 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     public SingleConnectionManager(SingleServerConfig cfg, Config config) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
+        newconfig.setRetryAttempts(cfg.getRetryAttempts());
+        newconfig.setRetryInterval(cfg.getRetryInterval());
+        newconfig.setTimeout(cfg.getTimeout());
         newconfig.setPassword(cfg.getPassword());
         newconfig.setDatabase(cfg.getDatabase());
         newconfig.setMasterAddress(addr);
