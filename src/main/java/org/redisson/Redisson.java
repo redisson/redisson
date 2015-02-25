@@ -16,17 +16,14 @@
 package org.redisson;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
-
 import io.netty.util.concurrent.Future;
-
 import org.redisson.async.ResultOperation;
-import org.redisson.connection.ClusterConnectionManager;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.SentinelConnectionManager;
-import org.redisson.connection.SingleConnectionManager;
+import org.redisson.connection.*;
 import org.redisson.core.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -93,6 +90,30 @@ public class Redisson implements RedissonClient {
     public <V> RBucket<V> getBucket(String name) {
         return new RedissonBucket<V>(connectionManager, name);
     }
+
+    /**
+     * Returns a list of object holder by a key pattern
+     */
+    @Override
+    public <V> List<RBucket<V>> getBuckets(final String pattern) {
+        List<Object> keys = connectionManager.get(connectionManager.readAsync(new ResultOperation<List<Object>, V>() {
+            @Override
+            public Future<List<Object>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.keys(pattern);
+            }
+        }));
+        if (keys == null) {
+            return Collections.emptyList();
+        }
+        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
+        for (Object key : keys) {
+            if(key != null) {
+                buckets.add(this.<V>getBucket(key.toString()));
+            }
+        }
+        return buckets;
+    }
+
 
     /**
      * Returns HyperLogLog object
