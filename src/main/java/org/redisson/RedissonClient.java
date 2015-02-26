@@ -17,6 +17,8 @@ package org.redisson;
 
 import org.redisson.core.*;
 
+import java.util.List;
+
 public interface RedissonClient {
 
     /**
@@ -26,6 +28,11 @@ public interface RedissonClient {
      * @return
      */
     <V> RBucket<V> getBucket(String name);
+
+    /**
+     * Returns a list of object holder by a key pattern
+     */
+    <V> List<RBucket<V>> getBuckets(String pattern);
 
     /**
      * Returns HyperLogLog object

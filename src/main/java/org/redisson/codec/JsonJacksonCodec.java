@@ -94,7 +94,7 @@ public class JsonJacksonCodec implements RedissonCodec {
 
     @Override
     public Object decodeKey(ByteBuffer bytes) {
-        return new String(bytes.array(), Charset.forName("ASCII"));
+        return new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Charset.forName("ASCII"));
     }
 
     @Override
