@@ -18,6 +18,7 @@ package org.redisson.codec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -126,12 +127,12 @@ public class KryoCodec implements RedissonCodec {
 
     @Override
     public byte[] encodeKey(Object key) {
-        return encodeValue(key);
+        return key.toString().getBytes(Charset.forName("ASCII"));
     }
 
     @Override
     public Object decodeKey(ByteBuffer bytes) {
-        return decode(bytes);
+        return new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Charset.forName("ASCII"));
     }
 
     @Override
