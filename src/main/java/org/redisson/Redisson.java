@@ -204,6 +204,17 @@ public class Redisson implements RedissonClient {
     }
 
     /**
+     * Returns distributed blocking queue instance by name.
+     * 
+     * @param name of the distributed blocking queue
+     * @return distributed queue
+     */
+    @Override
+    public <V> RBlockingQueue<V> getBlockingQueue(String name) {
+        return new RedissonBlockingQueue(connectionManager, name);
+    }
+
+    /**
      * Returns distributed deque instance by name.
      *
      * @param name of the distributed queue
