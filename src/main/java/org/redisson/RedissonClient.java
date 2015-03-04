@@ -99,6 +99,14 @@ public interface RedissonClient {
     <V> RQueue<V> getQueue(String name);
 
     /**
+     * Returns blocking queue instance by name.
+     * 
+     * @param name of queue
+     * @return
+     */
+    <V> RBlockingQueue<V> getBlockingQueue(String name);
+
+    /**
      * Returns deque instance by name.
      *
      * @param name of deque
