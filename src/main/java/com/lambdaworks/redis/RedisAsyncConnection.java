@@ -379,12 +379,12 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<Long> hincrby(K key, K field, long amount) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKey(field).add(amount);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapKey(field).add(amount);
         return dispatch(HINCRBY, new IntegerOutput<K, V>(codec), args);
     }
 
     public Future<String> hincrbyfloat(K key, K field, String amount) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKey(field).add(amount);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapKey(field).add(amount);
         return dispatch(HINCRBYFLOAT, new StatusOutput<K, V>(codec), args);
     }
 

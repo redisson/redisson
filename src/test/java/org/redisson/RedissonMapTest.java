@@ -118,13 +118,15 @@ public class RedissonMapTest extends BaseTest {
         }
 
     }
-
+    
     @Test
     public void testAddAndGet() throws InterruptedException {
         RMap<Integer, Integer> map = redisson.getMap("getAll");
         map.put(1, 100);
 
         Integer res = map.addAndGet(1, 12);
+        Assert.assertEquals(112, (int)res);
+        res = map.get(1);
         Assert.assertEquals(112, (int)res);
     }
 
