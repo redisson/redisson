@@ -25,7 +25,6 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -644,14 +643,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     RedisPubSubConnection nextPubSubConnection(int slot) {
         return getEntry(slot).nextPubSubConnection();
-    }
-
-    protected URI toURI(String url) {
-        try {
-            return new URI("//" + url);
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Can't parse " + url);
-        }
     }
 
     protected void returnSubscribeConnection(int slot, PubSubConnectionEntry entry) {

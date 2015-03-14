@@ -20,6 +20,8 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.redisson.misc.URIBuilder;
+
 public class SentinelServersConfig extends BaseMasterSlaveServersConfig<SentinelServersConfig> {
 
     private List<URI> sentinelAddresses = new ArrayList<URI>();
@@ -45,11 +47,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     public SentinelServersConfig addSentinelAddress(String ... addresses) {
         for (String address : addresses) {
-            try {
-                sentinelAddresses.add(new URI("//" + address));
-            } catch (URISyntaxException e) {
-                throw new IllegalArgumentException("Can't parse " + address);
-            }
+            sentinelAddresses.add(URIBuilder.create(address));
         }
         return this;
     }

@@ -18,6 +18,8 @@ package org.redisson;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.redisson.misc.URIBuilder;
+
 public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
@@ -82,11 +84,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * @param address
      */
     public SingleServerConfig setAddress(String address) {
-        try {
-            this.address = new URI("//" + address);
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Can't parse " + address);
-        }
+        this.address = URIBuilder.create(address);
         return this;
     }
     public URI getAddress() {

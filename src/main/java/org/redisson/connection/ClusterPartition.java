@@ -15,16 +15,19 @@
  */
 package org.redisson.connection;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.redisson.misc.URIBuilder;
 
 public class ClusterPartition {
 
     private int startSlot;
     private int endSlot;
     private boolean masterFail;
-    private String masterAddress;
-    private List<String> slaveAddresses = new ArrayList<String>();
+    private URI masterAddress;
+    private List<URI> slaveAddresses = new ArrayList<URI>();
 
     public void setMasterFail(boolean masterFail) {
         this.masterFail = masterFail;
@@ -47,17 +50,20 @@ public class ClusterPartition {
         this.endSlot = endSlot;
     }
 
-    public String getMasterAddress() {
+    public URI getMasterAddress() {
         return masterAddress;
     }
     public void setMasterAddress(String masterAddress) {
+        setMasterAddress(URIBuilder.create(masterAddress));
+    }
+    public void setMasterAddress(URI masterAddress) {
         this.masterAddress = masterAddress;
     }
 
-    public void addSlaveAddress(String address) {
+    public void addSlaveAddress(URI address) {
         slaveAddresses.add(address);
     }
-    public List<String> getSlaveAddresses() {
+    public List<URI> getSlaveAddresses() {
         return slaveAddresses;
     }
 

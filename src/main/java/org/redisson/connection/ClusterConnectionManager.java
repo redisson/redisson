@@ -117,8 +117,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                             if (!newMasterPart.getMasterAddress().equals(part.getMasterAddress())) {
                                                 log.debug("changing master from {} to {} for {}",
                                                         part.getMasterAddress(), newMasterPart.getMasterAddress(), newMasterPart.getEndSlot());
-                                                URI newUri = toURI(newMasterPart.getMasterAddress());
-                                                URI oldUri = toURI(part.getMasterAddress());
+                                                URI newUri = newMasterPart.getMasterAddress();
+                                                URI oldUri = part.getMasterAddress();
 
                                                 changeMaster(newMasterPart.getEndSlot(), newUri.getHost(), newUri.getPort());
                                                 slaveDown(newMasterPart.getEndSlot(), oldUri.getHost(), oldUri.getPort());

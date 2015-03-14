@@ -16,9 +16,10 @@
 package org.redisson;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.redisson.misc.URIBuilder;
 
 public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<MasterSlaveServersConfig> {
 
@@ -48,17 +49,13 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      * @param masterAddress
      */
     public MasterSlaveServersConfig setMasterAddress(String masterAddress) {
-        try {
-            this.masterAddress = new URI("//" + masterAddress);
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Can't parse " + masterAddress);
-        }
+        this.masterAddress = URIBuilder.create(masterAddress);
         return this;
     }
     public URI getMasterAddress() {
         return masterAddress;
     }
-    void setMasterAddress(URI masterAddress) {
+    public void setMasterAddress(URI masterAddress) {
         this.masterAddress = masterAddress;
     }
 
@@ -70,7 +67,7 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      */
     public MasterSlaveServersConfig addSlaveAddress(String ... sAddresses) {
         for (String address : sAddresses) {
-            slaveAddresses.add(URI.create("//" + address));
+            slaveAddresses.add(URIBuilder.create(address));
         }
         return this;
     }

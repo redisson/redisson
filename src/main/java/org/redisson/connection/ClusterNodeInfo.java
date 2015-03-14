@@ -15,15 +15,18 @@
  */
 package org.redisson.connection;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.redisson.misc.URIBuilder;
 
 public class ClusterNodeInfo {
 
     public enum Flag {SLAVE, MASTER, MYSELF, FAIL};
 
     private String nodeId;
-    private String address;
+    private URI address;
     private List<Flag> flags = new ArrayList<Flag>();
     private String slaveOf;
 
@@ -37,11 +40,11 @@ public class ClusterNodeInfo {
         this.nodeId = nodeId;
     }
 
-    public String getAddress() {
+    public URI getAddress() {
         return address;
     }
     public void setAddress(String address) {
-        this.address = address;
+        this.address = URIBuilder.create(address);
     }
 
     public List<Flag> getFlags() {
