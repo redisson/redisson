@@ -1,13 +1,32 @@
+/**
+ * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.redisson;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
-import org.redisson.async.*;
-import org.redisson.connection.*;
-import org.redisson.core.*;
+import org.redisson.async.SyncOperation;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.core.RBlockingQueue;
 
-import com.lambdaworks.redis.*;
+import com.lambdaworks.redis.RedisConnection;
 
 /**
  * Offers blocking queue facilities through an intermediary
@@ -16,38 +35,12 @@ import com.lambdaworks.redis.*;
  * delegated to this intermediary queue.
  * 
  * @author pdeschen@gmail.com
+ * @author Nikita Koksharov
  */
 public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlockingQueue<V> {
 
-    private final static int BLPOP_TIMEOUT_IN_MS = 1000;
-
-    private final LinkedBlockingQueue<V> blockingQueue = new LinkedBlockingQueue();
-
-    public RedissonBlockingQueue(final ConnectionManager connection, final String name) {
+    protected RedissonBlockingQueue(ConnectionManager connection, String name) {
         super(connection, name);
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        final java.util.concurrent.Future<?> future = executor.submit(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    V item = connection.write(name, new SyncOperation<V, V>() {
-                        @Override
-                        public V execute(RedisConnection<Object, V> conn) {
-                            // Get this timeout from config?
-                            return conn.blpop(BLPOP_TIMEOUT_IN_MS, name).value;
-                        }
-                    });
-                    blockingQueue.add(item);
-                }
-            }
-        });
-        Runtime.getRuntime().addShutdownHook(new Thread("redis-blpop-shutdown-hook-thread") {
-            @Override
-            public void run() {
-                future.cancel(true);
-                executor.shutdown();
-            }
-        });
     }
 
     @Override
@@ -62,26 +55,75 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public V take() throws InterruptedException {
-        return blockingQueue.take();
+        return connectionManager.write(getName(), new SyncOperation<V, V>() {
+            @Override
+            public V execute(RedisConnection<Object, V> conn) {
+                return conn.blpop(0, getName()).value;
+            }
+        });
     }
 
     @Override
     public V poll(final long timeout, final TimeUnit unit) throws InterruptedException {
-        return blockingQueue.poll(timeout, unit);
+        return connectionManager.read(getName(), new SyncOperation<V, V>() {
+            @Override
+            public V execute(RedisConnection<Object, V> conn) {
+                return conn.blpop(unit.toSeconds(timeout), getName()).value;
+            }
+        });
     }
 
     @Override
     public int remainingCapacity() {
-        return blockingQueue.remainingCapacity();
+        return Integer.MAX_VALUE;
     }
 
     @Override
     public int drainTo(Collection<? super V> c) {
-        return blockingQueue.drainTo(c);
+        List<V> list = connectionManager.write(getName(), new SyncOperation<V, List<V>>() {
+            @Override
+            public List<V> execute(RedisConnection<Object, V> conn) {
+                while (true) {
+                    conn.watch(getName());
+                    conn.multi();
+                    conn.lrange(getName(), 0, -1);
+                    conn.ltrim(getName(), 0, -1);
+                    List<Object> res = conn.exec();
+                    if (res.size() == 2) {
+                        List<V> items = (List<V>) res.get(0);
+                        return items;
+                    }
+                }
+            }
+        });
+        c.addAll(list);
+        return list.size();
     }
 
     @Override
-    public int drainTo(Collection<? super V> c, int maxElements) {
-        return blockingQueue.drainTo(c, maxElements);
+    public int drainTo(Collection<? super V> c, final int maxElements) {
+        List<V> list = connectionManager.write(getName(), new SyncOperation<V, List<V>>() {
+            @Override
+            public List<V> execute(RedisConnection<Object, V> conn) {
+                while (true) {
+                    conn.watch(getName());
+                    Long len = Math.min(conn.llen(getName()), maxElements);
+                    if (len == 0) {
+                        conn.unwatch();
+                        return Collections.emptyList();
+                    }
+                    conn.multi();
+                    conn.lrange(getName(), 0, len);
+                    conn.ltrim(getName(), 0, len);
+                    List<Object> res = conn.exec();
+                    if (res.size() == 2) {
+                        List<V> items = (List<V>) res.get(0);
+                        return items;
+                    }
+                }
+            }
+        });
+        c.addAll(list);
+        return list.size();
     }
 }

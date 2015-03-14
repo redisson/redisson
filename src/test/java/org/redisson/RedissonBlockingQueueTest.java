@@ -117,8 +117,5 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
         assertThat(counter.get(), equalTo(total));
         queue.delete();
-
-        redisson.shutdown();
-
     }
 }

@@ -75,13 +75,23 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Object[] toArray() {
-        List<V> list = subList(0, size());
+        List<V> list = readAllList();
         return list.toArray();
+    }
+
+    protected List<V> readAllList() {
+        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
+            @Override
+            protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
+                return async.lrange(getName(), 0, -1);
+            }
+        });
+        return list;
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<V> list = subList(0, size());
+        List<V> list = readAllList();
         return list.toArray(a);
     }
 
