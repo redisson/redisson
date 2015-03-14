@@ -84,7 +84,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
             @Override
             public void run(Redisson redisson) {
                 ConcurrentMap<Integer, Integer> map = redisson.getMap(name);
-                map.replace(secureRandom.nextInt(5), 2);
+                Assert.assertNotNull(map.replace(secureRandom.nextInt(5), 2));
             }
         });
 

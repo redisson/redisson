@@ -285,8 +285,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         }
                     } else {
                         connection.unwatch();
+                        return null;
                     }
-                    return null;
                 }
             }
         });
