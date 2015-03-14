@@ -353,7 +353,7 @@ public class RedissonLock extends RedissonObject implements RLock {
             return true;
         }
 
-        if (!subscribe().awaitUninterruptibly(time, unit)) {
+        if (!subscribe().awaitUninterruptibly(time, TimeUnit.MILLISECONDS)) {
             return false;
         }
 
