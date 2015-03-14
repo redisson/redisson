@@ -53,6 +53,15 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####??-Mar-2015 - version 1.2.1
+Feature - implementation of `java.util.concurrent.BlockingQueue` (thanks to pdeschen)  
+Feature - buckets load by pattern (thanks to mathieucarbou)  
+Improvement - IPv6 support  
+Fixed - KryoCodec keys decoding (thanks to mathieucarbou)  
+Fixed - `RMap.addAndGet()` data format  
+Fixed - timeout support in cluster, sentinel and single connections configurations
+Fixed - ClassCastException in `RedissonCountDownLatch.trySetCount`  
+
 ####09-Jan-2015 - version 1.2.0 released
 Feature - cluster mode support  
 Fixed - `RList` iterator race conditions  
