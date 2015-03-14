@@ -57,10 +57,13 @@ Recent Releases
 Feature - implementation of `java.util.concurrent.BlockingQueue` (thanks to pdeschen)  
 Feature - buckets load by pattern (thanks to mathieucarbou)  
 Improvement - IPv6 support  
+Improvement - `isEmpty` checks for collections added  
 Fixed - KryoCodec keys decoding (thanks to mathieucarbou)  
 Fixed - `RMap.addAndGet()` data format  
-Fixed - timeout support in cluster, sentinel and single connections configurations
+Fixed - timeout support in cluster, sentinel and single connections configurations  
 Fixed - ClassCastException in `RedissonCountDownLatch.trySetCount`  
+Fixed - `RMap.replace` concurrency issue (thanks to AndrewKolpakov)  
+Fixed - `RLock` subscription timeout units fixed (thanks to AndrewKolpakov)  
 
 ####09-Jan-2015 - version 1.2.0 released
 Feature - cluster mode support  
