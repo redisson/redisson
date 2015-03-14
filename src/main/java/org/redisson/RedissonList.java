@@ -116,7 +116,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        if (isEmpty()) {
+        if (isEmpty() || c.isEmpty()) {
             return false;
         }
 
@@ -144,6 +144,9 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean addAll(final Collection<? extends V> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
         connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
@@ -156,6 +159,9 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public boolean addAll(final int index, final Collection<? extends V> coll) {
         checkPosition(index);
+        if (coll.isEmpty()) {
+            return false;
+        }
         if (index < size()) {
             return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
                 @Override
@@ -191,6 +197,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean removeAll(final Collection<?> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
+
         return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, Object> conn) {
@@ -209,6 +219,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
+
         boolean changed = false;
         for (Iterator<V> iterator = iterator(); iterator.hasNext();) {
             V object = iterator.next();

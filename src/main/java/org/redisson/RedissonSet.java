@@ -204,6 +204,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean addAll(final Collection<? extends V> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
+        
         Long res = connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             public Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
@@ -215,6 +219,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
+        
         boolean changed = false;
         for (Object object : this) {
             if (!c.contains(object)) {
@@ -227,6 +235,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean removeAll(final Collection<?> c) {
+        if (c.isEmpty()) {
+            return false;
+        }
+        
         Long res = connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             public Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
