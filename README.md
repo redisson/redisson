@@ -57,7 +57,7 @@ Recent Releases
 Feature - implementation of `java.util.concurrent.BlockingQueue` (thanks to pdeschen)  
 Feature - buckets load by pattern (thanks to mathieucarbou)  
 Improvement - IPv6 support  
-Improvement - `isEmpty` checks for collections added  
+Improvement - `isEmpty` checks for added collections  
 Fixed - KryoCodec keys decoding (thanks to mathieucarbou)  
 Fixed - `RMap.addAndGet()` data format  
 Fixed - timeout support in cluster, sentinel and single connections configurations  
