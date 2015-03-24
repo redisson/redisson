@@ -171,6 +171,15 @@ public class Redisson implements RedissonClient {
     }
 
     /**
+     * Returns script with eval-operations support
+     * 
+     * @return
+     */
+    public RScript getScript() {
+        return new RedissonScript(connectionManager);
+    }
+    
+    /**
      * Returns distributed sorted set instance by name.
      *
      * @param name of the distributed set

@@ -6,6 +6,7 @@ import com.lambdaworks.redis.codec.RedisCodec;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.max;
@@ -51,6 +52,13 @@ public class CommandArgs<K, V> {
         return write(codec.encodeKey(key));
     }
 
+    public CommandArgs<K, V> addKeys(List<K> keys) {
+        for (K key : keys) {
+            addKey(key);
+        }
+        return this;
+    }
+    
     public CommandArgs<K, V> addKeys(K... keys) {
         for (K key : keys) {
             addKey(key);

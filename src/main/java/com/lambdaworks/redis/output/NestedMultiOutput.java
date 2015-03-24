@@ -31,7 +31,7 @@ public class NestedMultiOutput<K, V> extends CommandOutput<K, V, List<Object>> {
 
     @Override
     public void set(ByteBuffer bytes) {
-        output.add(bytes == null ? null : codec.decodeValue(bytes));
+        output.add(bytes == null ? null : codec.decodeKey(bytes));
     }
 
     @Override
