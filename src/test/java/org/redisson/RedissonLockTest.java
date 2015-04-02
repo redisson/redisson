@@ -9,6 +9,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.redisson.core.RExpirable;
 import org.redisson.core.RLock;
 
 public class RedissonLockTest extends BaseConcurrentTest {
@@ -186,12 +187,12 @@ public class RedissonLockTest extends BaseConcurrentTest {
                 Lock lock = redisson.getLock("testConcurrency_SingleInstance");
                 System.out.println("lock1 " + Thread.currentThread().getId());
                 lock.lock();
-                System.out.println("lock2 "+ Thread.currentThread().getId());
+                System.out.println("lock2 " + Thread.currentThread().getId());
                 lockedCounter.set(lockedCounter.get() + 1);
                 System.out.println("lockedCounter " + lockedCounter);
-                System.out.println("unlock1 "+ Thread.currentThread().getId());
+                System.out.println("unlock1 " + Thread.currentThread().getId());
                 lock.unlock();
-                System.out.println("unlock2 "+ Thread.currentThread().getId());
+                System.out.println("unlock2 " + Thread.currentThread().getId());
             }
         });
 
@@ -240,4 +241,15 @@ public class RedissonLockTest extends BaseConcurrentTest {
         Assert.assertEquals(iterations, lockedCounter.get());
     }
 
+    @Test
+    public void testLockTTL() throws Exception{
+        final long WAIT = 1;
+        final long TTL = 60;
+        RLock lock = redisson.getLock("testLockTTL");
+        lock.tryLock(WAIT, TTL, TimeUnit.SECONDS);
+
+        Assert.assertNotNull(((RExpirable) lock).remainTimeToLive());
+        Assert.assertTrue(((RExpirable) lock).remainTimeToLive() > 0 );
+
+    }
 }

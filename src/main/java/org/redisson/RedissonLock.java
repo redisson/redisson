@@ -29,6 +29,7 @@ import java.util.concurrent.locks.Condition;
 import org.redisson.async.ResultOperation;
 import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.core.RExpirable;
 import org.redisson.core.RLock;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
@@ -42,7 +43,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
  * @author Nikita Koksharov
  *
  */
-public class RedissonLock extends RedissonObject implements RLock {
+public class RedissonLock extends RedissonExpirable implements RLock {
 
     public static class LockValue implements Serializable {
 
