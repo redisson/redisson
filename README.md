@@ -53,7 +53,8 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
-####??-Mar-2015 - version 1.2.1
+####02-Apr-2015 - version 1.2.1 released
+Feature - all redis-script commands via 'RScript' object  
 Feature - implementation of `java.util.concurrent.BlockingQueue` (thanks to pdeschen)  
 Feature - buckets load by pattern (thanks to mathieucarbou)  
 Improvement - IPv6 support  
@@ -64,6 +65,7 @@ Fixed - timeout support in cluster, sentinel and single connections configuratio
 Fixed - ClassCastException in `RedissonCountDownLatch.trySetCount`  
 Fixed - `RMap.replace` concurrency issue (thanks to AndrewKolpakov)  
 Fixed - `RLock` subscription timeout units fixed (thanks to AndrewKolpakov)  
+Fixed - Re-throw async exceptions (thanks to AndrewKolpakov)  
 
 ####09-Jan-2015 - version 1.2.0 released
 Feature - cluster mode support  
