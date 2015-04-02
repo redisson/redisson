@@ -23,7 +23,31 @@ public interface RScript {
     
     enum ReturnType {BOOLEAN, INTEGER, MULTI, STATUS, VALUE};
 
+    List<Boolean> scriptExists(String ... shaDigests);
+    
+    Future<List<Boolean>> scriptExistsAsync(String ... shaDigests);
+    
+    String scriptFlush();
+    
+    Future<String> scriptFlushAsync();
+    
+    String scriptKill();
+    
+    Future<String> scriptKillAsync();
+    
+    String scriptLoad(String luaScript);
+    
+    Future<String> scriptLoadAsync(String luaScript);
+    
+    <R> R evalSha(String shaDigest, ReturnType returnType);
+    
+    <R> R evalSha(String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    
+    <R> Future<R> evalShaAsync(String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    
     <R> Future<R> evalAsync(String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+    
+    <R> R eval(String luaScript, ReturnType returnType);
     
     <R> R eval(String luaScript, ReturnType returnType, List<Object> keys, Object... values);
     

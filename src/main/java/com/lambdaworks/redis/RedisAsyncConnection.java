@@ -312,6 +312,13 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         return dispatch(EVAL, output, args);
     }
 
+    public <T> Future<T> evalsha(String digest, ScriptOutputType type, List<K> keys, V... values) {
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
+        args.add(digest).add(keys.size()).addKeys(keys).addValues(values);
+        CommandOutput<K, V, T> output = newScriptOutput(codec, type);
+        return dispatch(EVALSHA, output, args);
+    }
+    
     public <T> Future<T> evalsha(String digest, ScriptOutputType type, K[] keys, V... values) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
         args.add(digest).add(keys.length).addKeys(keys).addValues(values);
@@ -663,7 +670,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<String> scriptLoad(V script) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add(LOAD).addValue(script);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).add(LOAD).add(script.toString());
         return dispatch(SCRIPT, new StatusOutput<K, V>(codec), args);
     }
 
