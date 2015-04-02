@@ -24,7 +24,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
-import java.net.URI;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -357,11 +356,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         Promise<R> mainPromise = getGroup().next().newPromise();
         int slot = calcSlot(key);
         writeAsync(slot, asyncOperation, mainPromise, 0);
-        return mainPromise.awaitUninterruptibly().getNow();
+        return get(mainPromise);
     }
 
     public <V, R> R write(AsyncOperation<V, R> asyncOperation) {
-        return writeAsync(asyncOperation).awaitUninterruptibly().getNow();
+        return get(writeAsync(asyncOperation));
     }
 
     public <V> V get(Future<V> future) {
@@ -376,11 +375,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         Promise<T> mainPromise = getGroup().next().newPromise();
         int slot = calcSlot(key);
         readAsync(slot, asyncOperation, mainPromise, 0);
-        return mainPromise.awaitUninterruptibly().getNow();
+        return get(mainPromise);
     }
 
     public <V, T> T read(AsyncOperation<V, T> asyncOperation) {
-        return readAsync(asyncOperation).awaitUninterruptibly().getNow();
+        return get(readAsync(asyncOperation));
     }
 
     public <V, T> Future<T> readAsync(String key, AsyncOperation<V, T> asyncOperation) {

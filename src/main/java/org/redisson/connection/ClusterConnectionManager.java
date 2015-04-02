@@ -57,7 +57,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
             try {
                 RedisAsyncConnection<String, String> connection = client.connectAsync();
-                String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
+                String nodesValue = get(connection.clusterNodes());
 
                 Map<Integer, ClusterPartition> partitions = extractPartitions(nodesValue);
                 for (ClusterPartition partition : partitions.values()) {
@@ -101,7 +101,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         final RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
                         try {
                             RedisAsyncConnection<String, String> connection = client.connectAsync();
-                            String nodesValue = connection.clusterNodes().awaitUninterruptibly().getNow();
+                            String nodesValue = get(connection.clusterNodes());
 
                             log.debug("cluster nodes state: {}", nodesValue);
 
