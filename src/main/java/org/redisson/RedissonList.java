@@ -16,6 +16,7 @@
 package org.redisson;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
+import org.redisson.async.AsyncOperation;
 import org.redisson.async.ResultOperation;
 import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
@@ -99,6 +101,11 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public boolean add(V e) {
         return addAll(Collections.singleton(e));
     }
+    
+    @Override
+    public Future<Boolean> addAsync(V e) {
+        return addAllAsync(Collections.singleton(e));
+    }
 
     @Override
     public boolean remove(Object o) {
@@ -143,17 +150,22 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public boolean addAll(final Collection<? extends V> c) {
+    public boolean addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
             return false;
         }
-        connectionManager.write(getName(), new ResultOperation<Long, Object>() {
+        return connectionManager.get(addAllAsync(c));
+    }
+    
+    @Override
+    public Future<Boolean> addAllAsync(final Collection<? extends V> c) {
+        return connectionManager.writeAsync(getName(), new AsyncOperation<Object, Boolean>() {
             @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.rpush(getName(), c.toArray());
+            public void execute(Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
+                async.rpush((Object)getName(), c.toArray());
+                promise.setSuccess(true);
             }
         });
-        return true;
     }
 
     @Override

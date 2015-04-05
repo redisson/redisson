@@ -15,6 +15,9 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -26,4 +29,8 @@ import java.util.List;
  */
 public interface RList<V> extends List<V>, RExpirable {
 
+    Future<Boolean> addAsync(V e);
+    
+    Future<Boolean> addAllAsync(Collection<? extends V> c);
+    
 }
