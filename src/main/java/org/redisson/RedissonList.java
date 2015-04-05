@@ -27,6 +27,7 @@ import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
 import org.redisson.async.AsyncOperation;
+import org.redisson.async.OperationListener;
 import org.redisson.async.ResultOperation;
 import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
@@ -161,9 +162,13 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public Future<Boolean> addAllAsync(final Collection<? extends V> c) {
         return connectionManager.writeAsync(getName(), new AsyncOperation<Object, Boolean>() {
             @Override
-            public void execute(Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
-                async.rpush((Object)getName(), c.toArray());
-                promise.setSuccess(true);
+            public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
+                async.rpush((Object)getName(), c.toArray()).addListener(new OperationListener<Object, Boolean, Object>(promise, async, this) {
+                    @Override
+                    public void onOperationComplete(Future<Object> future) throws Exception {
+                        promise.setSuccess(true);
+                    }
+                });
             }
         });
     }
@@ -257,18 +262,23 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public V get(final int index) {
-        checkIndex(index);
-        return getValue(index);
-    }
-
-    private V getValue(final int index) {
-        return connectionManager.read(getName(), new ResultOperation<V, V>() {
+    public Future<V> getAsync(final int index) {
+        return connectionManager.readAsync(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lindex(getName(), index);
             }
         });
+    }
+    
+    @Override
+    public V get(int index) {
+        checkIndex(index);
+        return getValue(index);
+    }
+
+    private V getValue(int index) {
+        return connectionManager.get(getAsync(index));
     }
 
     private void checkIndex(int index) {

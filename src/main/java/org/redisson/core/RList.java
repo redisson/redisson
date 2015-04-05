@@ -29,6 +29,8 @@ import java.util.List;
  */
 public interface RList<V> extends List<V>, RExpirable {
 
+    Future<V> getAsync(int index);
+    
     Future<Boolean> addAsync(V e);
     
     Future<Boolean> addAllAsync(Collection<? extends V> c);
