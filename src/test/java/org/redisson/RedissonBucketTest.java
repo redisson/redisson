@@ -11,6 +11,17 @@ import java.util.List;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testRename() {
+        RBucket<String> bucket = redisson.getBucket("test");
+        bucket.set("someValue");
+        Assert.assertTrue(bucket.rename("test1"));
+        RBucket<String> oldBucket = redisson.getBucket("test");
+        Assert.assertNull(oldBucket.get());
+        RBucket<String> newBucket = redisson.getBucket("test1");
+        Assert.assertEquals("someValue", newBucket.get());
+    }
+    
+    @Test
     public void testSetGet() {
         RBucket<String> bucket = redisson.getBucket("test");
         Assert.assertNull(bucket.get());

@@ -39,4 +39,8 @@ public interface RObject {
     
     Future<Boolean> deleteAsync();
 
+    boolean rename(String newName);
+    
+    Future<Boolean> renameAsync(String newName);
+    
 }

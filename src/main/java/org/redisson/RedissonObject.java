@@ -48,6 +48,24 @@ abstract class RedissonObject implements RObject {
     public String getName() {
         return name;
     }
+    
+    public boolean rename(String newName) {
+        return connectionManager.get(renameAsync(newName));
+    }
+    
+    public Future<Boolean> renameAsync(final String newName) {
+        return connectionManager.writeAsync(getName(), new AsyncOperation<Object, Boolean>() {
+            @Override
+            public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
+                async.rename(getName(), newName).addListener(new OperationListener<Object, Boolean, String>(promise, async, this) {
+                    @Override
+                    public void onOperationComplete(Future<String> future) throws Exception {
+                        promise.setSuccess("OK".equals(future.get()));
+                    }
+                });
+            }
+        });
+    }
 
     public boolean delete() {
         return connectionManager.get(deleteAsync());
@@ -57,10 +75,10 @@ abstract class RedissonObject implements RObject {
         return connectionManager.writeAsync(getName(), new AsyncOperation<Object, Boolean>() {
             @Override
             public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
-                async.del(getName()).addListener(new OperationListener<Object, Boolean, Object>(promise, async, this) {
+                async.del(getName()).addListener(new OperationListener<Object, Boolean, Number>(promise, async, this) {
                     @Override
-                    public void onOperationComplete(Future<Object> future) throws Exception {
-                        promise.setSuccess(((Number) future.get()).byteValue() == 1);
+                    public void onOperationComplete(Future<Number> future) throws Exception {
+                        promise.setSuccess(future.get().byteValue() == 1);
                     }
                 });
             }
