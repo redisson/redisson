@@ -130,4 +130,11 @@ public interface RedissonClient {
      */
     RCountDownLatch getCountDownLatch(String name);
 
+    /**
+     * Returns script operations object
+     * 
+     * @return
+     */
+    RScript getScript();
+    
 }
