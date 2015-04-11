@@ -39,8 +39,39 @@ public interface RObject {
     
     Future<Boolean> deleteAsync();
 
+    /**
+     * Rename current object key to <code>newName</code>
+     * 
+     * @param newName
+     * @return
+     */
     boolean rename(String newName);
-    
+
+    /**
+     * Rename current object key to <code>newName</code>
+     * in async mode
+     * 
+     * @param newName
+     * @return
+     */
     Future<Boolean> renameAsync(String newName);
+
+    /**
+     * Rename current object key to <code>newName</code>
+     * only if new key is not exists 
+     * 
+     * @param newName
+     * @return
+     */
+    boolean renamenx(String newName);
+
+    /**
+     * Rename current object key to <code>newName</code>
+     * in async mode only if new key is not exists
+     * 
+     * @param newName
+     * @return
+     */
+    Future<Boolean> renamenxAsync(String newName);
     
 }

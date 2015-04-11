@@ -20,6 +20,7 @@ import io.netty.util.concurrent.Promise;
 
 import org.redisson.async.AsyncOperation;
 import org.redisson.async.OperationListener;
+import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RObject;
 
@@ -66,6 +67,20 @@ abstract class RedissonObject implements RObject {
             }
         });
     }
+    
+    public boolean renamenx(String newName) {
+        return connectionManager.get(renamenxAsync(newName));
+    }
+    
+    public Future<Boolean> renamenxAsync(final String newName) {
+        return connectionManager.writeAsync(getName(), new ResultOperation<Boolean, Object>() {
+            @Override
+            public Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
+                return async.renamenx(getName(), newName);
+            }
+        });
+    }
+
 
     public boolean delete() {
         return connectionManager.get(deleteAsync());
