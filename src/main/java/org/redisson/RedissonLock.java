@@ -490,8 +490,9 @@ public class RedissonLock extends RedissonObject implements RLock {
     }
 
     @Override
-    public void delete() {
+    public boolean delete() {
         forceUnlock();
+        return true;
     }
 
 }

@@ -92,8 +92,8 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     }
 
     @Override
-    public void delete() {
-        // nothing to delete
+    public boolean delete() {
+        throw new UnsupportedOperationException();
     }
 
 }

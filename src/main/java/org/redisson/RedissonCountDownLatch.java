@@ -263,17 +263,17 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     @Override
-    public void delete() {
-        connectionManager.write(getName(), new SyncOperation<Object, Void>() {
+    public boolean delete() {
+        return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
             @Override
-            public Void execute(RedisConnection<Object, Object> conn) {
+            public Boolean execute(RedisConnection<Object, Object> conn) {
                 conn.multi();
                 conn.del(getName());
                 conn.publish(getChannelName(), zeroCountMessage);
                 if (conn.exec().size() != 2) {
                     throw new IllegalStateException();
                 }
-                return null;
+                return true;
             }
         });
     }

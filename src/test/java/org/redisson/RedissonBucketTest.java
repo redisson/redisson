@@ -25,8 +25,9 @@ public class RedissonBucketTest extends BaseTest {
         String value = "somevalue";
         bucket.set(value);
         Assert.assertEquals(value, bucket.get());
-        bucket.delete();
+        Assert.assertTrue(bucket.delete());
         Assert.assertNull(bucket.get());
+        Assert.assertFalse(bucket.delete());
     }
 
 

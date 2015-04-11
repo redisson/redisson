@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * Base interface for all Redisson objects
  *
@@ -33,6 +35,8 @@ public interface RObject {
     /**
      * Deletes the object
      */
-    void delete();
+    boolean delete();
+    
+    Future<Boolean> deleteAsync();
 
 }

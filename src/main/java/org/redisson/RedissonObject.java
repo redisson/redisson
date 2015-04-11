@@ -18,7 +18,8 @@ package org.redisson;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
-import org.redisson.async.ResultOperation;
+import org.redisson.async.AsyncOperation;
+import org.redisson.async.OperationListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RObject;
 
@@ -48,17 +49,22 @@ abstract class RedissonObject implements RObject {
         return name;
     }
 
-    public void delete() {
-        delete(getName());
+    public boolean delete() {
+        return connectionManager.get(deleteAsync());
     }
 
-    void delete(String name) {
-        connectionManager.write(getName(), new ResultOperation<Long, Object>() {
+    public Future<Boolean> deleteAsync() {
+        return connectionManager.writeAsync(getName(), new AsyncOperation<Object, Boolean>() {
             @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.del(getName());
+            public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
+                async.del(getName()).addListener(new OperationListener<Object, Boolean, Object>(promise, async, this) {
+                    @Override
+                    public void onOperationComplete(Future<Object> future) throws Exception {
+                        promise.setSuccess(((Number) future.get()).byteValue() == 1);
+                    }
+                });
             }
         });
     }
-
+    
 }
