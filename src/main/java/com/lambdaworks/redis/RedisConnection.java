@@ -97,9 +97,9 @@ public class RedisConnection<K, V> {
         return await(c.bitopXor(destination, keys));
     }
 
-    public KeyValue<K, V> blpop(long timeout, K... keys) {
+    public KeyValue<K, V> blpop(long timeout, K... keys) throws InterruptedException {
         long timeout2 = (timeout == 0 ? Long.MAX_VALUE : max(timeout, unit.toSeconds(this.timeout)));
-        return await(c.blpop(timeout, keys), timeout2, SECONDS);
+        return awaitInterruptibly(c.blpop(timeout, keys), timeout2, SECONDS);
     }
 
     public KeyValue<K, V> brpop(long timeout, K... keys) {
@@ -107,9 +107,9 @@ public class RedisConnection<K, V> {
         return await(c.brpop(timeout, keys), timeout2, SECONDS);
     }
 
-    public V brpoplpush(long timeout, K source, K destination) {
+    public V brpoplpush(long timeout, K source, K destination) throws InterruptedException {
         long timeout2 = (timeout == 0 ? Long.MAX_VALUE : max(timeout, unit.toSeconds(this.timeout)));
-        return await(c.brpoplpush(timeout, source, destination), timeout2, SECONDS);
+        return awaitInterruptibly(c.brpoplpush(timeout, source, destination), timeout2, SECONDS);
     }
 
     public K clientGetname() {
@@ -859,6 +859,11 @@ public class RedisConnection<K, V> {
     private <T> T await(Future<T> future, long timeout, TimeUnit unit) {
         return c.await(future, timeout, unit);
     }
+    
+    private <T> T awaitInterruptibly(Future<T> future, long timeout, TimeUnit unit) throws InterruptedException {
+        return c.awaitInterruptibly(future, timeout, unit);
+    }
+
 
     private <T> T await(Future<T> future) {
         return c.await(future, timeout, unit);

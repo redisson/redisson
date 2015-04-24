@@ -19,6 +19,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
 
 import org.redisson.async.AsyncOperation;
+import org.redisson.async.SyncInterruptedOperation;
 import org.redisson.async.SyncOperation;
 
 import com.lambdaworks.redis.RedisConnection;
@@ -37,7 +38,11 @@ public interface ConnectionManager {
     <V, R> R read(String key, SyncOperation<V, R> operation);
 
     <V, R> R read(SyncOperation<V, R> operation);
-
+    
+    <V, R> R write(String key, SyncInterruptedOperation<V, R> operation) throws InterruptedException;
+    
+    <V, R> R write(SyncInterruptedOperation<V, R> operation) throws InterruptedException;
+    
     <V, R> R write(String key, SyncOperation<V, R> operation);
 
     <V, R> R write(SyncOperation<V, R> operation);

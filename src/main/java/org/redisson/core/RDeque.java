@@ -24,6 +24,6 @@ import java.util.Deque;
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RDeque<V> extends Deque<V>, RExpirable {
+public interface RDeque<V> extends Deque<V>, RQueue<V> {
 
 }

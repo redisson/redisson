@@ -25,4 +25,8 @@ import java.util.concurrent.*;
  */
 public interface RBlockingQueue<V> extends BlockingQueue<V>, RExpirable {
 
+    V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException;
+    
+    V pollLastAndOfferFirstTo(RBlockingQueue<V> queue, long timeout, TimeUnit unit) throws InterruptedException;
+    
 }

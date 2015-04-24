@@ -1262,6 +1262,19 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         }
         return cmd.getNow();
     }
+    
+    public <T> T awaitInterruptibly(Future<T> cmd, long timeout, TimeUnit unit) throws InterruptedException {
+        if (!cmd.await(timeout, unit)) {
+            Promise<T> promise = (Promise<T>)cmd;
+            RedisTimeoutException ex = new RedisTimeoutException();
+            promise.setFailure(ex);
+            throw ex;
+        }
+        if (!cmd.isSuccess()) {
+            throw (RedisException) cmd.cause();
+        }
+        return cmd.getNow();
+    }
 
     public RedisClient getRedisClient() {
         return redisClient;

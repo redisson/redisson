@@ -13,21 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.core;
+package org.redisson.async;
 
-import java.util.Queue;
+import com.lambdaworks.redis.RedisConnection;
 
-/**
- * {@link java.util.Queue} backed by Redis
- *
- * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
- */
-public interface RQueue<V> extends Queue<V>, RExpirable {
+public interface SyncInterruptedOperation<V, R> {
 
-    V pollLastAndOfferFirstTo(String dequeName);
-    
-    V pollLastAndOfferFirstTo(RQueue<V> deque);
+    R execute(RedisConnection<Object, V> conn) throws InterruptedException;
     
 }

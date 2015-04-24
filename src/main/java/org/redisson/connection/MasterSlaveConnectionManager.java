@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.async.AsyncOperation;
+import org.redisson.async.SyncInterruptedOperation;
 import org.redisson.async.SyncOperation;
 import org.redisson.codec.RedisCodecWrapper;
 import org.slf4j.Logger;
@@ -256,6 +257,47 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
             }
         });
+    }
+    
+    public <V, R> R write(String key, SyncInterruptedOperation<V, R> operation) throws InterruptedException {
+        int slot = calcSlot(key);
+        return write(slot, operation, 0);
+    }
+
+    public <V, R> R write(SyncInterruptedOperation<V, R> operation) throws InterruptedException {
+        return write(-1, operation, 0);
+    }
+
+    private <V, R> R write(int slot, SyncInterruptedOperation<V, R> operation, int attempt) throws InterruptedException {
+        try {
+            RedisConnection<Object, V> connection = connectionWriteOp(slot);
+            try {
+                return operation.execute(connection);
+            } catch (RedisMovedException e) {
+                return write(e.getSlot(), operation, attempt);
+            } catch (RedisTimeoutException e) {
+                if (attempt == config.getRetryAttempts()) {
+                    throw e;
+                }
+                attempt++;
+                return write(slot, operation, attempt);
+            } catch (InterruptedException e) {
+                throw e;
+            } finally {
+                releaseWrite(slot, connection);
+            }
+        } catch (RedisConnectionException e) {
+            if (attempt == config.getRetryAttempts()) {
+                throw e;
+            }
+            try {
+                Thread.sleep(config.getRetryInterval());
+            } catch (InterruptedException e1) {
+                Thread.currentThread().interrupt();
+            }
+            attempt++;
+            return write(slot, operation, attempt);
+        }
     }
 
     public <V, R> R write(String key, SyncOperation<V, R> operation) {

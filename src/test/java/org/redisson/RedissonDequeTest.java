@@ -14,6 +14,22 @@ import org.redisson.core.RDeque;
 public class RedissonDequeTest extends BaseTest {
 
     @Test
+    public void testPollLastAndOfferFirstTo() {
+        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        queue1.addFirst(3);
+        queue1.addFirst(2);
+        queue1.addFirst(1);
+
+        RDeque<Integer> queue2 = redisson.getDeque("deque2");
+        queue2.addFirst(6);
+        queue2.addFirst(5);
+        queue2.addFirst(4);
+
+        queue1.pollLastAndOfferFirstTo(queue2);
+        MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
+    }
+    
+    @Test
     public void testAddFirstOrigin() {
         Deque<Integer> queue = new ArrayDeque<Integer>();
         queue.addFirst(1);

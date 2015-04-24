@@ -22,6 +22,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.async.SyncInterruptedOperation;
 import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RBlockingQueue;
@@ -55,9 +56,9 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public V take() throws InterruptedException {
-        return connectionManager.write(getName(), new SyncOperation<V, V>() {
+        return connectionManager.write(getName(), new SyncInterruptedOperation<V, V>() {
             @Override
-            public V execute(RedisConnection<Object, V> conn) {
+            public V execute(RedisConnection<Object, V> conn) throws InterruptedException {
                 return conn.blpop(0, getName()).value;
             }
         });
@@ -65,14 +66,30 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public V poll(final long timeout, final TimeUnit unit) throws InterruptedException {
-        return connectionManager.write(getName(), new SyncOperation<V, V>() {
+        return connectionManager.write(getName(), new SyncInterruptedOperation<V, V>() {
             @Override
-            public V execute(RedisConnection<Object, V> conn) {
+            public V execute(RedisConnection<Object, V> conn) throws InterruptedException {
                 return conn.blpop(unit.toSeconds(timeout), getName()).value;
             }
         });
     }
 
+    @Override
+    public V pollLastAndOfferFirstTo(RBlockingQueue<V> queue, long timeout, TimeUnit unit)
+            throws InterruptedException {
+        return pollLastAndOfferFirstTo(queue.getName(), timeout, unit);
+    }
+    
+    @Override
+    public V pollLastAndOfferFirstTo(final String queueName, final long timeout, final TimeUnit unit) throws InterruptedException {
+        return connectionManager.write(getName(), new SyncInterruptedOperation<V, V>() {
+            @Override
+            public V execute(RedisConnection<Object, V> conn) throws InterruptedException {
+                return conn.brpoplpush(unit.toSeconds(timeout), getName(), queueName);
+            }
+        });
+    }
+    
     @Override
     public int remainingCapacity() {
         return Integer.MAX_VALUE;

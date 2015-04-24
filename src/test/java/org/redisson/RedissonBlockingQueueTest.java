@@ -16,6 +16,22 @@ import org.redisson.core.*;
 public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
+    public void testPollLastAndOfferFirstTo() throws InterruptedException {
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
+        queue1.put(1);
+        queue1.put(2);
+        queue1.put(3);
+
+        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue2");
+        queue2.put(4);
+        queue2.put(5);
+        queue2.put(6);
+
+        queue1.pollLastAndOfferFirstTo(queue2, 10, TimeUnit.SECONDS);
+        MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
+    }
+    
+    @Test
     public void testAddOfferOrigin() {
         Queue<Integer> queue = new LinkedList<Integer>();
         queue.add(1);
