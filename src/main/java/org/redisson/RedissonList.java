@@ -152,14 +152,14 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean addAll(Collection<? extends V> c) {
-        if (c.isEmpty()) {
-            return false;
-        }
         return connectionManager.get(addAllAsync(c));
     }
     
     @Override
     public Future<Boolean> addAllAsync(final Collection<? extends V> c) {
+        if (c.isEmpty()) {
+            return connectionManager.getGroup().next().newSucceededFuture(false);
+        }        
         return connectionManager.writeAsync(getName(), new AsyncOperation<Object, Boolean>() {
             @Override
             public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
@@ -236,10 +236,6 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        if (c.isEmpty()) {
-            return false;
-        }
-
         boolean changed = false;
         for (Iterator<V> iterator = iterator(); iterator.hasNext();) {
             V object = iterator.next();

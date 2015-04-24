@@ -219,10 +219,6 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        if (c.isEmpty()) {
-            return false;
-        }
-        
         boolean changed = false;
         for (Object object : this) {
             if (!c.contains(object)) {
