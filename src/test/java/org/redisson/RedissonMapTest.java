@@ -147,6 +147,22 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testGetAllWithStringKeys() {
+        RMap<String, Integer> map = redisson.getMap("getAllStrings");
+        map.put("A", 100);
+        map.put("B", 200);
+        map.put("C", 300);
+        map.put("D", 400);
+
+        Map<String, Integer> filtered = map.getAll(new HashSet<String>(Arrays.asList("B", "C", "E")));
+
+        Map<String, Integer> expectedMap = new HashMap<String, Integer>();
+        expectedMap.put("B", 200);
+        expectedMap.put("C", 300);
+        Assert.assertEquals(expectedMap, filtered);
+    }
+
+    @Test
     public void testFilterKeys() {
         RMap<Integer, Integer> map = redisson.getMap("filterKeys");
         map.put(1, 100);
