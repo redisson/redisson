@@ -23,7 +23,7 @@ import org.redisson.misc.URIBuilder;
 
 public class ClusterNodeInfo {
 
-    public enum Flag {SLAVE, MASTER, MYSELF, FAIL};
+    public enum Flag {SLAVE, MASTER, MYSELF, FAIL, HANDSHAKE};
 
     private String nodeId;
     private URI address;
