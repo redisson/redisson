@@ -415,7 +415,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     }
 
     public Future<List<V>> hmget(K key, K... fields) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addKeys(fields);
+        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapKeys(fields);
         return dispatch(HMGET, new ValueListOutput<K, V>(codec), args);
     }
 
