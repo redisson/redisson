@@ -130,8 +130,8 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
                         return Collections.emptyList();
                     }
                     conn.multi();
-                    conn.lrange(getName(), 0, len);
-                    conn.ltrim(getName(), 0, len);
+                    conn.lrange(getName(), 0, len - 1);
+                    conn.ltrim(getName(), len, -1);
                     List<Object> res = conn.exec();
                     if (res.size() == 2) {
                         List<V> items = (List<V>) res.get(0);
