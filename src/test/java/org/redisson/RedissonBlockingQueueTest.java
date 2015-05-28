@@ -102,6 +102,24 @@ public class RedissonBlockingQueueTest extends BaseTest {
     }
 
     @Test
+    public void testDrainTo() {
+        RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue");
+        for (int i = 0 ; i < 100; i++) {
+            queue.offer(i);
+        }
+        Assert.assertEquals(100, queue.size());
+        Set<Integer> batch = new HashSet<Integer>();
+        int count = queue.drainTo(batch, 10);
+        Assert.assertEquals(10, count);
+        Assert.assertEquals(10, batch.size());
+        Assert.assertEquals(90, queue.size());
+        queue.drainTo(batch, 10);
+        queue.drainTo(batch, 20);
+        queue.drainTo(batch, 60);
+        Assert.assertEquals(0, queue.size());
+    }
+
+    @Test
     public void testBlockingQueue() {
 
         RBlockingQueue<Integer> queue = redisson.getBlockingQueue("test_:blocking:queue:");
