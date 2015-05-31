@@ -1,5 +1,7 @@
 package org.redisson;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.lambdaworks.redis.RedisException;
 import io.netty.util.concurrent.Future;
 
 import java.io.Serializable;
@@ -12,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
 
@@ -415,12 +418,12 @@ public class RedissonMapTest extends BaseTest {
         Future<Integer> future = map.putAsync(2, 3);
         Assert.assertNull(future.get());
 
-        Assert.assertEquals((Integer)3, map.get(2));
+        Assert.assertEquals((Integer) 3, map.get(2));
 
         Future<Integer> future1 = map.putAsync(2, 4);
-        Assert.assertEquals((Integer)3, future1.get());
+        Assert.assertEquals((Integer) 3, future1.get());
 
-        Assert.assertEquals((Integer)4, map.get(2));
+        Assert.assertEquals((Integer) 4, map.get(2));
     }
 
     @Test
@@ -430,10 +433,10 @@ public class RedissonMapTest extends BaseTest {
         map.put(3, 5);
         map.put(7, 8);
 
-        Assert.assertEquals((Integer)3, map.removeAsync(1).get());
-        Assert.assertEquals((Integer)5, map.removeAsync(3).get());
+        Assert.assertEquals((Integer) 3, map.removeAsync(1).get());
+        Assert.assertEquals((Integer) 5, map.removeAsync(3).get());
         Assert.assertNull(map.removeAsync(10).get());
-        Assert.assertEquals((Integer)8, map.removeAsync(7).get());
+        Assert.assertEquals((Integer) 8, map.removeAsync(7).get());
     }
 
     @Test
@@ -444,7 +447,7 @@ public class RedissonMapTest extends BaseTest {
         map.put(4, 6);
         map.put(7, 8);
 
-        Assert.assertEquals((Long)3L, map.fastRemoveAsync(1, 3, 7).get());
+        Assert.assertEquals((Long) 3L, map.fastRemoveAsync(1, 3, 7).get());
         Thread.sleep(1);
         Assert.assertEquals(1, map.size());
     }
@@ -455,5 +458,40 @@ public class RedissonMapTest extends BaseTest {
         map.put(1, 3);
         Assert.assertEquals(0, map.fastRemove());
         Assert.assertEquals(1, map.size());
+    }
+
+    @Test(timeout = 5000)
+    public void testDeserializationErrorReturnsErrorImmediately() throws Exception {
+        redisson.getConfig().setCodec(new JsonJacksonCodec());
+
+        RMap<String, SimpleObjectWithoutDefaultConstructor> map = redisson.getMap("deserializationFailure");
+        SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
+
+        Assert.assertEquals("test-val", object.getTestField());
+        map.put("test-key", object);
+
+        try {
+            map.get("test-key");
+            Assert.fail("Expected exception from map.get() call");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static class SimpleObjectWithoutDefaultConstructor {
+
+        private String testField;
+
+        SimpleObjectWithoutDefaultConstructor(String testField) {
+            this.testField = testField;
+        }
+
+        public String getTestField() {
+            return testField;
+        }
+
+        public void setTestField(String testField) {
+            this.testField = testField;
+        }
     }
 }
