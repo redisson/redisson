@@ -71,7 +71,7 @@ public class RedisStateMachine<K, V> {
                 case SINGLE:
                     if ((bytes = readLine(buffer)) == null) break loop;
                     if (!QUEUED.equals(bytes)) {
-                        output.set(bytes);
+                        setCommandOutputSafely(output, bytes);
                     }
                     break;
                 case ERROR:
@@ -80,13 +80,13 @@ public class RedisStateMachine<K, V> {
                     break;
                 case INTEGER:
                     if ((end = findLineEnd(buffer)) == -1) break loop;
-                    output.set(readLong(buffer, buffer.readerIndex(), end));
+                    setCommandOutputSafely(output, readLong(buffer, buffer.readerIndex(), end));
                     break;
                 case BULK:
                     if ((end = findLineEnd(buffer)) == -1) break loop;
                     length = (int) readLong(buffer, buffer.readerIndex(), end);
                     if (length == -1) {
-                        output.set(null);
+                        setCommandOutputSafely(output, null);
                     } else {
                         state.type = BYTES;
                         state.count = length + 2;
@@ -109,7 +109,7 @@ public class RedisStateMachine<K, V> {
                     continue loop;
                 case BYTES:
                     if ((bytes = readBytes(buffer, state.count)) == null) break loop;
-                    output.set(bytes);
+                    setCommandOutputSafely(output, bytes);
             }
 
             buffer.markReaderIndex();
@@ -171,4 +171,28 @@ public class RedisStateMachine<K, V> {
         }
         return bytes;
     }
+
+
+    private boolean setCommandOutputSafely(CommandOutput output, ByteBuffer bytes) {
+        boolean success = false;
+        try {
+            output.set(bytes);
+            success = true;
+        } catch (Throwable t) {
+            output.setException(t);
+        }
+        return success;
+    }
+
+    private boolean setCommandOutputSafely(CommandOutput output, long value) {
+        boolean success = false;
+        try {
+            output.set(value);
+            success = true;
+        } catch (Throwable t) {
+            output.setException(t);
+        }
+        return success;
+    }
+
 }
