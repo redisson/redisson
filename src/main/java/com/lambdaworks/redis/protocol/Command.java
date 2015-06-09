@@ -72,6 +72,10 @@ public class Command<K, V, T> {
                     String[] parts = output.getError().split(" ");
                     int slot = Integer.valueOf(parts[1]);
                     promise.setFailure(new RedisMovedException(slot));
+                } else if (output.getError().startsWith("(error) ASK")) {
+                    String[] parts = output.getError().split(" ");
+                    int slot = Integer.valueOf(parts[2]);
+                    promise.setFailure(new RedisMovedException(slot));
                 } else {
                     promise.setFailure(new RedisException(output.getError()));
                 }
