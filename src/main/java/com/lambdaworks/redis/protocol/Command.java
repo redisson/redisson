@@ -67,7 +67,7 @@ public class Command<K, V, T> {
             }
             if (res instanceof RedisException) {
                 promise.setFailure((Exception)res);
-            } if (output.hasError()) {
+            } else if (output.hasError()) {
                 if (output.getError().startsWith("MOVED")) {
                     String[] parts = output.getError().split(" ");
                     int slot = Integer.valueOf(parts[1]);
@@ -79,6 +79,8 @@ public class Command<K, V, T> {
                 } else {
                     promise.setFailure(new RedisException(output.getError()));
                 }
+            } else if (output.hasException()) {
+                promise.setFailure(output.getException());
             } else {
                 promise.setSuccess((T)res);
             }

@@ -17,6 +17,7 @@ public abstract class CommandOutput<K, V, T> {
     protected RedisCodec<K, V> codec;
     protected T output;
     protected String error;
+    protected Throwable exception;
 
     /**
      * Initialize a new instance that encodes and decodes keys and
@@ -95,6 +96,33 @@ public abstract class CommandOutput<K, V, T> {
      */
     public String getError() {
         return error;
+    }
+
+    /**
+     * Set exception that was caught while processing result in command output.
+     *
+     * @param exception Exception caught while processing command result.
+     */
+    public void setException(Throwable exception) {
+        this.exception = exception;
+    }
+
+    /**
+     * Check if the processing command result resulted in an exception.
+     *
+     * @return true if processing of command result resulted in an exception.
+     */
+    public boolean hasException() {
+        return this.exception != null;
+    }
+
+    /**
+     * Get the exception that occurred while processing command result.
+     *
+     * @return The exception.
+     */
+    public Throwable getException () {
+        return exception;
     }
 
     /**

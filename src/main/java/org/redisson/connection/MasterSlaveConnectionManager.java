@@ -410,7 +410,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (future.isSuccess()) {
             return future.getNow();
         }
-        throw ((RedisException)future.cause());
+        throw future.cause() instanceof RedisException ?
+                (RedisException) future.cause() :
+                new RedisException("Unexpected exception while processing command", future.cause());
     }
 
     public <V, T> T read(String key, AsyncOperation<V, T> asyncOperation) {
