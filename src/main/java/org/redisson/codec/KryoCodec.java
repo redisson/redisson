@@ -19,6 +19,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Collections;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -39,6 +41,11 @@ public class KryoCodec implements RedissonCodec {
     public static class KryoPoolImpl implements KryoPool {
 
         private final Queue<Kryo> objects = new ConcurrentLinkedQueue<Kryo>();
+        private final List<Class<?>> classes;
+
+        public KryoPoolImpl(List<Class<?>> classes) {
+            this.classes = classes;
+        }
 
         public Kryo get() {
             Kryo kryo;
@@ -60,6 +67,9 @@ public class KryoCodec implements RedissonCodec {
         protected Kryo createInstance() {
             Kryo kryo = new Kryo();
             kryo.setReferences(false);
+            for (Class<?> clazz : classes) {
+                kryo.register(clazz);
+            }
             return kryo;
         }
 
@@ -78,8 +88,13 @@ public class KryoCodec implements RedissonCodec {
     private final KryoPool kryoPool;
 
     public KryoCodec() {
-        this(new KryoPoolImpl());
+        this(new KryoPoolImpl(Collections.<Class<?>>emptyList()));
     }
+
+    public KryoCodec(List<Class<?>> classes) {
+        this(new KryoPoolImpl(classes));
+    }
+
 
     public KryoCodec(KryoPool kryoPool) {
         this.kryoPool = kryoPool;
