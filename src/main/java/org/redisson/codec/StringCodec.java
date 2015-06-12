@@ -16,51 +16,50 @@
 package org.redisson.codec;
 
 import java.nio.ByteBuffer;
-
-import com.lambdaworks.redis.codec.Utf8StringCodec;
+import java.nio.charset.Charset;
 
 public class StringCodec implements RedissonCodec {
 
-    private final Utf8StringCodec codec = new Utf8StringCodec();
+    private Charset charset = Charset.forName("UTF-8");
 
     @Override
     public Object decodeKey(ByteBuffer bytes) {
-        return codec.decodeKey(bytes);
+        return decodeValue(bytes);
     }
 
     @Override
     public Object decodeValue(ByteBuffer bytes) {
-        return codec.decodeValue(bytes);
+        return new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), charset);
     }
 
     @Override
     public byte[] encodeKey(Object key) {
-        return codec.encodeKey((String)key);
+        return encodeValue((String)key);
     }
 
     @Override
     public byte[] encodeValue(Object value) {
-        return codec.encodeValue((String)value);
+        return ((String)value).getBytes(charset);
     }
 
     @Override
     public byte[] encodeMapValue(Object value) {
-        return codec.encodeMapValue((String)value);
+        return encodeValue((String)value);
     }
 
     @Override
     public byte[] encodeMapKey(Object key) {
-        return codec.encodeMapKey((String)key);
+        return encodeValue((String)key);
     }
 
     @Override
     public Object decodeMapValue(ByteBuffer bytes) {
-        return codec.decodeMapValue(bytes);
+        return decodeValue(bytes);
     }
 
     @Override
     public Object decodeMapKey(ByteBuffer bytes) {
-        return codec.decodeMapKey(bytes);
+        return decodeValue(bytes);
     }
 
 }

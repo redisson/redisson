@@ -14,7 +14,7 @@ public class ValueSetScanOutput<K, V> extends CommandOutput<K, V, ListScanResult
     @Override
     public void set(ByteBuffer bytes) {
         if (output.getPos() == null) {
-            output.setPos(((Number) codec.decodeMapValue(bytes)).longValue());
+            output.setPos(Long.valueOf(codec.decodeMapValue(bytes).toString()));
         } else {
             output.addValue(codec.decodeMapValue(bytes));
         }
