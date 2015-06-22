@@ -191,13 +191,20 @@ public class Config {
         }
     }
 
-    public boolean isUseLinuxNativeEpoll() {
-        return useLinuxNativeEpoll;
-    }
-
+    /**
+     * Activates an unix socket if servers binded to loopback interface.
+     * Also used for epoll transport activation.
+     *
+     * @param useLinuxNativeEpoll
+     * @return
+     */
     public Config setUseLinuxNativeEpoll(boolean useLinuxNativeEpoll) {
         this.useLinuxNativeEpoll = useLinuxNativeEpoll;
         return this;
     }
+    public boolean isUseLinuxNativeEpoll() {
+        return useLinuxNativeEpoll;
+    }
+
 
 }
