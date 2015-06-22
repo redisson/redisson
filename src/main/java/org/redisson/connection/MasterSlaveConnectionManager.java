@@ -115,7 +115,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     public RedisClient createClient(String host, int port) {
-        return new RedisClient(group, socketChannelClass, host, port, config.getTimeout());
+        return createClient(host, port, config.getTimeout());
+    }
+
+    public RedisClient createClient(String host, int port, int timeout) {
+        return new RedisClient(group, socketChannelClass, host, port, timeout);
     }
 
     public <T> FutureListener<T> createReleaseWriteListener(final int slot,

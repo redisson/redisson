@@ -58,14 +58,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         for (URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = createClient(addr.getHost(), addr.getPort());
+            RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
             RedisAsyncConnection<String, String> connection = client.connectAsync();
 
             // TODO async
             List<String> master = get(connection.getMasterAddrByKey(cfg.getMasterName()));
             String masterHost = master.get(0) + ":" + master.get(1);
             c.setMasterAddress(masterHost);
-            log.info("master: {}", masterHost);
+            log.info("master: {} added", masterHost);
 //            c.addSlaveAddress(masterHost);
 
             // TODO async
@@ -73,7 +73,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             for (Map<String, String> map : slaves) {
                 String ip = map.get("ip");
                 String port = map.get("port");
-                log.info("slave: {}:{}", ip, port);
+                String flags = map.get("flags");
+
+                if (flags.contains("s_down") || flags.contains("disconnected")) {
+                    log.info("slave: {}:{} is disconnected. skipped, params: {}", ip, port, map);
+                    continue;
+                }
+
+                log.info("slave: {}:{} added, params: {}", ip, port, map);
                 c.addSlaveAddress(ip + ":" + port);
                 String host = ip + ":" + port;
                 addedSlaves.add(host);

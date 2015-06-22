@@ -34,6 +34,8 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 //TODO ping support
 public interface ConnectionManager {
 
+    RedisClient createClient(String host, int port, int timeout);
+
     RedisClient createClient(String host, int port);
 
     <V> V get(Future<V> future);

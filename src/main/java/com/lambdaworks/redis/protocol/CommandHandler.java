@@ -46,8 +46,8 @@ public class CommandHandler<K, V> extends ChannelDuplexHandler {
         try {
             if (!input.isReadable()) return;
 
-            System.out.println("in: " + input.toString(CharsetUtil.UTF_8));
-            
+//            System.out.println("in: " + input.toString(CharsetUtil.UTF_8));
+
             buffer.discardReadBytes();
             buffer.writeBytes(input);
 
@@ -62,8 +62,8 @@ public class CommandHandler<K, V> extends ChannelDuplexHandler {
         Command<?, ?, ?> cmd = (Command<?, ?, ?>) msg;
         ByteBuf buf = ctx.alloc().heapBuffer();
         cmd.encode(buf);
-        System.out.println("out: " + buf.toString(CharsetUtil.UTF_8));
-        
+//        System.out.println("out: " + buf.toString(CharsetUtil.UTF_8));
+
         ctx.write(buf, promise);
     }
 
@@ -74,7 +74,7 @@ public class CommandHandler<K, V> extends ChannelDuplexHandler {
                     || !rsm.decode(buffer, cmd.getOutput())) {
                 break;
             }
-            
+
             cmd = queue.take();
             cmd.complete();
         }
