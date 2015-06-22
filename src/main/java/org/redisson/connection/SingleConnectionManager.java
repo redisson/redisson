@@ -41,7 +41,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
-        SingleEntry entry = new SingleEntry(codec, group, config);
+        SingleEntry entry = new SingleEntry(codec, this, config);
         entries.put(Integer.MAX_VALUE, entry);
     }
 

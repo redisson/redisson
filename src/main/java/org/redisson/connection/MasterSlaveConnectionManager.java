@@ -17,6 +17,10 @@ package org.redisson.connection;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
@@ -46,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
+import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.RedisConnectionException;
 import com.lambdaworks.redis.RedisException;
@@ -71,6 +76,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected EventLoopGroup group;
 
+    protected Class<? extends SocketChannel> socketChannelClass;
+
     protected final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
 
     protected MasterSlaveServersConfig config;
@@ -92,13 +99,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
-        MasterSlaveEntry entry = new MasterSlaveEntry(codec, group, config);
+        MasterSlaveEntry entry = new MasterSlaveEntry(codec, this, config);
         entries.put(Integer.MAX_VALUE, entry);
     }
 
     protected void init(Config cfg) {
-        this.group = new NioEventLoopGroup(cfg.getThreads());
+        if (cfg.isUseLinuxNativeEpoll()) {
+            this.group = new EpollEventLoopGroup(cfg.getThreads());
+            this.socketChannelClass = EpollSocketChannel.class;
+        } else {
+            this.group = new NioEventLoopGroup(cfg.getThreads());
+            this.socketChannelClass = NioSocketChannel.class;
+        }
         this.codec = new RedisCodecWrapper(cfg.getCodec());
+    }
+
+    public RedisClient createClient(String host, int port) {
+        return new RedisClient(group, socketChannelClass, host, port, config.getTimeout());
     }
 
     public <T> FutureListener<T> createReleaseWriteListener(final int slot,
@@ -258,7 +275,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         });
     }
-    
+
     public <V, R> R write(String key, SyncInterruptedOperation<V, R> operation) throws InterruptedException {
         int slot = calcSlot(key);
         return write(slot, operation, 0);

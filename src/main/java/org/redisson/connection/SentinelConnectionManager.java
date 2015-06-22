@@ -58,7 +58,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         for (URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
+            RedisClient client = createClient(addr.getHost(), addr.getPort());
             RedisAsyncConnection<String, String> connection = client.connectAsync();
 
             // TODO async
@@ -93,7 +93,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         final Set<String> freezeSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
         for (final URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
+            RedisClient client = createClient(addr.getHost(), addr.getPort());
             sentinels.add(client);
 
             RedisPubSubConnection<String, String> pubsub = client.connectPubSub();

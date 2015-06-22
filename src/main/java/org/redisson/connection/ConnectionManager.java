@@ -22,6 +22,7 @@ import org.redisson.async.AsyncOperation;
 import org.redisson.async.SyncInterruptedOperation;
 import org.redisson.async.SyncOperation;
 
+import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
@@ -33,16 +34,18 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 //TODO ping support
 public interface ConnectionManager {
 
+    RedisClient createClient(String host, int port);
+
     <V> V get(Future<V> future);
 
     <V, R> R read(String key, SyncOperation<V, R> operation);
 
     <V, R> R read(SyncOperation<V, R> operation);
-    
+
     <V, R> R write(String key, SyncInterruptedOperation<V, R> operation) throws InterruptedException;
-    
+
     <V, R> R write(SyncInterruptedOperation<V, R> operation) throws InterruptedException;
-    
+
     <V, R> R write(String key, SyncOperation<V, R> operation);
 
     <V, R> R write(SyncOperation<V, R> operation);

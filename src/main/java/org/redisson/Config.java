@@ -31,7 +31,7 @@ public class Config {
     private MasterSlaveServersConfig masterSlaveServersConfig;
 
     private SingleServerConfig singleServerConfig;
-    
+
     private ClusterServersConfig clusterServersConfig;
 
     /**
@@ -44,10 +44,14 @@ public class Config {
      */
     private RedissonCodec codec;
 
+    private boolean useLinuxNativeEpoll;
+
     public Config() {
     }
 
     Config(Config oldConf) {
+        setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());
+
         if (oldConf.getCodec() == null) {
             // use it by default
             oldConf.setCodec(new JsonJacksonCodec());
@@ -100,7 +104,7 @@ public class Config {
     void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
         this.clusterServersConfig = clusterServersConfig;
     }
-    
+
     public SingleServerConfig useSingleServer() {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
@@ -168,7 +172,7 @@ public class Config {
             throw new IllegalStateException("cluster servers config already used!");
         }
     }
-    
+
     private void checkSentinelServersConfig() {
         if (sentinelServersConfig != null) {
             throw new IllegalStateException("sentinel servers config already used!");
@@ -185,6 +189,15 @@ public class Config {
         if (singleServerConfig != null) {
             throw new IllegalStateException("single server config already used!");
         }
+    }
+
+    public boolean isUseLinuxNativeEpoll() {
+        return useLinuxNativeEpoll;
+    }
+
+    public Config setUseLinuxNativeEpoll(boolean useLinuxNativeEpoll) {
+        this.useLinuxNativeEpoll = useLinuxNativeEpoll;
+        return this;
     }
 
 }

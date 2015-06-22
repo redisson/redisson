@@ -15,8 +15,6 @@
  */
 package org.redisson.connection;
 
-import io.netty.channel.EventLoopGroup;
-
 import org.redisson.MasterSlaveServersConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,13 +29,13 @@ public class SingleEntry extends MasterSlaveEntry {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    public SingleEntry(RedisCodec codec, EventLoopGroup group, MasterSlaveServersConfig config) {
-        super(codec, group, config);
+    public SingleEntry(RedisCodec codec, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        super(codec, connectionManager, config);
     }
 
     @Override
     public void setupMasterEntry(String host, int port) {
-        RedisClient masterClient = new RedisClient(group, host, port, config.getTimeout());
+        RedisClient masterClient = connectionManager.createClient(host, port);
         masterEntry = new SubscribesConnectionEntry(masterClient, config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize());
     }
 

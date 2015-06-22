@@ -12,6 +12,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
@@ -61,9 +62,14 @@ public class RedisClient {
      * @param port    Server port.
      */
     public RedisClient(EventLoopGroup group, String host, int port, int timeout) {
+        this(group, NioSocketChannel.class, host, port, timeout);
+    }
+
+    public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host,
+            int port, int timeout2) {
         addr = new InetSocketAddress(host, port);
 
-        bootstrap = new Bootstrap().channel(NioSocketChannel.class).group(group).remoteAddress(addr);
+        bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
 
         setDefaultTimeout(timeout, TimeUnit.MILLISECONDS);
 

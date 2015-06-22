@@ -54,7 +54,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         init(config);
 
         for (URI addr : cfg.getNodeAddresses()) {
-            RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
+            RedisClient client = createClient(addr.getHost(), addr.getPort());
             try {
                 RedisAsyncConnection<String, String> connection = client.connectAsync();
                 String nodesValue = get(connection.clusterNodes());
@@ -87,7 +87,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         log.info("master: {} for slot range: {}-{} added", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
         c.setMasterAddress(partition.getMasterAddress());
 
-        SingleEntry entry = new SingleEntry(codec, group, c);
+        SingleEntry entry = new SingleEntry(codec, this, c);
         entries.put(partition.getEndSlot(), entry);
         lastPartitions.put(partition.getEndSlot(), partition);
     }
@@ -98,7 +98,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             public void run() {
                 try {
                     for (URI addr : cfg.getNodeAddresses()) {
-                        final RedisClient client = new RedisClient(group, addr.getHost(), addr.getPort(), cfg.getTimeout());
+                        final RedisClient client = createClient(addr.getHost(), addr.getPort());
                         try {
                             RedisAsyncConnection<String, String> connection = client.connectAsync();
                             String nodesValue = get(connection.clusterNodes());

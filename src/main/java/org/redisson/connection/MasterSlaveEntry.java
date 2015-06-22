@@ -15,8 +15,6 @@
  */
 package org.redisson.connection;
 
-import io.netty.channel.EventLoopGroup;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,11 +45,11 @@ public class MasterSlaveEntry {
 
     final MasterSlaveServersConfig config;
     final RedisCodec codec;
-    final EventLoopGroup group;
+    final ConnectionManager connectionManager;
 
-    public MasterSlaveEntry(RedisCodec codec, EventLoopGroup group, MasterSlaveServersConfig config) {
+    public MasterSlaveEntry(RedisCodec codec, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.codec = codec;
-        this.group = group;
+        this.connectionManager = connectionManager;
         this.config = config;
 
         slaveBalancer = config.getLoadBalancer();
@@ -60,7 +58,7 @@ public class MasterSlaveEntry {
         List<URI> addresses = new ArrayList<URI>(config.getSlaveAddresses());
         addresses.add(config.getMasterAddress());
         for (URI address : addresses) {
-            RedisClient client = new RedisClient(group, address.getHost(), address.getPort(), config.getTimeout());
+            RedisClient client = connectionManager.createClient(address.getHost(), address.getPort());
             SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                     config.getSlaveConnectionPoolSize(),
                     config.getSlaveSubscriptionConnectionPoolSize());
@@ -74,7 +72,7 @@ public class MasterSlaveEntry {
     }
 
     public void setupMasterEntry(String host, int port) {
-        RedisClient masterClient = new RedisClient(group, host, port, config.getTimeout());
+        RedisClient masterClient = connectionManager.createClient(host, port);
         masterEntry = new ConnectionEntry(masterClient, config.getMasterConnectionPoolSize());
     }
 
@@ -85,7 +83,7 @@ public class MasterSlaveEntry {
     public void addSlave(String host, int port) {
         slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
 
-        RedisClient client = new RedisClient(group, host, port, config.getTimeout());
+        RedisClient client = connectionManager.createClient(host, port);
         slaveBalancer.add(new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSlaveSubscriptionConnectionPoolSize()));
