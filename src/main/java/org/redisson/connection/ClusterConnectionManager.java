@@ -54,7 +54,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         init(config);
 
         for (URI addr : cfg.getNodeAddresses()) {
-            RedisClient client = createClient(addr.getHost(), addr.getPort());
+            RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getTimeout());
             try {
                 RedisAsyncConnection<String, String> connection = client.connectAsync();
                 String nodesValue = get(connection.clusterNodes());
