@@ -16,6 +16,6 @@ package com.lambdaworks.redis;
  * @author Will Glozer
  */
 public enum ScriptOutputType {
-    BOOLEAN, INTEGER, MULTI, STATUS, VALUE
+    BOOLEAN, INTEGER, MULTI, STATUS, VALUE, MAPVALUE, MAPVALUELIST
 }
 

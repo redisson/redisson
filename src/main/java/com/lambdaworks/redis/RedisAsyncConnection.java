@@ -300,28 +300,28 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
 
     public <T> Future<T> eval(V script, ScriptOutputType type, K[] keys, V... values) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
-        args.add(script.toString()).add(keys.length).addKeys(keys).addValues(values);
+        args.add(script.toString()).add(keys.length).addKeys(keys).addMapValues(values);
         CommandOutput<K, V, T> output = newScriptOutput(codec, type);
         return dispatch(EVAL, output, args);
     }
-    
+
     public <T> Future<T> eval(V script, ScriptOutputType type, List<K> keys, V... values) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
-        args.add(script.toString()).add(keys.size()).addKeys(keys).addValues(values);
+        args.add(script.toString()).add(keys.size()).addKeys(keys).addMapValues(values);
         CommandOutput<K, V, T> output = newScriptOutput(codec, type);
         return dispatch(EVAL, output, args);
     }
 
     public <T> Future<T> evalsha(String digest, ScriptOutputType type, List<K> keys, V... values) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
-        args.add(digest).add(keys.size()).addKeys(keys).addValues(values);
+        args.add(digest).add(keys.size()).addKeys(keys).addMapValues(values);
         CommandOutput<K, V, T> output = newScriptOutput(codec, type);
         return dispatch(EVALSHA, output, args);
     }
-    
+
     public <T> Future<T> evalsha(String digest, ScriptOutputType type, K[] keys, V... values) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec);
-        args.add(digest).add(keys.length).addKeys(keys).addValues(values);
+        args.add(digest).add(keys.length).addKeys(keys).addMapValues(values);
         CommandOutput<K, V, T> output = newScriptOutput(codec, type);
         return dispatch(EVALSHA, output, args);
     }
@@ -1262,7 +1262,7 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
         }
         return cmd.getNow();
     }
-    
+
     public <T> T awaitInterruptibly(Future<T> cmd, long timeout, TimeUnit unit) throws InterruptedException {
         if (!cmd.await(timeout, unit)) {
             Promise<T> promise = (Promise<T>)cmd;
@@ -1288,6 +1288,8 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
             case STATUS:  return (CommandOutput<K, V, T>) new StatusOutput<K, V>(codec);
             case MULTI:   return (CommandOutput<K, V, T>) new NestedMultiOutput<K, V>(codec);
             case VALUE:   return (CommandOutput<K, V, T>) new ValueOutput<K, V>(codec);
+            case MAPVALUE:   return (CommandOutput<K, V, T>) new MapValueOutput<K, V>(codec);
+            case MAPVALUELIST:   return (CommandOutput<K, V, T>) new MapValueListOutput<K, V>(codec);
             default:      throw new RedisException("Unsupported script output type");
         }
     }
