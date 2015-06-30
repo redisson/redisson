@@ -144,6 +144,9 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     if (config.getDatabase() != 0) {
                         conn.select(config.getDatabase());
                     }
+                    if (config.getClientName() != null) {
+                        conn.clientSetname(config.getClientName());
+                    }
 
                     entry.registerSubscribeConnection(conn);
                     return conn;
@@ -183,6 +186,9 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     }
                     if (config.getDatabase() != 0) {
                         conn.select(config.getDatabase());
+                    }
+                    if (config.getClientName() != null) {
+                        conn.clientSetname(config.getClientName());
                     }
 
                     return conn;

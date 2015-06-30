@@ -44,6 +44,11 @@ class BaseConfig<T extends BaseConfig<T>> {
      */
     private int subscriptionsPerConnection = 5;
 
+    /**
+     * Name of client connection
+     */
+    private String clientName;
+
     BaseConfig() {
     }
 
@@ -145,4 +150,15 @@ class BaseConfig<T extends BaseConfig<T>> {
         return timeout;
     }
 
+    /**
+     * Name for client connection
+     */
+    public String getClientName() {
+        return clientName;
+    }
+
+    public T setClientName(String clientName) {
+        this.clientName = clientName;
+        return (T) this;
+    }
 }

@@ -29,6 +29,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setTimeout(cfg.getTimeout());
         newconfig.setPassword(cfg.getPassword());
         newconfig.setDatabase(cfg.getDatabase());
+        newconfig.setClientName(cfg.getClientName());
         newconfig.setMasterAddress(addr);
         newconfig.setMasterConnectionPoolSize(cfg.getConnectionPoolSize());
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
