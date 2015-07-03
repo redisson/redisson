@@ -172,13 +172,13 @@ public class Redisson implements RedissonClient {
 
     /**
      * Returns script with eval-operations support
-     * 
+     *
      * @return
      */
     public RScript getScript() {
         return new RedissonScript(connectionManager);
     }
-    
+
     /**
      * Returns distributed sorted set instance by name.
      *
@@ -191,7 +191,7 @@ public class Redisson implements RedissonClient {
     }
 
     /**
-     * Returns distributed topic instance by name.
+     * Returns topic instance by name.
      *
      * @param name of the distributed topic
      * @return distributed topic
@@ -199,6 +199,22 @@ public class Redisson implements RedissonClient {
     @Override
     public <M> RTopic<M> getTopic(String name) {
         return new RedissonTopic<M>(connectionManager, name);
+    }
+
+    /**
+     * Returns topic instance satisfies by pattern name.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern of the topic
+     * @return
+     */
+    @Override
+    public <M> RTopic<M> getTopicPattern(String pattern) {
+        return new RedissonTopicPattern<M>(connectionManager, pattern);
     }
 
     /**
@@ -214,7 +230,7 @@ public class Redisson implements RedissonClient {
 
     /**
      * Returns distributed blocking queue instance by name.
-     * 
+     *
      * @param name of the distributed blocking queue
      * @return distributed queue
      */

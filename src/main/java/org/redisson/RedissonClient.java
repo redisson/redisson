@@ -85,10 +85,23 @@ public interface RedissonClient {
     /**
      * Returns topic instance by name.
      *
-     * @param name of the distributed topic
+     * @param name of topic
      * @return
      */
     <M> RTopic<M> getTopic(String name);
+
+    /**
+     * Returns topic instance satisfies by pattern name.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern of the topic
+     * @return
+     */
+    <M> RTopic<M> getTopicPattern(String pattern);
 
     /**
      * Returns queue instance by name.
@@ -100,7 +113,7 @@ public interface RedissonClient {
 
     /**
      * Returns blocking queue instance by name.
-     * 
+     *
      * @param name of queue
      * @return
      */
@@ -132,9 +145,9 @@ public interface RedissonClient {
 
     /**
      * Returns script operations object
-     * 
+     *
      * @return
      */
     RScript getScript();
-    
+
 }

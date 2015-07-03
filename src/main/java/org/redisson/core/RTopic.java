@@ -54,28 +54,10 @@ public interface RTopic<M> extends RObject {
     int addListener(MessageListener<M> listener);
 
     /**
-     * Subscribes to this topic using a pattern
-     * <code>MessageListener.onMessage</code> is called when any message
-     * is published on this topic.
-     *
-     * @param listener
-     * @return locally unique listener id
-     * @see org.redisson.core.MessageListener
-     */
-    int addPListener(MessageListener<M> listener);
-
-    /**
      * Removes the listener by <code>id</code> for listening this topic
      *
      * @param listenerId
      */
     void removeListener(int listenerId);
-
-    /**
-     * Removes the pattern listener by <code>id</code> for listening this topic
-     *
-     * @param listenerId
-     */
-    void removePListener(int listenerId);
 
 }

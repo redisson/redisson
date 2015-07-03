@@ -15,15 +15,9 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-
-import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
-import org.redisson.core.RTopic;
-
-import com.lambdaworks.redis.RedisAsyncConnection;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -32,25 +26,10 @@ import com.lambdaworks.redis.RedisAsyncConnection;
  *
  * @param <M> message
  */
-public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
+public class RedissonTopicPattern<M> extends RedissonTopic<M> {
 
-    protected RedissonTopic(ConnectionManager connectionManager, String name) {
+    protected RedissonTopicPattern(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
-    }
-
-    @Override
-    public long publish(M message) {
-        return connectionManager.get(publishAsync(message));
-    }
-
-    @Override
-    public Future<Long> publishAsync(final M message) {
-        return connectionManager.writeAsync(getName(), new ResultOperation<Long, M>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, M> async) {
-                return async.publish(getName(), message);
-            }
-        });
     }
 
     @Override
@@ -60,7 +39,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     }
 
     private int addListener(RedisPubSubTopicListenerWrapper<M> pubSubListener) {
-        PubSubConnectionEntry entry = connectionManager.subscribe(getName());
+        PubSubConnectionEntry entry = connectionManager.psubscribe(getName());
         synchronized (entry) {
             if (entry.isActive()) {
                 entry.addListener(getName(), pubSubListener);
@@ -80,8 +59,8 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
         synchronized (entry) {
             if (entry.isActive()) {
                 entry.removeListener(getName(), listenerId);
-                if (!entry.hasListeners(getName())) {
-                    connectionManager.unsubscribe(getName());
+                if (entry.getListeners(getName()).isEmpty()) {
+                    connectionManager.punsubscribe(getName());
                 }
                 return;
             }
@@ -89,11 +68,6 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
         // entry is inactive trying add again
         removeListener(listenerId);
-    }
-
-    @Override
-    public boolean delete() {
-        throw new UnsupportedOperationException();
     }
 
 }
