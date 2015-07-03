@@ -81,10 +81,6 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
         dispatch(PSUBSCRIBE, new PubSubOutput<K, V>(codec), args(patterns));
     }
 
-    public void punsubscribe(String... patterns) {
-        dispatch(PUNSUBSCRIBE, new PubSubOutput<K, V>(codec), args(patterns));
-    }
-
     public void subscribe(String... channels) {
         dispatch(SUBSCRIBE, new PubSubOutput<K, V>(codec), args(channels));
     }
@@ -93,7 +89,12 @@ public class RedisPubSubConnection<K, V> extends RedisAsyncConnection<K, V> {
         return dispatch(UNSUBSCRIBE, new PubSubOutput<K, V>(codec), args(channels));
     }
 
-    @Override
+    public Future<V> punsubscribe(String... patterns) {
+      return dispatch(PUNSUBSCRIBE, new PubSubOutput<K, V>(codec), args(patterns));
+    }
+
+
+  @Override
     public synchronized void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
 

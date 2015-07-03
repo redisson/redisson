@@ -72,6 +72,44 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     }
 
     @Override
+    public int addPListener(MessageListener<M> listener) {
+        RedisPubSubTopicListenerWrapper<M> pubSubListener = new RedisPubSubTopicListenerWrapper<M>(listener, getName());
+        return addPListener(pubSubListener);
+    }
+
+    private int addPListener(RedisPubSubTopicListenerWrapper<M> pubSubListener) {
+        PubSubConnectionEntry entry = connectionManager.psubscribe(getName());
+        synchronized (entry) {
+            if (entry.isActive()) {
+                entry.addListener(getName(), pubSubListener);
+                return pubSubListener.hashCode();
+            }
+        }
+        // entry is inactive trying add again
+        return addPListener(pubSubListener);
+    }
+
+    @Override
+    public void removePListener(int listenerId) {
+        PubSubConnectionEntry entry = connectionManager.getEntry(getName());
+        if (entry == null) {
+            return;
+        }
+        synchronized (entry) {
+            if (entry.isActive()) {
+                entry.removeListener(getName(), listenerId);
+                if (entry.getListeners(getName()).isEmpty()) {
+                    connectionManager.punsubscribe(getName());
+                }
+                return;
+            }
+        }
+
+        // entry is inactive trying add again
+        removePListener(listenerId);
+    }
+
+    @Override
     public void removeListener(int listenerId) {
         PubSubConnectionEntry entry = connectionManager.getEntry(getName());
         if (entry == null) {

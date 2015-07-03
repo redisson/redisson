@@ -49,6 +49,11 @@ public class RedisPubSubTopicListenerWrapper<V> extends RedisPubSubAdapter<V> {
         }
     }
 
+  	@Override
+  	public void message(String pattern, String channel, V message) {
+        listener.onMessage(message);
+  	}
+
     @Override
     public int hashCode() {
         final int prime = 31;

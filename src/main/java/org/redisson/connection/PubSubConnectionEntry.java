@@ -138,6 +138,21 @@ public class PubSubConnectionEntry {
         conn.subscribe(channelName);
     }
 
+    public void psubscribe(final String pattern) {
+        conn.addListener(new RedisPubSubAdapter() {
+          @Override
+          public void psubscribed(String channel, long count) {
+            log.debug("psubscribed to '{}' pattern", pattern);
+          }
+
+          @Override
+          public void punsubscribed(String channel, long count) {
+            log.debug("punsubscribed from '{}' pattern", pattern);
+          }
+        });
+        conn.psubscribe(pattern);
+    }
+
 
     public void subscribe(RedisPubSubAdapter listener, String channel) {
         addListener(channel, listener);
@@ -161,6 +176,25 @@ public class PubSubConnectionEntry {
         });
         return future;
     }
+
+    public Future punsubscribe(final String channel) {
+        Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
+        if (listeners != null) {
+            for (RedisPubSubListener listener : listeners) {
+                removeListener(channel, listener);
+            }
+        }
+
+        Future future = conn.punsubscribe(channel);
+        future.addListener(new FutureListener() {
+            @Override
+            public void operationComplete(Future future) throws Exception {
+                subscribedChannelsAmount.release();
+            }
+        });
+        return future;
+    }
+
 
     public boolean tryClose() {
         if (subscribedChannelsAmount.tryAcquire(subscriptionsPerConnection)) {

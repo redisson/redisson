@@ -572,6 +572,55 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
+    public <K, V> PubSubConnectionEntry psubscribe(String channelName) {
+        // multiple channel names per PubSubConnections allowed
+        PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
+        if (сonnEntry != null) {
+            return сonnEntry;
+        }
+
+        Set<PubSubConnectionEntry> entries = new HashSet<PubSubConnectionEntry>(name2PubSubConnection.values());
+        for (PubSubConnectionEntry entry : entries) {
+            if (entry.tryAcquire()) {
+                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+                if (oldEntry != null) {
+                    entry.release();
+                    return oldEntry;
+                }
+
+                synchronized (entry) {
+                    if (!entry.isActive()) {
+                        entry.release();
+                        return psubscribe(channelName);
+                    }
+                    entry.psubscribe(channelName);
+                    return entry;
+                }
+            }
+        }
+
+        int slot = -1;
+        RedisPubSubConnection<K, V> conn = nextPubSubConnection(slot);
+
+        PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
+        entry.tryAcquire();
+        PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+        if (oldEntry != null) {
+            returnSubscribeConnection(slot, entry);
+            return oldEntry;
+        }
+
+        synchronized (entry) {
+            if (!entry.isActive()) {
+                entry.release();
+                return psubscribe(channelName);
+            }
+            entry.psubscribe(channelName);
+            return entry;
+        }
+    }
+
+    @Override
     public <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
@@ -626,6 +675,27 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         Future future = entry.unsubscribe(channelName);
+        future.addListener(new FutureListener() {
+            @Override
+            public void operationComplete(Future future) throws Exception {
+                synchronized (entry) {
+                    if (entry.tryClose()) {
+                        returnSubscribeConnection(-1, entry);
+                    }
+                }
+            }
+        });
+        return future;
+    }
+
+    @Override
+    public Future punsubscribe(String channelName) {
+        final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
+        if (entry == null) {
+            return group.next().newSucceededFuture(null);
+        }
+
+        Future future = entry.punsubscribe(channelName);
         future.addListener(new FutureListener() {
             @Override
             public void operationComplete(Future future) throws Exception {

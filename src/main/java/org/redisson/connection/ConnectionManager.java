@@ -76,9 +76,13 @@ public interface ConnectionManager {
 
     <K, V> PubSubConnectionEntry subscribe(String channelName);
 
+    <K, V> PubSubConnectionEntry psubscribe(String pattern);
+
     <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName);
 
     Future unsubscribe(String channelName);
+
+    Future punsubscribe(String channelName);
 
     void releaseRead(int slot, RedisConnection сonnection);
 
