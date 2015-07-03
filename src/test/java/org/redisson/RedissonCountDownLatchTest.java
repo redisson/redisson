@@ -8,12 +8,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RCountDownLatch;
 
-public class RedissonCountDownLatchTest {
+public class RedissonCountDownLatchTest extends BaseTest {
 
     @Test
     public void testAwaitTimeout() throws InterruptedException {
-        Redisson redisson = Redisson.create();
-
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final RCountDownLatch latch = redisson.getCountDownLatch("latch1");
@@ -48,13 +46,10 @@ public class RedissonCountDownLatchTest {
         executor.shutdown();
         executor.awaitTermination(10, TimeUnit.SECONDS);
 
-        redisson.shutdown();
     }
 
     @Test
     public void testAwaitTimeoutFail() throws InterruptedException {
-        Redisson redisson = Redisson.create();
-
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final RCountDownLatch latch = redisson.getCountDownLatch("latch1");
@@ -88,15 +83,14 @@ public class RedissonCountDownLatchTest {
 
         executor.shutdown();
         executor.awaitTermination(10, TimeUnit.SECONDS);
-
-        redisson.shutdown();
     }
 
     @Test
     public void testCountDown() throws InterruptedException {
-        Redisson redisson = Redisson.create();
         RCountDownLatch latch = redisson.getCountDownLatch("latch");
-        latch.trySetCount(1);
+        latch.trySetCount(2);
+        Assert.assertEquals(2, latch.getCount());
+        latch.countDown();
         Assert.assertEquals(1, latch.getCount());
         latch.countDown();
         Assert.assertEquals(0, latch.getCount());
@@ -131,8 +125,25 @@ public class RedissonCountDownLatchTest {
         latch4.countDown();
         Assert.assertEquals(0, latch.getCount());
         latch4.await();
-
-        redisson.shutdown();
     }
 
+    @Test
+    public void testDelete() throws Exception {
+        RCountDownLatch latch = redisson.getCountDownLatch("latch");
+        latch.trySetCount(1);
+        Assert.assertTrue(latch.delete());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testDeleteFailed() throws Exception {
+        RCountDownLatch latch = redisson.getCountDownLatch("latch");
+        Assert.assertTrue(latch.delete());
+    }
+
+    @Test
+    public void testTrySetCount() throws Exception {
+        RCountDownLatch latch = redisson.getCountDownLatch("latch");
+        Assert.assertTrue(latch.trySetCount(1));
+        Assert.assertFalse(latch.trySetCount(2));
+    }
 }

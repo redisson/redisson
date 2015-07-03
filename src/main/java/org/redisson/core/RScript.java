@@ -21,7 +21,7 @@ import java.util.List;
 
 public interface RScript {
     
-    enum ReturnType {BOOLEAN, INTEGER, MULTI, STATUS, VALUE};
+    enum ReturnType {BOOLEAN, INTEGER, MULTI, STATUS, VALUE, MAPVALUE, MAPVALUELIST};
 
     List<Boolean> scriptExists(String ... shaDigests);
     
@@ -38,7 +38,11 @@ public interface RScript {
     String scriptLoad(String luaScript);
     
     Future<String> scriptLoadAsync(String luaScript);
-    
+
+    <R> R evalR(String luaScript, ReturnType returnType, List<Object> keys, List<?> values, List<?> rawValues);
+
+    <R> Future<R> evalAsyncR(String luaScript, ReturnType returnType, List<Object> keys, List<?> values, List<?> rawValues);
+
     <R> R evalSha(String shaDigest, ReturnType returnType);
     
     <R> R evalSha(String shaDigest, ReturnType returnType, List<Object> keys, Object... values);

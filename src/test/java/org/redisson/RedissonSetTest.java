@@ -2,13 +2,8 @@ package org.redisson;
 
 import io.netty.util.concurrent.Future;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
+import java.io.Serializable;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import org.hamcrest.MatcherAssert;
@@ -20,7 +15,7 @@ import org.redisson.core.RSortedSet;
 
 public class RedissonSetTest extends BaseTest {
 
-    public static class SimpleBean {
+    public static class SimpleBean implements Serializable {
 
         private Long lng;
 
@@ -158,13 +153,36 @@ public class RedissonSetTest extends BaseTest {
     @Test
     public void testRetainAll() {
         Set<Integer> set = redisson.getSet("set");
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < 20000; i++) {
             set.add(i);
         }
 
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
+        Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
         Assert.assertEquals(2, set.size());
     }
+
+//    @Test
+//    public void testIteratorRemoveHighVolume() {
+//        Set<Integer> set = redisson.getSet("set") /*new HashSet<Integer>()*/;
+//        for (int i = 0; i < 120000; i++) {
+//            set.add(i);
+//        }
+//        int cnt = 0;
+//        Iterator<Integer> iterator = set.iterator();
+//        while (iterator.hasNext()) {
+//            Integer integer = iterator.next();
+//            if (integer > -1) { // always
+//                iterator.remove();
+//            }
+//            cnt++;
+//        }
+//        System.out.println("-----------");
+//        for (Integer integer : set) {
+//            System.out.println(integer);
+//        }
+//        Assert.assertEquals(20000, cnt);
+//    }
 
     @Test
     public void testContainsAll() {
@@ -234,4 +252,27 @@ public class RedissonSetTest extends BaseTest {
         Assert.assertEquals(5, set.size());
     }
 
+
+    @Test
+    public void testRetainAllEmpty() {
+        Set<Integer> set = redisson.getSet("set");
+        set.add(1);
+        set.add(2);
+        set.add(3);
+        set.add(4);
+        set.add(5);
+
+        Assert.assertTrue(set.retainAll(Collections.<Integer>emptyList()));
+        Assert.assertEquals(0, set.size());
+    }
+
+    @Test
+    public void testRetainAllNoModify() {
+        Set<Integer> set = redisson.getSet("set");
+        set.add(1);
+        set.add(2);
+
+        Assert.assertFalse(set.retainAll(Arrays.asList(1, 2))); // nothing changed
+        Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
+    }
 }

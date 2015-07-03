@@ -13,7 +13,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     public void testSingleReplaceOldValue_SingleInstance() throws InterruptedException {
         final String name = "testSingleReplaceOldValue_SingleInstance";
 
-        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+        ConcurrentMap<String, String> map = BaseTest.createInstance().getMap(name);
         map.put("1", "122");
 
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
@@ -25,7 +25,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
             }
         });
 
-        ConcurrentMap<String, String> testMap = Redisson.create().getMap(name);
+        ConcurrentMap<String, String> testMap = BaseTest.createInstance().getMap(name);
         Assert.assertEquals("32", testMap.get("1"));
 
         assertMapSize(1, name);
@@ -35,7 +35,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     public void testSingleRemoveValue_SingleInstance() throws InterruptedException {
         final String name = "testSingleRemoveValue_SingleInstance";
 
-        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+        ConcurrentMap<String, String> map = BaseTest.createInstance().getMap(name);
         map.putIfAbsent("1", "0");
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
@@ -52,7 +52,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     public void testSingleReplace_SingleInstance() throws InterruptedException {
         final String name = "testSingleReplace_SingleInstance";
 
-        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+        ConcurrentMap<String, String> map = BaseTest.createInstance().getMap(name);
         map.put("1", "0");
 
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
@@ -63,7 +63,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
             }
         });
 
-        ConcurrentMap<String, String> testMap = Redisson.create().getMap(name);
+        ConcurrentMap<String, String> testMap = BaseTest.createInstance().getMap(name);
         Assert.assertEquals("3", testMap.get("1"));
 
         assertMapSize(1, name);
@@ -73,7 +73,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     public void test_Multi_Replace_MultiInstance() throws InterruptedException {
         final String name = "test_Multi_Replace_MultiInstance";
 
-        Redisson redisson = Redisson.create();
+        Redisson redisson = BaseTest.createInstance();
         ConcurrentMap<Integer, Integer> map = redisson.getMap(name);
         for (int i = 0; i < 5; i++) {
             map.put(i, 1);
@@ -88,7 +88,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
             }
         });
 
-        ConcurrentMap<Integer, Integer> testMap = Redisson.create().getMap(name);
+        ConcurrentMap<Integer, Integer> testMap = BaseTest.createInstance().getMap(name);
         for (Integer value : testMap.values()) {
             Assert.assertEquals(2, (int)value);
         }
@@ -102,7 +102,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     public void test_Multi_RemoveValue_MultiInstance() throws InterruptedException {
         final String name = "test_Multi_RemoveValue_MultiInstance";
 
-        ConcurrentMap<Integer, Integer> map = Redisson.create().getMap(name);
+        ConcurrentMap<Integer, Integer> map = BaseTest.createInstance().getMap(name);
         for (int i = 0; i < 10; i++) {
             map.put(i, 1);
         }
@@ -123,7 +123,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     public void testSinglePutIfAbsent_SingleInstance() throws InterruptedException {
         final String name = "testSinglePutIfAbsent_SingleInstance";
 
-        ConcurrentMap<String, String> map = Redisson.create().getMap(name);
+        ConcurrentMap<String, String> map = BaseTest.createInstance().getMap(name);
         map.putIfAbsent("1", "0");
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
@@ -133,7 +133,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
             }
         });
 
-        ConcurrentMap<String, String> testMap = Redisson.create().getMap(name);
+        ConcurrentMap<String, String> testMap = BaseTest.createInstance().getMap(name);
         Assert.assertEquals("0", testMap.get("1"));
 
         assertMapSize(1, name);
@@ -168,7 +168,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     }
 
     private void assertMapSize(int size, String name) {
-        Map<String, String> map = Redisson.create().getMap(name);
+        Map<String, String> map = BaseTest.createInstance().getMap(name);
         Assert.assertEquals(size, map.size());
         clear(map);
     }

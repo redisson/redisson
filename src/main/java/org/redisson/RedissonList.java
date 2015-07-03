@@ -15,26 +15,19 @@
  */
 package org.redisson;
 
+import com.lambdaworks.redis.RedisAsyncConnection;
+import com.lambdaworks.redis.RedisConnection;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
-
 import org.redisson.async.AsyncOperation;
 import org.redisson.async.OperationListener;
 import org.redisson.async.ResultOperation;
 import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RList;
+import org.redisson.core.RScript;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.RedisConnection;
+import java.util.*;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -163,7 +156,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return connectionManager.writeAsync(getName(), new AsyncOperation<Object, Boolean>() {
             @Override
             public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
-                async.rpush((Object)getName(), c.toArray()).addListener(new OperationListener<Object, Boolean, Object>(promise, async, this) {
+                async.rpush((Object) getName(), c.toArray()).addListener(new OperationListener<Object, Boolean, Object>(promise, async, this) {
                     @Override
                     public void onOperationComplete(Future<Object> future) throws Exception {
                         promise.setSuccess(true);
@@ -180,34 +173,35 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return false;
         }
         if (index < size()) {
-            return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
-                @Override
-                public Boolean execute(RedisConnection<Object, Object> conn) {
-                    while (true) {
-                        conn.watch(getName());
-                        List<Object> tail = conn.lrange(getName(), index, size());
 
-                        int first = 0;
-                        int last = 0;
-                        if (index == 0) {
-                            first = size();// truncate the list
-                            last = 0;
-                        } else {
-                            first = 0;
-                            last = index - 1;
-                        }
-
-                        conn.multi();
-                        conn.ltrim(getName(), first, last);
-                        conn.rpush(getName(), coll.toArray());
-                        conn.rpush(getName(), tail.toArray());
-                        if (conn.exec().size() == 3) {
-                            return true;
-                        }
+            if (index == 0) { // prepend elements to list
+                final ArrayList<V> elemens = new ArrayList<V>(coll);
+                Collections.reverse(elemens);
+                return connectionManager.write(getName(), new SyncOperation<Object, Boolean>() {
+                    @Override
+                    public Boolean execute(RedisConnection<Object, Object> conn) {
+                        conn.lpush(getName(), elemens.toArray());
+                        return true;
                     }
-                }
-            });
+                });
+            }
+
+            // insert into middle of list
+
+            ArrayList<Object> keys = new ArrayList<Object>();
+            keys.add(getName());
+
+            return "OK".equals(new RedissonScript(connectionManager).evalR(
+                    "local ind = table.remove(ARGV); " + // index is last parameter
+                            "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
+                            "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
+                            "for i, v in ipairs(ARGV) do redis.call('rpush', KEYS[1], v) end;" +
+                            "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
+                            "return 'OK'",
+                    RScript.ReturnType.STATUS,
+                    keys, new ArrayList<Object>(coll), Collections.singletonList(index)));
         } else {
+            // append to list
             return addAll(coll);
         }
     }
@@ -302,21 +296,17 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public V set(final int index, final V element) {
         checkIndex(index);
 
-        return connectionManager.write(getName(), new SyncOperation<V, V>() {
-            @Override
-            public V execute(RedisConnection<Object, V> conn) {
-                while (true) {
-                    conn.watch(getName());
-                    V prev = (V) conn.lindex(getName(), index);
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
 
-                    conn.multi();
-                    conn.lset(getName(), index, element);
-                    if (conn.exec().size() == 1) {
-                        return prev;
-                    }
-                }
-            }
-        });
+        return new RedissonScript(connectionManager).evalR(
+                "local v = redis.call('lindex', KEYS[1], ARGV[2]); " +
+                        "redis.call('lset', KEYS[1], ARGV[2], ARGV[1]); " +
+                        "return v",
+                RScript.ReturnType.VALUE,
+                keys, Collections.singletonList(element), Collections.singletonList(index)
+
+        );
     }
 
     @Override
@@ -339,26 +329,25 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public V remove(final int index) {
         checkIndex(index);
 
-        return connectionManager.write(getName(), new SyncOperation<Object, V>() {
-            @Override
-            public V execute(RedisConnection<Object, Object> conn) {
-                if (index == 0) {
+        if (index == 0) {
+            return connectionManager.write(getName(), new SyncOperation<Object, V>() {
+                @Override
+                public V execute(RedisConnection<Object, Object> conn) {
                     return (V) conn.lpop(getName());
                 }
-                while (true) {
-                    conn.watch(getName());
-                    V prev = (V) conn.lindex(getName(), index);
-                    List<Object> tail = conn.lrange(getName(), index + 1, size());
-
-                    conn.multi();
-                    conn.ltrim(getName(), 0, index - 1);
-                    conn.rpush(getName(), tail.toArray());
-                    if (conn.exec().size() == 2) {
-                        return prev;
-                    }
-                }
-            }
-        });
+            });
+        }
+        // else
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        return new RedissonScript(connectionManager).evalR(
+                "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
+                        "local tail = redis.call('lrange', KEYS[1], ARGV[1]);" +
+                        "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +
+                        "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
+                        "return v",
+                RScript.ReturnType.VALUE,
+                keys, Collections.emptyList(), Collections.singletonList(index));
     }
 
     @Override
@@ -367,22 +356,15 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return -1;
         }
 
-        int to = div(size(), batchSize);
-        for (int i = 0; i < to; i++) {
-            final int j = i;
-            List<Object> range = connectionManager.read(getName(), new ResultOperation<List<Object>, Object>() {
-                @Override
-                protected Future<List<Object>> execute(RedisAsyncConnection<Object, Object> async) {
-                    return async.lrange(getName(), j*batchSize, j*batchSize + batchSize - 1);
-                }
-            });
-            int index = range.indexOf(o);
-            if (index != -1) {
-                return index + i*batchSize;
-            }
-        }
-
-        return -1;
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        Long index = new RedissonScript(connectionManager).eval(
+                "local s = redis.call('llen', KEYS[1]);" +
+                        "for i = 0, s, 1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
+                        "return -1",
+                RScript.ReturnType.INTEGER,
+                keys, o);
+        return index.intValue();
     }
 
     @Override
@@ -391,24 +373,15 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return -1;
         }
 
-        final int size = size();
-        int to = div(size, batchSize);
-        for (int i = 1; i <= to; i++) {
-            final int j = i;
-            final int startIndex = -i*batchSize;
-            List<Object> range = connectionManager.read(getName(), new ResultOperation<List<Object>, Object>() {
-                @Override
-                protected Future<List<Object>> execute(RedisAsyncConnection<Object, Object> async) {
-                    return async.lrange(getName(), startIndex, size - (j-1)*batchSize);
-                }
-            });
-            int index = range.lastIndexOf(o);
-            if (index != -1) {
-                return Math.max(size + startIndex, 0) + index;
-            }
-        }
-
-        return -1;
+        ArrayList<Object> keys = new ArrayList<Object>();
+        keys.add(getName());
+        Long index = new RedissonScript(connectionManager).eval(
+                "local s = redis.call('llen', KEYS[1]);" +
+                        "for i = s, 0, -1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
+                        "return -1",
+                RScript.ReturnType.INTEGER,
+                keys, o);
+        return index.intValue();
     }
 
     @Override

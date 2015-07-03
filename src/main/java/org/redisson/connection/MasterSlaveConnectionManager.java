@@ -805,4 +805,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return group;
     }
 
+    @Override
+    public Timeout newTimeout(TimerTask task, long delay, TimeUnit unit) {
+        return timer.newTimeout(task, delay, unit);
+    }
+
 }

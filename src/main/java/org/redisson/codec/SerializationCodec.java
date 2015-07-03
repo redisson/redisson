@@ -15,11 +15,9 @@
  */
 package org.redisson.codec;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 /**
  *
@@ -30,7 +28,7 @@ public class SerializationCodec implements RedissonCodec {
 
     @Override
     public Object decodeKey(ByteBuffer bytes) {
-        return decode(bytes);
+        return new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Charset.forName("ASCII"));
     }
 
     @Override
@@ -50,7 +48,7 @@ public class SerializationCodec implements RedissonCodec {
 
     @Override
     public byte[] encodeKey(Object key) {
-        return encodeValue(key);
+        return key.toString().getBytes(Charset.forName("ASCII"));
     }
 
     @Override
@@ -73,7 +71,7 @@ public class SerializationCodec implements RedissonCodec {
 
     @Override
     public byte[] encodeMapKey(Object key) {
-        return encodeKey(key);
+        return encodeValue(key);
     }
 
     @Override
@@ -83,7 +81,18 @@ public class SerializationCodec implements RedissonCodec {
 
     @Override
     public Object decodeMapKey(ByteBuffer bytes) {
-        return decodeKey(bytes);
+        return decodeValue(bytes);
+    }
+
+    protected String decodeAscii(ByteBuffer bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        char[] chars = new char[bytes.remaining()];
+        for (int i = 0; i < chars.length; i++) {
+            chars[i] = (char) bytes.get();
+        }
+        return new String(chars);
     }
 
 }

@@ -18,10 +18,7 @@ package org.redisson;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 import org.redisson.async.AsyncOperation;
 import org.redisson.async.OperationListener;
@@ -121,7 +118,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                 }
 
                 // lazy init iterator
-                hasNext();
+//                hasNext();
                 iter.remove();
                 RedissonSet.this.remove(value);
                 removeExecuted = true;
@@ -207,7 +204,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         if (c.isEmpty()) {
             return false;
         }
-        
+
         Long res = connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             public Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
@@ -219,14 +216,13 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        boolean changed = false;
-        for (Object object : this) {
+        List<V> toRemove = new ArrayList<V>();
+        for (V object : this) {
             if (!c.contains(object)) {
-                remove(object);
-                changed = true;
+                toRemove.add(object);
             }
         }
-        return changed;
+        return removeAll(toRemove);
     }
 
     @Override

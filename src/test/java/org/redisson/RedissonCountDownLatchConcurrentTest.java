@@ -15,7 +15,7 @@ public class RedissonCountDownLatchConcurrentTest {
     public void testSingleCountDownAwait_SingleInstance() throws InterruptedException {
         final int iterations = Runtime.getRuntime().availableProcessors()*3;
 
-        Redisson redisson = Redisson.create();
+        Redisson redisson = BaseTest.createInstance();
         final RCountDownLatch latch = redisson.getCountDownLatch("latch");
         latch.trySetCount(iterations);
 

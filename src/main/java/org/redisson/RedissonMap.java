@@ -15,16 +15,14 @@
  */
 package org.redisson;
 
-import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
+import java.math.BigDecimal;
+import java.util.*;
+
+import org.redisson.async.AsyncOperation;
+import org.redisson.async.OperationListener;
 import org.redisson.async.ResultOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.Predicate;
@@ -32,6 +30,7 @@ import org.redisson.core.RMap;
 import org.redisson.core.RScript;
 
 import com.lambdaworks.redis.RedisAsyncConnection;
+import com.lambdaworks.redis.RedisConnection;
 import com.lambdaworks.redis.output.MapScanResult;
 
 import io.netty.util.concurrent.Future;
@@ -129,6 +128,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public void putAll(final Map<? extends K, ? extends V> map) {
+        if (map.size() == 0) {
+            return;
+        }
         connectionManager.write(getName(), new ResultOperation<String, Object>() {
             @Override
             public Future<String> execute(RedisAsyncConnection<Object, Object> async) {

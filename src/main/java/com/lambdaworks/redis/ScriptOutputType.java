@@ -10,6 +10,7 @@ package com.lambdaworks.redis;
  *  <li>{@link #INTEGER} 64-bit integer</li>
  *  <li>{@link #STATUS}  status string</li>
  *  <li>{@link #VALUE}   value</li>
+ *  <li>{@link #MAPVALUE}  typed value</li>
  *  <li>{@link #MULTI}   of these types</li>.
  * </ul>
  *
