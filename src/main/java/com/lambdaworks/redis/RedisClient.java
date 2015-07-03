@@ -66,7 +66,7 @@ public class RedisClient {
     }
 
     public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host,
-            int port, int timeout2) {
+            int port, int timeout) {
         addr = new InetSocketAddress(host, port);
 
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
