@@ -66,6 +66,9 @@ public class SingleEntry extends MasterSlaveEntry {
             if (config.getDatabase() != 0) {
                 conn.select(config.getDatabase());
             }
+            if (config.getClientName() != null) {
+                conn.clientSetname(config.getClientName());
+            }
             return conn;
         } catch (RedisConnectionException e) {
             ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().release();

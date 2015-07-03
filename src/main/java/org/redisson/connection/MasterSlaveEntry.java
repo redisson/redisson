@@ -131,6 +131,9 @@ public class MasterSlaveEntry {
             if (config.getDatabase() != 0) {
                 conn.select(config.getDatabase());
             }
+            if (config.getClientName() != null) {
+                conn.clientSetname((K) config.getClientName());
+            }
             return conn;
         } catch (RedisConnectionException e) {
             masterEntry.getConnectionsSemaphore().release();
