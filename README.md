@@ -3,7 +3,7 @@
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
 Based on patched version of [lettuce](https://github.com/wg/lettuce) [Redis](http://redis.io) client and [Netty 4](http://netty.io) framework.  
-Redis 2.6+ and JDK 1.6+ compatible  
+Redis 2.8+ and JDK 1.6+ compatible  
 
 
 Read [wiki](https://github.com/mrniko/redisson/wiki) for more Redisson usage details
@@ -53,6 +53,26 @@ Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####??-Jul-2015 - version 1.3.0
+Feature - `RQueue.pollLastAndOfferFirstTo` method added  
+Feature - `RObject.rename`, `RObject.renameAsync`, `RObject.renamenx`, `RObject.renamenxAsync` methods added  
+Feature - `RList.getAsync`, `RList.addAsync`, `RList.addAllAsync` methods added  
+Feature - `RObject.deleteAsync` method added  
+Feature - unix sockets support via `Configuration.useLinuxNativeEpoll` setting  
+Feature - Redisson.getTopicPattern method added (thanks to alex-sherwin)  
+Improvement - lua scripts used instead of multi/exec commands to avoid connection errors during execution (thanks to AndrewKolpakov)  
+Improvement - `RObject.delete` method now returns `boolean` status  
+Improvement - propagate Command processing exceptions to ConnectionManager (thanks to marko-stankovic)  
+Improvement - KryoCodec classes registration ability added  
+Fixed - slave status handling in Sentinel mode  
+Fixed - String codec  
+Fixed - Cluster ASKING command support  
+Fixed - `RedissonBlockingQueue#drainTo` method (thanks to Sergey Poletaev)  
+Fixed - Cluster.STATE.HANDSHAKE enum added  
+Fixed - `RedissonClient.getScript` method added  
+Fixed - `BlockingQueue.poll` method  
+Fixed - Incorrect map key encoding makes hmget return no fields when string keys are used (thanks to sammiq)  
 
 ####02-Apr-2015 - version 1.2.1 released
 Feature - all redis-script commands via 'RScript' object  
