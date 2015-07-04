@@ -54,12 +54,10 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public boolean compareAndSet(final long expect, final long update) {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         return new RedissonScript(connectionManager).evalR(
                 "if redis.call('get', KEYS[1]) == ARGV[1] then redis.call('set', KEYS[1], ARGV[2]); return true else return false end",
                 RScript.ReturnType.BOOLEAN,
-                keys, Collections.EMPTY_LIST, Arrays.asList(expect, update));
+                Collections.<Object>singletonList(getName()), Collections.EMPTY_LIST, Arrays.asList(expect, update));
     }
 
     @Override
@@ -79,22 +77,18 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long getAndAdd(final long delta) {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         return new RedissonScript(connectionManager).evalR(
                 "local v = redis.call('get', KEYS[1]) or 0; redis.call('set', KEYS[1], v + ARGV[1]); return tonumber(v)",
                 RScript.ReturnType.INTEGER,
-                keys, Collections.EMPTY_LIST, Collections.singletonList(delta));
+                Collections.<Object>singletonList(getName()), Collections.EMPTY_LIST, Collections.singletonList(delta));
     }
 
     @Override
     public long getAndSet(final long newValue) {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         return new RedissonScript(connectionManager).evalR(
                 "local v = redis.call('get', KEYS[1]) or 0; redis.call('set', KEYS[1], ARGV[1]); return tonumber(v)",
                 RScript.ReturnType.INTEGER,
-                keys, Collections.EMPTY_LIST, Collections.singletonList(newValue));
+                Collections.<Object>singletonList(getName()), Collections.EMPTY_LIST, Collections.singletonList(newValue));
     }
 
     @Override
@@ -118,12 +112,10 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public void set(final long newValue) {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         new RedissonScript(connectionManager).evalR(
                 "redis.call('set', KEYS[1], ARGV[1])",
                 RScript.ReturnType.STATUS,
-                keys, Collections.EMPTY_LIST, Collections.singletonList(newValue));
+                Collections.<Object>singletonList(getName()), Collections.EMPTY_LIST, Collections.singletonList(newValue));
     }
 
     public String toString() {

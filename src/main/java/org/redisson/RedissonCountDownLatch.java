@@ -193,15 +193,14 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         if (getCount() <= 0) {
             return;
         }
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
+
         new RedissonScript(connectionManager).evalR(
                 "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
                         "if v == 0 then redis.call('publish', ARGV[2], ARGV[1]) end;" +
                         "return 'OK'",
                 RScript.ReturnType.STATUS,
-                keys, Collections.singletonList(zeroCountMessage), Collections.singletonList(getChannelName()));
+                Collections.<Object>singletonList(getName()), Collections.singletonList(zeroCountMessage), Collections.singletonList(getChannelName()));
     }
 
     private String getEntryName() {
@@ -218,13 +217,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private long getCountInner() {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
+
         Long val = new RedissonScript(connectionManager).eval(
                 "return redis.call('get', KEYS[1])",
                 RScript.ReturnType.INTEGER,
-                keys);
-
+                Collections.<Object>singletonList(getName()));
 
         if (val == null) {
             return 0;
@@ -233,23 +230,19 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     @Override
-    public boolean trySetCount(final long count) {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
+    public boolean trySetCount(long count) {
         return new RedissonScript(connectionManager).evalR(
                 "if redis.call('exists', KEYS[1]) == 0 then redis.call('set', KEYS[1], ARGV[2]); redis.call('publish', ARGV[3], ARGV[1]); return true else return false end",
                 RScript.ReturnType.BOOLEAN,
-                keys, Collections.singletonList(newCountMessage), Arrays.asList(count, getChannelName()));
+                Collections.<Object>singletonList(getName()), Collections.singletonList(newCountMessage), Arrays.asList(count, getChannelName()));
     }
 
     @Override
     public boolean delete() {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         Boolean deleted = new RedissonScript(connectionManager).evalR(
                 "if redis.call('del', KEYS[1]) == 1 then redis.call('publish', ARGV[2], ARGV[1]); return true else return false end",
                 RScript.ReturnType.BOOLEAN,
-                keys, Collections.singletonList(newCountMessage), Collections.singletonList(getChannelName()));
+                Collections.<Object>singletonList(getName()), Collections.singletonList(newCountMessage), Collections.singletonList(getChannelName()));
         if (!deleted) {
             throw new IllegalStateException();
         }

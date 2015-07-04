@@ -221,6 +221,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     private Long tryLockInner() {
         Long ttlRemaining = tryLockInner(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        // lock acquired
         if (ttlRemaining == null) {
             newRefreshTask();
         }
@@ -229,8 +230,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     private void newRefreshTask() {
         if (refreshTaskMap.containsKey(getName())) {
-         return;
+            return;
         }
+
         Timeout task = connectionManager.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -239,6 +241,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 newRefreshTask(); // reschedule itself
             }
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
+
         if (refreshTaskMap.putIfAbsent(getName(), task) != null) {
             task.cancel();
         }
@@ -248,22 +251,17 @@ public class RedissonLock extends RedissonExpirable implements RLock {
      * Stop refresh timer
      * @return true if timer was stopped successfully
      */
-    private boolean stopRefreshTask() {
-        boolean returnValue =false;
-        Timeout task = refreshTaskMap.get(getName());
+    private void stopRefreshTask() {
+        Timeout task = refreshTaskMap.remove(getName());
         if (task != null) {
-            returnValue = task.cancel();
-            refreshTaskMap.remove(getName());
+            task.cancel();
         }
-        return returnValue;
     }
 
 
     private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         return new RedissonScript(connectionManager)
                 .evalR("local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
@@ -278,7 +276,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  return redis.call('pttl', KEYS[1]); " +
                                 "end",
                         RScript.ReturnType.INTEGER,
-                        keys, Collections.singletonList(id.toString() + "-" + Thread.currentThread().getId()), Collections.singletonList(internalLockLeaseTime));
+                        Collections.<Object>singletonList(getName()), Collections.singletonList(id.toString() + "-" + Thread.currentThread().getId()), Collections.singletonList(internalLockLeaseTime));
     }
 
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
@@ -340,8 +338,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void unlock() {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         String opStatus = new RedissonScript(connectionManager)
                 .evalR("local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
@@ -363,7 +359,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  return nil; " +
                                 "end",
                         RScript.ReturnType.STATUS,
-                        keys, Arrays.asList(id.toString() + "-" + Thread.currentThread().getId(), unlockMessage), Arrays.asList(internalLockLeaseTime, getChannelName()));
+                        Collections.<Object>singletonList(getName()), Arrays.asList(id.toString() + "-" + Thread.currentThread().getId(), unlockMessage), Arrays.asList(internalLockLeaseTime, getChannelName()));
         if ("OK".equals(opStatus)) {
             stopRefreshTask();
         } else if ("FALSE".equals(opStatus)) {
@@ -383,13 +379,11 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void forceUnlock() {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         stopRefreshTask();
         new RedissonScript(connectionManager)
                 .evalR("redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return 'OK'",
                         RScript.ReturnType.STATUS,
-                        keys, Collections.singletonList(unlockMessage), Collections.singletonList(getChannelName()));
+                        Collections.<Object>singletonList(getName()), Collections.singletonList(unlockMessage), Collections.singletonList(getChannelName()));
     }
 
     @Override
@@ -404,8 +398,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public boolean isHeldByCurrentThread() {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         String opStatus = new RedissonScript(connectionManager)
                 .eval("local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
@@ -419,14 +411,12 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  end;" +
                                 "end",
                         RScript.ReturnType.STATUS,
-                        keys, id.toString() + "-" + Thread.currentThread().getId());
+                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId());
         return "OK".equals(opStatus);
     }
 
     @Override
     public int getHoldCount() {
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         Long opStatus = new RedissonScript(connectionManager)
                 .eval("local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
@@ -436,7 +426,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  return o['c']; " +
                                 "end",
                         RScript.ReturnType.INTEGER,
-                        keys, id.toString() + "-" + Thread.currentThread().getId());
+                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId());
         return opStatus.intValue();
     }
 

@@ -36,7 +36,7 @@ import org.redisson.core.RScript;
  * {@link LinkedBlockingQueue} where items are added as soon as
  * <code>blpop</code> returns. All {@link BlockingQueue} methods are actually
  * delegated to this intermediary queue.
- * 
+ *
  * @author pdeschen@gmail.com
  * @author Nikita Koksharov
  */
@@ -81,7 +81,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throws InterruptedException {
         return pollLastAndOfferFirstTo(queue.getName(), timeout, unit);
     }
-    
+
     @Override
     public V pollLastAndOfferFirstTo(final String queueName, final long timeout, final TimeUnit unit) throws InterruptedException {
         return connectionManager.write(getName(), new SyncInterruptedOperation<V, V>() {
@@ -91,7 +91,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             }
         });
     }
-    
+
     @Override
     public int remainingCapacity() {
         return Integer.MAX_VALUE;
@@ -102,14 +102,12 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         if (c == null) {
             throw new NullPointerException();
         }
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         List<V> list = new RedissonScript(connectionManager).eval(
                 "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
                         "redis.call('ltrim', KEYS[1], -1, 0); " +
                         "return vals",
                 RScript.ReturnType.MAPVALUELIST,
-                keys);
+                Collections.<Object>singletonList(getName()));
         c.addAll(list);
         return list.size();
     }
@@ -123,15 +121,13 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throw new NullPointerException();
         }
 
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         List<V> list = new RedissonScript(connectionManager).evalR(
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
                         "return vals",
                 RScript.ReturnType.MAPVALUELIST,
-                keys, Collections.emptyList(), Collections.singletonList(maxElements));
+                Collections.<Object>singletonList(getName()), Collections.emptyList(), Collections.singletonList(maxElements));
         c.addAll(list);
         return list.size();
     }

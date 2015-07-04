@@ -95,7 +95,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public boolean add(V e) {
         return addAll(Collections.singleton(e));
     }
-    
+
     @Override
     public Future<Boolean> addAsync(V e) {
         return addAllAsync(Collections.singleton(e));
@@ -147,12 +147,12 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public boolean addAll(Collection<? extends V> c) {
         return connectionManager.get(addAllAsync(c));
     }
-    
+
     @Override
     public Future<Boolean> addAllAsync(final Collection<? extends V> c) {
         if (c.isEmpty()) {
             return connectionManager.getGroup().next().newSucceededFuture(false);
-        }        
+        }
         return connectionManager.writeAsync(getName(), new AsyncOperation<Object, Boolean>() {
             @Override
             public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, Object> async) {
@@ -188,9 +188,6 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
             // insert into middle of list
 
-            ArrayList<Object> keys = new ArrayList<Object>();
-            keys.add(getName());
-
             return "OK".equals(new RedissonScript(connectionManager).evalR(
                     "local ind = table.remove(ARGV); " + // index is last parameter
                             "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
@@ -199,7 +196,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                             "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
                             "return 'OK'",
                     RScript.ReturnType.STATUS,
-                    keys, new ArrayList<Object>(coll), Collections.singletonList(index)));
+                    Collections.<Object>singletonList(getName()), new ArrayList<Object>(coll), Collections.singletonList(index)));
         } else {
             // append to list
             return addAll(coll);
@@ -260,7 +257,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             }
         });
     }
-    
+
     @Override
     public V get(int index) {
         checkIndex(index);
@@ -296,15 +293,14 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public V set(final int index, final V element) {
         checkIndex(index);
 
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
-
         return new RedissonScript(connectionManager).evalR(
                 "local v = redis.call('lindex', KEYS[1], ARGV[2]); " +
                         "redis.call('lset', KEYS[1], ARGV[2], ARGV[1]); " +
                         "return v",
                 RScript.ReturnType.VALUE,
-                keys, Collections.singletonList(element), Collections.singletonList(index)
+                Collections.<Object>singletonList(getName()),
+                Collections.singletonList(element),
+                Collections.singletonList(index)
 
         );
     }
@@ -338,8 +334,6 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             });
         }
         // else
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         return new RedissonScript(connectionManager).evalR(
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "local tail = redis.call('lrange', KEYS[1], ARGV[1]);" +
@@ -347,7 +341,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                         "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
                         "return v",
                 RScript.ReturnType.VALUE,
-                keys, Collections.emptyList(), Collections.singletonList(index));
+                Collections.<Object>singletonList(getName()), Collections.emptyList(), Collections.singletonList(index));
     }
 
     @Override
@@ -356,14 +350,12 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return -1;
         }
 
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         Long index = new RedissonScript(connectionManager).eval(
                 "local s = redis.call('llen', KEYS[1]);" +
                         "for i = 0, s, 1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
                         "return -1",
                 RScript.ReturnType.INTEGER,
-                keys, o);
+                Collections.<Object>singletonList(getName()), o);
         return index.intValue();
     }
 
@@ -373,14 +365,12 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return -1;
         }
 
-        ArrayList<Object> keys = new ArrayList<Object>();
-        keys.add(getName());
         Long index = new RedissonScript(connectionManager).eval(
                 "local s = redis.call('llen', KEYS[1]);" +
                         "for i = s, 0, -1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
                         "return -1",
                 RScript.ReturnType.INTEGER,
-                keys, o);
+                Collections.<Object>singletonList(getName()), o);
         return index.intValue();
     }
 
