@@ -54,7 +54,7 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
-####??-Jul-2015 - version 1.3.0
+####04-Jul-2015 - version 1.3.0 released
 Feature - `RQueue.pollLastAndOfferFirstTo` method added  
 Feature - `RObject.rename`, `RObject.renameAsync`, `RObject.renamenx`, `RObject.renamenxAsync` methods added  
 Feature - `RList.getAsync`, `RList.addAsync`, `RList.addAllAsync` methods added  
