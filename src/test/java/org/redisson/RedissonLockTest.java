@@ -30,6 +30,17 @@ public class RedissonLockTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testForceUnlock() {
+        RLock lock = redisson.getLock("lock");
+        lock.lock();
+        lock.forceUnlock();
+        Assert.assertFalse(lock.isLocked());
+
+        lock = redisson.getLock("lock");
+        Assert.assertFalse(lock.isLocked());
+    }
+
+    @Test
     public void testExpire() throws InterruptedException {
         RLock lock = redisson.getLock("lock");
         lock.lock(2, TimeUnit.SECONDS);

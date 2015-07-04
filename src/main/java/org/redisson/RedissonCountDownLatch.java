@@ -15,20 +15,21 @@
  */
 package org.redisson;
 
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.core.RCountDownLatch;
-import org.redisson.core.RScript;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+
+import org.redisson.connection.ConnectionManager;
+import org.redisson.core.RCountDownLatch;
+import org.redisson.core.RScript;
+
+import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
+
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
 /**
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
@@ -238,15 +239,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     @Override
-    public boolean delete() {
-        Boolean deleted = new RedissonScript(connectionManager).evalR(
+    public Future<Boolean> deleteAsync() {
+        return new RedissonScript(connectionManager).evalAsyncR(
                 "if redis.call('del', KEYS[1]) == 1 then redis.call('publish', ARGV[2], ARGV[1]); return true else return false end",
                 RScript.ReturnType.BOOLEAN,
                 Collections.<Object>singletonList(getName()), Collections.singletonList(newCountMessage), Collections.singletonList(getChannelName()));
-        if (!deleted) {
-            throw new IllegalStateException();
-        }
-        return true;
     }
 
 }

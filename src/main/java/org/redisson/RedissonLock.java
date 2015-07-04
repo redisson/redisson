@@ -15,18 +15,6 @@
  */
 package org.redisson;
 
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
-import org.redisson.async.SyncOperation;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.core.RLock;
-import org.redisson.core.RScript;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
@@ -34,6 +22,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
+
+import org.redisson.async.SyncOperation;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.core.RLock;
+import org.redisson.core.RScript;
+
+import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
+
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
@@ -379,10 +380,14 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void forceUnlock() {
+        connectionManager.get(forceUnlockAsync());
+    }
+
+    private Future<Boolean> forceUnlockAsync() {
         stopRefreshTask();
-        new RedissonScript(connectionManager)
-                .evalR("redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return 'OK'",
-                        RScript.ReturnType.STATUS,
+        return new RedissonScript(connectionManager)
+                .evalAsyncR("redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return true",
+                        RScript.ReturnType.BOOLEAN,
                         Collections.<Object>singletonList(getName()), Collections.singletonList(unlockMessage), Collections.singletonList(getChannelName()));
     }
 
@@ -434,6 +439,11 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     public boolean delete() {
         forceUnlock();
         return true;
+    }
+
+    @Override
+    public Future<Boolean> deleteAsync() {
+        return forceUnlockAsync();
     }
 
 }

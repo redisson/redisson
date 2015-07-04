@@ -96,4 +96,9 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public io.netty.util.concurrent.Future<Boolean> deleteAsync() {
+        throw new UnsupportedOperationException();
+    };
+
 }
