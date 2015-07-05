@@ -15,6 +15,16 @@
  */
 package org.redisson.client.protocol;
 
-public class StringDecoder implements ResponseDecoder<String> {
+import io.netty.buffer.ByteBuf;
+import io.netty.util.CharsetUtil;
+
+public class StringReplayDecoder implements Decoder<String> {
+
+    @Override
+    public String decode(ByteBuf buf) {
+        String status = buf.readBytes(buf.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
+        buf.skipBytes(2);
+        return status;
+    }
 
 }

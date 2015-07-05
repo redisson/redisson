@@ -15,6 +15,10 @@
  */
 package org.redisson.client.protocol;
 
-public class ObjectDecoder implements ResponseDecoder<Object> {
+import io.netty.buffer.ByteBuf;
+
+public interface Decoder<R> {
+
+    R decode(ByteBuf buf);
 
 }

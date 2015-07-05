@@ -17,7 +17,7 @@ package org.redisson.client.protocol;
 
 public interface RedisCommands {
 
-    RedisCommand<Object> GET = new RedisCommand<Object>("GET", new ObjectDecoder());
-    RedisCommand<String> SET = new RedisCommand<String>("SET", new StringDecoder());
+    RedisCommand<Object> GET = new RedisCommand<Object>("GET");
+    RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder());
 
 }

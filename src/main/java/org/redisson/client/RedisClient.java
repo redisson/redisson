@@ -21,8 +21,10 @@ import org.redisson.client.handler.RedisCommandsQueue;
 import org.redisson.client.handler.RedisData;
 import org.redisson.client.handler.RedisDecoder;
 import org.redisson.client.handler.RedisEncoder;
+import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.StringCodec;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -66,27 +68,38 @@ public class RedisClient {
         return future;
     }
 
-    public <R> Future<R> execute(RedisCommand<R> command, Object ... params) {
+//    public <R> Future<R> execute(Codec encoder, RedisCommand<R> command, Object ... params) {
+//        Promise<R> promise = bootstrap.group().next().<R>newPromise();
+//        channel.writeAndFlush(new RedisData<R, R>(promise, encoder, command, params));
+//        return promise;
+//    }
+
+    public <T, R> Future<R> execute(Codec encoder, RedisCommand<T> command, Object ... params) {
         Promise<R> promise = bootstrap.group().next().<R>newPromise();
-        channel.writeAndFlush(new RedisData<R>(promise, command, params));
+        channel.writeAndFlush(new RedisData<T, R>(promise, encoder, command, params));
         return promise;
     }
 
     public static void main(String[] args) throws InterruptedException {
         RedisClient rc = new RedisClient("127.0.0.1", 6379);
         rc.connect().sync();
-        for (int i = 0; i < 10000; i++) {
-            final int j = i;
-            Future<String> res = rc.execute(RedisCommands.SET, "test", "" + Math.random());
-            res.addListener(new FutureListener<String>() {
+        Future<String> res = rc.execute(new StringCodec(), RedisCommands.SET, "test", "" + Math.random());
+        res.addListener(new FutureListener<String>() {
 
-                @Override
-                public void operationComplete(Future<String> future) throws Exception {
-                    System.out.println("res: " + future.getNow() + " " + j);
-                }
+            @Override
+            public void operationComplete(Future<String> future) throws Exception {
+                System.out.println("res 1: " + future.getNow());
+            }
 
-            });
-        }
-//        rc.execute(RedisCommands.GET, "test");
+        });
+
+        Future<String> r = rc.execute(new StringCodec(), RedisCommands.GET, "test");
+        r.addListener(new FutureListener<Object>() {
+
+            @Override
+            public void operationComplete(Future<Object> future) throws Exception {
+                System.out.println("res 2: " + future.getNow());
+            }
+        });
     }
 }

@@ -22,14 +22,14 @@ import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.Promise;
 
-public class RedisEncoder extends MessageToByteEncoder<RedisData<Object>> {
+public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
 
     final char ARGS_PREFIX = '*';
     final char BYTES_PREFIX = '$';
     final byte[] CRLF = "\r\n".getBytes();
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, RedisData<Object> msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, RedisData<Object, Object> msg, ByteBuf out) throws Exception {
         out.writeByte(ARGS_PREFIX);
         out.writeBytes(toChars(1 + msg.getParams().length));
         out.writeBytes(CRLF);
@@ -39,8 +39,8 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object>> {
             writeArgument(out, param.toString().getBytes("UTF-8"));
         }
 
-        String o = out.toString(CharsetUtil.UTF_8);
-        System.out.println(o);
+//        String o = out.toString(CharsetUtil.UTF_8);
+//        System.out.println(o);
     }
 
     private void writeArgument(ByteBuf out, byte[] arg) {

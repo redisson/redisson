@@ -17,24 +17,28 @@ package org.redisson.client.handler;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.RedisCommand;
 
 import io.netty.util.concurrent.Promise;
 
-public class RedisData<R> {
+public class RedisData<T, R> {
 
-    Promise<R> promise;
-    RedisCommand<R> command;
-    Object[] params;
-    AtomicBoolean send = new AtomicBoolean();
+    final Promise<R> promise;
+    final RedisCommand<T> command;
+    final Object[] params;
+    final Codec codec;
+    final AtomicBoolean sended = new AtomicBoolean();
 
-    public RedisData(Promise<R> promise, RedisCommand<R> command, Object[] params) {
+    public RedisData(Promise<R> promise, Codec encoder, RedisCommand<T> command, Object[] params) {
         this.promise = promise;
         this.command = command;
         this.params = params;
+        this.codec = encoder;
     }
 
-    public RedisCommand<R> getCommand() {
+    public RedisCommand<T> getCommand() {
         return command;
     }
 
@@ -46,8 +50,12 @@ public class RedisData<R> {
         return promise;
     }
 
-    public AtomicBoolean getSend() {
-        return send;
+    public AtomicBoolean getSended() {
+        return sended;
+    }
+
+    public Codec getCodec() {
+        return codec;
     }
 
 }

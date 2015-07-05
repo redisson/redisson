@@ -17,10 +17,14 @@ package org.redisson.client.protocol;
 
 public class RedisCommand<R> {
 
-    private String name;
-    private ResponseDecoder<R> reponseDecoder;
+    private final String name;
+    private Decoder<R> reponseDecoder;
 
-    public RedisCommand(String name, ResponseDecoder<R> reponseDecoder) {
+    public RedisCommand(String name) {
+        this(name, null);
+    }
+
+    public RedisCommand(String name, Decoder<R> reponseDecoder) {
         super();
         this.name = name;
         this.reponseDecoder = reponseDecoder;
@@ -30,7 +34,7 @@ public class RedisCommand<R> {
         return name;
     }
 
-    public ResponseDecoder<R> getReponseDecoder() {
+    public Decoder<R> getReponseDecoder() {
         return reponseDecoder;
     }
 

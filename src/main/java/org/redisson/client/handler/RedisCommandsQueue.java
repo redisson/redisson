@@ -28,9 +28,9 @@ public class RedisCommandsQueue extends ChannelDuplexHandler {
 
     public enum QueueCommands {NEXT_COMMAND}
 
-    public static final AttributeKey<Promise<Object>> REPLAY_PROMISE = AttributeKey.valueOf("promise");
+    public static final AttributeKey<RedisData<Object, Object>> REPLAY_PROMISE = AttributeKey.valueOf("promise");
 
-    private final Queue<RedisData<Object>> queue = PlatformDependent.newMpscQueue();
+    private final Queue<RedisData<Object, Object>> queue = PlatformDependent.newMpscQueue();
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -45,8 +45,8 @@ public class RedisCommandsQueue extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof RedisData) {
-            RedisData<Object> data = (RedisData<Object>) msg;
-            if (data.getSend().get()) {
+            RedisData<Object, Object> data = (RedisData<Object, Object>) msg;
+            if (data.getSended().get()) {
                 super.write(ctx, msg, promise);
             } else {
                 queue.add(data);
@@ -58,9 +58,9 @@ public class RedisCommandsQueue extends ChannelDuplexHandler {
     }
 
     private void sendData(ChannelHandlerContext ctx) throws Exception {
-        RedisData<Object> data = queue.peek();
-        if (data != null && data.getSend().compareAndSet(false, true)) {
-            ctx.channel().attr(REPLAY_PROMISE).set(data.getPromise());
+        RedisData<Object, Object> data = queue.peek();
+        if (data != null && data.getSended().compareAndSet(false, true)) {
+            ctx.channel().attr(REPLAY_PROMISE).set(data);
             ctx.channel().writeAndFlush(data);
         }
     }
