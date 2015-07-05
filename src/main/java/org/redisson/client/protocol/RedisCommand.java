@@ -18,16 +18,18 @@ package org.redisson.client.protocol;
 public class RedisCommand<R> {
 
     private final String name;
+    private final int[] encodeParamIndexes;
     private Decoder<R> reponseDecoder;
 
-    public RedisCommand(String name) {
-        this(name, null);
+    public RedisCommand(String name, int ... encodeParamIndexes) {
+        this(name, null, encodeParamIndexes);
     }
 
-    public RedisCommand(String name, Decoder<R> reponseDecoder) {
+    public RedisCommand(String name, Decoder<R> reponseDecoder, int ... encodeParamIndexes) {
         super();
         this.name = name;
         this.reponseDecoder = reponseDecoder;
+        this.encodeParamIndexes = encodeParamIndexes;
     }
 
     public String getName() {
@@ -38,5 +40,8 @@ public class RedisCommand<R> {
         return reponseDecoder;
     }
 
+    public int[] getEncodeParamIndexes() {
+        return encodeParamIndexes;
+    }
 
 }

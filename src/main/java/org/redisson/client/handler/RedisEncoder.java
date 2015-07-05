@@ -15,12 +15,11 @@
  */
 package org.redisson.client.handler;
 
+import java.util.Arrays;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
-import io.netty.util.AttributeKey;
-import io.netty.util.CharsetUtil;
-import io.netty.util.concurrent.Promise;
 
 public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
 
@@ -34,9 +33,15 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
         out.writeBytes(toChars(1 + msg.getParams().length));
         out.writeBytes(CRLF);
 
-        writeArgument(out, msg.getCommand().getName().getBytes("UTF-8"));
+        if (Arrays.binarySearch(msg.getCommand().getEncodeParamIndexes(), 0) != -1) {
+            writeArgument(out, msg.getCodec().encode(msg.getCommand().getName()));
+        }
+        int i = 1;
         for (Object param : msg.getParams()) {
-            writeArgument(out, param.toString().getBytes("UTF-8"));
+            if (Arrays.binarySearch(msg.getCommand().getEncodeParamIndexes(), i) != -1) {
+                writeArgument(out, msg.getCodec().encode(param));
+            }
+            i++;
         }
 
 //        String o = out.toString(CharsetUtil.UTF_8);
