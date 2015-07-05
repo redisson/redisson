@@ -16,6 +16,7 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.handler.RedisCommandsQueue;
 import org.redisson.client.handler.RedisDecoder;
@@ -27,22 +28,25 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 public class RedisClient {
 
-    private Class<? extends SocketChannel> socketChannelClass = NioSocketChannel.class;
     private Bootstrap bootstrap;
-    private EventLoopGroup group = new NioEventLoopGroup();
     private InetSocketAddress addr;
-    private Channel channel;
+
+    private long timeout;
+    private TimeUnit timeoutUnit;
 
     public RedisClient(String host, int port) {
+        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60*1000);
+    }
+
+    public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int timeout) {
         addr = new InetSocketAddress(host, port);
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
         bootstrap.handler(new ChannelInitializer<Channel>() {
@@ -56,13 +60,40 @@ public class RedisClient {
             }
 
         });
+
+        setTimeout(timeout, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Set the default timeout for {@link RedisConnection connections} created by
+     * this client. The timeout applies to connection attempts and non-blocking
+     * commands.
+     *
+     * @param timeout   Сonnection timeout.
+     * @param unit      Unit of time for the timeout.
+     */
+    public void setTimeout(long timeout, TimeUnit unit) {
+        this.timeout = timeout;
+        this.timeoutUnit = unit;
+        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) unit.toMillis(timeout));
+    }
+
+    long getTimeout() {
+        return timeout;
+    }
+
+    TimeUnit getTimeoutUnit() {
+        return timeoutUnit;
+    }
+
+    Bootstrap getBootstrap() {
+        return bootstrap;
     }
 
     public RedisConnection connect() {
         ChannelFuture future = bootstrap.connect();
-        channel = future.channel();
         future.syncUninterruptibly();
-        return new RedisConnection(bootstrap, channel);
+        return new RedisConnection(this, future.channel());
     }
 
     public static void main(String[] args) throws InterruptedException {

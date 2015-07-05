@@ -4,20 +4,35 @@ import org.redisson.client.handler.RedisData;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.RedisCommand;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 public class RedisConnection {
 
-    final Bootstrap bootstrap;
     final Channel channel;
+    final RedisClient redisClient;
 
-    public RedisConnection(Bootstrap bootstrap, Channel channel) {
+    public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
-        this.bootstrap = bootstrap;
+        this.redisClient = redisClient;
         this.channel = channel;
+    }
+
+    public <R> R await(Future<R> cmd) {
+        if (!cmd.awaitUninterruptibly(redisClient.getTimeout(), redisClient.getTimeoutUnit())) {
+            Promise<R> promise = (Promise<R>)cmd;
+            RedisTimeoutException ex = new RedisTimeoutException();
+            promise.setFailure(ex);
+            throw ex;
+        }
+        if (!cmd.isSuccess()) {
+            if (cmd.cause() instanceof RedisException) {
+                throw (RedisException) cmd.cause();
+            }
+            throw new RedisException("Unexpected exception while processing command", cmd.cause());
+        }
+        return cmd.getNow();
     }
 
     public <V> V get(Future<V> future) {
@@ -34,11 +49,11 @@ public class RedisConnection {
 
     public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params) {
         Future<R> r = async(encoder, command, params);
-        return get(r);
+        return await(r);
     }
 
     public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = bootstrap.group().next().<R>newPromise();
+        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
         channel.writeAndFlush(new RedisData<T, R>(promise, encoder, command, params));
         return promise;
     }
