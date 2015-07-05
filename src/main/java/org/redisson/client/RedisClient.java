@@ -18,11 +18,8 @@ package org.redisson.client;
 import java.net.InetSocketAddress;
 
 import org.redisson.client.handler.RedisCommandsQueue;
-import org.redisson.client.handler.RedisData;
 import org.redisson.client.handler.RedisDecoder;
 import org.redisson.client.handler.RedisEncoder;
-import org.redisson.client.protocol.Codec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
 
@@ -36,7 +33,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 public class RedisClient {
 
@@ -62,48 +58,21 @@ public class RedisClient {
         });
     }
 
-    public ChannelFuture connect() {
+    public RedisConnection connect() {
         ChannelFuture future = bootstrap.connect();
         channel = future.channel();
-        return future;
-    }
-
-//    public <R> Future<R> execute(Codec encoder, RedisCommand<R> command, Object ... params) {
-//        Promise<R> promise = bootstrap.group().next().<R>newPromise();
-//        channel.writeAndFlush(new RedisData<R, R>(promise, encoder, command, params));
-//        return promise;
-//    }
-
-    public <T, R> Future<R> execute(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = bootstrap.group().next().<R>newPromise();
-        channel.writeAndFlush(new RedisData<T, R>(promise, encoder, command, params));
-        return promise;
+        future.syncUninterruptibly();
+        return new RedisConnection(bootstrap, channel);
     }
 
     public static void main(String[] args) throws InterruptedException {
-        final RedisClient rc = new RedisClient("127.0.0.1", 6379);
-        rc.connect().sync();
+        final RedisClient c = new RedisClient("127.0.0.1", 6379);
+        RedisConnection rc = c.connect();
 //        for (int i = 0; i < 10000; i++) {
-            Future<String> res1 = rc.execute(new StringCodec(), RedisCommands.CLIENT_SETNAME, "12333");
-            res1.addListener(new FutureListener<String>() {
-
-                @Override
-                public void operationComplete(Future<String> future) throws Exception {
-                    System.out.println("res 12: " + future.getNow());
-                }
-
-            });
-
-            Future<String> res2 = rc.execute(new StringCodec(), RedisCommands.CLIENT_GETNAME);
-            res2.addListener(new FutureListener<String>() {
-
-                @Override
-                public void operationComplete(Future<String> future) throws Exception {
-                    System.out.println("res name: " + future.getNow());
-                }
-
-            });
-
+            String res1 = rc.sync(new StringCodec(), RedisCommands.CLIENT_SETNAME, "12333");
+            System.out.println("res 12: " + res1);
+            String res2 = rc.sync(new StringCodec(), RedisCommands.CLIENT_GETNAME);
+            System.out.println("res name: " + res2);
 
 /*            Future<String> res = rc.execute(new StringCodec(), RedisCommands.SET, "test", "" + Math.random());
             res.addListener(new FutureListener<String>() {
