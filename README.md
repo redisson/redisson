@@ -61,6 +61,7 @@ Feature - `RList.getAsync`, `RList.addAsync`, `RList.addAllAsync` methods added
 Feature - `RObject.deleteAsync` method added  
 Feature - unix sockets support via `Configuration.useLinuxNativeEpoll` setting  
 Feature - Redisson.getTopicPattern method added (thanks to alex-sherwin)  
+Improvement - `RLock` auto-unlock then client lock-owner is gone (thanks to AndrewKolpakov)  
 Improvement - lua scripts used instead of multi/exec commands to avoid connection errors during execution (thanks to AndrewKolpakov)  
 Improvement - `RObject.delete` method now returns `boolean` status  
 Improvement - propagate Command processing exceptions to ConnectionManager (thanks to marko-stankovic)  
