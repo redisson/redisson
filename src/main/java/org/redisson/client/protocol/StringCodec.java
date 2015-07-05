@@ -8,7 +8,7 @@ import io.netty.util.CharsetUtil;
 public class StringCodec implements Codec {
 
     @Override
-    public byte[] encode(Object in) {
+    public byte[] encode(int paramIndex, Object in) {
         try {
             return in.toString().getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {

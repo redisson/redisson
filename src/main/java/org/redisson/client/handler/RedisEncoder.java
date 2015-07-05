@@ -20,6 +20,7 @@ import java.util.Arrays;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import io.netty.util.CharsetUtil;
 
 public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
 
@@ -30,22 +31,27 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
     @Override
     protected void encode(ChannelHandlerContext ctx, RedisData<Object, Object> msg, ByteBuf out) throws Exception {
         out.writeByte(ARGS_PREFIX);
-        out.writeBytes(toChars(1 + msg.getParams().length));
+        int len = 1 + msg.getParams().length;
+        if (msg.getCommand().getSubName() != null) {
+            len++;
+        }
+        out.writeBytes(toChars(len));
         out.writeBytes(CRLF);
 
-        if (Arrays.binarySearch(msg.getCommand().getEncodeParamIndexes(), 0) != -1) {
-            writeArgument(out, msg.getCodec().encode(msg.getCommand().getName()));
+        writeArgument(out, msg.getCommand().getName().getBytes("UTF-8"));
+        if (msg.getCommand().getSubName() != null) {
+            writeArgument(out, msg.getCommand().getSubName().getBytes("UTF-8"));
         }
         int i = 1;
         for (Object param : msg.getParams()) {
             if (Arrays.binarySearch(msg.getCommand().getEncodeParamIndexes(), i) != -1) {
-                writeArgument(out, msg.getCodec().encode(param));
+                writeArgument(out, msg.getCodec().encode(i, param));
             }
             i++;
         }
 
-//        String o = out.toString(CharsetUtil.UTF_8);
-//        System.out.println(o);
+        String o = out.toString(CharsetUtil.UTF_8);
+        System.out.println(o);
     }
 
     private void writeArgument(ByteBuf out, byte[] arg) {

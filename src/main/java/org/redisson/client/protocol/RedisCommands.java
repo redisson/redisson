@@ -17,7 +17,12 @@ package org.redisson.client.protocol;
 
 public interface RedisCommands {
 
-    RedisCommand<Object> GET = new RedisCommand<Object>("GET", 0);
-    RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 0, 1);
+    RedisCommand<String> AUTH = new RedisCommand<String>("AUTH", new StringReplayDecoder());
+    RedisCommand<String> SELECT = new RedisCommand<String>("SELECT", new StringReplayDecoder());
+    RedisCommand<String> CLIENT_SETNAME = new RedisCommand<String>("CLIENT", "SETNAME", new StringReplayDecoder(), 1);
+    RedisCommand<String> CLIENT_GETNAME = new RedisCommand<String>("CLIENT", "GETNAME");
+
+    RedisCommand<Object> GET = new RedisCommand<Object>("GET");
+    RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 1);
 
 }

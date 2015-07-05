@@ -81,25 +81,48 @@ public class RedisClient {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        RedisClient rc = new RedisClient("127.0.0.1", 6379);
+        final RedisClient rc = new RedisClient("127.0.0.1", 6379);
         rc.connect().sync();
-        Future<String> res = rc.execute(new StringCodec(), RedisCommands.SET, "test", "" + Math.random());
-        res.addListener(new FutureListener<String>() {
+//        for (int i = 0; i < 10000; i++) {
+            Future<String> res1 = rc.execute(new StringCodec(), RedisCommands.CLIENT_SETNAME, "12333");
+            res1.addListener(new FutureListener<String>() {
 
-            @Override
-            public void operationComplete(Future<String> future) throws Exception {
-                System.out.println("res 1: " + future.getNow());
-            }
+                @Override
+                public void operationComplete(Future<String> future) throws Exception {
+                    System.out.println("res 12: " + future.getNow());
+                }
 
-        });
+            });
 
-        Future<String> r = rc.execute(new StringCodec(), RedisCommands.GET, "test");
-        r.addListener(new FutureListener<Object>() {
+            Future<String> res2 = rc.execute(new StringCodec(), RedisCommands.CLIENT_GETNAME);
+            res2.addListener(new FutureListener<String>() {
 
-            @Override
-            public void operationComplete(Future<Object> future) throws Exception {
-                System.out.println("res 2: " + future.getNow());
-            }
-        });
+                @Override
+                public void operationComplete(Future<String> future) throws Exception {
+                    System.out.println("res name: " + future.getNow());
+                }
+
+            });
+
+
+/*            Future<String> res = rc.execute(new StringCodec(), RedisCommands.SET, "test", "" + Math.random());
+            res.addListener(new FutureListener<String>() {
+
+                @Override
+                public void operationComplete(Future<String> future) throws Exception {
+//                    System.out.println("res 1: " + future.getNow());
+                }
+
+            });
+
+            Future<String> r = rc.execute(new StringCodec(), RedisCommands.GET, "test");
+            r.addListener(new FutureListener<Object>() {
+
+                @Override
+                public void operationComplete(Future<Object> future) throws Exception {
+                    System.out.println("res 2: " + future.getNow());
+                }
+            });
+*///        }
     }
 }
