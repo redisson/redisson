@@ -15,14 +15,32 @@
  */
 package org.redisson.client.protocol;
 
+import org.redisson.client.handler.RedisData;
+
+import io.netty.util.concurrent.Future;
+
 public interface RedisCommands {
 
-    RedisCommand<String> AUTH = new RedisCommand<String>("AUTH", new StringReplayDecoder());
-    RedisCommand<String> SELECT = new RedisCommand<String>("SELECT", new StringReplayDecoder());
-    RedisCommand<String> CLIENT_SETNAME = new RedisCommand<String>("CLIENT", "SETNAME", new StringReplayDecoder(), 1);
-    RedisCommand<String> CLIENT_GETNAME = new RedisCommand<String>("CLIENT", "GETNAME");
+    RedisStringCommand AUTH = new RedisStringCommand("AUTH", new StringReplayDecoder());
+    RedisStringCommand SELECT = new RedisStringCommand("SELECT", new StringReplayDecoder());
+    RedisStringCommand CLIENT_SETNAME = new RedisStringCommand("CLIENT", "SETNAME", new StringReplayDecoder(), 1);
+    RedisStringCommand CLIENT_GETNAME = new RedisStringCommand("CLIENT", "GETNAME");
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
     RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 1);
+    RedisCommand<String> SETEX = new RedisCommand<String>("SETEX", new StringReplayDecoder(), 2);
+    RedisCommand<Boolean> EXISTS = new RedisCommand<Boolean>("EXISTS", new BooleanReplayDecoder(), 1);
+
+
+
+    String sync(RedisStringCommand command, Object ... params);
+
+    Future<String> async(RedisStringCommand command, Object ... params);
+
+    <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params);
+
+    <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params);
+
+    <T, R> void send(RedisData<T, R> data);
 
 }

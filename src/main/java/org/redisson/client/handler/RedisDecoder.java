@@ -43,6 +43,9 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
         } else if (code == '-') {
             Object result = data.getCommand().getReponseDecoder().decode(in);
             data.getPromise().setFailure(new RedisException(result.toString()));
+        } else if (code == ':') {
+            Object result = data.getCommand().getReponseDecoder().decode(in);
+            data.getPromise().setSuccess(result);
         } else if (code == '$') {
             Decoder<Object> decoder = data.getCommand().getReponseDecoder();
             if (decoder == null) {
@@ -51,7 +54,7 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
             Object result = decoder.decode(readBytes(in));
             data.getPromise().setSuccess(result);
         } else {
-            throw new IllegalStateException("Can't decode replay");
+            throw new IllegalStateException("Can't decode replay " + (char)code);
         }
 
         ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);

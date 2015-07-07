@@ -16,7 +16,6 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.handler.RedisCommandsQueue;
 import org.redisson.client.handler.RedisDecoder;
@@ -30,17 +29,21 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.ChannelGroupFuture;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.GlobalEventExecutor;
 
 public class RedisClient {
 
-    private Bootstrap bootstrap;
-    private InetSocketAddress addr;
+    private final Bootstrap bootstrap;
+    private final InetSocketAddress addr;
+    private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
-    private long timeout;
-    private TimeUnit timeoutUnit;
+    private final long timeout;
 
     public RedisClient(String host, int port) {
         this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60*1000);
@@ -61,29 +64,16 @@ public class RedisClient {
 
         });
 
-        setTimeout(timeout, TimeUnit.MILLISECONDS);
+        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout);
+        this.timeout = timeout;
     }
 
-    /**
-     * Set the default timeout for {@link RedisConnection connections} created by
-     * this client. The timeout applies to connection attempts and non-blocking
-     * commands.
-     *
-     * @param timeout   Сonnection timeout.
-     * @param unit      Unit of time for the timeout.
-     */
-    public void setTimeout(long timeout, TimeUnit unit) {
-        this.timeout = timeout;
-        this.timeoutUnit = unit;
-        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) unit.toMillis(timeout));
+    public InetSocketAddress getAddr() {
+        return addr;
     }
 
     long getTimeout() {
         return timeout;
-    }
-
-    TimeUnit getTimeoutUnit() {
-        return timeoutUnit;
     }
 
     Bootstrap getBootstrap() {
@@ -93,17 +83,25 @@ public class RedisClient {
     public RedisConnection connect() {
         ChannelFuture future = bootstrap.connect();
         future.syncUninterruptibly();
+        channels.add(future.channel());
         return new RedisConnection(this, future.channel());
+    }
+
+    public ChannelGroupFuture shutdownAsync() {
+        return channels.close();
     }
 
     public static void main(String[] args) throws InterruptedException {
         final RedisClient c = new RedisClient("127.0.0.1", 6379);
         RedisConnection rc = c.connect();
 //        for (int i = 0; i < 10000; i++) {
-            String res1 = rc.sync(new StringCodec(), RedisCommands.CLIENT_SETNAME, "12333");
+            String res1 = rc.sync(RedisCommands.CLIENT_SETNAME, "12333");
             System.out.println("res 12: " + res1);
-            String res2 = rc.sync(new StringCodec(), RedisCommands.CLIENT_GETNAME);
+            String res2 = rc.sync(RedisCommands.CLIENT_GETNAME);
             System.out.println("res name: " + res2);
+            Boolean res3 = rc.sync(new StringCodec(), RedisCommands.EXISTS, "33");
+            System.out.println("res name 2: " + res3);
+
 
 /*            Future<String> res = rc.execute(new StringCodec(), RedisCommands.SET, "test", "" + Math.random());
             res.addListener(new FutureListener<String>() {
