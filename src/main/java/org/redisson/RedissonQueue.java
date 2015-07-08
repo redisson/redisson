@@ -94,7 +94,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V pollLastAndOfferFirstTo(final String queueName) {
-        return connectionManager.write(new ResultOperation<V, V>() {
+        return connectionManager.write(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.rpoplpush(getName(), queueName);

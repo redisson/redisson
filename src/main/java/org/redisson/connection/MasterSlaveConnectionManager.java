@@ -15,19 +15,6 @@
  */
 package org.redisson.connection;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.util.HashedWheelTimer;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -45,6 +32,10 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.async.AsyncOperation;
 import org.redisson.async.SyncInterruptedOperation;
 import org.redisson.async.SyncOperation;
+import org.redisson.client.handler.RedisData;
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.StringCodec;
 import org.redisson.codec.RedisCodecWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +51,19 @@ import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 import com.lambdaworks.redis.pubsub.RedisPubSubListener;
+
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollSocketChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
 /**
  *
@@ -135,6 +139,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public <T> FutureListener<T> createReleaseReadListener(final int slot,
                                     final RedisConnection conn, final Timeout timeout) {
+        return new FutureListener<T>() {
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                timeout.cancel();
+                releaseRead(slot, conn);
+            }
+        };
+    }
+
+    public <T> FutureListener<T> createReleaseReadListener(final int slot, final org.redisson.client.RedisConnection conn,
+            final Timeout timeout) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -285,10 +300,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return write(slot, operation, 0);
     }
 
-    public <V, R> R write(SyncInterruptedOperation<V, R> operation) throws InterruptedException {
-        return write(-1, operation, 0);
-    }
-
     private <V, R> R write(int slot, SyncInterruptedOperation<V, R> operation, int attempt) throws InterruptedException {
         try {
             RedisConnection<Object, V> connection = connectionWriteOp(slot);
@@ -326,10 +337,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return write(slot, operation, 0);
     }
 
-    public <V, R> R write(SyncOperation<V, R> operation) {
-        return write(-1, operation, 0);
-    }
-
     private <V, R> R write(int slot, SyncOperation<V, R> operation, int attempt) {
         try {
             RedisConnection<Object, V> connection = connectionWriteOp(slot);
@@ -363,10 +370,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public <V, R> R read(String key, SyncOperation<V, R> operation) {
         int slot = calcSlot(key);
         return read(slot, operation, 0);
-    }
-
-    public <V, R> R read(SyncOperation<V, R> operation) {
-        return read(-1, operation, 0);
     }
 
     private <V, R> R read(int slot, SyncOperation<V, R> operation, int attempt) {
@@ -422,10 +425,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return get(mainPromise);
     }
 
-    public <V, R> R write(AsyncOperation<V, R> asyncOperation) {
-        return get(writeAsync(asyncOperation));
-    }
-
     public <V> V get(Future<V> future) {
         future.awaitUninterruptibly();
         if (future.isSuccess()) {
@@ -441,10 +440,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         int slot = calcSlot(key);
         readAsync(slot, asyncOperation, mainPromise, 0);
         return get(mainPromise);
-    }
-
-    public <V, T> T read(AsyncOperation<V, T> asyncOperation) {
-        return get(readAsync(asyncOperation));
     }
 
     public <V, T> Future<T> readAsync(String key, AsyncOperation<V, T> asyncOperation) {
@@ -516,6 +511,105 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         });
     }
+
+    public <T, R> Future<R> readAsync(String key, RedisCommand<T> command, Object ... params) {
+        Promise<R> mainPromise = getGroup().next().newPromise();
+        int slot = calcSlot(key);
+        async(true, slot, new StringCodec(), command, params, mainPromise, 0);
+        return mainPromise;
+    }
+
+    public Future<Void> writeAsyncVoid(String key, RedisCommand<String> command, Object ... params) {
+        final Promise<Void> voidPromise = getGroup().next().newPromise();
+        Promise<String> mainPromise = getGroup().next().newPromise();
+        mainPromise.addListener(new FutureListener<String>() {
+            @Override
+            public void operationComplete(Future<String> future) throws Exception {
+                if (future.isCancelled()) {
+                    voidPromise.cancel(true);
+                } else {
+                    if (future.isSuccess()) {
+                        voidPromise.setSuccess(null);
+                    } else {
+                        voidPromise.setFailure(future.cause());
+                    }
+                }
+            }
+        });
+        int slot = calcSlot(key);
+        async(false, slot, new StringCodec(), command, params, mainPromise, 0);
+        return voidPromise;
+    }
+
+    public <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params) {
+        Promise<R> mainPromise = getGroup().next().newPromise();
+        int slot = calcSlot(key);
+        async(false, slot, new StringCodec(), command, params, mainPromise, 0);
+        return mainPromise;
+    }
+
+    private <V, R> void async(final boolean readOnlyMode, final int slot, final Codec codec, final RedisCommand<V> command,
+                            final Object[] params, final Promise<R> mainPromise, final int attempt) {
+        final Promise<R> attemptPromise = getGroup().next().newPromise();
+        final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
+
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                if (attemptPromise.isDone()) {
+                    return;
+                }
+                if (attempt == config.getRetryAttempts()) {
+                    attemptPromise.setFailure(ex.get());
+                    return;
+                }
+                attemptPromise.cancel(true);
+
+                int count = attempt + 1;
+                async(readOnlyMode, slot, codec, command, params, mainPromise, count);
+            }
+        };
+
+        try {
+            org.redisson.client.RedisConnection connection;
+            if (readOnlyMode) {
+                connection = connectionReadOp2(slot);
+            } else {
+                connection = connectionReadOp2(slot);
+            }
+            log.debug("readAsync for slot {} using {}", slot, connection.getRedisClient().getAddr());
+            connection.send(new RedisData<V, R>(attemptPromise, codec, command, params));
+
+            ex.set(new RedisTimeoutException());
+            Timeout timeout = timer.newTimeout(timerTask, config.getTimeout(), TimeUnit.MILLISECONDS);
+            attemptPromise.addListener(createReleaseReadListener(slot, connection, timeout));
+        } catch (RedisConnectionException e) {
+            ex.set(e);
+            timer.newTimeout(timerTask, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+        }
+        attemptPromise.addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                if (future.isCancelled()) {
+                    return;
+                }
+                // TODO cancel timeout
+
+                if (future.cause() instanceof RedisMovedException) {
+                    RedisMovedException ex = (RedisMovedException)future.cause();
+                    async(readOnlyMode, ex.getSlot(), codec, command, params, mainPromise, attempt);
+                    return;
+                }
+
+                if (future.isSuccess()) {
+                    mainPromise.setSuccess(future.getNow());
+                } else {
+                    mainPromise.setFailure(future.cause());
+                }
+            }
+        });
+    }
+
 
     @Override
     public PubSubConnectionEntry getEntry(String channelName) {
@@ -775,6 +869,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return getEntry(slot).connectionReadOp();
     }
 
+    public org.redisson.client.RedisConnection connectionReadOp2(int slot) {
+        return null;
+    }
+
+    protected org.redisson.client.RedisConnection connectionWriteOp2(int slot) {
+        return null;
+    }
+
     RedisPubSubConnection nextPubSubConnection(int slot) {
         return getEntry(slot).nextPubSubConnection();
     }
@@ -790,6 +892,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public void releaseRead(int slot, RedisConnection connection) {
         getEntry(slot).releaseRead(connection);
     }
+
+    public void releaseRead(int slot, org.redisson.client.RedisConnection connection) {
+//        getEntry(slot).releaseRead(connection);
+    }
+
 
     @Override
     public void shutdown() {

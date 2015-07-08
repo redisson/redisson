@@ -74,7 +74,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public long remainTimeToLive() {
-        return connectionManager.write(new ResultOperation<Long, Object>() {
+        return connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.ttl(getName());

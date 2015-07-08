@@ -393,7 +393,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public boolean isLocked() {
-        return connectionManager.read(new SyncOperation<Boolean, Boolean>() {
+        return connectionManager.read(getName(), new SyncOperation<Boolean, Boolean>() {
             @Override
             public Boolean execute(RedisConnection<Object, Boolean> conn) {
                 return conn.exists(getName());

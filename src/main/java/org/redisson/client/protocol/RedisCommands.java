@@ -15,10 +15,6 @@
  */
 package org.redisson.client.protocol;
 
-import org.redisson.client.handler.RedisData;
-
-import io.netty.util.concurrent.Future;
-
 public interface RedisCommands {
 
     RedisStringCommand AUTH = new RedisStringCommand("AUTH", new StringReplayDecoder());
@@ -31,16 +27,7 @@ public interface RedisCommands {
     RedisCommand<String> SETEX = new RedisCommand<String>("SETEX", new StringReplayDecoder(), 2);
     RedisCommand<Boolean> EXISTS = new RedisCommand<Boolean>("EXISTS", new BooleanReplayDecoder(), 1);
 
-
-
-    String sync(RedisStringCommand command, Object ... params);
-
-    Future<String> async(RedisStringCommand command, Object ... params);
-
-    <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params);
-
-    <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params);
-
-    <T, R> void send(RedisData<T, R> data);
+    RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 1);
+    RedisCommand<PubSubMessageDecoder> SUBSCRIBE = new RedisCommand<PubSubMessageDecoder>("SUBSCRIBE", 1);
 
 }

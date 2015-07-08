@@ -16,12 +16,12 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 
 import org.redisson.client.handler.RedisCommandsQueue;
 import org.redisson.client.handler.RedisDecoder;
 import org.redisson.client.handler.RedisEncoder;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.StringCodec;
+import org.redisson.client.protocol.PubSubMessage;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -35,6 +35,7 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 public class RedisClient {
@@ -56,10 +57,9 @@ public class RedisClient {
 
             @Override
             protected void initChannel(Channel ch) throws Exception {
-                ch.pipeline().addFirst(
-                        new RedisEncoder(),
-                        new RedisCommandsQueue(),
-                        new RedisDecoder());
+                ch.pipeline().addFirst(new RedisEncoder(),
+                                        new RedisCommandsQueue(),
+                                        new RedisDecoder());
             }
 
         });
@@ -87,20 +87,34 @@ public class RedisClient {
         return new RedisConnection(this, future.channel());
     }
 
+    public RedisPubSubConnection connectPubSub() {
+        ChannelFuture future = bootstrap.connect();
+        future.syncUninterruptibly();
+        channels.add(future.channel());
+        return new RedisPubSubConnection(this, future.channel());
+    }
+
     public ChannelGroupFuture shutdownAsync() {
         return channels.close();
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
         final RedisClient c = new RedisClient("127.0.0.1", 6379);
         RedisConnection rc = c.connect();
-//        for (int i = 0; i < 10000; i++) {
-            String res1 = rc.sync(RedisCommands.CLIENT_SETNAME, "12333");
-            System.out.println("res 12: " + res1);
-            String res2 = rc.sync(RedisCommands.CLIENT_GETNAME);
-            System.out.println("res name: " + res2);
-            Boolean res3 = rc.sync(new StringCodec(), RedisCommands.EXISTS, "33");
-            System.out.println("res name 2: " + res3);
+        RedisPubSubConnection rpsc = c.connectPubSub();
+
+//            String res1 = rc.sync(RedisCommands.CLIENT_SETNAME, "12333");
+//            System.out.println("res 12: " + res1);
+//            String res2 = rc.sync(RedisCommands.CLIENT_GETNAME);
+//            System.out.println("res name: " + res2);
+//            Boolean res3 = rc.sync(new StringCodec(), RedisCommands.EXISTS, "33");
+//            System.out.println("res name 2: " + res3);
+
+            Future<Long> m = rpsc.publish("sss", "123");
+            System.out.println("out: " + m.get());
+            Future<PubSubMessage> m1 = rpsc.subscribe("sss");
+            System.out.println("out: " + m1.get());
+
 
 
 /*            Future<String> res = rc.execute(new StringCodec(), RedisCommands.SET, "test", "" + Math.random());

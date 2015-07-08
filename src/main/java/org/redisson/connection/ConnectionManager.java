@@ -23,6 +23,7 @@ import io.netty.util.concurrent.Future;
 import org.redisson.async.AsyncOperation;
 import org.redisson.async.SyncInterruptedOperation;
 import org.redisson.async.SyncOperation;
+import org.redisson.client.protocol.RedisCommand;
 
 import com.lambdaworks.redis.RedisClient;
 import com.lambdaworks.redis.RedisConnection;
@@ -38,6 +39,12 @@ import java.util.concurrent.TimeUnit;
 //TODO ping support
 public interface ConnectionManager {
 
+    Future<Void> writeAsyncVoid(String key, RedisCommand<String> command, Object ... params);
+
+    <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params);
+
+    <T, R> Future<R> readAsync(String key, RedisCommand<T> command, Object ... params);
+
     RedisClient createClient(String host, int port, int timeout);
 
     RedisClient createClient(String host, int port);
@@ -46,25 +53,15 @@ public interface ConnectionManager {
 
     <V, R> R read(String key, SyncOperation<V, R> operation);
 
-    <V, R> R read(SyncOperation<V, R> operation);
-
     <V, R> R write(String key, SyncInterruptedOperation<V, R> operation) throws InterruptedException;
-
-    <V, R> R write(SyncInterruptedOperation<V, R> operation) throws InterruptedException;
 
     <V, R> R write(String key, SyncOperation<V, R> operation);
 
-    <V, R> R write(SyncOperation<V, R> operation);
-
     <V, R> R write(String key, AsyncOperation<V, R> asyncOperation);
-
-    <V, R> R write(AsyncOperation<V, R> asyncOperation);
 
     <V, T> Future<T> writeAllAsync(AsyncOperation<V, T> asyncOperation);
 
     <V, T> T read(String key, AsyncOperation<V, T> asyncOperation);
-
-    <V, T> T read(AsyncOperation<V, T> asyncOperation);
 
     <V, T> Future<T> readAsync(String key, AsyncOperation<V, T> asyncOperation);
 

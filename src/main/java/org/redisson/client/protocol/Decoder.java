@@ -15,10 +15,14 @@
  */
 package org.redisson.client.protocol;
 
+import java.util.List;
+
 import io.netty.buffer.ByteBuf;
 
 public interface Decoder<R> {
 
     R decode(ByteBuf buf);
+
+    R decode(List<Object> parts);
 
 }

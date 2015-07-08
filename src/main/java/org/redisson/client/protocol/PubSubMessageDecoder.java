@@ -15,23 +15,33 @@
  */
 package org.redisson.client.protocol;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
-public class BooleanReplayDecoder implements Decoder<Boolean> {
+public class PubSubMessageDecoder implements Codec {
 
     @Override
-    public Boolean decode(ByteBuf buf) {
-        String status = buf.readBytes(buf.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
+    public String decode(ByteBuf buf) {
+        String status = buf.toString(CharsetUtil.UTF_8);
         buf.skipBytes(2);
-        return Boolean.valueOf(status);
+        return status;
     }
 
     @Override
-    public Boolean decode(List<Object> parts) {
-        throw new IllegalStateException();
+    public PubSubMessage decode(List<Object> parts) {
+        return new PubSubMessage(PubSubMessage.Type.valueOf(parts.get(0).toString().toUpperCase()), parts.get(1).toString());
+    }
+
+    @Override
+    public byte[] encode(int paramIndex, Object in) {
+        try {
+            return in.toString().getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
 }

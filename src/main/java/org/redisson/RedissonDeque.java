@@ -43,7 +43,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public void addFirst(final V e) {
-        connectionManager.write(new VoidOperation<V, Long>() {
+        connectionManager.write(getName(), new VoidOperation<V, Long>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lpush(getName(), e);
@@ -53,7 +53,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public void addLast(final V e) {
-        connectionManager.write(new VoidOperation<V, Long>() {
+        connectionManager.write(getName(), new VoidOperation<V, Long>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
                 return async.rpush(getName(), e);
@@ -99,7 +99,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V getLast() {
-        List<V> list = connectionManager.read(new ResultOperation<List<V>, V>() {
+        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
             @Override
             protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lrange(getName(), -1, -1);
@@ -113,7 +113,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public boolean offerFirst(final V e) {
-        connectionManager.write(new ResultOperation<Long, Object>() {
+        connectionManager.write(getName(), new ResultOperation<Long, Object>() {
             @Override
             protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
                 return async.lpush(getName(), e);
@@ -134,7 +134,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V peekLast() {
-        List<V> list = connectionManager.read(new ResultOperation<List<V>, V>() {
+        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
             @Override
             protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
                 return async.lrange(getName(), -1, -1);
@@ -153,7 +153,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V pollLast() {
-        return connectionManager.write(new ResultOperation<V, V>() {
+        return connectionManager.write(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.rpop(getName());
@@ -178,7 +178,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V removeLast() {
-        V value = connectionManager.write(new ResultOperation<V, V>() {
+        V value = connectionManager.write(getName(), new ResultOperation<V, V>() {
             @Override
             protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
                 return async.rpop(getName());

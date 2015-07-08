@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol;
 
+import java.util.List;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
@@ -25,6 +27,11 @@ public class StringReplayDecoder implements Decoder<String> {
         String status = buf.readBytes(buf.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
         buf.skipBytes(2);
         return status;
+    }
+
+    @Override
+    public String decode(List<Object> parts) {
+        throw new IllegalStateException();
     }
 
 }

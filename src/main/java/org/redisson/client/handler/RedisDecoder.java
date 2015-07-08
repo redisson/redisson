@@ -16,6 +16,7 @@
 package org.redisson.client.handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.redisson.client.RedisException;
@@ -25,39 +26,71 @@ import org.redisson.client.protocol.Decoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
+import io.netty.util.CharsetUtil;
 
 public class RedisDecoder extends ReplayingDecoder<Void> {
 
-    private static final char CR = '\r';
-    private static final char LF = '\n';
+    public static final char CR = '\r';
+    public static final char LF = '\n';
     private static final char ZERO = '0';
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         RedisData<Object, Object> data = ctx.channel().attr(RedisCommandsQueue.REPLAY_PROMISE).getAndRemove();
 
+        decode(in, data, null);
+
+        ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
+    }
+
+    private void decode(ByteBuf in, RedisData<Object, Object> data, List<Object> parts) throws IOException {
         int code = in.readByte();
         if (code == '+') {
             Object result = data.getCommand().getReponseDecoder().decode(in);
-            data.getPromise().setSuccess(result);
+            if (parts != null) {
+                parts.add(result);
+            } else {
+                data.getPromise().setSuccess(result);
+            }
         } else if (code == '-') {
             Object result = data.getCommand().getReponseDecoder().decode(in);
             data.getPromise().setFailure(new RedisException(result.toString()));
         } else if (code == ':') {
-            Object result = data.getCommand().getReponseDecoder().decode(in);
-            data.getPromise().setSuccess(result);
+            String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
+            in.skipBytes(2);
+            Long result = Long.valueOf(status);
+            if (parts != null) {
+                parts.add(result);
+            } else {
+                data.getPromise().setSuccess(result);
+            }
         } else if (code == '$') {
             Decoder<Object> decoder = data.getCommand().getReponseDecoder();
             if (decoder == null) {
                 decoder = data.getCodec();
             }
             Object result = decoder.decode(readBytes(in));
+            if (parts != null) {
+                parts.add(result);
+            } else {
+                data.getPromise().setSuccess(result);
+            }
+        } else if (code == '*') {
+            long size = readLong(in);
+            List<Object> respParts = new ArrayList<Object>();
+            for (int i = 0; i < size; i++) {
+                decode(in, data, respParts);
+            }
+
+            Decoder<Object> decoder = data.getCommand().getReponseDecoder();
+            if (decoder == null) {
+                decoder = data.getCodec();
+            }
+            Object result = decoder.decode(respParts);
             data.getPromise().setSuccess(result);
         } else {
             throw new IllegalStateException("Can't decode replay " + (char)code);
         }
-
-        ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
     }
 
     public ByteBuf readBytes(ByteBuf is) throws IOException {
