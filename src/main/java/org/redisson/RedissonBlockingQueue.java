@@ -28,6 +28,7 @@ import org.redisson.async.SyncOperation;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RBlockingQueue;
 
+import com.lambdaworks.redis.KeyValue;
 import com.lambdaworks.redis.RedisConnection;
 import org.redisson.core.RScript;
 
@@ -71,7 +72,11 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         return connectionManager.write(getName(), new SyncInterruptedOperation<V, V>() {
             @Override
             public V execute(RedisConnection<Object, V> conn) throws InterruptedException {
-                return conn.blpop(unit.toSeconds(timeout), getName()).value;
+                KeyValue<Object, V> val = conn.blpop(unit.toSeconds(timeout), getName());
+                if (val != null) {
+                    return val.value;
+                }
+                return null;
             }
         });
     }
