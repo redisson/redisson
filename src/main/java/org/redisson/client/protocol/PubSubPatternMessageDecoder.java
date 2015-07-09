@@ -5,7 +5,7 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
-public class PubSubPatternMessageDecoder implements Decoder<Object> {
+public class PubSubPatternMessageDecoder implements MultiDecoder<Object> {
 
     @Override
     public Object decode(ByteBuf buf) {
@@ -15,7 +15,7 @@ public class PubSubPatternMessageDecoder implements Decoder<Object> {
     }
 
     @Override
-    public Object decode(List<Object> parts) {
+    public PubSubPatternMessage decode(List<Object> parts) {
         return new PubSubPatternMessage(parts.get(1).toString(), parts.get(2).toString(), parts.get(3));
     }
 

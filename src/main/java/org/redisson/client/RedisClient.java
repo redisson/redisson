@@ -105,15 +105,15 @@ public class RedisClient {
         RedisConnection rc = c.connect();
         RedisPubSubConnection rpsc = c.connectPubSub();
 
-//            String res1 = rc.sync(RedisCommands.CLIENT_SETNAME, "12333");
-//            System.out.println("res 12: " + res1);
-//            String res2 = rc.sync(RedisCommands.CLIENT_GETNAME);
-//            System.out.println("res name: " + res2);
+            String res1 = rc.sync(RedisCommands.CLIENT_SETNAME, "12333");
+            System.out.println("res 12: " + res1);
+            String res2 = rc.sync(RedisCommands.CLIENT_GETNAME);
+            System.out.println("res name: " + res2);
 //            Boolean res3 = rc.sync(new StringCodec(), RedisCommands.EXISTS, "33");
 //            System.out.println("res name 2: " + res3);
 
-            Future<Long> m = rpsc.publish("sss", "123");
-            System.out.println("out: " + m.get());
+            Long m = rc.sync(new StringCodec(), RedisCommands.PUBLISH, "sss", "123");
+            System.out.println("out: " + m);
             Future<PubSubStatusMessage> m1 = rpsc.psubscribe("ss*");
             System.out.println("out: " + m1.get());
             rpsc.addListener(new RedisPubSubListener<String>() {
@@ -133,7 +133,7 @@ public class RedisClient {
 
             final RedisClient c2 = new RedisClient("127.0.0.1", 6379);
             Long res = c2.connect().sync(new StringCodec(), RedisCommands.PUBLISH, "sss", "4444");
-//            System.out.println("published: " + res);
+            System.out.println("published: " + res);
 
 
 

@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.redisson.client.handler.RedisData;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.MultiDecoder;
 import org.redisson.client.protocol.PubSubStatusMessage;
 import org.redisson.client.protocol.PubSubStatusDecoder;
 import org.redisson.client.protocol.PubSubMessage;
@@ -54,30 +55,26 @@ public class RedisPubSubConnection {
     }
 
     public Future<PubSubStatusMessage> subscribe(String ... channel) {
-        return async(new PubSubStatusDecoder(), new PubSubMessageDecoder(), RedisCommands.SUBSCRIBE, channel);
+        return async(new PubSubMessageDecoder(), RedisCommands.SUBSCRIBE, channel);
     }
 
     public Future<PubSubStatusMessage> psubscribe(String ... channel) {
-        return async(new PubSubStatusDecoder(), new PubSubPatternMessageDecoder(), RedisCommands.PSUBSCRIBE, channel);
+        return async(new PubSubPatternMessageDecoder(), RedisCommands.PSUBSCRIBE, channel);
     }
 
     public Future<PubSubStatusMessage> unsubscribe(String ... channel) {
-        return async(new PubSubStatusDecoder(), RedisCommands.SUBSCRIBE, channel);
+        return async(null, RedisCommands.UNSUBSCRIBE, channel);
     }
 
-    public Future<Long> publish(String channel, String msg) {
-        return async(new StringCodec(), RedisCommands.PUBLISH, channel, msg);
-    }
+//    public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
+//        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+//        channel.writeAndFlush(new RedisData<T, R>(promise, encoder, command, params));
+//        return promise;
+//    }
 
-    public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
+    public <T, R> Future<R> async(MultiDecoder<Object> nextDecoder, RedisCommand<T> command, Object ... params) {
         Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
-        channel.writeAndFlush(new RedisData<T, R>(promise, encoder, command, params));
-        return promise;
-    }
-
-    public <T, R> Future<R> async(Codec encoder, Decoder<Object> nextDecoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
-        channel.writeAndFlush(new RedisData<T, R>(promise, nextDecoder, encoder, command, params));
+        channel.writeAndFlush(new RedisData<T, R>(promise, nextDecoder, null, command, params));
         return promise;
     }
 

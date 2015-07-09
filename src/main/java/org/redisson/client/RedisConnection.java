@@ -6,7 +6,7 @@ import org.redisson.client.handler.RedisData;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStringCommand;
+import org.redisson.client.protocol.RedisStrictCommand;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -56,15 +56,9 @@ public class RedisConnection implements RedisCommands {
         throw new RedisException("Unexpected exception while processing command", future.cause());
     }
 
-    public String sync(RedisStringCommand command, Object ... params) {
-        Future<String> r = async(command, params);
+    public <T> T sync(RedisStrictCommand<T> command, Object ... params) {
+        Future<T> r = async(null, command, params);
         return await(r);
-    }
-
-    public Future<String> async(RedisStringCommand command, Object ... params) {
-        Promise<String> promise = redisClient.getBootstrap().group().next().<String>newPromise();
-        channel.writeAndFlush(new RedisData<String, String>(promise, command.getCodec(), command, params));
-        return promise;
     }
 
     public <T, R> void send(RedisData<T, R> data) {

@@ -20,7 +20,6 @@ import java.util.Arrays;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
-import io.netty.util.CharsetUtil;
 
 public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
 
@@ -44,8 +43,10 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
         }
         int i = 1;
         for (Object param : msg.getParams()) {
-            if (Arrays.binarySearch(msg.getCommand().getEncodeParamIndexes(), i) != -1) {
+            if (Arrays.binarySearch(msg.getCommand().getObjectParamIndexes(), i) != -1) {
                 writeArgument(out, msg.getCodec().encode(i, param));
+            } else {
+                writeArgument(out, msg.getCommand().getParamsEncoder().encode(i, param));
             }
             i++;
         }

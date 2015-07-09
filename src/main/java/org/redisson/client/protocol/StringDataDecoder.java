@@ -18,13 +18,11 @@ package org.redisson.client.protocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
-public class StringReplayDecoder implements Decoder<String> {
+public class StringDataDecoder implements Decoder<String> {
 
     @Override
     public String decode(ByteBuf buf) {
-        String status = buf.readBytes(buf.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
-        buf.skipBytes(2);
-        return status;
+        return buf.toString(CharsetUtil.UTF_8);
     }
 
 }

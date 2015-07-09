@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.MultiDecoder;
 import org.redisson.client.protocol.RedisCommand;
 
 import io.netty.util.concurrent.Promise;
@@ -30,13 +31,13 @@ public class RedisData<T, R> {
     final Object[] params;
     final Codec codec;
     final AtomicBoolean sended = new AtomicBoolean();
-    final Decoder<Object> nextDecoder;
+    final MultiDecoder<Object> nextDecoder;
 
     public RedisData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
         this(promise, null, codec, command, params);
     }
 
-    public RedisData(Promise<R> promise, Decoder<Object> nextDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
+    public RedisData(Promise<R> promise, MultiDecoder<Object> nextDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
         this.promise = promise;
         this.command = command;
         this.params = params;
@@ -52,7 +53,7 @@ public class RedisData<T, R> {
         return params;
     }
 
-    public Decoder<Object> getNextDecoder() {
+    public MultiDecoder<Object> getNextDecoder() {
         return nextDecoder;
     }
 

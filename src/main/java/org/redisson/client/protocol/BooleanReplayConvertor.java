@@ -19,7 +19,7 @@ public class BooleanReplayConvertor implements Convertor<Boolean> {
 
     @Override
     public Boolean convert(Object obj) {
-        return "1".equals(obj);
+        return Long.valueOf(1).equals(obj);
     }
 
 

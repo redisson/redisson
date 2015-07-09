@@ -15,17 +15,16 @@
  */
 package org.redisson.client.protocol;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
-public class PubSubStatusDecoder implements Codec {
+public class PubSubStatusDecoder implements MultiDecoder<PubSubStatusMessage> {
 
     @Override
-    public String decode(ByteBuf buf) {
+    public Object decode(ByteBuf buf) {
         String status = buf.toString(CharsetUtil.UTF_8);
         buf.skipBytes(2);
         return status;
@@ -38,15 +37,6 @@ public class PubSubStatusDecoder implements Codec {
             channels.add(part.toString());
         }
         return new PubSubStatusMessage(PubSubStatusMessage.Type.valueOf(parts.get(0).toString().toUpperCase()), channels);
-    }
-
-    @Override
-    public byte[] encode(int paramIndex, Object in) {
-        try {
-            return in.toString().getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
 }

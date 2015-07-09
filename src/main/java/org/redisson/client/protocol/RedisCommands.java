@@ -17,20 +17,21 @@ package org.redisson.client.protocol;
 
 public interface RedisCommands {
 
-    RedisStringCommand AUTH = new RedisStringCommand("AUTH", new StringReplayDecoder());
-    RedisStringCommand SELECT = new RedisStringCommand("SELECT", new StringReplayDecoder());
-    RedisStringCommand CLIENT_SETNAME = new RedisStringCommand("CLIENT", "SETNAME", new StringReplayDecoder(), 1);
-    RedisStringCommand CLIENT_GETNAME = new RedisStringCommand("CLIENT", "GETNAME");
+    RedisStrictCommand<String> AUTH = new RedisStrictCommand<String>("AUTH", new StringReplayDecoder());
+    RedisStrictCommand<String> SELECT = new RedisStrictCommand<String>("SELECT", new StringReplayDecoder());
+    RedisStrictCommand<String> CLIENT_SETNAME = new RedisStrictCommand<String>("CLIENT", "SETNAME", new StringReplayDecoder());
+    RedisStrictCommand<String> CLIENT_GETNAME = new RedisStrictCommand<String>("CLIENT", "GETNAME", new StringDataDecoder());
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
     RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 1);
     RedisCommand<String> SETEX = new RedisCommand<String>("SETEX", new StringReplayDecoder(), 2);
-    RedisCommand<Boolean> EXISTS = new RedisCommand<Boolean>("EXISTS", new BooleanReplayConvertor(), 1);
+    RedisStrictCommand<Boolean> EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanReplayConvertor());
 
     RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 1);
-    RedisCommand<PubSubStatusMessage> SUBSCRIBE = new RedisCommand<PubSubStatusMessage>("SUBSCRIBE", 1);
-    RedisCommand<PubSubStatusMessage> UNSUBSCRIBE = new RedisCommand<PubSubStatusMessage>("UNSUBSCRIBE", 1);
 
-    RedisCommand<PubSubStatusMessage> PSUBSCRIBE = new RedisCommand<PubSubStatusMessage>("PSUBSCRIBE", 1);
+    RedisStrictCommand<PubSubStatusMessage> SUBSCRIBE = new RedisStrictCommand<PubSubStatusMessage>("SUBSCRIBE", new PubSubStatusDecoder());
+    RedisStrictCommand<PubSubStatusMessage> UNSUBSCRIBE = new RedisStrictCommand<PubSubStatusMessage>("UNSUBSCRIBE", new PubSubStatusDecoder());
+    RedisStrictCommand<PubSubStatusMessage> PSUBSCRIBE = new RedisStrictCommand<PubSubStatusMessage>("PSUBSCRIBE", new PubSubStatusDecoder());
+    RedisStrictCommand<PubSubStatusMessage> PUNSUBSCRIBE = new RedisStrictCommand<PubSubStatusMessage>("PUNSUBSCRIBE", new PubSubStatusDecoder());
 
 }

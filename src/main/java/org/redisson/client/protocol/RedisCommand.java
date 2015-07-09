@@ -19,8 +19,11 @@ public class RedisCommand<R> {
 
     private final String name;
     private final String subName;
-    private final int[] encodeParamIndexes;
-    private Decoder<R> reponseDecoder;
+    private final int[] objectParamIndexes;
+
+    private Encoder paramsEncoder = new StringParamsEncoder();
+    private MultiDecoder<R> replayMultiDecoder;
+    private Decoder<R> replayDecoder;
     private Convertor<R> convertor = new EmptyConvertor<R>();
 
     public RedisCommand(String name, String subName, int ... encodeParamIndexes) {
@@ -34,7 +37,7 @@ public class RedisCommand<R> {
     public RedisCommand(String name, Convertor<R> convertor, int ... encodeParamIndexes) {
         this.name = name;
         this.subName = null;
-        this.encodeParamIndexes = encodeParamIndexes;
+        this.objectParamIndexes = encodeParamIndexes;
         this.convertor = convertor;
     }
 
@@ -42,12 +45,19 @@ public class RedisCommand<R> {
         this(name, null, reponseDecoder, encodeParamIndexes);
     }
 
+    public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, int ... encodeParamIndexes) {
+        this.name = name;
+        this.subName = null;
+        this.objectParamIndexes = encodeParamIndexes;
+        this.replayMultiDecoder = replayMultiDecoder;
+    }
+
     public RedisCommand(String name, String subName, Decoder<R> reponseDecoder, int ... encodeParamIndexes) {
         super();
         this.name = name;
         this.subName = subName;
-        this.reponseDecoder = reponseDecoder;
-        this.encodeParamIndexes = encodeParamIndexes;
+        this.replayDecoder = reponseDecoder;
+        this.objectParamIndexes = encodeParamIndexes;
     }
 
     public String getSubName() {
@@ -58,16 +68,24 @@ public class RedisCommand<R> {
         return name;
     }
 
-    public Decoder<R> getReponseDecoder() {
-        return reponseDecoder;
+    public Decoder<R> getReplayDecoder() {
+        return replayDecoder;
     }
 
-    public int[] getEncodeParamIndexes() {
-        return encodeParamIndexes;
+    public int[] getObjectParamIndexes() {
+        return objectParamIndexes;
+    }
+
+    public MultiDecoder<R> getReplayMultiDecoder() {
+        return replayMultiDecoder;
     }
 
     public Convertor<R> getConvertor() {
         return convertor;
+    }
+
+    public Encoder getParamsEncoder() {
+        return paramsEncoder;
     }
 
 }

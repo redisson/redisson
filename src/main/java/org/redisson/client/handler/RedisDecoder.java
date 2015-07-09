@@ -24,6 +24,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.handler.RedisCommandsQueue.QueueCommands;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.MultiDecoder;
 import org.redisson.client.protocol.PubSubMessage;
 import org.redisson.client.protocol.PubSubPatternMessage;
 
@@ -38,7 +39,7 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
     public static final char LF = '\n';
     private static final char ZERO = '0';
 
-    private Decoder<Object> nextDecoder;
+    private MultiDecoder<Object> nextDecoder;
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -54,33 +55,19 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
         int code = in.readByte();
 //        System.out.println("trying decode -- " + (char)code);
         if (code == '+') {
-            Object result = data.getCommand().getReponseDecoder().decode(in);
-            if (parts != null) {
-                parts.add(result);
-            } else {
-                data.getPromise().setSuccess(result);
-            }
+            Object result = data.getCommand().getReplayDecoder().decode(in);
+            handleResult(data, parts, result);
         } else if (code == '-') {
-            Object result = data.getCommand().getReponseDecoder().decode(in);
+            Object result = data.getCommand().getReplayDecoder().decode(in);
             data.getPromise().setFailure(new RedisException(result.toString()));
         } else if (code == ':') {
             String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
             Object result = Long.valueOf(status);
-            result = data.getCommand().getConvertor().convert(result);
-
-            if (parts != null) {
-                parts.add(result);
-            } else {
-                data.getPromise().setSuccess(result);
-            }
+            handleResult(data, parts, result);
         } else if (code == '$') {
-            Object result = decoder(data).decode(readBytes(in));
-            if (parts != null) {
-                parts.add(result);
-            } else {
-                data.getPromise().setSuccess(result);
-            }
+            Object result = decoder(data, parts != null).decode(readBytes(in));
+            handleResult(data, parts, result);
         } else if (code == '*') {
             long size = readLong(in);
             List<Object> respParts = new ArrayList<Object>();
@@ -88,7 +75,7 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
                 decode(in, data, respParts, pubSubConnection);
             }
 
-            Object result = decoder(data).decode(respParts);
+            Object result = ((MultiDecoder<Object>)decoder(data, true)).decode(respParts);
             if (data != null) {
                 if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(data.getCommand().getName())) {
                     nextDecoder = data.getNextDecoder();
@@ -106,11 +93,25 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
         }
     }
 
-    private Decoder<Object> decoder(RedisData<Object, Object> data) {
+    private void handleResult(RedisData<Object, Object> data, List<Object> parts, Object result) {
+        if (data != null) {
+            result = data.getCommand().getConvertor().convert(result);
+        }
+        if (parts != null) {
+            parts.add(result);
+        } else {
+            data.getPromise().setSuccess(result);
+        }
+    }
+
+    private Decoder<Object> decoder(RedisData<Object, Object> data, boolean isMulti) {
         if (data == null) {
             return nextDecoder;
         }
-        Decoder<Object> decoder = data.getCommand().getReponseDecoder();
+        Decoder<Object> decoder = data.getCommand().getReplayDecoder();
+        if (isMulti) {
+            decoder = data.getCommand().getReplayMultiDecoder();
+        }
         if (decoder == null) {
             decoder = data.getCodec();
         }
