@@ -50,8 +50,8 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
             i++;
         }
 
-        String o = out.toString(CharsetUtil.UTF_8);
-        System.out.println(o);
+//        String o = out.toString(CharsetUtil.UTF_8);
+//        System.out.println(o);
     }
 
     private void writeArgument(ByteBuf out, byte[] arg) {

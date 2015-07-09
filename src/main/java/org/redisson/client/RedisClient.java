@@ -21,7 +21,9 @@ import java.util.concurrent.ExecutionException;
 import org.redisson.client.handler.RedisCommandsQueue;
 import org.redisson.client.handler.RedisDecoder;
 import org.redisson.client.handler.RedisEncoder;
-import org.redisson.client.protocol.PubSubMessage;
+import org.redisson.client.protocol.PubSubStatusMessage;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.StringCodec;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -112,8 +114,26 @@ public class RedisClient {
 
             Future<Long> m = rpsc.publish("sss", "123");
             System.out.println("out: " + m.get());
-            Future<PubSubMessage> m1 = rpsc.subscribe("sss");
+            Future<PubSubStatusMessage> m1 = rpsc.psubscribe("ss*");
             System.out.println("out: " + m1.get());
+            rpsc.addListener(new RedisPubSubListener<String>() {
+                @Override
+                public void onMessage(String channel, String message) {
+                    System.out.println("incoming message: " + message);
+                }
+
+                @Override
+                public void onPatternMessage(String pattern, String channel, String message) {
+                    System.out.println("incoming pattern pattern: " + pattern
+                            + " channel: " + channel + " message: " + message);
+
+                }
+            });
+
+
+            final RedisClient c2 = new RedisClient("127.0.0.1", 6379);
+            Long res = c2.connect().sync(new StringCodec(), RedisCommands.PUBLISH, "sss", "4444");
+//            System.out.println("published: " + res);
 
 
 

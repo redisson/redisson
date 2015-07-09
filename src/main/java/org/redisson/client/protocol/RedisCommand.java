@@ -21,6 +21,7 @@ public class RedisCommand<R> {
     private final String subName;
     private final int[] encodeParamIndexes;
     private Decoder<R> reponseDecoder;
+    private Convertor<R> convertor = new EmptyConvertor<R>();
 
     public RedisCommand(String name, String subName, int ... encodeParamIndexes) {
         this(name, subName, null, encodeParamIndexes);
@@ -28,6 +29,13 @@ public class RedisCommand<R> {
 
     public RedisCommand(String name, int ... encodeParamIndexes) {
         this(name, null, null, encodeParamIndexes);
+    }
+
+    public RedisCommand(String name, Convertor<R> convertor, int ... encodeParamIndexes) {
+        this.name = name;
+        this.subName = null;
+        this.encodeParamIndexes = encodeParamIndexes;
+        this.convertor = convertor;
     }
 
     public RedisCommand(String name, Decoder<R> reponseDecoder, int ... encodeParamIndexes) {
@@ -56,6 +64,10 @@ public class RedisCommand<R> {
 
     public int[] getEncodeParamIndexes() {
         return encodeParamIndexes;
+    }
+
+    public Convertor<R> getConvertor() {
+        return convertor;
     }
 
 }

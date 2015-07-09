@@ -25,9 +25,12 @@ public interface RedisCommands {
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
     RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 1);
     RedisCommand<String> SETEX = new RedisCommand<String>("SETEX", new StringReplayDecoder(), 2);
-    RedisCommand<Boolean> EXISTS = new RedisCommand<Boolean>("EXISTS", new BooleanReplayDecoder(), 1);
+    RedisCommand<Boolean> EXISTS = new RedisCommand<Boolean>("EXISTS", new BooleanReplayConvertor(), 1);
 
     RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 1);
-    RedisCommand<PubSubMessageDecoder> SUBSCRIBE = new RedisCommand<PubSubMessageDecoder>("SUBSCRIBE", 1);
+    RedisCommand<PubSubStatusMessage> SUBSCRIBE = new RedisCommand<PubSubStatusMessage>("SUBSCRIBE", 1);
+    RedisCommand<PubSubStatusMessage> UNSUBSCRIBE = new RedisCommand<PubSubStatusMessage>("UNSUBSCRIBE", 1);
+
+    RedisCommand<PubSubStatusMessage> PSUBSCRIBE = new RedisCommand<PubSubStatusMessage>("PSUBSCRIBE", 1);
 
 }

@@ -16,6 +16,14 @@ import org.redisson.core.*;
 public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
+    public void testAwait() throws InterruptedException {
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
+        queue1.put(1);
+
+        Assert.assertEquals((Integer)1, queue1.poll(10, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
         queue1.put(1);
@@ -30,7 +38,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue1.pollLastAndOfferFirstTo(queue2, 10, TimeUnit.SECONDS);
         MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
     }
-    
+
     @Test
     public void testAddOfferOrigin() {
         Queue<Integer> queue = new LinkedList<Integer>();
@@ -129,7 +137,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         final AtomicInteger counter = new AtomicInteger();
         int total = 100;
         for (int i = 0; i < total; i++) {
-            // runnable won't be executed in any particular order, and hence, int value as well. 
+            // runnable won't be executed in any particular order, and hence, int value as well.
             executor.submit(new Runnable() {
                 @Override
                 public void run() {
