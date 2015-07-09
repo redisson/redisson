@@ -15,6 +15,9 @@
  */
 package org.redisson.client.protocol;
 
+import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+
 public interface RedisCommands {
 
     RedisStrictCommand<String> AUTH = new RedisStrictCommand<String>("AUTH", new StringReplayDecoder());

@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol;
 
+import org.redisson.client.protocol.pubsub.MultiDecoder;
+
 public class RedisCommand<R> {
 
     private final String name;

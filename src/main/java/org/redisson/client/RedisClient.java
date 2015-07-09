@@ -21,9 +21,9 @@ import java.util.concurrent.ExecutionException;
 import org.redisson.client.handler.RedisCommandsQueue;
 import org.redisson.client.handler.RedisDecoder;
 import org.redisson.client.handler.RedisEncoder;
-import org.redisson.client.protocol.PubSubStatusMessage;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;

@@ -24,9 +24,9 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.handler.RedisCommandsQueue.QueueCommands;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.MultiDecoder;
-import org.redisson.client.protocol.PubSubMessage;
-import org.redisson.client.protocol.PubSubPatternMessage;
+import org.redisson.client.protocol.pubsub.MultiDecoder;
+import org.redisson.client.protocol.pubsub.PubSubMessage;
+import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
