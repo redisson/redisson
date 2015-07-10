@@ -20,6 +20,7 @@ import java.util.Arrays;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import io.netty.util.CharsetUtil;
 
 public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
 
@@ -51,8 +52,8 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
             i++;
         }
 
-//        String o = out.toString(CharsetUtil.UTF_8);
-//        System.out.println(o);
+        String o = out.toString(CharsetUtil.UTF_8);
+        System.out.println(o);
     }
 
     private void writeArgument(ByteBuf out, byte[] arg) {

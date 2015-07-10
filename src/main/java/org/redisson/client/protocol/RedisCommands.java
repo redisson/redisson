@@ -29,6 +29,13 @@ import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 public interface RedisCommands {
 
+    RedisStrictCommand<Boolean> EVAL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor());
+    RedisStrictCommand<Long> EVAL_INTEGER = new RedisStrictCommand<Long>("EVAL");
+
+    RedisStrictCommand<Long> INCR = new RedisStrictCommand<Long>("INCR");
+    RedisStrictCommand<Long> INCRBY = new RedisStrictCommand<Long>("INCRBY");
+    RedisStrictCommand<Long> DECR = new RedisStrictCommand<Long>("DECR");
+
     RedisStrictCommand<String> AUTH = new RedisStrictCommand<String>("AUTH", new StringReplayDecoder());
     RedisStrictCommand<String> SELECT = new RedisStrictCommand<String>("SELECT", new StringReplayDecoder());
     RedisStrictCommand<String> CLIENT_SETNAME = new RedisStrictCommand<String>("CLIENT", "SETNAME", new StringReplayDecoder());

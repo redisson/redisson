@@ -22,6 +22,8 @@ import io.netty.util.CharsetUtil;
 
 public class StringCodec implements Codec {
 
+    public static final StringCodec INSTANCE = new StringCodec();
+
     @Override
     public byte[] encode(int paramIndex, Object in) {
         try {
