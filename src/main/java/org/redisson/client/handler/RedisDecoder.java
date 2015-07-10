@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.handler.RedisCommandsQueue.QueueCommands;
 import org.redisson.client.protocol.Decoder;
@@ -45,7 +46,7 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        RedisData<Object, Object> data = ctx.channel().attr(RedisCommandsQueue.REPLAY_PROMISE).getAndRemove();
+        RedisData<Object, Object> data = ctx.channel().attr(RedisCommandsQueue.REPLAY).get();
         RedisPubSubConnection pubSubConnection = ctx.channel().attr(RedisPubSubConnection.CONNECTION).get();
 
         Decoder<Object> currentDecoder = null;
@@ -58,20 +59,34 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
             };
         }
 
+        System.out.println("message " + in.writerIndex() + "-" + in.readerIndex() + " in: " + in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
+
         decode(in, data, null, pubSubConnection, currentDecoder);
 
+        ctx.channel().attr(RedisCommandsQueue.REPLAY).remove();
         ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
     }
 
     private void decode(ByteBuf in, RedisData<Object, Object> data, List<Object> parts, RedisPubSubConnection pubSubConnection, Decoder<Object> currentDecoder) throws IOException {
         int code = in.readByte();
-//        System.out.println("trying decode -- " + (char)code);
         if (code == '+') {
             Object result = data.getCommand().getReplayDecoder().decode(in);
             handleResult(data, parts, result);
         } else if (code == '-') {
-            Object result = data.getCommand().getReplayDecoder().decode(in);
-            data.getPromise().setFailure(new RedisException(result.toString()));
+            String error = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
+            in.skipBytes(2);
+
+            if (error.startsWith("MOVED")) {
+                String[] errorParts = error.split(" ");
+                int slot = Integer.valueOf(errorParts[1]);
+                data.getPromise().setFailure(new RedisMovedException(slot));
+            } else if (error.startsWith("(error) ASK")) {
+                String[] errorParts = error.split(" ");
+                int slot = Integer.valueOf(errorParts[2]);
+                data.getPromise().setFailure(new RedisMovedException(slot));
+            } else {
+                data.getPromise().setFailure(new RedisException(error));
+            }
         } else if (code == ':') {
             String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
@@ -99,7 +114,12 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
                         messageDecoders.remove(param.toString());
                     }
                 }
-                data.getPromise().setSuccess(result);
+
+                if (parts != null) {
+                    parts.add(result);
+                } else {
+                    data.getPromise().setSuccess(result);
+                }
             } else {
                 if (result instanceof PubSubMessage) {
                     pubSubConnection.onMessage((PubSubMessage) result);

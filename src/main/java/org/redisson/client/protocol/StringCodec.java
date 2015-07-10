@@ -33,6 +33,9 @@ public class StringCodec implements Codec {
 
     @Override
     public Object decode(ByteBuf buf) {
+        if (buf == null) {
+            return null;
+        }
         return buf.toString(CharsetUtil.UTF_8);
     }
 

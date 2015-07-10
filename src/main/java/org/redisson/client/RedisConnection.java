@@ -59,17 +59,17 @@ public class RedisConnection implements RedisCommands {
         return cmd.getNow();
     }
 
-    public <V> V get(Future<V> future) {
-        future.awaitUninterruptibly();
-        if (future.isSuccess()) {
-            return future.getNow();
-        }
-
-        if (future.cause() instanceof RedisException) {
-            throw (RedisException) future.cause();
-        }
-        throw new RedisException("Unexpected exception while processing command", future.cause());
-    }
+//    public <V> V get(Future<V> future) {
+//        future.awaitUninterruptibly();
+//        if (future.isSuccess()) {
+//            return future.getNow();
+//        }
+//
+//        if (future.cause() instanceof RedisException) {
+//            throw (RedisException) future.cause();
+//        }
+//        throw new RedisException("Unexpected exception while processing command", future.cause());
+//    }
 
     public <T> T sync(RedisStrictCommand<T> command, Object ... params) {
         Future<T> r = async(null, command, params);

@@ -27,7 +27,7 @@ public class RedisCommandsQueue extends ChannelDuplexHandler {
 
     public enum QueueCommands {NEXT_COMMAND}
 
-    public static final AttributeKey<RedisData<Object, Object>> REPLAY_PROMISE = AttributeKey.valueOf("promise");
+    public static final AttributeKey<RedisData<Object, Object>> REPLAY = AttributeKey.valueOf("promise");
 
     private final Queue<RedisData<Object, Object>> queue = PlatformDependent.newMpscQueue();
 
@@ -59,7 +59,7 @@ public class RedisCommandsQueue extends ChannelDuplexHandler {
     private void sendData(ChannelHandlerContext ctx) throws Exception {
         RedisData<Object, Object> data = queue.peek();
         if (data != null && data.getSended().compareAndSet(false, true)) {
-            ctx.channel().attr(REPLAY_PROMISE).set(data);
+            ctx.channel().attr(REPLAY).set(data);
             ctx.channel().writeAndFlush(data);
         }
     }

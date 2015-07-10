@@ -16,6 +16,8 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.redisson.client.handler.RedisCommandsQueue;
@@ -83,17 +85,29 @@ public class RedisClient {
     }
 
     public RedisConnection connect() {
-        ChannelFuture future = bootstrap.connect();
-        future.syncUninterruptibly();
-        channels.add(future.channel());
-        return new RedisConnection(this, future.channel());
+        try {
+            ChannelFuture future = bootstrap.connect();
+            future.syncUninterruptibly();
+            channels.add(future.channel());
+            return new RedisConnection(this, future.channel());
+        } catch (Exception e) {
+            throw new RedisConnectionException("unable to connect", e);
+        }
     }
 
     public RedisPubSubConnection connectPubSub() {
-        ChannelFuture future = bootstrap.connect();
-        future.syncUninterruptibly();
-        channels.add(future.channel());
-        return new RedisPubSubConnection(this, future.channel());
+        try {
+            ChannelFuture future = bootstrap.connect();
+            future.syncUninterruptibly();
+            channels.add(future.channel());
+            return new RedisPubSubConnection(this, future.channel());
+        } catch (Exception e) {
+            throw new RedisConnectionException("unable to connect", e);
+        }
+    }
+
+    public void shutdown() {
+        shutdownAsync().syncUninterruptibly();
     }
 
     public ChannelGroupFuture shutdownAsync() {
@@ -102,8 +116,23 @@ public class RedisClient {
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
         final RedisClient c = new RedisClient("127.0.0.1", 6379);
-        RedisConnection rc = c.connect();
-        RedisPubSubConnection rpsc = c.connectPubSub();
+        Object r = c.connect().sync(new StringCodec(), RedisCommands.GET, "test1");
+        System.out.println(r);
+//        final RedisClient c = new RedisClient("127.0.0.1", 26379);
+//        RedisConnection rc = c.connect();
+//        List<String> res4 = rc.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, "mymaster");
+//        System.out.println("r: " + res4);
+//
+//        List<Map<String, String>> res5 = rc.sync(RedisCommands.SENTINEL_SLAVES, "mymaster");
+//        System.out.println("r: " + res5);
+
+
+/*        RedisPubSubConnection rpsc = c.connectPubSub();
+
+            rc.sync(new StringCodec(), RedisCommands.HMSET, "test", "1", "2");
+            rc.sync(new StringCodec(), RedisCommands.HMSET, "test", "2", "3");
+            List<String> r = rc.sync(new StringCodec(), RedisCommands.HMGET, "test", "1", "2");
+
 
             String res1 = rc.sync(RedisCommands.CLIENT_SETNAME, "12333");
             System.out.println("res 12: " + res1);
@@ -144,25 +173,6 @@ public class RedisClient {
             Long res3 = c3.connect().sync(new StringCodec(), RedisCommands.PUBLISH, "sss", "4444");
             System.out.println("published: " + res3);
 
-
-/*            Future<String> res = rc.execute(new StringCodec(), RedisCommands.SET, "test", "" + Math.random());
-            res.addListener(new FutureListener<String>() {
-
-                @Override
-                public void operationComplete(Future<String> future) throws Exception {
-//                    System.out.println("res 1: " + future.getNow());
-                }
-
-            });
-
-            Future<String> r = rc.execute(new StringCodec(), RedisCommands.GET, "test");
-            r.addListener(new FutureListener<Object>() {
-
-                @Override
-                public void operationComplete(Future<Object> future) throws Exception {
-                    System.out.println("res 2: " + future.getNow());
-                }
-            });
-*///        }
-    }
+*/    }
 }
+

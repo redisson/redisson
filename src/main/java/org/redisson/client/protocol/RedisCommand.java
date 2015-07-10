@@ -29,11 +29,11 @@ public class RedisCommand<R> {
     private Convertor<R> convertor = new EmptyConvertor<R>();
 
     public RedisCommand(String name, String subName, int ... encodeParamIndexes) {
-        this(name, subName, null, encodeParamIndexes);
+        this(name, subName, null, null, encodeParamIndexes);
     }
 
     public RedisCommand(String name, int ... encodeParamIndexes) {
-        this(name, null, null, encodeParamIndexes);
+        this(name, null, null, null, encodeParamIndexes);
     }
 
     public RedisCommand(String name, Convertor<R> convertor, int ... encodeParamIndexes) {
@@ -44,7 +44,7 @@ public class RedisCommand<R> {
     }
 
     public RedisCommand(String name, Decoder<R> reponseDecoder, int ... encodeParamIndexes) {
-        this(name, null, reponseDecoder, encodeParamIndexes);
+        this(name, null, null, reponseDecoder, encodeParamIndexes);
     }
 
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, int ... encodeParamIndexes) {
@@ -54,10 +54,16 @@ public class RedisCommand<R> {
         this.replayMultiDecoder = replayMultiDecoder;
     }
 
-    public RedisCommand(String name, String subName, Decoder<R> reponseDecoder, int ... encodeParamIndexes) {
+    public RedisCommand(String name, String subName, MultiDecoder<R> replayMultiDecoder,
+            int... encodeParamIndexes) {
+        this(name, subName, replayMultiDecoder, null, encodeParamIndexes);
+    }
+
+    public RedisCommand(String name, String subName, MultiDecoder<R> replayMultiDecoder, Decoder<R> reponseDecoder, int ... encodeParamIndexes) {
         super();
         this.name = name;
         this.subName = subName;
+        this.replayMultiDecoder = replayMultiDecoder;
         this.replayDecoder = reponseDecoder;
         this.objectParamIndexes = encodeParamIndexes;
     }

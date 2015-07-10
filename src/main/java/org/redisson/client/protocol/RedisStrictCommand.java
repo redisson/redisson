@@ -23,6 +23,11 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
         super(name, replayMultiDecoder, encodeParamIndexes);
     }
 
+    public RedisStrictCommand(String name, String subName, MultiDecoder<T> replayMultiDecoder,
+            int... encodeParamIndexes) {
+        super(name, subName, replayMultiDecoder, encodeParamIndexes);
+    }
+
     public RedisStrictCommand(String name, int... encodeParamIndexes) {
         super(name, encodeParamIndexes);
     }
@@ -33,7 +38,7 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
 
     public RedisStrictCommand(String name, String subName, Decoder<T> reponseDecoder,
             int... encodeParamIndexes) {
-        super(name, subName, reponseDecoder, encodeParamIndexes);
+        super(name, subName, null, reponseDecoder, encodeParamIndexes);
     }
 
     public RedisStrictCommand(String name, String subName, int... encodeParamIndexes) {
