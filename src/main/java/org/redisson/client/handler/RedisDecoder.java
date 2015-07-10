@@ -18,7 +18,9 @@ package org.redisson.client.handler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
@@ -39,19 +41,29 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
     public static final char LF = '\n';
     private static final char ZERO = '0';
 
-    private MultiDecoder<Object> nextDecoder;
+    private final Map<String, MultiDecoder<Object>> messageDecoders = new HashMap<String, MultiDecoder<Object>>();
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         RedisData<Object, Object> data = ctx.channel().attr(RedisCommandsQueue.REPLAY_PROMISE).getAndRemove();
         RedisPubSubConnection pubSubConnection = ctx.channel().attr(RedisPubSubConnection.CONNECTION).get();
 
-        decode(in, data, null, pubSubConnection);
+        Decoder<Object> currentDecoder = null;
+        if (data == null) {
+            currentDecoder = new Decoder<Object>() {
+                @Override
+                public Object decode(ByteBuf buf) {
+                    return buf.toString(CharsetUtil.UTF_8);
+                }
+            };
+        }
+
+        decode(in, data, null, pubSubConnection, currentDecoder);
 
         ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
     }
 
-    private void decode(ByteBuf in, RedisData<Object, Object> data, List<Object> parts, RedisPubSubConnection pubSubConnection) throws IOException {
+    private void decode(ByteBuf in, RedisData<Object, Object> data, List<Object> parts, RedisPubSubConnection pubSubConnection, Decoder<Object> currentDecoder) throws IOException {
         int code = in.readByte();
 //        System.out.println("trying decode -- " + (char)code);
         if (code == '+') {
@@ -66,19 +78,26 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
             Object result = Long.valueOf(status);
             handleResult(data, parts, result);
         } else if (code == '$') {
-            Object result = decoder(data, parts != null).decode(readBytes(in));
+            Object result = decoder(data, parts, currentDecoder).decode(readBytes(in));
             handleResult(data, parts, result);
         } else if (code == '*') {
             long size = readLong(in);
             List<Object> respParts = new ArrayList<Object>();
             for (int i = 0; i < size; i++) {
-                decode(in, data, respParts, pubSubConnection);
+                decode(in, data, respParts, pubSubConnection, currentDecoder);
             }
 
-            Object result = ((MultiDecoder<Object>)decoder(data, true)).decode(respParts);
+            Object result = messageDecoder(data, respParts).decode(respParts);
             if (data != null) {
                 if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(data.getCommand().getName())) {
-                    nextDecoder = data.getNextDecoder();
+                    for (Object param : data.getParams()) {
+                        messageDecoders.put(param.toString(), data.getMessageDecoder());
+                    }
+                }
+                if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(data.getCommand().getName())) {
+                    for (Object param : data.getParams()) {
+                        messageDecoders.remove(param.toString());
+                    }
                 }
                 data.getPromise().setSuccess(result);
             } else {
@@ -104,12 +123,35 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
         }
     }
 
-    private Decoder<Object> decoder(RedisData<Object, Object> data, boolean isMulti) {
+    private MultiDecoder<Object> messageDecoder(RedisData<Object, Object> data, List<Object> parts) {
         if (data == null) {
-            return nextDecoder;
+            if (parts.get(0).equals("message")) {
+                String channelName = (String) parts.get(1);
+                return messageDecoders.get(channelName);
+            }
+            if (parts.get(0).equals("pmessage")) {
+                String patternName = (String) parts.get(1);
+                return messageDecoders.get(patternName);
+            }
         }
+        return data.getCommand().getReplayMultiDecoder();
+    }
+
+    private Decoder<Object> decoder(RedisData<Object, Object> data, List<Object> parts, Decoder<Object> currentDecoder) {
+        if (data == null) {
+            if (parts.size() == 2 && parts.get(0).equals("message")) {
+                String channelName = (String) parts.get(1);
+                return messageDecoders.get(channelName);
+            }
+            if (parts.size() == 3 && parts.get(0).equals("pmessage")) {
+                String patternName = (String) parts.get(1);
+                return messageDecoders.get(patternName);
+            }
+            return currentDecoder;
+        }
+
         Decoder<Object> decoder = data.getCommand().getReplayDecoder();
-        if (isMulti) {
+        if (parts != null) {
             decoder = data.getCommand().getReplayMultiDecoder();
         }
         if (decoder == null) {

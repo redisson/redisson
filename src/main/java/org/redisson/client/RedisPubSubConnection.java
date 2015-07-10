@@ -81,6 +81,10 @@ public class RedisPubSubConnection {
         return async(null, RedisCommands.UNSUBSCRIBE, channel);
     }
 
+    public Future<PubSubStatusMessage> punsubscribe(String ... channel) {
+        return async(null, RedisCommands.PUNSUBSCRIBE, channel);
+    }
+
 //    public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
 //        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
 //        channel.writeAndFlush(new RedisData<T, R>(promise, encoder, command, params));

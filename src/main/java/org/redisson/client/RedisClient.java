@@ -116,6 +116,8 @@ public class RedisClient {
             System.out.println("out: " + m);
             Future<PubSubStatusMessage> m1 = rpsc.psubscribe("ss*");
             System.out.println("out: " + m1.get());
+            Future<PubSubStatusMessage> m2 = rpsc.psubscribe("ss*");
+            System.out.println("out: " + m2.get());
             rpsc.addListener(new RedisPubSubListener<String>() {
                 @Override
                 public void onMessage(String channel, String message) {
@@ -135,6 +137,12 @@ public class RedisClient {
             Long res = c2.connect().sync(new StringCodec(), RedisCommands.PUBLISH, "sss", "4444");
             System.out.println("published: " + res);
 
+            Future<PubSubStatusMessage> m3 = rpsc.punsubscribe("ss*");
+            System.out.println("punsubscribe out: " + m3.get());
+
+            final RedisClient c3 = new RedisClient("127.0.0.1", 6379);
+            Long res3 = c3.connect().sync(new StringCodec(), RedisCommands.PUBLISH, "sss", "4444");
+            System.out.println("published: " + res3);
 
 
 /*            Future<String> res = rc.execute(new StringCodec(), RedisCommands.SET, "test", "" + Math.random());
