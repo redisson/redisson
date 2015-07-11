@@ -19,34 +19,28 @@ import org.redisson.client.protocol.pubsub.MultiDecoder;
 
 public class RedisStrictCommand<T> extends RedisCommand<T> {
 
-    public RedisStrictCommand(String name, MultiDecoder<T> replayMultiDecoder, int... encodeParamIndexes) {
-        super(name, replayMultiDecoder, encodeParamIndexes);
+    public RedisStrictCommand(String name, MultiDecoder<T> replayMultiDecoder) {
+        super(name, replayMultiDecoder);
     }
 
-    public RedisStrictCommand(String name, String subName, MultiDecoder<T> replayMultiDecoder,
-            int... encodeParamIndexes) {
-        super(name, subName, replayMultiDecoder, encodeParamIndexes);
+    public RedisStrictCommand(String name, String subName, MultiDecoder<T> replayMultiDecoder) {
+        super(name, subName, replayMultiDecoder, -1);
     }
 
-    public RedisStrictCommand(String name, int... encodeParamIndexes) {
-        super(name, encodeParamIndexes);
+    public RedisStrictCommand(String name) {
+        super(name);
     }
 
-    public RedisStrictCommand(String name, Convertor<T> convertor, int ... encodeParamIndexes) {
-        super(name, convertor, encodeParamIndexes);
+    public RedisStrictCommand(String name, Convertor<T> convertor) {
+        super(name, convertor, -1);
     }
 
-    public RedisStrictCommand(String name, String subName, Decoder<T> reponseDecoder,
-            int... encodeParamIndexes) {
-        super(name, subName, null, reponseDecoder, encodeParamIndexes);
+    public RedisStrictCommand(String name, String subName, Decoder<T> reponseDecoder) {
+        super(name, subName, null, reponseDecoder, -1);
     }
 
-    public RedisStrictCommand(String name, String subName, int... encodeParamIndexes) {
-        super(name, subName, encodeParamIndexes);
-    }
-
-    public RedisStrictCommand(String name, Decoder<T> reponseDecoder, int... encodeParamIndexes) {
-        super(name, reponseDecoder, encodeParamIndexes);
+    public RedisStrictCommand(String name, Decoder<T> reponseDecoder) {
+        super(name, reponseDecoder);
     }
 
 }

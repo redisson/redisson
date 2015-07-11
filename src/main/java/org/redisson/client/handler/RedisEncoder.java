@@ -15,7 +15,8 @@
  */
 package org.redisson.client.handler;
 
-import java.util.Arrays;
+import org.redisson.client.protocol.Encoder;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -44,16 +45,37 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
         }
         int i = 1;
         for (Object param : msg.getParams()) {
-            if (Arrays.binarySearch(msg.getCommand().getObjectParamIndexes(), i) != -1) {
-                writeArgument(out, msg.getCodec().encode(i, param));
-            } else {
-                writeArgument(out, msg.getCommand().getParamsEncoder().encode(i, param));
+            Encoder encoder = msg.getCommand().getParamsEncoder();
+            if (msg.getCommand().getInParamIndex() == i && msg.getCommand().getInParamType() == ValueType.OBJECT) {
+                encoder = msg.getCodec().getValueEncoder();
+            } else if (msg.getCommand().getInParamIndex() <= i && msg.getCommand().getInParamType() != ValueType.OBJECT) {
+                encoder = encoder(msg, i - msg.getCommand().getInParamIndex());
             }
+
+            writeArgument(out, encoder.encode(i, param));
+
             i++;
         }
 
         String o = out.toString(CharsetUtil.UTF_8);
         System.out.println(o);
+    }
+
+    private Encoder encoder(RedisData<Object, Object> msg, int param) {
+        if (msg.getCommand().getInParamType() == ValueType.MAP) {
+            if (param % 2 != 0) {
+                return msg.getCodec().getMapValueEncoder();
+            } else {
+                return msg.getCodec().getMapKeyEncoder();
+            }
+        }
+        if (msg.getCommand().getInParamType() == ValueType.MAP_KEY) {
+            return msg.getCodec().getMapKeyEncoder();
+        }
+        if (msg.getCommand().getInParamType() == ValueType.MAP_KEY) {
+            return msg.getCodec().getMapValueEncoder();
+        }
+        throw new IllegalStateException();
     }
 
     private void writeArgument(ByteBuf out, byte[] arg) {

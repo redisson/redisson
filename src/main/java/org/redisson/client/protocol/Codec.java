@@ -15,6 +15,18 @@
  */
 package org.redisson.client.protocol;
 
-public interface Codec extends Encoder, Decoder<Object> {
+public interface Codec {
+
+    Decoder<Object> getMapValueDecoder();
+
+    Encoder getMapValueEncoder();
+
+    Decoder<Object> getMapKeyDecoder();
+
+    Encoder getMapKeyEncoder();
+
+    Decoder<Object> getValueDecoder();
+
+    Encoder getValueEncoder();
 
 }

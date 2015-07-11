@@ -1,4 +1,4 @@
-package org.redisson.client.protocol;
+package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 

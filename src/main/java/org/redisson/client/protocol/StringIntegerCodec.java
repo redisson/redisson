@@ -20,9 +20,9 @@ import java.io.UnsupportedEncodingException;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
-public class IntegerCodec implements Codec {
+public class StringIntegerCodec implements Codec {
 
-    public static final IntegerCodec INSTANCE = new IntegerCodec();
+    public static final StringIntegerCodec INSTANCE = new StringIntegerCodec();
 
     @Override
     public Decoder<Object> getValueDecoder() {
@@ -32,7 +32,7 @@ public class IntegerCodec implements Codec {
                 if (buf == null) {
                     return null;
                 }
-                return Integer.valueOf(buf.toString(CharsetUtil.UTF_8));
+                return buf.toString(CharsetUtil.UTF_8);
             }
         };
     }
@@ -53,7 +53,15 @@ public class IntegerCodec implements Codec {
 
     @Override
     public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
+        return new Decoder<Object>() {
+            @Override
+            public Object decode(ByteBuf buf) {
+                if (buf == null) {
+                    return null;
+                }
+                return Integer.valueOf(buf.toString(CharsetUtil.UTF_8));
+            }
+        };
     }
 
     @Override

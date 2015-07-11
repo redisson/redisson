@@ -25,20 +25,50 @@ public class StringCodec implements Codec {
     public static final StringCodec INSTANCE = new StringCodec();
 
     @Override
-    public byte[] encode(int paramIndex, Object in) {
-        try {
-            return in.toString().getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException(e);
-        }
+    public Decoder<Object> getValueDecoder() {
+        return new Decoder<Object>() {
+            @Override
+            public Object decode(ByteBuf buf) {
+                if (buf == null) {
+                    return null;
+                }
+                return buf.toString(CharsetUtil.UTF_8);
+            }
+        };
     }
 
     @Override
-    public Object decode(ByteBuf buf) {
-        if (buf == null) {
-            return null;
-        }
-        return buf.toString(CharsetUtil.UTF_8);
+    public Encoder getValueEncoder() {
+        return new Encoder() {
+            @Override
+            public byte[] encode(int paramIndex, Object in) {
+                try {
+                    return in.toString().getBytes("UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        };
+    }
+
+    @Override
+    public Decoder<Object> getMapValueDecoder() {
+        return getValueDecoder();
+    }
+
+    @Override
+    public Encoder getMapValueEncoder() {
+        return getValueEncoder();
+    }
+
+    @Override
+    public Decoder<Object> getMapKeyDecoder() {
+        return getValueDecoder();
+    }
+
+    @Override
+    public Encoder getMapKeyEncoder() {
+        return getValueEncoder();
     }
 
 }

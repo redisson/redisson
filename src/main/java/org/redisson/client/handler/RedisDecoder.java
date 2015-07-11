@@ -27,6 +27,7 @@ import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.handler.RedisCommandsQueue.QueueCommands;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.pubsub.MultiDecoder;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
@@ -103,32 +104,37 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
             }
 
             Object result = messageDecoder(data, respParts).decode(respParts);
-            if (data != null) {
-                if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(data.getCommand().getName())) {
-                    for (Object param : data.getParams()) {
-                        messageDecoders.put(param.toString(), data.getMessageDecoder());
-                    }
-                }
-                if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(data.getCommand().getName())) {
-                    for (Object param : data.getParams()) {
-                        messageDecoders.remove(param.toString());
-                    }
-                }
-
-                if (parts != null) {
-                    parts.add(result);
-                } else {
-                    data.getPromise().setSuccess(result);
-                }
-            } else {
-                if (result instanceof PubSubMessage) {
-                    pubSubConnection.onMessage((PubSubMessage) result);
-                } else {
-                    pubSubConnection.onMessage((PubSubPatternMessage) result);
-                }
-            }
+            handleMultiResult(data, parts, pubSubConnection, result);
         } else {
             throw new IllegalStateException("Can't decode replay " + (char)code);
+        }
+    }
+
+    private void handleMultiResult(RedisData<Object, Object> data, List<Object> parts,
+            RedisPubSubConnection pubSubConnection, Object result) {
+        if (data != null) {
+            if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(data.getCommand().getName())) {
+                for (Object param : data.getParams()) {
+                    messageDecoders.put(param.toString(), data.getMessageDecoder());
+                }
+            }
+            if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(data.getCommand().getName())) {
+                for (Object param : data.getParams()) {
+                    messageDecoders.remove(param.toString());
+                }
+            }
+
+            if (parts != null) {
+                parts.add(result);
+            } else {
+                data.getPromise().setSuccess(result);
+            }
+        } else {
+            if (result instanceof PubSubMessage) {
+                pubSubConnection.onMessage((PubSubMessage) result);
+            } else {
+                pubSubConnection.onMessage((PubSubPatternMessage) result);
+            }
         }
     }
 
@@ -178,7 +184,19 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
             }
         }
         if (decoder == null) {
-            decoder = data.getCodec();
+            if (data.getCommand().getOutParamType() == ValueType.MAP) {
+                if (parts.size() % 2 != 0) {
+                    decoder = data.getCodec().getMapKeyDecoder();
+                } else {
+                    decoder = data.getCodec().getMapValueDecoder();
+                }
+            } else if (data.getCommand().getOutParamType() == ValueType.MAP_KEY) {
+                decoder = data.getCodec().getMapKeyDecoder();
+            } else if (data.getCommand().getOutParamType() == ValueType.MAP_VALUE) {
+                decoder = data.getCodec().getMapValueDecoder();
+            } else {
+                decoder = data.getCodec().getValueDecoder();
+            }
         }
         return decoder;
     }
