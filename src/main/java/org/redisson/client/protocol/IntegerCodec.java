@@ -13,30 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.pubsub;
+package org.redisson.client.protocol;
 
-import java.util.List;
+import java.io.UnsupportedEncodingException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
-public class PubSubMessageDecoder implements MultiDecoder<Object> {
+public class IntegerCodec implements Codec {
+
+    public static final IntegerCodec INSTANCE = new IntegerCodec();
+
+    @Override
+    public byte[] encode(int paramIndex, Object in) {
+        try {
+            return in.toString().getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     @Override
     public Object decode(ByteBuf buf) {
-        String status = buf.toString(CharsetUtil.UTF_8);
-        buf.skipBytes(2);
-        return status;
-    }
-
-    @Override
-    public PubSubMessage decode(List<Object> parts) {
-        return new PubSubMessage(parts.get(1).toString(), parts.get(2).toString());
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum) {
-        return true;
+        if (buf == null) {
+            return null;
+        }
+        return Integer.valueOf(buf.toString(CharsetUtil.UTF_8));
     }
 
 }

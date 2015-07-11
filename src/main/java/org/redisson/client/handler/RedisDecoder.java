@@ -172,7 +172,10 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
 
         Decoder<Object> decoder = data.getCommand().getReplayDecoder();
         if (parts != null) {
-            decoder = data.getCommand().getReplayMultiDecoder();
+            MultiDecoder<Object> multiDecoder = data.getCommand().getReplayMultiDecoder();
+            if (multiDecoder.isApplicable(parts.size())) {
+                decoder = multiDecoder;
+            }
         }
         if (decoder == null) {
             decoder = data.getCodec();

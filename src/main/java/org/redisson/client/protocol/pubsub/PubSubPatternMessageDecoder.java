@@ -34,4 +34,9 @@ public class PubSubPatternMessageDecoder implements MultiDecoder<Object> {
         return new PubSubPatternMessage(parts.get(1).toString(), parts.get(2).toString(), parts.get(3));
     }
 
+    @Override
+    public boolean isApplicable(int paramNum) {
+        return true;
+    }
+
 }

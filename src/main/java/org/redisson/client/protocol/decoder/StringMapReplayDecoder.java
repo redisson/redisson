@@ -40,4 +40,9 @@ public class StringMapReplayDecoder implements MultiDecoder<List<Map<String, Str
         return Collections.singletonList(result);
     }
 
+    @Override
+    public boolean isApplicable(int paramNum) {
+        return true;
+    }
+
 }

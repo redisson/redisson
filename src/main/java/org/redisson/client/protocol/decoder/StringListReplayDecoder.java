@@ -20,4 +20,9 @@ public class StringListReplayDecoder implements MultiDecoder<List<String>> {
         return Arrays.asList(Arrays.copyOf(parts.toArray(), parts.size(), String[].class));
     }
 
+    @Override
+    public boolean isApplicable(int paramNum) {
+        return true;
+    }
+
 }

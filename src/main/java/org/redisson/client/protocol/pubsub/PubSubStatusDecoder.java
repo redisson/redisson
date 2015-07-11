@@ -39,4 +39,9 @@ public class PubSubStatusDecoder implements MultiDecoder<PubSubStatusMessage> {
         return new PubSubStatusMessage(PubSubStatusMessage.Type.valueOf(parts.get(0).toString().toUpperCase()), channels);
     }
 
+    @Override
+    public boolean isApplicable(int paramNum) {
+        return true;
+    }
+
 }

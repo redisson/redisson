@@ -21,6 +21,8 @@ import org.redisson.client.protocol.Decoder;
 
 public interface MultiDecoder<T> extends Decoder<Object> {
 
+    boolean isApplicable(int paramNum);
+
     T decode(List<Object> parts);
 
 }
