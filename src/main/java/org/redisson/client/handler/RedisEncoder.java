@@ -16,6 +16,7 @@
 package org.redisson.client.handler;
 
 import org.redisson.client.protocol.Encoder;
+import org.redisson.client.protocol.StringParamsEncoder;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 
 import io.netty.buffer.ByteBuf;
@@ -24,6 +25,8 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
 
 public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
+
+    private final Encoder paramsEncoder = new StringParamsEncoder();
 
     final char ARGS_PREFIX = '*';
     final char BYTES_PREFIX = '$';
@@ -45,7 +48,7 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
         }
         int i = 1;
         for (Object param : msg.getParams()) {
-            Encoder encoder = msg.getCommand().getParamsEncoder();
+            Encoder encoder = paramsEncoder;
             if (msg.getCommand().getInParamType().size() == 1) {
                 if (msg.getCommand().getInParamIndex() == i && msg.getCommand().getInParamType().get(0) == ValueType.OBJECT) {
                     encoder = msg.getCodec().getValueEncoder();

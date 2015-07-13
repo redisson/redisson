@@ -31,7 +31,6 @@ public class RedisCommand<R> {
     private final String name;
     private final String subName;
 
-    private Encoder paramsEncoder = new StringParamsEncoder();
     private MultiDecoder<R> replayMultiDecoder;
     private Decoder<R> replayDecoder;
     private Convertor<R> convertor = new EmptyConvertor<R>();
@@ -170,10 +169,6 @@ public class RedisCommand<R> {
 
     public Convertor<R> getConvertor() {
         return convertor;
-    }
-
-    public Encoder getParamsEncoder() {
-        return paramsEncoder;
     }
 
     public List<ValueType> getInParamType() {
