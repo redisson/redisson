@@ -5,7 +5,7 @@ import org.redisson.client.protocol.Decoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
-public class BooleanReplayDecoder2 implements Decoder<Boolean> {
+public class BooleanReplayDecoder implements Decoder<Boolean> {
 
     @Override
     public Boolean decode(ByteBuf buf) {
