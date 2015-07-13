@@ -15,10 +15,12 @@
  */
 package org.redisson.client.protocol;
 
+import java.io.IOException;
+
 import io.netty.buffer.ByteBuf;
 
 public interface Decoder<R> {
 
-    R decode(ByteBuf buf);
+    R decode(ByteBuf buf) throws IOException;
 
 }

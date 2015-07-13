@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol;
 
-import java.io.UnsupportedEncodingException;
+import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -41,12 +41,8 @@ public class StringCodec implements Codec {
     public Encoder getValueEncoder() {
         return new Encoder() {
             @Override
-            public byte[] encode(int paramIndex, Object in) {
-                try {
-                    return in.toString().getBytes("UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    throw new IllegalStateException(e);
-                }
+            public byte[] encode(int paramIndex, Object in) throws IOException {
+                return in.toString().getBytes("UTF-8");
             }
         };
     }

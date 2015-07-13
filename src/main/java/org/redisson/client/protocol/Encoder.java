@@ -15,8 +15,10 @@
  */
 package org.redisson.client.protocol;
 
+import java.io.IOException;
+
 public interface Encoder {
 
-    byte[] encode(int paramIndex, Object in);
+    byte[] encode(int paramIndex, Object in) throws IOException;
 
 }
