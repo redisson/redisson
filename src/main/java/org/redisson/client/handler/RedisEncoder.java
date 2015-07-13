@@ -46,10 +46,17 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
         int i = 1;
         for (Object param : msg.getParams()) {
             Encoder encoder = msg.getCommand().getParamsEncoder();
-            if (msg.getCommand().getInParamIndex() == i && msg.getCommand().getInParamType() == ValueType.OBJECT) {
-                encoder = msg.getCodec().getValueEncoder();
-            } else if (msg.getCommand().getInParamIndex() <= i && msg.getCommand().getInParamType() != ValueType.OBJECT) {
-                encoder = encoder(msg, i - msg.getCommand().getInParamIndex());
+            if (msg.getCommand().getInParamType().size() == 1) {
+                if (msg.getCommand().getInParamIndex() == i && msg.getCommand().getInParamType().get(0) == ValueType.OBJECT) {
+                    encoder = msg.getCodec().getValueEncoder();
+                } else if (msg.getCommand().getInParamIndex() <= i && msg.getCommand().getInParamType().get(0) != ValueType.OBJECT) {
+                    encoder = encoder(msg, i - msg.getCommand().getInParamIndex());
+                }
+            } else {
+                int paramNum = i - msg.getCommand().getInParamIndex();
+                if (msg.getCommand().getInParamIndex() <= i) {
+                    encoder = encoder(msg, paramNum);
+                }
             }
 
             writeArgument(out, encoder.encode(i, param));
@@ -62,17 +69,21 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
     }
 
     private Encoder encoder(RedisData<Object, Object> msg, int param) {
-        if (msg.getCommand().getInParamType() == ValueType.MAP) {
+        int typeIndex = 0;
+        if (msg.getCommand().getInParamType().size() > 1) {
+            typeIndex = param;
+        }
+        if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.MAP) {
             if (param % 2 != 0) {
                 return msg.getCodec().getMapValueEncoder();
             } else {
                 return msg.getCodec().getMapKeyEncoder();
             }
         }
-        if (msg.getCommand().getInParamType() == ValueType.MAP_KEY) {
+        if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.MAP_KEY) {
             return msg.getCodec().getMapKeyEncoder();
         }
-        if (msg.getCommand().getInParamType() == ValueType.MAP_KEY) {
+        if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.MAP_VALUE) {
             return msg.getCodec().getMapValueEncoder();
         }
         throw new IllegalStateException();

@@ -4,11 +4,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.redisson.client.protocol.pubsub.MultiDecoder;
-
 import io.netty.buffer.ByteBuf;
 
 public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
+
+    @Override
+    public MultiDecoder<?> get() {
+        return this;
+    }
 
     @Override
     public Object decode(ByteBuf buf) {
@@ -20,7 +23,7 @@ public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>>
         Map<Object, Object> result = new HashMap<Object, Object>(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
-                result.put(parts.get(i-1).toString(), parts.get(i).toString());
+                result.put(parts.get(i-1), parts.get(i));
            }
         }
         return result;

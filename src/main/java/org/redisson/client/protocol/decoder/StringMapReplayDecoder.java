@@ -6,12 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.redisson.client.protocol.pubsub.MultiDecoder;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
 public class StringMapReplayDecoder implements MultiDecoder<List<Map<String, String>>> {
+
+    @Override
+    public MultiDecoder<?> get() {
+        return this;
+    }
 
     @Override
     public Object decode(ByteBuf buf) {
@@ -20,6 +23,7 @@ public class StringMapReplayDecoder implements MultiDecoder<List<Map<String, Str
 
     @Override
     public List<Map<String, String>> decode(List<Object> parts) {
+        // TODO refactor
         if (!parts.isEmpty()) {
             if (parts.get(0) instanceof List) {
                 List<Map<String, String>> result = new ArrayList<Map<String, String>>(parts.size());

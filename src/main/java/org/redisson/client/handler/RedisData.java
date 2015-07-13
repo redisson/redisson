@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.pubsub.MultiDecoder;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.util.concurrent.Promise;
 

@@ -18,6 +18,8 @@ package org.redisson.client.protocol.pubsub;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.redisson.client.protocol.decoder.MultiDecoder;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
@@ -42,6 +44,11 @@ public class PubSubStatusDecoder implements MultiDecoder<PubSubStatusMessage> {
     @Override
     public boolean isApplicable(int paramNum) {
         return true;
+    }
+
+    @Override
+    public MultiDecoder<?> get() {
+        return this;
     }
 
 }

@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.pubsub;
+package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
 import org.redisson.client.protocol.Decoder;
 
 public interface MultiDecoder<T> extends Decoder<Object> {
+
+    MultiDecoder<?> get();
 
     boolean isApplicable(int paramNum);
 

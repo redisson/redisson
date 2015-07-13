@@ -2,8 +2,6 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
-import org.redisson.client.protocol.pubsub.MultiDecoder;
-
 import io.netty.buffer.ByteBuf;
 
 public class ObjectListReplayDecoder implements MultiDecoder<List<Object>> {
@@ -21,6 +19,11 @@ public class ObjectListReplayDecoder implements MultiDecoder<List<Object>> {
     @Override
     public boolean isApplicable(int paramNum) {
         return false;
+    }
+
+    @Override
+    public MultiDecoder<?> get() {
+        return this;
     }
 
 }

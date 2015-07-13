@@ -15,14 +15,17 @@
  */
 package org.redisson.client.protocol;
 
-import org.redisson.client.protocol.pubsub.MultiDecoder;
+import java.util.Arrays;
+import java.util.List;
+
+import org.redisson.client.protocol.decoder.MultiDecoder;
 
 public class RedisCommand<R> {
 
     public enum ValueType {OBJECT, MAP_VALUE, MAP_KEY, MAP}
 
     private ValueType outParamType = ValueType.OBJECT;
-    private ValueType inParamType = ValueType.OBJECT;
+    private List<ValueType> inParamType = Arrays.asList(ValueType.OBJECT);
     private final int inParamIndex;
 
     private final String name;
@@ -42,6 +45,17 @@ public class RedisCommand<R> {
         this.outParamType = outParamType;
     }
 
+    public RedisCommand(String name, int objectParamIndex, ValueType inParamType) {
+        this(name, null, null, null, objectParamIndex);
+        this.inParamType = Arrays.asList(inParamType);
+    }
+
+    public RedisCommand(String name, ValueType inParamType, ValueType outParamType) {
+        this(name, (String)null);
+        this.inParamType = Arrays.asList(inParamType);
+        this.outParamType = outParamType;
+    }
+
     public RedisCommand(String name, String subName) {
         this(name, subName, null, null, -1);
     }
@@ -56,15 +70,31 @@ public class RedisCommand<R> {
 
     public RedisCommand(String name, int encodeParamIndex, ValueType inParamType, ValueType outParamType) {
         this(name, null, null, null, encodeParamIndex);
+        this.inParamType = Arrays.asList(inParamType);
+        this.outParamType = outParamType;
+    }
+
+    public RedisCommand(String name, int encodeParamIndex, List<ValueType> inParamType, ValueType outParamType) {
+        this(name, null, null, null, encodeParamIndex);
         this.inParamType = inParamType;
         this.outParamType = outParamType;
     }
 
+    public RedisCommand(String name, Decoder<R> reponseDecoder, int encodeParamIndex, List<ValueType> inParamType, ValueType outParamType) {
+        this(name, null, null, reponseDecoder, encodeParamIndex);
+        this.inParamType = inParamType;
+        this.outParamType = outParamType;
+    }
+
+    public RedisCommand(String name, Decoder<R> reponseDecoder, int encodeParamIndex, List<ValueType> inParamType) {
+        this(name, null, null, reponseDecoder, encodeParamIndex);
+        this.inParamType = inParamType;
+    }
 
     public RedisCommand(String name, Convertor<R> convertor, int encodeParamIndex, ValueType inParamType) {
         this(name, null, null, null, encodeParamIndex);
         this.convertor = convertor;
-        this.inParamType = inParamType;
+        this.inParamType = Arrays.asList(inParamType);
     }
 
     public RedisCommand(String name, Convertor<R> convertor, int encodeParamIndex) {
@@ -78,7 +108,7 @@ public class RedisCommand<R> {
 
     public RedisCommand(String name, Decoder<R> reponseDecoder, int objectParamIndex, ValueType inParamType) {
         this(name, null, null, reponseDecoder, objectParamIndex);
-        this.inParamType = inParamType;
+        this.inParamType = Arrays.asList(inParamType);
     }
 
     public RedisCommand(String name, Decoder<R> reponseDecoder, int objectParamIndex) {
@@ -93,7 +123,7 @@ public class RedisCommand<R> {
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, int objectParamIndex, ValueType inParamType, ValueType outParamType) {
         this(name, replayMultiDecoder, objectParamIndex);
         this.outParamType = outParamType;
-        this.inParamType = inParamType;
+        this.inParamType = Arrays.asList(inParamType);
     }
 
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder) {
@@ -146,7 +176,7 @@ public class RedisCommand<R> {
         return paramsEncoder;
     }
 
-    public ValueType getInParamType() {
+    public List<ValueType> getInParamType() {
         return inParamType;
     }
 

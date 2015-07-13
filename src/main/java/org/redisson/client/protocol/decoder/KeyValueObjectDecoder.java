@@ -2,12 +2,14 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
-import org.redisson.client.protocol.pubsub.MultiDecoder;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
 public class KeyValueObjectDecoder implements MultiDecoder<Object> {
+
+    public MultiDecoder<Object> get() {
+        return (MultiDecoder<Object>) this;
+    }
 
     @Override
     public Object decode(ByteBuf buf) {

@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.redisson.client.handler.RedisData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.pubsub.MultiDecoder;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubMessageDecoder;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;

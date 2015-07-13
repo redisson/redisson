@@ -3,12 +3,15 @@ package org.redisson.client.protocol.decoder;
 import java.util.Arrays;
 import java.util.List;
 
-import org.redisson.client.protocol.pubsub.MultiDecoder;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
 public class StringListReplayDecoder implements MultiDecoder<List<String>> {
+
+    @Override
+    public MultiDecoder<?> get() {
+        return this;
+    }
 
     @Override
     public Object decode(ByteBuf buf) {

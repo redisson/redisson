@@ -19,8 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.decoder.BooleanReplayDecoder;
+import org.redisson.client.protocol.decoder.BooleanStatusReplayDecoder;
 import org.redisson.client.protocol.decoder.KeyValueObjectDecoder;
+import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.StringDataDecoder;
@@ -29,6 +30,8 @@ import org.redisson.client.protocol.decoder.StringMapReplayDecoder;
 import org.redisson.client.protocol.decoder.StringReplayDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+
+import com.lambdaworks.redis.output.MapScanResult;
 
 public interface RedisCommands {
 
@@ -50,7 +53,7 @@ public interface RedisCommands {
     RedisStrictCommand<Long> EVAL_INTEGER = new RedisStrictCommand<Long>("EVAL");
     RedisCommand<List<Object>> EVAL_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder());
     RedisCommand<Object> EVAL_OBJECT = new RedisCommand<Object>("EVAL");
-    RedisCommand<Object> EVAL_MAP_VALUE = new RedisCommand<Object>("EVAL", ValueType.MAP_VALUE);
+    RedisCommand<Object> EVAL_MAP_VALUE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
 
     RedisStrictCommand<Long> INCR = new RedisStrictCommand<Long>("INCR");
     RedisStrictCommand<Long> INCRBY = new RedisStrictCommand<Long>("INCRBY");
@@ -64,24 +67,27 @@ public interface RedisCommands {
 
     RedisStrictCommand<List<String>> KEYS = new RedisStrictCommand<List<String>>("KEYS", new StringListReplayDecoder());
 
+    RedisStrictCommand<String> HINCRBYFLOAT = new RedisStrictCommand<String>("HINCRBYFLOAT");
+    RedisCommand<MapScanResult<Object, Object>> HSCAN = new RedisCommand<MapScanResult<Object, Object>>("HSCAN", new MapScanResultReplayDecoder(), ValueType.MAP);
     RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder(), ValueType.MAP);
     RedisCommand<List<Object>> HVALS = new RedisCommand<List<Object>>("HVALS", new ObjectListReplayDecoder(), ValueType.MAP_VALUE);
-    RedisCommand<Boolean> HEXISTS = new RedisCommand<Boolean>("HEXISTS", new BooleanReplayConvertor(), 1, ValueType.MAP_KEY);
+    RedisCommand<Boolean> HEXISTS = new RedisCommand<Boolean>("HEXISTS", new BooleanReplayConvertor(), 2, ValueType.MAP_KEY);
     RedisStrictCommand<Long> HLEN = new RedisStrictCommand<Long>("HLEN");
     RedisCommand<List<Object>> HKEYS = new RedisCommand<List<Object>>("HKEYS", new ObjectListReplayDecoder(), ValueType.MAP_KEY);
     RedisCommand<String> HMSET = new RedisCommand<String>("HMSET", new StringReplayDecoder(), 1, ValueType.MAP);
-    RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new ObjectListReplayDecoder(), 1, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    RedisCommand<Object> HGET = new RedisCommand<Object>("HGET", 1, ValueType.MAP_KEY, ValueType.MAP_VALUE);
+    RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new ObjectListReplayDecoder(), 2, ValueType.MAP_KEY, ValueType.MAP_VALUE);
+    RedisCommand<Object> HGET = new RedisCommand<Object>("HGET", 2, ValueType.MAP_KEY, ValueType.MAP_VALUE);
+    RedisCommand<Long> HDEL = new RedisStrictCommand<Long>("HDEL", 2, ValueType.MAP_KEY);
 
     RedisStrictCommand<Boolean> DEL_BOOLEAN = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
-    RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 1);
+    RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 2);
     RedisCommand<String> SETEX = new RedisCommand<String>("SETEX", new StringReplayDecoder(), 2);
     RedisStrictCommand<Boolean> EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
-    RedisStrictCommand<Boolean> RENAME = new RedisStrictCommand<Boolean>("RENAME", new BooleanReplayDecoder());
+    RedisStrictCommand<Boolean> RENAME = new RedisStrictCommand<Boolean>("RENAME", new BooleanStatusReplayDecoder());
 
     RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 1);
 

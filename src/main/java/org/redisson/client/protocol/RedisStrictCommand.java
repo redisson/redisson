@@ -15,9 +15,13 @@
  */
 package org.redisson.client.protocol;
 
-import org.redisson.client.protocol.pubsub.MultiDecoder;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 
 public class RedisStrictCommand<T> extends RedisCommand<T> {
+
+    public RedisStrictCommand(String name, int objectParamIndex, ValueType inParamType) {
+        super(name, (Decoder<T>)null, objectParamIndex, inParamType);
+    }
 
     public RedisStrictCommand(String name, MultiDecoder<T> replayMultiDecoder) {
         super(name, replayMultiDecoder);

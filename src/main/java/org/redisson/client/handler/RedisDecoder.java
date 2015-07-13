@@ -28,7 +28,7 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.handler.RedisCommandsQueue.QueueCommands;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.pubsub.MultiDecoder;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 
@@ -62,7 +62,11 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
 
         System.out.println("message " + in.writerIndex() + "-" + in.readerIndex() + " in: " + in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
 
-        decode(in, data, null, pubSubConnection, currentDecoder);
+        try {
+            decode(in, data, null, pubSubConnection, currentDecoder);
+        } catch (Exception e) {
+            data.getPromise().setFailure(e);
+        }
 
         ctx.channel().attr(RedisCommandsQueue.REPLAY).remove();
         ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
@@ -103,7 +107,7 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
                 decode(in, data, respParts, pubSubConnection, currentDecoder);
             }
 
-            Object result = messageDecoder(data, respParts).decode(respParts);
+            Object result = messageDecoder(data, respParts).get().decode(respParts);
             handleMultiResult(data, parts, pubSubConnection, result);
         } else {
             throw new IllegalStateException("Can't decode replay " + (char)code);
