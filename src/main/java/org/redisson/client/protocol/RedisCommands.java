@@ -44,9 +44,13 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> PERSIST = new RedisStrictCommand<Boolean>("PERSIST", new BooleanReplayConvertor());
     RedisStrictCommand<Long> TTL = new RedisStrictCommand<Long>("TTL");
 
+    RedisCommand<Object> RPOPLPUSH = new RedisCommand<Object>("RPOPLPUSH");
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
     RedisCommand<Object> BLPOP = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder());
 
+    RedisCommand<Long> RPOP = new RedisCommand<Long>("RPOP");
+    RedisCommand<Long> LPUSH = new RedisCommand<Long>("LPUSH");
+    RedisCommand<List<Object>> LRANGE = new RedisCommand<List<Object>>("LRANGE", new ObjectListReplayDecoder());
     RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH");
 
     RedisStrictCommand<Boolean> EVAL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor());
