@@ -69,8 +69,8 @@ public class RedisPubSubConnection extends RedisConnection {
         return async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channel);
     }
 
-    public Future<PubSubStatusMessage> psubscribe(String ... channel) {
-        return async(new PubSubPatternMessageDecoder(), RedisCommands.PSUBSCRIBE, channel);
+    public Future<PubSubStatusMessage> psubscribe(Codec codec, String ... channel) {
+        return async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channel);
     }
 
     public Future<PubSubStatusMessage> unsubscribe(String ... channel) {

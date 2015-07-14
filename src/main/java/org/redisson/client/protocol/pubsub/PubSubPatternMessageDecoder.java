@@ -15,20 +15,26 @@
  */
 package org.redisson.client.protocol.pubsub;
 
+import java.io.IOException;
 import java.util.List;
 
+import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 public class PubSubPatternMessageDecoder implements MultiDecoder<Object> {
 
+    private final Decoder<Object> decoder;
+
+    public PubSubPatternMessageDecoder(Decoder<Object> decoder) {
+        super();
+        this.decoder = decoder;
+    }
+
     @Override
-    public Object decode(ByteBuf buf) {
-        String status = buf.toString(CharsetUtil.UTF_8);
-        buf.skipBytes(2);
-        return status;
+    public Object decode(ByteBuf buf) throws IOException {
+        return decoder.decode(buf);
     }
 
     @Override
