@@ -33,7 +33,18 @@ public class RedisCommand<R> {
 
     private MultiDecoder<R> replayMultiDecoder;
     private Decoder<R> replayDecoder;
-    private Convertor<R> convertor = new EmptyConvertor<R>();
+    Convertor<R> convertor = new EmptyConvertor<R>();
+
+    public RedisCommand(RedisCommand<R> command, String name) {
+        this.outParamType = command.outParamType;
+        this.inParamType = command.inParamType;
+        this.inParamIndex = command.inParamIndex;
+        this.name = name;
+        this.subName = command.subName;
+        this.replayMultiDecoder = command.replayMultiDecoder;
+        this.replayDecoder = command.replayDecoder;
+        this.convertor = command.convertor;
+    }
 
     public RedisCommand(String name) {
         this(name, (String)null);
@@ -57,6 +68,11 @@ public class RedisCommand<R> {
 
     public RedisCommand(String name, String subName) {
         this(name, subName, null, null, -1);
+    }
+
+    public RedisCommand(String name, String subName, Convertor<R> convertor) {
+        this(name, subName, null, null, -1);
+        this.convertor = convertor;
     }
 
     public RedisCommand(String name, String subName, int objectParamIndex) {

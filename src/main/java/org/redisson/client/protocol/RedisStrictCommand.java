@@ -39,6 +39,15 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
         super(name, convertor, -1);
     }
 
+    public RedisStrictCommand(String name, String subName, Convertor<T> convertor) {
+        super(name, subName, convertor);
+    }
+
+    public RedisStrictCommand(String name, String subName, MultiDecoder<T> replayMultiDecoder, Convertor convertor) {
+        super(name, subName, replayMultiDecoder, -1);
+        this.convertor = convertor;
+    }
+
     public RedisStrictCommand(String name, String subName, Decoder<T> reponseDecoder) {
         super(name, subName, null, reponseDecoder, -1);
     }

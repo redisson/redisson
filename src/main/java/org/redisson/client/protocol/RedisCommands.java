@@ -69,11 +69,18 @@ public interface RedisCommands {
     RedisCommand<List<Object>> LRANGE = new RedisCommand<List<Object>>("LRANGE", new ObjectListReplayDecoder());
     RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH", 2, ValueType.OBJECTS);
 
+    RedisStrictCommand<String> SCRIPT_LOAD = new RedisStrictCommand<String>("SCRIPT", "LOAD", new StringDataDecoder());
+    RedisStrictCommand<Boolean> SCRIPT_KILL = new RedisStrictCommand<Boolean>("SCRIPT", "KILL", new BooleanStatusReplayDecoder());
+    RedisStrictCommand<Boolean> SCRIPT_FLUSH = new RedisStrictCommand<Boolean>("SCRIPT", "FLUSH", new BooleanStatusReplayDecoder());
+    RedisStrictCommand<List<Object>> SCRIPT_EXISTS = new RedisStrictCommand<List<Object>>("SCRIPT", "EXISTS", new ObjectListReplayDecoder(), new BooleanReplayConvertor());
+
     RedisStrictCommand<Boolean> EVAL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor());
+    RedisStrictCommand<String> EVAL_STRING = new RedisStrictCommand<String>("EVAL", new StringReplayDecoder());
     RedisStrictCommand<Long> EVAL_INTEGER = new RedisStrictCommand<Long>("EVAL");
     RedisCommand<List<Object>> EVAL_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder());
     RedisCommand<Object> EVAL_OBJECT = new RedisCommand<Object>("EVAL");
-    RedisCommand<Object> EVAL_MAP_VALUE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
+    RedisCommand<Object> EVAL_MAP_VALUE = new RedisCommand<Object>("EVAL", ValueType.MAP_VALUE);
+    RedisCommand<List<Object>> EVAL_MAP_VALUE_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder(), ValueType.MAP_VALUE);
 
     RedisStrictCommand<Long> INCR = new RedisStrictCommand<Long>("INCR");
     RedisStrictCommand<Long> INCRBY = new RedisStrictCommand<Long>("INCRBY");
@@ -104,6 +111,7 @@ public interface RedisCommands {
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
     RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 2);
+    RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor(), 2);
     RedisCommand<String> SETEX = new RedisCommand<String>("SETEX", new StringReplayDecoder(), 2);
     RedisStrictCommand<Boolean> EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanReplayConvertor());
 
