@@ -10,21 +10,8 @@ import io.netty.util.CharsetUtil;
 
 public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Object, Object>> {
 
-    ThreadLocal<MultiDecoder<?>> currentMultiDecoder = new ThreadLocal<MultiDecoder<?>>();
-    ThreadLocal<Boolean> posParsed = new ThreadLocal<Boolean>();
-    ObjectMapReplayDecoder nextDecoder = new ObjectMapReplayDecoder();
-
-    public MultiDecoder<?> get() {
-        if (currentMultiDecoder.get() == null) {
-            currentMultiDecoder.set(nextDecoder);
-            return nextDecoder;
-        }
-        return (MultiDecoder<?>) this;
-    }
-
     @Override
     public Object decode(ByteBuf buf) {
-        posParsed.set(true);
         return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
     }
 
@@ -35,7 +22,7 @@ public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Ob
 
     @Override
     public boolean isApplicable(int paramNum) {
-        return paramNum == 0 && posParsed.get() == null;
+        return paramNum == 0;
     }
 
 }

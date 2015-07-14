@@ -21,9 +21,4 @@ public class ObjectListReplayDecoder implements MultiDecoder<List<Object>> {
         return false;
     }
 
-    @Override
-    public MultiDecoder<?> get() {
-        return this;
-    }
-
 }

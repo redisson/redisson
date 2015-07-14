@@ -113,7 +113,7 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
                 decode(in, data, respParts, pubSubConnection, currentDecoder);
             }
 
-            Object result = messageDecoder(data, respParts).get().decode(respParts);
+            Object result = messageDecoder(data, respParts).decode(respParts);
             handleMultiResult(data, parts, pubSubConnection, result);
         } else {
             throw new IllegalStateException("Can't decode replay " + (char)code);

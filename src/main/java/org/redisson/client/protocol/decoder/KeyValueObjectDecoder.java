@@ -7,10 +7,6 @@ import io.netty.util.CharsetUtil;
 
 public class KeyValueObjectDecoder implements MultiDecoder<Object> {
 
-    public MultiDecoder<Object> get() {
-        return (MultiDecoder<Object>) this;
-    }
-
     @Override
     public Object decode(ByteBuf buf) {
         String status = buf.toString(CharsetUtil.UTF_8);

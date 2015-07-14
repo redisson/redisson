@@ -46,9 +46,4 @@ public class PubSubStatusDecoder implements MultiDecoder<PubSubStatusMessage> {
         return true;
     }
 
-    @Override
-    public MultiDecoder<?> get() {
-        return this;
-    }
-
 }

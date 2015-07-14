@@ -13,46 +13,53 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
     private final MultiDecoder<Object> firstDecoder;
     private final MultiDecoder<Object> secondDecoder;
 
-    private Deque<MultiDecoder<?>> iterator;
-    private Deque<MultiDecoder<?>> flipIterator;
+    private ThreadLocal<Deque<MultiDecoder<?>>> decoders = new ThreadLocal<Deque<MultiDecoder<?>>>() {
+        protected Deque<MultiDecoder<?>> initialValue() {
+            return new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder));
+        };
+    };
+
+    private ThreadLocal<Deque<MultiDecoder<?>>> flipDecoders = new ThreadLocal<Deque<MultiDecoder<?>>>() {
+        protected Deque<MultiDecoder<?>> initialValue() {
+            return new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder, firstDecoder));
+        };
+    };
 
     public NestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder) {
         this.firstDecoder = firstDecoder;
         this.secondDecoder = secondDecoder;
-
-        init(firstDecoder, secondDecoder);
-    }
-
-    private void init(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder) {
-        iterator = new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder));
-        flipIterator = new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder, firstDecoder));
     }
 
     @Override
     public Object decode(ByteBuf buf) throws IOException {
-        return flipIterator.peek().decode(buf);
-    }
-
-    @Override
-    public MultiDecoder<?> get() {
-        return this;
+        return flipDecoders.get().peek().decode(buf);
     }
 
     @Override
     public boolean isApplicable(int paramNum) {
         if (paramNum == 0) {
-            flipIterator.poll();
-            if (flipIterator.isEmpty()) {
-                init(firstDecoder, secondDecoder);
-                flipIterator.poll();
+            flipDecoders.get().poll();
+            // in case of incoming buffer tail
+            // state should be reseted
+            if (flipDecoders.get().isEmpty()) {
+                flipDecoders.remove();
+                decoders.remove();
+
+                flipDecoders.get().poll();
             }
         }
-        return flipIterator.peek().isApplicable(paramNum);
+        return flipDecoders.get().peek().isApplicable(paramNum);
     }
 
     @Override
     public Object decode(List<Object> parts) {
-        return iterator.poll().decode(parts);
+        Object result = decoders.get().poll().decode(parts);
+        // clear state on last decoding
+        if (decoders.get().isEmpty()) {
+            flipDecoders.remove();
+            decoders.remove();
+        }
+        return result;
     }
 
 }

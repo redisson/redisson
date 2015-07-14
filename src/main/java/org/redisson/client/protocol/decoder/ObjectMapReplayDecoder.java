@@ -9,11 +9,6 @@ import io.netty.buffer.ByteBuf;
 public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
 
     @Override
-    public MultiDecoder<?> get() {
-        return this;
-    }
-
-    @Override
     public Object decode(ByteBuf buf) {
         throw new UnsupportedOperationException();
     }

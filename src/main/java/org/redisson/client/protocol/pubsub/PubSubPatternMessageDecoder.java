@@ -41,9 +41,4 @@ public class PubSubPatternMessageDecoder implements MultiDecoder<Object> {
         return true;
     }
 
-    @Override
-    public MultiDecoder<?> get() {
-        return this;
-    }
-
 }
