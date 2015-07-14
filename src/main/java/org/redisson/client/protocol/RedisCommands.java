@@ -110,7 +110,7 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> RENAME = new RedisStrictCommand<Boolean>("RENAME", new BooleanStatusReplayDecoder());
 
-    RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 1);
+    RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 2);
 
     RedisStrictCommand<PubSubStatusMessage> SUBSCRIBE = new RedisStrictCommand<PubSubStatusMessage>("SUBSCRIBE", new PubSubStatusDecoder());
     RedisStrictCommand<PubSubStatusMessage> UNSUBSCRIBE = new RedisStrictCommand<PubSubStatusMessage>("UNSUBSCRIBE", new PubSubStatusDecoder());

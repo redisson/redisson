@@ -18,6 +18,7 @@ package org.redisson.client;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.redisson.client.handler.RedisData;
+import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MultiDecoder;
@@ -64,8 +65,8 @@ public class RedisPubSubConnection extends RedisConnection {
         }
     }
 
-    public Future<PubSubStatusMessage> subscribe(String ... channel) {
-        return async(new PubSubMessageDecoder(), RedisCommands.SUBSCRIBE, channel);
+    public Future<PubSubStatusMessage> subscribe(Codec codec, String ... channel) {
+        return async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channel);
     }
 
     public Future<PubSubStatusMessage> psubscribe(String ... channel) {
