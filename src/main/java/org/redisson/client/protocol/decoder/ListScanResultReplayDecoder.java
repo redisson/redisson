@@ -1,12 +1,11 @@
 package org.redisson.client.protocol.decoder;
 
 import java.util.List;
-import java.util.Map;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
-public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Object, Object>> {
+public class ListScanResultReplayDecoder implements MultiDecoder<ListScanResult<Object>> {
 
     @Override
     public Object decode(ByteBuf buf) {
@@ -14,8 +13,8 @@ public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Ob
     }
 
     @Override
-    public MapScanResult<Object, Object> decode(List<Object> parts) {
-        return new MapScanResult<Object, Object>((Long)parts.get(0), (Map<Object, Object>)parts.get(1));
+    public ListScanResult<Object> decode(List<Object> parts) {
+        return new ListScanResult<Object>((Long)parts.get(0), (List<Object>)parts.get(1));
     }
 
     @Override
