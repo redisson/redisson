@@ -37,6 +37,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.CharsetUtil;
 
+/**
+ * Code parts from Sam Pullara
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisDecoder extends ReplayingDecoder<Void> {
 
     public static final char CR = '\r';
@@ -64,7 +70,7 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
 
         try {
             decode(in, data, null, pubSubConnection, currentDecoder);
-        } catch (Exception e) {
+        } catch (IOException e) {
             data.getPromise().setFailure(e);
         }
 

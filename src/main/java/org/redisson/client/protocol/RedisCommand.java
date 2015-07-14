@@ -22,7 +22,7 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 
 public class RedisCommand<R> {
 
-    public enum ValueType {OBJECT, MAP_VALUE, MAP_KEY, MAP}
+    public enum ValueType {OBJECT, OBJECTS, MAP_VALUE, MAP_KEY, MAP}
 
     private ValueType outParamType = ValueType.OBJECT;
     private List<ValueType> inParamType = Arrays.asList(ValueType.OBJECT);
@@ -94,6 +94,12 @@ public class RedisCommand<R> {
         this(name, null, null, null, encodeParamIndex);
         this.convertor = convertor;
         this.inParamType = Arrays.asList(inParamType);
+    }
+
+    public RedisCommand(String name, Convertor<R> convertor, int encodeParamIndex, List<ValueType> inParamTypes) {
+        this(name, null, null, null, encodeParamIndex);
+        this.convertor = convertor;
+        this.inParamType = inParamTypes;
     }
 
     public RedisCommand(String name, Convertor<R> convertor, int encodeParamIndex) {

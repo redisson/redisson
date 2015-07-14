@@ -24,6 +24,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
 
+/**
+ * Code parts from Sam Pullara
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
 
     private final Encoder paramsEncoder = new StringParamsEncoder();
@@ -88,6 +94,9 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
         }
         if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.MAP_VALUE) {
             return msg.getCodec().getMapValueEncoder();
+        }
+        if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.OBJECTS) {
+            return msg.getCodec().getValueEncoder();
         }
         throw new IllegalStateException();
     }

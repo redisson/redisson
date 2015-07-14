@@ -22,6 +22,8 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.BooleanStatusReplayDecoder;
 import org.redisson.client.protocol.decoder.KeyValueObjectDecoder;
 import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
+import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder2;
+import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.StringDataDecoder;
@@ -36,6 +38,7 @@ import com.lambdaworks.redis.output.MapScanResult;
 public interface RedisCommands {
 
     RedisCommand<Object> LPOP = new RedisCommand<Object>("LPOP");
+    RedisCommand<Long> LREM = new RedisCommand<Long>("LREM", 3);
     RedisCommand<Object> LINDEX = new RedisCommand<Object>("LINDEX");
     RedisStrictCommand<Long> LLEN = new RedisStrictCommand<Long>("LLEN");
 
@@ -48,10 +51,14 @@ public interface RedisCommands {
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
     RedisCommand<Object> BLPOP = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder());
 
+    RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor(), 2);
+    RedisCommand<Long> PFCOUNT = new RedisCommand<Long>("PFCOUNT");
+    RedisStrictCommand<String> PFMERGE = new RedisStrictCommand<String>("PFMERGE", new StringReplayDecoder());
+
     RedisCommand<Long> RPOP = new RedisCommand<Long>("RPOP");
     RedisCommand<Long> LPUSH = new RedisCommand<Long>("LPUSH");
     RedisCommand<List<Object>> LRANGE = new RedisCommand<List<Object>>("LRANGE", new ObjectListReplayDecoder());
-    RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH");
+    RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH", 2, ValueType.OBJECTS);
 
     RedisStrictCommand<Boolean> EVAL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor());
     RedisStrictCommand<Long> EVAL_INTEGER = new RedisStrictCommand<Long>("EVAL");
@@ -73,7 +80,7 @@ public interface RedisCommands {
 
     RedisCommand<Boolean> HSET = new RedisCommand<Boolean>("HSET", new BooleanReplayConvertor(), 2, ValueType.MAP);
     RedisStrictCommand<String> HINCRBYFLOAT = new RedisStrictCommand<String>("HINCRBYFLOAT");
-    RedisCommand<MapScanResult<Object, Object>> HSCAN = new RedisCommand<MapScanResult<Object, Object>>("HSCAN", new MapScanResultReplayDecoder(), ValueType.MAP);
+    RedisCommand<MapScanResult<Object, Object>> HSCAN = new RedisCommand<MapScanResult<Object, Object>>("HSCAN", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder2()), ValueType.MAP);
     RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder(), ValueType.MAP);
     RedisCommand<List<Object>> HVALS = new RedisCommand<List<Object>>("HVALS", new ObjectListReplayDecoder(), ValueType.MAP_VALUE);
     RedisCommand<Boolean> HEXISTS = new RedisCommand<Boolean>("HEXISTS", new BooleanReplayConvertor(), 2, ValueType.MAP_KEY);

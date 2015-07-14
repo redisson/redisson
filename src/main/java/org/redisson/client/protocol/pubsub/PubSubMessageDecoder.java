@@ -33,7 +33,7 @@ public class PubSubMessageDecoder implements MultiDecoder<Object> {
 
     @Override
     public PubSubMessage decode(List<Object> parts) {
-        return new PubSubMessage(parts.get(1).toString(), parts.get(2).toString());
+        return new PubSubMessage(parts.get(1).toString(), parts.get(2));
     }
 
     @Override
