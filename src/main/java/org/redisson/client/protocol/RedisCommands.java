@@ -21,7 +21,9 @@ import java.util.Map;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.BooleanStatusReplayDecoder;
 import org.redisson.client.protocol.decoder.KeyValueObjectDecoder;
-import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
+import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
+import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
@@ -33,9 +35,16 @@ import org.redisson.client.protocol.decoder.StringReplayDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
-import com.lambdaworks.redis.output.MapScanResult;
-
 public interface RedisCommands {
+
+    RedisCommand<Long> SREM = new RedisCommand<Long>("SREM", 2, ValueType.OBJECTS);
+    RedisCommand<Long> SADD = new RedisCommand<Long>("SADD", 2, ValueType.OBJECTS);
+    RedisCommand<Boolean> SADD_SINGLE = new RedisCommand<Boolean>("SADD", new BooleanReplayConvertor(), 2);
+    RedisCommand<Boolean> SREM_SINGLE = new RedisCommand<Boolean>("SREM", new BooleanReplayConvertor(), 2);
+    RedisCommand<List<Object>> SMEMBERS = new RedisCommand<List<Object>>("SMEMBERS", new ObjectListReplayDecoder());
+    RedisCommand<ListScanResult<Object>> SSCAN = new RedisCommand<ListScanResult<Object>>("SSCAN", new NestedMultiDecoder(new ObjectListReplayDecoder(), new ListScanResultReplayDecoder()), ValueType.MAP);
+    RedisCommand<Boolean> SISMEMBER = new RedisCommand<Boolean>("SISMEMBER", new BooleanReplayConvertor(), 2);
+    RedisStrictCommand<Long> SCARD = new RedisStrictCommand<Long>("SCARD");
 
     RedisCommand<Object> LPOP = new RedisCommand<Object>("LPOP");
     RedisCommand<Long> LREM = new RedisCommand<Long>("LREM", 3);
@@ -91,7 +100,7 @@ public interface RedisCommands {
     RedisCommand<Object> HGET = new RedisCommand<Object>("HGET", 2, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     RedisCommand<Long> HDEL = new RedisStrictCommand<Long>("HDEL", 2, ValueType.MAP_KEY);
 
-    RedisStrictCommand<Boolean> DEL_BOOLEAN = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> DEL_SINGLE = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
     RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 2);
