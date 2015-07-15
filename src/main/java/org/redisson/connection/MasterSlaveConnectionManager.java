@@ -46,6 +46,7 @@ import org.redisson.async.AsyncOperation;
 import org.redisson.async.SyncInterruptedOperation;
 import org.redisson.async.SyncOperation;
 import org.redisson.codec.RedisCodecWrapper;
+import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +72,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final HashedWheelTimer timer = new HashedWheelTimer();
+
+    private InfinitySemaphoreLatch latch = new InfinitySemaphoreLatch();
 
     protected RedisCodec codec;
 
@@ -124,6 +127,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public <T> FutureListener<T> createReleaseWriteListener(final int slot,
                                     final RedisConnection conn, final Timeout timeout) {
+        latch.release();
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -135,6 +139,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public <T> FutureListener<T> createReleaseReadListener(final int slot,
                                     final RedisConnection conn, final Timeout timeout) {
+        latch.release();
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -154,6 +159,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private <V, T> void writeAllAsync(final int slot, final AsyncOperation<V, T> asyncOperation, final AtomicInteger counter, final Promise<T> mainPromise, final int attempt) {
+        if (!latch.acquire()) {
+            mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
+            return;
+        }
+
         final Promise<T> promise = getGroup().next().newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
 
@@ -225,6 +235,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private <V, T> void writeAsync(final int slot, final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise, final int attempt) {
+        if (!latch.acquire()) {
+            mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
+            return;
+        }
+
         final Promise<T> promise = getGroup().next().newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
 
@@ -290,6 +305,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private <V, R> R write(int slot, SyncInterruptedOperation<V, R> operation, int attempt) throws InterruptedException {
+        if (!latch.acquire()) {
+            return null;
+        }
         try {
             RedisConnection<Object, V> connection = connectionWriteOp(slot);
             try {
@@ -305,6 +323,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             } catch (InterruptedException e) {
                 throw e;
             } finally {
+                latch.release();
                 releaseWrite(slot, connection);
             }
         } catch (RedisConnectionException e) {
@@ -331,6 +350,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private <V, R> R write(int slot, SyncOperation<V, R> operation, int attempt) {
+        if (!latch.acquire()) {
+            return null;
+        }
         try {
             RedisConnection<Object, V> connection = connectionWriteOp(slot);
             try {
@@ -344,6 +366,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 attempt++;
                 return write(slot, operation, attempt);
             } finally {
+                latch.release();
                 releaseWrite(slot, connection);
             }
         } catch (RedisConnectionException e) {
@@ -370,6 +393,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private <V, R> R read(int slot, SyncOperation<V, R> operation, int attempt) {
+        if (!latch.acquire()) {
+            return null;
+        }
+
         try {
             RedisConnection<Object, V> connection = connectionReadOp(slot);
             try {
@@ -383,6 +410,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 attempt++;
                 return read(slot, operation, attempt);
             } finally {
+                latch.release();
                 releaseRead(slot, connection);
             }
         } catch (RedisConnectionException e) {
@@ -461,6 +489,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private <V, T> void readAsync(final int slot, final AsyncOperation<V, T> asyncOperation, final Promise<T> mainPromise, final int attempt) {
+        if (!latch.acquire()) {
+            mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
+            return;
+        }
+
         final Promise<T> promise = getGroup().next().newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
 
@@ -793,6 +826,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
+        latch.closeAndAwaitUninterruptibly();
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
