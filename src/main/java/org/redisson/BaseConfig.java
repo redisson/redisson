@@ -59,6 +59,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         setRetryInterval(config.getRetryInterval());
         setDatabase(config.getDatabase());
         setTimeout(config.getTimeout());
+        setClientName(config.getClientName());
     }
 
     /**
