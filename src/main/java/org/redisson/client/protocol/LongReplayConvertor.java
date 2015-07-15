@@ -13,21 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.decoder;
+package org.redisson.client.protocol;
 
-import org.redisson.client.protocol.Decoder;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
-
-public class LongReplayDecoder implements Decoder<Long> {
+public class LongReplayConvertor implements Convertor<Long> {
 
     @Override
-    public Long decode(ByteBuf buf) {
-        if (buf == null) {
-            return 0L;
-        }
-        return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
+    public Long convert(Object obj) {
+        return Long.valueOf(obj.toString());
     }
+
 
 }

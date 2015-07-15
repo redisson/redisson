@@ -29,11 +29,11 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.redisson.client.protocol.BooleanReplayConvertor;
+import org.redisson.client.protocol.LongReplayConvertor;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
-import org.redisson.client.protocol.decoder.LongReplayDecoder;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.Predicate;
@@ -162,14 +162,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean remove(Object key, Object value) {
-        Long result = connectionManager.get(removeAsync(key, value));
-        return result != null && result == 1;
+        return connectionManager.get(removeAsync(key, value)) == 1;
     }
 
     @Override
     public Future<Long> removeAsync(Object key, Object value) {
-        return connectionManager.evalAsync(new RedisCommand<Long>("EVAL", new LongReplayDecoder(), 4, ValueType.MAP),
-                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('hdel', KEYS[1], ARGV[1]) else return nil end",
+        return connectionManager.evalAsync(new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 4, ValueType.MAP),
+                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('hdel', KEYS[1], ARGV[1]) else return 0 end",
             Collections.<Object>singletonList(getName()), key, value);
     }
 
