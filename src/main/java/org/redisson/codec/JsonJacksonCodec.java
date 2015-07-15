@@ -43,16 +43,9 @@ import io.netty.buffer.ByteBufInputStream;
  */
 public class JsonJacksonCodec implements Codec {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private ObjectMapper mapObjectMapper = new ObjectMapper();
 
     public JsonJacksonCodec() {
-        init(objectMapper);
-        TypeResolverBuilder<?> typer = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL);
-        typer.init(JsonTypeInfo.Id.CLASS, null);
-        typer.inclusion(JsonTypeInfo.As.PROPERTY);
-        objectMapper.setDefaultTyping(typer);
-
         init(mapObjectMapper);
         // type info inclusion
         TypeResolverBuilder<?> mapTyper = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
@@ -136,30 +129,12 @@ public class JsonJacksonCodec implements Codec {
 
     @Override
     public Decoder<Object> getValueDecoder() {
-//        return new Decoder<Object>() {
-//
-//            @Override
-//            public Object decode(ByteBuf buf) throws IOException {
-//                if (buf == null) {
-//                    return null;
-//                }
-//
-//                return objectMapper.readValue(new ByteBufInputStream(buf), Object.class);
-//            }
-//        };
         return getMapValueDecoder();
     }
 
     @Override
     public Encoder getValueEncoder() {
         return getMapValueEncoder();
-//        return new Encoder() {
-//
-//            @Override
-//            public byte[] encode(int paramIndex, Object in) throws IOException {
-//                return objectMapper.writeValueAsBytes(in);
-//            }
-//        };
     }
 
 }

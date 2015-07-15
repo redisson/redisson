@@ -15,84 +15,75 @@
  */
 package org.redisson.codec;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
 
 /**
  *
  * @author Nikita Koksharov
  *
  */
-public class SerializationCodec implements RedissonCodec {
+public class SerializationCodec implements Codec {
 
     @Override
-    public Object decodeKey(ByteBuffer bytes) {
-        return new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Charset.forName("ASCII"));
-    }
-
-    @Override
-    public Object decodeValue(ByteBuffer bytes) {
-        return decode(bytes);
-    }
-
-    private Object decode(ByteBuffer bytes) {
-        try {
-            ByteArrayInputStream in = new ByteArrayInputStream(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit());
-            ObjectInputStream inputStream = new ObjectInputStream(in);
-            return inputStream.readObject();
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+    public Decoder<Object> getMapValueDecoder() {
+        return getValueDecoder();
     }
 
     @Override
-    public byte[] encodeKey(Object key) {
-        return key.toString().getBytes(Charset.forName("ASCII"));
+    public Encoder getMapValueEncoder() {
+        return getValueEncoder();
     }
 
     @Override
-    public byte[] encodeValue(Object value) {
-        try {
-            ByteArrayOutputStream result = new ByteArrayOutputStream();
-            ObjectOutputStream outputStream = new ObjectOutputStream(result);
-            outputStream.writeObject(value);
-            outputStream.close();
-            return result.toByteArray();
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+    public Decoder<Object> getMapKeyDecoder() {
+        return getValueDecoder();
     }
 
     @Override
-    public byte[] encodeMapValue(Object value) {
-        return encodeValue(value);
+    public Encoder getMapKeyEncoder() {
+        return getValueEncoder();
     }
 
     @Override
-    public byte[] encodeMapKey(Object key) {
-        return encodeValue(key);
+    public Decoder<Object> getValueDecoder() {
+        return new Decoder<Object>() {
+            @Override
+            public Object decode(ByteBuf buf) throws IOException {
+                try {
+                    ObjectInputStream inputStream = new ObjectInputStream(new ByteBufInputStream(buf));
+                    return inputStream.readObject();
+                } catch (IOException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new IOException(e);
+                }
+            }
+        };
     }
 
     @Override
-    public Object decodeMapValue(ByteBuffer bytes) {
-        return decodeValue(bytes);
-    }
+    public Encoder getValueEncoder() {
+        return new Encoder() {
 
-    @Override
-    public Object decodeMapKey(ByteBuffer bytes) {
-        return decodeValue(bytes);
-    }
-
-    protected String decodeAscii(ByteBuffer bytes) {
-        if (bytes == null) {
-            return null;
-        }
-        char[] chars = new char[bytes.remaining()];
-        for (int i = 0; i < chars.length; i++) {
-            chars[i] = (char) bytes.get();
-        }
-        return new String(chars);
+            @Override
+            public byte[] encode(Object in) throws IOException {
+                ByteArrayOutputStream result = new ByteArrayOutputStream();
+                ObjectOutputStream outputStream = new ObjectOutputStream(result);
+                outputStream.writeObject(in);
+                outputStream.close();
+                return result.toByteArray();
+            }
+        };
     }
 
 }

@@ -15,20 +15,25 @@
  */
 package org.redisson.codec;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-public class KryoCodec implements RedissonCodec {
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+
+public class KryoCodec implements Codec {
 
     public interface KryoPool {
 
@@ -100,79 +105,76 @@ public class KryoCodec implements RedissonCodec {
         this.kryoPool = kryoPool;
     }
 
-    private Object decode(ByteBuffer bytes) {
-        Kryo kryo = null;
-        try {
-            kryo = kryoPool.get();
-            return kryo.readClassAndObject(new Input(new ByteArrayInputStream(bytes.array(), bytes
-                    .arrayOffset() + bytes.position(), bytes.limit())));
-        } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
+    @Override
+    public Decoder<Object> getMapValueDecoder() {
+        return getValueDecoder();
+    }
+
+    @Override
+    public Encoder getMapValueEncoder() {
+        return getValueEncoder();
+    }
+
+    @Override
+    public Decoder<Object> getMapKeyDecoder() {
+        return getValueDecoder();
+    }
+
+    @Override
+    public Encoder getMapKeyEncoder() {
+        return getValueEncoder();
+    }
+
+    @Override
+    public Decoder<Object> getValueDecoder() {
+        return new Decoder<Object>() {
+
+            @Override
+            public Object decode(ByteBuf buf) throws IOException {
+                Kryo kryo = null;
+                try {
+                    kryo = kryoPool.get();
+                    return kryo.readClassAndObject(new Input(new ByteBufInputStream(buf)));
+                } catch (Exception e) {
+                    if (e instanceof RuntimeException) {
+                        throw (RuntimeException) e;
+                    }
+                    throw new RedissonKryoCodecException(e);
+                } finally {
+                    if (kryo != null) {
+                        kryoPool.yield(kryo);
+                    }
+                }
             }
-            throw new RedissonKryoCodecException(e);
-        } finally {
-            if (kryo != null) {
-                kryoPool.yield(kryo);
+        };
+    }
+
+    @Override
+    public Encoder getValueEncoder() {
+        return new Encoder() {
+
+            @Override
+            public byte[] encode(Object in) throws IOException {
+                Kryo kryo = null;
+                try {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    Output output = new Output(baos);
+                    kryo = kryoPool.get();
+                    kryo.writeClassAndObject(output, in);
+                    output.close();
+                    return baos.toByteArray();
+                } catch (Exception e) {
+                    if (e instanceof RuntimeException) {
+                        throw (RuntimeException) e;
+                    }
+                    throw new RedissonKryoCodecException(e);
+                } finally {
+                    if (kryo != null) {
+                        kryoPool.yield(kryo);
+                    }
+                }
             }
-        }
-    }
-
-    @Override
-    public byte[] encodeValue(Object value) {
-        Kryo kryo = null;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Output output = new Output(baos);
-            kryo = kryoPool.get();
-            kryo.writeClassAndObject(output, value);
-            output.close();
-            return baos.toByteArray();
-        } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            }
-            throw new RedissonKryoCodecException(e);
-        } finally {
-            if (kryo != null) {
-                kryoPool.yield(kryo);
-            }
-        }
-    }
-
-    @Override
-    public byte[] encodeKey(Object key) {
-        return key.toString().getBytes(Charset.forName("ASCII"));
-    }
-
-    @Override
-    public Object decodeKey(ByteBuffer bytes) {
-        return new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Charset.forName("ASCII"));
-    }
-
-    @Override
-    public Object decodeValue(ByteBuffer bytes) {
-        return decode(bytes);
-    }
-
-    @Override
-    public byte[] encodeMapValue(Object value) {
-        return encodeValue(value);
-    }
-
-    @Override
-    public byte[] encodeMapKey(Object key) {
-        return encodeKey(key);
-    }
-
-    @Override
-    public Object decodeMapValue(ByteBuffer bytes) {
-        return decodeValue(bytes);
-    }
-
-    @Override
-    public Object decodeMapKey(ByteBuffer bytes) {
-        return decodeKey(bytes);
+        };
     }
 
 }
