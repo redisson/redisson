@@ -1,9 +1,5 @@
 package org.redisson;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.lambdaworks.redis.RedisException;
-import io.netty.util.concurrent.Future;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,11 +8,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
+
+import io.netty.util.concurrent.Future;
 
 public class RedissonMapTest extends BaseTest {
 
@@ -121,7 +121,7 @@ public class RedissonMapTest extends BaseTest {
         }
 
     }
-    
+
     @Test
     public void testAddAndGet() throws InterruptedException {
         RMap<Integer, Integer> map = redisson.getMap("getAll");
@@ -229,6 +229,19 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertNull(val2);
         String val3 = map.get(3);
         Assert.assertEquals("43", val3);
+    }
+
+    @Test
+    public void testEntrySet() {
+        Map<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        Assert.assertEquals(3, map.entrySet().size());
+        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(1), Matchers.equalTo("12")));
+        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(2), Matchers.equalTo("33")));
+        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(3), Matchers.equalTo("43")));
     }
 
     @Test
@@ -465,6 +478,14 @@ public class RedissonMapTest extends BaseTest {
 
         Assert.assertEquals((Long) 3L, map.fastRemoveAsync(1, 3, 7).get());
         Thread.sleep(1);
+        Assert.assertEquals(1, map.size());
+    }
+
+    @Test
+    public void testFastPut() throws Exception {
+        RMap<Integer, Integer> map = redisson.getMap("simple");
+        Assert.assertTrue(map.fastPut(1, 2));
+        Assert.assertFalse(map.fastPut(1, 3));
         Assert.assertEquals(1, map.size());
     }
 
