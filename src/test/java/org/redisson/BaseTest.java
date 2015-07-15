@@ -1,15 +1,21 @@
 package org.redisson;
 
 import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public abstract class BaseTest {
 
-    protected Redisson redisson;
+    protected static Redisson redisson;
 
-    @Before
-    public void before() {
-        this.redisson = createInstance();
+    @BeforeClass
+    public static void beforeClass() {
+        redisson = createInstance();
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        redisson.shutdown();
     }
 
     public static Redisson createInstance() {
@@ -19,17 +25,12 @@ public abstract class BaseTest {
         }
         Config config = new Config();
         config.useSingleServer().setAddress(redisAddress);
-//        config.setCodec(new SerializationCodec());
         return Redisson.create(config);
     }
 
     @After
     public void after() {
-        try {
-            redisson.flushdb();
-        } finally {
-            redisson.shutdown();
-        }
+        redisson.flushdb();
     }
 
 }
