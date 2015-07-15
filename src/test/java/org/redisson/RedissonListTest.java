@@ -1,32 +1,40 @@
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RList;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+
 public class RedissonListTest extends BaseTest {
 
     @Test
-    public void testAddAllAsync() {
+    public void testAddAllAsync() throws InterruptedException {
         final RList<Long> list = redisson.getList("list");
         list.addAllAsync(Arrays.asList(1L, 2L, 3L)).addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
                 list.addAllAsync(Arrays.asList(1L, 24L, 3L));
             }
-        });
+        }).awaitUninterruptibly();
+
+        Thread.sleep(1000);
 
         Assert.assertThat(list, Matchers.contains(1L, 2L, 3L, 1L, 24L, 3L));
     }
-    
+
     @Test
-    public void testAddAsync() {
+    public void testAddAsync() throws InterruptedException {
         final RList<Long> list = redisson.getList("list");
         list.addAsync(1L).addListener(new FutureListener<Boolean>() {
             @Override
@@ -35,9 +43,11 @@ public class RedissonListTest extends BaseTest {
             }
         }).awaitUninterruptibly();
 
+        Thread.sleep(1000);
+
         Assert.assertThat(list, Matchers.contains(1L, 2L));
     }
-    
+
     @Test
     public void testLong() {
         List<Long> list = redisson.getList("list");

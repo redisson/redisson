@@ -134,10 +134,10 @@ public class RedissonCountDownLatchTest extends BaseTest {
         Assert.assertTrue(latch.delete());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testDeleteFailed() throws Exception {
         RCountDownLatch latch = redisson.getCountDownLatch("latch");
-        Assert.assertTrue(latch.delete());
+        Assert.assertFalse(latch.delete());
     }
 
     @Test

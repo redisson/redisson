@@ -5,29 +5,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.redisson.core.RLock;
 
 public class RedissonLockTest extends BaseConcurrentTest {
-
-    Redisson redisson;
-
-    @Before
-    public void before() {
-        redisson = BaseTest.createInstance();
-    }
-
-    @After
-    public void after() {
-        try {
-            redisson.flushdb();
-        } finally {
-            redisson.shutdown();
-        }
-    }
 
     @Test
     public void testForceUnlock() {
@@ -62,6 +44,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         lock.unlock();
     }
+
     @Test
     public void testAutoExpire() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
