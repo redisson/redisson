@@ -18,8 +18,8 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private Bootstrap bootstrap;
-    private ChannelGroup channels;
+    private final Bootstrap bootstrap;
+    private final ChannelGroup channels;
     private static final int BACKOFF_CAP = 12;
 
     public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels) {
@@ -57,7 +57,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        log.debug("reconnecting connection {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
+        log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
 
         bootstrap.connect().addListener(new GenericFutureListener<ChannelFuture>() {
             @Override
@@ -67,7 +67,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                 }
 
                 if (future.isSuccess()) {
-                    log.debug("connection {} connected to {}", connection, connection.getRedisClient().getAddr());
+                    log.debug("{} connected to {}", connection, connection.getRedisClient().getAddr());
                     connection.updateChannel(future.channel());
                     return;
                 }
