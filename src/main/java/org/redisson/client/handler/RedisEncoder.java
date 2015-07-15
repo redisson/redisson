@@ -17,6 +17,8 @@ package org.redisson.client.handler;
 
 import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.StringParamsEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 
 import io.netty.buffer.ByteBuf;
@@ -31,6 +33,8 @@ import io.netty.util.CharsetUtil;
  *
  */
 public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final Encoder paramsEncoder = new StringParamsEncoder();
 
@@ -68,13 +72,14 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
                 }
             }
 
-            writeArgument(out, encoder.encode(i, param));
+            writeArgument(out, encoder.encode(param));
 
             i++;
         }
 
-        String o = out.toString(CharsetUtil.UTF_8);
-        System.out.println(o);
+        if (log.isTraceEnabled()) {
+            log.trace("channel: {} message: {}", ctx.channel(), out.toString(CharsetUtil.UTF_8));
+        }
     }
 
     private Encoder encoder(RedisData<Object, Object> msg, int param) {

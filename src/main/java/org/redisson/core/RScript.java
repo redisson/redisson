@@ -19,40 +19,58 @@ import io.netty.util.concurrent.Future;
 
 import java.util.List;
 
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
+
 public interface RScript {
-    
-    enum ReturnType {BOOLEAN, INTEGER, MULTI, STATUS, VALUE, MAPVALUE, MAPVALUELIST};
+
+    enum ReturnType {
+        BOOLEAN(RedisCommands.EVAL_BOOLEAN),
+        INTEGER(RedisCommands.EVAL_INTEGER),
+        MULTI(RedisCommands.EVAL_LIST),
+        STATUS(RedisCommands.EVAL_STRING),
+        VALUE(RedisCommands.EVAL_OBJECT),
+        MAPVALUE(RedisCommands.EVAL_MAP_VALUE),
+        MAPVALUELIST(RedisCommands.EVAL_MAP_VALUE_LIST);
+
+        RedisCommand<?> command;
+
+        ReturnType(RedisCommand<?> command) {
+            this.command = command;
+        }
+
+        public RedisCommand<?> getCommand() {
+            return command;
+        }
+
+    };
 
     List<Boolean> scriptExists(String ... shaDigests);
-    
+
     Future<List<Boolean>> scriptExistsAsync(String ... shaDigests);
-    
-    String scriptFlush();
-    
-    Future<String> scriptFlushAsync();
-    
-    String scriptKill();
-    
-    Future<String> scriptKillAsync();
-    
+
+    boolean scriptFlush();
+
+    Future<Boolean> scriptFlushAsync();
+
+    boolean scriptKill();
+
+    Future<Boolean> scriptKillAsync();
+
     String scriptLoad(String luaScript);
-    
+
     Future<String> scriptLoadAsync(String luaScript);
 
-    <R> R evalR(String luaScript, ReturnType returnType, List<Object> keys, List<?> values, List<?> rawValues);
-
-    <R> Future<R> evalAsyncR(String luaScript, ReturnType returnType, List<Object> keys, List<?> values, List<?> rawValues);
-
     <R> R evalSha(String shaDigest, ReturnType returnType);
-    
+
     <R> R evalSha(String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-    
+
     <R> Future<R> evalShaAsync(String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-    
+
     <R> Future<R> evalAsync(String luaScript, ReturnType returnType, List<Object> keys, Object... values);
-    
+
     <R> R eval(String luaScript, ReturnType returnType);
-    
+
     <R> R eval(String luaScript, ReturnType returnType, List<Object> keys, Object... values);
-    
+
 }

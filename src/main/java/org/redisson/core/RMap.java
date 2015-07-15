@@ -146,7 +146,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable {
 
     Future<V> replaceAsync(K key, V value);
 
-    Future<V> replaceAsync(K key, V oldValue, V newValue);
+    Future<Boolean> replaceAsync(K key, V oldValue, V newValue);
 
     Future<Long> removeAsync(Object key, Object value);
 

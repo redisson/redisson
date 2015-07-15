@@ -19,6 +19,6 @@ import java.io.IOException;
 
 public interface Encoder {
 
-    byte[] encode(int paramIndex, Object in) throws IOException;
+    byte[] encode(Object in) throws IOException;
 
 }

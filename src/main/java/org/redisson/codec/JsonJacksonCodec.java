@@ -15,8 +15,11 @@
  */
 package org.redisson.codec;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.io.IOException;
+
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -30,12 +33,15 @@ import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+
 /**
  *
  * @author Nikita Koksharov
  *
  */
-public class JsonJacksonCodec implements RedissonCodec {
+public class JsonJacksonCodec implements Codec {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ObjectMapper mapObjectMapper = new ObjectMapper();
@@ -93,63 +99,67 @@ public class JsonJacksonCodec implements RedissonCodec {
     }
 
     @Override
-    public Object decodeKey(ByteBuffer bytes) {
-        return new String(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Charset.forName("ASCII"));
+    public Decoder<Object> getMapValueDecoder() {
+        return new Decoder<Object>() {
+
+            @Override
+            public Object decode(ByteBuf buf) throws IOException {
+                if (buf == null) {
+                    return null;
+                }
+
+                return mapObjectMapper.readValue(new ByteBufInputStream(buf), Object.class);
+            }
+        };
     }
 
     @Override
-    public Object decodeValue(ByteBuffer bytes) {
-        return decode(bytes);
-    }
+    public Encoder getMapValueEncoder() {
+        return new Encoder() {
 
-    private Object decode(ByteBuffer bytes) {
-        try {
-            return objectMapper.readValue(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Object.class);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @Override
-    public byte[] encodeKey(Object key) {
-        return key.toString().getBytes(Charset.forName("ASCII"));
+            @Override
+            public byte[] encode(Object in) throws IOException {
+                return mapObjectMapper.writeValueAsBytes(in);
+            }
+        };
     }
 
     @Override
-    public byte[] encodeValue(Object value) {
-        try {
-            return objectMapper.writeValueAsBytes(value);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+    public Decoder<Object> getMapKeyDecoder() {
+        return getMapValueDecoder();
     }
 
     @Override
-    public byte[] encodeMapValue(Object value) {
-        try {
-            return mapObjectMapper.writeValueAsBytes(value);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+    public Encoder getMapKeyEncoder() {
+        return getMapValueEncoder();
     }
 
     @Override
-    public byte[] encodeMapKey(Object key) {
-        return encodeMapValue(key);
+    public Decoder<Object> getValueDecoder() {
+//        return new Decoder<Object>() {
+//
+//            @Override
+//            public Object decode(ByteBuf buf) throws IOException {
+//                if (buf == null) {
+//                    return null;
+//                }
+//
+//                return objectMapper.readValue(new ByteBufInputStream(buf), Object.class);
+//            }
+//        };
+        return getMapValueDecoder();
     }
 
     @Override
-    public Object decodeMapValue(ByteBuffer bytes) {
-        try {
-            return mapObjectMapper.readValue(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit(), Object.class);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @Override
-    public Object decodeMapKey(ByteBuffer bytes) {
-        return decodeMapValue(bytes);
+    public Encoder getValueEncoder() {
+        return getMapValueEncoder();
+//        return new Encoder() {
+//
+//            @Override
+//            public byte[] encode(int paramIndex, Object in) throws IOException {
+//                return objectMapper.writeValueAsBytes(in);
+//            }
+//        };
     }
 
 }

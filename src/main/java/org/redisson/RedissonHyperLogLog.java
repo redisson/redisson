@@ -15,15 +15,16 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
-import org.redisson.async.ResultOperation;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RHyperLogLog;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
+import io.netty.util.concurrent.Future;
 
 public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogLog<V> {
 
@@ -32,12 +33,12 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
     }
 
     @Override
-    public long add(V obj) {
+    public boolean add(V obj) {
         return connectionManager.get(addAsync(obj));
     }
 
     @Override
-    public long addAll(Collection<V> objects) {
+    public boolean addAll(Collection<V> objects) {
         return connectionManager.get(addAllAsync(objects));
     }
 
@@ -52,58 +53,42 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
     }
 
     @Override
-    public long mergeWith(String... otherLogNames) {
-        return connectionManager.get(mergeWithAsync(otherLogNames));
+    public void mergeWith(String... otherLogNames) {
+        connectionManager.get(mergeWithAsync(otherLogNames));
     }
 
     @Override
-    public Future<Long> addAsync(final V obj) {
-        return connectionManager.writeAsync(getName(), new ResultOperation<Long, V>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
-                return async.pfadd(getName(), obj);
-            }
-        });
+    public Future<Boolean> addAsync(V obj) {
+        return connectionManager.writeAsync(getName(), RedisCommands.PFADD, getName(), obj);
     }
 
     @Override
-    public Future<Long> addAllAsync(final Collection<V> objects) {
-        return connectionManager.writeAsync(getName(), new ResultOperation<Long, Object>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.pfadd(getName(), objects.toArray());
-            }
-        });
+    public Future<Boolean> addAllAsync(Collection<V> objects) {
+        List<Object> args = new ArrayList<Object>(objects.size() + 1);
+        args.add(getName());
+        args.addAll(objects);
+        return connectionManager.writeAsync(getName(), RedisCommands.PFADD, getName(), args.toArray());
     }
 
     @Override
     public Future<Long> countAsync() {
-        return connectionManager.writeAsync(getName(), new ResultOperation<Long, Object>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.pfcount(getName());
-            }
-        });
+        return connectionManager.readAsync(getName(), RedisCommands.PFCOUNT, getName());
     }
 
     @Override
-    public Future<Long> countWithAsync(final String... otherLogNames) {
-        return connectionManager.writeAsync(getName(), new ResultOperation<Long, Object>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.pfcount(getName(), otherLogNames);
-            }
-        });
+    public Future<Long> countWithAsync(String... otherLogNames) {
+        List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(otherLogNames));
+        return connectionManager.readAsync(getName(), RedisCommands.PFCOUNT, args.toArray());
     }
 
     @Override
-    public Future<Long> mergeWithAsync(final String... otherLogNames) {
-        return connectionManager.writeAsync(getName(), new ResultOperation<Long, Object>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.pfmerge(getName(), otherLogNames);
-            }
-        });
+    public Future<Void> mergeWithAsync(String... otherLogNames) {
+        List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(otherLogNames));
+        return connectionManager.writeAsyncVoid(getName(), RedisCommands.PFMERGE, args.toArray());
     }
 
 }

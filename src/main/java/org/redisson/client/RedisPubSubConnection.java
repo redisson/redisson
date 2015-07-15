@@ -49,7 +49,7 @@ public class RedisPubSubConnection extends RedisConnection {
         listeners.add(listener);
     }
 
-    public void removeListener(RedisPubSubListener listener) {
+    public void removeListener(RedisPubSubListener<?> listener) {
         listeners.remove(listener);
     }
 

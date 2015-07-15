@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -23,13 +22,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.async.SyncInterruptedOperation;
-import org.redisson.async.SyncOperation;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.KeyValueMessage;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RBlockingQueue;
 
-import com.lambdaworks.redis.RedisConnection;
-import org.redisson.core.RScript;
+import io.netty.util.concurrent.Future;
 
 /**
  * Offers blocking queue facilities through an intermediary
@@ -58,22 +56,18 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public V take() throws InterruptedException {
-        return connectionManager.write(getName(), new SyncInterruptedOperation<V, V>() {
-            @Override
-            public V execute(RedisConnection<Object, V> conn) throws InterruptedException {
-                return conn.blpop(0, getName()).value;
-            }
-        });
+        Future<KeyValueMessage<String, V>> res = connectionManager.writeAsync(getName(), RedisCommands.BLPOP, getName(), 0);
+        return res.await().getNow().getValue();
     }
 
     @Override
-    public V poll(final long timeout, final TimeUnit unit) throws InterruptedException {
-        return connectionManager.write(getName(), new SyncInterruptedOperation<V, V>() {
-            @Override
-            public V execute(RedisConnection<Object, V> conn) throws InterruptedException {
-                return conn.blpop(unit.toSeconds(timeout), getName()).value;
-            }
-        });
+    public V poll(long timeout, TimeUnit unit) throws InterruptedException {
+        Future<KeyValueMessage<String, V>> res = connectionManager.writeAsync(getName(), RedisCommands.BLPOP, getName(), unit.toSeconds(timeout));
+        KeyValueMessage<String, V> m = res.await().getNow();
+        if (m != null) {
+            return m.getValue();
+        }
+        return null;
     }
 
     @Override
@@ -83,13 +77,9 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
-    public V pollLastAndOfferFirstTo(final String queueName, final long timeout, final TimeUnit unit) throws InterruptedException {
-        return connectionManager.write(getName(), new SyncInterruptedOperation<V, V>() {
-            @Override
-            public V execute(RedisConnection<Object, V> conn) throws InterruptedException {
-                return conn.brpoplpush(unit.toSeconds(timeout), getName(), queueName);
-            }
-        });
+    public V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException {
+        Future<V> res = connectionManager.writeAsync(getName(), RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
+        return res.await().getNow();
     }
 
     @Override
@@ -102,12 +92,11 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         if (c == null) {
             throw new NullPointerException();
         }
-        List<V> list = new RedissonScript(connectionManager).eval(
-                "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
-                        "redis.call('ltrim', KEYS[1], -1, 0); " +
-                        "return vals",
-                RScript.ReturnType.MAPVALUELIST,
-                Collections.<Object>singletonList(getName()));
+
+        List<V> list = connectionManager.eval(RedisCommands.EVAL_LIST,
+              "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
+              "redis.call('ltrim', KEYS[1], -1, 0); " +
+              "return vals", Collections.<Object>singletonList(getName()));
         c.addAll(list);
         return list.size();
     }
@@ -121,13 +110,12 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throw new NullPointerException();
         }
 
-        List<V> list = new RedissonScript(connectionManager).evalR(
+        List<V> list = connectionManager.eval(RedisCommands.EVAL_LIST,
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
                         "return vals",
-                RScript.ReturnType.MAPVALUELIST,
-                Collections.<Object>singletonList(getName()), Collections.emptyList(), Collections.singletonList(maxElements));
+                Collections.<Object>singletonList(getName()), maxElements);
         c.addAll(list);
         return list.size();
     }

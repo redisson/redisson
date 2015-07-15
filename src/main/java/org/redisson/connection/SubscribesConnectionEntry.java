@@ -19,11 +19,11 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisPubSubConnection;
 
 public class SubscribesConnectionEntry extends ConnectionEntry {
-    
+
     private final Semaphore subscribeConnectionsSemaphore;
     private final Queue<RedisPubSubConnection> allSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
@@ -36,22 +36,22 @@ public class SubscribesConnectionEntry extends ConnectionEntry {
     public Queue<RedisPubSubConnection> getAllSubscribeConnections() {
         return allSubscribeConnections;
     }
-    
+
     public void registerSubscribeConnection(RedisPubSubConnection connection) {
         allSubscribeConnections.offer(connection);
     }
-    
+
     public RedisPubSubConnection pollFreeSubscribeConnection() {
         return freeSubscribeConnections.poll();
     }
-    
+
     public void offerFreeSubscribeConnection(RedisPubSubConnection connection) {
         freeSubscribeConnections.offer(connection);
     }
-    
+
     public Semaphore getSubscribeConnectionsSemaphore() {
         return subscribeConnectionsSemaphore;
     }
-    
+
 }
 

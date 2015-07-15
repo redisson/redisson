@@ -19,8 +19,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnection;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnection;
 
 public class ConnectionEntry {
 
@@ -29,12 +29,12 @@ public class ConnectionEntry {
 
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final Semaphore connectionsSemaphore;
-    
+
     public ConnectionEntry(RedisClient client, int poolSize) {
         this.client = client;
         this.connectionsSemaphore = new Semaphore(poolSize);
     }
-    
+
     public RedisClient getClient() {
         return client;
     }
@@ -54,5 +54,5 @@ public class ConnectionEntry {
     public Queue<RedisConnection> getConnections() {
         return connections;
     }
-    
+
 }

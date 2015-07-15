@@ -15,20 +15,22 @@
  */
 package org.redisson;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.protocol.LongCodec;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.StringCodec;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RCountDownLatch;
-import org.redisson.core.RScript;
-
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 /**
@@ -72,18 +74,10 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return oldPromise;
         }
 
-        RedisPubSubAdapter<Integer> listener = new RedisPubSubAdapter<Integer>() {
+        RedisPubSubListener<Integer> listener = new RedisPubSubListener<Integer>() {
 
             @Override
-            public void subscribed(String channel, long count) {
-                if (getChannelName().equals(channel)
-                        && !value.getPromise().isSuccess()) {
-                    value.getPromise().setSuccess(true);
-                }
-            }
-
-            @Override
-            public void message(String channel, Integer message) {
+            public void onMessage(String channel, Integer message) {
                 if (!getChannelName().equals(channel)) {
                     return;
                 }
@@ -95,11 +89,26 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 }
             }
 
+            @Override
+            public void onPatternMessage(String pattern, String channel, Integer message) {
+                // TODO Auto-generated method stub
+
+            }
+
         };
 
+        Future<PubSubStatusMessage> res = null;
         synchronized (ENTRIES) {
-            connectionManager.subscribe(listener, getChannelName());
+            res = connectionManager.subscribe(listener, getChannelName());
         }
+        res.addListener(new FutureListener<PubSubStatusMessage>() {
+            @Override
+            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
+                if (!value.getPromise().isSuccess()) {
+                    value.getPromise().setSuccess(true);
+                }
+            }
+        });
         return newPromise;
     }
 
@@ -195,13 +204,12 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return;
         }
 
-        new RedissonScript(connectionManager).evalR(
+        connectionManager.eval(RedisCommands.EVAL_BOOLEAN,
                 "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
                         "if v == 0 then redis.call('publish', ARGV[2], ARGV[1]) end;" +
-                        "return 'OK'",
-                RScript.ReturnType.STATUS,
-                Collections.<Object>singletonList(getName()), Collections.singletonList(zeroCountMessage), Collections.singletonList(getChannelName()));
+                        "return true",
+                 Collections.<Object>singletonList(getName()), zeroCountMessage, getChannelName());
     }
 
     private String getEntryName() {
@@ -218,12 +226,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private long getCountInner() {
-
-        Long val = new RedissonScript(connectionManager).eval(
-                "return redis.call('get', KEYS[1])",
-                RScript.ReturnType.INTEGER,
-                Collections.<Object>singletonList(getName()));
-
+        Long val = connectionManager.read(getName(), LongCodec.INSTANCE, RedisCommands.GET, getName());
         if (val == null) {
             return 0;
         }
@@ -232,18 +235,16 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean trySetCount(long count) {
-        return new RedissonScript(connectionManager).evalR(
+        return connectionManager.eval(RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[1]) == 0 then redis.call('set', KEYS[1], ARGV[2]); redis.call('publish', ARGV[3], ARGV[1]); return true else return false end",
-                RScript.ReturnType.BOOLEAN,
-                Collections.<Object>singletonList(getName()), Collections.singletonList(newCountMessage), Arrays.asList(count, getChannelName()));
+                 Collections.<Object>singletonList(getName()), newCountMessage, count, getChannelName());
     }
 
     @Override
     public Future<Boolean> deleteAsync() {
-        return new RedissonScript(connectionManager).evalAsyncR(
+        return connectionManager.evalAsync(RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1]) == 1 then redis.call('publish', ARGV[2], ARGV[1]); return true else return false end",
-                RScript.ReturnType.BOOLEAN,
-                Collections.<Object>singletonList(getName()), Collections.singletonList(newCountMessage), Collections.singletonList(getChannelName()));
+                 Collections.<Object>singletonList(getName()), newCountMessage, getChannelName());
     }
 
 }

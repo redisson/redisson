@@ -15,18 +15,13 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.redisson.async.ResultOperation;
-import org.redisson.async.VoidOperation;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RDeque;
-
-import com.lambdaworks.redis.RedisAsyncConnection;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -42,23 +37,13 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public void addFirst(final V e) {
-        connectionManager.write(getName(), new VoidOperation<V, Long>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
-                return async.lpush(getName(), e);
-            }
-        });
+    public void addFirst(V e) {
+        connectionManager.write(getName(), RedisCommands.LPUSH, getName(), e);
     }
 
     @Override
-    public void addLast(final V e) {
-        connectionManager.write(getName(), new VoidOperation<V, Long>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, V> async) {
-                return async.rpush(getName(), e);
-            }
-        });
+    public void addLast(V e) {
+        connectionManager.write(getName(), RedisCommands.RPUSH, getName(), e);
     }
 
     @Override
@@ -99,12 +84,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V getLast() {
-        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
-            @Override
-            protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.lrange(getName(), -1, -1);
-            }
-        });
+        List<V> list = connectionManager.read(getName(), RedisCommands.LRANGE, getName(), -1, -1);
         if (list.isEmpty()) {
             throw new NoSuchElementException();
         }
@@ -112,13 +92,8 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public boolean offerFirst(final V e) {
-        connectionManager.write(getName(), new ResultOperation<Long, Object>() {
-            @Override
-            protected Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.lpush(getName(), e);
-            }
-        });
+    public boolean offerFirst(V e) {
+        connectionManager.write(getName(), RedisCommands.LPUSH, getName(), e);
         return true;
     }
 
@@ -134,14 +109,9 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V peekLast() {
-        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
-            @Override
-            protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.lrange(getName(), -1, -1);
-            }
-        });
+        List<V> list = connectionManager.read(getName(), RedisCommands.LRANGE, getName(), -1, -1);
         if (list.isEmpty()) {
-            throw  null;
+            return null;
         }
         return list.get(0);
     }
@@ -153,12 +123,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V pollLast() {
-        return connectionManager.write(getName(), new ResultOperation<V, V>() {
-            @Override
-            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
-                return async.rpop(getName());
-            }
-        });
+        return connectionManager.write(getName(), RedisCommands.RPOP, getName());
     }
 
     @Override
@@ -178,12 +143,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V removeLast() {
-        V value = connectionManager.write(getName(), new ResultOperation<V, V>() {
-            @Override
-            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
-                return async.rpop(getName());
-            }
-        });
+        V value = connectionManager.write(getName(), RedisCommands.RPOP, getName());
         if (value == null) {
             throw new NoSuchElementException();
         }

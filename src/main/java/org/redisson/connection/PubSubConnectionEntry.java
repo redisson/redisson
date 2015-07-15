@@ -27,12 +27,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 
+import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
-import com.lambdaworks.redis.pubsub.RedisPubSubListener;
 
 public class PubSubConnectionEntry {
 
@@ -65,7 +65,7 @@ public class PubSubConnectionEntry {
         return new ArrayList<RedisPubSubListener>(result);
     }
 
-    public void addListener(String channelName, RedisPubSubListener listener) {
+    public void addListener(String channelName, RedisPubSubListener<?> listener) {
         Queue<RedisPubSubListener> queue = channelListeners.get(channelName);
         if (queue == null) {
             queue = new ConcurrentLinkedQueue<RedisPubSubListener>();
@@ -123,43 +123,32 @@ public class PubSubConnectionEntry {
         subscribedChannelsAmount.release();
     }
 
-    public void subscribe(final String channelName) {
-        conn.addListener(new RedisPubSubAdapter() {
+    public void subscribe(Codec codec, final String channelName) {
+        Future<PubSubStatusMessage> result = conn.subscribe(codec, channelName);
+        result.addListener(new FutureListener<PubSubStatusMessage>() {
             @Override
-            public void subscribed(String channel, long count) {
+            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
                 log.debug("subscribed to '{}' channel on server '{}'", channelName, conn.getRedisClient().getAddr());
             }
+        });
+    }
 
+    public void psubscribe(Codec codec, final String pattern) {
+        Future<PubSubStatusMessage> result = conn.psubscribe(codec, pattern);
+        result.addListener(new FutureListener<PubSubStatusMessage>() {
             @Override
-            public void unsubscribed(String channel, long count) {
-                log.debug("unsubscribed from '{}' channel on server '{}'", channelName, conn.getRedisClient().getAddr());
+            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
+                log.debug("punsubscribed from '{}' pattern on server '{}'", pattern, conn.getRedisClient().getAddr());
             }
         });
-        conn.subscribe(channelName);
     }
 
-    public void psubscribe(final String pattern) {
-        conn.addListener(new RedisPubSubAdapter() {
-          @Override
-          public void psubscribed(String channel, long count) {
-            log.debug("psubscribed to '{}' pattern", pattern);
-          }
-
-          @Override
-          public void punsubscribed(String channel, long count) {
-            log.debug("punsubscribed from '{}' pattern", pattern);
-          }
-        });
-        conn.psubscribe(pattern);
-    }
-
-
-    public void subscribe(RedisPubSubAdapter listener, String channel) {
+    public Future<PubSubStatusMessage> subscribe(Codec codec, RedisPubSubListener listener, String channel) {
         addListener(channel, listener);
-        conn.subscribe(channel);
+        return conn.subscribe(codec, channel);
     }
 
-    public Future unsubscribe(final String channel) {
+    public Future<PubSubStatusMessage> unsubscribe(final String channel) {
         Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
         if (listeners != null) {
             for (RedisPubSubListener listener : listeners) {
@@ -167,17 +156,17 @@ public class PubSubConnectionEntry {
             }
         }
 
-        Future future = conn.unsubscribe(channel);
-        future.addListener(new FutureListener() {
+        Future<PubSubStatusMessage> future = conn.unsubscribe(channel);
+        future.addListener(new FutureListener<PubSubStatusMessage>() {
             @Override
-            public void operationComplete(Future future) throws Exception {
+            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
                 subscribedChannelsAmount.release();
             }
         });
         return future;
     }
 
-    public Future punsubscribe(final String channel) {
+    public Future<PubSubStatusMessage> punsubscribe(final String channel) {
         Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
         if (listeners != null) {
             for (RedisPubSubListener listener : listeners) {
@@ -185,10 +174,10 @@ public class PubSubConnectionEntry {
             }
         }
 
-        Future future = conn.punsubscribe(channel);
-        future.addListener(new FutureListener() {
+        Future<PubSubStatusMessage> future = conn.punsubscribe(channel);
+        future.addListener(new FutureListener<PubSubStatusMessage>() {
             @Override
-            public void operationComplete(Future future) throws Exception {
+            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
                 subscribedChannelsAmount.release();
             }
         });

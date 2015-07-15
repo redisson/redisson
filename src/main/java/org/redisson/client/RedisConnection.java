@@ -59,18 +59,6 @@ public class RedisConnection implements RedisCommands {
         return cmd.getNow();
     }
 
-//    public <V> V get(Future<V> future) {
-//        future.awaitUninterruptibly();
-//        if (future.isSuccess()) {
-//            return future.getNow();
-//        }
-//
-//        if (future.cause() instanceof RedisException) {
-//            throw (RedisException) future.cause();
-//        }
-//        throw new RedisException("Unexpected exception while processing command", future.cause());
-//    }
-
     public <T> T sync(RedisStrictCommand<T> command, Object ... params) {
         Future<T> r = async(null, command, params);
         return await(r);
@@ -94,13 +82,5 @@ public class RedisConnection implements RedisCommands {
     public ChannelFuture closeAsync() {
         return channel.close();
     }
-
-//  public <R> Future<R> execute(Codec encoder, RedisCommand<R> command, Object ... params) {
-//  Promise<R> promise = bootstrap.group().next().<R>newPromise();
-//  channel.writeAndFlush(new RedisData<R, R>(promise, encoder, command, params));
-//  return promise;
-//}
-
-
 
 }

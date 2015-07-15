@@ -21,24 +21,24 @@ import java.util.Collection;
 
 public interface RHyperLogLog<V> extends RObject {
 
-    long add(V obj);
+    boolean add(V obj);
 
-    long addAll(Collection<V> objects);
+    boolean addAll(Collection<V> objects);
 
     long count();
 
     long countWith(String ... otherLogNames);
 
-    long mergeWith(String ... otherLogNames);
+    void mergeWith(String ... otherLogNames);
 
-    Future<Long> addAsync(V obj);
+    Future<Boolean> addAsync(V obj);
 
-    Future<Long> addAllAsync(Collection<V> objects);
+    Future<Boolean> addAllAsync(Collection<V> objects);
 
     Future<Long> countAsync();
 
     Future<Long> countWithAsync(String ... otherLogNames);
 
-    Future<Long> mergeWithAsync(String ... otherLogNames);
+    Future<Void> mergeWithAsync(String ... otherLogNames);
 
 }

@@ -32,13 +32,13 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.ClusterServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionException;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ClusterNodeInfo.Flag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnectionException;
 
 public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
@@ -56,8 +56,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (URI addr : cfg.getNodeAddresses()) {
             RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getTimeout());
             try {
-                RedisAsyncConnection<String, String> connection = client.connectAsync();
-                String nodesValue = get(connection.clusterNodes());
+                RedisConnection connection = client.connect();
+                String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
 
                 Map<Integer, ClusterPartition> partitions = extractPartitions(nodesValue);
                 for (ClusterPartition partition : partitions.values()) {
@@ -100,8 +100,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     for (URI addr : cfg.getNodeAddresses()) {
                         final RedisClient client = createClient(addr.getHost(), addr.getPort());
                         try {
-                            RedisAsyncConnection<String, String> connection = client.connectAsync();
-                            String nodesValue = get(connection.clusterNodes());
+                            RedisConnection connection = client.connect();
+                            String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
 
                             log.debug("cluster nodes state: {}", nodesValue);
 

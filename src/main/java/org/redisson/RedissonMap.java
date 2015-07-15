@@ -15,23 +15,29 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
-
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
-import org.redisson.async.AsyncOperation;
-import org.redisson.async.OperationListener;
-import org.redisson.async.ResultOperation;
+import org.redisson.client.protocol.BooleanReplayConvertor;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.StringCodec;
+import org.redisson.client.protocol.decoder.LongReplayDecoder;
+import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
-import org.redisson.core.RScript;
-
-import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.output.MapScanResult;
 
 import io.netty.util.concurrent.Future;
 
@@ -47,18 +53,16 @@ import io.netty.util.concurrent.Future;
 //TODO implement watching by keys instead of map name
 public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
+    private final RedisCommand<Object> EVAL_PUT = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
+
     protected RedissonMap(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
     }
 
     @Override
     public int size() {
-        return connectionManager.read(getName(), new ResultOperation<Long, V>() {
-            @Override
-            public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hlen(getName());
-            }
-        }).intValue();
+        Long res = connectionManager.read(getName(), RedisCommands.HLEN, getName());
+        return res.intValue();
     }
 
     @Override
@@ -67,46 +71,33 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public boolean containsKey(final Object key) {
-        return connectionManager.read(getName(), new ResultOperation<Boolean, V>() {
-            @Override
-            public Future<Boolean> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hexists(getName(), key);
-            }
-        });
+    public boolean containsKey(Object key) {
+        return connectionManager.read(getName(), RedisCommands.HEXISTS, getName(), key);
     }
 
     @Override
-    public boolean containsValue(final Object value) {
-        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
-            @Override
-            public Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hvals(getName());
-            }
-        });
+    public boolean containsValue(Object value) {
+        Collection<V> list = values();
         return list.contains(value);
     }
 
     @Override
-    public Map<K, V> getAll(final Set<K> keys) {
+    public Map<K, V> getAll(Set<K> keys) {
         if (keys.size() == 0) {
             return Collections.emptyMap();
         }
-        final Object[] keysArray = keys.toArray();
-        List<V> list = connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
-            @Override
-            protected Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hmget(getName(), keysArray);
-            }
-        });
+        List<Object> args = new ArrayList<Object>(keys.size() + 1);
+        args.add(getName());
+        args.addAll(keys);
+        List<V> list = connectionManager.read(getName(), RedisCommands.HMGET, args.toArray());
 
         Map<K, V> result = new HashMap<K, V>(list.size());
-        for (int index = 0; index < keysArray.length; index++) {
+        for (int index = 0; index < args.size()-1; index++) {
             V value = list.get(index);
             if (value == null) {
                 continue;
             }
-            result.put((K) keysArray[index], value);
+            result.put((K) args.get(index+1), value);
         }
         return result;
     }
@@ -131,12 +122,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         if (map.size() == 0) {
             return;
         }
-        connectionManager.write(getName(), new ResultOperation<String, Object>() {
-            @Override
-            public Future<String> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.hmset(getName(), (Map<Object, Object>) map);
-            }
-        });
+
+        connectionManager.write(getName(), RedisCommands.HMSET, getName(), map);
     }
 
     @Override
@@ -146,38 +133,19 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Set<K> keySet() {
-        return (Set<K>) connectionManager.read(getName(), new ResultOperation<Set<Object>, V>() {
-            @Override
-            public Future<Set<Object>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hkeys(getName());
-            }
-        });
+        List<K> keys = connectionManager.read(getName(), RedisCommands.HKEYS, getName());
+        return new HashSet<K>(keys);
     }
 
     @Override
     public Collection<V> values() {
-        return connectionManager.read(getName(), new ResultOperation<List<V>, V>() {
-            @Override
-            public Future<List<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hvals(getName());
-            }
-        });
+        return connectionManager.read(getName(), RedisCommands.HVALS, getName());
     }
 
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet() {
-        Map<Object, Object> map = connectionManager.read(getName(), new ResultOperation<Map<Object, Object>, Object>() {
-            @Override
-            public Future<Map<Object, Object>> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.hgetall(getName());
-            }
-        });
-
-        Map<K, V> result = new HashMap<K, V>();
-        for (java.util.Map.Entry<Object, Object> entry : map.entrySet()) {
-            result.put((K)entry.getKey(), (V)entry.getValue());
-        }
-        return result.entrySet();
+        Map<K, V> map = connectionManager.read(getName(), RedisCommands.HGETALL, getName());
+        return map.entrySet();
     }
 
     @Override
@@ -187,10 +155,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> putIfAbsentAsync(K key, V value) {
-        return new RedissonScript(connectionManager)
-                .evalAsync("if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return nil else return redis.call('hget', KEYS[1], ARGV[1]) end",
-                        RScript.ReturnType.VALUE,
-                        Collections.<Object>singletonList(getName()), key, value);
+        return connectionManager.evalAsync(EVAL_PUT,
+                "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return nil else return redis.call('hget', KEYS[1], ARGV[1]) end",
+                Collections.<Object>singletonList(getName()), key, value);
     }
 
     @Override
@@ -201,23 +168,22 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<Long> removeAsync(Object key, Object value) {
-        return new RedissonScript(connectionManager)
-                .evalAsync("if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('hdel', KEYS[1], ARGV[1]) else return nil end",
-                        RScript.ReturnType.INTEGER,
-                        Collections.<Object>singletonList(getName()), key, value);
+        return connectionManager.evalAsync(new RedisCommand<Long>("EVAL", new LongReplayDecoder(), 4, ValueType.MAP),
+                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('hdel', KEYS[1], ARGV[1]) else return nil end",
+            Collections.<Object>singletonList(getName()), key, value);
     }
 
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
-        return "OK".equals(connectionManager.get(replaceAsync(key, oldValue, newValue)));
+        return connectionManager.get(replaceAsync(key, oldValue, newValue));
     }
 
     @Override
-    public Future<V> replaceAsync(K key, V oldValue, V newValue) {
-        return new RedissonScript(connectionManager)
-                .evalAsync("if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); return 'OK'; else return nil; end",
-                        RScript.ReturnType.STATUS,
-                        Collections.<Object>singletonList(getName()), key, oldValue, newValue);
+    public Future<Boolean> replaceAsync(K key, V oldValue, V newValue) {
+        return connectionManager.evalAsync(new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4,
+                    Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE, ValueType.MAP_VALUE)),
+                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); return true; else return false; end",
+                Collections.<Object>singletonList(getName()), key, oldValue, newValue);
     }
 
     @Override
@@ -227,47 +193,34 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> replaceAsync(K key, V value) {
-        return new RedissonScript(connectionManager)
-                .evalAsync("if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return v; else return nil; end",
-                        RScript.ReturnType.VALUE,
-                        Collections.<Object>singletonList(getName()), key, value);
+        return connectionManager.evalAsync(new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE),
+                "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return v; else return nil; end",
+            Collections.<Object>singletonList(getName()), key, value);
     }
 
     @Override
-    public Future<V> getAsync(final K key) {
-        return connectionManager.readAsync(getName(), new ResultOperation<V, V>() {
-            @Override
-            public Future<V> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hget(getName(), key);
-            }
-        });
+    public Future<V> getAsync(K key) {
+        return connectionManager.readAsync(getName(), RedisCommands.HGET, getName(), key);
     }
 
     @Override
     public Future<V> putAsync(K key, V value) {
-        return new RedissonScript(connectionManager)
-                .evalAsync("local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return v",
-                        RScript.ReturnType.VALUE,
-                        Collections.<Object>singletonList(getName()), key, value);
+        return connectionManager.evalAsync(EVAL_PUT,
+                "local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return v",
+                Collections.<Object>singletonList(getName()), key, value);
     }
 
 
     @Override
     public Future<V> removeAsync(K key) {
-        return new RedissonScript(connectionManager)
-                .evalAsync("local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hdel', KEYS[1], ARGV[1]); return v",
-                        RScript.ReturnType.VALUE,
-                        Collections.<Object>singletonList(getName()), key);
+        return connectionManager.evalAsync(new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE),
+                "local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hdel', KEYS[1], ARGV[1]); return v",
+                Collections.<Object>singletonList(getName()), key);
     }
 
     @Override
-    public Future<Boolean> fastPutAsync(final K key, final V value) {
-        return connectionManager.writeAsync(getName(), new ResultOperation<Boolean, V>() {
-            @Override
-            public Future<Boolean> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hset(getName(), key, value);
-            }
-        });
+    public Future<Boolean> fastPutAsync(K key, V value) {
+        return connectionManager.writeAsync(getName(), RedisCommands.HSET, getName(), key, value);
     }
 
     @Override
@@ -277,16 +230,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<Long> fastRemoveAsync(final K ... keys) {
-        if (keys != null && keys.length > 0) {
-            return connectionManager.writeAsync(getName(), new ResultOperation<Long, V>() {
-                @Override
-                public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
-                    return async.hdel(getName(), keys);
-                }
-            });
-        } else {
+        if (keys == null || keys.length == 0) {
             return connectionManager.getGroup().next().newSucceededFuture(0L);
         }
+
+        List<Object> args = new ArrayList<Object>(keys.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(keys));
+        return connectionManager.writeAsync(getName(), RedisCommands.HDEL, args.toArray());
     }
 
     @Override
@@ -294,13 +245,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return connectionManager.get(fastRemoveAsync(keys));
     }
 
-    private MapScanResult<Object, V> scanIterator(final long startPos) {
-        return connectionManager.read(getName(), new ResultOperation<MapScanResult<Object, V>, V>() {
-            @Override
-            public Future<MapScanResult<Object, V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.hscan(getName(), startPos);
-            }
-        });
+    private MapScanResult<Object, V> scanIterator(long startPos) {
+        return connectionManager.read(getName(), RedisCommands.HSCAN, getName(), startPos);
     }
 
     private Iterator<Map.Entry<K, V>> iterator() {
@@ -386,15 +332,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public V addAndGet(final K key, final V value) {
-        String res = connectionManager.write(getName(), new ResultOperation<String, V>() {
-
-            @Override
-            protected Future<String> execute(RedisAsyncConnection<Object, V> async) {
-                Number val = (Number) value;
-                return async.hincrbyfloat(getName(), key, new BigDecimal(val.toString()).toPlainString());
-            }
-        });
+    public V addAndGet(K key, V value) {
+        String res = connectionManager.write(getName(), StringCodec.INSTANCE,
+                RedisCommands.HINCRBYFLOAT, getName(), key, new BigDecimal(value.toString()).toPlainString());
 
         if (value instanceof Long) {
             Object obj = Long.parseLong(res);

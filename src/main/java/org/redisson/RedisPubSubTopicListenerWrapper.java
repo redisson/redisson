@@ -15,9 +15,8 @@
  */
 package org.redisson;
 
+import org.redisson.client.RedisPubSubListener;
 import org.redisson.core.MessageListener;
-
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
 /**
  *
@@ -26,7 +25,7 @@ import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
  * @param <K>
  * @param <V>
  */
-public class RedisPubSubTopicListenerWrapper<V> extends RedisPubSubAdapter<V> {
+public class RedisPubSubTopicListenerWrapper<V> implements RedisPubSubListener<V> {
 
     private final MessageListener<V> listener;
     private final String name;
@@ -40,19 +39,6 @@ public class RedisPubSubTopicListenerWrapper<V> extends RedisPubSubAdapter<V> {
         this.listener = listener;
         this.name = name;
     }
-
-    @Override
-    public void message(String channel, V message) {
-        // could be subscribed to multiple channels
-        if (name.equals(channel)) {
-            listener.onMessage(message);
-        }
-    }
-
-  	@Override
-  	public void message(String pattern, String channel, V message) {
-        listener.onMessage(message);
-  	}
 
     @Override
     public int hashCode() {
@@ -79,6 +65,17 @@ public class RedisPubSubTopicListenerWrapper<V> extends RedisPubSubAdapter<V> {
         return true;
     }
 
+    @Override
+    public void onMessage(String channel, V message) {
+        // could be subscribed to multiple channels
+        if (name.equals(channel)) {
+            listener.onMessage(message);
+        }
+    }
 
+    @Override
+    public void onPatternMessage(String pattern, String channel, V message) {
+        listener.onMessage(message);
+    }
 
 }

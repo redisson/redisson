@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.client.protocol.Codec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.RedissonCodec;
 
@@ -42,7 +43,7 @@ public class Config {
     /**
      * Redis key/value codec. JsonJacksonCodec used by default
      */
-    private RedissonCodec codec;
+    private Codec codec;
 
     private boolean useLinuxNativeEpoll;
 
@@ -79,11 +80,11 @@ public class Config {
      * @see org.redisson.codec.JsonJacksonCodec
      * @see org.redisson.codec.SerializationCodec
      */
-    public Config setCodec(RedissonCodec codec) {
+    public Config setCodec(Codec codec) {
         this.codec = codec;
         return this;
     }
-    public RedissonCodec getCodec() {
+    public Codec getCodec() {
         return codec;
     }
 

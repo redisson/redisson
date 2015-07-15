@@ -20,10 +20,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.SortedSet;
 
-import org.redisson.RedissonSortedSet.BinarySearchResult;
+import org.redisson.client.RedisConnection;
 import org.redisson.connection.ConnectionManager;
-
-import com.lambdaworks.redis.RedisConnection;
 
 /**
  *
@@ -51,31 +49,34 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     @Override
     public int size() {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp(-1);
-        try {
-            double headScore = getHeadScore(connection);
-            double tailScore = getTailScore(connection);
-
-            return connection.zcount(redissonSortedSet.getName(), headScore, tailScore).intValue();
-        } finally {
-            connectionManager.releaseRead(-1, connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionReadOp(-1);
+//        try {
+//            double headScore = getHeadScore(connection);
+//            double tailScore = getTailScore(connection);
+//
+//            return connection.zcount(redissonSortedSet.getName(), headScore, tailScore).intValue();
+//        } finally {
+//            connectionManager.releaseRead(-1, connection);
+//        }
     }
 
-    private int getTailScore(RedisConnection<Object, V> connection) {
-        BinarySearchResult<V> res = redissonSortedSet.binarySearch(tailValue, connection);
-        if (res.getIndex() < 0) {
-            return 0;
-        }
-        return res.getIndex();
+    private int getTailScore(RedisConnection connection) {
+        throw new UnsupportedOperationException();
+//        BinarySearchResult<V> res = redissonSortedSet.binarySearch(tailValue, connection);
+//        if (res.getIndex() < 0) {
+//            return 0;
+//        }
+//        return res.getIndex();
     }
 
-    private int getHeadScore(RedisConnection<Object, V> connection) {
-        BinarySearchResult<V> res = redissonSortedSet.binarySearch(headValue, connection);
-        if (res.getIndex() < 0) {
-            return 0;
-        }
-        return res.getIndex();
+    private int getHeadScore(RedisConnection connection) {
+        throw new UnsupportedOperationException();
+//        BinarySearchResult<V> res = redissonSortedSet.binarySearch(headValue, connection);
+//        if (res.getIndex() < 0) {
+//            return 0;
+//        }
+//        return res.getIndex();
     }
 
     @Override
@@ -85,16 +86,17 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     @Override
     public boolean contains(Object o) {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp(-1);
-        try {
-            int headScore = getHeadScore(connection);
-            int tailScore = getTailScore(connection);
-
-            BinarySearchResult<V> res = redissonSortedSet.binarySearch((V)o, connection);
-            return res.getIndex() < tailScore && res.getIndex() > headScore;
-        } finally {
-            connectionManager.releaseRead(-1, connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionReadOp(-1);
+//        try {
+//            int headScore = getHeadScore(connection);
+//            int tailScore = getTailScore(connection);
+//
+//            BinarySearchResult<V> res = redissonSortedSet.binarySearch((V)o, connection);
+//            return res.getIndex() < tailScore && res.getIndex() > headScore;
+//        } finally {
+//            connectionManager.releaseRead(-1, connection);
+//        }
     }
 
     @Override
@@ -112,26 +114,28 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     @Override
     public Object[] toArray() {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp(-1);
-        try {
-            double headScore = getHeadScore(connection);
-            double tailScore = getTailScore(connection);
-            return connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore).toArray();
-        } finally {
-            connectionManager.releaseRead(-1, connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionReadOp(-1);
+//        try {
+//            double headScore = getHeadScore(connection);
+//            double tailScore = getTailScore(connection);
+//            return connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore).toArray();
+//        } finally {
+//            connectionManager.releaseRead(-1, connection);
+//        }
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        RedisConnection<Object, V> connection = connectionManager.connectionReadOp(-1);
-        try {
-            double headScore = getHeadScore(connection);
-            double tailScore = getTailScore(connection);
-            return connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore).toArray(a);
-        } finally {
-            connectionManager.releaseRead(-1, connection);
-        }
+        throw new UnsupportedOperationException();
+//        RedisConnection<Object, V> connection = connectionManager.connectionReadOp(-1);
+//        try {
+//            double headScore = getHeadScore(connection);
+//            double tailScore = getTailScore(connection);
+//            return connection.zrangebyscore(redissonSortedSet.getName(), headScore, tailScore).toArray(a);
+//        } finally {
+//            connectionManager.releaseRead(-1, connection);
+//        }
     }
 
     @Override
@@ -241,14 +245,15 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 
     @Override
     public SortedSet<V> subSet(V fromElement, V toElement) {
+        throw new UnsupportedOperationException();
         // TODO check bounds
-        if (fromElement == null) {
-            fromElement = headValue;
-        }
-        if (toElement == null) {
-            toElement = tailValue;
-        }
-        return new RedissonSubSortedSet<V>(redissonSortedSet, connectionManager, fromElement, toElement);
+//        if (fromElement == null) {
+//            fromElement = headValue;
+//        }
+//        if (toElement == null) {
+//            toElement = tailValue;
+//        }
+//        return new RedissonSubSortedSet<V>(redissonSortedSet, connectionManager, fromElement, toElement);
     }
 
     @Override

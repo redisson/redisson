@@ -21,14 +21,14 @@ import java.util.Collection;
 import java.util.List;
 
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.RedisConnectionException;
-import com.lambdaworks.redis.codec.RedisCodec;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 /**
  *
@@ -44,10 +44,10 @@ public class MasterSlaveEntry {
     volatile ConnectionEntry masterEntry;
 
     final MasterSlaveServersConfig config;
-    final RedisCodec codec;
+    final Codec codec;
     final ConnectionManager connectionManager;
 
-    public MasterSlaveEntry(RedisCodec codec, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    public MasterSlaveEntry(Codec codec, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.codec = codec;
         this.connectionManager = connectionManager;
         this.config = config;
@@ -107,7 +107,7 @@ public class MasterSlaveEntry {
         ConnectionEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
         slaveDown(host, port);
-        oldMaster.getClient().shutdown();
+        oldMaster.getClient().shutdownAsync();
     }
 
     public void shutdownMasterAsync() {
@@ -115,24 +115,24 @@ public class MasterSlaveEntry {
         slaveBalancer.shutdown();
     }
 
-    public <K, V> RedisConnection<K, V> connectionWriteOp() {
+    public RedisConnection connectionWriteOp() {
         acquireMasterConnection();
 
-        RedisConnection<K, V> conn = masterEntry.getConnections().poll();
+        RedisConnection conn = masterEntry.getConnections().poll();
         if (conn != null) {
             return conn;
         }
 
         try {
-            conn = masterEntry.getClient().connect(codec);
+            conn = masterEntry.getClient().connect();
             if (config.getPassword() != null) {
-                conn.auth(config.getPassword());
+                conn.sync(RedisCommands.AUTH, config.getPassword());
             }
             if (config.getDatabase() != 0) {
-                conn.select(config.getDatabase());
+                conn.sync(RedisCommands.SELECT, config.getDatabase());
             }
             if (config.getClientName() != null) {
-                conn.clientSetname((K) config.getClientName());
+                conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
             }
             return conn;
         } catch (RedisConnectionException e) {
@@ -141,7 +141,7 @@ public class MasterSlaveEntry {
         }
     }
 
-    public <K, V> RedisConnection<K, V> connectionReadOp() {
+    public RedisConnection connectionReadOp() {
         return slaveBalancer.nextConnection();
     }
 
@@ -166,7 +166,7 @@ public class MasterSlaveEntry {
     public void releaseWrite(RedisConnection connection) {
         // may changed during changeMaster call
         if (!masterEntry.getClient().equals(connection.getRedisClient())) {
-            connection.close();
+            connection.closeAsync();
             return;
         }
 

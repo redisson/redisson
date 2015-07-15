@@ -24,27 +24,27 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.misc.ReclosableLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.RedisConnectionException;
-import com.lambdaworks.redis.codec.RedisCodec;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 abstract class BaseLoadBalancer implements LoadBalancer {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private RedisCodec codec;
+    private Codec codec;
 
     private MasterSlaveServersConfig config;
 
     private final ReclosableLatch clientsEmpty = new ReclosableLatch();
     final Queue<SubscribesConnectionEntry> clients = new ConcurrentLinkedQueue<SubscribesConnectionEntry>();
 
-    public void init(RedisCodec codec, MasterSlaveServersConfig config) {
+    public void init(Codec codec, MasterSlaveServersConfig config) {
         this.codec = codec;
         this.config = config;
     }
@@ -84,7 +84,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 if (connection == null) {
                     break;
                 }
-                connection.close();
+                connection.closeAsync();
             }
 
             // close all pub/sub connections
@@ -93,7 +93,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                 if (connection == null) {
                     break;
                 }
-                connection.close();
+                connection.closeAsync();
             }
 
 
@@ -116,7 +116,6 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         return Collections.emptyList();
     }
 
-    @SuppressWarnings("unchecked")
     public RedisPubSubConnection nextPubSubConnection() {
         clientsEmpty.awaitUninterruptibly();
         List<SubscribesConnectionEntry> clientsCopy = new ArrayList<SubscribesConnectionEntry>(clients);
@@ -137,15 +136,15 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     if (conn != null) {
                         return conn;
                     }
-                    conn = entry.getClient().connectPubSub(codec);
+                    conn = entry.getClient().connectPubSub();
                     if (config.getPassword() != null) {
-                        conn.auth(config.getPassword());
+                        conn.sync(RedisCommands.AUTH, config.getPassword());
                     }
                     if (config.getDatabase() != 0) {
-                        conn.select(config.getDatabase());
+                        conn.sync(RedisCommands.SELECT, config.getDatabase());
                     }
                     if (config.getClientName() != null) {
-                        conn.clientSetname(config.getClientName());
+                        conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
                     }
 
                     entry.registerSubscribeConnection(conn);
@@ -180,15 +179,15 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     return conn;
                 }
                 try {
-                    conn = entry.getClient().connect(codec);
+                    conn = entry.getClient().connect();
                     if (config.getPassword() != null) {
-                        conn.auth(config.getPassword());
+                        conn.sync(RedisCommands.AUTH, config.getPassword());
                     }
                     if (config.getDatabase() != 0) {
-                        conn.select(config.getDatabase());
+                        conn.sync(RedisCommands.SELECT, config.getDatabase());
                     }
                     if (config.getClientName() != null) {
-                        conn.clientSetname(config.getClientName());
+                        conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
                     }
 
                     return conn;
@@ -208,7 +207,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         for (SubscribesConnectionEntry entry : clients) {
             if (entry.getClient().equals(connection.getRedisClient())) {
                 if (entry.isFreezed()) {
-                    connection.close();
+                    connection.closeAsync();
                 } else {
                     entry.offerFreeSubscribeConnection(connection);
                 }
@@ -222,7 +221,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         for (SubscribesConnectionEntry entry : clients) {
             if (entry.getClient().equals(connection.getRedisClient())) {
                 if (entry.isFreezed()) {
-                    connection.close();
+                    connection.closeAsync();
                 } else {
                     entry.getConnections().add(connection);
                 }

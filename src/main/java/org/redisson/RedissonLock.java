@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,17 +22,16 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
-import org.redisson.async.SyncOperation;
+import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RLock;
-import org.redisson.core.RScript;
-
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 /**
@@ -122,28 +120,33 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             return oldPromise;
         }
 
-        RedisPubSubAdapter<Object> listener = new RedisPubSubAdapter<Object>() {
+        RedisPubSubListener<Integer> listener = new RedisPubSubListener<Integer>() {
 
             @Override
-            public void subscribed(String channel, long count) {
-                if (getChannelName().equals(channel)
-                        && !value.getPromise().isSuccess()) {
-                    value.getPromise().setSuccess(true);
-                }
-            }
-
-            @Override
-            public void message(String channel, Object message) {
+            public void onMessage(String channel, Integer message) {
                 if (message.equals(unlockMessage) && getChannelName().equals(channel)) {
                     value.getLatch().release();
                 }
             }
 
+            @Override
+            public void onPatternMessage(String pattern, String channel, Integer message) {
+            }
+
         };
 
+        Future<PubSubStatusMessage> res = null;
         synchronized (ENTRIES) {
-            connectionManager.subscribe(listener, getChannelName());
+            res = connectionManager.subscribe(listener, getChannelName());
         }
+        res.addListener(new FutureListener<PubSubStatusMessage>() {
+            @Override
+            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
+                if (!value.getPromise().isSuccess()) {
+                    value.getPromise().setSuccess(true);
+                }
+            }
+        });
         return newPromise;
     }
 
@@ -263,8 +266,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return new RedissonScript(connectionManager)
-                .evalR("local v = redis.call('get', KEYS[1]); " +
+        return connectionManager.eval(RedisCommands.EVAL_INTEGER,
+                "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('set', KEYS[1], cjson.encode({['o'] = ARGV[1], ['c'] = 1}), 'px', ARGV[2]); " +
                                 "  return nil; " +
@@ -276,8 +279,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  end;" +
                                 "  return redis.call('pttl', KEYS[1]); " +
                                 "end",
-                        RScript.ReturnType.INTEGER,
-                        Collections.<Object>singletonList(getName()), Collections.singletonList(id.toString() + "-" + Thread.currentThread().getId()), Collections.singletonList(internalLockLeaseTime));
+                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId(), internalLockLeaseTime);
     }
 
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
@@ -339,37 +341,34 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void unlock() {
-        String opStatus = new RedissonScript(connectionManager)
-                .evalR("local v = redis.call('get', KEYS[1]); " +
+        Boolean opStatus = connectionManager.eval(RedisCommands.EVAL_BOOLEAN,
+                "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('publish', ARGV[4], ARGV[2]); " +
-                                "  return 'OK'; " +
+                                "  return true; " +
                                 "else " +
                                 "  local o = cjson.decode(v); " +
                                 "  if (o['o'] == ARGV[1]) then " +
                                 "    o['c'] = o['c'] - 1; " +
                                 "    if (o['c'] > 0) then " +
                                 "      redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[3]); " +
-                                "      return 'FALSE';"+
+                                "      return false;"+
                                 "    else " +
                                 "      redis.call('del', KEYS[1]);" +
                                 "      redis.call('publish', ARGV[4], ARGV[2]); " +
-                                "      return 'OK';"+
+                                "      return true;"+
                                 "    end" +
                                 "  end;" +
                                 "  return nil; " +
                                 "end",
-                        RScript.ReturnType.STATUS,
-                        Collections.<Object>singletonList(getName()), Arrays.asList(id.toString() + "-" + Thread.currentThread().getId(), unlockMessage), Arrays.asList(internalLockLeaseTime, getChannelName()));
-        if ("OK".equals(opStatus)) {
-            stopRefreshTask();
-        } else if ("FALSE".equals(opStatus)) {
-            //do nothing
-        } else {
+                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId(), unlockMessage, internalLockLeaseTime, getChannelName());
+        if (opStatus == null) {
             throw new IllegalStateException("Can't unlock lock Current id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
         }
-
+        if (opStatus) {
+            stopRefreshTask();
+        }
     }
 
     @Override
@@ -385,52 +384,44 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     private Future<Boolean> forceUnlockAsync() {
         stopRefreshTask();
-        return new RedissonScript(connectionManager)
-                .evalAsyncR("redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return true",
-                        RScript.ReturnType.BOOLEAN,
-                        Collections.<Object>singletonList(getName()), Collections.singletonList(unlockMessage), Collections.singletonList(getChannelName()));
+        return connectionManager.evalAsync(RedisCommands.EVAL_BOOLEAN,
+                "redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return true",
+                        Collections.<Object>singletonList(getName()), unlockMessage, getChannelName());
     }
 
     @Override
     public boolean isLocked() {
-        return connectionManager.read(getName(), new SyncOperation<Boolean, Boolean>() {
-            @Override
-            public Boolean execute(RedisConnection<Object, Boolean> conn) {
-                return conn.exists(getName());
-            }
-        });
+        return connectionManager.read(getName(), RedisCommands.EXISTS, getName());
     }
 
     @Override
     public boolean isHeldByCurrentThread() {
-        String opStatus = new RedissonScript(connectionManager)
-                .eval("local v = redis.call('get', KEYS[1]); " +
+        Boolean opStatus = connectionManager.eval(RedisCommands.EVAL_BOOLEAN,
+                            "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
-                                "  return nil; " +
+                                "  return false; " +
                                 "else " +
                                 "  local o = cjson.decode(v); " +
                                 "  if (o['o'] == ARGV[1]) then " +
-                                "    return 'OK'; " +
+                                "    return true; " +
                                 "  else" +
-                                "    return nil; " +
+                                "    return false; " +
                                 "  end;" +
                                 "end",
-                        RScript.ReturnType.STATUS,
                         Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId());
-        return "OK".equals(opStatus);
+        return opStatus;
     }
 
     @Override
     public int getHoldCount() {
-        Long opStatus = new RedissonScript(connectionManager)
-                .eval("local v = redis.call('get', KEYS[1]); " +
+        Long opStatus = connectionManager.eval(RedisCommands.EVAL_INTEGER,
+                "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  return 0; " +
                                 "else " +
                                 "  local o = cjson.decode(v); " +
                                 "  return o['c']; " +
                                 "end",
-                        RScript.ReturnType.INTEGER,
                         Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId());
         return opStatus.intValue();
     }

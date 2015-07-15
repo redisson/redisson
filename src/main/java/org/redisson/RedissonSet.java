@@ -15,19 +15,18 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 
-import java.util.*;
-
-import org.redisson.async.AsyncOperation;
-import org.redisson.async.OperationListener;
-import org.redisson.async.ResultOperation;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSet;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.output.ListScanResult;
+import io.netty.util.concurrent.Future;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -44,12 +43,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public int size() {
-        return connectionManager.read(getName(), new ResultOperation<Long, V>() {
-            @Override
-            public Future<Long> execute(RedisAsyncConnection<Object, V> async) {
-                return async.scard(getName());
-            }
-        }).intValue();
+        return ((Long)connectionManager.read(getName(), RedisCommands.SCARD, getName())).intValue();
     }
 
     @Override
@@ -58,22 +52,12 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
-    public boolean contains(final Object o) {
-        return connectionManager.read(getName(), new ResultOperation<Boolean, Object>() {
-            @Override
-            public Future<Boolean> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.sismember(getName(), o);
-            }
-        });
+    public boolean contains(Object o) {
+        return connectionManager.read(getName(), RedisCommands.SISMEMBER, getName(), o);
     }
 
-    private ListScanResult<V> scanIterator(final long startPos) {
-        return connectionManager.read(getName(), new ResultOperation<ListScanResult<V>, V>() {
-            @Override
-            public Future<ListScanResult<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.sscan(getName(), startPos);
-            }
-        });
+    private ListScanResult<V> scanIterator(long startPos) {
+        return connectionManager.read(getName(), RedisCommands.SSCAN, getName(), startPos);
     }
 
     @Override
@@ -129,59 +113,29 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Object[] toArray() {
-        Set<V> res = connectionManager.read(getName(), new ResultOperation<Set<V>, V>() {
-            @Override
-            public Future<Set<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.smembers(getName());
-            }
-        });
+        List<Object> res = connectionManager.read(getName(), RedisCommands.SMEMBERS, getName());
         return res.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        Set<V> res = connectionManager.read(getName(), new ResultOperation<Set<V>, V>() {
-            @Override
-            public Future<Set<V>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.smembers(getName());
-            }
-        });
+        List<Object> res = connectionManager.read(getName(), RedisCommands.SMEMBERS, getName());
         return res.toArray(a);
     }
 
     @Override
-    public boolean add(final V e) {
+    public boolean add(V e) {
         return connectionManager.get(addAsync(e));
     }
 
     @Override
-    public Future<Boolean> addAsync(final V e) {
-        return connectionManager.writeAsync(getName(), new AsyncOperation<V, Boolean>() {
-            @Override
-            public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, V> async) {
-                async.sadd(getName(), e).addListener(new OperationListener<V, Boolean, Long>(promise, async, this) {
-                    @Override
-                    public void onOperationComplete(Future<Long> future) throws Exception {
-                        promise.setSuccess(future.get() > 0);
-                    }
-                });
-            }
-        });
+    public Future<Boolean> addAsync(V e) {
+        return connectionManager.writeAsync(getName(), RedisCommands.SADD_SINGLE, getName(), e);
     }
 
     @Override
-    public Future<Boolean> removeAsync(final V e) {
-        return connectionManager.writeAsync(getName(), new AsyncOperation<V, Boolean>() {
-            @Override
-            public void execute(final Promise<Boolean> promise, RedisAsyncConnection<Object, V> async) {
-                async.srem(getName(), e).addListener(new OperationListener<V, Boolean, Long>(promise, async, this) {
-                    @Override
-                    public void onOperationComplete(Future<Long> future) throws Exception {
-                        promise.setSuccess(future.get() > 0);
-                    }
-                });
-            }
-        });
+    public Future<Boolean> removeAsync(V e) {
+        return connectionManager.writeAsync(getName(), RedisCommands.SREM_SINGLE, getName(), e);
     }
 
     @Override
@@ -205,12 +159,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
             return false;
         }
 
-        Long res = connectionManager.write(getName(), new ResultOperation<Long, Object>() {
-            @Override
-            public Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.sadd(getName(), c.toArray());
-            }
-        });
+        List<Object> args = new ArrayList<Object>(c.size() + 1);
+        args.add(getName());
+        args.addAll(c);
+        Long res = connectionManager.write(getName(), RedisCommands.SADD, args.toArray());
         return res > 0;
     }
 
@@ -230,13 +182,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         if (c.isEmpty()) {
             return false;
         }
-        
-        Long res = connectionManager.write(getName(), new ResultOperation<Long, Object>() {
-            @Override
-            public Future<Long> execute(RedisAsyncConnection<Object, Object> async) {
-                return async.srem(getName(), c.toArray());
-            }
-        });
+
+        List<Object> args = new ArrayList<Object>(c.size() + 1);
+        args.add(getName());
+        args.addAll(c);
+        Long res = connectionManager.write(getName(), RedisCommands.SREM, args.toArray());
         return res > 0;
     }
 

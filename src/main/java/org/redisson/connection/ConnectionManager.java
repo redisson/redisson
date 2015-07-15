@@ -15,21 +15,22 @@
  */
 package org.redisson.connection;
 
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+
+import org.redisson.SyncOperation;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
-
-import org.redisson.async.AsyncOperation;
-import org.redisson.async.SyncInterruptedOperation;
-import org.redisson.async.SyncOperation;
-import org.redisson.client.protocol.RedisCommand;
-
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -39,7 +40,43 @@ import java.util.concurrent.TimeUnit;
 //TODO ping support
 public interface ConnectionManager {
 
-    Future<Void> writeAsyncVoid(String key, RedisCommand<String> command, Object ... params);
+    <R> R read(String key, SyncOperation<R> operation);
+
+    <R> R write(String key, SyncOperation<R> operation);
+
+    <T, R> Future<R> writeAsync(RedisCommand<T> command, Object ... params);
+
+    <T, R> R write(RedisCommand<T> command, Object ... params);
+
+    <T, R> R write(Codec codec, RedisCommand<T> command, Object ... params);
+
+    <T, R> Future<R> writeAsync(Codec codec, RedisCommand<T> command, Object ... params);
+
+    <T, R> R eval(RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> Future<R> evalAsync(RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> Future<R> evalAsync(Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object ... params);
+
+    <T, R> Future<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
+
+    <T, R> R read(String key, RedisCommand<T> command, Object ... params);
+
+    <T, R> R eval(Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> Future<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
+
+    <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object ... params);
+
+    <T, R> R write(String key, RedisCommand<T> command, Object ... params);
+
+    <T> Future<Queue<Object>> readAllAsync(RedisCommand<T> command, Object ... params);
+
+    <T> Future<Boolean> writeAllAsync(RedisCommand<T> command, Object ... params);
+
+    <T> Future<Void> writeAsyncVoid(String key, RedisCommand<T> command, Object ... params);
 
     <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params);
 
@@ -51,35 +88,15 @@ public interface ConnectionManager {
 
     <V> V get(Future<V> future);
 
-    <V, R> R read(String key, SyncOperation<V, R> operation);
-
-    <V, R> R write(String key, SyncInterruptedOperation<V, R> operation) throws InterruptedException;
-
-    <V, R> R write(String key, SyncOperation<V, R> operation);
-
-    <V, R> R write(String key, AsyncOperation<V, R> asyncOperation);
-
-    <V, T> Future<T> writeAllAsync(AsyncOperation<V, T> asyncOperation);
-
-    <V, T> T read(String key, AsyncOperation<V, T> asyncOperation);
-
-    <V, T> Future<T> readAsync(String key, AsyncOperation<V, T> asyncOperation);
-
-    <V, T> Future<T> readAsync(AsyncOperation<V, T> asyncOperation);
-
-    <V, T> Future<T> writeAsync(String key, AsyncOperation<V, T> asyncOperation);
-
-    <V, T> Future<T> writeAsync(AsyncOperation<V, T> asyncOperation);
-
-    <K, V> RedisConnection<K, V> connectionReadOp(int slot);
+    RedisConnection connectionReadOp(int slot);
 
     PubSubConnectionEntry getEntry(String channelName);
 
-    <K, V> PubSubConnectionEntry subscribe(String channelName);
+    PubSubConnectionEntry subscribe(String channelName);
 
-    <K, V> PubSubConnectionEntry psubscribe(String pattern);
+    PubSubConnectionEntry psubscribe(String pattern);
 
-    <K, V> PubSubConnectionEntry subscribe(RedisPubSubAdapter<V> listener, String channelName);
+    <V> Future<PubSubStatusMessage> subscribe(RedisPubSubListener<V> listener, String channelName);
 
     Future unsubscribe(String channelName);
 

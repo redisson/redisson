@@ -27,13 +27,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.SentinelServersConfig;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.StringCodec;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.pubsub.RedisPubSubAdapter;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
@@ -59,17 +64,17 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
-            RedisAsyncConnection<String, String> connection = client.connectAsync();
+            RedisConnection connection = client.connect();
 
             // TODO async
-            List<String> master = get(connection.getMasterAddrByKey(cfg.getMasterName()));
+            List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
             String masterHost = master.get(0) + ":" + master.get(1);
             c.setMasterAddress(masterHost);
             log.info("master: {} added", masterHost);
 //            c.addSlaveAddress(masterHost);
 
             // TODO async
-            List<Map<String, String>> slaves = get(connection.slaves(cfg.getMasterName()));
+            List<Map<String, String>> slaves = connection.sync(RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
             for (Map<String, String> map : slaves) {
                 String ip = map.get("ip");
                 String port = map.get("port");
@@ -103,15 +108,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             RedisClient client = createClient(addr.getHost(), addr.getPort());
             sentinels.add(client);
 
-            RedisPubSubConnection<String, String> pubsub = client.connectPubSub();
-            pubsub.addListener(new RedisPubSubAdapter<String>() {
-                @Override
-                public void subscribed(String channel, long count) {
-                    log.info("subscribed to channel: {} from Sentinel {}:{}", channel, addr.getHost(), addr.getPort());
-                }
+            RedisPubSubConnection pubsub = client.connectPubSub();
+            pubsub.addListener(new RedisPubSubListener<String>() {
 
                 @Override
-                public void message(String channel, String msg) {
+                public void onMessage(String channel, String msg) {
                     if ("+slave".equals(channel)) {
                         onSlaveAdded(addedSlaves, addr, msg);
                     }
@@ -126,8 +127,18 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     }
                 }
 
+                @Override
+                public void onPatternMessage(String pattern, String channel, String message) {
+                }
             });
-            pubsub.subscribe("+switch-master", "+sdown", "-sdown", "+slave");
+
+            Future<PubSubStatusMessage> res = pubsub.subscribe(StringCodec.INSTANCE, "+switch-master", "+sdown", "-sdown", "+slave");
+            res.addListener(new FutureListener<PubSubStatusMessage>() {
+                @Override
+                public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
+                    log.info("subscribed to channel: {} from Sentinel {}:{}", future.getNow().getChannels(), addr.getHost(), addr.getPort());
+                }
+            });
         }
     }
 

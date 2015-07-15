@@ -41,7 +41,7 @@ public class StringCodec implements Codec {
     public Encoder getValueEncoder() {
         return new Encoder() {
             @Override
-            public byte[] encode(int paramIndex, Object in) throws IOException {
+            public byte[] encode(Object in) throws IOException {
                 return in.toString().getBytes("UTF-8");
             }
         };

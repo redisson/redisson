@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.async;
+package org.redisson;
 
-import io.netty.util.concurrent.Promise;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.protocol.Codec;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
+public interface SyncOperation<R> {
 
-public interface AsyncOperation<V, R> {
+    R execute(Codec codec, RedisConnection conn);
 
-    void execute(Promise<R> promise, RedisAsyncConnection<Object, V> async);
-    
 }

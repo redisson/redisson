@@ -15,15 +15,11 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-
 import java.util.NoSuchElementException;
 
-import org.redisson.async.ResultOperation;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RQueue;
-
-import com.lambdaworks.redis.RedisAsyncConnection;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -44,12 +40,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     public V getFirst() {
-        V value = connectionManager.read(getName(), new ResultOperation<V, V>() {
-            @Override
-            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
-                return async.lindex(getName(), 0);
-            }
-        });
+        V value = connectionManager.read(getName(), RedisCommands.LINDEX, getName(), 0);
         if (value == null) {
             throw new NoSuchElementException();
         }
@@ -71,12 +62,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V poll() {
-        return connectionManager.write(getName(), new ResultOperation<V, V>() {
-            @Override
-            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
-                return async.lpop(getName());
-            }
-        });
+        return connectionManager.write(getName(), RedisCommands.LPOP, getName());
     }
 
     @Override
@@ -93,13 +79,8 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     @Override
-    public V pollLastAndOfferFirstTo(final String queueName) {
-        return connectionManager.write(getName(), new ResultOperation<V, V>() {
-            @Override
-            protected Future<V> execute(RedisAsyncConnection<Object, V> async) {
-                return async.rpoplpush(getName(), queueName);
-            }
-        });
+    public V pollLastAndOfferFirstTo(String queueName) {
+        return connectionManager.write(getName(), RedisCommands.RPOPLPUSH, getName(), queueName);
     }
 
     @Override

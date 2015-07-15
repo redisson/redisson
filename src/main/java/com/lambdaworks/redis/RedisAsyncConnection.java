@@ -26,17 +26,14 @@ import static com.lambdaworks.redis.protocol.CommandKeyword.SETNAME;
 import static com.lambdaworks.redis.protocol.CommandKeyword.WITHSCORES;
 import static com.lambdaworks.redis.protocol.CommandKeyword.XOR;
 import static com.lambdaworks.redis.protocol.CommandType.*;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.EventLoopGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -60,8 +57,6 @@ import com.lambdaworks.redis.output.ListScanOutput;
 import com.lambdaworks.redis.output.ListScanResult;
 import com.lambdaworks.redis.output.MapKeyListOutput;
 import com.lambdaworks.redis.output.MapOutput;
-import com.lambdaworks.redis.output.MapScanOutput;
-import com.lambdaworks.redis.output.MapScanResult;
 import com.lambdaworks.redis.output.MapValueListOutput;
 import com.lambdaworks.redis.output.MapValueOutput;
 import com.lambdaworks.redis.output.MultiOutput;
@@ -79,6 +74,14 @@ import com.lambdaworks.redis.protocol.CommandKeyword;
 import com.lambdaworks.redis.protocol.CommandOutput;
 import com.lambdaworks.redis.protocol.CommandType;
 import com.lambdaworks.redis.protocol.ConnectionWatchdog;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
 /**
  * An asynchronous thread-safe connection to a redis server. Multiple threads may
@@ -1095,11 +1098,6 @@ public class RedisAsyncConnection<K, V> extends ChannelInboundHandlerAdapter {
     public Future<ListScanResult<V>> sscan(K key, long startValue) {
         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(startValue);
         return dispatch(SSCAN, new ValueSetScanOutput<K, V>(codec), args);
-    }
-
-    public Future<MapScanResult<K, V>> hscan(K key, long startValue) {
-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).add(startValue);
-        return dispatch(HSCAN, new MapScanOutput<K, V>(codec), args);
     }
 
     public Future<ListScanResult<V>> zscan(K key, long startValue) {

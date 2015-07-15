@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.decoder.BooleanStatusReplayDecoder;
 import org.redisson.client.protocol.decoder.KeyValueObjectDecoder;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
@@ -37,6 +36,11 @@ import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 public interface RedisCommands {
 
+    RedisStrictCommand<Boolean> UNWATCH = new RedisStrictCommand<Boolean>("UNWATCH", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> WATCH = new RedisStrictCommand<Boolean>("WATCH", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> MULTI = new RedisStrictCommand<Boolean>("MULTI", new BooleanReplayConvertor());
+    RedisCommand<List<Object>> EXEC = new RedisCommand<List<Object>>("EXEC", new ObjectListReplayDecoder());
+
     RedisCommand<Long> SREM = new RedisCommand<Long>("SREM", 2, ValueType.OBJECTS);
     RedisCommand<Long> SADD = new RedisCommand<Long>("SADD", 2, ValueType.OBJECTS);
     RedisCommand<Boolean> SADD_SINGLE = new RedisCommand<Boolean>("SADD", new BooleanReplayConvertor(), 2);
@@ -49,7 +53,9 @@ public interface RedisCommands {
     RedisCommand<Object> LPOP = new RedisCommand<Object>("LPOP");
     RedisCommand<Long> LREM = new RedisCommand<Long>("LREM", 3);
     RedisCommand<Object> LINDEX = new RedisCommand<Object>("LINDEX");
+    RedisCommand<Object> LINSERT = new RedisCommand<Object>("LINSERT", 3, ValueType.OBJECTS);
     RedisStrictCommand<Long> LLEN = new RedisStrictCommand<Long>("LLEN");
+    RedisStrictCommand<Boolean> LTRIM = new RedisStrictCommand<Boolean>("LTRIM", new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> EXPIRE = new RedisStrictCommand<Boolean>("EXPIRE", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> EXPIREAT = new RedisStrictCommand<Boolean>("EXPIREAT", new BooleanReplayConvertor());
@@ -70,8 +76,8 @@ public interface RedisCommands {
     RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH", 2, ValueType.OBJECTS);
 
     RedisStrictCommand<String> SCRIPT_LOAD = new RedisStrictCommand<String>("SCRIPT", "LOAD", new StringDataDecoder());
-    RedisStrictCommand<Boolean> SCRIPT_KILL = new RedisStrictCommand<Boolean>("SCRIPT", "KILL", new BooleanStatusReplayDecoder());
-    RedisStrictCommand<Boolean> SCRIPT_FLUSH = new RedisStrictCommand<Boolean>("SCRIPT", "FLUSH", new BooleanStatusReplayDecoder());
+    RedisStrictCommand<Boolean> SCRIPT_KILL = new RedisStrictCommand<Boolean>("SCRIPT", "KILL", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> SCRIPT_FLUSH = new RedisStrictCommand<Boolean>("SCRIPT", "FLUSH", new BooleanReplayConvertor());
     RedisStrictCommand<List<Object>> SCRIPT_EXISTS = new RedisStrictCommand<List<Object>>("SCRIPT", "EXISTS", new ObjectListReplayDecoder(), new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> EVAL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor());
@@ -88,9 +94,9 @@ public interface RedisCommands {
 
     RedisStrictCommand<String> AUTH = new RedisStrictCommand<String>("AUTH", new StringReplayDecoder());
     RedisStrictCommand<String> SELECT = new RedisStrictCommand<String>("SELECT", new StringReplayDecoder());
-    RedisStrictCommand<String> CLIENT_SETNAME = new RedisStrictCommand<String>("CLIENT", "SETNAME", new StringReplayDecoder());
+    RedisStrictCommand<Boolean> CLIENT_SETNAME = new RedisStrictCommand<Boolean>("CLIENT", "SETNAME", new BooleanReplayConvertor());
     RedisStrictCommand<String> CLIENT_GETNAME = new RedisStrictCommand<String>("CLIENT", "GETNAME", new StringDataDecoder());
-    RedisStrictCommand<String> FLUSHDB = new RedisStrictCommand<String>("FLUSHDB", new StringReplayDecoder());
+    RedisStrictCommand<String> FLUSHDB = new RedisStrictCommand<String>("FLUSHDB");
 
     RedisStrictCommand<List<String>> KEYS = new RedisStrictCommand<List<String>>("KEYS", new StringListReplayDecoder());
 
@@ -110,13 +116,13 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> DEL_SINGLE = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
-    RedisCommand<String> SET = new RedisCommand<String>("SET", new StringReplayDecoder(), 2);
+    RedisCommand<String> SET = new RedisCommand<String>("SET", 2);
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor(), 2);
-    RedisCommand<String> SETEX = new RedisCommand<String>("SETEX", new StringReplayDecoder(), 2);
+    RedisCommand<Boolean> SETEX = new RedisCommand<Boolean>("SETEX", new BooleanReplayConvertor(), 2);
     RedisStrictCommand<Boolean> EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
-    RedisStrictCommand<Boolean> RENAME = new RedisStrictCommand<Boolean>("RENAME", new BooleanStatusReplayDecoder());
+    RedisStrictCommand<Boolean> RENAME = new RedisStrictCommand<Boolean>("RENAME", new BooleanReplayConvertor());
 
     RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 2);
 

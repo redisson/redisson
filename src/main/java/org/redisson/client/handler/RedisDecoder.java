@@ -31,6 +31,8 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -44,6 +46,8 @@ import io.netty.util.CharsetUtil;
  *
  */
 public class RedisDecoder extends ReplayingDecoder<Void> {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     public static final char CR = '\r';
     public static final char LF = '\n';
@@ -66,7 +70,9 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
             };
         }
 
-        System.out.println("message " + in.writerIndex() + "-" + in.readerIndex() + " in: " + in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
+        if (log.isTraceEnabled()) {
+            log.trace("channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
+        }
 
         try {
             decode(in, data, null, pubSubConnection, currentDecoder);
@@ -81,7 +87,10 @@ public class RedisDecoder extends ReplayingDecoder<Void> {
     private void decode(ByteBuf in, RedisData<Object, Object> data, List<Object> parts, RedisPubSubConnection pubSubConnection, Decoder<Object> currentDecoder) throws IOException {
         int code = in.readByte();
         if (code == '+') {
-            Object result = data.getCommand().getReplayDecoder().decode(in);
+            String result = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
+            in.skipBytes(2);
+
+//            Object result = data.getCommand().getReplayDecoder().decode(in);
             handleResult(data, parts, result);
         } else if (code == '-') {
             String error = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);

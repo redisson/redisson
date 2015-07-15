@@ -15,16 +15,31 @@
  */
 package org.redisson;
 
-import com.lambdaworks.redis.RedisAsyncConnection;
-import io.netty.util.concurrent.Future;
-import org.redisson.async.ResultOperation;
-import org.redisson.connection.*;
-import org.redisson.core.*;
-
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.connection.ClusterConnectionManager;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveConnectionManager;
+import org.redisson.connection.SentinelConnectionManager;
+import org.redisson.connection.SingleConnectionManager;
+import org.redisson.core.RAtomicLong;
+import org.redisson.core.RBlockingQueue;
+import org.redisson.core.RBucket;
+import org.redisson.core.RCountDownLatch;
+import org.redisson.core.RDeque;
+import org.redisson.core.RHyperLogLog;
+import org.redisson.core.RList;
+import org.redisson.core.RLock;
+import org.redisson.core.RMap;
+import org.redisson.core.RQueue;
+import org.redisson.core.RScript;
+import org.redisson.core.RSet;
+import org.redisson.core.RSortedSet;
+import org.redisson.core.RTopic;
 
 /**
  * Main infrastructure class allows to get access
@@ -96,15 +111,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> List<RBucket<V>> getBuckets(final String pattern) {
-        List<Object> keys = connectionManager.get(connectionManager.readAsync(new ResultOperation<List<Object>, V>() {
-            @Override
-            public Future<List<Object>> execute(RedisAsyncConnection<Object, V> async) {
-                return async.keys(pattern);
-            }
-        }));
-        if (keys == null) {
-            return Collections.emptyList();
-        }
+        Collection<Object> keys = connectionManager.get(connectionManager.readAllAsync(RedisCommands.KEYS, pattern));
         List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
         for (Object key : keys) {
             if(key != null) {
@@ -291,12 +298,7 @@ public class Redisson implements RedissonClient {
     }
 
     public void flushdb() {
-        connectionManager.writeAllAsync(new ResultOperation<String, Object>() {
-            @Override
-            protected Future<String> execute(RedisAsyncConnection<Object, Object> conn) {
-                return conn.flushdb();
-            }
-        }).awaitUninterruptibly();
+        connectionManager.writeAllAsync(RedisCommands.FLUSHDB).awaitUninterruptibly();
     }
 
 }

@@ -16,20 +16,20 @@
 package org.redisson.connection;
 
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.lambdaworks.redis.RedisClient;
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.RedisConnectionException;
-import com.lambdaworks.redis.codec.RedisCodec;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
 
 public class SingleEntry extends MasterSlaveEntry {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    public SingleEntry(RedisCodec codec, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    public SingleEntry(Codec codec, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         super(codec, connectionManager, config);
     }
 
@@ -59,16 +59,17 @@ public class SingleEntry extends MasterSlaveEntry {
         }
 
         try {
-            conn = masterEntry.getClient().connectPubSub(codec);
+            conn = masterEntry.getClient().connectPubSub();
             if (config.getPassword() != null) {
-                conn.auth(config.getPassword());
+                conn.sync(RedisCommands.AUTH, config.getPassword());
             }
             if (config.getDatabase() != 0) {
-                conn.select(config.getDatabase());
+                conn.sync(RedisCommands.SELECT, config.getDatabase());
             }
             if (config.getClientName() != null) {
-                conn.clientSetname(config.getClientName());
+                conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
             }
+
             return conn;
         } catch (RedisConnectionException e) {
             ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().release();
@@ -83,7 +84,7 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public <K, V> RedisConnection<K, V> connectionReadOp() {
+    public RedisConnection connectionReadOp() {
         return super.connectionWriteOp();
     }
 

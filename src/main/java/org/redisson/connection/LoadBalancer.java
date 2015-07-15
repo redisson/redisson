@@ -18,10 +18,9 @@ package org.redisson.connection;
 import java.util.Collection;
 
 import org.redisson.MasterSlaveServersConfig;
-
-import com.lambdaworks.redis.RedisConnection;
-import com.lambdaworks.redis.codec.RedisCodec;
-import com.lambdaworks.redis.pubsub.RedisPubSubConnection;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.Codec;
 
 public interface LoadBalancer {
 
@@ -31,7 +30,7 @@ public interface LoadBalancer {
 
     Collection<RedisPubSubConnection> freeze(String host, int port);
 
-    void init(RedisCodec codec, MasterSlaveServersConfig config);
+    void init(Codec codec, MasterSlaveServersConfig config);
 
     void add(SubscribesConnectionEntry entry);
 
