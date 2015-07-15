@@ -603,16 +603,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future unsubscribe(String channelName) {
+    public Future<PubSubStatusMessage> unsubscribe(String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return group.next().newSucceededFuture(null);
         }
 
-        Future future = entry.unsubscribe(channelName);
-        future.addListener(new FutureListener() {
+        Future<PubSubStatusMessage> future = entry.unsubscribe(channelName);
+        future.addListener(new FutureListener<PubSubStatusMessage>() {
             @Override
-            public void operationComplete(Future future) throws Exception {
+            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
                 synchronized (entry) {
                     if (entry.tryClose()) {
                         returnSubscribeConnection(-1, entry);
@@ -624,16 +624,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future punsubscribe(String channelName) {
+    public Future<PubSubStatusMessage> punsubscribe(String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return group.next().newSucceededFuture(null);
         }
 
-        Future future = entry.punsubscribe(channelName);
-        future.addListener(new FutureListener() {
+        Future<PubSubStatusMessage> future = entry.punsubscribe(channelName);
+        future.addListener(new FutureListener<PubSubStatusMessage>() {
             @Override
-            public void operationComplete(Future future) throws Exception {
+            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
                 synchronized (entry) {
                     if (entry.tryClose()) {
                         returnSubscribeConnection(-1, entry);
