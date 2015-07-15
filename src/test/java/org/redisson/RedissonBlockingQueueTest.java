@@ -16,6 +16,13 @@ import org.redisson.core.*;
 public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
+    public void testPoll() throws InterruptedException {
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
+        queue1.put(1);
+        Assert.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
+        Assert.assertNull(queue1.poll(2, TimeUnit.SECONDS));
+    }
+    @Test
     public void testAwait() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
         queue1.put(1);
@@ -23,8 +30,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         Assert.assertEquals((Integer)1, queue1.poll(10, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testPollLastAndOfferFirstTo() throws InterruptedException {
+    @Test    public void testPollLastAndOfferFirstTo() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
         queue1.put(1);
         queue1.put(2);

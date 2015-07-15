@@ -31,6 +31,9 @@ public class KeyValueObjectDecoder implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts) {
+        if (parts.isEmpty()) {
+            return null;
+        }
         return new KeyValueMessage(parts.get(0), parts.get(1));
     }
 

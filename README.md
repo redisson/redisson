@@ -54,13 +54,14 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
-####??-Jul-2015 - version 1.3.0
+####04-Jul-2015 - version 1.3.0 released
 Feature - `RQueue.pollLastAndOfferFirstTo` method added  
 Feature - `RObject.rename`, `RObject.renameAsync`, `RObject.renamenx`, `RObject.renamenxAsync` methods added  
 Feature - `RList.getAsync`, `RList.addAsync`, `RList.addAllAsync` methods added  
 Feature - `RObject.deleteAsync` method added  
 Feature - unix sockets support via `Configuration.useLinuxNativeEpoll` setting  
-Feature - Redisson.getTopicPattern method added (thanks to alex-sherwin)  
+Feature - `Redisson.getTopicPattern` method added (thanks to alex-sherwin)  
+Improvement - `RLock` auto-unlock then client lock-owner is gone (thanks to AndrewKolpakov)  
 Improvement - lua scripts used instead of multi/exec commands to avoid connection errors during execution (thanks to AndrewKolpakov)  
 Improvement - `RObject.delete` method now returns `boolean` status  
 Improvement - propagate Command processing exceptions to ConnectionManager (thanks to marko-stankovic)  
@@ -193,7 +194,7 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>1.2.1</version>
+       <version>1.3.0</version>
     </dependency>
 
 ### Supported by
