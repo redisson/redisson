@@ -112,7 +112,11 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
             Object result = Long.valueOf(status);
             handleResult(data, parts, result);
         } else if (code == '$') {
-            Object result = decoder(data, parts, currentDecoder).decode(readBytes(in));
+            ByteBuf buf = readBytes(in);
+            Object result = null;
+            if (buf != null) {
+                result = decoder(data, parts, currentDecoder).decode(buf);
+            }
             handleResult(data, parts, result);
         } else if (code == '*') {
             long size = readLong(in);

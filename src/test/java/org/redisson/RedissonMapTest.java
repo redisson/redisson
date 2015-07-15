@@ -442,6 +442,14 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testEmptyRemove() {
+        RMap<Integer, Integer> map = redisson.getMap("simple");
+        Assert.assertFalse(map.remove(1, 3));
+        map.put(4, 5);
+        Assert.assertTrue(map.remove(4, 5));
+    }
+
+    @Test
     public void testPutAsync() throws InterruptedException, ExecutionException {
         RMap<Integer, Integer> map = redisson.getMap("simple");
         Future<Integer> future = map.putAsync(2, 3);

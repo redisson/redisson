@@ -97,10 +97,6 @@ public class JsonJacksonCodec implements Codec {
 
             @Override
             public Object decode(ByteBuf buf) throws IOException {
-                if (buf == null) {
-                    return null;
-                }
-
                 return mapObjectMapper.readValue(new ByteBufInputStream(buf), Object.class);
             }
         };

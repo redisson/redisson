@@ -27,9 +27,6 @@ public class LongCodec extends StringCodec {
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf) {
-                if (buf == null) {
-                    return null;
-                }
                 return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
             }
         };
