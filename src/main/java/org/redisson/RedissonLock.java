@@ -33,6 +33,7 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.PlatformDependent;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
@@ -45,14 +46,14 @@ import io.netty.util.concurrent.Promise;
 public class RedissonLock extends RedissonExpirable implements RLock {
 
     public static final long LOCK_EXPIRATION_INTERVAL_SECONDS = 30;
-    private static final ConcurrentMap<String, Timeout> refreshTaskMap = new ConcurrentHashMap<String, Timeout>();
+    private static final ConcurrentMap<String, Timeout> refreshTaskMap = PlatformDependent.newConcurrentHashMap();
     protected long internalLockLeaseTime = TimeUnit.SECONDS.toMillis(LOCK_EXPIRATION_INTERVAL_SECONDS);
 
     private final UUID id;
 
     private static final Integer unlockMessage = 0;
 
-    private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = new ConcurrentHashMap<String, RedissonLockEntry>();
+    private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = PlatformDependent.newConcurrentHashMap();
 
     protected RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
         super(connectionManager, name);

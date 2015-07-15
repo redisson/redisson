@@ -17,14 +17,12 @@ package org.redisson;
 
 import java.util.Collections;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.StringCodec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RCountDownLatch;
@@ -32,6 +30,7 @@ import org.redisson.core.RCountDownLatch;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.PlatformDependent;
 
 /**
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
@@ -47,7 +46,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     private static final Integer zeroCountMessage = 0;
     private static final Integer newCountMessage = 1;
 
-    private static final ConcurrentMap<String, RedissonCountDownLatchEntry> ENTRIES = new ConcurrentHashMap<String, RedissonCountDownLatchEntry>();
+    private static final ConcurrentMap<String, RedissonCountDownLatchEntry> ENTRIES = PlatformDependent.newConcurrentHashMap();
 
     private final UUID id;
 
