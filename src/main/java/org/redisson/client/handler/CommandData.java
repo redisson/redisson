@@ -23,7 +23,7 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.util.concurrent.Promise;
 
-public class RedisData<T, R> {
+public class CommandData<T, R> {
 
     final Promise<R> promise;
     final RedisCommand<T> command;
@@ -32,11 +32,11 @@ public class RedisData<T, R> {
     final AtomicBoolean sended = new AtomicBoolean();
     final MultiDecoder<Object> messageDecoder;
 
-    public RedisData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
+    public CommandData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
         this(promise, null, codec, command, params);
     }
 
-    public RedisData(Promise<R> promise, MultiDecoder<Object> messageDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
+    public CommandData(Promise<R> promise, MultiDecoder<Object> messageDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
         this.promise = promise;
         this.command = command;
         this.params = params;

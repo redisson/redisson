@@ -23,13 +23,13 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.PlatformDependent;
 
-public class RedisCommandsQueue extends ChannelDuplexHandler {
+public class CommandsQueue extends ChannelDuplexHandler {
 
     public enum QueueCommands {NEXT_COMMAND}
 
-    public static final AttributeKey<RedisData<Object, Object>> REPLAY = AttributeKey.valueOf("promise");
+    public static final AttributeKey<CommandData<Object, Object>> REPLAY = AttributeKey.valueOf("promise");
 
-    private final Queue<RedisData<Object, Object>> queue = PlatformDependent.newMpscQueue();
+    private final Queue<CommandData<Object, Object>> queue = PlatformDependent.newMpscQueue();
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -43,8 +43,8 @@ public class RedisCommandsQueue extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (msg instanceof RedisData) {
-            RedisData<Object, Object> data = (RedisData<Object, Object>) msg;
+        if (msg instanceof CommandData) {
+            CommandData<Object, Object> data = (CommandData<Object, Object>) msg;
             if (data.getSended().get()) {
                 super.write(ctx, msg, promise);
             } else {
@@ -57,7 +57,7 @@ public class RedisCommandsQueue extends ChannelDuplexHandler {
     }
 
     private void sendData(ChannelHandlerContext ctx) throws Exception {
-        RedisData<Object, Object> data = queue.peek();
+        CommandData<Object, Object> data = queue.peek();
         if (data != null && data.getSended().compareAndSet(false, true)) {
             ctx.channel().attr(REPLAY).set(data);
             ctx.channel().writeAndFlush(data);

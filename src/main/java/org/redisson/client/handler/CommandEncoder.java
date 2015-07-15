@@ -32,7 +32,7 @@ import io.netty.util.CharsetUtil;
  * @author Nikita Koksharov
  *
  */
-public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>> {
+public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Object>> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -43,7 +43,7 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
     final byte[] CRLF = "\r\n".getBytes();
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, RedisData<Object, Object> msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CommandData<Object, Object> msg, ByteBuf out) throws Exception {
         out.writeByte(ARGS_PREFIX);
         int len = 1 + msg.getParams().length;
         if (msg.getCommand().getSubName() != null) {
@@ -82,7 +82,7 @@ public class RedisEncoder extends MessageToByteEncoder<RedisData<Object, Object>
         }
     }
 
-    private Encoder encoder(RedisData<Object, Object> msg, int param) {
+    private Encoder encoder(CommandData<Object, Object> msg, int param) {
         int typeIndex = 0;
         if (msg.getCommand().getInParamType().size() > 1) {
             typeIndex = param;

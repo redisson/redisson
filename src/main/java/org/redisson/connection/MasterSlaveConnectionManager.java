@@ -43,7 +43,7 @@ import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.RedisTimeoutException;
-import org.redisson.client.handler.RedisData;
+import org.redisson.client.handler.CommandData;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.StringCodec;
@@ -417,7 +417,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 connection = connectionWriteOp(slot);
             }
             log.debug("readAsync for slot {} using {}", slot, connection.getRedisClient().getAddr());
-            connection.send(new RedisData<V, R>(attemptPromise, messageDecoder, codec, command, params));
+            connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
 
             ex.set(new RedisTimeoutException());
             Timeout timeout = timer.newTimeout(timerTask, config.getTimeout(), TimeUnit.MILLISECONDS);

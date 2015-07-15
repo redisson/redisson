@@ -17,7 +17,7 @@ package org.redisson.client;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.redisson.client.handler.RedisData;
+import org.redisson.client.handler.CommandData;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -29,20 +29,15 @@ import org.redisson.client.protocol.pubsub.PubSubPatternMessageDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 import io.netty.channel.Channel;
-import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 public class RedisPubSubConnection extends RedisConnection {
 
-    public static final AttributeKey<RedisPubSubConnection> CONNECTION = AttributeKey.valueOf("connection");
-
     final ConcurrentLinkedQueue<RedisPubSubListener<Object>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<Object>>();
 
     public RedisPubSubConnection(RedisClient redisClient, Channel channel) {
         super(redisClient, channel);
-
-        channel.attr(CONNECTION).set(this);
     }
 
     public void addListener(RedisPubSubListener listener) {
@@ -83,7 +78,7 @@ public class RedisPubSubConnection extends RedisConnection {
 
     public <T, R> Future<R> async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object ... params) {
         Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
-        channel.writeAndFlush(new RedisData<T, R>(promise, messageDecoder, null, command, params));
+        channel.writeAndFlush(new CommandData<T, R>(promise, messageDecoder, null, command, params));
         return promise;
     }
 

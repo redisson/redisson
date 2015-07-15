@@ -17,7 +17,7 @@ package org.redisson.client;
 
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.client.handler.RedisData;
+import org.redisson.client.handler.CommandData;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -25,17 +25,28 @@ import org.redisson.client.protocol.RedisStrictCommand;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 public class RedisConnection implements RedisCommands {
 
-    final Channel channel;
+    public static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
+
     final RedisClient redisClient;
+
+    private volatile boolean closed;
+    volatile Channel channel;
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
         this.redisClient = redisClient;
+        this.channel = channel;
+
+        channel.attr(CONNECTION).set(this);
+    }
+
+    public void updateChannel(Channel channel) {
         this.channel = channel;
     }
 
@@ -64,7 +75,7 @@ public class RedisConnection implements RedisCommands {
         return await(r);
     }
 
-    public <T, R> void send(RedisData<T, R> data) {
+    public <T, R> void send(CommandData<T, R> data) {
         channel.writeAndFlush(data);
     }
 
@@ -75,11 +86,20 @@ public class RedisConnection implements RedisCommands {
 
     public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
         Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
-        channel.writeAndFlush(new RedisData<T, R>(promise, encoder, command, params));
+        channel.writeAndFlush(new CommandData<T, R>(promise, encoder, command, params));
         return promise;
     }
 
+    public void setClosed(boolean reconnect) {
+        this.closed = reconnect;
+    }
+
+    public boolean isClosed() {
+        return closed;
+    }
+
     public ChannelFuture closeAsync() {
+        setClosed(true);
         return channel.close();
     }
 

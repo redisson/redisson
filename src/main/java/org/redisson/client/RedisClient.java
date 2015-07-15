@@ -16,16 +16,14 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import org.redisson.client.handler.RedisCommandsQueue;
-import org.redisson.client.handler.RedisDecoder;
-import org.redisson.client.handler.RedisEncoder;
+import org.redisson.client.handler.CommandDecoder;
+import org.redisson.client.handler.CommandEncoder;
+import org.redisson.client.handler.CommandsQueue;
+import org.redisson.client.handler.ConnectionWatchdog;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -39,7 +37,6 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 public class RedisClient {
@@ -58,14 +55,13 @@ public class RedisClient {
         addr = new InetSocketAddress(host, port);
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
         bootstrap.handler(new ChannelInitializer<Channel>() {
-
             @Override
             protected void initChannel(Channel ch) throws Exception {
-                ch.pipeline().addFirst(new RedisEncoder(),
-                                        new RedisCommandsQueue(),
-                                        new RedisDecoder());
+                ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels),
+                                        new CommandEncoder(),
+                                        new CommandsQueue(),
+                                        new CommandDecoder());
             }
-
         });
 
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout);
@@ -88,7 +84,6 @@ public class RedisClient {
         try {
             ChannelFuture future = bootstrap.connect();
             future.syncUninterruptibly();
-            channels.add(future.channel());
             return new RedisConnection(this, future.channel());
         } catch (Exception e) {
             throw new RedisConnectionException("unable to connect", e);
@@ -99,7 +94,6 @@ public class RedisClient {
         try {
             ChannelFuture future = bootstrap.connect();
             future.syncUninterruptibly();
-            channels.add(future.channel());
             return new RedisPubSubConnection(this, future.channel());
         } catch (Exception e) {
             throw new RedisConnectionException("unable to connect", e);
