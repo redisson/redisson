@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class EmptyConvertor<R> implements Convertor<R> {
+public class EmptyConvertor<R> extends SingleConvertor<R> {
 
     @Override
     public R convert(Object obj) {

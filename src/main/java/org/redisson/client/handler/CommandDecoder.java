@@ -91,7 +91,7 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
             String result = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
 
-            handleResult(data, parts, result);
+            handleResult(data, parts, result, false);
         } else if (code == '-') {
             String error = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
@@ -111,14 +111,14 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
             String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
             Object result = Long.valueOf(status);
-            handleResult(data, parts, result);
+            handleResult(data, parts, result, false);
         } else if (code == '$') {
             ByteBuf buf = readBytes(in);
             Object result = null;
             if (buf != null) {
                 result = decoder(data, parts, currentDecoder).decode(buf);
             }
-            handleResult(data, parts, result);
+            handleResult(data, parts, result, false);
         } else if (code == '*') {
             long size = readLong(in);
             List<Object> respParts = new ArrayList<Object>();
@@ -160,11 +160,7 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
                 }
             }
 
-            if (parts != null) {
-                parts.add(result);
-            } else {
-                data.getPromise().setSuccess(result);
-            }
+            handleResult(data, parts, result, true);
         } else {
             RedisPubSubConnection pubSubConnection = (RedisPubSubConnection)channel.attr(RedisPubSubConnection.CONNECTION).get();
             if (result instanceof PubSubMessage) {
@@ -175,9 +171,13 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
         }
     }
 
-    private void handleResult(CommandData<Object, Object> data, List<Object> parts, Object result) {
+    private void handleResult(CommandData<Object, Object> data, List<Object> parts, Object result, boolean multiResult) {
         if (data != null) {
-            result = data.getCommand().getConvertor().convert(result);
+            if (multiResult) {
+                result = data.getCommand().getConvertor().convertMulti(result);
+            } else {
+                result = data.getCommand().getConvertor().convert(result);
+            }
         }
         if (parts != null) {
             parts.add(result);

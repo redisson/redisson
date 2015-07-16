@@ -17,6 +17,8 @@ package org.redisson.client.protocol.convertor;
 
 public interface Convertor<R> {
 
+    Object convertMulti(Object obj);
+
     R convert(Object obj);
 
 }

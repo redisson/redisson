@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class LongReplayConvertor implements Convertor<Long> {
+public class LongReplayConvertor extends SingleConvertor<Long> {
 
     @Override
     public Long convert(Object obj) {

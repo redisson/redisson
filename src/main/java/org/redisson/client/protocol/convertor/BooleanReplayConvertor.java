@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class BooleanReplayConvertor implements Convertor<Boolean> {
+public class BooleanReplayConvertor extends SingleConvertor<Boolean> {
 
     @Override
     public Boolean convert(Object obj) {

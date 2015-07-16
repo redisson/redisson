@@ -15,12 +15,11 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class VoidReplayConvertor extends SingleConvertor<Void> {
+public abstract class SingleConvertor<R> implements Convertor<R> {
 
     @Override
-    public Void convert(Object obj) {
-        return null;
+    public Object convertMulti(Object obj) {
+        return obj;
     }
-
 
 }
