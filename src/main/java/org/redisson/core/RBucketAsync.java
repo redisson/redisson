@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,14 +26,14 @@ import java.util.concurrent.TimeUnit;
  *
  * @param <V> - the type of object
  */
-public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
+public interface RBucketAsync<V> extends RExpirableAsync {
 
-    V get();
+    Future<V> getAsync();
 
-    void set(V value);
+    Future<Void> setAsync(V value);
 
-    void set(V value, long timeToLive, TimeUnit timeUnit);
+    Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
 
-    boolean exists();
+    Future<Boolean> existsAsync();
 
 }
