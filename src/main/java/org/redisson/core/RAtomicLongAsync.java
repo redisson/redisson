@@ -2,7 +2,7 @@ package org.redisson.core;
 
 import io.netty.util.concurrent.Future;
 
-public interface RAtomicLongAsync extends RExpirable {
+public interface RAtomicLongAsync extends RExpirableAsync {
 
     Future<Boolean> compareAndSetAsync(long expect, long update);
 

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public interface RExpirable extends RObject {
+public interface RExpirable extends RObject, RExpirableAsync {
 
     boolean expire(long timeToLive, TimeUnit timeUnit);
 

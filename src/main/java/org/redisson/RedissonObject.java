@@ -42,31 +42,37 @@ abstract class RedissonObject implements RObject {
         return connectionManager.getGroup().next().<V>newPromise();
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public boolean rename(String newName) {
         return connectionManager.get(renameAsync(newName));
     }
 
+    @Override
     public Future<Boolean> renameAsync(String newName) {
         return connectionManager.writeAsync(getName(), RedisCommands.RENAME, getName(), newName);
     }
 
+    @Override
     public boolean renamenx(String newName) {
         return connectionManager.get(renamenxAsync(newName));
     }
 
+    @Override
     public Future<Boolean> renamenxAsync(String newName) {
         return connectionManager.writeAsync(getName(), RedisCommands.RENAMENX, getName(), newName);
     }
 
-
+    @Override
     public boolean delete() {
         return connectionManager.get(deleteAsync());
     }
 
+    @Override
     public Future<Boolean> deleteAsync() {
         return connectionManager.writeAsync(getName(), RedisCommands.DEL_SINGLE, getName());
     }
