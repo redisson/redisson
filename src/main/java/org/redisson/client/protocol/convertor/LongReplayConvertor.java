@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson.client.protocol.convertor;
 
-public class EmptyConvertor<R> implements Convertor<R> {
+public class LongReplayConvertor implements Convertor<Long> {
 
     @Override
-    public R convert(Object obj) {
-        return (R) obj;
+    public Long convert(Object obj) {
+        return Long.valueOf(obj.toString());
     }
+
 
 }

@@ -28,10 +28,10 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.redisson.client.protocol.BooleanReplayConvertor;
-import org.redisson.client.protocol.LongReplayConvertor;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
+import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
 import org.redisson.client.protocol.decoder.MapScanResult;

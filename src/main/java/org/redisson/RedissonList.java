@@ -23,8 +23,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
-import org.redisson.client.protocol.BooleanReplayConvertor;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
+
 import static org.redisson.client.protocol.RedisCommands.*;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RList;

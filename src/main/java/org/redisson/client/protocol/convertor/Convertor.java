@@ -13,14 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson.client.protocol.convertor;
 
-public class BooleanReplayConvertor implements Convertor<Boolean> {
+public interface Convertor<R> {
 
-    @Override
-    public Boolean convert(Object obj) {
-        return Long.valueOf(1).equals(obj) || "OK".equals(obj);
-    }
-
+    R convert(Object obj);
 
 }

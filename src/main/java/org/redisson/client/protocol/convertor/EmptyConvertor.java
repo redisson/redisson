@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson.client.protocol.convertor;
 
-public class VoidReplayConvertor implements Convertor<Void> {
+public class EmptyConvertor<R> implements Convertor<R> {
 
     @Override
-    public Void convert(Object obj) {
-        return null;
+    public R convert(Object obj) {
+        return (R) obj;
     }
-
 
 }

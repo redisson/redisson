@@ -18,6 +18,8 @@ package org.redisson.client.protocol;
 import java.util.Arrays;
 import java.util.List;
 
+import org.redisson.client.protocol.convertor.Convertor;
+import org.redisson.client.protocol.convertor.EmptyConvertor;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 public class RedisCommand<R> {

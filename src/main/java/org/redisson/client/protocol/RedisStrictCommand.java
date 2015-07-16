@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol;
 
+import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 public class RedisStrictCommand<T> extends RedisCommand<T> {
