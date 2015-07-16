@@ -19,7 +19,7 @@ import io.netty.util.concurrent.Future;
 
 import java.util.Collection;
 
-public interface RHyperLogLog<V> extends RObject {
+public interface RHyperLogLog<V> extends RExpirable {
 
     boolean add(V obj);
 

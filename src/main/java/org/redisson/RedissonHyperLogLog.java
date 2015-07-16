@@ -26,7 +26,7 @@ import org.redisson.core.RHyperLogLog;
 
 import io.netty.util.concurrent.Future;
 
-public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogLog<V> {
+public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
     protected RedissonHyperLogLog(ConnectionManager connectionManager, String name) {
         super(connectionManager, name);
@@ -88,7 +88,7 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
-        return connectionManager.writeAsyncVoid(getName(), RedisCommands.PFMERGE, args.toArray());
+        return connectionManager.writeAsync(getName(), RedisCommands.PFMERGE, args.toArray());
     }
 
 }
