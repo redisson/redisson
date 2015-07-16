@@ -22,6 +22,8 @@ import org.redisson.client.protocol.StringCodec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLong;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
  *
@@ -36,12 +38,22 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long addAndGet(long delta) {
-        return connectionManager.write(getName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getName(), delta);
+        return connectionManager.get(addAndGetAsync(delta));
+    }
+
+    @Override
+    public Future<Long> addAndGetAsync(long delta) {
+        return connectionManager.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getName(), delta);
     }
 
     @Override
     public boolean compareAndSet(long expect, long update) {
-        return connectionManager.evalWrite(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return connectionManager.get(compareAndSetAsync(expect, update));
+    }
+
+    @Override
+    public Future<Boolean> compareAndSetAsync(long expect, long update) {
+        return connectionManager.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('get', KEYS[1]) == ARGV[1] then "
                      + "redis.call('set', KEYS[1], ARGV[2]); "
                      + "return true "
@@ -52,7 +64,12 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long decrementAndGet() {
-        return connectionManager.write(getName(), StringCodec.INSTANCE, RedisCommands.DECR, getName());
+        return connectionManager.get(decrementAndGetAsync());
+    }
+
+    @Override
+    public Future<Long> decrementAndGetAsync() {
+        return connectionManager.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.DECR, getName());
     }
 
     @Override
@@ -61,8 +78,18 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
+    public Future<Long> getAsync() {
+        return addAndGetAsync(0);
+    }
+
+    @Override
     public long getAndAdd(long delta) {
-        return connectionManager.evalWrite(getName(),
+        return connectionManager.get(getAndAddAsync(delta));
+    }
+
+    @Override
+    public Future<Long> getAndAddAsync(long delta) {
+        return connectionManager.evalWriteAsync(getName(),
                 StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]) or 0; "
                 + "redis.call('set', KEYS[1], v + ARGV[1]); "
@@ -70,9 +97,15 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
                 Collections.<Object>singletonList(getName()), delta);
     }
 
+
     @Override
     public long getAndSet(long newValue) {
-        return connectionManager.evalWrite(getName(),
+        return connectionManager.get(getAndSetAsync(newValue));
+    }
+
+    @Override
+    public Future<Long> getAndSetAsync(long newValue) {
+        return connectionManager.evalWriteAsync(getName(),
                 StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]) or 0; redis.call('set', KEYS[1], ARGV[1]); return tonumber(v)",
                 Collections.<Object>singletonList(getName()), newValue);
@@ -80,7 +113,12 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long incrementAndGet() {
-        return connectionManager.write(getName(), StringCodec.INSTANCE, RedisCommands.INCR, getName());
+        return connectionManager.get(incrementAndGetAsync());
+    }
+
+    @Override
+    public Future<Long> incrementAndGetAsync() {
+        return connectionManager.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.INCR, getName());
     }
 
     @Override
@@ -88,13 +126,29 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return getAndAdd(1);
     }
 
+    @Override
+    public Future<Long> getAndIncrementAsync() {
+        return getAndAddAsync(1);
+    }
+
+    @Override
     public long getAndDecrement() {
         return getAndAdd(-1);
     }
 
     @Override
+    public Future<Long> getAndDecrementAsync() {
+        return getAndAddAsync(-1);
+    }
+
+    @Override
     public void set(long newValue) {
-        connectionManager.write(getName(), StringCodec.INSTANCE, RedisCommands.SET, getName(), newValue);
+        connectionManager.get(setAsync(newValue));
+    }
+
+    @Override
+    public Future<Void> setAsync(long newValue) {
+        return connectionManager.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SET, getName(), newValue);
     }
 
     public String toString() {

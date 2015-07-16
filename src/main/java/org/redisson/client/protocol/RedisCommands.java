@@ -68,7 +68,7 @@ public interface RedisCommands {
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor(), 2);
     RedisCommand<Long> PFCOUNT = new RedisCommand<Long>("PFCOUNT");
-    RedisStrictCommand<String> PFMERGE = new RedisStrictCommand<String>("PFMERGE", new StringReplayDecoder());
+    RedisStrictCommand<Void> PFMERGE = new RedisStrictCommand<Void>("PFMERGE", new VoidReplayConvertor());
 
     RedisCommand<Long> RPOP = new RedisCommand<Long>("RPOP");
     RedisCommand<Long> LPUSH = new RedisCommand<Long>("LPUSH");
@@ -116,9 +116,9 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> DEL_SINGLE = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
-    RedisCommand<String> SET = new RedisCommand<String>("SET", 2);
+    RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor(), 2);
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor(), 2);
-    RedisCommand<Boolean> SETEX = new RedisCommand<Boolean>("SETEX", new BooleanReplayConvertor(), 2);
+    RedisCommand<Void> SETEX = new RedisCommand<Void>("SETEX", new VoidReplayConvertor(), 2);
     RedisStrictCommand<Boolean> EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
