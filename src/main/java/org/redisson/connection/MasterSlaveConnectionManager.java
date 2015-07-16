@@ -317,6 +317,56 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    public <T, R> Future<R> evalReadAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalReadAsync(key, codec, evalCommandType, script, keys, params);
+    }
+
+    public <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        Promise<R> mainPromise = getGroup().next().newPromise();
+        List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
+        args.add(script);
+        args.add(keys.size());
+        args.addAll(keys);
+        args.addAll(Arrays.asList(params));
+        int slot = calcSlot(key);
+        async(true, slot, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
+        return mainPromise;
+    }
+
+    public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalRead(key, codec, evalCommandType, script, keys, params);
+    }
+
+    public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        Future<R> res = evalReadAsync(key, codec, evalCommandType, script, keys, params);
+        return get(res);
+    }
+
+    public <T, R> Future<R> evalWriteAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+    }
+
+    public <T, R> Future<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        Promise<R> mainPromise = getGroup().next().newPromise();
+        List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
+        args.add(script);
+        args.add(keys.size());
+        args.addAll(keys);
+        args.addAll(Arrays.asList(params));
+        int slot = calcSlot(key);
+        async(false, slot, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
+        return mainPromise;
+    }
+
+    public <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalWrite(key, codec, evalCommandType, script, keys, params);
+    }
+
+    public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        Future<R> res = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+        return get(res);
+    }
+
     public <T, R> R write(String key, RedisCommand<T> command, Object ... params) {
         Future<R> res = writeAsync(key, command, params);
         return get(res);
@@ -336,16 +386,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         async(false, -1, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
         return mainPromise;
     }
-
-    public <T, R> R eval(RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return eval(codec, evalCommandType, script, keys, params);
-    }
-
-    public <T, R> R eval(Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Future<R> res = evalAsync(codec, evalCommandType, script, keys, params);
-        return get(res);
-    }
-
 
     public <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params) {
         return writeAsync(key, codec, command, params);
@@ -416,7 +456,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             } else {
                 connection = connectionWriteOp(slot);
             }
-            log.debug("readAsync for slot {} using {}", slot, connection.getRedisClient().getAddr());
+            log.debug("getting connection for command {} via slot {} using {}", command, slot, connection.getRedisClient().getAddr());
             connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
 
             ex.set(new RedisTimeoutException());
@@ -559,7 +599,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<PubSubStatusMessage> subscribe(RedisPubSubListener listener, String channelName) {
+    public Future<List<PubSubStatusMessage>> subscribe(RedisPubSubListener listener, String channelName) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
             return сonnEntry.subscribe(codec, listener, channelName);
@@ -571,7 +611,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
                 if (oldEntry != null) {
                     entry.release();
-                    return group.next().newSucceededFuture(new PubSubStatusMessage(Type.SUBSCRIBE, Arrays.asList(channelName)));
+                    return group.next().newSucceededFuture(Arrays.asList(new PubSubStatusMessage(Type.SUBSCRIBE, channelName)));
                 }
                 synchronized (entry) {
                     if (!entry.isActive()) {
@@ -591,7 +631,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
         if (oldEntry != null) {
             returnSubscribeConnection(slot, entry);
-            return group.next().newSucceededFuture(new PubSubStatusMessage(Type.SUBSCRIBE, Arrays.asList(channelName)));
+            return group.next().newSucceededFuture(Arrays.asList(new PubSubStatusMessage(Type.SUBSCRIBE, channelName)));
         }
         synchronized (entry) {
             if (!entry.isActive()) {
@@ -603,16 +643,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<PubSubStatusMessage> unsubscribe(String channelName) {
+    public Future<List<PubSubStatusMessage>> unsubscribe(String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return group.next().newSucceededFuture(null);
         }
 
-        Future<PubSubStatusMessage> future = entry.unsubscribe(channelName);
-        future.addListener(new FutureListener<PubSubStatusMessage>() {
+        Future<List<PubSubStatusMessage>> future = entry.unsubscribe(channelName);
+        future.addListener(new FutureListener<List<PubSubStatusMessage>>() {
             @Override
-            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
+            public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
                 synchronized (entry) {
                     if (entry.tryClose()) {
                         returnSubscribeConnection(-1, entry);
@@ -624,16 +664,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<PubSubStatusMessage> punsubscribe(String channelName) {
+    public Future<List<PubSubStatusMessage>> punsubscribe(String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return group.next().newSucceededFuture(null);
         }
 
-        Future<PubSubStatusMessage> future = entry.punsubscribe(channelName);
-        future.addListener(new FutureListener<PubSubStatusMessage>() {
+        Future<List<PubSubStatusMessage>> future = entry.punsubscribe(channelName);
+        future.addListener(new FutureListener<List<PubSubStatusMessage>>() {
             @Override
-            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
+            public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
                 synchronized (entry) {
                     if (entry.tryClose()) {
                         returnSubscribeConnection(-1, entry);

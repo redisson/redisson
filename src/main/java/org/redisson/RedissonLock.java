@@ -267,7 +267,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return connectionManager.eval(RedisCommands.EVAL_INTEGER,
+        return connectionManager.evalWrite(getName(), RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('set', KEYS[1], cjson.encode({['o'] = ARGV[1], ['c'] = 1}), 'px', ARGV[2]); " +
@@ -342,7 +342,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void unlock() {
-        Boolean opStatus = connectionManager.eval(RedisCommands.EVAL_BOOLEAN,
+        Boolean opStatus = connectionManager.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('publish', ARGV[4], ARGV[2]); " +
@@ -385,7 +385,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     private Future<Boolean> forceUnlockAsync() {
         stopRefreshTask();
-        return connectionManager.evalAsync(RedisCommands.EVAL_BOOLEAN,
+        return connectionManager.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN,
                 "redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return true",
                         Collections.<Object>singletonList(getName()), unlockMessage, getChannelName());
     }
@@ -397,7 +397,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public boolean isHeldByCurrentThread() {
-        Boolean opStatus = connectionManager.eval(RedisCommands.EVAL_BOOLEAN,
+        Boolean opStatus = connectionManager.evalRead(getName(), RedisCommands.EVAL_BOOLEAN,
                             "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  return false; " +
@@ -415,7 +415,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public int getHoldCount() {
-        Long opStatus = connectionManager.eval(RedisCommands.EVAL_INTEGER,
+        Long opStatus = connectionManager.evalRead(getName(), RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  return 0; " +
@@ -423,7 +423,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  local o = cjson.decode(v); " +
                                 "  return o['c']; " +
                                 "end",
-                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId());
+                        Collections.<Object>singletonList(getName()));
         return opStatus.intValue();
     }
 

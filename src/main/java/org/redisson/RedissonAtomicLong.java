@@ -41,7 +41,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public boolean compareAndSet(long expect, long update) {
-        return connectionManager.eval(StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return connectionManager.evalWrite(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('get', KEYS[1]) == ARGV[1] then "
                      + "redis.call('set', KEYS[1], ARGV[2]); "
                      + "return true "
@@ -62,7 +62,8 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long getAndAdd(long delta) {
-        return connectionManager.eval(StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+        return connectionManager.evalWrite(getName(),
+                StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]) or 0; "
                 + "redis.call('set', KEYS[1], v + ARGV[1]); "
                 + "return tonumber(v)",
@@ -70,8 +71,9 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public long getAndSet(final long newValue) {
-        return connectionManager.eval(StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+    public long getAndSet(long newValue) {
+        return connectionManager.evalWrite(getName(),
+                StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]) or 0; redis.call('set', KEYS[1], ARGV[1]); return tonumber(v)",
                 Collections.<Object>singletonList(getName()), newValue);
     }

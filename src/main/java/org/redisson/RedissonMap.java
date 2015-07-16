@@ -155,7 +155,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> putIfAbsentAsync(K key, V value) {
-        return connectionManager.evalAsync(EVAL_PUT,
+        return connectionManager.evalWriteAsync(getName(), EVAL_PUT,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return nil else return redis.call('hget', KEYS[1], ARGV[1]) end",
                 Collections.<Object>singletonList(getName()), key, value);
     }
@@ -167,7 +167,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<Long> removeAsync(Object key, Object value) {
-        return connectionManager.evalAsync(new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 4, ValueType.MAP),
+        return connectionManager.evalWriteAsync(getName(),
+                new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 4, ValueType.MAP),
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('hdel', KEYS[1], ARGV[1]) else return 0 end",
             Collections.<Object>singletonList(getName()), key, value);
     }
@@ -179,7 +180,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<Boolean> replaceAsync(K key, V oldValue, V newValue) {
-        return connectionManager.evalAsync(new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4,
+        return connectionManager.evalWriteAsync(getName(),
+                new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4,
                     Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE, ValueType.MAP_VALUE)),
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); return true; else return false; end",
                 Collections.<Object>singletonList(getName()), key, oldValue, newValue);
@@ -192,7 +194,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> replaceAsync(K key, V value) {
-        return connectionManager.evalAsync(new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE),
+        return connectionManager.evalWriteAsync(getName(),
+                new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE),
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return v; else return nil; end",
             Collections.<Object>singletonList(getName()), key, value);
     }
@@ -204,7 +207,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> putAsync(K key, V value) {
-        return connectionManager.evalAsync(EVAL_PUT,
+        return connectionManager.evalWriteAsync(getName(), EVAL_PUT,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return v",
                 Collections.<Object>singletonList(getName()), key, value);
     }
@@ -212,7 +215,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> removeAsync(K key) {
-        return connectionManager.evalAsync(new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE),
+        return connectionManager.evalWriteAsync(getName(),
+                new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE),
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hdel', KEYS[1], ARGV[1]); return v",
                 Collections.<Object>singletonList(getName()), key);
     }

@@ -93,7 +93,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throw new NullPointerException();
         }
 
-        List<V> list = connectionManager.eval(RedisCommands.EVAL_LIST,
+        List<V> list = connectionManager.evalWrite(getName(), RedisCommands.EVAL_LIST,
               "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
               "redis.call('ltrim', KEYS[1], -1, 0); " +
               "return vals", Collections.<Object>singletonList(getName()));
@@ -110,7 +110,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throw new NullPointerException();
         }
 
-        List<V> list = connectionManager.eval(RedisCommands.EVAL_LIST,
+        List<V> list = connectionManager.evalWrite(getName(), RedisCommands.EVAL_LIST,
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +

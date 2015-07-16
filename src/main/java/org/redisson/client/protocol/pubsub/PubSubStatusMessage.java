@@ -15,23 +15,21 @@
  */
 package org.redisson.client.protocol.pubsub;
 
-import java.util.List;
-
 public class PubSubStatusMessage {
 
     public enum Type {SUBSCRIBE, PSUBSCRIBE, PUNSUBSCRIBE, UNSUBSCRIBE}
 
     private final Type type;
-    private final List<String> channels;
+    private final String channel;
 
-    public PubSubStatusMessage(Type type, List<String> channels) {
+    public PubSubStatusMessage(Type type, String channel) {
         super();
         this.type = type;
-        this.channels = channels;
+        this.channel = channel;
     }
 
-    public List<String> getChannels() {
-        return channels;
+    public String getChannel() {
+        return channel;
     }
 
     public Type getType() {
@@ -40,7 +38,7 @@ public class PubSubStatusMessage {
 
     @Override
     public String toString() {
-        return "PubSubStatusMessage [type=" + type + ", channels=" + channels + "]";
+        return "PubSubStatusMessage [type=" + type + ", channels=" + channel + "]";
     }
 
 }

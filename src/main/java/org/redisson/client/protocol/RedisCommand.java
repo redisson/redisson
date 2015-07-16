@@ -201,4 +201,9 @@ public class RedisCommand<R> {
         return outParamType;
     }
 
+    @Override
+    public String toString() {
+        return "RedisCommand [name=" + name + ", subName=" + subName + "]";
+    }
+
 }

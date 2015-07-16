@@ -31,6 +31,7 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,7 +127,20 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
             }
 
             Object result = messageDecoder(data, respParts).decode(respParts);
-            handleMultiResult(data, parts, channel, result);
+            if (result instanceof PubSubStatusMessage) {
+                if (parts == null) {
+                    parts = new ArrayList<Object>();
+                }
+                parts.add(result);
+                // has next status messages
+                if (in.writerIndex() > in.readerIndex()) {
+                    decode(in, data, parts, channel, currentDecoder);
+                } else {
+                    handleMultiResult(data, null, channel, parts);
+                }
+            } else {
+                handleMultiResult(data, parts, channel, result);
+            }
         } else {
             throw new IllegalStateException("Can't decode replay " + (char)code);
         }

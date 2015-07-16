@@ -132,11 +132,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
             });
 
-            Future<PubSubStatusMessage> res = pubsub.subscribe(StringCodec.INSTANCE, "+switch-master", "+sdown", "-sdown", "+slave");
-            res.addListener(new FutureListener<PubSubStatusMessage>() {
+            Future<List<PubSubStatusMessage>> res = pubsub.subscribe(StringCodec.INSTANCE, "+switch-master", "+sdown", "-sdown", "+slave");
+            res.addListener(new FutureListener<List<PubSubStatusMessage>>() {
                 @Override
-                public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
-                    log.info("subscribed to channel: {} from Sentinel {}:{}", future.getNow().getChannels(), addr.getHost(), addr.getPort());
+                public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
+                    log.info("subscribed to channels: {} from Sentinel {}:{}", future.getNow(), addr.getHost(), addr.getPort());
                 }
             });
         }

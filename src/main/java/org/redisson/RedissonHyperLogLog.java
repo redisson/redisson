@@ -72,7 +72,7 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
 
     @Override
     public Future<Long> countAsync() {
-        return connectionManager.readAsync(getName(), RedisCommands.PFCOUNT, getName());
+        return connectionManager.writeAsync(getName(), RedisCommands.PFCOUNT, getName());
     }
 
     @Override
@@ -80,7 +80,7 @@ public class RedissonHyperLogLog<V> extends RedissonObject implements RHyperLogL
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
-        return connectionManager.readAsync(getName(), RedisCommands.PFCOUNT, args.toArray());
+        return connectionManager.writeAsync(getName(), RedisCommands.PFCOUNT, args.toArray());
     }
 
     @Override

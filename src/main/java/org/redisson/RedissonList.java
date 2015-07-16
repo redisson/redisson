@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 
 import org.redisson.client.protocol.BooleanReplayConvertor;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
+import static org.redisson.client.protocol.RedisCommands.*;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RList;
 
@@ -50,7 +50,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public int size() {
-        Long size = connectionManager.read(getName(), RedisCommands.LLEN, getName());
+        Long size = connectionManager.read(getName(), LLEN, getName());
         return size.intValue();
     }
 
@@ -76,7 +76,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     protected List<V> readAllList() {
-        return connectionManager.read(getName(), RedisCommands.LRANGE, getName(), 0, -1);
+        return connectionManager.read(getName(), LRANGE, getName(), 0, -1);
     }
 
     @Override
@@ -101,7 +101,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     protected boolean remove(Object o, int count) {
-        return (Long)connectionManager.write(getName(), RedisCommands.LREM, getName(), count, o) > 0;
+        return (Long)connectionManager.write(getName(), LREM, getName(), count, o) > 0;
     }
 
     @Override
@@ -114,7 +114,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             int to = div(size(), batchSize);
             for (int i = 0; i < to; i++) {
                 final int j = i;
-                List<V> range = connectionManager.read(getName(), RedisCommands.LRANGE, getName(), j*batchSize, j*batchSize + batchSize - 1);
+                List<V> range = connectionManager.read(getName(), LRANGE, getName(), j*batchSize, j*batchSize + batchSize - 1);
                 for (Iterator<Object> iterator = copy.iterator(); iterator.hasNext();) {
                     Object obj = iterator.next();
                     int index = range.indexOf(obj);
@@ -143,7 +143,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
-        Future<Long> res = connectionManager.writeAsync(getName(), RedisCommands.RPUSH, args.toArray());
+        Future<Long> res = connectionManager.writeAsync(getName(), RPUSH, args.toArray());
         res.addListener(new FutureListener<Long>() {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
@@ -171,7 +171,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 Collections.reverse(elements);
                 elements.add(0, getName());
 
-                Long newSize = connectionManager.write(getName(), RedisCommands.LPUSH, elements.toArray());
+                Long newSize = connectionManager.write(getName(), LPUSH, elements.toArray());
                 return newSize != size;
             }
 
@@ -180,7 +180,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             List<Object> args = new ArrayList<Object>(coll.size() + 1);
             args.add(index);
             args.addAll(coll);
-            return connectionManager.eval(new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
+            return connectionManager.evalWrite(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
                     "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                             "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
                             "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
@@ -212,7 +212,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
         boolean result = false;
         for (Object object : c) {
-            boolean res = (Long)connectionManager.write(getName(), RedisCommands.LREM, getName(), 0, object) > 0;
+            boolean res = (Long)connectionManager.write(getName(), LREM, getName(), 0, object) > 0;
             if (!result) {
                 result = res;
             }
@@ -240,7 +240,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<V> getAsync(int index) {
-        return connectionManager.readAsync(getName(), RedisCommands.LINDEX, getName(), index);
+        return connectionManager.readAsync(getName(), LINDEX, getName(), index);
     }
 
     @Override
@@ -278,7 +278,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public V set(int index, V element) {
         checkIndex(index);
 
-        return connectionManager.eval(new RedisCommand<Object>("EVAL", 5),
+        return connectionManager.evalWrite(getName(), new RedisCommand<Object>("EVAL", 5),
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
@@ -306,10 +306,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         checkIndex(index);
 
         if (index == 0) {
-            return connectionManager.write(getName(), RedisCommands.LPOP, getName());
+            return connectionManager.write(getName(), LPOP, getName());
         }
 
-        return connectionManager.eval(RedisCommands.EVAL_OBJECT,
+        return connectionManager.evalWrite(getName(), EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "local tail = redis.call('lrange', KEYS[1], ARGV[1]);" +
                         "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +
@@ -324,7 +324,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return -1;
         }
 
-        Long index = connectionManager.eval(new RedisCommand<Long>("EVAL", 4),
+        Long index = connectionManager.evalRead(getName(), new RedisCommand<Long>("EVAL", 4),
                 "local s = redis.call('llen', KEYS[1]);" +
                         "for i = 0, s, 1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
                         "return -1",
@@ -338,7 +338,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return -1;
         }
 
-        return ((Long)connectionManager.eval(new RedisCommand<Long>("EVAL", 4),
+        return ((Long)connectionManager.evalRead(getName(), new RedisCommand<Long>("EVAL", 4),
                 "local s = redis.call('llen', KEYS[1]);" +
                         "for i = s, 0, -1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
                         "return -1",
@@ -455,7 +455,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             throw new IllegalArgumentException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
         }
 
-        return connectionManager.read(getName(), RedisCommands.LRANGE, getName(), fromIndex, toIndex - 1);
+        return connectionManager.read(getName(), LRANGE, getName(), fromIndex, toIndex - 1);
     }
 
     public String toString() {

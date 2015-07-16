@@ -40,6 +40,23 @@ import io.netty.util.concurrent.Future;
 //TODO ping support
 public interface ConnectionManager {
 
+    <T, R> Future<R> evalReadAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> Future<R> evalWriteAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> Future<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+
     <R> R read(String key, SyncOperation<R> operation);
 
     <R> R write(String key, SyncOperation<R> operation);
@@ -52,8 +69,6 @@ public interface ConnectionManager {
 
     <T, R> Future<R> writeAsync(Codec codec, RedisCommand<T> command, Object ... params);
 
-    <T, R> R eval(RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
-
     <T, R> Future<R> evalAsync(RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
     <T, R> Future<R> evalAsync(Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
@@ -63,8 +78,6 @@ public interface ConnectionManager {
     <T, R> Future<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> R read(String key, RedisCommand<T> command, Object ... params);
-
-    <T, R> R eval(Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
     <T, R> Future<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
