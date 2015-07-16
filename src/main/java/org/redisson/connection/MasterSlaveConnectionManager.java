@@ -246,28 +246,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return readAsync(key, codec, command, params);
     }
 
-    public <T> Future<Void> writeAsyncVoid(String key, RedisCommand<T> command, Object ... params) {
-        final Promise<Void> voidPromise = getGroup().next().newPromise();
-        Promise<String> mainPromise = getGroup().next().newPromise();
-        mainPromise.addListener(new FutureListener<String>() {
-            @Override
-            public void operationComplete(Future<String> future) throws Exception {
-                if (future.isCancelled()) {
-                    voidPromise.cancel(true);
-                } else {
-                    if (future.isSuccess()) {
-                        voidPromise.setSuccess(null);
-                    } else {
-                        voidPromise.setFailure(future.cause());
-                    }
-                }
-            }
-        });
-        int slot = calcSlot(key);
-        async(false, slot, null, codec, command, params, mainPromise, 0);
-        return voidPromise;
-    }
-
     public <R> R write(String key, SyncOperation<R> operation) {
         int slot = calcSlot(key);
         return async(false, slot, operation, 0);

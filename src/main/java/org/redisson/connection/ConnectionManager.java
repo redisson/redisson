@@ -89,8 +89,6 @@ public interface ConnectionManager {
 
     <T> Future<Boolean> writeAllAsync(RedisCommand<T> command, Object ... params);
 
-    <T> Future<Void> writeAsyncVoid(String key, RedisCommand<T> command, Object ... params);
-
     <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params);
 
     <T, R> Future<R> readAsync(String key, RedisCommand<T> command, Object ... params);

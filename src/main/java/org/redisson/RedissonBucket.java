@@ -46,7 +46,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Void> setAsync(V value) {
-        return connectionManager.writeAsyncVoid(getName(), RedisCommands.SET, getName(), value);
+        return connectionManager.writeAsync(getName(), RedisCommands.SET, getName(), value);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return connectionManager.writeAsyncVoid(getName(), RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
+        return connectionManager.writeAsync(getName(), RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
     }
 
     @Override
