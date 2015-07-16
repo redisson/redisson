@@ -15,41 +15,34 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * Base interface for all Redisson objects
  *
  * @author Nikita Koksharov
  *
  */
-public interface RObject extends RObjectAsync {
+public interface RObjectAsync {
 
-    /**
-     * Returns name of object
-     *
-     * @return name
-     */
-    String getName();
-
-    /**
-     * Deletes the object
-     */
-    boolean delete();
+    Future<Boolean> deleteAsync();
 
     /**
      * Rename current object key to <code>newName</code>
+     * in async mode
      *
      * @param newName
      * @return
      */
-    boolean rename(String newName);
+    Future<Boolean> renameAsync(String newName);
 
     /**
      * Rename current object key to <code>newName</code>
-     * only if new key is not exists
+     * in async mode only if new key is not exists
      *
      * @param newName
      * @return
      */
-    boolean renamenx(String newName);
+    Future<Boolean> renamenxAsync(String newName);
 
 }
