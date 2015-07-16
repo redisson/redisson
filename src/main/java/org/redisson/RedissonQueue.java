@@ -21,6 +21,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RQueue;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
  *
@@ -80,7 +82,17 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V pollLastAndOfferFirstTo(String queueName) {
-        return connectionManager.write(getName(), RedisCommands.RPOPLPUSH, getName(), queueName);
+        return connectionManager.get(pollLastAndOfferFirstToAsync(queueName));
+    }
+
+    @Override
+    public Future<V> pollLastAndOfferFirstToAsync(String queueName) {
+        return connectionManager.writeAsync(getName(), RedisCommands.RPOPLPUSH, getName(), queueName);
+    }
+
+    @Override
+    public Future<V> pollLastAndOfferFirstToAsync(RQueue<V> queue) {
+        return pollLastAndOfferFirstToAsync(queue.getName());
     }
 
     @Override

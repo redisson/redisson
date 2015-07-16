@@ -17,6 +17,8 @@ package org.redisson.core;
 
 import java.util.Queue;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * {@link java.util.Queue} backed by Redis
  *
@@ -26,8 +28,12 @@ import java.util.Queue;
  */
 public interface RQueue<V> extends Queue<V>, RExpirable {
 
+    Future<V> pollLastAndOfferFirstToAsync(RQueue<V> queue);
+
+    Future<V> pollLastAndOfferFirstToAsync(String queueName);
+
     V pollLastAndOfferFirstTo(String dequeName);
-    
+
     V pollLastAndOfferFirstTo(RQueue<V> deque);
-    
+
 }
