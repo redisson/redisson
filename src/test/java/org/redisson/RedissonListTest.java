@@ -470,15 +470,16 @@ public class RedissonListTest extends BaseTest {
         list.add(4);
         list.add(5);
 
-        list.removeAll(Arrays.asList(3, 2, 10, 6));
+        Assert.assertFalse(list.removeAll(Collections.emptyList()));
+        Assert.assertTrue(list.removeAll(Arrays.asList(3, 2, 10, 6)));
 
         Assert.assertThat(list, Matchers.contains(1, 4, 5));
 
-        list.removeAll(Arrays.asList(4));
+        Assert.assertTrue(list.removeAll(Arrays.asList(4)));
 
         Assert.assertThat(list, Matchers.contains(1, 5));
 
-        list.removeAll(Arrays.asList(1, 5, 1, 5));
+        Assert.assertTrue(list.removeAll(Arrays.asList(1, 5, 1, 5)));
 
         Assert.assertTrue(list.isEmpty());
     }
