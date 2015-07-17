@@ -15,18 +15,20 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.Collection;
 
-public interface RHyperLogLog<V> extends RExpirable, RHyperLogLogAsync<V> {
+public interface RHyperLogLogAsync<V> extends RExpirableAsync {
 
-    boolean add(V obj);
+    Future<Boolean> addAsync(V obj);
 
-    boolean addAll(Collection<V> objects);
+    Future<Boolean> addAllAsync(Collection<V> objects);
 
-    long count();
+    Future<Long> countAsync();
 
-    long countWith(String ... otherLogNames);
+    Future<Long> countWithAsync(String ... otherLogNames);
 
-    void mergeWith(String ... otherLogNames);
+    Future<Void> mergeWithAsync(String ... otherLogNames);
 
 }
