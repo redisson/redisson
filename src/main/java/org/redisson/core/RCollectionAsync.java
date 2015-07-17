@@ -1,7 +1,6 @@
 package org.redisson.core;
 
 import java.util.Collection;
-import java.util.List;
 
 import io.netty.util.concurrent.Future;
 
@@ -11,11 +10,13 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
 
     Future<Boolean> removeAllAsync(Collection<?> c);
 
+    Future<Boolean> containsAsync(Object o);
+
     Future<Boolean> containsAllAsync(Collection<?> c);
 
     Future<Boolean> removeAsync(Object o);
 
-    Future<List<V>> readAllAsync();
+    Future<Collection<V>> readAllAsync();
 
     Future<Integer> sizeAsync();
 

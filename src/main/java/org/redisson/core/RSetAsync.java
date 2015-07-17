@@ -15,15 +15,13 @@
  */
 package org.redisson.core;
 
-import java.util.Set;
-
 /**
- * Distributed and concurrent implementation of {@link java.util.Set}
+ * Async set functions
  *
  * @author Nikita Koksharov
  *
  * @param <V> value
  */
-public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
+public interface RSetAsync<V> extends RCollectionAsync<V> {
 
 }

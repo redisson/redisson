@@ -17,11 +17,14 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSet;
@@ -43,7 +46,12 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public int size() {
-        return ((Long)connectionManager.read(getName(), RedisCommands.SCARD, getName())).intValue();
+        return connectionManager.get(sizeAsync());
+    }
+
+    @Override
+    public Future<Integer> sizeAsync() {
+        return connectionManager.readAsync(getName(), RedisCommands.SCARD, getName());
     }
 
     @Override
@@ -53,7 +61,12 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean contains(Object o) {
-        return connectionManager.read(getName(), RedisCommands.SISMEMBER, getName(), o);
+        return connectionManager.get(containsAsync(o));
+    }
+
+    @Override
+    public Future<Boolean> containsAsync(Object o) {
+        return connectionManager.readAsync(getName(), RedisCommands.SISMEMBER, getName(), o);
     }
 
     private ListScanResult<V> scanIterator(long startPos) {
@@ -112,14 +125,19 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
+    public Future<Collection<V>> readAllAsync() {
+        return connectionManager.readAsync(getName(), RedisCommands.SMEMBERS, getName());
+    }
+
+    @Override
     public Object[] toArray() {
-        List<Object> res = connectionManager.read(getName(), RedisCommands.SMEMBERS, getName());
+        List<Object> res = (List<Object>) connectionManager.get(readAllAsync());
         return res.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<Object> res = connectionManager.read(getName(), RedisCommands.SMEMBERS, getName());
+        List<Object> res = (List<Object>) connectionManager.get(readAllAsync());
         return res.toArray(a);
     }
 
@@ -134,8 +152,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
-    public Future<Boolean> removeAsync(V e) {
-        return connectionManager.writeAsync(getName(), RedisCommands.SREM_SINGLE, getName(), e);
+    public Future<Boolean> removeAsync(Object o) {
+        return connectionManager.writeAsync(getName(), RedisCommands.SREM_SINGLE, getName(), o);
     }
 
     @Override
@@ -145,49 +163,85 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        for (Object object : c) {
-            if (!contains(object)) {
-                return false;
-            }
-        }
-        return true;
+        return connectionManager.get(containsAllAsync(c));
     }
 
     @Override
-    public boolean addAll(final Collection<? extends V> c) {
+    public Future<Boolean> containsAllAsync(Collection<?> c) {
+        return connectionManager.evalReadAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+                "local s = redis.call('smembers', KEYS[1]);" +
+                        "for i = 0, table.getn(s), 1 do " +
+                            "for j = 0, table.getn(ARGV), 1 do "
+                            + "if ARGV[j] == s[i] "
+                            + "then table.remove(ARGV, j) end "
+                        + "end; "
+                       + "end;"
+                       + "return table.getn(ARGV) == 0; ",
+                Collections.<Object>singletonList(getName()), c.toArray());
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
             return false;
         }
 
+        return connectionManager.get(addAllAsync(c));
+    }
+
+    @Override
+    public Future<Boolean> addAllAsync(Collection<? extends V> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
-        Long res = connectionManager.write(getName(), RedisCommands.SADD, args.toArray());
-        return res > 0;
+        return connectionManager.writeAsync(getName(), RedisCommands.SADD, args.toArray());
     }
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        List<V> toRemove = new ArrayList<V>();
-        for (V object : this) {
-            if (!c.contains(object)) {
-                toRemove.add(object);
-            }
-        }
-        return removeAll(toRemove);
+        return connectionManager.get(retainAllAsync(c));
     }
 
     @Override
-    public boolean removeAll(final Collection<?> c) {
-        if (c.isEmpty()) {
-            return false;
-        }
+    public Future<Boolean> retainAllAsync(Collection<?> c) {
+        return connectionManager.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+                    "local changed = false " +
+                    "local s = redis.call('smembers', KEYS[1]) "
+                       + "local i = 0 "
+                       + "while i <= table.getn(s) do "
+                            + "local element = s[i] "
+                            + "local isInAgrs = false "
+                            + "for j = 0, table.getn(ARGV), 1 do "
+                                + "if ARGV[j] == element then "
+                                    + "isInAgrs = true "
+                                    + "break "
+                                + "end "
+                            + "end "
+                            + "if isInAgrs == false then "
+                                + "redis.call('SREM', KEYS[1], element) "
+                                + "changed = true "
+                            + "end "
+                            + "i = i + 1 "
+                       + "end "
+                       + "return changed ",
+                Collections.<Object>singletonList(getName()), c.toArray());
+    }
 
-        List<Object> args = new ArrayList<Object>(c.size() + 1);
-        args.add(getName());
-        args.addAll(c);
-        Long res = connectionManager.write(getName(), RedisCommands.SREM, args.toArray());
-        return res > 0;
+    @Override
+    public Future<Boolean> removeAllAsync(Collection<?> c) {
+        return connectionManager.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+                        "local v = false " +
+                        "for i = 0, table.getn(ARGV), 1 do "
+                            + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "
+                            + "then v = true end "
+                        +"end "
+                       + "return v ",
+                Collections.<Object>singletonList(getName()), c.toArray());
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c) {
+        return connectionManager.get(removeAllAsync(c));
     }
 
     @Override

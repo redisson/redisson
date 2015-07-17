@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.core;
+package org.redisson.client.protocol.convertor;
 
-import java.util.Set;
+public class BooleanAmountReplayConvertor extends SingleConvertor<Boolean> {
 
-/**
- * Distributed and concurrent implementation of {@link java.util.Set}
- *
- * @author Nikita Koksharov
- *
- * @param <V> value
- */
-public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
+    @Override
+    public Boolean convert(Object obj) {
+        return (Long)obj > 0;
+    }
+
 
 }

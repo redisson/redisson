@@ -1,9 +1,11 @@
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-
 import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.hamcrest.MatcherAssert;
@@ -11,7 +13,8 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RSet;
-import org.redisson.core.RSortedSet;
+
+import io.netty.util.concurrent.Future;
 
 public class RedissonSetTest extends BaseTest {
 
@@ -191,6 +194,7 @@ public class RedissonSetTest extends BaseTest {
             set.add(i);
         }
 
+        Assert.assertTrue(set.containsAll(Collections.emptyList()));
         Assert.assertTrue(set.containsAll(Arrays.asList(30, 11)));
         Assert.assertFalse(set.containsAll(Arrays.asList(30, 711, 11)));
     }
