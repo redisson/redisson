@@ -28,7 +28,7 @@ public class CommandsData implements QueueCommand {
         this.commands = commands;
     }
 
-    public List<CommandData<? extends Object, ? extends Object>> getCommands() {
+    public List<CommandData<?, ?>> getCommands() {
         return commands;
     }
 

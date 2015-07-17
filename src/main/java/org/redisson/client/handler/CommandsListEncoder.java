@@ -29,12 +29,10 @@ import io.netty.handler.codec.MessageToByteEncoder;
  */
 public class CommandsListEncoder extends MessageToByteEncoder<CommandsData> {
 
-    private final CommandEncoder encoder = new CommandEncoder();
-
     @Override
     protected void encode(ChannelHandlerContext ctx, CommandsData msg, ByteBuf out) throws Exception {
         for (CommandData<?, ?> commandData : msg.getCommands()) {
-            encoder.encode(ctx, (CommandData<Object, Object>)commandData, out);
+            ctx.pipeline().get(CommandEncoder.class).encode(ctx, (CommandData<Object, Object>)commandData, out);
         }
     }
 
