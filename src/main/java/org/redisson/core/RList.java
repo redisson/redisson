@@ -24,7 +24,7 @@ import java.util.List;
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RList<V> extends List<V>, RListAsync<V> {
+public interface RList<V> extends List<V>, RExpirable, RListAsync<V> {
 
     void fastSet(int index, V element);
 

@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  * @param <K> key
  * @param <V> value
  */
-public interface RMap<K, V> extends ConcurrentMap<K, V>, RMapAsync<K, V> {
+public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
 
     /**
      * Atomically adds the given <code>delta</code> to the current value
