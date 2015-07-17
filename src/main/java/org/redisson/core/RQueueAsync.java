@@ -18,22 +18,22 @@ package org.redisson.core;
 import io.netty.util.concurrent.Future;
 
 /**
- * Async list functions
+ * {@link java.util.Queue} backed by Redis
  *
  * @author Nikita Koksharov
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RListAsync<V> extends RCollectionAsync<V> {
+public interface RQueueAsync<V> extends RCollectionAsync<V> {
 
-    Future<Integer> lastIndexOfAsync(Object o);
+    Future<V> peekAsync();
 
-    Future<Integer> indexOfAsync(Object o);
+    Future<V> pollAsync();
 
-    Future<Void> fastSetAsync(int index, V element);
+    Future<Boolean> offerAsync(V e);
 
-    Future<V> setAsync(int index, V element);
+    Future<V> pollLastAndOfferFirstToAsync(RQueue<V> queue);
 
-    Future<V> getAsync(int index);
+    Future<V> pollLastAndOfferFirstToAsync(String queueName);
 
 }

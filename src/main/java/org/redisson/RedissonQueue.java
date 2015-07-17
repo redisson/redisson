@@ -41,6 +41,11 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
         return add(e);
     }
 
+    @Override
+    public Future<Boolean> offerAsync(V e) {
+        return addAsync(e);
+    }
+
     public V getFirst() {
         V value = connectionManager.read(getName(), RedisCommands.LINDEX, getName(), 0);
         if (value == null) {
@@ -63,13 +68,23 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     @Override
+    public Future<V> pollAsync() {
+        return connectionManager.writeAsync(getName(), RedisCommands.LPOP, getName());
+    }
+
+    @Override
     public V poll() {
-        return connectionManager.write(getName(), RedisCommands.LPOP, getName());
+        return connectionManager.get(pollAsync());
     }
 
     @Override
     public V element() {
         return getFirst();
+    }
+
+    @Override
+    public Future<V> peekAsync() {
+        return getAsync(0);
     }
 
     @Override
