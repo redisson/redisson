@@ -41,6 +41,8 @@ import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 
 public interface RedisCommands {
 
+    RedisStrictCommand<String> PING = new RedisStrictCommand<String>("PING");
+
     RedisStrictCommand<Boolean> UNWATCH = new RedisStrictCommand<Boolean>("UNWATCH", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> WATCH = new RedisStrictCommand<Boolean>("WATCH", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> MULTI = new RedisStrictCommand<Boolean>("MULTI", new BooleanReplayConvertor());

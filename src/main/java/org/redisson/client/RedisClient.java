@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
+import org.redisson.client.handler.CommandsListEncoder;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.handler.ConnectionWatchdog;
 import org.redisson.client.protocol.RedisCommands;
@@ -59,6 +60,7 @@ public class RedisClient {
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels),
                                         new CommandEncoder(),
+                                        new CommandsListEncoder(),
                                         new CommandsQueue(),
                                         new CommandDecoder());
             }
@@ -76,7 +78,7 @@ public class RedisClient {
         return timeout;
     }
 
-    Bootstrap getBootstrap() {
+    public Bootstrap getBootstrap() {
         return bootstrap;
     }
 

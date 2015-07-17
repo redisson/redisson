@@ -15,10 +15,12 @@
  */
 package org.redisson.client;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.client.handler.CommandData;
 import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -79,6 +81,10 @@ public class RedisConnection implements RedisCommands {
         channel.writeAndFlush(data);
     }
 
+    public void send(List<CommandData<? extends Object, ? extends Object>> data) {
+        channel.writeAndFlush(new CommandsData(data));
+    }
+
     public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params) {
         Future<R> r = async(encoder, command, params);
         return await(r);
@@ -88,6 +94,11 @@ public class RedisConnection implements RedisCommands {
         Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
         channel.writeAndFlush(new CommandData<T, R>(promise, encoder, command, params));
         return promise;
+    }
+
+    public <T, R> CommandData<T, R> create(Codec encoder, RedisCommand<T> command, Object ... params) {
+        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        return new CommandData<T, R>(promise, encoder, command, params);
     }
 
     public void setClosed(boolean reconnect) {

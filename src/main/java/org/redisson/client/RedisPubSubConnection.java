@@ -18,8 +18,8 @@ package org.redisson.client;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.redisson.client.handler.CommandData;
 import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MultiDecoder;

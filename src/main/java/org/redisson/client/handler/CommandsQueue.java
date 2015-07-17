@@ -17,19 +17,27 @@ package org.redisson.client.handler;
 
 import java.util.Queue;
 
+import org.redisson.client.protocol.QueueCommand;
+
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ *
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class CommandsQueue extends ChannelDuplexHandler {
 
     public enum QueueCommands {NEXT_COMMAND}
 
-    public static final AttributeKey<CommandData<Object, Object>> REPLAY = AttributeKey.valueOf("promise");
+    public static final AttributeKey<QueueCommand> REPLAY = AttributeKey.valueOf("promise");
 
-    private final Queue<CommandData<Object, Object>> queue = PlatformDependent.newMpscQueue();
+    private final Queue<QueueCommand> queue = PlatformDependent.newMpscQueue();
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -43,8 +51,8 @@ public class CommandsQueue extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (msg instanceof CommandData) {
-            CommandData<Object, Object> data = (CommandData<Object, Object>) msg;
+        if (msg instanceof QueueCommand) {
+            QueueCommand data = (QueueCommand) msg;
             if (data.getSended().get()) {
                 super.write(ctx, msg, promise);
             } else {
@@ -57,7 +65,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
     }
 
     private void sendData(ChannelHandlerContext ctx) throws Exception {
-        CommandData<Object, Object> data = queue.peek();
+        QueueCommand data = queue.peek();
         if (data != null && data.getSended().compareAndSet(false, true)) {
             ctx.channel().attr(REPLAY).set(data);
             ctx.channel().writeAndFlush(data);

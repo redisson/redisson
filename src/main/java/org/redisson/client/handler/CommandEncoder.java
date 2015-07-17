@@ -15,6 +15,7 @@
  */
 package org.redisson.client.handler;
 
+import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.StringParamsEncoder;
 import org.slf4j.Logger;

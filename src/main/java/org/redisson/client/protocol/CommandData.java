@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.handler;
+package org.redisson.client.protocol;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.redisson.client.protocol.Codec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.util.concurrent.Promise;
 
-public class CommandData<T, R> {
+public class CommandData<T, R> implements QueueCommand {
 
     final Promise<R> promise;
     final RedisCommand<T> command;

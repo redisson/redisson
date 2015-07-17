@@ -26,7 +26,10 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.handler.CommandsQueue.QueueCommands;
+import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
@@ -59,7 +62,7 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        CommandData<Object, Object> data = ctx.channel().attr(CommandsQueue.REPLAY).get();
+        QueueCommand data = ctx.channel().attr(CommandsQueue.REPLAY).get();
 
         Decoder<Object> currentDecoder = null;
         if (data == null) {
@@ -75,10 +78,26 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
             log.trace("channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
         }
 
-        try {
-            decode(in, data, null, ctx.channel(), currentDecoder);
-        } catch (IOException e) {
-            data.getPromise().setFailure(e);
+        if (data instanceof CommandData) {
+            CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
+            try {
+                decode(in, cmd, null, ctx.channel(), currentDecoder);
+            } catch (IOException e) {
+                cmd.getPromise().setFailure(e);
+            }
+        } else if (data instanceof CommandsData) {
+            CommandsData commands = (CommandsData)data;
+            int i = 0;
+            while (in.writerIndex() > in.readerIndex()) {
+                CommandData<Object, Object> cmd = null;
+                try {
+                    cmd = (CommandData<Object, Object>) commands.getCommands().get(i);
+                    decode(in, cmd, null, ctx.channel(), currentDecoder);
+                    i++;
+                } catch (IOException e) {
+                    cmd.getPromise().setFailure(e);
+                }
+            }
         }
 
         ctx.channel().attr(CommandsQueue.REPLAY).remove();
