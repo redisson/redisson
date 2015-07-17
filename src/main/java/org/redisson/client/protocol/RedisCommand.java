@@ -126,6 +126,10 @@ public class RedisCommand<R> {
         this.inParamType = inParamTypes;
     }
 
+    public RedisCommand(String name, Convertor<R> convertor) {
+        this(name, convertor, -1);
+    }
+
     public RedisCommand(String name, Convertor<R> convertor, int encodeParamIndex) {
         this(name, null, null, null, encodeParamIndex);
         this.convertor = convertor;

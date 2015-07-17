@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,10 +29,11 @@ import java.util.Set;
 
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
+import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
+import org.redisson.client.protocol.convertor.LongReplayConvertor;
+import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.Predicate;
@@ -61,8 +61,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public int size() {
-        Long res = connectionManager.read(getName(), RedisCommands.HLEN, getName());
-        return res.intValue();
+        return connectionManager.get(sizeAsync());
+    }
+
+    @Override
+    public Future<Integer> sizeAsync() {
+        return connectionManager.readAsync(getName(), RedisCommands.HLEN, getName());
     }
 
     @Override
@@ -76,9 +80,26 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public Future<Boolean> containsKeyAsync(Object key) {
+        return connectionManager.readAsync(getName(), RedisCommands.HEXISTS, getName(), key);
+    }
+
+    @Override
     public boolean containsValue(Object value) {
-        Collection<V> list = values();
-        return list.contains(value);
+        return connectionManager.get(containsValueAsync(value));
+    }
+
+    @Override
+    public Future<Boolean> containsValueAsync(Object value) {
+        return connectionManager.evalReadAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+                "local s = redis.call('hvals', KEYS[1]);" +
+                        "for i = 0, table.getn(s), 1 do "
+                            + "if ARGV[1] == s[i] then "
+                                + "return true "
+                            + "end "
+                       + "end;" +
+                     "return false",
+                Collections.<Object>singletonList(getName()), value);
     }
 
     @Override
@@ -133,13 +154,22 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Set<K> keySet() {
-        List<K> keys = connectionManager.read(getName(), RedisCommands.HKEYS, getName());
-        return new HashSet<K>(keys);
+        return connectionManager.get(keySetAsync());
+    }
+
+    @Override
+    public Future<Set<K>> keySetAsync() {
+        return connectionManager.readAsync(getName(), RedisCommands.HKEYS, getName());
     }
 
     @Override
     public Collection<V> values() {
-        return connectionManager.read(getName(), RedisCommands.HVALS, getName());
+        return connectionManager.get(valuesAsync());
+    }
+
+    @Override
+    public Future<Collection<V>> valuesAsync() {
+        return connectionManager.readAsync(getName(), RedisCommands.HVALS, getName());
     }
 
     @Override
@@ -232,7 +262,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Long> fastRemoveAsync(final K ... keys) {
+    public Future<Long> fastRemoveAsync(K ... keys) {
         if (keys == null || keys.length == 0) {
             return connectionManager.getGroup().next().newSucceededFuture(0L);
         }
@@ -335,31 +365,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public V addAndGet(K key, V value) {
-        String res = connectionManager.write(getName(), StringCodec.INSTANCE,
-                RedisCommands.HINCRBYFLOAT, getName(), key, new BigDecimal(value.toString()).toPlainString());
-
-        if (value instanceof Long) {
-            Object obj = Long.parseLong(res);
-            return (V)obj;
-        }
-        if (value instanceof Integer) {
-            Object obj = Integer.parseInt(res);
-            return (V)obj;
-        }
-        if (value instanceof Float) {
-            Object obj = Float.parseFloat(res);
-            return (V)obj;
-        }
-        if (value instanceof Double) {
-            Object obj = Double.parseDouble(res);
-            return (V)obj;
-        }
-        if (value instanceof BigDecimal) {
-            Object obj = new BigDecimal(res);
-            return (V)obj;
-        }
-        throw new IllegalStateException("Wrong value type!");
+    public V addAndGet(K key, Number value) {
+        return connectionManager.get(addAndGetAsync(key, value));
     }
+
+    @Override
+    public Future<V> addAndGetAsync(K key, Number value) {
+        return connectionManager.writeAsync(getName(), StringCodec.INSTANCE,
+                new RedisCommand<Object>("HINCRBYFLOAT", new NumberConvertor(value.getClass())),
+                   getName(), key, new BigDecimal(value.toString()).toPlainString());
+    }
+
 
 }
