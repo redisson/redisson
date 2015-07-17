@@ -37,6 +37,12 @@ public class RedisCommand<R> {
     private Decoder<R> replayDecoder;
     Convertor<R> convertor = new EmptyConvertor<R>();
 
+    /**
+     * Copy command and change name
+     *
+     * @param command - source command
+     * @param name - new command name
+     */
     public RedisCommand(RedisCommand<R> command, String name) {
         this.outParamType = command.outParamType;
         this.inParamType = command.inParamType;

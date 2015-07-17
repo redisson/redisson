@@ -15,17 +15,44 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
+import java.util.Collection;
 import java.util.List;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.List}
+ * Async list functions
  *
  * @author Nikita Koksharov
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RList<V> extends List<V>, RListAsync<V> {
+public interface RListAsync<V> extends RExpirableAsync {
 
-    void fastSet(int index, V element);
+    Future<Integer> lastIndexOfAsync(Object o);
+
+    Future<Integer> indexOfAsync(Object o);
+
+    Future<Void> fastSetAsync(int index, V element);
+
+    Future<V> setAsync(int index, V element);
+
+    Future<Boolean> retainAllAsync(Collection<?> c);
+
+    Future<Boolean> removeAllAsync(Collection<?> c);
+
+    Future<Boolean> containsAllAsync(Collection<?> c);
+
+    Future<Boolean> removeAsync(Object o);
+
+    Future<List<V>> readAllAsync();
+
+    Future<Integer> sizeAsync();
+
+    Future<V> getAsync(int index);
+
+    Future<Boolean> addAsync(V e);
+
+    Future<Boolean> addAllAsync(Collection<? extends V> c);
 
 }

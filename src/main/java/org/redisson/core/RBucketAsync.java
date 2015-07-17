@@ -20,7 +20,7 @@ import io.netty.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Any object holder
+ * Async object functions
  *
  * @author Nikita Koksharov
  *

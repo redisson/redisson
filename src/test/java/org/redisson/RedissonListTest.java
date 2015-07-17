@@ -449,6 +449,19 @@ public class RedissonListTest extends BaseTest {
 
 
     @Test
+    public void testRemoveAllEmpty() {
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        Assert.assertFalse(list.removeAll(Collections.emptyList()));
+        Assert.assertFalse(Arrays.asList(1).removeAll(Collections.emptyList()));
+    }
+
+    @Test
     public void testRemoveAll() {
         List<Integer> list = redisson.getList("list");
         list.add(1);
@@ -483,6 +496,16 @@ public class RedissonListTest extends BaseTest {
 
         Assert.assertThat(list, Matchers.contains(2, 3));
         Assert.assertEquals(2, list.size());
+    }
+
+    @Test
+    public void testFastSet() {
+        RList<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+
+        list.fastSet(0, 3);
+        Assert.assertEquals(3, (int)list.get(0));
     }
 
     @Test
@@ -592,6 +615,18 @@ public class RedissonListTest extends BaseTest {
 
         Assert.assertTrue(list.containsAll(Arrays.asList(30, 11)));
         Assert.assertFalse(list.containsAll(Arrays.asList(30, 711, 11)));
+        Assert.assertTrue(list.containsAll(Arrays.asList(30)));
+    }
+
+    @Test
+    public void testContainsAllEmpty() {
+        List<Integer> list = redisson.getList("list");
+        for (int i = 0; i < 200; i++) {
+            list.add(i);
+        }
+
+        Assert.assertTrue(list.containsAll(Collections.emptyList()));
+        Assert.assertTrue(Arrays.asList(1).containsAll(Collections.emptyList()));
     }
 
     @Test
