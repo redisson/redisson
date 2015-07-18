@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
@@ -26,7 +28,7 @@ public class LongCodec extends StringCodec {
     public Decoder<Object> getValueDecoder() {
         return new Decoder<Object>() {
             @Override
-            public Object decode(ByteBuf buf) {
+            public Object decode(ByteBuf buf, State state) {
                 return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
             }
         };

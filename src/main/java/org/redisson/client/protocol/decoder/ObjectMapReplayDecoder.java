@@ -19,17 +19,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 
 public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
 
     @Override
-    public Object decode(ByteBuf buf) {
+    public Object decode(ByteBuf buf, State state) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Map<Object, Object> decode(List<Object> parts) {
+    public Map<Object, Object> decode(List<Object> parts, State state) {
         Map<Object, Object> result = new HashMap<Object, Object>(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
@@ -40,7 +42,7 @@ public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>>
     }
 
     @Override
-    public boolean isApplicable(int paramNum) {
+    public boolean isApplicable(int paramNum, State state) {
         return false;
     }
 

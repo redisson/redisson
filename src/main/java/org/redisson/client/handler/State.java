@@ -2,14 +2,15 @@ package org.redisson.client.handler;
 
 import java.util.List;
 
-public class DecoderState {
+public class State {
 
     private int index;
+    private Object decoderState;
 
     private long size;
     private List<Object> respParts;
 
-    public DecoderState() {
+    public State() {
         super();
     }
 
@@ -34,5 +35,11 @@ public class DecoderState {
         return index;
     }
 
+    public <T> T getDecoderState() {
+        return (T)decoderState;
+    }
+    public void setDecoderState(Object decoderState) {
+        this.decoderState = decoderState;
+    }
 
 }

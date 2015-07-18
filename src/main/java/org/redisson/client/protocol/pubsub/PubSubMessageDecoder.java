@@ -18,6 +18,7 @@ package org.redisson.client.protocol.pubsub;
 import java.io.IOException;
 import java.util.List;
 
+import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
@@ -33,17 +34,17 @@ public class PubSubMessageDecoder implements MultiDecoder<Object> {
     }
 
     @Override
-    public Object decode(ByteBuf buf) throws IOException {
-        return decoder.decode(buf);
+    public Object decode(ByteBuf buf, State state) throws IOException {
+        return decoder.decode(buf, null);
     }
 
     @Override
-    public PubSubMessage<Object> decode(List<Object> parts) {
+    public PubSubMessage<Object> decode(List<Object> parts, State state) {
         return new PubSubMessage<Object>(parts.get(1).toString(), parts.get(2));
     }
 
     @Override
-    public boolean isApplicable(int paramNum) {
+    public boolean isApplicable(int paramNum, State state) {
         return true;
     }
 

@@ -17,22 +17,24 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 
 public class ObjectListReplayDecoder implements MultiDecoder<List<Object>> {
 
     @Override
-    public Object decode(ByteBuf buf) {
+    public Object decode(ByteBuf buf, State state) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<Object> decode(List<Object> parts) {
+    public List<Object> decode(List<Object> parts, State state) {
         return parts;
     }
 
     @Override
-    public boolean isApplicable(int paramNum) {
+    public boolean isApplicable(int paramNum, State state) {
         return false;
     }
 

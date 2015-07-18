@@ -21,24 +21,36 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 
 public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
 
+    public static class DecoderState {
+
+        Deque<MultiDecoder<?>> decoders;
+
+        Deque<MultiDecoder<?>> flipDecoders;
+
+        public DecoderState(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder) {
+            super();
+            this.decoders = new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder));
+            this.flipDecoders = new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder, firstDecoder));
+        }
+
+        public Deque<MultiDecoder<?>> getDecoders() {
+            return decoders;
+        }
+
+        public Deque<MultiDecoder<?>> getFlipDecoders() {
+            return flipDecoders;
+        }
+
+    }
+
     private final MultiDecoder<Object> firstDecoder;
     private final MultiDecoder<Object> secondDecoder;
-
-    private ThreadLocal<Deque<MultiDecoder<?>>> decoders = new ThreadLocal<Deque<MultiDecoder<?>>>() {
-        protected Deque<MultiDecoder<?>> initialValue() {
-            return new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder));
-        };
-    };
-
-    private ThreadLocal<Deque<MultiDecoder<?>>> flipDecoders = new ThreadLocal<Deque<MultiDecoder<?>>>() {
-        protected Deque<MultiDecoder<?>> initialValue() {
-            return new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder, firstDecoder));
-        };
-    };
 
     public NestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder) {
         this.firstDecoder = firstDecoder;
@@ -46,35 +58,33 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
     }
 
     @Override
-    public Object decode(ByteBuf buf) throws IOException {
-        return flipDecoders.get().peek().decode(buf);
+    public Object decode(ByteBuf buf, State state) throws IOException {
+        DecoderState ds = getDecoder(state);
+        return ds.getFlipDecoders().peek().decode(buf, state);
     }
 
     @Override
-    public boolean isApplicable(int paramNum) {
+    public boolean isApplicable(int paramNum, State state) {
+        DecoderState ds = getDecoder(state);
         if (paramNum == 0) {
-            flipDecoders.get().poll();
-            // in case of incoming buffer tail
-            // state should be reseted
-            if (flipDecoders.get().isEmpty()) {
-                flipDecoders.remove();
-                decoders.remove();
-
-                flipDecoders.get().poll();
-            }
+            ds.getFlipDecoders().poll();
         }
-        return flipDecoders.get().peek().isApplicable(paramNum);
+        return ds.getFlipDecoders().peek().isApplicable(paramNum, state);
+    }
+
+    private DecoderState getDecoder(State state) {
+        DecoderState ds = state.getDecoderState();
+        if (ds == null) {
+            ds = new DecoderState(firstDecoder, secondDecoder);
+            state.setDecoderState(ds);
+        }
+        return ds;
     }
 
     @Override
-    public Object decode(List<Object> parts) {
-        Object result = decoders.get().poll().decode(parts);
-        // clear state on last decoding
-        if (decoders.get().isEmpty()) {
-            flipDecoders.remove();
-            decoders.remove();
-        }
-        return result;
+    public Object decode(List<Object> parts, State state) {
+        DecoderState ds = getDecoder(state);
+        return ds.getDecoders().poll().decode(parts, state);
     }
 
 }

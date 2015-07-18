@@ -17,20 +17,22 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
 public class KeyValueObjectDecoder implements MultiDecoder<Object> {
 
     @Override
-    public Object decode(ByteBuf buf) {
+    public Object decode(ByteBuf buf, State state) {
         String status = buf.toString(CharsetUtil.UTF_8);
         buf.skipBytes(2);
         return status;
     }
 
     @Override
-    public Object decode(List<Object> parts) {
+    public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
             return null;
         }
@@ -38,7 +40,7 @@ public class KeyValueObjectDecoder implements MultiDecoder<Object> {
     }
 
     @Override
-    public boolean isApplicable(int paramNum) {
+    public boolean isApplicable(int paramNum, State state) {
         return paramNum == 0;
     }
 

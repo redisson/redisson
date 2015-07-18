@@ -17,23 +17,25 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
 public class ListScanResultReplayDecoder implements MultiDecoder<ListScanResult<Object>> {
 
     @Override
-    public Object decode(ByteBuf buf) {
+    public Object decode(ByteBuf buf, State state) {
         return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
     }
 
     @Override
-    public ListScanResult<Object> decode(List<Object> parts) {
+    public ListScanResult<Object> decode(List<Object> parts, State state) {
         return new ListScanResult<Object>((Long)parts.get(0), (List<Object>)parts.get(1));
     }
 
     @Override
-    public boolean isApplicable(int paramNum) {
+    public boolean isApplicable(int paramNum, State state) {
         return paramNum == 0;
     }
 

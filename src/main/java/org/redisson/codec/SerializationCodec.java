@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -58,7 +59,7 @@ public class SerializationCodec implements Codec {
     public Decoder<Object> getValueDecoder() {
         return new Decoder<Object>() {
             @Override
-            public Object decode(ByteBuf buf) throws IOException {
+            public Object decode(ByteBuf buf, State state) throws IOException {
                 try {
                     ObjectInputStream inputStream = new ObjectInputStream(new ByteBufInputStream(buf));
                     return inputStream.readObject();

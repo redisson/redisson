@@ -19,22 +19,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 
 public class ObjectSetReplayDecoder implements MultiDecoder<Set<Object>> {
 
     @Override
-    public Object decode(ByteBuf buf) {
+    public Object decode(ByteBuf buf, State state) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Set<Object> decode(List<Object> parts) {
+    public Set<Object> decode(List<Object> parts, State state) {
         return new HashSet<Object>(parts);
     }
 
     @Override
-    public boolean isApplicable(int paramNum) {
+    public boolean isApplicable(int paramNum, State state) {
         return false;
     }
 

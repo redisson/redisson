@@ -21,18 +21,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
 public class StringMapReplayDecoder implements MultiDecoder<List<Map<String, String>>> {
 
     @Override
-    public Object decode(ByteBuf buf) {
+    public Object decode(ByteBuf buf, State state) {
         return buf.toString(CharsetUtil.UTF_8);
     }
 
     @Override
-    public List<Map<String, String>> decode(List<Object> parts) {
+    public List<Map<String, String>> decode(List<Object> parts, State state) {
         // TODO refactor
         if (!parts.isEmpty()) {
             if (parts.get(0) instanceof List) {
@@ -55,7 +57,7 @@ public class StringMapReplayDecoder implements MultiDecoder<List<Map<String, Str
     }
 
     @Override
-    public boolean isApplicable(int paramNum) {
+    public boolean isApplicable(int paramNum, State state) {
         return true;
     }
 

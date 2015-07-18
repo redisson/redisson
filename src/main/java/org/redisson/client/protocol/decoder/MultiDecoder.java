@@ -17,12 +17,13 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
+import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 public interface MultiDecoder<T> extends Decoder<Object> {
 
-    boolean isApplicable(int paramNum);
+    boolean isApplicable(int paramNum, State state);
 
-    T decode(List<Object> parts);
+    T decode(List<Object> parts, State state);
 
 }

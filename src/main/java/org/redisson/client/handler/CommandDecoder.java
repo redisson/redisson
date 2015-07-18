@@ -50,7 +50,7 @@ import io.netty.util.CharsetUtil;
  * @author Nikita Koksharov
  *
  */
-public class CommandDecoder extends ReplayingDecoder<DecoderState> {
+public class CommandDecoder extends ReplayingDecoder<State> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -68,7 +68,7 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
         if (data == null) {
             currentDecoder = new Decoder<Object>() {
                 @Override
-                public Object decode(ByteBuf buf) {
+                public Object decode(ByteBuf buf, State state) {
                     return buf.toString(CharsetUtil.UTF_8);
                 }
             };
@@ -78,12 +78,14 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
             log.trace("channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
         }
 
+        if (state() == null) {
+            state(new State());
+        }
+        state().setDecoderState(null);
+
         if (data == null) {
               decode(in, null, null, ctx.channel(), currentDecoder);
         } else if (data instanceof CommandData) {
-//            if (state() == null) {
-//                state(new DecoderState());
-//            }
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
 //                if (state().getSize() > 0) {
@@ -97,12 +99,7 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
         } else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData)data;
 
-            int i = 0;
-            if (state() != null) {
-                i = state().getIndex();
-            } else {
-                state(new DecoderState());
-            }
+            int i = state().getIndex();
 
             while (in.writerIndex() > in.readerIndex()) {
                 CommandData<Object, Object> cmd = null;
@@ -155,7 +152,7 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
             ByteBuf buf = readBytes(in);
             Object result = null;
             if (buf != null) {
-                result = decoder(data, parts, currentDecoder).decode(buf);
+                result = decoder(data, parts, currentDecoder).decode(buf, state());
             }
             handleResult(data, parts, result, false);
         } else if (code == '*') {
@@ -178,7 +175,7 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
             decode(in, data, respParts, channel, currentDecoder);
         }
 
-        Object result = messageDecoder(data, respParts).decode(respParts);
+        Object result = messageDecoder(data, respParts).decode(respParts, state());
         if (result instanceof PubSubStatusMessage) {
             if (parts == null) {
                 parts = new ArrayList<Object>();
@@ -265,7 +262,7 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
         Decoder<Object> decoder = data.getCommand().getReplayDecoder();
         if (parts != null) {
             MultiDecoder<Object> multiDecoder = data.getCommand().getReplayMultiDecoder();
-            if (multiDecoder.isApplicable(parts.size())) {
+            if (multiDecoder.isApplicable(parts.size(), state())) {
                 decoder = multiDecoder;
             }
         }

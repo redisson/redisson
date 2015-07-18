@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 import io.netty.buffer.ByteBuf;
@@ -23,7 +24,7 @@ import io.netty.util.CharsetUtil;
 public class StringDataDecoder implements Decoder<String> {
 
     @Override
-    public String decode(ByteBuf buf) {
+    public String decode(ByteBuf buf, State state) {
         return buf.toString(CharsetUtil.UTF_8);
     }
 

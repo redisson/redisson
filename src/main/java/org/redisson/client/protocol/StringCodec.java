@@ -17,6 +17,8 @@ package org.redisson.client.protocol;
 
 import java.io.IOException;
 
+import org.redisson.client.handler.State;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
@@ -28,7 +30,7 @@ public class StringCodec implements Codec {
     public Decoder<Object> getValueDecoder() {
         return new Decoder<Object>() {
             @Override
-            public Object decode(ByteBuf buf) {
+            public Object decode(ByteBuf buf, State state) {
                 return buf.toString(CharsetUtil.UTF_8);
             }
         };

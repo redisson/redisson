@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -130,7 +131,7 @@ public class KryoCodec implements Codec {
         return new Decoder<Object>() {
 
             @Override
-            public Object decode(ByteBuf buf) throws IOException {
+            public Object decode(ByteBuf buf, State state) throws IOException {
                 Kryo kryo = null;
                 try {
                     kryo = kryoPool.get();
