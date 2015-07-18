@@ -2,6 +2,7 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,6 +39,8 @@ public class RedisClientTest {
         pool.awaitTermination(1, TimeUnit.HOURS);
 
         Assert.assertEquals(100000L, conn.sync(LongCodec.INSTANCE, RedisCommands.GET, "test"));
+
+        conn.sync(RedisCommands.FLUSHDB);
     }
 
     @Test
@@ -63,14 +66,29 @@ public class RedisClientTest {
         Assert.assertEquals(1, (long)cmd2.getPromise().get());
         Assert.assertEquals(2, (long)cmd3.getPromise().get());
         Assert.assertEquals("PONG", cmd4.getPromise().get());
+
+        conn.sync(RedisCommands.FLUSHDB);
     }
 
     @Test
-    public void testPipelineBigRequest() throws InterruptedException, ExecutionException {
+    public void testBigRequest() throws InterruptedException, ExecutionException {
         RedisClient c = new RedisClient("localhost", 6379);
         RedisConnection conn = c.connect();
 
-        conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
+        for (int i = 0; i < 50; i++) {
+            conn.sync(StringCodec.INSTANCE, RedisCommands.HSET, "testmap", i, "2");
+        }
+
+        Map<Object, Object> res = conn.sync(StringCodec.INSTANCE, RedisCommands.HGETALL, "testmap");
+        Assert.assertEquals(50, res.size());
+
+        conn.sync(RedisCommands.FLUSHDB);
+    }
+
+    @Test
+    public void testPipelineBigResponse() throws InterruptedException, ExecutionException {
+        RedisClient c = new RedisClient("localhost", 6379);
+        RedisConnection conn = c.connect();
 
         List<CommandData<?, ?>> commands = new ArrayList<CommandData<?, ?>>();
         for (int i = 0; i < 1000; i++) {
@@ -83,6 +101,8 @@ public class RedisClientTest {
         for (CommandData<?, ?> commandData : commands) {
             commandData.getPromise().get();
         }
+
+        conn.sync(RedisCommands.FLUSHDB);
     }
 
 }

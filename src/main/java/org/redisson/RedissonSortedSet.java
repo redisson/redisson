@@ -155,8 +155,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public int size() {
-        Long size = connectionManager.read(getName(), RedisCommands.LLEN, getName());
-        return size.intValue();
+        return connectionManager.read(getName(), RedisCommands.LLEN, getName());
     }
 
     private int size(RedisConnection connection) {

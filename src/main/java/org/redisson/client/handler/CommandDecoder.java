@@ -78,23 +78,37 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
             log.trace("channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
         }
 
-        if (data instanceof CommandData) {
+        if (data == null) {
+              decode(in, null, null, ctx.channel(), currentDecoder);
+        } else if (data instanceof CommandData) {
+//            if (state() == null) {
+//                state(new DecoderState());
+//            }
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
-                decode(in, cmd, null, ctx.channel(), currentDecoder);
+//                if (state().getSize() > 0) {
+//                    decodeMulti(in, cmd, null, ctx.channel(), currentDecoder, state().getSize(), state().getRespParts());
+//                } else {
+                    decode(in, cmd, null, ctx.channel(), currentDecoder);
+//                }
             } catch (IOException e) {
                 cmd.getPromise().setFailure(e);
             }
         } else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData)data;
+
             int i = 0;
             if (state() != null) {
                 i = state().getIndex();
+            } else {
+                state(new DecoderState());
             }
+
             while (in.writerIndex() > in.readerIndex()) {
                 CommandData<Object, Object> cmd = null;
                 try {
-                    checkpoint(new DecoderState(i));
+                    checkpoint();
+                    state().setIndex(i);
                     cmd = (CommandData<Object, Object>) commands.getCommands().get(i);
                     decode(in, cmd, null, ctx.channel(), currentDecoder);
                     i++;
@@ -106,6 +120,8 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
 
         ctx.channel().attr(CommandsQueue.REPLAY).remove();
         ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
+
+        state(null);
     }
 
     private void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel, Decoder<Object> currentDecoder) throws IOException {
@@ -144,28 +160,38 @@ public class CommandDecoder extends ReplayingDecoder<DecoderState> {
             handleResult(data, parts, result, false);
         } else if (code == '*') {
             long size = readLong(in);
-            List<Object> respParts = new ArrayList<Object>();
-            for (int i = 0; i < size; i++) {
-                decode(in, data, respParts, channel, currentDecoder);
-            }
+//            state().setSize(size);
 
-            Object result = messageDecoder(data, respParts).decode(respParts);
-            if (result instanceof PubSubStatusMessage) {
-                if (parts == null) {
-                    parts = new ArrayList<Object>();
-                }
-                parts.add(result);
-                // has next status messages
-                if (in.writerIndex() > in.readerIndex()) {
-                    decode(in, data, parts, channel, currentDecoder);
-                } else {
-                    handleMultiResult(data, null, channel, parts);
-                }
-            } else {
-                handleMultiResult(data, parts, channel, result);
-            }
+            List<Object> respParts = new ArrayList<Object>();
+//            state().setRespParts(respParts);
+
+            decodeMulti(in, data, parts, channel, currentDecoder, size, respParts);
         } else {
             throw new IllegalStateException("Can't decode replay " + (char)code);
+        }
+    }
+
+    private void decodeMulti(ByteBuf in, CommandData<Object, Object> data, List<Object> parts,
+            Channel channel, Decoder<Object> currentDecoder, long size, List<Object> respParts)
+                    throws IOException {
+        for (int i = respParts.size(); i < size; i++) {
+            decode(in, data, respParts, channel, currentDecoder);
+        }
+
+        Object result = messageDecoder(data, respParts).decode(respParts);
+        if (result instanceof PubSubStatusMessage) {
+            if (parts == null) {
+                parts = new ArrayList<Object>();
+            }
+            parts.add(result);
+            // has next status messages
+            if (in.writerIndex() > in.readerIndex()) {
+                decode(in, data, parts, channel, currentDecoder);
+            } else {
+                handleMultiResult(data, null, channel, parts);
+            }
+        } else {
+            handleMultiResult(data, parts, channel, result);
         }
     }
 
