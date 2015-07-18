@@ -16,8 +16,6 @@ import org.redisson.client.protocol.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
 
-import io.netty.util.concurrent.Promise;
-
 public class RedisClientTest {
 
     @Test
@@ -67,5 +65,24 @@ public class RedisClientTest {
         Assert.assertEquals("PONG", cmd4.getPromise().get());
     }
 
+    @Test
+    public void testPipelineBigRequest() throws InterruptedException, ExecutionException {
+        RedisClient c = new RedisClient("localhost", 6379);
+        RedisConnection conn = c.connect();
+
+        conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
+
+        List<CommandData<?, ?>> commands = new ArrayList<CommandData<?, ?>>();
+        for (int i = 0; i < 1000; i++) {
+            CommandData<String, String> cmd1 = conn.create(null, RedisCommands.PING);
+            commands.add(cmd1);
+        }
+
+        conn.send(commands);
+
+        for (CommandData<?, ?> commandData : commands) {
+            commandData.getPromise().get();
+        }
+    }
 
 }

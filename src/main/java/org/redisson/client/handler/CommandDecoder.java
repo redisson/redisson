@@ -50,7 +50,7 @@ import io.netty.util.CharsetUtil;
  * @author Nikita Koksharov
  *
  */
-public class CommandDecoder extends ReplayingDecoder<Void> {
+public class CommandDecoder extends ReplayingDecoder<DecoderState> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -88,9 +88,13 @@ public class CommandDecoder extends ReplayingDecoder<Void> {
         } else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData)data;
             int i = 0;
+            if (state() != null) {
+                i = state().getIndex();
+            }
             while (in.writerIndex() > in.readerIndex()) {
                 CommandData<Object, Object> cmd = null;
                 try {
+                    checkpoint(new DecoderState(i));
                     cmd = (CommandData<Object, Object>) commands.getCommands().get(i);
                     decode(in, cmd, null, ctx.channel(), currentDecoder);
                     i++;
