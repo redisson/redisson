@@ -71,12 +71,13 @@ public class InfinitySemaphoreLatch extends AbstractQueuedSynchronizer {
     }
 
     // waiting for an open state
-    public final void closeAndAwaitUninterruptibly() {
+    public final boolean closeAndAwaitUninterruptibly() {
         closed = true;
         try {
-            await();
+            return await(15, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return false;
         }
     }
 

@@ -127,10 +127,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public <T> FutureListener<T> createReleaseWriteListener(final int slot,
                                     final RedisConnection conn, final Timeout timeout) {
-        latch.release();
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                latch.release();
                 timeout.cancel();
                 releaseWrite(slot, conn);
             }
@@ -139,10 +139,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public <T> FutureListener<T> createReleaseReadListener(final int slot,
                                     final RedisConnection conn, final Timeout timeout) {
-        latch.release();
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                latch.release();
                 timeout.cancel();
                 releaseRead(slot, conn);
             }
