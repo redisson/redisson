@@ -276,7 +276,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return getValue(index);
     }
 
-    private V getValue(int index) {
+    V getValue(int index) {
         return connectionManager.get(getAsync(index));
     }
 

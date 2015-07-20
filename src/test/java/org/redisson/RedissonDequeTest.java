@@ -14,6 +14,66 @@ import org.redisson.core.RDeque;
 public class RedissonDequeTest extends BaseTest {
 
     @Test
+    public void testRemoveLastOccurrence() {
+        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        queue1.addFirst(3);
+        queue1.addFirst(1);
+        queue1.addFirst(2);
+        queue1.addFirst(3);
+
+        queue1.removeLastOccurrence(3);
+
+        MatcherAssert.assertThat(queue1, Matchers.containsInAnyOrder(3, 2, 1));
+    }
+
+    @Test
+    public void testRemoveFirstOccurrence() {
+        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        queue1.addFirst(3);
+        queue1.addFirst(1);
+        queue1.addFirst(2);
+        queue1.addFirst(3);
+
+        queue1.removeFirstOccurrence(3);
+
+        MatcherAssert.assertThat(queue1, Matchers.containsInAnyOrder(2, 1, 3));
+    }
+
+    @Test
+    public void testRemoveLast() {
+        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        queue1.addFirst(1);
+        queue1.addFirst(2);
+        queue1.addFirst(3);
+
+        Assert.assertEquals(1, (int)queue1.removeLast());
+        Assert.assertEquals(2, (int)queue1.removeLast());
+        Assert.assertEquals(3, (int)queue1.removeLast());
+    }
+
+    @Test
+    public void testRemoveFirst() {
+        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        queue1.addFirst(1);
+        queue1.addFirst(2);
+        queue1.addFirst(3);
+
+        Assert.assertEquals(3, (int)queue1.removeFirst());
+        Assert.assertEquals(2, (int)queue1.removeFirst());
+        Assert.assertEquals(1, (int)queue1.removeFirst());
+    }
+
+    @Test
+    public void testPeek() {
+        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        Assert.assertNull(queue1.peekFirst());
+        Assert.assertNull(queue1.peekLast());
+        queue1.addFirst(2);
+        Assert.assertEquals(2, (int)queue1.peekFirst());
+        Assert.assertEquals(2, (int)queue1.peekLast());
+    }
+
+    @Test
     public void testPollLastAndOfferFirstTo() {
         RDeque<Integer> queue1 = redisson.getDeque("deque1");
         queue1.addFirst(3);
@@ -28,7 +88,7 @@ public class RedissonDequeTest extends BaseTest {
         queue1.pollLastAndOfferFirstTo(queue2);
         MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
     }
-    
+
     @Test
     public void testAddFirstOrigin() {
         Deque<Integer> queue = new ArrayDeque<Integer>();

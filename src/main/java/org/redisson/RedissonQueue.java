@@ -47,7 +47,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     public V getFirst() {
-        V value = connectionManager.read(getName(), RedisCommands.LINDEX, getName(), 0);
+        V value = getValue(0);
         if (value == null) {
             throw new NoSuchElementException();
         }

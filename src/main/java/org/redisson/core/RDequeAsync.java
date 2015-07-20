@@ -15,7 +15,7 @@
  */
 package org.redisson.core;
 
-import java.util.Deque;
+import io.netty.util.concurrent.Future;
 
 /**
  * {@link java.util.Deque} backed by Redis
@@ -24,7 +24,36 @@ import java.util.Deque;
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RDeque<V> extends Deque<V>, RQueue<V>, RDequeAsync<V> {
+public interface RDequeAsync<V> extends RQueueAsync<V> {
 
+    Future<Boolean> removeLastOccurrenceAsync(Object o);
+
+    Future<V> removeLastAsync();
+
+    Future<V> removeFirstAsync();
+
+    Future<Boolean> removeFirstOccurrenceAsync(Object o);
+
+    Future<Void> pushAsync(V e);
+
+    Future<V> popAsync();
+
+    Future<V> pollLastAsync();
+
+    Future<V> pollFirstAsync();
+
+    Future<V> peekLastAsync();
+
+    Future<V> peekFirstAsync();
+
+    Future<Boolean> offerLastAsync(V e);
+
+    Future<V> getLastAsync();
+
+    Future<Void> addLastAsync(V e);
+
+    Future<Void> addFirstAsync(V e);
+
+    Future<Boolean> offerFirstAsync(V e);
 
 }
