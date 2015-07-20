@@ -15,14 +15,14 @@
  */
 package org.redisson.core;
 
-import io.netty.util.concurrent.Future;
-
 import java.util.List;
 
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 
-public interface RScript {
+public interface RScript extends RScriptAsync {
+
+    enum Mode {READ_ONLY, READ_WRITE}
 
     enum ReturnType {
         BOOLEAN(RedisCommands.EVAL_BOOLEAN),
@@ -45,32 +45,34 @@ public interface RScript {
 
     };
 
-    List<Boolean> scriptExists(String ... shaDigests);
+    <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
-    Future<List<Boolean>> scriptExistsAsync(String ... shaDigests);
+    <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType);
 
-    boolean scriptFlush();
+    <R> R eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    Future<Boolean> scriptFlushAsync();
-
-    boolean scriptKill();
-
-    Future<Boolean> scriptKillAsync();
+    <R> R eval(Mode mode, String luaScript, ReturnType returnType);
 
     String scriptLoad(String luaScript);
 
-    Future<String> scriptLoadAsync(String luaScript);
+    boolean scriptKill();
 
-    <R> R evalSha(String shaDigest, ReturnType returnType);
+    List<Boolean> scriptExists(String key, String ... shaDigests);
 
-    <R> R evalSha(String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    boolean scriptFlush();
 
-    <R> Future<R> evalShaAsync(String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    boolean scriptFlush(String key);
 
-    <R> Future<R> evalAsync(String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+    boolean scriptKill(String key);
 
-    <R> R eval(String luaScript, ReturnType returnType);
+    String scriptLoad(String key, String luaScript);
 
-    <R> R eval(String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+    <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType);
+
+    <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+
+    <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType);
+
+    <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
 }

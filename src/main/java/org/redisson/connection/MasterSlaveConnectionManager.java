@@ -201,7 +201,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private int calcSlot(String key) {
-        if (entries.size() == 1) {
+        if (entries.size() == 1 || key == null) {
             return -1;
         }
 
@@ -350,21 +350,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return get(res);
     }
 
-    public <T, R> Future<R> evalAsync(RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalAsync(codec, evalCommandType, script, keys, params);
-    }
-
-    public <T, R> Future<R> evalAsync(Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Promise<R> mainPromise = getGroup().next().newPromise();
-        List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
-        args.add(script);
-        args.add(keys.size());
-        args.addAll(keys);
-        args.addAll(Arrays.asList(params));
-        async(false, -1, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
-        return mainPromise;
-    }
-
     public <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params) {
         return writeAsync(key, codec, command, params);
     }
@@ -380,30 +365,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         async(false, slot, null, codec, command, params, mainPromise, 0);
         return mainPromise;
     }
-
-    public <T, R> R write(RedisCommand<T> command, Object ... params) {
-        return write(codec, command, params);
-    }
-
-    public <T, R> R write(Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(codec, command, params);
-        return get(res);
-    }
-
-    public <T, R> Future<R> writeAsync(RedisCommand<T> command, Object ... params) {
-        return writeAsync(codec, command, params);
-    }
-
-    public <T, R> Future<R> writeAsync(Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = getGroup().next().newPromise();
-
-        for (Integer slot : entries.keySet()) {
-            async(false, slot, null, codec, command, params, mainPromise, 0);
-        }
-
-        return mainPromise;
-    }
-
 
     private <V, R> void async(final boolean readOnlyMode, final int slot, final MultiDecoder<Object> messageDecoder, final Codec codec, final RedisCommand<V> command,
                             final Object[] params, final Promise<R> mainPromise, final int attempt) {
@@ -723,8 +684,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return getEntry(slot).connectionWriteOp();
     }
 
-    @Override
-    public RedisConnection connectionReadOp(int slot) {
+    protected RedisConnection connectionReadOp(int slot) {
         return getEntry(slot).connectionReadOp();
     }
 

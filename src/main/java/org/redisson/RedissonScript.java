@@ -29,78 +29,144 @@ public class RedissonScript implements RScript {
 
     private final ConnectionManager connectionManager;
 
-    public RedissonScript(ConnectionManager connectionManager) {
+    protected RedissonScript(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
 
     @Override
     public String scriptLoad(String luaScript) {
-        return connectionManager.get(scriptLoadAsync(luaScript));
+        return scriptLoad(null, luaScript);
     }
 
     @Override
+    public String scriptLoad(String key, String luaScript) {
+        return connectionManager.get(scriptLoadAsync(key, luaScript));
+    }
+
     public Future<String> scriptLoadAsync(String luaScript) {
-        return connectionManager.writeAsync(RedisCommands.SCRIPT_LOAD, luaScript);
+        return scriptLoadAsync(null, luaScript);
     }
 
     @Override
-    public <R> R eval(String luaScript, ReturnType returnType) {
-        return eval(luaScript, returnType, Collections.emptyList());
+    public Future<String> scriptLoadAsync(String key, String luaScript) {
+        return connectionManager.writeAsync(key, RedisCommands.SCRIPT_LOAD, luaScript);
     }
 
     @Override
-    public <R> R eval(String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
-        return (R) connectionManager.get(evalAsync(luaScript, returnType, keys, values));
+    public <R> R eval(Mode mode, String luaScript, ReturnType returnType) {
+        return eval(null, mode, luaScript, returnType);
     }
 
     @Override
-    public <R> Future<R> evalAsync(String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
-        return connectionManager.evalAsync(returnType.getCommand(), luaScript, keys, values);
+    public <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType) {
+        return eval(key, mode, luaScript, returnType, Collections.emptyList());
     }
 
     @Override
-    public <R> R evalSha(String shaDigest, ReturnType returnType) {
-        return evalSha(shaDigest, returnType, Collections.emptyList());
+    public <R> R eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
+        return eval(null, mode, luaScript, returnType, keys, values);
     }
 
     @Override
-    public <R> R evalSha(String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
-        return (R) connectionManager.get(evalShaAsync(shaDigest, returnType, keys, values));
+    public <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
+        return (R) connectionManager.get(evalAsync(key, mode, luaScript, returnType, keys, values));
     }
 
     @Override
-    public <R> Future<R> evalShaAsync(String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
-        return connectionManager.evalAsync(new RedisCommand(returnType.getCommand(), "EVALSHA"), shaDigest, keys, values);
+    public <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
+        return evalAsync(null, mode, luaScript, returnType, keys, values);
+    }
+
+    @Override
+    public <R> Future<R> evalAsync(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
+        if (mode == Mode.READ_ONLY) {
+            return connectionManager.evalReadAsync(key, returnType.getCommand(), luaScript, keys, values);
+        }
+        return connectionManager.evalWriteAsync(key, returnType.getCommand(), luaScript, keys, values);
+    }
+
+    @Override
+    public <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType) {
+        return evalSha(null, mode, shaDigest, returnType);
+    }
+
+    @Override
+    public <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType) {
+        return evalSha(key, mode, shaDigest, returnType, Collections.emptyList());
+    }
+
+    @Override
+    public <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
+        return evalSha(null, mode, shaDigest, returnType, keys, values);
+    }
+
+    @Override
+    public <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
+        return (R) connectionManager.get(evalShaAsync(key, mode, shaDigest, returnType, keys, values));
+    }
+
+    @Override
+    public <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
+        return evalShaAsync(null, mode, shaDigest, returnType, keys, values);
+    }
+
+    @Override
+    public <R> Future<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
+        RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
+        if (mode == Mode.READ_ONLY) {
+            return connectionManager.evalReadAsync(key, command, shaDigest, keys, values);
+        }
+        return connectionManager.evalWriteAsync(key, command, shaDigest, keys, values);
     }
 
     @Override
     public boolean scriptKill() {
-        return connectionManager.get(scriptKillAsync());
+        return scriptKill(null);
+    }
+
+    @Override
+    public boolean scriptKill(String key) {
+        return connectionManager.get(scriptKillAsync(key));
     }
 
     @Override
     public Future<Boolean> scriptKillAsync() {
-        return connectionManager.writeAsync(RedisCommands.SCRIPT_KILL);
+        return scriptKillAsync(null);
     }
 
     @Override
-    public List<Boolean> scriptExists(String ... shaDigests) {
-        return connectionManager.get(scriptExistsAsync(shaDigests));
+    public Future<Boolean> scriptKillAsync(String key) {
+        return connectionManager.writeAsync(key, RedisCommands.SCRIPT_KILL);
     }
 
     @Override
-    public Future<List<Boolean>> scriptExistsAsync(String ... shaDigests) {
-        return connectionManager.writeAsync(RedisCommands.SCRIPT_EXISTS, shaDigests);
+    public List<Boolean> scriptExists(String key, String ... shaDigests) {
+        return connectionManager.get(scriptExistsAsync(key, shaDigests));
+    }
+
+    @Override
+    public Future<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests) {
+        return connectionManager.writeAsync(key, RedisCommands.SCRIPT_EXISTS, shaDigests);
     }
 
     @Override
     public boolean scriptFlush() {
-        return connectionManager.get(scriptFlushAsync());
+        return scriptFlush(null);
+    }
+
+    @Override
+    public boolean scriptFlush(String key) {
+        return connectionManager.get(scriptFlushAsync(key));
     }
 
     @Override
     public Future<Boolean> scriptFlushAsync() {
-        return connectionManager.writeAsync(RedisCommands.SCRIPT_FLUSH);
+        return scriptFlushAsync(null);
+    }
+
+    @Override
+    public Future<Boolean> scriptFlushAsync(String key) {
+        return connectionManager.writeAsync(key, RedisCommands.SCRIPT_FLUSH);
     }
 
 }

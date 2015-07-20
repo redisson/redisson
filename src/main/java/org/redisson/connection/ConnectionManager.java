@@ -61,18 +61,6 @@ public interface ConnectionManager {
 
     <R> R write(String key, SyncOperation<R> operation);
 
-    <T, R> Future<R> writeAsync(RedisCommand<T> command, Object ... params);
-
-    <T, R> R write(RedisCommand<T> command, Object ... params);
-
-    <T, R> R write(Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> Future<R> writeAsync(Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> Future<R> evalAsync(RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
-
-    <T, R> Future<R> evalAsync(Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
-
     <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> Future<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
@@ -98,8 +86,6 @@ public interface ConnectionManager {
     RedisClient createClient(String host, int port);
 
     <V> V get(Future<V> future);
-
-    RedisConnection connectionReadOp(int slot);
 
     PubSubConnectionEntry getEntry(String channelName);
 
