@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
  *
@@ -22,32 +24,14 @@ package org.redisson.core;
  *
  * @param <M> the type of message object
  */
-public interface RTopic<M> extends RTopicAsync<M> {
+public interface RTopicAsync<M> extends RObjectAsync {
 
     /**
-     * Publish the message to all subscribers of this topic
+     * Publish the message to all subscribers of this topic asynchronously
      *
      * @param message
-     * @return the number of clients that received the message
+     * @return the <code>Future</code> object with number of clients that received the message
      */
-    long publish(M message);
-
-    /**
-     * Subscribes to this topic.
-     * <code>MessageListener.onMessage</code> is called when any message
-     * is published on this topic.
-     *
-     * @param listener
-     * @return locally unique listener id
-     * @see org.redisson.core.MessageListener
-     */
-    int addListener(MessageListener<M> listener);
-
-    /**
-     * Removes the listener by <code>id</code> for listening this topic
-     *
-     * @param listenerId
-     */
-    void removeListener(int listenerId);
+    Future<Long> publishAsync(M message);
 
 }
