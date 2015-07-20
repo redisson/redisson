@@ -98,12 +98,12 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean add(V e) {
-        return addAll(Collections.singleton(e));
+        return connectionManager.get(addAsync(e));
     }
 
     @Override
     public Future<Boolean> addAsync(V e) {
-        return addAllAsync(Collections.singleton(e));
+        return connectionManager.writeAsync(getName(), RPUSH_BOOLEAN, getName(), e);
     }
 
     @Override
@@ -150,11 +150,11 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> addAllAsync(final Collection<? extends V> c) {
-        if (c.isEmpty()) {
-            return connectionManager.getGroup().next().newSucceededFuture(false);
-        }
-
         final Promise<Boolean> promise = newPromise();
+        if (c.isEmpty()) {
+            promise.setSuccess(false);
+            return promise;
+        }
         final int listSize = size();
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());

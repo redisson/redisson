@@ -17,14 +17,14 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.KeyValueMessage;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.core.RBlockingQueue;
 
 import io.netty.util.concurrent.Future;
@@ -45,6 +45,11 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
+    public Future<Boolean> putAsync(V e) {
+        return offerAsync(e);
+    }
+
+    @Override
     public void put(V e) throws InterruptedException {
         offer(e);
     }
@@ -55,19 +60,25 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
+    public Future<V> takeAsync() {
+        return connectionManager.writeAsync(getName(), RedisCommands.BLPOP_VALUE, getName(), 0);
+    }
+
+    @Override
     public V take() throws InterruptedException {
-        Future<KeyValueMessage<String, V>> res = connectionManager.writeAsync(getName(), RedisCommands.BLPOP, getName(), 0);
-        return res.await().getNow().getValue();
+        Future<V> res = takeAsync();
+        return res.await().getNow();
+    }
+
+    @Override
+    public Future<V> pollAsync(long timeout, TimeUnit unit) {
+        return connectionManager.writeAsync(getName(), RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
     }
 
     @Override
     public V poll(long timeout, TimeUnit unit) throws InterruptedException {
-        Future<KeyValueMessage<String, V>> res = connectionManager.writeAsync(getName(), RedisCommands.BLPOP, getName(), unit.toSeconds(timeout));
-        KeyValueMessage<String, V> m = res.await().getNow();
-        if (m != null) {
-            return m.getValue();
-        }
-        return null;
+        Future<V> res = pollAsync(timeout, unit);
+        return res.await().getNow();
     }
 
     @Override
@@ -77,8 +88,13 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
+    public Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
+        return connectionManager.writeAsync(getName(), RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
+    }
+
+    @Override
     public V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException {
-        Future<V> res = connectionManager.writeAsync(getName(), RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
+        Future<V> res = pollLastAndOfferFirstToAsync(queueName, timeout, unit);
         return res.await().getNow();
     }
 
@@ -93,12 +109,14 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throw new NullPointerException();
         }
 
-        List<V> list = connectionManager.evalWrite(getName(), RedisCommands.EVAL_LIST,
+        return connectionManager.get(drainToAsync(c));
+    }
+
+    private Future<Integer> drainToAsync(Collection<? super V> c) {
+        return connectionManager.evalWriteAsync(getName(), new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
               "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
               "redis.call('ltrim', KEYS[1], -1, 0); " +
               "return vals", Collections.<Object>singletonList(getName()));
-        c.addAll(list);
-        return list.size();
     }
 
     @Override
@@ -110,13 +128,15 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throw new NullPointerException();
         }
 
-        List<V> list = connectionManager.evalWrite(getName(), RedisCommands.EVAL_LIST,
+        return connectionManager.get(drainToAsync(c, maxElements));
+    }
+
+    private Future<Integer> drainToAsync(Collection<? super V> c, final int maxElements) {
+        return connectionManager.evalWriteAsync(getName(), new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
                         "return vals",
                 Collections.<Object>singletonList(getName()), maxElements);
-        c.addAll(list);
-        return list.size();
     }
 }

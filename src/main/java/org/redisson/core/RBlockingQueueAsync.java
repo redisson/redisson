@@ -25,7 +25,7 @@ import io.netty.util.concurrent.Future;
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection
  */
-public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockingQueueAsync<V> {
+public interface RBlockingQueueAsync<V> extends RQueueAsync<V>, RExpirableAsync {
 
     Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit);
 
@@ -36,9 +36,5 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
     Future<Boolean> putAsync(V e);
 
     Future<Boolean> offerAsync(V e);
-
-    V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException;
-
-    V pollLastAndOfferFirstTo(RBlockingQueue<V> queue, long timeout, TimeUnit unit) throws InterruptedException;
 
 }

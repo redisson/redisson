@@ -23,6 +23,8 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
+import org.redisson.client.protocol.convertor.KeyValueConvertor;
+import org.redisson.client.protocol.convertor.TrueReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.KeyValueObjectDecoder;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -74,6 +76,7 @@ public interface RedisCommands {
     RedisCommand<Object> RPOPLPUSH = new RedisCommand<Object>("RPOPLPUSH");
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
     RedisCommand<Object> BLPOP = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder());
+    RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder(), new KeyValueConvertor());
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor(), 2);
     RedisCommand<Long> PFCOUNT = new RedisCommand<Long>("PFCOUNT");
@@ -83,6 +86,7 @@ public interface RedisCommands {
     RedisCommand<Long> LPUSH = new RedisCommand<Long>("LPUSH");
     RedisCommand<List<Object>> LRANGE = new RedisCommand<List<Object>>("LRANGE", new ObjectListReplayDecoder());
     RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH", 2, ValueType.OBJECTS);
+    RedisCommand<Boolean> RPUSH_BOOLEAN = new RedisCommand<Boolean>("RPUSH", new TrueReplayConvertor(), 2, ValueType.OBJECTS);
 
     RedisStrictCommand<String> SCRIPT_LOAD = new RedisStrictCommand<String>("SCRIPT", "LOAD", new StringDataDecoder());
     RedisStrictCommand<Boolean> SCRIPT_KILL = new RedisStrictCommand<Boolean>("SCRIPT", "KILL", new BooleanReplayConvertor());
