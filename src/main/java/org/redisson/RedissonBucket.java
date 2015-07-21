@@ -18,55 +18,54 @@ package org.redisson;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RBucket;
 
 import io.netty.util.concurrent.Future;
 
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
-    protected RedissonBucket(ConnectionManager connectionManager, String name) {
+    protected RedissonBucket(CommandExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
     @Override
     public V get() {
-        return connectionManager.get(getAsync());
+        return get(getAsync());
     }
 
     @Override
     public Future<V> getAsync() {
-        return connectionManager.readAsync(getName(), RedisCommands.GET, getName());
+        return commandExecutor.readAsync(getName(), RedisCommands.GET, getName());
     }
 
     @Override
     public void set(V value) {
-        connectionManager.get(setAsync(value));
+        get(setAsync(value));
     }
 
     @Override
     public Future<Void> setAsync(V value) {
-        return connectionManager.writeAsync(getName(), RedisCommands.SET, getName(), value);
+        return commandExecutor.writeAsync(getName(), RedisCommands.SET, getName(), value);
     }
 
     @Override
     public void set(V value, long timeToLive, TimeUnit timeUnit) {
-        connectionManager.get(setAsync(value, timeToLive, timeUnit));
+        get(setAsync(value, timeToLive, timeUnit));
     }
 
     @Override
     public Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return connectionManager.writeAsync(getName(), RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
+        return commandExecutor.writeAsync(getName(), RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
     }
 
     @Override
     public boolean exists() {
-        return connectionManager.get(existsAsync());
+        return get(existsAsync());
     }
 
     @Override
     public Future<Boolean> existsAsync() {
-        return connectionManager.readAsync(getName(), RedisCommands.EXISTS, getName());
+        return commandExecutor.readAsync(getName(), RedisCommands.EXISTS, getName());
     }
 
 }

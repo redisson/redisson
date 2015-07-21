@@ -18,7 +18,6 @@ package org.redisson;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RQueue;
 
 import io.netty.util.concurrent.Future;
@@ -32,8 +31,8 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
-    protected RedissonQueue(ConnectionManager connectionManager, String name) {
-        super(connectionManager, name);
+    protected RedissonQueue(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
 
     @Override
@@ -69,12 +68,12 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public Future<V> pollAsync() {
-        return connectionManager.writeAsync(getName(), RedisCommands.LPOP, getName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.LPOP, getName());
     }
 
     @Override
     public V poll() {
-        return connectionManager.get(pollAsync());
+        return get(pollAsync());
     }
 
     @Override
@@ -97,12 +96,12 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V pollLastAndOfferFirstTo(String queueName) {
-        return connectionManager.get(pollLastAndOfferFirstToAsync(queueName));
+        return get(pollLastAndOfferFirstToAsync(queueName));
     }
 
     @Override
     public Future<V> pollLastAndOfferFirstToAsync(String queueName) {
-        return connectionManager.writeAsync(getName(), RedisCommands.RPOPLPUSH, getName(), queueName);
+        return commandExecutor.writeAsync(getName(), RedisCommands.RPOPLPUSH, getName(), queueName);
     }
 
     @Override

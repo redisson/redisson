@@ -15,6 +15,9 @@
  */
 package org.redisson.client.protocol;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.client.protocol.decoder.MultiDecoder;
@@ -64,6 +67,22 @@ public class CommandData<T, R> implements QueueCommand {
 
     public Codec getCodec() {
         return codec;
+    }
+
+    @Override
+    public String toString() {
+        return "CommandData [promise=" + promise + ", command=" + command + ", params="
+                + Arrays.toString(params) + ", codec=" + codec + ", sended=" + sended + ", messageDecoder="
+                + messageDecoder + "]";
+    }
+
+    @Override
+    public List<CommandData<Object, Object>> getPubSubOperations() {
+        if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE")
+                .contains(getCommand().getName())) {
+            return Collections.singletonList((CommandData<Object, Object>)this);
+        }
+        return Collections.emptyList();
     }
 
 }

@@ -15,8 +15,10 @@
  */
 package org.redisson.client.handler;
 
+import java.util.List;
 import java.util.Queue;
 
+import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
 
 import io.netty.channel.ChannelDuplexHandler;
@@ -67,7 +69,14 @@ public class CommandsQueue extends ChannelDuplexHandler {
     private void sendData(ChannelHandlerContext ctx) throws Exception {
         QueueCommand data = queue.peek();
         if (data != null && data.getSended().compareAndSet(false, true)) {
-            ctx.channel().attr(REPLAY).set(data);
+            List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
+            if (!pubSubOps.isEmpty()) {
+                for (CommandData<Object, Object> cd : pubSubOps) {
+                    ctx.pipeline().get(CommandDecoder.class).addChannel((String)cd.getParams()[0], cd);
+                }
+            } else {
+                ctx.channel().attr(REPLAY).set(data);
+            }
             ctx.channel().writeAndFlush(data);
         }
     }

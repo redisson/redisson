@@ -50,6 +50,7 @@ import org.redisson.core.RTopic;
  */
 public class Redisson implements RedissonClient {
 
+    private final CommandExecutor commandExecutor;
     private final ConnectionManager connectionManager;
     private final Config config;
 
@@ -69,6 +70,7 @@ public class Redisson implements RedissonClient {
         } else {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
+        commandExecutor = new CommandExecutorService(connectionManager);
     }
 
     /**
@@ -103,7 +105,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> RBucket<V> getBucket(String name) {
-        return new RedissonBucket<V>(connectionManager, name);
+        return new RedissonBucket<V>(commandExecutor, name);
     }
 
     /**
@@ -111,7 +113,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> List<RBucket<V>> getBuckets(final String pattern) {
-        Collection<Object> keys = connectionManager.get(connectionManager.readAllAsync(RedisCommands.KEYS, pattern));
+        Collection<Object> keys = commandExecutor.get(commandExecutor.readAllAsync(RedisCommands.KEYS, pattern));
         List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
         for (Object key : keys) {
             if(key != null) {
@@ -130,7 +132,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> RHyperLogLog<V> getHyperLogLog(String name) {
-        return new RedissonHyperLogLog<V>(connectionManager, name);
+        return new RedissonHyperLogLog<V>(commandExecutor, name);
     }
 
     /**
@@ -141,7 +143,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> RList<V> getList(String name) {
-        return new RedissonList<V>(connectionManager, name);
+        return new RedissonList<V>(commandExecutor, name);
     }
 
     /**
@@ -152,7 +154,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
-        return new RedissonMap<K, V>(connectionManager, name);
+        return new RedissonMap<K, V>(commandExecutor, name);
     }
 
     /**
@@ -163,7 +165,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public RLock getLock(String name) {
-        return new RedissonLock(connectionManager, name, id);
+        return new RedissonLock(commandExecutor, name, id);
     }
 
     /**
@@ -174,7 +176,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> RSet<V> getSet(String name) {
-        return new RedissonSet<V>(connectionManager, name);
+        return new RedissonSet<V>(commandExecutor, name);
     }
 
     /**
@@ -183,7 +185,7 @@ public class Redisson implements RedissonClient {
      * @return
      */
     public RScript getScript() {
-        return new RedissonScript(connectionManager);
+        return new RedissonScript(commandExecutor);
     }
 
     /**
@@ -194,7 +196,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
-        return new RedissonSortedSet<V>(connectionManager, name);
+        return new RedissonSortedSet<V>(commandExecutor, name);
     }
 
     /**
@@ -205,7 +207,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <M> RTopic<M> getTopic(String name) {
-        return new RedissonTopic<M>(connectionManager, name);
+        return new RedissonTopic<M>(commandExecutor, name);
     }
 
     /**
@@ -221,7 +223,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <M> RTopic<M> getTopicPattern(String pattern) {
-        return new RedissonTopicPattern<M>(connectionManager, pattern);
+        return new RedissonTopicPattern<M>(commandExecutor, pattern);
     }
 
     /**
@@ -232,7 +234,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> RQueue<V> getQueue(String name) {
-        return new RedissonQueue<V>(connectionManager, name);
+        return new RedissonQueue<V>(commandExecutor, name);
     }
 
     /**
@@ -243,7 +245,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> RBlockingQueue<V> getBlockingQueue(String name) {
-        return new RedissonBlockingQueue(connectionManager, name);
+        return new RedissonBlockingQueue<V>(commandExecutor, name);
     }
 
     /**
@@ -254,7 +256,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> RDeque<V> getDeque(String name) {
-        return new RedissonDeque<V>(connectionManager, name);
+        return new RedissonDeque<V>(commandExecutor, name);
     }
 
     /**
@@ -265,7 +267,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public RAtomicLong getAtomicLong(String name) {
-        return new RedissonAtomicLong(connectionManager, name);
+        return new RedissonAtomicLong(commandExecutor, name);
     }
 
     /**
@@ -276,7 +278,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public RCountDownLatch getCountDownLatch(String name) {
-        return new RedissonCountDownLatch(connectionManager, name, id);
+        return new RedissonCountDownLatch(commandExecutor, name, id);
     }
 
     /**
@@ -298,7 +300,7 @@ public class Redisson implements RedissonClient {
     }
 
     public void flushdb() {
-        connectionManager.writeAllAsync(RedisCommands.FLUSHDB).awaitUninterruptibly();
+        commandExecutor.writeAllAsync(RedisCommands.FLUSHDB).awaitUninterruptibly();
     }
 
 }

@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,6 +36,18 @@ public class CommandsData implements QueueCommand {
 
     public AtomicBoolean getSended() {
         return sended;
+    }
+
+    @Override
+    public List<CommandData<Object, Object>> getPubSubOperations() {
+        List<CommandData<Object, Object>> result = new ArrayList<CommandData<Object, Object>>();
+        for (CommandData<?, ?> commandData : commands) {
+            if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE")
+                    .equals(commandData.getCommand().getName())) {
+                result.add((CommandData<Object, Object>)commandData);
+            }
+        }
+        return result;
     }
 
 }

@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.pubsub;
 
-public class PubSubStatusMessage {
+public class PubSubStatusMessage implements Message {
 
     public enum Type {SUBSCRIBE, PSUBSCRIBE, PUNSUBSCRIBE, UNSUBSCRIBE}
 

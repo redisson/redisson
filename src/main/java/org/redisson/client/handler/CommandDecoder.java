@@ -32,6 +32,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.client.protocol.pubsub.Message;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
@@ -43,6 +44,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.CharsetUtil;
+import io.netty.util.internal.PlatformDependent;
 
 /**
  * Code parts from Sam Pullara
@@ -58,7 +60,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     public static final char LF = '\n';
     private static final char ZERO = '0';
 
+    // no need concurrent map responses are coming consecutive
     private final Map<String, MultiDecoder<Object>> messageDecoders = new HashMap<String, MultiDecoder<Object>>();
+    private final Map<String, CommandData<Object, Object>> channels = PlatformDependent.newConcurrentHashMap();
+
+    public void addChannel(String channel, CommandData<Object, Object> data) {
+        channels.put(channel, data);
+    }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -176,16 +184,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
 
         Object result = messageDecoder(data, respParts).decode(respParts, state());
-        if (result instanceof PubSubStatusMessage) {
-            if (parts == null) {
-                parts = new ArrayList<Object>();
-            }
-            parts.add(result);
-            // has next status messages
+
+        if (result instanceof Message) {
+            handleMultiResult(data, null, channel, result);
+            // has next messages?
             if (in.writerIndex() > in.readerIndex()) {
-                decode(in, data, parts, channel, currentDecoder);
-            } else {
-                handleMultiResult(data, null, channel, parts);
+                decode(in, data, null, channel, currentDecoder);
             }
         } else {
             handleMultiResult(data, parts, channel, result);
@@ -194,14 +198,23 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private void handleMultiResult(CommandData<Object, Object> data, List<Object> parts,
             Channel channel, Object result) {
+        if (data == null) {
+            if (result instanceof PubSubStatusMessage) {
+                String channelName = ((PubSubStatusMessage) result).getChannel();
+                data = channels.get(channelName);
+            }
+        }
+
         if (data != null) {
             if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(data.getCommand().getName())) {
                 for (Object param : data.getParams()) {
+                    channels.remove(param.toString());
                     messageDecoders.put(param.toString(), data.getMessageDecoder());
                 }
             }
             if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(data.getCommand().getName())) {
                 for (Object param : data.getParams()) {
+                    channels.remove(param.toString());
                     messageDecoders.remove(param.toString());
                 }
             }
@@ -234,15 +247,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts) {
         if (data == null) {
-            if (parts.get(0).equals("message")) {
+            if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(parts.get(0))) {
+                String channelName = (String) parts.get(1);
+                return channels.get(channelName).getCommand().getReplayMultiDecoder();
+            } else if (parts.get(0).equals("message")) {
                 String channelName = (String) parts.get(1);
                 return messageDecoders.get(channelName);
-            }
-            if (parts.get(0).equals("pmessage")) {
+            } else if (parts.get(0).equals("pmessage")) {
                 String patternName = (String) parts.get(1);
                 return messageDecoders.get(patternName);
             }
         }
+
         return data.getCommand().getReplayMultiDecoder();
     }
 

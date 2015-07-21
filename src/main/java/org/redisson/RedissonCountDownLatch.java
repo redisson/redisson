@@ -24,7 +24,6 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RCountDownLatch;
 
 import io.netty.util.concurrent.Future;
@@ -50,8 +49,8 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     private final UUID id;
 
-    protected RedissonCountDownLatch(ConnectionManager connectionManager, String name, UUID id) {
-        super(connectionManager, name);
+    protected RedissonCountDownLatch(CommandExecutor commandExecutor, String name, UUID id) {
+        super(commandExecutor, name);
         this.id = id;
     }
 
@@ -98,7 +97,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
         Future<PubSubStatusMessage> res = null;
         synchronized (ENTRIES) {
-            res = connectionManager.subscribe(listener, getChannelName());
+            res = commandExecutor.getConnectionManager().subscribe(listener, getChannelName());
         }
         res.addListener(new FutureListener<PubSubStatusMessage>() {
             @Override
@@ -125,7 +124,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                     synchronized (ENTRIES) {
                         // maybe added during subscription
                         if (!ENTRIES.containsKey(getEntryName())) {
-                            connectionManager.unsubscribe(getChannelName());
+                            commandExecutor.getConnectionManager().unsubscribe(getChannelName());
                         }
                     }
                 }
@@ -203,7 +202,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return;
         }
 
-        connectionManager.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
+        commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
                 "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
                         "if v == 0 then redis.call('publish', ARGV[2], ARGV[1]) end;" +
@@ -225,7 +224,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private long getCountInner() {
-        Long val = connectionManager.read(getName(), LongCodec.INSTANCE, RedisCommands.GET, getName());
+        Long val = commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.GET, getName());
         if (val == null) {
             return 0;
         }
@@ -234,14 +233,14 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean trySetCount(long count) {
-        return connectionManager.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[1]) == 0 then redis.call('set', KEYS[1], ARGV[2]); redis.call('publish', ARGV[3], ARGV[1]); return true else return false end",
                  Collections.<Object>singletonList(getName()), newCountMessage, count, getChannelName());
     }
 
     @Override
     public Future<Boolean> deleteAsync() {
-        return connectionManager.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1]) == 1 then redis.call('publish', ARGV[2], ARGV[1]); return true else return false end",
                  Collections.<Object>singletonList(getName()), newCountMessage, getChannelName());
     }

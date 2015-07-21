@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.Collections;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -25,7 +24,6 @@ import java.util.concurrent.locks.Condition;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RLock;
 
 import io.netty.util.Timeout;
@@ -55,8 +53,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = PlatformDependent.newConcurrentHashMap();
 
-    protected RedissonLock(ConnectionManager connectionManager, String name, UUID id) {
-        super(connectionManager, name);
+    protected RedissonLock(CommandExecutor commandExecutor, String name, UUID id) {
+        super(commandExecutor, name);
         this.id = id;
     }
 
@@ -75,7 +73,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     synchronized (ENTRIES) {
                         // maybe added during subscription
                         if (!ENTRIES.containsKey(getEntryName())) {
-                            connectionManager.unsubscribe(getChannelName());
+                            commandExecutor.getConnectionManager().unsubscribe(getChannelName());
                         }
                     }
                 }
@@ -138,7 +136,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
         Future<PubSubStatusMessage> res = null;
         synchronized (ENTRIES) {
-            res = connectionManager.subscribe(listener, getChannelName());
+            res = commandExecutor.getConnectionManager().subscribe(listener, getChannelName());
         }
         res.addListener(new FutureListener<PubSubStatusMessage>() {
             @Override
@@ -238,7 +236,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             return;
         }
 
-        Timeout task = connectionManager.newTimeout(new TimerTask() {
+        Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 expire(internalLockLeaseTime, TimeUnit.MILLISECONDS);
@@ -267,7 +265,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return connectionManager.evalWrite(getName(), RedisCommands.EVAL_INTEGER,
+        return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('set', KEYS[1], cjson.encode({['o'] = ARGV[1], ['c'] = 1}), 'px', ARGV[2]); " +
@@ -342,7 +340,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void unlock() {
-        Boolean opStatus = connectionManager.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
+        Boolean opStatus = commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('publish', ARGV[4], ARGV[2]); " +
@@ -380,24 +378,24 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void forceUnlock() {
-        connectionManager.get(forceUnlockAsync());
+        get(forceUnlockAsync());
     }
 
     private Future<Boolean> forceUnlockAsync() {
         stopRefreshTask();
-        return connectionManager.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN,
                 "redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return true",
                         Collections.<Object>singletonList(getName()), unlockMessage, getChannelName());
     }
 
     @Override
     public boolean isLocked() {
-        return connectionManager.read(getName(), RedisCommands.EXISTS, getName());
+        return commandExecutor.read(getName(), RedisCommands.EXISTS, getName());
     }
 
     @Override
     public boolean isHeldByCurrentThread() {
-        Boolean opStatus = connectionManager.evalRead(getName(), RedisCommands.EVAL_BOOLEAN,
+        Boolean opStatus = commandExecutor.evalRead(getName(), RedisCommands.EVAL_BOOLEAN,
                             "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  return false; " +
@@ -415,7 +413,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public int getHoldCount() {
-        Long opStatus = connectionManager.evalRead(getName(), RedisCommands.EVAL_INTEGER,
+        Long opStatus = commandExecutor.evalRead(getName(), RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  return 0; " +

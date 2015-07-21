@@ -21,45 +21,44 @@ import java.util.Collection;
 import java.util.List;
 
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RHyperLogLog;
 
 import io.netty.util.concurrent.Future;
 
 public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
-    protected RedissonHyperLogLog(ConnectionManager connectionManager, String name) {
-        super(connectionManager, name);
+    protected RedissonHyperLogLog(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
 
     @Override
     public boolean add(V obj) {
-        return connectionManager.get(addAsync(obj));
+        return get(addAsync(obj));
     }
 
     @Override
     public boolean addAll(Collection<V> objects) {
-        return connectionManager.get(addAllAsync(objects));
+        return get(addAllAsync(objects));
     }
 
     @Override
     public long count() {
-        return connectionManager.get(countAsync());
+        return get(countAsync());
     }
 
     @Override
     public long countWith(String... otherLogNames) {
-        return connectionManager.get(countWithAsync(otherLogNames));
+        return get(countWithAsync(otherLogNames));
     }
 
     @Override
     public void mergeWith(String... otherLogNames) {
-        connectionManager.get(mergeWithAsync(otherLogNames));
+        get(mergeWithAsync(otherLogNames));
     }
 
     @Override
     public Future<Boolean> addAsync(V obj) {
-        return connectionManager.writeAsync(getName(), RedisCommands.PFADD, getName(), obj);
+        return commandExecutor.writeAsync(getName(), RedisCommands.PFADD, getName(), obj);
     }
 
     @Override
@@ -67,12 +66,12 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
         args.addAll(objects);
-        return connectionManager.writeAsync(getName(), RedisCommands.PFADD, getName(), args.toArray());
+        return commandExecutor.writeAsync(getName(), RedisCommands.PFADD, getName(), args.toArray());
     }
 
     @Override
     public Future<Long> countAsync() {
-        return connectionManager.writeAsync(getName(), RedisCommands.PFCOUNT, getName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.PFCOUNT, getName());
     }
 
     @Override
@@ -80,7 +79,7 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
-        return connectionManager.writeAsync(getName(), RedisCommands.PFCOUNT, args.toArray());
+        return commandExecutor.writeAsync(getName(), RedisCommands.PFCOUNT, args.toArray());
     }
 
     @Override
@@ -88,7 +87,7 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
-        return connectionManager.writeAsync(getName(), RedisCommands.PFMERGE, args.toArray());
+        return commandExecutor.writeAsync(getName(), RedisCommands.PFMERGE, args.toArray());
     }
 
 }

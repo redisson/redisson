@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 
@@ -28,8 +27,8 @@ import org.redisson.core.MessageListener;
  */
 public class RedissonTopicPattern<M> extends RedissonTopic<M> {
 
-    protected RedissonTopicPattern(ConnectionManager connectionManager, String name) {
-        super(connectionManager, name);
+    protected RedissonTopicPattern(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
 
     @Override
@@ -39,7 +38,7 @@ public class RedissonTopicPattern<M> extends RedissonTopic<M> {
     }
 
     private int addListener(RedisPubSubTopicListenerWrapper<M> pubSubListener) {
-        PubSubConnectionEntry entry = connectionManager.psubscribe(getName());
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().psubscribe(getName());
         synchronized (entry) {
             if (entry.isActive()) {
                 entry.addListener(getName(), pubSubListener);
@@ -52,7 +51,7 @@ public class RedissonTopicPattern<M> extends RedissonTopic<M> {
 
     @Override
     public void removeListener(int listenerId) {
-        PubSubConnectionEntry entry = connectionManager.getEntry(getName());
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getEntry(getName());
         if (entry == null) {
             return;
         }
@@ -60,7 +59,7 @@ public class RedissonTopicPattern<M> extends RedissonTopic<M> {
             if (entry.isActive()) {
                 entry.removeListener(getName(), listenerId);
                 if (entry.getListeners(getName()).isEmpty()) {
-                    connectionManager.punsubscribe(getName());
+                    commandExecutor.getConnectionManager().punsubscribe(getName());
                 }
                 return;
             }

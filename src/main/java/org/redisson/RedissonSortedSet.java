@@ -94,16 +94,16 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     private Comparator<? super V> comparator = NaturalComparator.NATURAL_ORDER;
 
-    protected RedissonSortedSet(ConnectionManager connectionManager, String name) {
-        super(connectionManager, name);
+    protected RedissonSortedSet(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
 
         loadComparator();
 
-        connectionManager.write(getName(), StringCodec.INSTANCE, RedisCommands.SETNX, getCurrentVersionKey(), 0L);
+        commandExecutor.write(getName(), StringCodec.INSTANCE, RedisCommands.SETNX, getCurrentVersionKey(), 0L);
     }
 
     private void loadComparator() {
-        connectionManager.read(getName(), new SyncOperation<Void>() {
+        commandExecutor.read(getName(), new SyncOperation<Void>() {
             @Override
             public Void execute(Codec codec, RedisConnection conn) {
                 loadComparator(conn);
@@ -155,7 +155,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public int size() {
-        return connectionManager.read(getName(), RedisCommands.LLEN, getName());
+        return commandExecutor.read(getName(), RedisCommands.LLEN, getName());
     }
 
     private int size(RedisConnection connection) {
@@ -169,7 +169,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean contains(final Object o) {
-        return connectionManager.read(getName(), new SyncOperation<Boolean>() {
+        return commandExecutor.read(getName(), new SyncOperation<Boolean>() {
             @Override
             public Boolean execute(Codec codec, RedisConnection conn) {
                 return binarySearch((V)o, codec, conn).getIndex() >= 0;
@@ -240,7 +240,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private void remove(final int index) {
-        connectionManager.write(getName(), new SyncOperation<V>() {
+        commandExecutor.write(getName(), new SyncOperation<V>() {
             @Override
             public V execute(Codec codec, RedisConnection conn) {
                 if (index == 0) {
@@ -268,18 +268,18 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     private V get(final int index) {
-        return connectionManager.read(getName(), RedisCommands.LINDEX, getName(), index);
+        return commandExecutor.read(getName(), RedisCommands.LINDEX, getName(), index);
     }
 
     @Override
     public Object[] toArray() {
-        List<V> res = connectionManager.read(getName(), RedisCommands.LRANGE, getName(), 0, -1);
+        List<V> res = commandExecutor.read(getName(), RedisCommands.LRANGE, getName(), 0, -1);
         return res.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<V> res = connectionManager.read(getName(), RedisCommands.LRANGE, getName(), 0, -1);
+        List<V> res = commandExecutor.read(getName(), RedisCommands.LRANGE, getName(), 0, -1);
         return res.toArray(a);
     }
 
@@ -293,7 +293,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean add(final V value) {
-        return connectionManager.write(getName(), new SyncOperation<Boolean>() {
+        return commandExecutor.write(getName(), new SyncOperation<Boolean>() {
             @Override
             public Boolean execute(Codec codec, RedisConnection conn) {
                 return add(value, codec, conn);
@@ -302,7 +302,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     public Future<Boolean> addAsync(final V value) {
-        EventLoop loop = connectionManager.getGroup().next();
+        EventLoop loop = commandExecutor.getConnectionManager().getGroup().next();
         final Promise<Boolean> promise = loop.newPromise();
 
         loop.execute(new Runnable() {
@@ -438,10 +438,10 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public Future<Boolean> removeAsync(final V value) {
-        EventLoopGroup group = connectionManager.getGroup();
+        EventLoopGroup group = commandExecutor.getConnectionManager().getGroup();
         final Promise<Boolean> promise = group.next().newPromise();
 
-        connectionManager.getGroup().execute(new Runnable() {
+        group.execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -458,7 +458,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean remove(final Object value) {
-        return connectionManager.write(getName(), new SyncOperation<Boolean>() {
+        return commandExecutor.write(getName(), new SyncOperation<Boolean>() {
             @Override
             public Boolean execute(Codec codec, RedisConnection conn) {
                 return remove(value, codec, conn);
@@ -573,7 +573,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public V first() {
-        V res = connectionManager.read(getName(), RedisCommands.LINDEX, getName(), 0);
+        V res = commandExecutor.read(getName(), RedisCommands.LINDEX, getName(), 0);
         if (res == null) {
             throw new NoSuchElementException();
         }
@@ -582,7 +582,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public V last() {
-        V res = connectionManager.read(getName(), RedisCommands.LINDEX, getName(), -1);
+        V res = commandExecutor.read(getName(), RedisCommands.LINDEX, getName(), -1);
         if (res == null) {
             throw new NoSuchElementException();
         }
@@ -602,7 +602,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         String className = comparator.getClass().getName();
         final String comparatorSign = className + ":" + calcClassSign(className);
 
-        Boolean res = connectionManager.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
+        Boolean res = commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('llen', KEYS[1]) == 0 then redis.call('set', KEYS[2], ARGV[1]); return true; "
                 + "else return false; end",
                 Arrays.<Object>asList(getName(), getComparatorKeyName()), comparatorSign);

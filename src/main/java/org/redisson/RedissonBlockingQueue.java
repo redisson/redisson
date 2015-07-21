@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.core.RBlockingQueue;
 
@@ -40,8 +39,8 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlockingQueue<V> {
 
-    protected RedissonBlockingQueue(ConnectionManager connection, String name) {
-        super(connection, name);
+    protected RedissonBlockingQueue(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
 
     @Override
@@ -61,7 +60,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public Future<V> takeAsync() {
-        return connectionManager.writeAsync(getName(), RedisCommands.BLPOP_VALUE, getName(), 0);
+        return commandExecutor.writeAsync(getName(), RedisCommands.BLPOP_VALUE, getName(), 0);
     }
 
     @Override
@@ -72,7 +71,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public Future<V> pollAsync(long timeout, TimeUnit unit) {
-        return connectionManager.writeAsync(getName(), RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
+        return commandExecutor.writeAsync(getName(), RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
     }
 
     @Override
@@ -89,7 +88,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
-        return connectionManager.writeAsync(getName(), RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
+        return commandExecutor.writeAsync(getName(), RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
     }
 
     @Override
@@ -109,11 +108,11 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throw new NullPointerException();
         }
 
-        return connectionManager.get(drainToAsync(c));
+        return get(drainToAsync(c));
     }
 
     private Future<Integer> drainToAsync(Collection<? super V> c) {
-        return connectionManager.evalWriteAsync(getName(), new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
+        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
               "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
               "redis.call('ltrim', KEYS[1], -1, 0); " +
               "return vals", Collections.<Object>singletonList(getName()));
@@ -128,11 +127,11 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
             throw new NullPointerException();
         }
 
-        return connectionManager.get(drainToAsync(c, maxElements));
+        return get(drainToAsync(c, maxElements));
     }
 
     private Future<Integer> drainToAsync(Collection<? super V> c, final int maxElements) {
-        return connectionManager.evalWriteAsync(getName(), new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
+        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +

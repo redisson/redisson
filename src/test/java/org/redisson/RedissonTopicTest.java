@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Assert;
@@ -138,6 +139,41 @@ public class RedissonTopicTest {
         redisson1.shutdown();
         redisson2.shutdown();
     }
+
+    @Test
+    public void testHeavyLoad() throws InterruptedException {
+        final CountDownLatch messageRecieved = new CountDownLatch(1000);
+
+        Redisson redisson1 = BaseTest.createInstance();
+        RTopic<Message> topic1 = redisson1.getTopic("topic");
+        topic1.addListener(new MessageListener<Message>() {
+            @Override
+            public void onMessage(Message msg) {
+                Assert.assertEquals(new Message("123"), msg);
+                messageRecieved.countDown();
+            }
+        });
+
+        Redisson redisson2 = BaseTest.createInstance();
+        RTopic<Message> topic2 = redisson2.getTopic("topic");
+        topic2.addListener(new MessageListener<Message>() {
+            @Override
+            public void onMessage(Message msg) {
+                Assert.assertEquals(new Message("123"), msg);
+                messageRecieved.countDown();
+            }
+        });
+
+        for (int i = 0; i < 500; i++) {
+            topic2.publish(new Message("123"));
+        }
+
+        messageRecieved.await();
+
+        redisson1.shutdown();
+        redisson2.shutdown();
+    }
+
 
     @Test
     public void testListenerRemove() throws InterruptedException {

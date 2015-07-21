@@ -30,16 +30,20 @@ import io.netty.util.concurrent.Promise;
  */
 abstract class RedissonObject implements RObject {
 
-    final ConnectionManager connectionManager;
+    final CommandExecutor commandExecutor;
     private final String name;
 
-    public RedissonObject(ConnectionManager connectionManager, String name) {
-        this.connectionManager = connectionManager;
+    public RedissonObject(CommandExecutor commandExecutor, String name) {
+        this.commandExecutor = commandExecutor;
         this.name = name;
     }
 
+    protected <V> V get(Future<V> future) {
+        return commandExecutor.get(future);
+    }
+
     protected <V> Promise<V> newPromise() {
-        return connectionManager.getGroup().next().<V>newPromise();
+        return commandExecutor.getConnectionManager().getGroup().next().<V>newPromise();
     }
 
     @Override
@@ -49,32 +53,32 @@ abstract class RedissonObject implements RObject {
 
     @Override
     public boolean rename(String newName) {
-        return connectionManager.get(renameAsync(newName));
+        return commandExecutor.get(renameAsync(newName));
     }
 
     @Override
     public Future<Boolean> renameAsync(String newName) {
-        return connectionManager.writeAsync(getName(), RedisCommands.RENAME, getName(), newName);
+        return commandExecutor.writeAsync(getName(), RedisCommands.RENAME, getName(), newName);
     }
 
     @Override
     public boolean renamenx(String newName) {
-        return connectionManager.get(renamenxAsync(newName));
+        return commandExecutor.get(renamenxAsync(newName));
     }
 
     @Override
     public Future<Boolean> renamenxAsync(String newName) {
-        return connectionManager.writeAsync(getName(), RedisCommands.RENAMENX, getName(), newName);
+        return commandExecutor.writeAsync(getName(), RedisCommands.RENAMENX, getName(), newName);
     }
 
     @Override
     public boolean delete() {
-        return connectionManager.get(deleteAsync());
+        return commandExecutor.get(deleteAsync());
     }
 
     @Override
     public Future<Boolean> deleteAsync() {
-        return connectionManager.writeAsync(getName(), RedisCommands.DEL_SINGLE, getName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_SINGLE, getName());
     }
 
 }

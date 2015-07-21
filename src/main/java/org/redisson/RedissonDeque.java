@@ -23,7 +23,6 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.TrueReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.decoder.ListFirstObjectDecoder;
 import org.redisson.core.RDeque;
 
@@ -44,28 +43,28 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
 
-    protected RedissonDeque(ConnectionManager connectionManager, String name) {
-        super(connectionManager, name);
+    protected RedissonDeque(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
 
     @Override
     public void addFirst(V e) {
-        connectionManager.get(addFirstAsync(e));
+        get(addFirstAsync(e));
     }
 
     @Override
     public Future<Void> addFirstAsync(V e) {
-        return connectionManager.writeAsync(getName(), LPUSH_VOID, getName(), e);
+        return commandExecutor.writeAsync(getName(), LPUSH_VOID, getName(), e);
     }
 
     @Override
     public void addLast(V e) {
-        connectionManager.get(addLastAsync(e));
+        get(addLastAsync(e));
     }
 
     @Override
     public Future<Void> addLastAsync(V e) {
-        return connectionManager.writeAsync(getName(), RPUSH_VOID, getName(), e);
+        return commandExecutor.writeAsync(getName(), RPUSH_VOID, getName(), e);
     }
 
 
@@ -107,12 +106,12 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<V> getLastAsync() {
-        return connectionManager.readAsync(getName(), LRANGE_SINGLE, getName(), -1, -1);
+        return commandExecutor.readAsync(getName(), LRANGE_SINGLE, getName(), -1, -1);
     }
 
     @Override
     public V getLast() {
-        V result = connectionManager.get(getLastAsync());
+        V result = get(getLastAsync());
         if (result == null) {
             throw new NoSuchElementException();
         }
@@ -121,12 +120,12 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public boolean offerFirst(V e) {
-        return connectionManager.get(offerFirstAsync(e));
+        return get(offerFirstAsync(e));
     }
 
     @Override
     public Future<Boolean> offerFirstAsync(V e) {
-        return connectionManager.writeAsync(getName(), LPUSH_BOOLEAN, getName(), e);
+        return commandExecutor.writeAsync(getName(), LPUSH_BOOLEAN, getName(), e);
     }
 
     @Override
@@ -136,7 +135,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public boolean offerLast(V e) {
-        return connectionManager.get(offerLastAsync(e));
+        return get(offerLastAsync(e));
     }
 
     @Override
@@ -146,7 +145,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V peekFirst() {
-        return connectionManager.get(peekFirstAsync());
+        return get(peekFirstAsync());
     }
 
     @Override
@@ -156,7 +155,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public V peekLast() {
-        return connectionManager.get(getLastAsync());
+        return get(getLastAsync());
     }
 
     @Override
@@ -171,13 +170,13 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<V> pollLastAsync() {
-        return connectionManager.writeAsync(getName(), RedisCommands.RPOP, getName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.RPOP, getName());
     }
 
 
     @Override
     public V pollLast() {
-        return connectionManager.get(pollLastAsync());
+        return get(pollLastAsync());
     }
 
     @Override
@@ -217,12 +216,12 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<V> removeLastAsync() {
-        return connectionManager.writeAsync(getName(), RedisCommands.RPOP, getName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.RPOP, getName());
     }
 
     @Override
     public V removeLast() {
-        V value = connectionManager.get(removeLastAsync());
+        V value = get(removeLastAsync());
         if (value == null) {
             throw new NoSuchElementException();
         }

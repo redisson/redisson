@@ -20,35 +20,34 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RExpirable;
 
 import io.netty.util.concurrent.Future;
 
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
-    RedissonExpirable(ConnectionManager connectionManager, String name) {
+    RedissonExpirable(CommandExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
     @Override
     public boolean expire(long timeToLive, TimeUnit timeUnit) {
-        return connectionManager.get(expireAsync(timeToLive, timeUnit));
+        return commandExecutor.get(expireAsync(timeToLive, timeUnit));
     }
 
     @Override
     public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return connectionManager.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.EXPIRE, getName(), timeUnit.toSeconds(timeToLive));
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.EXPIRE, getName(), timeUnit.toSeconds(timeToLive));
     }
 
     @Override
     public boolean expireAt(long timestamp) {
-        return connectionManager.get(expireAtAsync(timestamp));
+        return commandExecutor.get(expireAtAsync(timestamp));
     }
 
     @Override
     public Future<Boolean> expireAtAsync(long timestamp) {
-        return connectionManager.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.EXPIREAT, getName(), timestamp);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.EXPIREAT, getName(), timestamp);
     }
 
     @Override
@@ -63,22 +62,22 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public boolean clearExpire() {
-        return connectionManager.get(clearExpireAsync());
+        return commandExecutor.get(clearExpireAsync());
     }
 
     @Override
     public Future<Boolean> clearExpireAsync() {
-        return connectionManager.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PERSIST, getName());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PERSIST, getName());
     }
 
     @Override
     public long remainTimeToLive() {
-        return connectionManager.get(remainTimeToLiveAsync());
+        return commandExecutor.get(remainTimeToLiveAsync());
     }
 
     @Override
     public Future<Long> remainTimeToLiveAsync() {
-        return connectionManager.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.TTL, getName());
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.TTL, getName());
     }
 
 }

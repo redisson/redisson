@@ -16,7 +16,6 @@
 package org.redisson;
 
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
@@ -32,18 +31,18 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
-    protected RedissonTopic(ConnectionManager connectionManager, String name) {
-        super(connectionManager, name);
+    protected RedissonTopic(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
 
     @Override
     public long publish(M message) {
-        return connectionManager.get(publishAsync(message));
+        return get(publishAsync(message));
     }
 
     @Override
     public Future<Long> publishAsync(M message) {
-        return connectionManager.writeAsync(getName(), RedisCommands.PUBLISH, getName(), message);
+        return commandExecutor.writeAsync(getName(), RedisCommands.PUBLISH, getName(), message);
     }
 
     @Override
@@ -53,7 +52,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     }
 
     private int addListener(RedisPubSubTopicListenerWrapper<M> pubSubListener) {
-        PubSubConnectionEntry entry = connectionManager.subscribe(getName());
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().subscribe(getName());
         synchronized (entry) {
             if (entry.isActive()) {
                 entry.addListener(getName(), pubSubListener);
@@ -66,7 +65,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     @Override
     public void removeListener(int listenerId) {
-        PubSubConnectionEntry entry = connectionManager.getEntry(getName());
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getEntry(getName());
         if (entry == null) {
             return;
         }
@@ -74,7 +73,7 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
             if (entry.isActive()) {
                 entry.removeListener(getName(), listenerId);
                 if (!entry.hasListeners(getName())) {
-                    connectionManager.unsubscribe(getName());
+                    commandExecutor.getConnectionManager().unsubscribe(getName());
                 }
                 return;
             }

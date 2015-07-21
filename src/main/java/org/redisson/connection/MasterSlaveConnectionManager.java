@@ -15,39 +15,25 @@
  */
 package org.redisson.connection;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
-import org.redisson.SyncOperation;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.protocol.Codec;
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.StringCodec;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.slf4j.Logger;
@@ -62,7 +48,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
@@ -91,6 +76,26 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected final NavigableMap<Integer, MasterSlaveEntry> entries = new ConcurrentSkipListMap<Integer, MasterSlaveEntry>();
 
     MasterSlaveConnectionManager() {
+    }
+
+    @Override
+    public HashedWheelTimer getTimer() {
+        return timer;
+    }
+
+    @Override
+    public MasterSlaveServersConfig getConfig() {
+        return config;
+    }
+
+    @Override
+    public Codec getCodec() {
+        return codec;
+    }
+
+    @Override
+    public NavigableMap<Integer, MasterSlaveEntry> getEntries() {
+        return entries;
     }
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
@@ -150,57 +155,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         };
     }
 
-    public <T> Future<Queue<Object>> readAllAsync(RedisCommand<T> command, Object ... params) {
-        final Promise<Queue<Object>> mainPromise = getGroup().next().newPromise();
-        Promise<Object> promise = new DefaultPromise<Object>() {
-            Queue<Object> results = new ConcurrentLinkedQueue<Object>();
-            AtomicInteger counter = new AtomicInteger(entries.keySet().size());
-            @Override
-            public Promise<Object> setSuccess(Object result) {
-                if (result instanceof Collection) {
-                    results.addAll((Collection)result);
-                } else {
-                    results.add(result);
-                }
-
-                if (counter.decrementAndGet() == 0
-                      && !mainPromise.isDone()) {
-                    mainPromise.setSuccess(results);
-                }
-                return this;
-            }
-        };
-
-        for (Integer slot : entries.keySet()) {
-            async(true, slot, null, new StringCodec(), command, params, promise, 0);
-        }
-        return mainPromise;
-    }
-
-    public <T> Future<Boolean> writeAllAsync(RedisCommand<T> command, Object ... params) {
-        return allAsync(false, command, params);
-    }
-
-    public <T> Future<Boolean> allAsync(boolean readOnlyMode, RedisCommand<T> command, Object ... params) {
-        final Promise<Boolean> mainPromise = getGroup().next().newPromise();
-        Promise<Object> promise = new DefaultPromise<Object>() {
-            AtomicInteger counter = new AtomicInteger(entries.keySet().size());
-            @Override
-            public Promise<Object> setSuccess(Object result) {
-                if (counter.decrementAndGet() == 0
-                      && !mainPromise.isDone()) {
-                    mainPromise.setSuccess(true);
-                }
-                return this;
-            }
-        };
-        for (Integer slot : entries.keySet()) {
-            async(readOnlyMode, slot, null, new StringCodec(), command, params, promise, 0);
-        }
-        return mainPromise;
-    }
-
-    private int calcSlot(String key) {
+    @Override
+    public int calcSlot(String key) {
         if (entries.size() == 1 || key == null) {
             return -1;
         }
@@ -215,224 +171,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         log.debug("slot {} for {}", result, key);
         return result;
     }
-
-    public <V> V get(Future<V> future) {
-        future.awaitUninterruptibly();
-        if (future.isSuccess()) {
-            return future.getNow();
-        }
-        throw future.cause() instanceof RedisException ?
-                (RedisException) future.cause() :
-                new RedisException("Unexpected exception while processing command", future.cause());
-    }
-
-    public <T, R> R read(String key, RedisCommand<T> command, Object ... params) {
-        return read(key, codec, command, params);
-    }
-
-    public <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = readAsync(key, codec, command, params);
-        return get(res);
-    }
-
-    public <T, R> Future<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = getGroup().next().newPromise();
-        int slot = calcSlot(key);
-        async(true, slot, null, codec, command, params, mainPromise, 0);
-        return mainPromise;
-    }
-
-    public <T, R> Future<R> readAsync(String key, RedisCommand<T> command, Object ... params) {
-        return readAsync(key, codec, command, params);
-    }
-
-    public <R> R write(String key, SyncOperation<R> operation) {
-        int slot = calcSlot(key);
-        return async(false, slot, operation, 0);
-    }
-
-    public <R> R read(String key, SyncOperation<R> operation) {
-        int slot = calcSlot(key);
-        return async(true, slot, operation, 0);
-    }
-
-    private <R> R async(boolean readOnlyMode, int slot, SyncOperation<R> operation, int attempt) {
-        try {
-            RedisConnection connection;
-            if (readOnlyMode) {
-                connection = connectionReadOp(slot);
-            } else {
-                connection = connectionWriteOp(slot);
-            }
-            try {
-                return operation.execute(codec, connection);
-            } catch (RedisMovedException e) {
-                return async(readOnlyMode, e.getSlot(), operation, attempt);
-            } catch (RedisTimeoutException e) {
-                if (attempt == config.getRetryAttempts()) {
-                    throw e;
-                }
-                attempt++;
-                return async(readOnlyMode, slot, operation, attempt);
-            } finally {
-                if (readOnlyMode) {
-                    releaseRead(slot, connection);
-                } else {
-                    releaseWrite(slot, connection);
-                }
-            }
-        } catch (RedisConnectionException e) {
-            if (attempt == config.getRetryAttempts()) {
-                throw e;
-            }
-            try {
-                Thread.sleep(config.getRetryInterval());
-            } catch (InterruptedException e1) {
-                Thread.currentThread().interrupt();
-            }
-            attempt++;
-            return async(readOnlyMode, slot, operation, attempt);
-        }
-    }
-
-    public <T, R> Future<R> evalReadAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalReadAsync(key, codec, evalCommandType, script, keys, params);
-    }
-
-    public <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Promise<R> mainPromise = getGroup().next().newPromise();
-        List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
-        args.add(script);
-        args.add(keys.size());
-        args.addAll(keys);
-        args.addAll(Arrays.asList(params));
-        int slot = calcSlot(key);
-        async(true, slot, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
-        return mainPromise;
-    }
-
-    public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalRead(key, codec, evalCommandType, script, keys, params);
-    }
-
-    public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Future<R> res = evalReadAsync(key, codec, evalCommandType, script, keys, params);
-        return get(res);
-    }
-
-    public <T, R> Future<R> evalWriteAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-    }
-
-    public <T, R> Future<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Promise<R> mainPromise = getGroup().next().newPromise();
-        List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
-        args.add(script);
-        args.add(keys.size());
-        args.addAll(keys);
-        args.addAll(Arrays.asList(params));
-        int slot = calcSlot(key);
-        async(false, slot, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
-        return mainPromise;
-    }
-
-    public <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalWrite(key, codec, evalCommandType, script, keys, params);
-    }
-
-    public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Future<R> res = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-        return get(res);
-    }
-
-    public <T, R> R write(String key, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(key, command, params);
-        return get(res);
-    }
-
-    public <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params) {
-        return writeAsync(key, codec, command, params);
-    }
-
-    public <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(key, codec, command, params);
-        return get(res);
-    }
-
-    public <T, R> Future<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = getGroup().next().newPromise();
-        int slot = calcSlot(key);
-        async(false, slot, null, codec, command, params, mainPromise, 0);
-        return mainPromise;
-    }
-
-    private <V, R> void async(final boolean readOnlyMode, final int slot, final MultiDecoder<Object> messageDecoder, final Codec codec, final RedisCommand<V> command,
-                            final Object[] params, final Promise<R> mainPromise, final int attempt) {
-        final Promise<R> attemptPromise = getGroup().next().newPromise();
-        final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
-
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                if (attemptPromise.isDone()) {
-                    return;
-                }
-                if (attempt == config.getRetryAttempts()) {
-                    attemptPromise.setFailure(ex.get());
-                    return;
-                }
-                attemptPromise.cancel(true);
-
-                int count = attempt + 1;
-                async(readOnlyMode, slot, messageDecoder, codec, command, params, mainPromise, count);
-            }
-        };
-
-        try {
-            org.redisson.client.RedisConnection connection;
-            if (readOnlyMode) {
-                connection = connectionReadOp(slot);
-            } else {
-                connection = connectionWriteOp(slot);
-            }
-            log.debug("getting connection for command {} via slot {} using {}", command, slot, connection.getRedisClient().getAddr());
-            connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
-
-            ex.set(new RedisTimeoutException());
-            Timeout timeout = timer.newTimeout(timerTask, config.getTimeout(), TimeUnit.MILLISECONDS);
-
-            if (readOnlyMode) {
-                attemptPromise.addListener(createReleaseReadListener(slot, connection, timeout));
-            } else {
-                attemptPromise.addListener(createReleaseWriteListener(slot, connection, timeout));
-            }
-        } catch (RedisConnectionException e) {
-            ex.set(e);
-            timer.newTimeout(timerTask, config.getRetryInterval(), TimeUnit.MILLISECONDS);
-        }
-        attemptPromise.addListener(new FutureListener<R>() {
-            @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                if (future.isCancelled()) {
-                    return;
-                }
-                // TODO cancel timeout
-
-                if (future.cause() instanceof RedisMovedException) {
-                    RedisMovedException ex = (RedisMovedException)future.cause();
-                    async(readOnlyMode, ex.getSlot(), messageDecoder, codec, command, params, mainPromise, attempt);
-                    return;
-                }
-
-                if (future.isSuccess()) {
-                    mainPromise.setSuccess(future.getNow());
-                } else {
-                    mainPromise.setFailure(future.cause());
-                }
-            }
-        });
-    }
-
 
     @Override
     public PubSubConnectionEntry getEntry(String channelName) {
@@ -680,11 +418,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entries.remove(endSlot);
     }
 
-    protected RedisConnection connectionWriteOp(int slot) {
+    @Override
+    public RedisConnection connectionWriteOp(int slot) {
         return getEntry(slot).connectionWriteOp();
     }
 
-    protected RedisConnection connectionReadOp(int slot) {
+    @Override
+    public RedisConnection connectionReadOp(int slot) {
         return getEntry(slot).connectionReadOp();
     }
 
@@ -696,10 +436,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this.getEntry(slot).returnSubscribeConnection(entry);
     }
 
-    protected void releaseWrite(int slot, RedisConnection connection) {
+    @Override
+    public void releaseWrite(int slot, RedisConnection connection) {
         getEntry(slot).releaseWrite(connection);
     }
 
+    @Override
     public void releaseRead(int slot, RedisConnection connection) {
         getEntry(slot).releaseRead(connection);
     }
@@ -711,6 +453,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         timer.stop();
         group.shutdownGracefully().syncUninterruptibly();
+    }
+
+    @Override
+    public <R> Promise<R> newPromise() {
+        return group.next().newPromise();
     }
 
     @Override
