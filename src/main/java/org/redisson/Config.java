@@ -194,6 +194,7 @@ public class Config {
     /**
      * Activates an unix socket if servers binded to loopback interface.
      * Also used for epoll transport activation.
+     * <b>netty-transport-native-epoll</b> library should be in classpath
      *
      * @param useLinuxNativeEpoll
      * @return
