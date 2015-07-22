@@ -24,6 +24,16 @@ package org.redisson.core;
 public interface RObject extends RObjectAsync {
 
     /**
+     * Transfer a object from a source Redis instance to a destination Redis instance
+     *
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @return
+     */
+    void migrate(String host, int port, int database);
+
+    /**
      * Move object to another database
      *
      * @param database
@@ -47,9 +57,8 @@ public interface RObject extends RObjectAsync {
      * Rename current object key to <code>newName</code>
      *
      * @param newName
-     * @return
      */
-    boolean rename(String newName);
+    void rename(String newName);
 
     /**
      * Rename current object key to <code>newName</code>

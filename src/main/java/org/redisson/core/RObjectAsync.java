@@ -26,7 +26,18 @@ import io.netty.util.concurrent.Future;
 public interface RObjectAsync {
 
     /**
-     * Move object to another database
+     * Transfer a object from a source Redis instance to a destination Redis instance
+     * in async mode
+     *
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @return
+     */
+    Future<Void> migrateAsync(String host, int port, int database);
+
+    /**
+     * Move object to another database in async mode
      *
      * @param database
      * @return <code>true</code> if key was moved else <code>false</code>
@@ -42,7 +53,7 @@ public interface RObjectAsync {
      * @param newName
      * @return
      */
-    Future<Boolean> renameAsync(String newName);
+    Future<Void> renameAsync(String newName);
 
     /**
      * Rename current object key to <code>newName</code>

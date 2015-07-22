@@ -23,18 +23,18 @@ public class RedissonBucketTest extends BaseTest {
         Assert.assertEquals("someValue", newBucket.get());
         Assert.assertFalse(newBucket.renamenx("test2"));
     }
-    
+
     @Test
     public void testRename() {
         RBucket<String> bucket = redisson.getBucket("test");
         bucket.set("someValue");
-        Assert.assertTrue(bucket.rename("test1"));
+        bucket.rename("test1");
         RBucket<String> oldBucket = redisson.getBucket("test");
         Assert.assertNull(oldBucket.get());
         RBucket<String> newBucket = redisson.getBucket("test1");
         Assert.assertEquals("someValue", newBucket.get());
     }
-    
+
     @Test
     public void testSetGet() {
         RBucket<String> bucket = redisson.getBucket("test");

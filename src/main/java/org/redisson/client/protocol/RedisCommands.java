@@ -45,9 +45,9 @@ public interface RedisCommands {
 
     RedisStrictCommand<String> PING = new RedisStrictCommand<String>("PING");
 
-    RedisStrictCommand<Boolean> UNWATCH = new RedisStrictCommand<Boolean>("UNWATCH", new BooleanReplayConvertor());
-    RedisStrictCommand<Boolean> WATCH = new RedisStrictCommand<Boolean>("WATCH", new BooleanReplayConvertor());
-    RedisStrictCommand<Boolean> MULTI = new RedisStrictCommand<Boolean>("MULTI", new BooleanReplayConvertor());
+    RedisStrictCommand<Void> UNWATCH = new RedisStrictCommand<Void>("UNWATCH", new VoidReplayConvertor());
+    RedisStrictCommand<Void> WATCH = new RedisStrictCommand<Void>("WATCH", new VoidReplayConvertor());
+    RedisStrictCommand<Void> MULTI = new RedisStrictCommand<Void>("MULTI", new VoidReplayConvertor());
     RedisCommand<List<Object>> EXEC = new RedisCommand<List<Object>>("EXEC", new ObjectListReplayDecoder());
 
     RedisCommand<Long> SREM = new RedisCommand<Long>("SREM", 2, ValueType.OBJECTS);
@@ -135,8 +135,9 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
-    RedisStrictCommand<Boolean> RENAME = new RedisStrictCommand<Boolean>("RENAME", new BooleanReplayConvertor());
+    RedisStrictCommand<Void> RENAME = new RedisStrictCommand<Void>("RENAME", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> MOVE = new RedisStrictCommand<Boolean>("MOVE", new BooleanReplayConvertor());
+    RedisStrictCommand<Void> MIGRATE = new RedisStrictCommand<Void>("MIGRATE", new VoidReplayConvertor());
 
     RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 2);
 

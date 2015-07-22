@@ -51,13 +51,23 @@ abstract class RedissonObject implements RObject {
     }
 
     @Override
-    public boolean rename(String newName) {
-        return get(renameAsync(newName));
+    public void rename(String newName) {
+        get(renameAsync(newName));
     }
 
     @Override
-    public Future<Boolean> renameAsync(String newName) {
+    public Future<Void> renameAsync(String newName) {
         return commandExecutor.writeAsync(getName(), RedisCommands.RENAME, getName(), newName);
+    }
+
+    @Override
+    public void migrate(String host, int port, int database) {
+        get(migrateAsync(host, port, database));
+    }
+
+    @Override
+    public Future<Void> migrateAsync(String host, int port, int database) {
+        return commandExecutor.writeAsync(getName(), RedisCommands.MIGRATE, host, port, getName(), database);
     }
 
     @Override
