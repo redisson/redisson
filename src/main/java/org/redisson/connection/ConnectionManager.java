@@ -24,6 +24,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.misc.InfinitySemaphoreLatch;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.HashedWheelTimer;
@@ -88,4 +89,7 @@ public interface ConnectionManager {
     EventLoopGroup getGroup();
 
     Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);
+
+    InfinitySemaphoreLatch getShutdownLatch();
+
 }

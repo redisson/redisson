@@ -36,6 +36,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
+import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +68,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected EventLoopGroup group;
 
+
     protected Class<? extends SocketChannel> socketChannelClass;
 
     protected final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
@@ -74,6 +76,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected MasterSlaveServersConfig config;
 
     protected final NavigableMap<Integer, MasterSlaveEntry> entries = new ConcurrentSkipListMap<Integer, MasterSlaveEntry>();
+
+    private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
     MasterSlaveConnectionManager() {
     }
@@ -138,6 +142,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                shutdownLatch.release();
                 timeout.cancel();
                 releaseWrite(slot, conn);
             }
@@ -149,6 +154,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                shutdownLatch.release();
                 timeout.cancel();
                 releaseRead(slot, conn);
             }
@@ -448,6 +454,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
+        shutdownLatch.closeAndAwaitUninterruptibly();
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
@@ -468,6 +475,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public Timeout newTimeout(TimerTask task, long delay, TimeUnit unit) {
         return timer.newTimeout(task, delay, unit);
+    }
+
+    public InfinitySemaphoreLatch getShutdownLatch() {
+        return shutdownLatch;
     }
 
 }

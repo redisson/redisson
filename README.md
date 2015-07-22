@@ -54,6 +54,11 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####22-Jul-2015 - version 1.3.1 released  
+Fixed - requests state sync during shutdown  
+Fixed - netty-transport-native-epoll is now has a provided scope  
+Fixed - NPE during `BlockingQueue.poll` invocation  
+
 ####04-Jul-2015 - version 1.3.0 released
 Feature - `RQueue.pollLastAndOfferFirstTo` method added  
 Feature - `RObject.rename`, `RObject.renameAsync`, `RObject.renamenx`, `RObject.renamenxAsync` methods added  

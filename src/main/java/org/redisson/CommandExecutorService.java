@@ -157,6 +157,10 @@ public class CommandExecutorService implements CommandExecutor {
     }
 
     private <R> R async(boolean readOnlyMode, int slot, SyncOperation<R> operation, int attempt) {
+        if (!connectionManager.getShutdownLatch().acquire()) {
+            return null;
+        }
+
         try {
             RedisConnection connection;
             if (readOnlyMode) {
@@ -175,6 +179,7 @@ public class CommandExecutorService implements CommandExecutor {
                 attempt++;
                 return async(readOnlyMode, slot, operation, attempt);
             } finally {
+                connectionManager.getShutdownLatch().release();
                 if (readOnlyMode) {
                     connectionManager.releaseRead(slot, connection);
                 } else {
@@ -268,6 +273,11 @@ public class CommandExecutorService implements CommandExecutor {
 
     protected <V, R> void async(final boolean readOnlyMode, final int slot, final MultiDecoder<Object> messageDecoder, final Codec codec, final RedisCommand<V> command,
                             final Object[] params, final Promise<R> mainPromise, final int attempt) {
+        if (!connectionManager.getShutdownLatch().acquire()) {
+            mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
+            return;
+        }
+
         final Promise<R> attemptPromise = connectionManager.newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
 

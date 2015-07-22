@@ -111,6 +111,15 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
+        if (!connectionManager.getShutdownLatch().acquireAmount(commands.size())) {
+            IllegalStateException fail = new IllegalStateException("Redisson is shutdown");
+            for (Entry e : commands.values()) {
+                for (CommandEntry entry : e.getCommands()) {
+                    entry.getCommand().getPromise().setFailure(fail);
+                }
+            }
+            return connectionManager.getGroup().next().newFailedFuture(fail);
+        }
 
         if (commands.isEmpty()) {
             return connectionManager.getGroup().next().newSucceededFuture(null);
