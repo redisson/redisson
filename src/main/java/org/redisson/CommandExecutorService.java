@@ -53,9 +53,9 @@ import io.netty.util.concurrent.Promise;
  */
 public class CommandExecutorService implements CommandExecutor {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    final Logger log = LoggerFactory.getLogger(getClass());
 
-    ConnectionManager connectionManager;
+    final ConnectionManager connectionManager;
 
     public CommandExecutorService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
@@ -266,7 +266,7 @@ public class CommandExecutorService implements CommandExecutor {
         return mainPromise;
     }
 
-    private <V, R> void async(final boolean readOnlyMode, final int slot, final MultiDecoder<Object> messageDecoder, final Codec codec, final RedisCommand<V> command,
+    protected <V, R> void async(final boolean readOnlyMode, final int slot, final MultiDecoder<Object> messageDecoder, final Codec codec, final RedisCommand<V> command,
                             final Object[] params, final Promise<R> mainPromise, final int attempt) {
         final Promise<R> attemptPromise = connectionManager.newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();

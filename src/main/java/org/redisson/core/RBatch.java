@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.core;
 
-import org.redisson.core.*;
-
-import java.util.List;
-
-public interface RedissonClient {
+/**
+ * Interface for using pipeline feature.
+ *
+ * All methods invocations via async objects
+ * which have gotten from this interface are batched
+ * to separate queue and could be executed later
+ * with <code>execute()</code> or <code>executeAsync()</code> methods.
+ *
+ *
+ * @author Nikita Koksharov
+ *
+ */
+public interface RBatch {
 
     /**
      * Returns object holder by name
@@ -27,12 +35,7 @@ public interface RedissonClient {
      * @param name of object
      * @return
      */
-    <V> RBucket<V> getBucket(String name);
-
-    /**
-     * Returns a list of object holder by a key pattern
-     */
-    <V> List<RBucket<V>> getBuckets(String pattern);
+    <V> RBucketAsync<V> getBucket(String name);
 
     /**
      * Returns HyperLogLog object
@@ -40,7 +43,7 @@ public interface RedissonClient {
      * @param name of object
      * @return
      */
-    <V> RHyperLogLog<V> getHyperLogLog(String name);
+    <V> RHyperLogLogAsync<V> getHyperLogLog(String name);
 
     /**
      * Returns list instance by name.
@@ -48,7 +51,7 @@ public interface RedissonClient {
      * @param name of list
      * @return
      */
-    <V> RList<V> getList(String name);
+    <V> RListAsync<V> getList(String name);
 
     /**
      * Returns map instance by name.
@@ -56,15 +59,7 @@ public interface RedissonClient {
      * @param name of map
      * @return
      */
-    <K, V> RMap<K, V> getMap(String name);
-
-    /**
-     * Returns lock instance by name.
-     *
-     * @param name of lock
-     * @return
-     */
-    RLock getLock(String name);
+    <K, V> RMapAsync<K, V> getMap(String name);
 
     /**
      * Returns set instance by name.
@@ -72,15 +67,7 @@ public interface RedissonClient {
      * @param name of set
      * @return
      */
-    <V> RSet<V> getSet(String name);
-
-    /**
-     * Returns sorted set instance by name.
-     *
-     * @param name of sorted set
-     * @return
-     */
-    <V> RSortedSet<V> getSortedSet(String name);
+    <V> RSetAsync<V> getSet(String name);
 
     /**
      * Returns topic instance by name.
@@ -88,7 +75,7 @@ public interface RedissonClient {
      * @param name of topic
      * @return
      */
-    <M> RTopic<M> getTopic(String name);
+    <M> RTopicAsync<M> getTopic(String name);
 
     /**
      * Returns topic instance satisfies by pattern name.
@@ -101,7 +88,7 @@ public interface RedissonClient {
      * @param pattern of the topic
      * @return
      */
-    <M> RTopic<M> getTopicPattern(String pattern);
+    <M> RTopicAsync<M> getTopicPattern(String pattern);
 
     /**
      * Returns queue instance by name.
@@ -109,7 +96,7 @@ public interface RedissonClient {
      * @param name of queue
      * @return
      */
-    <V> RQueue<V> getQueue(String name);
+    <V> RQueueAsync<V> getQueue(String name);
 
     /**
      * Returns blocking queue instance by name.
@@ -117,7 +104,7 @@ public interface RedissonClient {
      * @param name of queue
      * @return
      */
-    <V> RBlockingQueue<V> getBlockingQueue(String name);
+    <V> RBlockingQueueAsync<V> getBlockingQueue(String name);
 
     /**
      * Returns deque instance by name.
@@ -125,7 +112,7 @@ public interface RedissonClient {
      * @param name of deque
      * @return
      */
-    <V> RDeque<V> getDeque(String name);
+    <V> RDequeAsync<V> getDequeAsync(String name);
 
     /**
      * Returns "atomic long" instance by name.
@@ -133,31 +120,15 @@ public interface RedissonClient {
      * @param name of the "atomic long"
      * @return
      */
-    RAtomicLong getAtomicLong(String name);
-
-    /**
-     * Returns "count down latch" instance by name.
-     *
-     * @param name of the "count down latch"
-     * @return
-     */
-    RCountDownLatch getCountDownLatch(String name);
+    RAtomicLongAsync getAtomicLongAsync(String name);
 
     /**
      * Returns script operations object
      *
      * @return
      */
-    RScript getScript();
+    RScriptAsync getScript();
 
-    /**
-     * Return batch object which executes group of
-     * command in pipeline.
-     *
-     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
-     *
-     * @return
-     */
-    RBatch createBatch();
+    void execute();
 
 }

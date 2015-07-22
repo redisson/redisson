@@ -28,6 +28,8 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
 
 /**
+ * Redis protocol command encoder
+ *
  * Code parts from Sam Pullara
  *
  * @author Nikita Koksharov

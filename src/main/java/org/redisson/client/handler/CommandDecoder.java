@@ -47,6 +47,8 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.internal.PlatformDependent;
 
 /**
+ * Redis protocol command decoder
+ *
  * Code parts from Sam Pullara
  *
  * @author Nikita Koksharov
@@ -121,6 +123,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     cmd.getPromise().setFailure(e);
                 }
             }
+
+            commands.getPromise().setSuccess(null);
         }
 
         ctx.channel().attr(CommandsQueue.REPLAY).remove();

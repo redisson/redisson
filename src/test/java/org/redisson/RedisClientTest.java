@@ -13,9 +13,12 @@ import org.junit.Test;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
+
+import io.netty.util.concurrent.Promise;
 
 public class RedisClientTest {
 
@@ -60,7 +63,8 @@ public class RedisClientTest {
         CommandData<String, String> cmd4 = conn.create(null, RedisCommands.PING);
         commands.add(cmd4);
 
-        conn.send(commands);
+        Promise<Void> p = c.getBootstrap().group().next().newPromise();
+        conn.send(new CommandsData(p, commands));
 
         Assert.assertEquals("PONG", cmd1.getPromise().get());
         Assert.assertEquals(1, (long)cmd2.getPromise().get());
@@ -96,7 +100,8 @@ public class RedisClientTest {
             commands.add(cmd1);
         }
 
-        conn.send(commands);
+        Promise<Void> p = c.getBootstrap().group().next().newPromise();
+        conn.send(new CommandsData(p, commands));
 
         for (CommandData<?, ?> commandData : commands) {
             commandData.getPromise().get();

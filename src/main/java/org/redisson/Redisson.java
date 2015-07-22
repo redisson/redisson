@@ -27,6 +27,7 @@ import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
 import org.redisson.core.RAtomicLong;
+import org.redisson.core.RBatch;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
@@ -301,6 +302,11 @@ public class Redisson implements RedissonClient {
 
     public void flushdb() {
         commandExecutor.writeAllAsync(RedisCommands.FLUSHDB).awaitUninterruptibly();
+    }
+
+    @Override
+    public RBatch createBatch() {
+        return new RedissonBatch(connectionManager);
     }
 
 }

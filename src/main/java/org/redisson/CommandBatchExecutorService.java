@@ -1,0 +1,209 @@
+package org.redisson;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisException;
+import org.redisson.client.RedisMovedException;
+import org.redisson.client.RedisTimeoutException;
+import org.redisson.client.protocol.Codec;
+import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.CommandsData;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.connection.ConnectionManager;
+
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.PlatformDependent;
+
+public class CommandBatchExecutorService extends CommandExecutorService {
+
+    public static class Entry {
+
+        Queue<CommandData<?, ?>> commands = PlatformDependent.newMpscQueue();
+
+        volatile boolean readOnlyMode = true;
+
+        public Queue<CommandData<?, ?>> getCommands() {
+            return commands;
+        }
+
+        public void setReadOnlyMode(boolean readOnlyMode) {
+            this.readOnlyMode = readOnlyMode;
+        }
+
+        public boolean isReadOnlyMode() {
+            return readOnlyMode;
+        }
+
+    }
+
+    private final ConcurrentMap<Integer, Entry> commands = PlatformDependent.newConcurrentHashMap();
+
+    public CommandBatchExecutorService(ConnectionManager connectionManager) {
+        super(connectionManager);
+    }
+
+    @Override
+    protected <V, R> void async(boolean readOnlyMode, int slot, MultiDecoder<Object> messageDecoder,
+            Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, int attempt) {
+        Entry entry = commands.get(slot);
+        if (entry == null) {
+            entry = new Entry();
+            Entry oldEntry = commands.putIfAbsent(slot, entry);
+            if (oldEntry != null) {
+                entry = oldEntry;
+            }
+        }
+
+        if (!readOnlyMode) {
+            entry.setReadOnlyMode(false);
+        }
+        entry.getCommands().add(new CommandData<V, R>(mainPromise, messageDecoder, codec, command, params));
+    }
+
+    public void execute() {
+        get(executeAsync());
+    }
+
+    public Promise<Void> executeAsync() {
+        Promise<Void> promise = connectionManager.newPromise();
+        for (java.util.Map.Entry<Integer, Entry> e : commands.entrySet()) {
+            execute(e.getValue(), e.getKey(), promise, new AtomicInteger(commands.size()), 0);
+        }
+        return promise;
+    }
+
+    public void execute(final Entry entry, final int slot, final Promise<Void> mainPromise, final AtomicInteger slots, final int attempt) {
+        final Promise<Void> attemptPromise = connectionManager.newPromise();
+        final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
+
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                if (attemptPromise.isDone()) {
+                    return;
+                }
+                if (attempt == connectionManager.getConfig().getRetryAttempts()) {
+                    attemptPromise.setFailure(ex.get());
+                    return;
+                }
+                attemptPromise.cancel(true);
+
+                int count = attempt + 1;
+                execute(entry, slot, mainPromise, slots, count);
+            }
+        };
+
+        try {
+            org.redisson.client.RedisConnection connection;
+            if (entry.isReadOnlyMode()) {
+                connection = connectionManager.connectionReadOp(slot);
+            } else {
+                connection = connectionManager.connectionWriteOp(slot);
+            }
+
+            connection.send(new CommandsData(mainPromise, new ArrayList<CommandData<?, ?>>(entry.getCommands())));
+
+            ex.set(new RedisTimeoutException());
+            Timeout timeout = connectionManager.getTimer().newTimeout(timerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+
+            if (entry.isReadOnlyMode()) {
+                attemptPromise.addListener(connectionManager.createReleaseReadListener(slot, connection, timeout));
+            } else {
+                attemptPromise.addListener(connectionManager.createReleaseWriteListener(slot, connection, timeout));
+            }
+        } catch (RedisConnectionException e) {
+            ex.set(e);
+            connectionManager.getTimer().newTimeout(timerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+        }
+        attemptPromise.addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (future.isCancelled()) {
+                    return;
+                }
+                // TODO cancel timeout
+
+                if (future.cause() instanceof RedisMovedException) {
+                    RedisMovedException ex = (RedisMovedException)future.cause();
+                    execute(entry, ex.getSlot(), mainPromise, slots, attempt);
+                    return;
+                }
+
+                if (future.isSuccess()) {
+                    if (slots.decrementAndGet() == 0) {
+                        mainPromise.setSuccess(future.getNow());
+                    }
+                } else {
+                    mainPromise.setFailure(future.cause());
+                }
+            }
+        });
+    }
+
+    @Override
+    public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys,
+            Object... params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script,
+            List<Object> keys, Object... params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys,
+            Object... params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script,
+            List<Object> keys, Object... params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <R> R read(String key, SyncOperation<R> operation) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <R> R write(String key, SyncOperation<R> operation) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object... params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T, R> R read(String key, RedisCommand<T> command, Object... params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object... params) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T, R> R write(String key, RedisCommand<T> command, Object... params) {
+        throw new UnsupportedOperationException();
+    }
+
+}

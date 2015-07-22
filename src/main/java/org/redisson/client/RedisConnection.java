@@ -15,7 +15,6 @@
  */
 package org.redisson.client;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.protocol.Codec;
@@ -81,8 +80,8 @@ public class RedisConnection implements RedisCommands {
         channel.writeAndFlush(data);
     }
 
-    public void send(List<CommandData<? extends Object, ? extends Object>> data) {
-        channel.writeAndFlush(new CommandsData(data));
+    public void send(CommandsData data) {
+        channel.writeAndFlush(data);
     }
 
     public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params) {

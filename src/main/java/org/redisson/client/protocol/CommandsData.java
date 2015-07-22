@@ -20,14 +20,22 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.netty.util.concurrent.Promise;
+
 public class CommandsData implements QueueCommand {
 
     private final List<CommandData<?, ?>> commands;
+    private final Promise<Void> promise;
     private final AtomicBoolean sended = new AtomicBoolean();
 
-    public CommandsData(List<CommandData<?, ?>> commands) {
+    public CommandsData(Promise<Void> promise, List<CommandData<?, ?>> commands) {
         super();
+        this.promise = promise;
         this.commands = commands;
+    }
+
+    public Promise<Void> getPromise() {
+        return promise;
     }
 
     public List<CommandData<?, ?>> getCommands() {
