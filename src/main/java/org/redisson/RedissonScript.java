@@ -120,7 +120,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public boolean scriptKill() {
-        return scriptKill(null);
+        return commandExecutor.get(scriptKillAsync());
     }
 
     @Override
@@ -130,7 +130,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public Future<Boolean> scriptKillAsync() {
-        return scriptKillAsync(null);
+        return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_KILL);
     }
 
     @Override
@@ -150,7 +150,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public boolean scriptFlush() {
-        return scriptFlush(null);
+        return commandExecutor.get(scriptFlushAsync());
     }
 
     @Override
@@ -160,7 +160,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public Future<Boolean> scriptFlushAsync() {
-        return scriptFlushAsync(null);
+        return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
     }
 
     @Override
