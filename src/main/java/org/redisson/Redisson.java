@@ -301,8 +301,13 @@ public class Redisson implements RedissonClient {
     }
 
     public void flushdb() {
-        commandExecutor.writeAllAsync(RedisCommands.FLUSHDB).awaitUninterruptibly();
+        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHDB));
     }
+
+    public void flushall() {
+        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
+    }
+
 
     @Override
     public RBatch createBatch() {
