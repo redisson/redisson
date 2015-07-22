@@ -24,6 +24,14 @@ package org.redisson.core;
 public interface RObject extends RObjectAsync {
 
     /**
+     * Move object to another database
+     *
+     * @param database
+     * @return <code>true</code> if key was moved else <code>false</code>
+     */
+    boolean move(int database);
+
+    /**
      * Returns name of object
      *
      * @return name

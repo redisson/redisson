@@ -136,6 +136,7 @@ public interface RedisCommands {
 
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> RENAME = new RedisStrictCommand<Boolean>("RENAME", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> MOVE = new RedisStrictCommand<Boolean>("MOVE", new BooleanReplayConvertor());
 
     RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 2);
 

@@ -16,7 +16,6 @@
 package org.redisson;
 
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RObject;
 
 import io.netty.util.concurrent.Future;
@@ -53,7 +52,7 @@ abstract class RedissonObject implements RObject {
 
     @Override
     public boolean rename(String newName) {
-        return commandExecutor.get(renameAsync(newName));
+        return get(renameAsync(newName));
     }
 
     @Override
@@ -62,8 +61,18 @@ abstract class RedissonObject implements RObject {
     }
 
     @Override
+    public boolean move(int database) {
+        return get(moveAsync(database));
+    }
+
+    @Override
+    public Future<Boolean> moveAsync(int database) {
+        return commandExecutor.writeAsync(getName(), RedisCommands.MOVE, getName(), database);
+    }
+
+    @Override
     public boolean renamenx(String newName) {
-        return commandExecutor.get(renamenxAsync(newName));
+        return get(renamenxAsync(newName));
     }
 
     @Override
@@ -73,7 +82,7 @@ abstract class RedissonObject implements RObject {
 
     @Override
     public boolean delete() {
-        return commandExecutor.get(deleteAsync());
+        return get(deleteAsync());
     }
 
     @Override

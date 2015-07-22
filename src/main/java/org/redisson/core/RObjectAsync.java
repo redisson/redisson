@@ -25,6 +25,14 @@ import io.netty.util.concurrent.Future;
  */
 public interface RObjectAsync {
 
+    /**
+     * Move object to another database
+     *
+     * @param database
+     * @return <code>true</code> if key was moved else <code>false</code>
+     */
+    Future<Boolean> moveAsync(int database);
+
     Future<Boolean> deleteAsync();
 
     /**
