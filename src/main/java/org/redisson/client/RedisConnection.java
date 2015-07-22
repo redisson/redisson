@@ -76,12 +76,12 @@ public class RedisConnection implements RedisCommands {
         return await(r);
     }
 
-    public <T, R> void send(CommandData<T, R> data) {
-        channel.writeAndFlush(data);
+    public <T, R> ChannelFuture send(CommandData<T, R> data) {
+        return channel.writeAndFlush(data);
     }
 
-    public void send(CommandsData data) {
-        channel.writeAndFlush(data);
+    public ChannelFuture send(CommandsData data) {
+        return channel.writeAndFlush(data);
     }
 
     public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params) {
