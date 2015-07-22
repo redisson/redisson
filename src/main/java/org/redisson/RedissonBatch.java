@@ -1,5 +1,7 @@
 package org.redisson;
 
+import java.util.List;
+
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLongAsync;
 import org.redisson.core.RBatch;
@@ -13,6 +15,8 @@ import org.redisson.core.RQueueAsync;
 import org.redisson.core.RScriptAsync;
 import org.redisson.core.RSetAsync;
 import org.redisson.core.RTopicAsync;
+
+import io.netty.util.concurrent.Future;
 
 public class RedissonBatch implements RBatch {
 
@@ -84,8 +88,13 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
-    public void execute() {
-        executorService.execute();
+    public List<?> execute() {
+        return executorService.execute();
+    }
+
+    @Override
+    public Future<List<?>> executeAsync() {
+        return executorService.executeAsync();
     }
 
 }

@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentMap;
@@ -28,13 +29,36 @@ import io.netty.util.internal.PlatformDependent;
 
 public class CommandBatchExecutorService extends CommandExecutorService {
 
+
+    public static class CommandEntry implements Comparable<CommandEntry> {
+
+        final CommandData<?, ?> command;
+        final int index;
+
+        public CommandEntry(CommandData<?, ?> command, int index) {
+            super();
+            this.command = command;
+            this.index = index;
+        }
+
+        public CommandData<?, ?> getCommand() {
+            return command;
+        }
+
+        @Override
+        public int compareTo(CommandEntry o) {
+            return index - o.index;
+        }
+
+    }
+
     public static class Entry {
 
-        Queue<CommandData<?, ?>> commands = PlatformDependent.newMpscQueue();
+        Queue<CommandEntry> commands = PlatformDependent.newMpscQueue();
 
         volatile boolean readOnlyMode = true;
 
-        public Queue<CommandData<?, ?>> getCommands() {
+        public Queue<CommandEntry> getCommands() {
             return commands;
         }
 
@@ -48,7 +72,11 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
     }
 
-    private final ConcurrentMap<Integer, Entry> commands = PlatformDependent.newConcurrentHashMap();
+    private final AtomicInteger index = new AtomicInteger();
+
+    private ConcurrentMap<Integer, Entry> commands = PlatformDependent.newConcurrentHashMap();
+
+    private boolean executed;
 
     public CommandBatchExecutorService(ConnectionManager connectionManager) {
         super(connectionManager);
@@ -57,6 +85,9 @@ public class CommandBatchExecutorService extends CommandExecutorService {
     @Override
     protected <V, R> void async(boolean readOnlyMode, int slot, MultiDecoder<Object> messageDecoder,
             Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, int attempt) {
+        if (executed) {
+            throw new IllegalStateException("Batch already executed!");
+        }
         Entry entry = commands.get(slot);
         if (entry == null) {
             entry = new Entry();
@@ -69,17 +100,48 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         if (!readOnlyMode) {
             entry.setReadOnlyMode(false);
         }
-        entry.getCommands().add(new CommandData<V, R>(mainPromise, messageDecoder, codec, command, params));
+        entry.getCommands().add(new CommandEntry(new CommandData<V, R>(mainPromise, messageDecoder, codec, command, params), index.incrementAndGet()));
     }
 
-    public void execute() {
-        get(executeAsync());
+    public List<?> execute() {
+        return get(executeAsync());
     }
 
-    public Promise<Void> executeAsync() {
-        Promise<Void> promise = connectionManager.newPromise();
+    public Future<List<?>> executeAsync() {
+        if (executed) {
+            throw new IllegalStateException("Batch already executed!");
+        }
+
+        if (commands.isEmpty()) {
+            return connectionManager.getGroup().next().newSucceededFuture(null);
+        }
+        executed = true;
+
+        Promise<Void> voidPromise = connectionManager.newPromise();
+        final Promise<List<?>> promise = connectionManager.newPromise();
+        voidPromise.addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (!future.isSuccess()) {
+                    promise.setFailure(future.cause());
+                    return;
+                }
+
+                List<CommandEntry> entries = new ArrayList<CommandEntry>();
+                for (Entry e : commands.values()) {
+                    entries.addAll(e.getCommands());
+                }
+                Collections.sort(entries);
+                List<Object> result = new ArrayList<Object>();
+                for (CommandEntry commandEntry : entries) {
+                    result.add(commandEntry.getCommand().getPromise().getNow());
+                }
+                promise.setSuccess(result);
+                commands = null;
+            }
+        });
         for (java.util.Map.Entry<Integer, Entry> e : commands.entrySet()) {
-            execute(e.getValue(), e.getKey(), promise, new AtomicInteger(commands.size()), 0);
+            execute(e.getValue(), e.getKey(), voidPromise, new AtomicInteger(commands.size()), 0);
         }
         return promise;
     }
@@ -113,7 +175,11 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 connection = connectionManager.connectionWriteOp(slot);
             }
 
-            connection.send(new CommandsData(mainPromise, new ArrayList<CommandData<?, ?>>(entry.getCommands())));
+            ArrayList<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size());
+            for (CommandEntry c : entry.getCommands()) {
+                list.add(c.getCommand());
+            }
+            connection.send(new CommandsData(mainPromise, list));
 
             ex.set(new RedisTimeoutException());
             Timeout timeout = connectionManager.getTimer().newTimeout(timerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);

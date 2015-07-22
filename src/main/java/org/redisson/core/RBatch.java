@@ -15,6 +15,10 @@
  */
 package org.redisson.core;
 
+import java.util.List;
+
+import io.netty.util.concurrent.Future;
+
 /**
  * Interface for using pipeline feature.
  *
@@ -129,6 +133,24 @@ public interface RBatch {
      */
     RScriptAsync getScript();
 
-    void execute();
+    /**
+     * Executes all operations accumulated during async methods invocations.
+     *
+     * In cluster configurations operations grouped by slot ids
+     * so may be executed on different servers. Thus command execution order could be changed
+     *
+     * @return
+     */
+    List<?> execute();
+
+    /**
+     * Executes all operations accumulated during async methods invocations asynchronously.
+     *
+     * In cluster configurations operations grouped by slot ids
+     * so may be executed on different servers. Thus command execution order could be changed
+     *
+     * @return
+     */
+    Future<List<?>> executeAsync();
 
 }
