@@ -310,8 +310,8 @@ public class Redisson implements RedissonClient {
      * @param pattern
      * @return
      */
-    public Queue<String> findKeys(String pattern) {
-        return commandExecutor.get(findKeysAsync(pattern));
+    public Queue<String> findKeysByPattern(String pattern) {
+        return commandExecutor.get(findKeysByPatternAsync(pattern));
     }
 
     /**
@@ -320,7 +320,7 @@ public class Redisson implements RedissonClient {
      * @param pattern
      * @return
      */
-    public Future<Queue<String>> findKeysAsync(String pattern) {
+    public Future<Queue<String>> findKeysByPatternAsync(String pattern) {
         return commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
     }
 
