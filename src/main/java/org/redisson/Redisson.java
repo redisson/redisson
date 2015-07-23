@@ -16,8 +16,8 @@
 package org.redisson;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,6 +42,8 @@ import org.redisson.core.RScript;
 import org.redisson.core.RSet;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
+
+import io.netty.util.concurrent.Future;
 
 /**
  * Main infrastructure class allows to get access
@@ -115,7 +117,8 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> List<RBucket<V>> getBuckets(String pattern) {
-        Collection<Object> keys = commandExecutor.get(commandExecutor.readAllAsync(RedisCommands.KEYS, pattern));
+        Future<Queue<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
+        Queue<String> keys = commandExecutor.<Queue<String>>get(r);
         List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
         for (Object key : keys) {
             if(key != null) {
@@ -302,13 +305,43 @@ public class Redisson implements RedissonClient {
     }
 
     /**
+     * Find keys by key search pattern
+     *
+     * @param pattern
+     * @return
+     */
+    public Queue<String> findKeys(String pattern) {
+        return commandExecutor.get(findKeysAsync(pattern));
+    }
+
+    /**
+     * Find keys by key search pattern in async mode
+     *
+     * @param pattern
+     * @return
+     */
+    public Future<Queue<String>> findKeysAsync(String pattern) {
+        return commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
+    }
+
+    /**
      * Delete multiple objects by name
      *
      * @param keys - object names
      * @return
      */
     public long delete(String ... keys) {
-        return commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.DEL, new SlotCallback<Long, Long>() {
+        return commandExecutor.get(deleteAsync(keys));
+    }
+
+    /**
+     * Delete multiple objects by name in async mode
+     *
+     * @param keys - object names
+     * @return
+     */
+    public Future<Long> deleteAsync(String ... keys) {
+        return commandExecutor.writeAllAsync(RedisCommands.DEL, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
             @Override
             public void onSlotResult(Long result) {
@@ -319,7 +352,7 @@ public class Redisson implements RedissonClient {
             public Long onFinish() {
                 return results.get();
             }
-        }, (Object[])keys));
+        }, (Object[])keys);
     }
 
     public void flushdb() {

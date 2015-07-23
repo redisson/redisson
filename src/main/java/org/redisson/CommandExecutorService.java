@@ -65,13 +65,13 @@ public class CommandExecutorService implements CommandExecutor {
         return connectionManager;
     }
 
-    public <T> Future<Queue<Object>> readAllAsync(RedisCommand<T> command, Object ... params) {
-        final Promise<Queue<Object>> mainPromise = connectionManager.newPromise();
-        Promise<Object> promise = new DefaultPromise<Object>() {
-            Queue<Object> results = new ConcurrentLinkedQueue<Object>();
+    public <T, R> Future<Queue<R>> readAllAsync(RedisCommand<T> command, Object ... params) {
+        final Promise<Queue<R>> mainPromise = connectionManager.newPromise();
+        Promise<R> promise = new DefaultPromise<R>() {
+            Queue<R> results = new ConcurrentLinkedQueue<R>();
             AtomicInteger counter = new AtomicInteger(connectionManager.getEntries().keySet().size());
             @Override
-            public Promise<Object> setSuccess(Object result) {
+            public Promise<R> setSuccess(R result) {
                 if (result instanceof Collection) {
                     results.addAll((Collection)result);
                 } else {

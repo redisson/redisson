@@ -1,5 +1,7 @@
 package org.redisson;
 
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RBucket;
@@ -8,8 +10,23 @@ import org.redisson.core.RMap;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Queue;
 
 public class RedissonBucketTest extends BaseTest {
+
+    @Test
+    public void testFindKeys() {
+        RBucket<String> bucket = redisson.getBucket("test1");
+        bucket.set("someValue");
+        RMap<String, String> map = redisson.getMap("test2");
+        map.fastPut("1", "2");
+
+        Queue<String> keys = redisson.findKeys("test?");
+        MatcherAssert.assertThat(keys, Matchers.contains("test1", "test2"));
+
+        Queue<String> keys2 = redisson.findKeys("test");
+        MatcherAssert.assertThat(keys2, Matchers.empty());
+    }
 
     @Test
     public void testMassDelete() {

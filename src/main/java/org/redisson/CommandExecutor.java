@@ -69,7 +69,7 @@ public interface CommandExecutor {
 
     <T, R> R write(String key, RedisCommand<T> command, Object ... params);
 
-    <T> Future<Queue<Object>> readAllAsync(RedisCommand<T> command, Object ... params);
+    <T, R> Future<Queue<R>> readAllAsync(RedisCommand<T> command, Object ... params);
 
     <T> Future<Boolean> writeAllAsync(RedisCommand<T> command, Object ... params);
 
