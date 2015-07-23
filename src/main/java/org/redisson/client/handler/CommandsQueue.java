@@ -72,7 +72,9 @@ public class CommandsQueue extends ChannelDuplexHandler {
             List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
-                    ctx.pipeline().get(CommandDecoder.class).addChannel((String)cd.getParams()[0], cd);
+                    for (Object channel : cd.getParams()) {
+                        ctx.pipeline().get(CommandDecoder.class).addChannel(channel.toString(), cd);
+                    }
                 }
             } else {
                 ctx.channel().attr(REPLAY).set(data);

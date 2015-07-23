@@ -78,11 +78,11 @@ public interface ConnectionManager {
 
     PubSubConnectionEntry psubscribe(String pattern);
 
-    <V> Future<PubSubStatusMessage> subscribe(RedisPubSubListener<V> listener, String channelName);
+    <V> void subscribe(RedisPubSubListener<V> listener, String channelName);
 
-    Future unsubscribe(String channelName);
+    void unsubscribe(String channelName);
 
-    Future punsubscribe(String channelName);
+    void punsubscribe(String channelName);
 
     void shutdown();
 

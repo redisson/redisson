@@ -34,6 +34,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,15 +131,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 @Override
                 public void onPatternMessage(String pattern, String channel, String message) {
                 }
-            });
 
-            Future<List<PubSubStatusMessage>> res = pubsub.subscribe(StringCodec.INSTANCE, "+switch-master", "+sdown", "-sdown", "+slave");
-            res.addListener(new FutureListener<List<PubSubStatusMessage>>() {
                 @Override
-                public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
-                    log.info("subscribed to channels: {} from Sentinel {}:{}", future.getNow(), addr.getHost(), addr.getPort());
+                public void onStatus(Type type, String channel) {
+                    if (type == Type.SUBSCRIBE) {
+                        log.info("subscribed to channel: {} from Sentinel {}:{}", channel, addr.getHost(), addr.getPort());
+                    }
                 }
             });
+
+            pubsub.subscribe(StringCodec.INSTANCE, "+switch-master", "+sdown", "-sdown", "+slave");
         }
     }
 

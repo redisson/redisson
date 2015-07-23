@@ -16,6 +16,7 @@
 package org.redisson;
 
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.redisson.core.MessageListener;
 
 /**
@@ -76,6 +77,10 @@ public class RedisPubSubTopicListenerWrapper<V> implements RedisPubSubListener<V
     @Override
     public void onPatternMessage(String pattern, String channel, V message) {
         listener.onMessage(message);
+    }
+
+    @Override
+    public void onStatus(Type type, String channel) {
     }
 
 }

@@ -15,14 +15,20 @@
  */
 package org.redisson.client;
 
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 
-public interface RedisPubSubListener<V> {
+public class BaseRedisPubSubListener<V> implements RedisPubSubListener<V> {
 
-    void onStatus(PubSubStatusMessage.Type type, String channel);
+    @Override
+    public void onStatus(Type type, String channel) {
+    }
 
-    void onMessage(String channel, V message);
+    @Override
+    public void onMessage(String channel, V message) {
+    }
 
-    void onPatternMessage(String pattern, String channel, V message);
+    @Override
+    public void onPatternMessage(String pattern, String channel, V message) {
+    }
 
 }

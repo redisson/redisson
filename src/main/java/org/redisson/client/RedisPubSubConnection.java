@@ -15,7 +15,7 @@
  */
 package org.redisson.client;
 
-import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.redisson.client.protocol.Codec;
@@ -30,12 +30,10 @@ import org.redisson.client.protocol.pubsub.PubSubPatternMessageDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 import io.netty.channel.Channel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 
 public class RedisPubSubConnection extends RedisConnection {
 
-    final ConcurrentLinkedQueue<RedisPubSubListener<Object>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<Object>>();
+    final Queue<RedisPubSubListener<Object>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<Object>>();
 
     public RedisPubSubConnection(RedisClient redisClient, Channel channel) {
         super(redisClient, channel);
@@ -45,8 +43,18 @@ public class RedisPubSubConnection extends RedisConnection {
         listeners.add(listener);
     }
 
+    public void addOneShotListener(RedisPubSubListener listener) {
+        listeners.add(new OnceRedisPubSubListener<Object>(this, listener));
+    }
+
     public void removeListener(RedisPubSubListener<?> listener) {
         listeners.remove(listener);
+    }
+
+    public void onMessage(PubSubStatusMessage message) {
+        for (RedisPubSubListener<Object> redisPubSubListener : listeners) {
+            redisPubSubListener.onStatus(message.getType(), message.getChannel());
+        }
     }
 
     public void onMessage(PubSubMessage message) {
@@ -61,26 +69,24 @@ public class RedisPubSubConnection extends RedisConnection {
         }
     }
 
-    public Future<List<PubSubStatusMessage>> subscribe(Codec codec, String ... channel) {
-        return async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channel);
+    public void subscribe(Codec codec, String ... channel) {
+        async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channel);
     }
 
-    public Future<List<PubSubStatusMessage>> psubscribe(Codec codec, String ... channel) {
-        return async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channel);
+    public void psubscribe(Codec codec, String ... channel) {
+        async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channel);
     }
 
-    public Future<List<PubSubStatusMessage>> unsubscribe(String ... channel) {
-        return async((MultiDecoder)null, RedisCommands.UNSUBSCRIBE, channel);
+    public void unsubscribe(String ... channel) {
+        async((MultiDecoder)null, RedisCommands.UNSUBSCRIBE, channel);
     }
 
-    public Future<List<PubSubStatusMessage>> punsubscribe(String ... channel) {
-        return async((MultiDecoder)null, RedisCommands.PUNSUBSCRIBE, channel);
+    public void punsubscribe(String ... channel) {
+        async((MultiDecoder)null, RedisCommands.PUNSUBSCRIBE, channel);
     }
 
-    public <T, R> Future<R> async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
-        channel.writeAndFlush(new CommandData<T, R>(promise, messageDecoder, null, command, params));
-        return promise;
+    private <T, R> void async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object ... params) {
+        channel.writeAndFlush(new CommandData<T, R>(null, messageDecoder, null, command, params));
     }
 
 }

@@ -15,23 +15,20 @@
  */
 package org.redisson.connection;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 
+import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.Codec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,66 +122,54 @@ public class PubSubConnectionEntry {
     }
 
     public void subscribe(Codec codec, final String channelName) {
-        Future<List<PubSubStatusMessage>> result = conn.subscribe(codec, channelName);
-        result.addListener(new FutureListener<List<PubSubStatusMessage>>() {
-            @Override
-            public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
-                if (future.isSuccess()) {
-                    log.debug("subscribed to '{}' channel on server '{}'", channelName, conn.getRedisClient().getAddr());
-                }
-            }
-        });
+        conn.subscribe(codec, channelName);
     }
 
     public void psubscribe(Codec codec, final String pattern) {
-        Future<List<PubSubStatusMessage>> result = conn.psubscribe(codec, pattern);
-        result.addListener(new FutureListener<List<PubSubStatusMessage>>() {
-            @Override
-            public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
-                log.debug("punsubscribed from '{}' pattern on server '{}'", pattern, conn.getRedisClient().getAddr());
-            }
-        });
+        conn.psubscribe(codec, pattern);
     }
 
-    public Future<List<PubSubStatusMessage>> subscribe(Codec codec, RedisPubSubListener listener, String channel) {
+    public void subscribe(Codec codec, RedisPubSubListener listener, String channel) {
         addListener(channel, listener);
-        return conn.subscribe(codec, channel);
+        conn.subscribe(codec, channel);
     }
 
-    public Future<List<PubSubStatusMessage>> unsubscribe(final String channel) {
-        Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
-        if (listeners != null) {
-            for (RedisPubSubListener listener : listeners) {
-                removeListener(channel, listener);
-            }
-        }
-
-        Future<List<PubSubStatusMessage>> future = conn.unsubscribe(channel);
-        future.addListener(new FutureListener<List<PubSubStatusMessage>>() {
+    public void unsubscribe(final String channel, RedisPubSubListener listener) {
+        conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
             @Override
-            public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
-                subscribedChannelsAmount.release();
+            public void onStatus(Type type, String ch) {
+                if (type == Type.UNSUBSCRIBE && channel.equals(ch)) {
+                    Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
+                    if (listeners != null) {
+                        for (RedisPubSubListener listener : listeners) {
+                            removeListener(channel, listener);
+                        }
+                    }
+                    subscribedChannelsAmount.release();
+                }
             }
         });
-        return future;
+        conn.addOneShotListener(listener);
+        conn.unsubscribe(channel);
     }
 
-    public Future<List<PubSubStatusMessage>> punsubscribe(final String channel) {
-        Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
-        if (listeners != null) {
-            for (RedisPubSubListener listener : listeners) {
-                removeListener(channel, listener);
-            }
-        }
-
-        Future<List<PubSubStatusMessage>> future = conn.punsubscribe(channel);
-        future.addListener(new FutureListener<List<PubSubStatusMessage>>() {
+    public void punsubscribe(final String channel, RedisPubSubListener listener) {
+        conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
             @Override
-            public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
-                subscribedChannelsAmount.release();
+            public void onStatus(Type type, String ch) {
+                if (type == Type.PUNSUBSCRIBE && channel.equals(ch)) {
+                    Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
+                    if (listeners != null) {
+                        for (RedisPubSubListener listener : listeners) {
+                            removeListener(channel, listener);
+                        }
+                    }
+                    subscribedChannelsAmount.release();
+                }
             }
         });
-        return future;
+        conn.addOneShotListener(listener);
+        conn.punsubscribe(channel);
     }
 
 

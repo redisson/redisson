@@ -15,10 +15,8 @@
  */
 package org.redisson.connection;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -29,12 +27,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.Codec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
@@ -49,7 +47,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
@@ -282,10 +279,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<List<PubSubStatusMessage>> subscribe(RedisPubSubListener listener, String channelName) {
+    public void subscribe(RedisPubSubListener listener, String channelName) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
-            return сonnEntry.subscribe(codec, listener, channelName);
+            сonnEntry.subscribe(codec, listener, channelName);
+            return;
         }
 
         Set<PubSubConnectionEntry> entries = new HashSet<PubSubConnectionEntry>(name2PubSubConnection.values());
@@ -294,14 +292,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
                 if (oldEntry != null) {
                     entry.release();
-                    return group.next().newSucceededFuture(Arrays.asList(new PubSubStatusMessage(Type.SUBSCRIBE, channelName)));
+                    return;
                 }
                 synchronized (entry) {
                     if (!entry.isActive()) {
                         entry.release();
-                        return subscribe(listener, channelName);
+                        subscribe(listener, channelName);
+                        return;
                     }
-                    return entry.subscribe(codec, listener, channelName);
+                    entry.subscribe(codec, listener, channelName);
+                    return;
                 }
             }
         }
@@ -314,57 +314,63 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
         if (oldEntry != null) {
             returnSubscribeConnection(slot, entry);
-            return group.next().newSucceededFuture(Arrays.asList(new PubSubStatusMessage(Type.SUBSCRIBE, channelName)));
+            return;
         }
         synchronized (entry) {
             if (!entry.isActive()) {
                 entry.release();
-                return subscribe(listener, channelName);
+                subscribe(listener, channelName);
+                return;
             }
-            return entry.subscribe(codec, listener, channelName);
+            entry.subscribe(codec, listener, channelName);
+            return;
         }
     }
 
     @Override
-    public Future<List<PubSubStatusMessage>> unsubscribe(String channelName) {
+    public void unsubscribe(final String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
-            return group.next().newSucceededFuture(null);
+            return;
         }
 
-        Future<List<PubSubStatusMessage>> future = entry.unsubscribe(channelName);
-        future.addListener(new FutureListener<List<PubSubStatusMessage>>() {
+        entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
+
             @Override
-            public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
-                synchronized (entry) {
-                    if (entry.tryClose()) {
-                        returnSubscribeConnection(-1, entry);
+            public void onStatus(Type type, String channel) {
+                if (type == Type.UNSUBSCRIBE && channel.equals(channelName)) {
+                    synchronized (entry) {
+                        if (entry.tryClose()) {
+                            returnSubscribeConnection(-1, entry);
+                        }
                     }
                 }
             }
+
         });
-        return future;
     }
 
     @Override
-    public Future<List<PubSubStatusMessage>> punsubscribe(String channelName) {
+    public void punsubscribe(final String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
-            return group.next().newSucceededFuture(null);
+            return;
         }
 
-        Future<List<PubSubStatusMessage>> future = entry.punsubscribe(channelName);
-        future.addListener(new FutureListener<List<PubSubStatusMessage>>() {
+        entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
+
             @Override
-            public void operationComplete(Future<List<PubSubStatusMessage>> future) throws Exception {
-                synchronized (entry) {
-                    if (entry.tryClose()) {
-                        returnSubscribeConnection(-1, entry);
+            public void onStatus(Type type, String channel) {
+                if (type == Type.PUNSUBSCRIBE && channel.equals(channelName)) {
+                    synchronized (entry) {
+                        if (entry.tryClose()) {
+                            returnSubscribeConnection(-1, entry);
+                        }
                     }
                 }
             }
+
         });
-        return future;
     }
 
     protected MasterSlaveEntry getEntry() {

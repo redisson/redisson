@@ -20,14 +20,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.redisson.core.RCountDownLatch;
 
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
@@ -72,7 +72,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return oldPromise;
         }
 
-        RedisPubSubListener<Integer> listener = new RedisPubSubListener<Integer>() {
+        RedisPubSubListener<Integer> listener = new BaseRedisPubSubListener<Integer>() {
 
             @Override
             public void onMessage(String channel, Integer message) {
@@ -88,25 +88,17 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             }
 
             @Override
-            public void onPatternMessage(String pattern, String channel, Integer message) {
-                // TODO Auto-generated method stub
-
+            public void onStatus(Type type, String channel) {
+                if (channel.equals(getChannelName()) && !value.getPromise().isSuccess()) {
+                    value.getPromise().setSuccess(true);
+                }
             }
 
         };
 
-        Future<PubSubStatusMessage> res = null;
         synchronized (ENTRIES) {
-            res = commandExecutor.getConnectionManager().subscribe(listener, getChannelName());
+            commandExecutor.getConnectionManager().subscribe(listener, getChannelName());
         }
-        res.addListener(new FutureListener<PubSubStatusMessage>() {
-            @Override
-            public void operationComplete(Future<PubSubStatusMessage> future) throws Exception {
-                if (!value.getPromise().isSuccess()) {
-                    value.getPromise().setSuccess(true);
-                }
-            }
-        });
         return newPromise;
     }
 

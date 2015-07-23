@@ -1,8 +1,10 @@
 package org.redisson;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,15 +14,47 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 public class RedisClientTest {
+
+    @Test
+    public void testSubscribe() throws InterruptedException {
+        RedisClient c = new RedisClient("localhost", 6379);
+        RedisPubSubConnection pubSubConnection = c.connectPubSub();
+        final CountDownLatch latch = new CountDownLatch(2);
+        pubSubConnection.addListener(new RedisPubSubListener<Object>() {
+
+            @Override
+            public void onStatus(Type type, String channel) {
+                Assert.assertEquals(Type.SUBSCRIBE, type);
+                Assert.assertTrue(Arrays.asList("test1", "test2").contains(channel));
+                latch.countDown();
+            }
+
+            @Override
+            public void onMessage(String channel, Object message) {
+            }
+
+            @Override
+            public void onPatternMessage(String pattern, String channel, Object message) {
+            }
+        });
+        pubSubConnection.subscribe(StringCodec.INSTANCE, "test1", "test2");
+
+        latch.await();
+    }
 
     @Test
     public void test() throws InterruptedException {

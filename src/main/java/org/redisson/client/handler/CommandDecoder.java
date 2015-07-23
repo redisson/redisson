@@ -205,28 +205,25 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (data == null) {
             if (result instanceof PubSubStatusMessage) {
                 String channelName = ((PubSubStatusMessage) result).getChannel();
-                data = channels.get(channelName);
+                CommandData<Object, Object> d = channels.get(channelName);
+                if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(d.getCommand().getName())) {
+                    channels.remove(channelName);
+                    messageDecoders.put(channelName, d.getMessageDecoder());
+                }
+                if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(d.getCommand().getName())) {
+                    channels.remove(channelName);
+                    messageDecoders.remove(channelName);
+                }
             }
         }
 
         if (data != null) {
-            if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(data.getCommand().getName())) {
-                for (Object param : data.getParams()) {
-                    channels.remove(param.toString());
-                    messageDecoders.put(param.toString(), data.getMessageDecoder());
-                }
-            }
-            if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(data.getCommand().getName())) {
-                for (Object param : data.getParams()) {
-                    channels.remove(param.toString());
-                    messageDecoders.remove(param.toString());
-                }
-            }
-
             handleResult(data, parts, result, true);
         } else {
             RedisPubSubConnection pubSubConnection = (RedisPubSubConnection)channel.attr(RedisPubSubConnection.CONNECTION).get();
-            if (result instanceof PubSubMessage) {
+            if (result instanceof PubSubStatusMessage) {
+                pubSubConnection.onMessage((PubSubStatusMessage) result);
+            } else if (result instanceof PubSubMessage) {
                 pubSubConnection.onMessage((PubSubMessage) result);
             } else {
                 pubSubConnection.onMessage((PubSubPatternMessage) result);
