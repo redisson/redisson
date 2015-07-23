@@ -2,7 +2,7 @@
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
-Based on patched version of [lettuce](https://github.com/wg/lettuce) [Redis](http://redis.io) client and [Netty 4](http://netty.io) framework.  
+Based on high-performance async and lock-free Redis client and [Netty 4](http://netty.io) framework.  
 Redis 2.8+ and JDK 1.6+ compatible  
 
 
