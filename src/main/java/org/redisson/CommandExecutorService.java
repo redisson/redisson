@@ -33,7 +33,6 @@ import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.StringCodec;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.connection.ConnectionManager;
 import org.slf4j.Logger;
@@ -88,7 +87,7 @@ public class CommandExecutorService implements CommandExecutor {
         };
 
         for (Integer slot : connectionManager.getEntries().keySet()) {
-            async(true, slot, null, new StringCodec(), command, params, promise, 0);
+            async(true, slot, null, connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
     }
@@ -111,7 +110,31 @@ public class CommandExecutorService implements CommandExecutor {
             }
         };
         for (Integer slot : connectionManager.getEntries().keySet()) {
-            async(readOnlyMode, slot, null, new StringCodec(), command, params, promise, 0);
+            async(readOnlyMode, slot, null, connectionManager.getCodec(), command, params, promise, 0);
+        }
+        return mainPromise;
+    }
+
+    public <R, T> Future<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
+        return allAsync(false, command, callback, params);
+    }
+
+    public <T, R> Future<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object ... params) {
+        final Promise<R> mainPromise = connectionManager.newPromise();
+        Promise<T> promise = new DefaultPromise<T>() {
+            AtomicInteger counter = new AtomicInteger(connectionManager.getEntries().keySet().size());
+            @Override
+            public Promise<T> setSuccess(T result) {
+                callback.onSlotResult(result);
+                if (counter.decrementAndGet() == 0
+                      && !mainPromise.isDone()) {
+                    mainPromise.setSuccess(callback.onFinish());
+                }
+                return this;
+            }
+        };
+        for (Integer slot : connectionManager.getEntries().keySet()) {
+            async(readOnlyMode, slot, null, connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
     }

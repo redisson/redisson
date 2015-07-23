@@ -3,12 +3,24 @@ package org.redisson;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RBucket;
+import org.redisson.core.RMap;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 public class RedissonBucketTest extends BaseTest {
+
+    @Test
+    public void testMassDelete() {
+        RBucket<String> bucket = redisson.getBucket("test");
+        bucket.set("someValue");
+        RMap<String, String> map = redisson.getMap("map2");
+        map.fastPut("1", "2");
+
+        Assert.assertEquals(2, redisson.delete("test", "map2"));
+        Assert.assertEquals(0, redisson.delete("test", "map2"));
+    }
 
     @Test
     public void testRenamenx() {

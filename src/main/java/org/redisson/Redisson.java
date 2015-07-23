@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ClusterConnectionManager;
@@ -113,7 +114,7 @@ public class Redisson implements RedissonClient {
      * Returns a list of object holder by a key pattern
      */
     @Override
-    public <V> List<RBucket<V>> getBuckets(final String pattern) {
+    public <V> List<RBucket<V>> getBuckets(String pattern) {
         Collection<Object> keys = commandExecutor.get(commandExecutor.readAllAsync(RedisCommands.KEYS, pattern));
         List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
         for (Object key : keys) {
@@ -298,6 +299,27 @@ public class Redisson implements RedissonClient {
      */
     public Config getConfig() {
         return config;
+    }
+
+    /**
+     * Delete multiple objects by name
+     *
+     * @param keys - object names
+     * @return
+     */
+    public long delete(String ... keys) {
+        return commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.DEL, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return results.get();
+            }
+        }, (Object[])keys));
     }
 
     public void flushdb() {
