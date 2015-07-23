@@ -15,18 +15,54 @@
  */
 package org.redisson.client.protocol;
 
+/**
+ * Redis code
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface Codec {
 
+    /**
+     * Returns object decoder used for hash map values in HMAP Redis structure
+     *
+     * @return
+     */
     Decoder<Object> getMapValueDecoder();
 
+    /**
+     * Returns object encoder used for hash map values in HMAP Redis structure
+     *
+     * @return
+     */
     Encoder getMapValueEncoder();
 
+    /**
+     * Returns object decoder used for hash map keys in HMAP Redis structure
+     *
+     * @return
+     */
     Decoder<Object> getMapKeyDecoder();
 
+    /**
+     * Returns object encoder used for hash map keys in HMAP Redis structure
+     *
+     * @return
+     */
     Encoder getMapKeyEncoder();
 
+    /**
+     * Returns object decoder used for any objects stored Redis structure except HMAP
+     *
+     * @return
+     */
     Decoder<Object> getValueDecoder();
 
+    /**
+     * Returns object encoder used for any objects stored Redis structure except HMAP
+     *
+     * @return
+     */
     Encoder getValueEncoder();
 
 }
