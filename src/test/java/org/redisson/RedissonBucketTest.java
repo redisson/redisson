@@ -15,16 +15,26 @@ import java.util.Queue;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testDeleteByPattern() {
+        RBucket<String> bucket = redisson.getBucket("test1");
+        bucket.set("someValue");
+        RMap<String, String> map = redisson.getMap("test2");
+        map.fastPut("1", "2");
+
+        Assert.assertEquals(2, redisson.deleteByPattern("test?"));
+    }
+
+    @Test
     public void testFindKeys() {
         RBucket<String> bucket = redisson.getBucket("test1");
         bucket.set("someValue");
         RMap<String, String> map = redisson.getMap("test2");
         map.fastPut("1", "2");
 
-        Queue<String> keys = redisson.findKeys("test?");
-        MatcherAssert.assertThat(keys, Matchers.contains("test1", "test2"));
+        Queue<String> keys = redisson.findKeysByPattern("test?");
+        MatcherAssert.assertThat(keys, Matchers.containsInAnyOrder("test1", "test2"));
 
-        Queue<String> keys2 = redisson.findKeys("test");
+        Queue<String> keys2 = redisson.findKeysByPattern("test");
         MatcherAssert.assertThat(keys2, Matchers.empty());
     }
 

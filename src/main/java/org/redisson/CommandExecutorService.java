@@ -84,6 +84,13 @@ public class CommandExecutorService implements CommandExecutor {
                 }
                 return this;
             }
+
+            @Override
+            public Promise<R> setFailure(Throwable cause) {
+                mainPromise.setFailure(cause);
+                return this;
+            }
+
         };
 
         for (Integer slot : connectionManager.getEntries().keySet()) {
@@ -108,6 +115,13 @@ public class CommandExecutorService implements CommandExecutor {
                 }
                 return this;
             }
+
+            @Override
+            public Promise<Object> setFailure(Throwable cause) {
+                mainPromise.setFailure(cause);
+                return this;
+            }
+
         };
         for (Integer slot : connectionManager.getEntries().keySet()) {
             async(readOnlyMode, slot, null, connectionManager.getCodec(), command, params, promise, 0);
@@ -130,6 +144,12 @@ public class CommandExecutorService implements CommandExecutor {
                       && !mainPromise.isDone()) {
                     mainPromise.setSuccess(callback.onFinish());
                 }
+                return this;
+            }
+
+            @Override
+            public Promise<T> setFailure(Throwable cause) {
+                mainPromise.setFailure(cause);
                 return this;
             }
         };
@@ -224,19 +244,11 @@ public class CommandExecutorService implements CommandExecutor {
     }
 
     public <T, R> Future<R> evalReadAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalReadAsync(key, connectionManager.getCodec(), evalCommandType, script, keys, params);
+        return evalAsync(true, key, connectionManager.getCodec(), evalCommandType, script, keys, params);
     }
 
     public <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
-        List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
-        args.add(script);
-        args.add(keys.size());
-        args.addAll(keys);
-        args.addAll(Arrays.asList(params));
-        int slot = connectionManager.calcSlot(key);
-        async(true, slot, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
-        return mainPromise;
+        return evalAsync(true, key, codec, evalCommandType, script, keys, params);
     }
 
     public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
@@ -249,10 +261,50 @@ public class CommandExecutorService implements CommandExecutor {
     }
 
     public <T, R> Future<R> evalWriteAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalWriteAsync(key, connectionManager.getCodec(), evalCommandType, script, keys, params);
+        return evalAsync(false, key, connectionManager.getCodec(), evalCommandType, script, keys, params);
     }
 
     public <T, R> Future<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalAsync(false, key, codec, evalCommandType, script, keys, params);
+    }
+
+    public <T, R> Future<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
+        return evalAllAsync(false, command, callback, script, keys, params);
+    }
+
+    public <T, R> Future<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
+        final Promise<R> mainPromise = connectionManager.newPromise();
+        Promise<T> promise = new DefaultPromise<T>() {
+            AtomicInteger counter = new AtomicInteger(connectionManager.getEntries().keySet().size());
+            @Override
+            public Promise<T> setSuccess(T result) {
+                callback.onSlotResult(result);
+                if (counter.decrementAndGet() == 0
+                      && !mainPromise.isDone()) {
+                    mainPromise.setSuccess(callback.onFinish());
+                }
+                return this;
+            }
+
+            @Override
+            public Promise<T> setFailure(Throwable cause) {
+                mainPromise.setFailure(cause);
+                return this;
+            }
+        };
+
+        List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
+        args.add(script);
+        args.add(keys.size());
+        args.addAll(keys);
+        args.addAll(Arrays.asList(params));
+        for (Integer slot : connectionManager.getEntries().keySet()) {
+            async(readOnlyMode, slot, null, connectionManager.getCodec(), command, args.toArray(), promise, 0);
+        }
+        return mainPromise;
+    }
+
+    private <T, R> Future<R> evalAsync(boolean readOnlyMode, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
         args.add(script);
@@ -260,7 +312,7 @@ public class CommandExecutorService implements CommandExecutor {
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
         int slot = connectionManager.calcSlot(key);
-        async(false, slot, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
+        async(readOnlyMode, slot, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
         return mainPromise;
     }
 

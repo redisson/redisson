@@ -32,6 +32,8 @@ import io.netty.util.concurrent.Future;
 //TODO ping support
 public interface CommandExecutor {
 
+    <T, R> Future<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
+
     <R, T> Future<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params);
 
     ConnectionManager getConnectionManager();
