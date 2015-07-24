@@ -99,34 +99,8 @@ public class CommandExecutorService implements CommandExecutor {
         return mainPromise;
     }
 
-    public <T> Future<Boolean> writeAllAsync(RedisCommand<T> command, Object ... params) {
-        return allAsync(false, command, params);
-    }
-
-    public <T> Future<Boolean> allAsync(boolean readOnlyMode, RedisCommand<T> command, Object ... params) {
-        final Promise<Boolean> mainPromise = connectionManager.newPromise();
-        Promise<Object> promise = new DefaultPromise<Object>() {
-            AtomicInteger counter = new AtomicInteger(connectionManager.getEntries().keySet().size());
-            @Override
-            public Promise<Object> setSuccess(Object result) {
-                if (counter.decrementAndGet() == 0
-                      && !mainPromise.isDone()) {
-                    mainPromise.setSuccess(true);
-                }
-                return this;
-            }
-
-            @Override
-            public Promise<Object> setFailure(Throwable cause) {
-                mainPromise.setFailure(cause);
-                return this;
-            }
-
-        };
-        for (Integer slot : connectionManager.getEntries().keySet()) {
-            async(readOnlyMode, slot, null, connectionManager.getCodec(), command, params, promise, 0);
-        }
-        return mainPromise;
+    public <T> Future<Void> writeAllAsync(RedisCommand<T> command, Object ... params) {
+        return writeAllAsync(command, null, params);
     }
 
     public <R, T> Future<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
@@ -139,10 +113,15 @@ public class CommandExecutorService implements CommandExecutor {
             AtomicInteger counter = new AtomicInteger(connectionManager.getEntries().keySet().size());
             @Override
             public Promise<T> setSuccess(T result) {
-                callback.onSlotResult(result);
-                if (counter.decrementAndGet() == 0
-                      && !mainPromise.isDone()) {
-                    mainPromise.setSuccess(callback.onFinish());
+                if (callback != null) {
+                    callback.onSlotResult(result);
+                }
+                if (counter.decrementAndGet() == 0) {
+                    if (callback != null) {
+                        mainPromise.setSuccess(callback.onFinish());
+                    } else {
+                        mainPromise.setSuccess(null);
+                    }
                 }
                 return this;
             }

@@ -34,7 +34,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public String scriptLoad(String luaScript) {
-        return scriptLoad(null, luaScript);
+        return commandExecutor.get(scriptLoadAsync(luaScript));
     }
 
     @Override
@@ -43,7 +43,18 @@ public class RedissonScript implements RScript {
     }
 
     public Future<String> scriptLoadAsync(String luaScript) {
-        return scriptLoadAsync(null, luaScript);
+        return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
+            volatile String result;
+            @Override
+            public void onSlotResult(String result) {
+                this.result = result;
+            }
+
+            @Override
+            public String onFinish() {
+                return result;
+            }
+        }, luaScript);
     }
 
     @Override
@@ -119,22 +130,22 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public boolean scriptKill() {
-        return commandExecutor.get(scriptKillAsync());
+    public void scriptKill() {
+        commandExecutor.get(scriptKillAsync());
     }
 
     @Override
-    public boolean scriptKill(String key) {
-        return commandExecutor.get(scriptKillAsync(key));
+    public void scriptKill(String key) {
+        commandExecutor.get(scriptKillAsync(key));
     }
 
     @Override
-    public Future<Boolean> scriptKillAsync() {
+    public Future<Void> scriptKillAsync() {
         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_KILL);
     }
 
     @Override
-    public Future<Boolean> scriptKillAsync(String key) {
+    public Future<Void> scriptKillAsync(String key) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_KILL);
     }
 
@@ -149,22 +160,22 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public boolean scriptFlush() {
-        return commandExecutor.get(scriptFlushAsync());
+    public void scriptFlush() {
+        commandExecutor.get(scriptFlushAsync());
     }
 
     @Override
-    public boolean scriptFlush(String key) {
-        return commandExecutor.get(scriptFlushAsync(key));
+    public void scriptFlush(String key) {
+        commandExecutor.get(scriptFlushAsync(key));
     }
 
     @Override
-    public Future<Boolean> scriptFlushAsync() {
+    public Future<Void> scriptFlushAsync() {
         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
     }
 
     @Override
-    public Future<Boolean> scriptFlushAsync(String key) {
+    public Future<Void> scriptFlushAsync(String key) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_FLUSH);
     }
 

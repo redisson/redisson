@@ -24,7 +24,7 @@ import io.netty.util.concurrent.Future;
 
 public interface RScriptAsync {
 
-    Future<Boolean> scriptFlushAsync();
+    Future<Void> scriptFlushAsync();
 
     <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
@@ -32,13 +32,13 @@ public interface RScriptAsync {
 
     Future<String> scriptLoadAsync(String luaScript);
 
-    Future<Boolean> scriptKillAsync();
+    Future<Void> scriptKillAsync();
 
     Future<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests);
 
-    Future<Boolean> scriptFlushAsync(String key);
+    Future<Void> scriptFlushAsync(String key);
 
-    Future<Boolean> scriptKillAsync(String key);
+    Future<Void> scriptKillAsync(String key);
 
     Future<String> scriptLoadAsync(String key, String luaScript);
 
