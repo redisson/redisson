@@ -91,7 +91,7 @@ public class RedisConnection implements RedisCommands {
 
     public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
         Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
-        channel.writeAndFlush(new CommandData<T, R>(promise, encoder, command, params));
+        send(new CommandData<T, R>(promise, encoder, command, params));
         return promise;
     }
 
@@ -111,6 +111,11 @@ public class RedisConnection implements RedisCommands {
     public ChannelFuture closeAsync() {
         setClosed(true);
         return channel.close();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + " [redisClient=" + redisClient + ", channel=" + channel + "]";
     }
 
 }

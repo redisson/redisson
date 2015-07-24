@@ -30,7 +30,6 @@ public class CommandData<T, R> implements QueueCommand {
     final RedisCommand<T> command;
     final Object[] params;
     final Codec codec;
-    final AtomicBoolean sended = new AtomicBoolean();
     final MultiDecoder<Object> messageDecoder;
 
     public CommandData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
@@ -61,10 +60,6 @@ public class CommandData<T, R> implements QueueCommand {
         return promise;
     }
 
-    public AtomicBoolean getSended() {
-        return sended;
-    }
-
     public Codec getCodec() {
         return codec;
     }
@@ -72,8 +67,7 @@ public class CommandData<T, R> implements QueueCommand {
     @Override
     public String toString() {
         return "CommandData [promise=" + promise + ", command=" + command + ", params="
-                + Arrays.toString(params) + ", codec=" + codec + ", sended=" + sended + ", messageDecoder="
-                + messageDecoder + "]";
+                + Arrays.toString(params) + ", codec=" + codec + "]";
     }
 
     @Override

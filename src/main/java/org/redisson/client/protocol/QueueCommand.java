@@ -16,12 +16,9 @@
 package org.redisson.client.protocol;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public interface QueueCommand {
 
     List<CommandData<Object, Object>> getPubSubOperations();
-
-    AtomicBoolean getSended();
 
 }

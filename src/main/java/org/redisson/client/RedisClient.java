@@ -107,5 +107,10 @@ public class RedisClient {
         return channels.close();
     }
 
+    @Override
+    public String toString() {
+        return "RedisClient [addr=" + addr + "]";
+    }
+
 }
 

@@ -25,7 +25,7 @@ class BaseConfig<T extends BaseConfig<T>> {
      */
     private int timeout = 60000;
 
-    private int retryAttempts = 5;
+    private int retryAttempts = 20;
 
     private int retryInterval = 1000;
 

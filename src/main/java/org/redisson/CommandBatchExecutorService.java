@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.client.RedisConnectionClosedException;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
@@ -35,6 +36,8 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.connection.ConnectionManager;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
@@ -170,7 +173,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         final Promise<Void> attemptPromise = connectionManager.newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
 
-        TimerTask timerTask = new TimerTask() {
+        final TimerTask retryTimerTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 if (attemptPromise.isDone()) {
@@ -199,10 +202,21 @@ public class CommandBatchExecutorService extends CommandExecutorService {
             for (CommandEntry c : entry.getCommands()) {
                 list.add(c.getCommand());
             }
-            connection.send(new CommandsData(attemptPromise, list));
+            ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
 
             ex.set(new RedisTimeoutException());
-            Timeout timeout = connectionManager.getTimer().newTimeout(timerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+            final Timeout timeout = connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        timeout.cancel();
+                        ex.set(new RedisConnectionClosedException("channel: " + future.channel() + " closed"));
+                        connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    }
+                }
+            });
 
             if (entry.isReadOnlyMode()) {
                 attemptPromise.addListener(connectionManager.createReleaseReadListener(slot, connection, timeout));
@@ -211,7 +225,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
             }
         } catch (RedisConnectionException e) {
             ex.set(e);
-            connectionManager.getTimer().newTimeout(timerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+            connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
         }
         attemptPromise.addListener(new FutureListener<Void>() {
             @Override

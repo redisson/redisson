@@ -20,6 +20,7 @@ import java.util.Queue;
 
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
+import org.redisson.client.protocol.QueueCommandHolder;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -39,7 +40,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
 
     public static final AttributeKey<QueueCommand> REPLAY = AttributeKey.valueOf("promise");
 
-    private final Queue<QueueCommand> queue = PlatformDependent.newMpscQueue();
+    private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -55,10 +56,10 @@ public class CommandsQueue extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof QueueCommand) {
             QueueCommand data = (QueueCommand) msg;
-            if (data.getSended().get()) {
+            if (queue.peek() != null && queue.peek().getCommand() == data) {
                 super.write(ctx, msg, promise);
             } else {
-                queue.add(data);
+                queue.add(new QueueCommandHolder(data, promise));
                 sendData(ctx);
             }
         } else {
@@ -67,8 +68,9 @@ public class CommandsQueue extends ChannelDuplexHandler {
     }
 
     private void sendData(ChannelHandlerContext ctx) throws Exception {
-        QueueCommand data = queue.peek();
-        if (data != null && data.getSended().compareAndSet(false, true)) {
+        QueueCommandHolder command = queue.peek();
+        if (command != null && command.getSended().compareAndSet(false, true)) {
+            QueueCommand data = command.getCommand();
             List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
@@ -79,7 +81,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
             } else {
                 ctx.channel().attr(REPLAY).set(data);
             }
-            ctx.channel().writeAndFlush(data);
+            ctx.channel().writeAndFlush(data, command.getChannelPromise());
         }
     }
 

@@ -189,6 +189,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     if (config.getClientName() != null) {
                         conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
                     }
+                    log.debug("new connection created: {}", conn);
 
                     return conn;
                 } catch (RedisConnectionException e) {

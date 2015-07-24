@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.client;
 
-public interface SlotCallback<T, R> {
+public class RedisConnectionClosedException extends RedisException {
 
-    void onSlotResult(T result);
+    private static final long serialVersionUID = -4756928186967834601L;
 
-    R onFinish();
+    public RedisConnectionClosedException(String msg) {
+        super(msg);
+    }
+
+    public RedisConnectionClosedException(String msg, Throwable e) {
+        super(msg, e);
+    }
 
 }

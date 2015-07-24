@@ -26,7 +26,6 @@ public class CommandsData implements QueueCommand {
 
     private final List<CommandData<?, ?>> commands;
     private final Promise<Void> promise;
-    private final AtomicBoolean sended = new AtomicBoolean();
 
     public CommandsData(Promise<Void> promise, List<CommandData<?, ?>> commands) {
         super();
@@ -40,10 +39,6 @@ public class CommandsData implements QueueCommand {
 
     public List<CommandData<?, ?>> getCommands() {
         return commands;
-    }
-
-    public AtomicBoolean getSended() {
-        return sended;
     }
 
     @Override
