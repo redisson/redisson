@@ -17,7 +17,10 @@ package org.redisson;
 
 import org.redisson.core.*;
 
+import io.netty.util.concurrent.Future;
+
 import java.util.List;
+import java.util.Queue;
 
 public interface RedissonClient {
 
@@ -159,5 +162,97 @@ public interface RedissonClient {
      * @return
      */
     RBatch createBatch();
+
+    /**
+     * Shuts down Redisson instance <b>NOT</b> Redis server
+     */
+    void shutdown();
+
+    /**
+     * Allows to get configuration provided
+     * during Redisson instance creation. Further changes on
+     * this object not affect Redisson instance.
+     *
+     * @return Config object
+     */
+    Config getConfig();
+
+    /**
+     * Find keys by key search pattern
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern
+     * @return
+     */
+    Queue<String> findKeysByPattern(String pattern);
+
+    /**
+     * Find keys by key search pattern in async mode
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern
+     * @return
+     */
+    Future<Queue<String>> findKeysByPatternAsync(String pattern);
+
+    /**
+     * Delete multiple objects by a key pattern
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern
+     * @return
+     */
+    long deleteByPattern(String pattern);
+
+    /**
+     * Delete multiple objects by a key pattern in async mode
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern
+     * @return
+     */
+    Future<Long> deleteByPatternAsync(String pattern);
+
+    /**
+     * Delete multiple objects by name
+     *
+     * @param keys - object names
+     * @return
+     */
+    long delete(String ... keys);
+
+    /**
+     * Delete multiple objects by name in async mode
+     *
+     * @param keys - object names
+     * @return
+     */
+    Future<Long> deleteAsync(String ... keys);
+
+    /**
+     * Delete all the keys of the currently selected database
+     */
+    void flushdb();
+
+    /**
+     * Delete all the keys of all the existing databases
+     */
+    void flushall();
 
 }

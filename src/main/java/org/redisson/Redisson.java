@@ -296,6 +296,7 @@ public class Redisson implements RedissonClient {
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server
      */
+    @Override
     public void shutdown() {
         connectionManager.shutdown();
     }
@@ -307,6 +308,7 @@ public class Redisson implements RedissonClient {
      *
      * @return Config object
      */
+    @Override
     public Config getConfig() {
         return config;
     }
@@ -322,6 +324,7 @@ public class Redisson implements RedissonClient {
      * @param pattern
      * @return
      */
+    @Override
     public Queue<String> findKeysByPattern(String pattern) {
         return commandExecutor.get(findKeysByPatternAsync(pattern));
     }
@@ -337,6 +340,7 @@ public class Redisson implements RedissonClient {
      * @param pattern
      * @return
      */
+    @Override
     public Future<Queue<String>> findKeysByPatternAsync(String pattern) {
         return commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
     }
@@ -352,6 +356,7 @@ public class Redisson implements RedissonClient {
      * @param pattern
      * @return
      */
+    @Override
     public long deleteByPattern(String pattern) {
         return commandExecutor.get(deleteByPatternAsync(pattern));
     }
@@ -367,6 +372,7 @@ public class Redisson implements RedissonClient {
      * @param pattern
      * @return
      */
+    @Override
     public Future<Long> deleteByPatternAsync(String pattern) {
         return commandExecutor.evalWriteAllAsync(RedisCommands.EVAL_INTEGER, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
@@ -393,6 +399,7 @@ public class Redisson implements RedissonClient {
      * @param keys - object names
      * @return
      */
+    @Override
     public long delete(String ... keys) {
         return commandExecutor.get(deleteAsync(keys));
     }
@@ -403,6 +410,7 @@ public class Redisson implements RedissonClient {
      * @param keys - object names
      * @return
      */
+    @Override
     public Future<Long> deleteAsync(String ... keys) {
         return commandExecutor.writeAllAsync(RedisCommands.DEL, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
@@ -418,15 +426,30 @@ public class Redisson implements RedissonClient {
         }, (Object[])keys);
     }
 
+    /**
+     * Delete all the keys of the currently selected database
+     */
+    @Override
     public void flushdb() {
         commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHDB));
     }
 
+    /**
+     * Delete all the keys of all the existing databases
+     */
+    @Override
     public void flushall() {
         commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
     }
 
-
+    /**
+     * Return batch object which executes group of
+     * command in pipeline.
+     *
+     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
+     *
+     * @return
+     */
     @Override
     public RBatch createBatch() {
         return new RedissonBatch(connectionManager);
