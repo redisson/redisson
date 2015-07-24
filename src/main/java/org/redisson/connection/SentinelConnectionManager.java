@@ -33,13 +33,9 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.StringCodec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
@@ -133,10 +129,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 @Override
-                public void onStatus(Type type, String channel) {
+                public boolean onStatus(Type type, String channel) {
                     if (type == Type.SUBSCRIBE) {
                         log.info("subscribed to channel: {} from Sentinel {}:{}", channel, addr.getHost(), addr.getPort());
                     }
+                    return true;
                 }
             });
 

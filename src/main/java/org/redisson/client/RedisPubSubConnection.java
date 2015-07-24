@@ -44,7 +44,7 @@ public class RedisPubSubConnection extends RedisConnection {
     }
 
     public void addOneShotListener(RedisPubSubListener listener) {
-        listeners.add(new OnceRedisPubSubListener<Object>(this, listener));
+        listeners.add(new OneShotPubSubListener<Object>(this, listener));
     }
 
     public void removeListener(RedisPubSubListener<?> listener) {

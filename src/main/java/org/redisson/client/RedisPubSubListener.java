@@ -19,7 +19,7 @@ import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 public interface RedisPubSubListener<V> {
 
-    void onStatus(PubSubStatusMessage.Type type, String channel);
+    boolean onStatus(PubSubStatusMessage.Type type, String channel);
 
     void onMessage(String channel, V message);
 

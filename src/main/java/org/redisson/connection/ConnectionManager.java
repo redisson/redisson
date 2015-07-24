@@ -23,14 +23,12 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.Codec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 

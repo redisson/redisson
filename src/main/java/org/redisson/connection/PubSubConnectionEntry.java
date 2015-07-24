@@ -137,7 +137,7 @@ public class PubSubConnectionEntry {
     public void unsubscribe(final String channel, RedisPubSubListener listener) {
         conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
             @Override
-            public void onStatus(Type type, String ch) {
+            public boolean onStatus(Type type, String ch) {
                 if (type == Type.UNSUBSCRIBE && channel.equals(ch)) {
                     Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
                     if (listeners != null) {
@@ -146,7 +146,9 @@ public class PubSubConnectionEntry {
                         }
                     }
                     subscribedChannelsAmount.release();
+                    return true;
                 }
+                return false;
             }
         });
         conn.addOneShotListener(listener);
@@ -156,7 +158,7 @@ public class PubSubConnectionEntry {
     public void punsubscribe(final String channel, RedisPubSubListener listener) {
         conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
             @Override
-            public void onStatus(Type type, String ch) {
+            public boolean onStatus(Type type, String ch) {
                 if (type == Type.PUNSUBSCRIBE && channel.equals(ch)) {
                     Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
                     if (listeners != null) {
@@ -165,7 +167,9 @@ public class PubSubConnectionEntry {
                         }
                     }
                     subscribedChannelsAmount.release();
+                    return true;
                 }
+                return false;
             }
         });
         conn.addOneShotListener(listener);

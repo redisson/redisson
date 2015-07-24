@@ -337,14 +337,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
 
             @Override
-            public void onStatus(Type type, String channel) {
+            public boolean onStatus(Type type, String channel) {
                 if (type == Type.UNSUBSCRIBE && channel.equals(channelName)) {
                     synchronized (entry) {
                         if (entry.tryClose()) {
                             returnSubscribeConnection(-1, entry);
                         }
                     }
+                    return true;
                 }
+                return false;
             }
 
         });
@@ -360,14 +362,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
 
             @Override
-            public void onStatus(Type type, String channel) {
+            public boolean onStatus(Type type, String channel) {
                 if (type == Type.PUNSUBSCRIBE && channel.equals(channelName)) {
                     synchronized (entry) {
                         if (entry.tryClose()) {
                             returnSubscribeConnection(-1, entry);
                         }
                     }
+                    return true;
                 }
+                return false;
             }
 
         });

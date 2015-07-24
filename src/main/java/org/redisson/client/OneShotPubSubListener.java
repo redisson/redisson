@@ -17,21 +17,24 @@ package org.redisson.client;
 
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 
-public class OnceRedisPubSubListener<V> implements RedisPubSubListener<V> {
+public class OneShotPubSubListener<V> implements RedisPubSubListener<V> {
 
     private RedisPubSubConnection connection;
     private RedisPubSubListener<V> listener;
 
-    public OnceRedisPubSubListener(RedisPubSubConnection connection, RedisPubSubListener<V> listener) {
+    public OneShotPubSubListener(RedisPubSubConnection connection, RedisPubSubListener<V> listener) {
         super();
         this.connection = connection;
         this.listener = listener;
     }
 
     @Override
-    public void onStatus(Type type, String channel) {
-        listener.onStatus(type, channel);
-        connection.removeListener(this);
+    public boolean onStatus(Type type, String channel) {
+        if (listener.onStatus(type, channel)) {
+            connection.removeListener(this);
+            return true;
+        }
+        return false;
     }
 
     @Override

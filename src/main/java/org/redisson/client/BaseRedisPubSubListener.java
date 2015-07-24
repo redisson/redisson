@@ -20,7 +20,8 @@ import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 public class BaseRedisPubSubListener<V> implements RedisPubSubListener<V> {
 
     @Override
-    public void onStatus(Type type, String channel) {
+    public boolean onStatus(Type type, String channel) {
+        return false;
     }
 
     @Override

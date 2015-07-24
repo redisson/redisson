@@ -129,10 +129,12 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             }
 
             @Override
-            public void onStatus(Type type, String channel) {
+            public boolean onStatus(Type type, String channel) {
                 if (channel.equals(getChannelName()) && !value.getPromise().isSuccess()) {
                     value.getPromise().setSuccess(true);
+                    return true;
                 }
+                return false;
             }
 
         };
