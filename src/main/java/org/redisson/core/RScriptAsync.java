@@ -32,6 +32,8 @@ public interface RScriptAsync {
 
     Future<String> scriptLoadAsync(String luaScript);
 
+    Future<List<Boolean>> scriptExistsAsync(String ... shaDigests);
+
     Future<Void> scriptKillAsync();
 
 }

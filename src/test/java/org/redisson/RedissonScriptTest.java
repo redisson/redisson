@@ -32,16 +32,16 @@ public class RedissonScriptTest extends BaseTest {
     @Test
     public void testScriptExists() {
         RScript s = redisson.getScript();
-        String r = s.scriptLoad(null, "return redis.call('get', 'foo')");
+        String r = s.scriptLoad("return redis.call('get', 'foo')");
         Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
 
-        List<Boolean> r1 = s.scriptExists(null, r);
+        List<Boolean> r1 = s.scriptExists(r);
         Assert.assertEquals(1, r1.size());
         Assert.assertTrue(r1.get(0));
 
         s.scriptFlush();
 
-        List<Boolean> r2 = s.scriptExists(null, r);
+        List<Boolean> r2 = s.scriptExists(r);
         Assert.assertEquals(1, r2.size());
         Assert.assertFalse(r2.get(0));
     }
@@ -83,7 +83,7 @@ public class RedissonScriptTest extends BaseTest {
     @Test
     public void testEvalSha() {
         RScript s = redisson.getScript();
-        String res = s.scriptLoad(null, "return redis.call('get', 'foo')");
+        String res = s.scriptLoad("return redis.call('get', 'foo')");
         Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
 
         redisson.getBucket("foo").set("bar");
@@ -94,7 +94,7 @@ public class RedissonScriptTest extends BaseTest {
     @Test
     public void testEvalshaAsync() {
         RScript s = redisson.getScript();
-        String res = s.scriptLoad(null, "return redis.call('get', 'foo')");
+        String res = s.scriptLoad("return redis.call('get', 'foo')");
         Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
 
         redisson.getBucket("foo").set("bar");

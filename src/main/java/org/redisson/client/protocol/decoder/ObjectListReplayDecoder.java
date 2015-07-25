@@ -21,7 +21,7 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
-public class ObjectListReplayDecoder implements MultiDecoder<List<Object>> {
+public class ObjectListReplayDecoder<T> implements MultiDecoder<List<T>> {
 
     @Override
     public Object decode(ByteBuf buf, State state) {
@@ -29,8 +29,8 @@ public class ObjectListReplayDecoder implements MultiDecoder<List<Object>> {
     }
 
     @Override
-    public List<Object> decode(List<Object> parts, State state) {
-        return parts;
+    public List<T> decode(List<Object> parts, State state) {
+        return (List<T>) parts;
     }
 
     @Override

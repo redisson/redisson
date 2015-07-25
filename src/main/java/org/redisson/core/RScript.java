@@ -55,6 +55,8 @@ public interface RScript extends RScriptAsync {
 
     String scriptLoad(String luaScript);
 
+    List<Boolean> scriptExists(String ... shaDigests);
+
     void scriptKill();
 
     void scriptFlush();

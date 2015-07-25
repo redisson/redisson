@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -138,6 +139,32 @@ public class RedissonScript implements RScript {
 
     public Future<Void> scriptKillAsync(String key) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_KILL);
+    }
+
+    @Override
+    public List<Boolean> scriptExists(String ... shaDigests) {
+        return commandExecutor.get(scriptExistsAsync(shaDigests));
+    }
+
+    @Override
+    public Future<List<Boolean>> scriptExistsAsync(final String ... shaDigests) {
+         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
+            volatile List<Boolean> result = new ArrayList<Boolean>(shaDigests.length);
+            @Override
+            public synchronized void onSlotResult(List<Boolean> result) {
+                for (int i = 0; i < result.size(); i++) {
+                    if (this.result.size() == i) {
+                        this.result.add(false);
+                    }
+                    this.result.set(i, this.result.get(i) | result.get(i));
+                }
+            }
+
+            @Override
+            public List<Boolean> onFinish() {
+                return new ArrayList<Boolean>(result);
+            }
+        }, (Object[])shaDigests);
     }
 
     public List<Boolean> scriptExists(String key, String ... shaDigests) {
