@@ -57,22 +57,6 @@ public interface RScript extends RScriptAsync {
 
     void scriptKill();
 
-    List<Boolean> scriptExists(String key, String ... shaDigests);
-
     void scriptFlush();
-
-    void scriptFlush(String key);
-
-    void scriptKill(String key);
-
-    String scriptLoad(String key, String luaScript);
-
-    <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType);
-
-    <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-
-    <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType);
-
-    <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
 }

@@ -34,16 +34,4 @@ public interface RScriptAsync {
 
     Future<Void> scriptKillAsync();
 
-    Future<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests);
-
-    Future<Void> scriptFlushAsync(String key);
-
-    Future<Void> scriptKillAsync(String key);
-
-    Future<String> scriptLoadAsync(String key, String luaScript);
-
-    <R> Future<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-
-    <R> Future<R> evalAsync(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
-
 }

@@ -37,11 +37,11 @@ public class RedissonScript implements RScript {
         return commandExecutor.get(scriptLoadAsync(luaScript));
     }
 
-    @Override
     public String scriptLoad(String key, String luaScript) {
         return commandExecutor.get(scriptLoadAsync(key, luaScript));
     }
 
+    @Override
     public Future<String> scriptLoadAsync(String luaScript) {
         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
             volatile String result;
@@ -57,7 +57,6 @@ public class RedissonScript implements RScript {
         }, luaScript);
     }
 
-    @Override
     public Future<String> scriptLoadAsync(String key, String luaScript) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_LOAD, luaScript);
     }
@@ -67,7 +66,6 @@ public class RedissonScript implements RScript {
         return eval(null, mode, luaScript, returnType);
     }
 
-    @Override
     public <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType) {
         return eval(key, mode, luaScript, returnType, Collections.emptyList());
     }
@@ -77,7 +75,6 @@ public class RedissonScript implements RScript {
         return eval(null, mode, luaScript, returnType, keys, values);
     }
 
-    @Override
     public <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
         return (R) commandExecutor.get(evalAsync(key, mode, luaScript, returnType, keys, values));
     }
@@ -87,7 +84,6 @@ public class RedissonScript implements RScript {
         return evalAsync(null, mode, luaScript, returnType, keys, values);
     }
 
-    @Override
     public <R> Future<R> evalAsync(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
         if (mode == Mode.READ_ONLY) {
             return commandExecutor.evalReadAsync(key, returnType.getCommand(), luaScript, keys, values);
@@ -100,7 +96,6 @@ public class RedissonScript implements RScript {
         return evalSha(null, mode, shaDigest, returnType);
     }
 
-    @Override
     public <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType) {
         return evalSha(key, mode, shaDigest, returnType, Collections.emptyList());
     }
@@ -110,7 +105,6 @@ public class RedissonScript implements RScript {
         return evalSha(null, mode, shaDigest, returnType, keys, values);
     }
 
-    @Override
     public <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
         return (R) commandExecutor.get(evalShaAsync(key, mode, shaDigest, returnType, keys, values));
     }
@@ -120,7 +114,6 @@ public class RedissonScript implements RScript {
         return evalShaAsync(null, mode, shaDigest, returnType, keys, values);
     }
 
-    @Override
     public <R> Future<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
         if (mode == Mode.READ_ONLY) {
@@ -134,7 +127,6 @@ public class RedissonScript implements RScript {
         commandExecutor.get(scriptKillAsync());
     }
 
-    @Override
     public void scriptKill(String key) {
         commandExecutor.get(scriptKillAsync(key));
     }
@@ -144,17 +136,14 @@ public class RedissonScript implements RScript {
         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_KILL);
     }
 
-    @Override
     public Future<Void> scriptKillAsync(String key) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_KILL);
     }
 
-    @Override
     public List<Boolean> scriptExists(String key, String ... shaDigests) {
         return commandExecutor.get(scriptExistsAsync(key, shaDigests));
     }
 
-    @Override
     public Future<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_EXISTS, shaDigests);
     }
@@ -164,7 +153,6 @@ public class RedissonScript implements RScript {
         commandExecutor.get(scriptFlushAsync());
     }
 
-    @Override
     public void scriptFlush(String key) {
         commandExecutor.get(scriptFlushAsync(key));
     }
@@ -174,7 +162,7 @@ public class RedissonScript implements RScript {
         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
     }
 
-    @Override
+//    @Override
     public Future<Void> scriptFlushAsync(String key) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_FLUSH);
     }
