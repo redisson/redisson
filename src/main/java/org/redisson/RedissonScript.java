@@ -194,4 +194,14 @@ public class RedissonScript implements RScript {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_FLUSH);
     }
 
+    @Override
+    public <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType) {
+        return evalShaAsync(null, mode, shaDigest, returnType, Collections.emptyList());
+    }
+
+    @Override
+    public <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType) {
+        return evalAsync(null, mode, luaScript, returnType, Collections.emptyList());
+    }
+
 }

@@ -28,7 +28,11 @@ public interface RScriptAsync {
 
     <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
+    <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType);
+
     <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+
+    <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType);
 
     Future<String> scriptLoadAsync(String luaScript);
 
