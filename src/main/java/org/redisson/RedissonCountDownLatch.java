@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.protocol.LongCodec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.redisson.core.RCountDownLatch;

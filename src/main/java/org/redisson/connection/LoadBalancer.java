@@ -20,7 +20,7 @@ import java.util.Collection;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 
 public interface LoadBalancer {
 

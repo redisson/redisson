@@ -17,7 +17,7 @@ package org.redisson.client;
 
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;

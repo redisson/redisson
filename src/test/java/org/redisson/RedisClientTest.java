@@ -16,11 +16,11 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
-import org.redisson.client.protocol.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.StringCodec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 
 import io.netty.util.concurrent.Promise;

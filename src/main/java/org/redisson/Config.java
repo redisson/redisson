@@ -15,7 +15,7 @@
  */
 package org.redisson;
 
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
 
 /**

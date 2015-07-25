@@ -22,7 +22,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
 import io.netty.channel.EventLoopGroup;

@@ -16,7 +16,7 @@
 package org.redisson;
 
 import org.redisson.client.RedisConnection;
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 
 public interface SyncOperation<R> {
 

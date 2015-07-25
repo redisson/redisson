@@ -27,7 +27,7 @@ import java.util.concurrent.Semaphore;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

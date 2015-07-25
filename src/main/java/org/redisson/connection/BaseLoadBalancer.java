@@ -27,7 +27,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.misc.ReclosableLatch;
 import org.slf4j.Logger;

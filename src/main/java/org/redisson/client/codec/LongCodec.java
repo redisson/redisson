@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson.client.codec;
 
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;

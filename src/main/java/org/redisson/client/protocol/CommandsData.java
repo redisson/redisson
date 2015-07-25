@@ -18,7 +18,6 @@ package org.redisson.client.protocol;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.netty.util.concurrent.Promise;
 

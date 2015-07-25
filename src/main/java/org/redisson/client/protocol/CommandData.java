@@ -18,8 +18,8 @@ package org.redisson.client.protocol;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.util.concurrent.Promise;

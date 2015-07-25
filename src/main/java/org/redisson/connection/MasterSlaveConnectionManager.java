@@ -32,7 +32,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;

@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Codec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 

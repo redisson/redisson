@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson.client.codec;
+
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
 
 /**
  * Redis code

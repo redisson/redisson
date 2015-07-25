@@ -18,7 +18,7 @@ package org.redisson;
 import java.util.List;
 import java.util.Queue;
 
-import org.redisson.client.protocol.Codec;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 

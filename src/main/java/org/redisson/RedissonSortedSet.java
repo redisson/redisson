@@ -31,10 +31,10 @@ import java.util.SortedSet;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisConnection;
-import org.redisson.client.protocol.Codec;
-import org.redisson.client.protocol.LongCodec;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.StringCodec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSortedSet;
 
