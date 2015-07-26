@@ -59,7 +59,7 @@ Recent Releases
 Starting from 2.0.0 version Redisson has a new own async and lock-free Redis client under the hood. Thanks to the new architecture pipline (command batches) support has been implemented and a lot of code has gone.  
 
 Feature - new async interfaces - `RAsyncMap`, `RAtomicLongAsync`, `RBlockingQueueAsync`, `RCollectionAsync`, `RDequeAsync`, `RExpirableAsync`, `RHyperLogLogAsync`, `RListAsync`, `RObjectAsync`, `RQueueAsync`, `RScriptAsync`, `RSetAsync`, `RTopicAsync`  
-Feature - command batches (Redis pipeline) support via `Redisson.createBatch` method  
+Feature - multiple commands batch (Redis pipelining) support via `Redisson.createBatch` method  
 Feature - new methods `flushall`, `deleteAsync`, `delete`, `deleteByPatternAsync`, `deleteByPattern`, `findKeysByPatternAsync`, `findKeysByPattern` added to `RedissonClient` interface  
 Improvement - closed channel detection speedup  
 
