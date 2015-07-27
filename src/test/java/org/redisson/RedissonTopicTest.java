@@ -48,6 +48,41 @@ public class RedissonTopicTest {
     }
 
     @Test
+    public void testInnerPublish() throws InterruptedException {
+
+        Redisson redisson1 = BaseTest.createInstance();
+        final RTopic<Message> topic1 = redisson1.getTopic("topic1");
+        final CountDownLatch messageRecieved = new CountDownLatch(3);
+        int listenerId = topic1.addListener(new MessageListener<Message>() {
+            @Override
+            public void onMessage(String channel, Message msg) {
+                Assert.assertEquals(msg, new Message("test"));
+                messageRecieved.countDown();
+            }
+        });
+
+        Redisson redisson2 = BaseTest.createInstance();
+        final RTopic<Message> topic2 = redisson2.getTopic("topic2");
+        topic2.addListener(new MessageListener<Message>() {
+            @Override
+            public void onMessage(String channel, Message msg) {
+                messageRecieved.countDown();
+                Message m = new Message("test");
+                if (!msg.equals(m)) {
+                    topic1.publish(m);
+                    topic2.publish(m);
+                }
+            }
+        });
+        topic2.publish(new Message("123"));
+
+        messageRecieved.await();
+
+        redisson1.shutdown();
+        redisson2.shutdown();
+    }
+
+    @Test
     public void testStatus() throws InterruptedException {
         Redisson redisson = BaseTest.createInstance();
         final RTopic<Message> topic1 = redisson.getTopic("topic1");
