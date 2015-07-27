@@ -33,6 +33,15 @@ public interface RTopic<M> extends RTopicAsync<M> {
     long publish(M message);
 
     /**
+     * Subscribes to status changes of this topic
+     *
+     * @param listener
+     * @return
+     * @see org.redisson.core.StatusListener
+     */
+    int addListener(StatusListener listener);
+
+    /**
      * Subscribes to this topic.
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.

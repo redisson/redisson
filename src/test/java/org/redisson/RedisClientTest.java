@@ -21,7 +21,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
+import org.redisson.client.protocol.pubsub.PubSubType;
 
 import io.netty.util.concurrent.Promise;
 
@@ -35,8 +35,8 @@ public class RedisClientTest {
         pubSubConnection.addListener(new RedisPubSubListener<Object>() {
 
             @Override
-            public boolean onStatus(Type type, String channel) {
-                Assert.assertEquals(Type.SUBSCRIBE, type);
+            public boolean onStatus(PubSubType type, String channel) {
+                Assert.assertEquals(PubSubType.SUBSCRIBE, type);
                 Assert.assertTrue(Arrays.asList("test1", "test2").contains(channel));
                 latch.countDown();
                 return true;

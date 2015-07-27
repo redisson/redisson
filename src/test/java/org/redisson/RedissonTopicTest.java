@@ -6,8 +6,10 @@ import java.util.concurrent.CountDownLatch;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
+import org.redisson.core.StatusListener;
 
 public class RedissonTopicTest {
 
@@ -46,6 +48,37 @@ public class RedissonTopicTest {
     }
 
     @Test
+    public void testStatus() throws InterruptedException {
+        Redisson redisson = BaseTest.createInstance();
+        final RTopic<Message> topic1 = redisson.getTopic("topic1");
+        final CountDownLatch l = new CountDownLatch(1);
+        int listenerId = topic1.addListener(new StatusListener() {
+            @Override
+            public void onStatusChange(PubSubType type, String channel) {
+                Assert.assertEquals(PubSubType.SUBSCRIBE, type);
+                Assert.assertEquals("topic1", channel);
+                l.countDown();
+            }
+        });
+
+        Thread.sleep(500);
+
+        int listenerId2 = topic1.addListener(new StatusListener() {
+            @Override
+            public void onStatusChange(PubSubType type, String channel) {
+                if (type == PubSubType.UNSUBSCRIBE) {
+                    Assert.assertEquals(PubSubType.UNSUBSCRIBE, type);
+                    Assert.assertEquals("topic1", channel);
+                    l.countDown();
+                }
+            }
+        });
+        topic1.removeListener(listenerId);
+        topic1.removeListener(listenerId2);
+        l.await();
+    }
+
+    @Test
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -53,13 +86,14 @@ public class RedissonTopicTest {
         RTopic<Message> topic1 = redisson.getTopic("topic1");
         int listenerId = topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.fail();
             }
         });
         topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
+                Assert.assertEquals("topic1", channel);
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -83,7 +117,7 @@ public class RedissonTopicTest {
         RTopic<Message> topic1 = redisson1.getTopic("topic");
         int listenerId = topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.fail();
             }
         });
@@ -95,7 +129,7 @@ public class RedissonTopicTest {
         RTopic<Message> topic2 = redisson2.getTopic("topic");
         topic2.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -117,7 +151,7 @@ public class RedissonTopicTest {
         RTopic<Message> topic1 = redisson1.getTopic("topic");
         topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -127,7 +161,7 @@ public class RedissonTopicTest {
         RTopic<Message> topic2 = redisson2.getTopic("topic");
         topic2.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -148,7 +182,7 @@ public class RedissonTopicTest {
         RTopic<Message> topic1 = redisson1.getTopic("topic");
         topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -158,7 +192,7 @@ public class RedissonTopicTest {
         RTopic<Message> topic2 = redisson2.getTopic("topic");
         topic2.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -181,7 +215,7 @@ public class RedissonTopicTest {
         RTopic<Message> topic1 = redisson1.getTopic("topic");
         int id = topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.fail();
             }
         });

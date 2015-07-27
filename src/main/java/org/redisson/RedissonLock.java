@@ -24,7 +24,7 @@ import java.util.concurrent.locks.Condition;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.core.RLock;
 
 import io.netty.util.Timeout;
@@ -129,7 +129,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             }
 
             @Override
-            public boolean onStatus(Type type, String channel) {
+            public boolean onStatus(PubSubType type, String channel) {
                 if (channel.equals(getChannelName()) && !value.getPromise().isSuccess()) {
                     value.getPromise().setSuccess(true);
                     return true;

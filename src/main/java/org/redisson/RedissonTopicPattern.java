@@ -33,11 +33,11 @@ public class RedissonTopicPattern<M> extends RedissonTopic<M> {
 
     @Override
     public int addListener(MessageListener<M> listener) {
-        RedisPubSubTopicListenerWrapper<M> pubSubListener = new RedisPubSubTopicListenerWrapper<M>(listener, getName());
+        PubSubMessageListenerWrapper<M> pubSubListener = new PubSubMessageListenerWrapper<M>(listener, getName());
         return addListener(pubSubListener);
     }
 
-    private int addListener(RedisPubSubTopicListenerWrapper<M> pubSubListener) {
+    private int addListener(PubSubMessageListenerWrapper<M> pubSubListener) {
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().psubscribe(getName());
         synchronized (entry) {
             if (entry.isActive()) {

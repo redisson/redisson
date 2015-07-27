@@ -15,10 +15,12 @@
  */
 package org.redisson;
 
+import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
+import org.redisson.core.StatusListener;
 
 import io.netty.util.concurrent.Future;
 
@@ -46,12 +48,17 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     }
 
     @Override
+    public int addListener(StatusListener listener) {
+        return addListener(new PubSubStatusListenerWrapper(listener, getName()));
+    };
+
+    @Override
     public int addListener(MessageListener<M> listener) {
-        RedisPubSubTopicListenerWrapper<M> pubSubListener = new RedisPubSubTopicListenerWrapper<M>(listener, getName());
+        PubSubMessageListenerWrapper<M> pubSubListener = new PubSubMessageListenerWrapper<M>(listener, getName());
         return addListener(pubSubListener);
     }
 
-    private int addListener(RedisPubSubTopicListenerWrapper<M> pubSubListener) {
+    private int addListener(RedisPubSubListener<M> pubSubListener) {
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().subscribe(getName());
         synchronized (entry) {
             if (entry.isActive()) {
@@ -91,6 +98,6 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
     @Override
     public io.netty.util.concurrent.Future<Boolean> deleteAsync() {
         throw new UnsupportedOperationException();
-    };
+    }
 
 }

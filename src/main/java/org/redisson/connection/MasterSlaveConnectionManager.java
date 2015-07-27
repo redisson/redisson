@@ -33,7 +33,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -337,8 +337,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
 
             @Override
-            public boolean onStatus(Type type, String channel) {
-                if (type == Type.UNSUBSCRIBE && channel.equals(channelName)) {
+            public boolean onStatus(PubSubType type, String channel) {
+                if (type == PubSubType.UNSUBSCRIBE && channel.equals(channelName)) {
                     synchronized (entry) {
                         if (entry.tryClose()) {
                             returnSubscribeConnection(-1, entry);
@@ -362,8 +362,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
 
             @Override
-            public boolean onStatus(Type type, String channel) {
-                if (type == Type.PUNSUBSCRIBE && channel.equals(channelName)) {
+            public boolean onStatus(PubSubType type, String channel) {
+                if (type == PubSubType.PUNSUBSCRIBE && channel.equals(channelName)) {
                     synchronized (entry) {
                         if (entry.tryClose()) {
                             returnSubscribeConnection(-1, entry);

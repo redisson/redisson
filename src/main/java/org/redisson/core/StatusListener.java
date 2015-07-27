@@ -15,23 +15,24 @@
  */
 package org.redisson.core;
 
-import io.netty.util.concurrent.Future;
+import java.util.EventListener;
+
+import org.redisson.client.protocol.pubsub.PubSubType;
 
 /**
- * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
+ * Listener for Redis PubSub channel status changes
  *
  * @author Nikita Koksharov
  *
- * @param <M> the type of message object
+ * @see org.redisson.core.RTopic
  */
-public interface RTopicAsync<M> {
+public interface StatusListener extends EventListener {
 
     /**
-     * Publish the message to all subscribers of this topic asynchronously
+     * Invokes on every pubsub status change in topic
      *
-     * @param message
-     * @return the <code>Future</code> object with number of clients that received the message
+     * @param msg topic message
      */
-    Future<Long> publishAsync(M message);
+    void onStatusChange(PubSubType type, String channel);
 
 }

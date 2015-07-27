@@ -34,7 +34,7 @@ public class PubSubStatusDecoder implements MultiDecoder<Object> {
 
     @Override
     public PubSubStatusMessage decode(List<Object> parts, State state) {
-        return new PubSubStatusMessage(PubSubStatusMessage.Type.valueOf(parts.get(0).toString().toUpperCase()), parts.get(1).toString());
+        return new PubSubStatusMessage(PubSubType.valueOf(parts.get(0).toString().toUpperCase()), parts.get(1).toString());
     }
 
     @Override

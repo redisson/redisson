@@ -15,7 +15,7 @@
  */
 package org.redisson.client;
 
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
+import org.redisson.client.protocol.pubsub.PubSubType;
 
 public class OneShotPubSubListener<V> implements RedisPubSubListener<V> {
 
@@ -29,7 +29,7 @@ public class OneShotPubSubListener<V> implements RedisPubSubListener<V> {
     }
 
     @Override
-    public boolean onStatus(Type type, String channel) {
+    public boolean onStatus(PubSubType type, String channel) {
         if (listener.onStatus(type, channel)) {
             connection.removeListener(this);
             return true;

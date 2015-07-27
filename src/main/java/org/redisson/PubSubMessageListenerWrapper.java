@@ -16,7 +16,7 @@
 package org.redisson;
 
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.core.MessageListener;
 
 /**
@@ -26,7 +26,7 @@ import org.redisson.core.MessageListener;
  * @param <K>
  * @param <V>
  */
-public class RedisPubSubTopicListenerWrapper<V> implements RedisPubSubListener<V> {
+public class PubSubMessageListenerWrapper<V> implements RedisPubSubListener<V> {
 
     private final MessageListener<V> listener;
     private final String name;
@@ -35,7 +35,7 @@ public class RedisPubSubTopicListenerWrapper<V> implements RedisPubSubListener<V
         return name;
     }
 
-    public RedisPubSubTopicListenerWrapper(MessageListener<V> listener, String name) {
+    public PubSubMessageListenerWrapper(MessageListener<V> listener, String name) {
         super();
         this.listener = listener;
         this.name = name;
@@ -57,7 +57,7 @@ public class RedisPubSubTopicListenerWrapper<V> implements RedisPubSubListener<V
             return false;
         if (getClass() != obj.getClass())
             return false;
-        RedisPubSubTopicListenerWrapper other = (RedisPubSubTopicListenerWrapper) obj;
+        PubSubMessageListenerWrapper other = (PubSubMessageListenerWrapper) obj;
         if (listener == null) {
             if (other.listener != null)
                 return false;
@@ -70,17 +70,20 @@ public class RedisPubSubTopicListenerWrapper<V> implements RedisPubSubListener<V
     public void onMessage(String channel, V message) {
         // could be subscribed to multiple channels
         if (name.equals(channel)) {
-            listener.onMessage(message);
+            listener.onMessage(channel, message);
         }
     }
 
     @Override
     public void onPatternMessage(String pattern, String channel, V message) {
-        listener.onMessage(message);
+        // could be subscribed to multiple channels
+        if (name.equals(pattern)) {
+            listener.onMessage(channel, message);
+        }
     }
 
     @Override
-    public boolean onStatus(Type type, String channel) {
+    public boolean onStatus(PubSubType type, String channel) {
         return false;
     }
 

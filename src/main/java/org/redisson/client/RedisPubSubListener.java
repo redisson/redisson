@@ -15,11 +15,11 @@
  */
 package org.redisson.client;
 
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.client.protocol.pubsub.PubSubType;
 
 public interface RedisPubSubListener<V> {
 
-    boolean onStatus(PubSubStatusMessage.Type type, String channel);
+    boolean onStatus(PubSubType type, String channel);
 
     void onMessage(String channel, V message);
 

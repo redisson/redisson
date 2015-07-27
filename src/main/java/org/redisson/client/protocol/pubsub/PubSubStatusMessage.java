@@ -17,12 +17,10 @@ package org.redisson.client.protocol.pubsub;
 
 public class PubSubStatusMessage implements Message {
 
-    public enum Type {SUBSCRIBE, PSUBSCRIBE, PUNSUBSCRIBE, UNSUBSCRIBE}
-
-    private final Type type;
+    private final PubSubType type;
     private final String channel;
 
-    public PubSubStatusMessage(Type type, String channel) {
+    public PubSubStatusMessage(PubSubType type, String channel) {
         super();
         this.type = type;
         this.channel = channel;
@@ -32,7 +30,7 @@ public class PubSubStatusMessage implements Message {
         return channel;
     }
 
-    public Type getType() {
+    public PubSubType getType() {
         return type;
     }
 

@@ -56,13 +56,13 @@ public class RedissonTopicPatternTest {
         RTopic<Message> topic1 = redisson.getTopicPattern("topic1.*");
         int listenerId = topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.fail();
             }
         });
         topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -85,7 +85,7 @@ public class RedissonTopicPatternTest {
         RTopic<Message> topic1 = redisson1.getTopicPattern("topic.*");
         int listenerId = topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.fail();
             }
         });
@@ -98,7 +98,7 @@ public class RedissonTopicPatternTest {
         RTopic<Message> topic2 = redisson2.getTopicPattern("topic.*");
         topic2.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -122,7 +122,7 @@ public class RedissonTopicPatternTest {
         RTopic<Message> topic1 = redisson1.getTopicPattern("topic.*");
         topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -132,7 +132,7 @@ public class RedissonTopicPatternTest {
         RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
         topic2.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
             }
@@ -160,7 +160,7 @@ public class RedissonTopicPatternTest {
         RTopic<Message> topic1 = redisson1.getTopicPattern("topic.*");
         int id = topic1.addListener(new MessageListener<Message>() {
             @Override
-            public void onMessage(Message msg) {
+            public void onMessage(String channel, Message msg) {
                 Assert.fail();
             }
         });

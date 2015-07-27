@@ -28,7 +28,7 @@ import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage.Type;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,8 +137,8 @@ public class PubSubConnectionEntry {
     public void unsubscribe(final String channel, RedisPubSubListener listener) {
         conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
             @Override
-            public boolean onStatus(Type type, String ch) {
-                if (type == Type.UNSUBSCRIBE && channel.equals(ch)) {
+            public boolean onStatus(PubSubType type, String ch) {
+                if (type == PubSubType.UNSUBSCRIBE && channel.equals(ch)) {
                     Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
                     if (listeners != null) {
                         for (RedisPubSubListener listener : listeners) {
@@ -158,8 +158,8 @@ public class PubSubConnectionEntry {
     public void punsubscribe(final String channel, RedisPubSubListener listener) {
         conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
             @Override
-            public boolean onStatus(Type type, String ch) {
-                if (type == Type.PUNSUBSCRIBE && channel.equals(ch)) {
+            public boolean onStatus(PubSubType type, String ch) {
+                if (type == PubSubType.PUNSUBSCRIBE && channel.equals(ch)) {
                     Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
                     if (listeners != null) {
                         for (RedisPubSubListener listener : listeners) {
