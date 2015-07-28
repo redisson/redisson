@@ -16,7 +16,7 @@
 package org.redisson.core;
 
 /**
- * Listener for Redis PubSub channel status changes
+ * Base status listener for Redis PubSub channel status changes
  *
  * @author Nikita Koksharov
  *
