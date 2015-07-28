@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import java.util.List;
+
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
  *
@@ -23,6 +25,13 @@ package org.redisson.core;
  * @param <M> the type of message object
  */
 public interface RPatternTopic<M> {
+
+    /**
+     * Get topic channel patterns
+     *
+     * @return
+     */
+    List<String> getPatternNames();
 
     /**
      * Subscribes to this topic.

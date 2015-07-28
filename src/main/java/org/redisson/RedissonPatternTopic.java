@@ -41,10 +41,6 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
         this.name = name;
     }
 
-    public List<String> getChannelNames() {
-        return Collections.singletonList(name);
-    }
-
     @Override
     public int addListener(PatternStatusListener listener) {
         return addListener(new PubSubPatternStatusListener(listener, name));
@@ -86,6 +82,11 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
         // entry is inactive trying add again
         removeListener(listenerId);
+    }
+
+    @Override
+    public List<String> getPatternNames() {
+        return Collections.singletonList(name);
     }
 
 }

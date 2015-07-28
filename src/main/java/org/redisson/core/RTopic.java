@@ -26,6 +26,11 @@ import java.util.List;
  */
 public interface RTopic<M> extends RTopicAsync<M> {
 
+    /**
+     * Get topic channel names
+     *
+     * @return
+     */
     List<String> getChannelNames();
 
     /**
