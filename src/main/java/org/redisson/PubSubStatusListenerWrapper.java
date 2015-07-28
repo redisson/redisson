@@ -76,7 +76,15 @@ public class PubSubStatusListenerWrapper<V> implements RedisPubSubListener<V> {
 
     @Override
     public boolean onStatus(PubSubType type, String channel) {
-        listener.onStatusChange(type, channel);
+        if (type == PubSubType.SUBSCRIBE) {
+            listener.onSubscribe(channel);
+        } else if (type == PubSubType.PSUBSCRIBE) {
+            listener.onPSubscribe(channel);
+        } else if (type == PubSubType.UNSUBSCRIBE) {
+            listener.onUnsubscribe(channel);
+        } else if (type == PubSubType.PUNSUBSCRIBE) {
+            listener.onPUnsubscribe(channel);
+        }
         return true;
     }
 

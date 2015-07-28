@@ -7,6 +7,7 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.core.BaseStatusListener;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
 import org.redisson.core.StatusListener;
@@ -87,10 +88,9 @@ public class RedissonTopicTest {
         Redisson redisson = BaseTest.createInstance();
         final RTopic<Message> topic1 = redisson.getTopic("topic1");
         final CountDownLatch l = new CountDownLatch(1);
-        int listenerId = topic1.addListener(new StatusListener() {
+        int listenerId = topic1.addListener(new BaseStatusListener() {
             @Override
-            public void onStatusChange(PubSubType type, String channel) {
-                Assert.assertEquals(PubSubType.SUBSCRIBE, type);
+            public void onSubscribe(String channel) {
                 Assert.assertEquals("topic1", channel);
                 l.countDown();
             }
@@ -98,14 +98,11 @@ public class RedissonTopicTest {
 
         Thread.sleep(500);
 
-        int listenerId2 = topic1.addListener(new StatusListener() {
+        int listenerId2 = topic1.addListener(new BaseStatusListener() {
             @Override
-            public void onStatusChange(PubSubType type, String channel) {
-                if (type == PubSubType.UNSUBSCRIBE) {
-                    Assert.assertEquals(PubSubType.UNSUBSCRIBE, type);
-                    Assert.assertEquals("topic1", channel);
-                    l.countDown();
-                }
+            public void onUnsubscribe(String channel) {
+                Assert.assertEquals("topic1", channel);
+                l.countDown();
             }
         });
         topic1.removeListener(listenerId);
