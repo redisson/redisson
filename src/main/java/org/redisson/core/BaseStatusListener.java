@@ -29,15 +29,7 @@ public class BaseStatusListener implements StatusListener {
     }
 
     @Override
-    public void onPSubscribe(String channel) {
-    }
-
-    @Override
     public void onUnsubscribe(String channel) {
-    }
-
-    @Override
-    public void onPUnsubscribe(String channel) {
     }
 
 }

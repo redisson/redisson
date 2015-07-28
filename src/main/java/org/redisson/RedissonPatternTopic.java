@@ -15,8 +15,14 @@
  */
 package org.redisson;
 
+import java.util.Collections;
+import java.util.List;
+
+import org.redisson.client.RedisPubSubListener;
 import org.redisson.connection.PubSubConnectionEntry;
-import org.redisson.core.MessageListener;
+import org.redisson.core.PatternMessageListener;
+import org.redisson.core.PatternStatusListener;
+import org.redisson.core.RPatternTopic;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -25,23 +31,36 @@ import org.redisson.core.MessageListener;
  *
  * @param <M> message
  */
-public class RedissonTopicPattern<M> extends RedissonTopic<M> {
+public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
-    protected RedissonTopicPattern(CommandExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+    final CommandExecutor commandExecutor;
+    private final String name;
+
+    protected RedissonPatternTopic(CommandExecutor commandExecutor, String name) {
+        this.commandExecutor = commandExecutor;
+        this.name = name;
+    }
+
+    public List<String> getChannelNames() {
+        return Collections.singletonList(name);
     }
 
     @Override
-    public int addListener(MessageListener<M> listener) {
-        PubSubMessageListenerWrapper<M> pubSubListener = new PubSubMessageListenerWrapper<M>(listener, getName());
+    public int addListener(PatternStatusListener listener) {
+        return addListener(new PubSubPatternStatusListener(listener, name));
+    };
+
+    @Override
+    public int addListener(PatternMessageListener<M> listener) {
+        PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
         return addListener(pubSubListener);
     }
 
-    private int addListener(PubSubMessageListenerWrapper<M> pubSubListener) {
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().psubscribe(getName());
+    private int addListener(RedisPubSubListener<M> pubSubListener) {
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().psubscribe(name);
         synchronized (entry) {
             if (entry.isActive()) {
-                entry.addListener(getName(), pubSubListener);
+                entry.addListener(name, pubSubListener);
                 return pubSubListener.hashCode();
             }
         }
@@ -51,15 +70,15 @@ public class RedissonTopicPattern<M> extends RedissonTopic<M> {
 
     @Override
     public void removeListener(int listenerId) {
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getEntry(getName());
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getEntry(name);
         if (entry == null) {
             return;
         }
         synchronized (entry) {
             if (entry.isActive()) {
-                entry.removeListener(getName(), listenerId);
-                if (entry.getListeners(getName()).isEmpty()) {
-                    commandExecutor.getConnectionManager().punsubscribe(getName());
+                entry.removeListener(name, listenerId);
+                if (entry.getListeners(name).isEmpty()) {
+                    commandExecutor.getConnectionManager().punsubscribe(name);
                 }
                 return;
             }

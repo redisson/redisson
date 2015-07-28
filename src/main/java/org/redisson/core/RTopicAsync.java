@@ -34,4 +34,20 @@ public interface RTopicAsync<M> {
      */
     Future<Long> publishAsync(M message);
 
+    /**
+     * Subscribes to status changes of this topic
+     *
+     * @param listener
+     * @return
+     * @see org.redisson.core.StatusListener
+     */
+    int addListener(StatusListener listener);
+
+    /**
+     * Removes the listener by <code>id</code> for listening this topic
+     *
+     * @param listenerId
+     */
+    void removeListener(int listenerId);
+
 }

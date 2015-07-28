@@ -18,6 +18,7 @@ package org.redisson;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.core.MessageListener;
+import org.redisson.core.PatternMessageListener;
 
 /**
  *
@@ -26,16 +27,16 @@ import org.redisson.core.MessageListener;
  * @param <K>
  * @param <V>
  */
-public class PubSubMessageListenerWrapper<V> implements RedisPubSubListener<V> {
+public class PubSubPatternMessageListener<V> implements RedisPubSubListener<V> {
 
-    private final MessageListener<V> listener;
+    private final PatternMessageListener<V> listener;
     private final String name;
 
     public String getName() {
         return name;
     }
 
-    public PubSubMessageListenerWrapper(MessageListener<V> listener, String name) {
+    public PubSubPatternMessageListener(PatternMessageListener<V> listener, String name) {
         super();
         this.listener = listener;
         this.name = name;
@@ -57,7 +58,7 @@ public class PubSubMessageListenerWrapper<V> implements RedisPubSubListener<V> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        PubSubMessageListenerWrapper other = (PubSubMessageListenerWrapper) obj;
+        PubSubPatternMessageListener other = (PubSubPatternMessageListener) obj;
         if (listener == null) {
             if (other.listener != null)
                 return false;
@@ -68,17 +69,13 @@ public class PubSubMessageListenerWrapper<V> implements RedisPubSubListener<V> {
 
     @Override
     public void onMessage(String channel, V message) {
-        // could be subscribed to multiple channels
-        if (name.equals(channel)) {
-            listener.onMessage(channel, message);
-        }
     }
 
     @Override
     public void onPatternMessage(String pattern, String channel, V message) {
         // could be subscribed to multiple channels
         if (name.equals(pattern)) {
-            listener.onMessage(channel, message);
+            listener.onMessage(pattern, channel, message);
         }
     }
 

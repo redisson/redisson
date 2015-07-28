@@ -15,19 +15,21 @@
  */
 package org.redisson.core;
 
-import java.util.EventListener;
-
 /**
- * Listener for Redis PubSub channel status changes
+ * Base status listener for Redis PubSub channel status changes
  *
  * @author Nikita Koksharov
  *
  * @see org.redisson.core.RTopic
  */
-public interface StatusListener extends EventListener {
+public class BasePatternStatusListener implements PatternStatusListener {
 
-    void onSubscribe(String channel);
+    @Override
+    public void onPSubscribe(String channel) {
+    }
 
-    void onUnsubscribe(String channel);
+    @Override
+    public void onPUnsubscribe(String channel) {
+    }
 
 }

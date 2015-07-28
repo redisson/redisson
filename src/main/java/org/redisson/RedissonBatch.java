@@ -73,11 +73,6 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
-    public <M> RTopicAsync<M> getTopicPattern(String pattern) {
-        return new RedissonTopicPattern<M>(executorService, pattern);
-    }
-
-    @Override
     public <V> RQueueAsync<V> getQueue(String name) {
         return new RedissonQueue<V>(executorService, name);
     }

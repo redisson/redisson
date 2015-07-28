@@ -38,6 +38,7 @@ import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
+import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
 import org.redisson.core.RScript;
 import org.redisson.core.RSet;
@@ -234,8 +235,8 @@ public class Redisson implements RedissonClient {
      * @return
      */
     @Override
-    public <M> RTopic<M> getTopicPattern(String pattern) {
-        return new RedissonTopicPattern<M>(commandExecutor, pattern);
+    public <M> RPatternTopic<M> getPatternTopic(String pattern) {
+        return new RedissonPatternTopic<M>(commandExecutor, pattern);
     }
 
     /**

@@ -82,19 +82,6 @@ public interface RBatch {
     <M> RTopicAsync<M> getTopic(String name);
 
     /**
-     * Returns topic instance satisfies by pattern name.
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern of the topic
-     * @return
-     */
-    <M> RTopicAsync<M> getTopicPattern(String pattern);
-
-    /**
      * Returns queue instance by name.
      *
      * @param name of queue

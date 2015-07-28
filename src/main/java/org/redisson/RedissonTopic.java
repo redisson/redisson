@@ -15,6 +15,9 @@
  */
 package org.redisson;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.PubSubConnectionEntry;
@@ -31,38 +34,46 @@ import io.netty.util.concurrent.Future;
  *
  * @param <M> message
  */
-public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
+public class RedissonTopic<M> implements RTopic<M> {
+
+    final CommandExecutor commandExecutor;
+    private final String name;
 
     protected RedissonTopic(CommandExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+        this.commandExecutor = commandExecutor;
+        this.name = name;
+    }
+
+    public List<String> getChannelNames() {
+        return Collections.singletonList(name);
     }
 
     @Override
     public long publish(M message) {
-        return get(publishAsync(message));
+        return commandExecutor.get(publishAsync(message));
     }
 
     @Override
     public Future<Long> publishAsync(M message) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.PUBLISH, getName(), message);
+        return commandExecutor.writeAsync(name, RedisCommands.PUBLISH, name, message);
     }
 
     @Override
     public int addListener(StatusListener listener) {
-        return addListener(new PubSubStatusListenerWrapper(listener, getName()));
+        return addListener(new PubSubStatusListener(listener, name));
     };
 
     @Override
     public int addListener(MessageListener<M> listener) {
-        PubSubMessageListenerWrapper<M> pubSubListener = new PubSubMessageListenerWrapper<M>(listener, getName());
+        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
         return addListener(pubSubListener);
     }
 
     private int addListener(RedisPubSubListener<M> pubSubListener) {
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().subscribe(getName());
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().subscribe(name);
         synchronized (entry) {
             if (entry.isActive()) {
-                entry.addListener(getName(), pubSubListener);
+                entry.addListener(name, pubSubListener);
                 return pubSubListener.hashCode();
             }
         }
@@ -72,15 +83,15 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
     @Override
     public void removeListener(int listenerId) {
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getEntry(getName());
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getEntry(name);
         if (entry == null) {
             return;
         }
         synchronized (entry) {
             if (entry.isActive()) {
-                entry.removeListener(getName(), listenerId);
-                if (!entry.hasListeners(getName())) {
-                    commandExecutor.getConnectionManager().unsubscribe(getName());
+                entry.removeListener(name, listenerId);
+                if (!entry.hasListeners(name)) {
+                    commandExecutor.getConnectionManager().unsubscribe(name);
                 }
                 return;
             }
@@ -88,16 +99,6 @@ public class RedissonTopic<M> extends RedissonObject implements RTopic<M> {
 
         // entry is inactive trying add again
         removeListener(listenerId);
-    }
-
-    @Override
-    public boolean delete() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public io.netty.util.concurrent.Future<Boolean> deleteAsync() {
-        throw new UnsupportedOperationException();
     }
 
 }

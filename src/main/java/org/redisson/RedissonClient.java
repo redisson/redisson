@@ -104,7 +104,7 @@ public interface RedissonClient {
      * @param pattern of the topic
      * @return
      */
-    <M> RTopic<M> getTopicPattern(String pattern);
+    <M> RPatternTopic<M> getPatternTopic(String pattern);
 
     /**
      * Returns queue instance by name.

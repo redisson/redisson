@@ -18,16 +18,21 @@ package org.redisson.core;
 import java.util.EventListener;
 
 /**
- * Listener for Redis PubSub channel status changes
+ * Listener for Redis messages published via RTopic Redisson object
  *
  * @author Nikita Koksharov
  *
+ * @param <M> message
+ *
  * @see org.redisson.core.RTopic
  */
-public interface StatusListener extends EventListener {
+public interface PatternMessageListener<M> extends EventListener {
 
-    void onSubscribe(String channel);
-
-    void onUnsubscribe(String channel);
+    /**
+     * Invokes on every message in topic
+     *
+     * @param msg topic message
+     */
+    void onMessage(String pattern, String channel, M msg);
 
 }

@@ -24,10 +24,10 @@ import java.util.EventListener;
  *
  * @see org.redisson.core.RTopic
  */
-public interface StatusListener extends EventListener {
+public interface PatternStatusListener extends EventListener {
 
-    void onSubscribe(String channel);
+    void onPSubscribe(String pattern);
 
-    void onUnsubscribe(String channel);
+    void onPUnsubscribe(String pattern);
 
 }

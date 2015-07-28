@@ -17,7 +17,7 @@ package org.redisson;
 
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.core.StatusListener;
+import org.redisson.core.MessageListener;
 
 /**
  *
@@ -26,16 +26,16 @@ import org.redisson.core.StatusListener;
  * @param <K>
  * @param <V>
  */
-public class PubSubStatusListenerWrapper<V> implements RedisPubSubListener<V> {
+public class PubSubMessageListener<V> implements RedisPubSubListener<V> {
 
-    private final StatusListener listener;
+    private final MessageListener<V> listener;
     private final String name;
 
     public String getName() {
         return name;
     }
 
-    public PubSubStatusListenerWrapper(StatusListener listener, String name) {
+    public PubSubMessageListener(MessageListener<V> listener, String name) {
         super();
         this.listener = listener;
         this.name = name;
@@ -57,7 +57,7 @@ public class PubSubStatusListenerWrapper<V> implements RedisPubSubListener<V> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        PubSubStatusListenerWrapper other = (PubSubStatusListenerWrapper) obj;
+        PubSubMessageListener other = (PubSubMessageListener) obj;
         if (listener == null) {
             if (other.listener != null)
                 return false;
@@ -68,24 +68,23 @@ public class PubSubStatusListenerWrapper<V> implements RedisPubSubListener<V> {
 
     @Override
     public void onMessage(String channel, V message) {
+        // could be subscribed to multiple channels
+        if (name.equals(channel)) {
+            listener.onMessage(channel, message);
+        }
     }
 
     @Override
     public void onPatternMessage(String pattern, String channel, V message) {
+        // could be subscribed to multiple channels
+        if (name.equals(pattern)) {
+            listener.onMessage(channel, message);
+        }
     }
 
     @Override
     public boolean onStatus(PubSubType type, String channel) {
-        if (type == PubSubType.SUBSCRIBE) {
-            listener.onSubscribe(channel);
-        } else if (type == PubSubType.PSUBSCRIBE) {
-            listener.onPSubscribe(channel);
-        } else if (type == PubSubType.UNSUBSCRIBE) {
-            listener.onUnsubscribe(channel);
-        } else if (type == PubSubType.PUNSUBSCRIBE) {
-            listener.onPUnsubscribe(channel);
-        }
-        return true;
+        return false;
     }
 
 }
