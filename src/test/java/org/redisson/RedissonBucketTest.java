@@ -1,5 +1,11 @@
 package org.redisson;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -7,12 +13,17 @@ import org.junit.Test;
 import org.redisson.core.RBucket;
 import org.redisson.core.RMap;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Queue;
-
 public class RedissonBucketTest extends BaseTest {
+
+    @Test
+    public void testExpire() throws InterruptedException {
+        RBucket<String> bucket = redisson.getBucket("test1");
+        bucket.set("someValue", 1, TimeUnit.SECONDS);
+
+        Thread.sleep(1000);
+
+        Assert.assertNull(bucket.get());
+    }
 
     @Test
     public void testDeleteByPattern() {
