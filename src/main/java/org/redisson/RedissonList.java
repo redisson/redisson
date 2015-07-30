@@ -367,9 +367,15 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     private <R> Future<R> indexOfAsync(Object o, Convertor<R> convertor) {
         return commandExecutor.evalReadAsync(getName(), new RedisCommand<R>("EVAL", convertor, 4),
-                "local s = redis.call('llen', KEYS[1]);" +
-                        "for i = 0, s, 1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
-                        "return -1",
+                "local key = KEYS[1] " +
+                "local obj = ARGV[1] " +
+                "local items = redis.call('lrange', key, 0, -1) " +
+                "for i=1,#items do " +
+                    "if items[i] == obj then " +
+                        "return i - 1 " +
+                    "end " +
+                "end " +
+                "return -1",
                 Collections.<Object>singletonList(getName()), o);
     }
 
