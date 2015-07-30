@@ -11,7 +11,9 @@ import java.util.ListIterator;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.core.RBatch;
 import org.redisson.core.RList;
+import org.redisson.core.RListAsync;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -267,6 +269,18 @@ public class RedissonListTest extends BaseTest {
         Assert.assertTrue(iterator.hasPrevious());
         Assert.assertTrue(1 == iterator.previous());
         Assert.assertFalse(iterator.hasPrevious());
+    }
+
+    @Test
+    public void testLastIndexOfNone() {
+        List<Integer> list = redisson.getList("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        Assert.assertEquals(-1, list.lastIndexOf(10));
     }
 
     @Test

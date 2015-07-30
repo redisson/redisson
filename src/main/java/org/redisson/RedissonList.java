@@ -392,9 +392,15 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public Future<Integer> lastIndexOfAsync(Object o) {
         return commandExecutor.evalReadAsync(getName(), new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 4),
-                "local s = redis.call('llen', KEYS[1]);" +
-                        "for i = s, 0, -1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
-                        "return -1",
+                "local key = KEYS[1] " +
+                "local obj = ARGV[1] " +
+                "local items = redis.call('lrange', key, 0, -1) " +
+                "for i = table.getn(items), 0, -1 do " +
+                    "if items[i] == obj then " +
+                        "return i - 1 " +
+                    "end " +
+                "end " +
+                "return -1",
                 Collections.<Object>singletonList(getName()), o);
     }
 
