@@ -124,7 +124,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
 
-            commands.getPromise().setSuccess(null);
+            if (i == commands.getCommands().size()) {
+                commands.getPromise().setSuccess(null);
+
+                ctx.channel().attr(CommandsQueue.REPLAY).remove();
+                ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
+
+                state(null);
+            } else {
+                checkpoint();
+                state().setIndex(i);
+            }
+            return;
         }
 
         ctx.channel().attr(CommandsQueue.REPLAY).remove();
