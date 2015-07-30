@@ -11,9 +11,7 @@ import java.util.ListIterator;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBatch;
 import org.redisson.core.RList;
-import org.redisson.core.RListAsync;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;

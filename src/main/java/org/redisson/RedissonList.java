@@ -134,14 +134,15 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
         return commandExecutor.evalReadAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
-                "local s = redis.call('llen', KEYS[1]);" +
-                        "for i = 0, s, 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
-                            + "if ARGV[j] == redis.call('lindex', KEYS[1], i) "
-                            + "then table.remove(ARGV, j) end "
-                        + "end; "
-                        +"end;"
-                        + "return table.getn(ARGV) == 0; ",
+                "local items = redis.call('lrange', KEYS[1], 0, -1) " +
+                "for i=1, #items do " +
+                    "for j = 0, table.getn(ARGV), 1 do " +
+                        "if items[i] == ARGV[j] then " +
+                            "table.remove(ARGV, j) " +
+                        "end " +
+                    "end " +
+                "end " +
+                "return table.getn(ARGV) == 0",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -242,27 +243,26 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
-                    "local changed = false " +
-                    "local s = redis.call('llen', KEYS[1]) "
-                       + "local i = 0 "
-                       + "while i < s do "
-                            + "local element = redis.call('lindex', KEYS[1], i) "
-                            + "local isInAgrs = false "
-                            + "for j = 0, table.getn(ARGV), 1 do "
-                                + "if ARGV[j] == element then "
-                                    + "isInAgrs = true "
-                                    + "break "
-                                + "end "
+                "local changed = false " +
+                "local items = redis.call('lrange', KEYS[1], 0, -1) "
+                   + "local i = 1 "
+                   + "local s = table.getn(items) "
+                   + "while i <= s do "
+                        + "local element = items[i] "
+                        + "local isInAgrs = false "
+                        + "for j = 0, table.getn(ARGV), 1 do "
+                            + "if ARGV[j] == element then "
+                                + "isInAgrs = true "
+                                + "break "
                             + "end "
-                            + "if isInAgrs == false then "
-                                + "redis.call('LREM', KEYS[1], 0, element) "
-                                + "i = i-1 "
-                                + "s = s-1 "
-                                + "changed = true "
-                            + "end "
-                            + "i = i + 1 "
-                       + "end "
-                       + "return changed ",
+                        + "end "
+                        + "if isInAgrs == false then "
+                            + "redis.call('LREM', KEYS[1], 0, element) "
+                            + "changed = true "
+                        + "end "
+                        + "i = i + 1 "
+                   + "end "
+                   + "return changed ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
