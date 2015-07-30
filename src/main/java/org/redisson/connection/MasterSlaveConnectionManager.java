@@ -59,7 +59,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final HashedWheelTimer timer = new HashedWheelTimer();
+    private HashedWheelTimer timer;
 
     protected Codec codec;
 
@@ -111,8 +111,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
+        int minTimeout = Math.min(config.getRetryInterval(), config.getTimeout());
+        if (minTimeout % 100 != 0) {
+            timer = new HashedWheelTimer(minTimeout % 100, TimeUnit.MILLISECONDS);
+        } else {
+            timer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS);
+        }
+
+        initEntry(config);
+    }
+
+    protected void initEntry(MasterSlaveServersConfig config) {
         MasterSlaveEntry entry = new MasterSlaveEntry(codec, this, config);
         entries.put(Integer.MAX_VALUE, entry);
+    }
+
+    public static void main(String[] args) {
+        System.out.println(1210 % 100);
     }
 
     protected void init(Config cfg) {
