@@ -113,7 +113,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         int minTimeout = Math.min(config.getRetryInterval(), config.getTimeout());
         if (minTimeout % 100 != 0) {
-            timer = new HashedWheelTimer(minTimeout % 100, TimeUnit.MILLISECONDS);
+            timer = new HashedWheelTimer((minTimeout % 100) / 2, TimeUnit.MILLISECONDS);
         } else {
             timer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS);
         }
