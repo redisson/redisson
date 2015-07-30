@@ -357,7 +357,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public int indexOf(Object o) {
-        return get(indexOfAsync(o, new IntegerReplayConvertor()));
+        return get(indexOfAsync(o));
     }
 
     @Override
@@ -381,11 +381,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Integer> indexOfAsync(Object o) {
-        return commandExecutor.evalReadAsync(getName(), new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 4),
-                "local s = redis.call('llen', KEYS[1]);" +
-                        "for i = 0, s, 1 do if ARGV[1] == redis.call('lindex', KEYS[1], i) then return i end end;" +
-                        "return -1",
-                Collections.<Object>singletonList(getName()), o);
+        return indexOfAsync(o, new IntegerReplayConvertor());
     }
 
     @Override
