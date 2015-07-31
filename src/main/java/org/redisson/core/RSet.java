@@ -26,4 +26,11 @@ import java.util.Set;
  */
 public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
 
+    /**
+     * Removes and returns random element from set
+     *
+     * @return
+     */
+    V removeRandom();
+
 }

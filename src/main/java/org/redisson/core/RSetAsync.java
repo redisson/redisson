@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * Async set functions
  *
@@ -23,5 +25,13 @@ package org.redisson.core;
  * @param <V> value
  */
 public interface RSetAsync<V> extends RCollectionAsync<V> {
+
+    /**
+     * Removes and returns random element from set
+     * in async mode
+     *
+     * @return
+     */
+    Future<V> removeRandomAsync();
 
 }

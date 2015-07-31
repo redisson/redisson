@@ -33,6 +33,19 @@ public class RedissonSetTest extends BaseTest {
     }
 
     @Test
+    public void testRemoveRandom() {
+        RSet<Integer> set = redisson.getSet("simple");
+        set.add(1);
+        set.add(2);
+        set.add(3);
+
+        MatcherAssert.assertThat(set.removeRandom(), Matchers.isOneOf(1, 2, 3));
+        MatcherAssert.assertThat(set.removeRandom(), Matchers.isOneOf(1, 2, 3));
+        MatcherAssert.assertThat(set.removeRandom(), Matchers.isOneOf(1, 2, 3));
+        Assert.assertNull(set.removeRandom());
+    }
+
+    @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
