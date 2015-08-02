@@ -54,6 +54,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         init(config);
 
         this.config = create(cfg);
+        init(this.config);
 
         for (URI addr : cfg.getNodeAddresses()) {
             RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getTimeout());
@@ -76,6 +77,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         monitorClusterChange(cfg);
+    }
+
+    @Override
+    protected void initEntry(MasterSlaveServersConfig config) {
     }
 
     private void addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {

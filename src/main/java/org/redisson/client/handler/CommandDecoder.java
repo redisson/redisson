@@ -164,7 +164,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 int slot = Integer.valueOf(errorParts[2]);
                 data.getPromise().setFailure(new RedisMovedException(slot));
             } else {
-                data.getPromise().setFailure(new RedisException(error));
+                data.getPromise().setFailure(new RedisException(error + ". channel: " + channel));
             }
         } else if (code == ':') {
             String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
