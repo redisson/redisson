@@ -16,9 +16,9 @@
 package org.redisson;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -125,8 +125,8 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public <V> List<RBucket<V>> getBuckets(String pattern) {
-        Future<Queue<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
-        Queue<String> keys = commandExecutor.get(r);
+        Future<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
+        Collection<String> keys = commandExecutor.get(r);
         List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
         for (Object key : keys) {
             if(key != null) {
@@ -326,7 +326,7 @@ public class Redisson implements RedissonClient {
      * @return
      */
     @Override
-    public Queue<String> findKeysByPattern(String pattern) {
+    public Collection<String> findKeysByPattern(String pattern) {
         return commandExecutor.get(findKeysByPatternAsync(pattern));
     }
 
@@ -342,7 +342,7 @@ public class Redisson implements RedissonClient {
      * @return
      */
     @Override
-    public Future<Queue<String>> findKeysByPatternAsync(String pattern) {
+    public Future<Collection<String>> findKeysByPatternAsync(String pattern) {
         return commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
     }
 

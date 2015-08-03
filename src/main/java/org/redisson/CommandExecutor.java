@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 
@@ -71,7 +72,7 @@ public interface CommandExecutor {
 
     <T, R> R write(String key, RedisCommand<T> command, Object ... params);
 
-    <T, R> Future<Queue<R>> readAllAsync(RedisCommand<T> command, Object ... params);
+    <T, R> Future<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params);
 
     <T> Future<Void> writeAllAsync(RedisCommand<T> command, Object ... params);
 

@@ -15,12 +15,27 @@
  */
 package org.redisson;
 
-import org.redisson.core.*;
+import java.util.Collection;
+import java.util.List;
+
+import org.redisson.core.RAtomicLong;
+import org.redisson.core.RBatch;
+import org.redisson.core.RBlockingQueue;
+import org.redisson.core.RBucket;
+import org.redisson.core.RCountDownLatch;
+import org.redisson.core.RDeque;
+import org.redisson.core.RHyperLogLog;
+import org.redisson.core.RList;
+import org.redisson.core.RLock;
+import org.redisson.core.RMap;
+import org.redisson.core.RPatternTopic;
+import org.redisson.core.RQueue;
+import org.redisson.core.RScript;
+import org.redisson.core.RSet;
+import org.redisson.core.RSortedSet;
+import org.redisson.core.RTopic;
 
 import io.netty.util.concurrent.Future;
-
-import java.util.List;
-import java.util.Queue;
 
 public interface RedissonClient {
 
@@ -188,7 +203,7 @@ public interface RedissonClient {
      * @param pattern
      * @return
      */
-    Queue<String> findKeysByPattern(String pattern);
+    Collection<String> findKeysByPattern(String pattern);
 
     /**
      * Find keys by key search pattern in async mode
@@ -201,7 +216,7 @@ public interface RedissonClient {
      * @param pattern
      * @return
      */
-    Future<Queue<String>> findKeysByPatternAsync(String pattern);
+    Future<Collection<String>> findKeysByPatternAsync(String pattern);
 
     /**
      * Delete multiple objects by a key pattern
