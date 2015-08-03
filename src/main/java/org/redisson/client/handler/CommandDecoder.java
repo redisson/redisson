@@ -253,6 +253,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
+            if (data.getPromise().isDone()) {
+                log.error("promise already done, something is wrong! result: {} promise command {}", result, data);
+                return;
+            }
             data.getPromise().setSuccess(result);
         }
     }
