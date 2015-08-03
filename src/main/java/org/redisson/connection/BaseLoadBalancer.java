@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -179,20 +180,8 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     return conn;
                 }
                 try {
-                    conn = entry.getClient().connect();
-                    if (config.getPassword() != null) {
-                        conn.sync(RedisCommands.AUTH, config.getPassword());
-                    }
-                    if (config.getDatabase() != 0) {
-                        conn.sync(RedisCommands.SELECT, config.getDatabase());
-                    }
-                    if (config.getClientName() != null) {
-                        conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
-                    }
-                    log.debug("new connection created: {}", conn);
-
-                    return conn;
-                } catch (RedisConnectionException e) {
+                    return entry.connect(config);
+                } catch (RedisException e) {
                     entry.getConnectionsSemaphore().release();
                     // TODO connection scoring
                     log.warn("Can't connect to {}, trying next connection!", entry.getClient().getAddr());

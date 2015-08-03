@@ -22,12 +22,8 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SingleEntry extends MasterSlaveEntry {
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
 
     public SingleEntry(Codec codec, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         super(codec, connectionManager, config);

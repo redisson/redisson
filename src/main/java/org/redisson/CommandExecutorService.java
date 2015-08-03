@@ -348,7 +348,9 @@ public class CommandExecutorService implements CommandExecutor {
                     attemptPromise.setFailure(ex.get());
                     return;
                 }
-                attemptPromise.cancel(true);
+                if (!attemptPromise.cancel(false)) {
+                    return;
+                }
 
                 int count = attempt + 1;
                 async(readOnlyMode, slot, messageDecoder, codec, command, params, mainPromise, count);

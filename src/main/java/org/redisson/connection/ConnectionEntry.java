@@ -19,10 +19,16 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
+import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.protocol.RedisCommands;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConnectionEntry {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private volatile boolean freezed;
     private final RedisClient client;
@@ -53,6 +59,23 @@ public class ConnectionEntry {
 
     public Queue<RedisConnection> getConnections() {
         return connections;
+    }
+
+    public RedisConnection connect(MasterSlaveServersConfig config) {
+        RedisConnection conn = client.connect();
+        if (config.getPassword() != null) {
+            conn.sync(RedisCommands.AUTH, config.getPassword());
+        }
+        if (config.getDatabase() != 0) {
+            conn.sync(RedisCommands.SELECT, config.getDatabase());
+        }
+        if (config.getClientName() != null) {
+            conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
+        }
+
+        log.debug("new connection created: {}", conn);
+
+        return conn;
     }
 
 }

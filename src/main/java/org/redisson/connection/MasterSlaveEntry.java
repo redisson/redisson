@@ -24,6 +24,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
 //TODO ping support
 public class MasterSlaveEntry {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    final Logger log = LoggerFactory.getLogger(getClass());
 
     LoadBalancer slaveBalancer;
     volatile ConnectionEntry masterEntry;
@@ -124,20 +125,8 @@ public class MasterSlaveEntry {
         }
 
         try {
-            conn = masterEntry.getClient().connect();
-            if (config.getPassword() != null) {
-                conn.sync(RedisCommands.AUTH, config.getPassword());
-            }
-            if (config.getDatabase() != 0) {
-                conn.sync(RedisCommands.SELECT, config.getDatabase());
-            }
-            if (config.getClientName() != null) {
-                conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
-            }
-            log.debug("new connection created: {}", conn);
-
-            return conn;
-        } catch (RedisConnectionException e) {
+            return masterEntry.connect(config);
+        } catch (RedisException e) {
             masterEntry.getConnectionsSemaphore().release();
             throw e;
         }

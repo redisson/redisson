@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
@@ -44,6 +45,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.CharsetUtil;
+import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -125,7 +127,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
 
             if (i == commands.getCommands().size()) {
-                commands.getPromise().setSuccess(null);
+                Promise<Void> promise = commands.getPromise();
+                if (!promise.trySuccess(null) && promise.isCancelled()) {
+                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+                }
 
                 ctx.channel().attr(CommandsQueue.REPLAY).remove();
                 ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
@@ -150,7 +155,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             String result = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
 
-            handleResult(data, parts, result, false);
+            handleResult(data, parts, result, false, channel);
         } else if (code == '-') {
             String error = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
@@ -170,14 +175,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
             Object result = Long.valueOf(status);
-            handleResult(data, parts, result, false);
+            handleResult(data, parts, result, false, channel);
         } else if (code == '$') {
             ByteBuf buf = readBytes(in);
             Object result = null;
             if (buf != null) {
                 result = decoder(data, parts, currentDecoder).decode(buf, state());
             }
-            handleResult(data, parts, result, false);
+            handleResult(data, parts, result, false, channel);
         } else if (code == '*') {
             long size = readLong(in);
 //            state().setSize(size);
@@ -229,7 +234,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
 
         if (data != null) {
-            handleResult(data, parts, result, true);
+            handleResult(data, parts, result, true, channel);
         } else {
             RedisPubSubConnection pubSubConnection = (RedisPubSubConnection)channel.attr(RedisPubSubConnection.CONNECTION).get();
             if (result instanceof PubSubStatusMessage) {
@@ -242,7 +247,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    private void handleResult(CommandData<Object, Object> data, List<Object> parts, Object result, boolean multiResult) {
+    private void handleResult(CommandData<Object, Object> data, List<Object> parts, Object result, boolean multiResult, Channel channel) {
         if (data != null) {
             if (multiResult) {
                 result = data.getCommand().getConvertor().convertMulti(result);
@@ -253,11 +258,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            if (data.getPromise().isDone()) {
-                log.error("promise already done, something is wrong! result: {} promise command {}", result, data);
-                return;
+            if (!data.getPromise().trySuccess(result) && data.getPromise().isCancelled()) {
+                log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, data, result);
             }
-            data.getPromise().setSuccess(result);
         }
     }
 
