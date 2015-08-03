@@ -56,7 +56,7 @@ Recent Releases
 ####Please Note: trunk is current development branch.
 
 ####03-Aug-2015 - version 2.1.0 released  
-Feature - `RTopic` status subscribtion/unsubscription listener  
+Feature - `RTopic` subscribtion/unsubscription status listener added  
 Feature - `RSet`: `removeRandom` and `removeRandomAsync` methods added  
 Improvement - `RList`: `retainAll`,`containsAll`, `indexOf`, `lastIndexOf` optimization  
 __Breaking api change__ - `findKeysByPattern` response interface changed to `Collection`  
