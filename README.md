@@ -220,7 +220,7 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.0.0</version>
+       <version>2.1.0</version>
     </dependency>
 
 ### Supported by
