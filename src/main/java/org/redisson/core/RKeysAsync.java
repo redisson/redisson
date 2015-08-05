@@ -2,12 +2,14 @@ package org.redisson.core;
 
 import java.util.Collection;
 
-public interface RKeys extends RKeysAsync {
+import io.netty.util.concurrent.Future;
 
-    String randomKey();
+public interface RKeysAsync {
+
+    Future<String> randomKeyAsync();
 
     /**
-     * Find keys by key search pattern
+     * Find keys by key search pattern in async mode
      *
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
@@ -17,10 +19,10 @@ public interface RKeys extends RKeysAsync {
      * @param pattern
      * @return
      */
-    Collection<String> findKeysByPattern(String pattern);
+    Future<Collection<String>> findKeysByPatternAsync(String pattern);
 
     /**
-     * Delete multiple objects by a key pattern
+     * Delete multiple objects by a key pattern in async mode
      *
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
@@ -30,14 +32,14 @@ public interface RKeys extends RKeysAsync {
      * @param pattern
      * @return
      */
-    long deleteByPattern(String pattern);
+    Future<Long> deleteByPatternAsync(String pattern);
 
     /**
-     * Delete multiple objects by name
+     * Delete multiple objects by name in async mode
      *
      * @param keys - object names
      * @return
      */
-    long delete(String ... keys);
+    Future<Long> deleteAsync(String ... keys);
 
 }
