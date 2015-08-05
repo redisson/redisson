@@ -14,7 +14,7 @@ public interface RKeys extends RKeysAsync {
      *
      * @return
      */
-    Iterable<String> keysIterable(String pattern);
+    Iterable<String> keysIterableByPattern(String pattern);
 
     /**
      * Get keys using iterator. Keys traversing with SCAN operation
