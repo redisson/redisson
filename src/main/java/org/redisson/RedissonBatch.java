@@ -24,6 +24,7 @@ import org.redisson.core.RBlockingQueueAsync;
 import org.redisson.core.RBucketAsync;
 import org.redisson.core.RDequeAsync;
 import org.redisson.core.RHyperLogLogAsync;
+import org.redisson.core.RKeysAsync;
 import org.redisson.core.RListAsync;
 import org.redisson.core.RMapAsync;
 import org.redisson.core.RQueueAsync;
@@ -35,10 +36,9 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonBatch implements RBatch {
 
-    CommandBatchExecutorService executorService;
+    private final CommandBatchExecutorService executorService;
 
     public RedissonBatch(ConnectionManager connectionManager) {
-        super();
         this.executorService = new CommandBatchExecutorService(connectionManager);
     }
 
@@ -95,6 +95,11 @@ public class RedissonBatch implements RBatch {
     @Override
     public RScriptAsync getScript() {
         return new RedissonScript(executorService);
+    }
+
+    @Override
+    public RKeysAsync getKeys() {
+        return new RedissonKeys(executorService);
     }
 
     @Override

@@ -121,6 +121,14 @@ public interface RBatch {
     RScriptAsync getScript();
 
     /**
+     * Returns keys operations.
+     * Each of Redis/Redisson object associated with own key
+     *
+     * @return
+     */
+    RKeysAsync getKeys();
+
+    /**
      * Executes all operations accumulated during async methods invocations.
      *
      * In cluster configurations operations grouped by slot ids
