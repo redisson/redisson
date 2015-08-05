@@ -41,6 +41,7 @@ Features
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
 * Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
 * Thread-safe implementation  
+* All commands are executed in an atomic way
 * Supports Redis pipeline (command batches)
 * Supports OSGi  
 * With over 210 unit tests  
