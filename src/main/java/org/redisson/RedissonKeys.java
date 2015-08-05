@@ -72,9 +72,9 @@ public class RedissonKeys implements RKeys {
 
     private ListScanResult<String> scanIterator(int slot, long startPos, String pattern) {
         if (pattern == null) {
-            return commandExecutor.read(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+            return commandExecutor.write(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
         }
-        return commandExecutor.read(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+        return commandExecutor.write(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
     }
 
     private Iterator<String> createKeysIterator(final int slot, final String pattern) {
@@ -132,7 +132,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public Future<String> randomKeyAsync() {
-        return commandExecutor.readRandomAsync(RedisCommands.RANDOM_KEY, StringCodec.INSTANCE);
+        return commandExecutor.readRandomAsync(RedisCommands.RANDOM_KEY);
     }
 
     /**

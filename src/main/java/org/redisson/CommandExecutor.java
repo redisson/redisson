@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -82,8 +81,8 @@ public interface CommandExecutor {
 
     <V> V get(Future<V> future);
 
-    <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Codec codec, Object ... params);
+    <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Object ... params);
 
-    <T, R> R read(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
+    <T, R> R write(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
 
 }
