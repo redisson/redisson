@@ -26,6 +26,7 @@ Features
     5. read data using slave servers, write data using master server
 * Master with Slave servers mode: read data using slave servers, write data using master server
 * Single server mode: read and write data using single server
+* Lua scripting  
 * Distributed implementation of `java.util.List`  
 * Distributed implementation of `java.util.Set`  
 * Distributed implementation of `java.util.SortedSet`  
