@@ -177,6 +177,17 @@ public class CommandExecutorService implements CommandExecutor {
         return mainPromise;
     }
 
+    public <T, R> R read(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
+        Future<R> res = readAsync(slot, codec, command, params);
+        return get(res);
+    }
+
+    public <T, R> Future<R> readAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
+        Promise<R> mainPromise = connectionManager.newPromise();
+        async(true, slot, null, codec, command, params, mainPromise, 0);
+        return mainPromise;
+    }
+
     public <T, R> Future<R> readAsync(String key, RedisCommand<T> command, Object ... params) {
         return readAsync(key, connectionManager.getCodec(), command, params);
     }

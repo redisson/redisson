@@ -4,6 +4,8 @@ import java.util.Collection;
 
 public interface RKeys extends RKeysAsync {
 
+    Iterable<String> keysIterable();
+
     String randomKey();
 
     /**

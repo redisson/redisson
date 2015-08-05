@@ -1,12 +1,18 @@
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.core.RKeys;
+import org.redisson.misc.CompositeIterable;
 
 import io.netty.util.concurrent.Future;
 
@@ -17,6 +23,74 @@ public class RedissonKeys implements RKeys {
     public RedissonKeys(CommandExecutor commandExecutor) {
         super();
         this.commandExecutor = commandExecutor;
+    }
+
+
+    @Override
+    public Iterable<String> keysIterable() {
+        List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
+        for (final Integer slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
+            Iterable<String> iterable = new Iterable<String>() {
+                @Override
+                public Iterator<String> iterator() {
+                    return createKeysIterator(slot);
+                }
+            };
+            iterables.add(iterable);
+        }
+        return new CompositeIterable<String>(iterables);
+    }
+
+    private ListScanResult<String> scanIterator(int slot, long startPos) {
+        return commandExecutor.read(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+    }
+
+    private Iterator<String> createKeysIterator(final int slot) {
+        return new Iterator<String>() {
+
+            private Iterator<String> iter;
+            private Long iterPos;
+
+            private boolean removeExecuted;
+            private String value;
+
+            @Override
+            public boolean hasNext() {
+                if (iter == null) {
+                    ListScanResult<String> res = scanIterator(slot, 0);
+                    iter = res.getValues().iterator();
+                    iterPos = res.getPos();
+                } else if (!iter.hasNext() && iterPos != 0) {
+                    ListScanResult<String> res = scanIterator(slot, iterPos);
+                    iter = res.getValues().iterator();
+                    iterPos = res.getPos();
+                }
+                return iter.hasNext();
+            }
+
+            @Override
+            public String next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException("No such element");
+                }
+
+                value = iter.next();
+                removeExecuted = false;
+                return value;
+            }
+
+            @Override
+            public void remove() {
+                if (removeExecuted) {
+                    throw new IllegalStateException("Element been already deleted");
+                }
+
+                iter.remove();
+                delete(value);
+                removeExecuted = true;
+            }
+
+        };
     }
 
     @Override

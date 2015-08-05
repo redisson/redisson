@@ -84,4 +84,6 @@ public interface CommandExecutor {
 
     <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Codec codec, Object ... params);
 
+    <T, R> R read(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
+
 }
