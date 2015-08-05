@@ -6,6 +6,11 @@ import io.netty.util.concurrent.Future;
 
 public interface RKeysAsync {
 
+    /**
+     * Get random key in async mode
+     *
+     * @return
+     */
     Future<String> randomKeyAsync();
 
     /**

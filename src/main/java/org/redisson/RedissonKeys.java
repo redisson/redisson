@@ -25,6 +25,20 @@ public class RedissonKeys implements RKeys {
         this.commandExecutor = commandExecutor;
     }
 
+    @Override
+    public Iterable<String> keysIterable(final String pattern) {
+        List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
+        for (final Integer slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
+            Iterable<String> iterable = new Iterable<String>() {
+                @Override
+                public Iterator<String> iterator() {
+                    return createKeysIterator(slot, pattern);
+                }
+            };
+            iterables.add(iterable);
+        }
+        return new CompositeIterable<String>(iterables);
+    }
 
     @Override
     public Iterable<String> keysIterable() {
@@ -33,7 +47,7 @@ public class RedissonKeys implements RKeys {
             Iterable<String> iterable = new Iterable<String>() {
                 @Override
                 public Iterator<String> iterator() {
-                    return createKeysIterator(slot);
+                    return createKeysIterator(slot, null);
                 }
             };
             iterables.add(iterable);
@@ -41,11 +55,14 @@ public class RedissonKeys implements RKeys {
         return new CompositeIterable<String>(iterables);
     }
 
-    private ListScanResult<String> scanIterator(int slot, long startPos) {
-        return commandExecutor.read(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+    private ListScanResult<String> scanIterator(int slot, long startPos, String pattern) {
+        if (pattern == null) {
+            return commandExecutor.read(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+        }
+        return commandExecutor.read(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
     }
 
-    private Iterator<String> createKeysIterator(final int slot) {
+    private Iterator<String> createKeysIterator(final int slot, final String pattern) {
         return new Iterator<String>() {
 
             private Iterator<String> iter;
@@ -57,11 +74,11 @@ public class RedissonKeys implements RKeys {
             @Override
             public boolean hasNext() {
                 if (iter == null) {
-                    ListScanResult<String> res = scanIterator(slot, 0);
+                    ListScanResult<String> res = scanIterator(slot, 0, pattern);
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 } else if (!iter.hasNext() && iterPos != 0) {
-                    ListScanResult<String> res = scanIterator(slot, iterPos);
+                    ListScanResult<String> res = scanIterator(slot, iterPos, pattern);
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 }
