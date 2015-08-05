@@ -24,13 +24,15 @@ import org.redisson.client.codec.Codec;
 
 public interface LoadBalancer {
 
+    void shutdownAsync();
+
     void shutdown();
 
     void unfreeze(String host, int port);
 
     Collection<RedisPubSubConnection> freeze(String host, int port);
 
-    void init(Codec codec, MasterSlaveServersConfig config);
+    void init(MasterSlaveServersConfig config);
 
     void add(SubscribesConnectionEntry entry);
 

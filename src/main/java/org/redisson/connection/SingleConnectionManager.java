@@ -40,7 +40,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     protected void initEntry(MasterSlaveServersConfig config) {
-        SingleEntry entry = new SingleEntry(codec, this, config);
+        SingleEntry entry = new SingleEntry(this, config);
         entries.put(Integer.MAX_VALUE, entry);
     }
 

@@ -30,9 +30,11 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
@@ -122,12 +124,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void initEntry(MasterSlaveServersConfig config) {
-        MasterSlaveEntry entry = new MasterSlaveEntry(codec, this, config);
+        MasterSlaveEntry entry = new MasterSlaveEntry(this, config);
         entries.put(Integer.MAX_VALUE, entry);
-    }
-
-    public static void main(String[] args) {
-        System.out.println(1210 % 100);
     }
 
     protected void init(Config cfg) {
@@ -141,14 +139,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this.codec = cfg.getCodec();
     }
 
+    @Override
     public RedisClient createClient(String host, int port) {
         return createClient(host, port, config.getTimeout());
     }
 
+    @Override
     public RedisClient createClient(String host, int port, int timeout) {
         return new RedisClient(group, socketChannelClass, host, port, timeout);
     }
 
+    @Override
     public <T> FutureListener<T> createReleaseWriteListener(final int slot,
                                     final RedisConnection conn, final Timeout timeout) {
         return new FutureListener<T>() {
@@ -161,6 +162,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         };
     }
 
+    @Override
     public <T> FutureListener<T> createReleaseReadListener(final int slot,
                                     final RedisConnection conn, final Timeout timeout) {
         return new FutureListener<T>() {

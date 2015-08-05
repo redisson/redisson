@@ -23,11 +23,8 @@ import java.util.List;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,25 +42,22 @@ public class MasterSlaveEntry {
     volatile ConnectionEntry masterEntry;
 
     final MasterSlaveServersConfig config;
-    final Codec codec;
     final ConnectionManager connectionManager;
 
-    public MasterSlaveEntry(Codec codec, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
-        this.codec = codec;
+    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
         this.config = config;
 
         slaveBalancer = config.getLoadBalancer();
-        slaveBalancer.init(codec, config);
+        slaveBalancer.init(config);
 
         List<URI> addresses = new ArrayList<URI>(config.getSlaveAddresses());
         addresses.add(config.getMasterAddress());
         for (URI address : addresses) {
             RedisClient client = connectionManager.createClient(address.getHost(), address.getPort());
-            SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
-                    config.getSlaveConnectionPoolSize(),
-                    config.getSlaveSubscriptionConnectionPoolSize());
-            slaveBalancer.add(entry);
+            slaveBalancer.add(new SubscribesConnectionEntry(client,
+                    this.config.getSlaveConnectionPoolSize(),
+                    this.config.getSlaveSubscriptionConnectionPoolSize()));
         }
         if (config.getSlaveAddresses().size() > 1) {
             slaveDown(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
@@ -73,8 +67,8 @@ public class MasterSlaveEntry {
     }
 
     public void setupMasterEntry(String host, int port) {
-        RedisClient masterClient = connectionManager.createClient(host, port);
-        masterEntry = new ConnectionEntry(masterClient, config.getMasterConnectionPoolSize());
+        RedisClient client = connectionManager.createClient(host, port);
+        masterEntry = new ConnectionEntry(client, config.getMasterConnectionPoolSize());
     }
 
     public Collection<RedisPubSubConnection> slaveDown(String host, int port) {
@@ -113,7 +107,7 @@ public class MasterSlaveEntry {
 
     public void shutdownMasterAsync() {
         masterEntry.getClient().shutdownAsync();
-        slaveBalancer.shutdown();
+        slaveBalancer.shutdownAsync();
     }
 
     public RedisConnection connectionWriteOp() {

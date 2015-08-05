@@ -28,7 +28,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.misc.ReclosableLatch;
 import org.slf4j.Logger;
@@ -38,15 +37,12 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private Codec codec;
-
     private MasterSlaveServersConfig config;
 
     private final ReclosableLatch clientsEmpty = new ReclosableLatch();
     final Queue<SubscribesConnectionEntry> clients = new ConcurrentLinkedQueue<SubscribesConnectionEntry>();
 
-    public void init(Codec codec, MasterSlaveServersConfig config) {
-        this.codec = codec;
+    public void init(MasterSlaveServersConfig config) {
         this.config = config;
     }
 
@@ -224,6 +220,12 @@ abstract class BaseLoadBalancer implements LoadBalancer {
     public void shutdown() {
         for (SubscribesConnectionEntry entry : clients) {
             entry.getClient().shutdown();
+        }
+    }
+
+    public void shutdownAsync() {
+        for (SubscribesConnectionEntry entry : clients) {
+            entry.getClient().shutdownAsync();
         }
     }
 

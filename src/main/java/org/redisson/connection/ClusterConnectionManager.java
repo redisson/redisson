@@ -62,7 +62,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 RedisConnection connection = client.connect();
                 String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
 
-                Map<Integer, ClusterPartition> partitions = extractPartitions(nodesValue);
+                Map<Integer, ClusterPartition> partitions = parsePartitions(nodesValue);
                 for (ClusterPartition partition : partitions.values()) {
                     addMasterEntry(partition, cfg);
                 }
@@ -85,14 +85,28 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private void addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
         if (partition.isMasterFail()) {
+            log.warn("master: {} for slot range: {}-{} add failed. Reason - server has FAIL flag", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
             return;
         }
 
-        MasterSlaveServersConfig c = create(cfg);
-        log.info("master: {} for slot range: {}-{} added", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
-        c.setMasterAddress(partition.getMasterAddress());
+        RedisClient client = createClient(partition.getMasterAddress().getHost(), partition.getMasterAddress().getPort(), cfg.getTimeout());
+        try {
+            RedisConnection c = client.connect();
+            String info = c.sync(RedisCommands.CLUSTER_INFO);
+            Map<String, String> params = parseInfo(info);
+            if ("fail".equals(params.get("cluster_state"))) {
+                log.warn("master: {} for slot range: {}-{} add failed. Reason - cluster_state:fail", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
+                return;
+            }
+        } finally {
+            client.shutdownAsync();
+        }
 
-        SingleEntry entry = new SingleEntry(codec, this, c);
+        MasterSlaveServersConfig config = create(cfg);
+        log.info("master: {} for slot range: {}-{} added", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
+        config.setMasterAddress(partition.getMasterAddress());
+
+        SingleEntry entry = new SingleEntry(this, config);
         entries.put(partition.getEndSlot(), entry);
         lastPartitions.put(partition.getEndSlot(), partition);
     }
@@ -110,7 +124,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                             log.debug("cluster nodes state: {}", nodesValue);
 
-                            Map<Integer, ClusterPartition> partitions = extractPartitions(nodesValue);
+                            Map<Integer, ClusterPartition> partitions = parsePartitions(nodesValue);
                             for (ClusterPartition newPart : partitions.values()) {
                                 for (ClusterPartition part : lastPartitions.values()) {
                                     if (newPart.getMasterAddress().equals(part.getMasterAddress())) {
@@ -187,7 +201,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private Map<Integer, ClusterPartition> extractPartitions(String nodesValue) {
+    private Map<String, String> parseInfo(String value) {
+        Map<String, String> result = new HashMap<String, String>();
+        for (String entry : value.split("\r\n|\n")) {
+            String[] parts = entry.split(":");
+            result.put(parts[0], parts[1]);
+        }
+        return result;
+    }
+
+    private Map<Integer, ClusterPartition> parsePartitions(String nodesValue) {
         Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
         Map<Integer, ClusterPartition> result = new HashMap<Integer, ClusterPartition>();
         List<ClusterNodeInfo> nodes = parse(nodesValue);
