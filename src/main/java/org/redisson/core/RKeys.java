@@ -20,7 +20,7 @@ import java.util.Collection;
 public interface RKeys extends RKeysAsync {
 
     /**
-     * Get keys by pattern using iterator. Keys traversing with SCAN operation
+     * Get all keys by pattern using iterator. Keys traversing with SCAN operation
      *
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
@@ -29,14 +29,14 @@ public interface RKeys extends RKeysAsync {
      *
      * @return
      */
-    Iterable<String> keysIterableByPattern(String pattern);
+    Iterable<String> getKeysByPattern(String pattern);
 
     /**
-     * Get keys using iterator. Keys traversing with SCAN operation
+     * Get all keys using iterator. Keys traversing with SCAN operation
      *
      * @return
      */
-    Iterable<String> keysIterable();
+    Iterable<String> getKeys();
 
     /**
      * Get random key

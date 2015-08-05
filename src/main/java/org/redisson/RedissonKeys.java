@@ -41,7 +41,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Iterable<String> keysIterableByPattern(final String pattern) {
+    public Iterable<String> getKeysByPattern(final String pattern) {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
         for (final Integer slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
             Iterable<String> iterable = new Iterable<String>() {
@@ -56,7 +56,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Iterable<String> keysIterable() {
+    public Iterable<String> getKeys() {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
         for (final Integer slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
             Iterable<String> iterable = new Iterable<String>() {
