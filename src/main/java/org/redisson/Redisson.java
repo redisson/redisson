@@ -295,6 +295,12 @@ public class Redisson implements RedissonClient {
         return new RedissonCountDownLatch(commandExecutor, name, id);
     }
 
+    /**
+     * Returns keys operations.
+     * Each of Redis/Redisson object associated with own key
+     *
+     * @return
+     */
     @Override
     public RKeys getKeys() {
         return new RedissonKeys(commandExecutor);

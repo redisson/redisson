@@ -179,6 +179,12 @@ public interface RedissonClient {
      */
     RBatch createBatch();
 
+    /**
+     * Returns keys operations.
+     * Each of Redis/Redisson object associated with own key
+     *
+     * @return
+     */
     RKeys getKeys();
 
     /**
