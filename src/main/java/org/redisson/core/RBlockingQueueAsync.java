@@ -15,6 +15,7 @@
  */
 package org.redisson.core;
 
+import java.util.Collection;
 import java.util.concurrent.*;
 
 import io.netty.util.concurrent.Future;
@@ -26,6 +27,10 @@ import io.netty.util.concurrent.Future;
  * @param <V> the type of elements held in this collection
  */
 public interface RBlockingQueueAsync<V> extends RQueueAsync<V>, RExpirableAsync {
+
+    Future<Integer> drainToAsync(Collection<? super V> c, int maxElements);
+
+    Future<Integer> drainToAsync(Collection<? super V> c);
 
     Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit);
 
