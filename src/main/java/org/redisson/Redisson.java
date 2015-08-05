@@ -35,6 +35,7 @@ import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
+import org.redisson.core.RKeys;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
@@ -292,6 +293,11 @@ public class Redisson implements RedissonClient {
     @Override
     public RCountDownLatch getCountDownLatch(String name) {
         return new RedissonCountDownLatch(commandExecutor, name, id);
+    }
+
+    @Override
+    public RKeys getKeys() {
+        return new RedissonKeys(commandExecutor);
     }
 
     /**

@@ -43,6 +43,7 @@ import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 
 public interface RedisCommands {
 
+    RedisStrictCommand<String> RANDOM_KEY = new RedisStrictCommand<String>("RANDOMKEY");
     RedisStrictCommand<String> PING = new RedisStrictCommand<String>("PING");
 
     RedisStrictCommand<Void> UNWATCH = new RedisStrictCommand<Void>("UNWATCH", new VoidReplayConvertor());

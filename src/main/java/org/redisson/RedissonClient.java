@@ -25,6 +25,7 @@ import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
+import org.redisson.core.RKeys;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
@@ -178,6 +179,8 @@ public interface RedissonClient {
      */
     RBatch createBatch();
 
+    RKeys getKeys();
+
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server
      */
@@ -203,6 +206,8 @@ public interface RedissonClient {
      * @param pattern
      * @return
      */
+    // use RKeys.findKeysByPattern
+    @Deprecated
     Collection<String> findKeysByPattern(String pattern);
 
     /**
@@ -216,6 +221,8 @@ public interface RedissonClient {
      * @param pattern
      * @return
      */
+    // use RKeys.findKeysByPatternAsync
+    @Deprecated
     Future<Collection<String>> findKeysByPatternAsync(String pattern);
 
     /**
@@ -229,6 +236,8 @@ public interface RedissonClient {
      * @param pattern
      * @return
      */
+    // use RKeys.deleteByPattern
+    @Deprecated
     long deleteByPattern(String pattern);
 
     /**
@@ -242,6 +251,8 @@ public interface RedissonClient {
      * @param pattern
      * @return
      */
+    // use RKeys.deleteByPatternAsync
+    @Deprecated
     Future<Long> deleteByPatternAsync(String pattern);
 
     /**
@@ -250,6 +261,8 @@ public interface RedissonClient {
      * @param keys - object names
      * @return
      */
+    // use RKeys.delete
+    @Deprecated
     long delete(String ... keys);
 
     /**
@@ -258,6 +271,8 @@ public interface RedissonClient {
      * @param keys - object names
      * @return
      */
+    // use RKeys.deleteAsync
+    @Deprecated
     Future<Long> deleteAsync(String ... keys);
 
     /**

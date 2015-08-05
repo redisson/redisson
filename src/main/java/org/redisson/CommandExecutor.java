@@ -82,4 +82,6 @@ public interface CommandExecutor {
 
     <V> V get(Future<V> future);
 
+    <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Codec codec, Object ... params);
+
 }

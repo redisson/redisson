@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -99,6 +100,15 @@ public class CommandExecutorService implements CommandExecutor {
         for (Integer slot : connectionManager.getEntries().keySet()) {
             async(true, slot, null, connectionManager.getCodec(), command, params, promise, 0);
         }
+        return mainPromise;
+    }
+
+    public <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Codec codec, Object ... params) {
+        final Promise<R> mainPromise = connectionManager.newPromise();
+        List<Integer> slots = new ArrayList<Integer>(connectionManager.getEntries().keySet());
+        Collections.shuffle(slots);
+        Integer slot = slots.get(0);
+        async(true, slot, null, codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
