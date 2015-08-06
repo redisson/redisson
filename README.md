@@ -1,8 +1,8 @@
-##Redisson - distributed and scalable Java data structures on top of Redis server. Advanced Redis client
+##Redisson - distributed and scalable Java data structures on top of Redis server. Advanced Java Redis client
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
-Based on high-performance async and lock-free Redis client and [Netty 4](http://netty.io) framework.  
+Based on high-performance async and lock-free Java Redis client and [Netty 4](http://netty.io) framework.  
 Redis 2.8+ and JDK 1.6+ compatible  
 
 
