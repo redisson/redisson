@@ -42,7 +42,7 @@ Features
 * Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
 * Thread-safe implementation  
 * All commands are executed in an atomic way
-* Supports Redis pipeline (command batches)
+* Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)
 * Supports OSGi  
 * With over 210 unit tests  
 
