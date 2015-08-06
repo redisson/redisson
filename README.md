@@ -40,6 +40,7 @@ Features
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
 * Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
+* Each object has an asynchronous interface
 * Thread-safe implementation  
 * All commands are executed in an atomic way
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)
