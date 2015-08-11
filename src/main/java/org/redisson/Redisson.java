@@ -28,6 +28,9 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
+import org.redisson.core.ClusterNode;
+import org.redisson.core.Node;
+import org.redisson.core.NodesGroup;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBlockingQueue;
@@ -412,6 +415,8 @@ public class Redisson implements RedissonClient {
      * @param keys - object names
      * @return
      */
+    // use RKeys.delete
+    @Deprecated
     @Override
     public long delete(String ... keys) {
         return commandExecutor.get(deleteAsync(keys));
@@ -423,6 +428,8 @@ public class Redisson implements RedissonClient {
      * @param keys - object names
      * @return
      */
+    // use RKeys.deleteAsync
+    @Deprecated
     @Override
     public Future<Long> deleteAsync(String ... keys) {
         return commandExecutor.writeAllAsync(RedisCommands.DEL, new SlotCallback<Long, Long>() {
@@ -437,6 +444,27 @@ public class Redisson implements RedissonClient {
                 return results.get();
             }
         }, (Object[])keys);
+    }
+
+    /**
+     * Get Redis nodes group for server operations
+     *
+     * @return
+     */
+    public NodesGroup<Node> getNodesGroup() {
+        return new RedisNodes<Node>(connectionManager);
+    }
+
+    /**
+     * Get Redis cluster nodes group for server operations
+     *
+     * @return
+     */
+    public NodesGroup<ClusterNode> getClusterNodesGroup() {
+        if (!config.isClusterConfig()) {
+            throw new IllegalStateException("Redisson not in cluster mode!");
+        }
+        return new RedisNodes<ClusterNode>(connectionManager);
     }
 
     /**

@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +40,10 @@ import io.netty.util.concurrent.Promise;
  */
 //TODO ping support
 public interface ConnectionManager {
+
+    Collection<RedisClientEntry> getClients();
+
+    void shutdownAsync(RedisClient client);
 
     int calcSlot(String key);
 

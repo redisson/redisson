@@ -16,7 +16,9 @@
 package org.redisson.connection;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -30,11 +32,9 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
@@ -77,6 +77,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected final NavigableMap<Integer, MasterSlaveEntry> entries = new ConcurrentSkipListMap<Integer, MasterSlaveEntry>();
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
+
+    private final Set<RedisClientEntry> clients = Collections.newSetFromMap(new ConcurrentHashMap<RedisClientEntry, Boolean>());
 
     MasterSlaveConnectionManager() {
     }
@@ -141,7 +143,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public RedisClient createClient(String host, int port) {
-        return createClient(host, port, config.getTimeout());
+        RedisClient client = createClient(host, port, config.getTimeout());
+        clients.add(new RedisClientEntry(client));
+        return client;
+    }
+
+    public void shutdownAsync(RedisClient client) {
+        clients.remove(new RedisClientEntry(client));
+        client.shutdownAsync();
     }
 
     @Override
@@ -487,6 +496,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         timer.stop();
         group.shutdownGracefully().syncUninterruptibly();
+    }
+
+    public Collection<RedisClientEntry> getClients() {
+        return Collections.unmodifiableCollection(clients);
     }
 
     @Override

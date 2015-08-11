@@ -23,9 +23,27 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 public class RedisClientTest {
+
+    @Test
+    public void testConnectAsync() throws InterruptedException {
+        RedisClient c = new RedisClient("localhost", 6379);
+        Future<RedisConnection> f = c.connectAsync();
+        final CountDownLatch l = new CountDownLatch(1);
+        f.addListener(new FutureListener<RedisConnection>() {
+            @Override
+            public void operationComplete(Future<RedisConnection> future) throws Exception {
+                RedisConnection conn = future.get();
+                Assert.assertEquals("PONG", conn.sync(RedisCommands.PING));
+                l.countDown();
+            }
+        });
+        l.await();
+    }
 
     @Test
     public void testSubscribe() throws InterruptedException {

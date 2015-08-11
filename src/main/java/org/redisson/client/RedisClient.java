@@ -26,6 +26,7 @@ import org.redisson.client.handler.ConnectionWatchdog;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -35,7 +36,9 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.Promise;
 
 public class RedisClient {
 
@@ -87,6 +90,23 @@ public class RedisClient {
         } catch (Exception e) {
             throw new RedisConnectionException("unable to connect", e);
         }
+    }
+
+    public Future<RedisConnection> connectAsync() {
+        final Promise<RedisConnection> f = bootstrap.group().next().newPromise();
+        ChannelFuture channelFuture = bootstrap.connect();
+        channelFuture.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (future.isSuccess()) {
+                    RedisConnection c = new RedisConnection(RedisClient.this, future.channel());
+                    f.setSuccess(c);
+                } else {
+                    f.setFailure(future.cause());
+                }
+            }
+        });
+        return f;
     }
 
     public RedisPubSubConnection connectPubSub() {

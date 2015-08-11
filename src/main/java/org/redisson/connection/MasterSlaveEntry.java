@@ -49,7 +49,7 @@ public class MasterSlaveEntry {
         this.config = config;
 
         slaveBalancer = config.getLoadBalancer();
-        slaveBalancer.init(config);
+        slaveBalancer.init(config, connectionManager);
 
         List<URI> addresses = new ArrayList<URI>(config.getSlaveAddresses());
         addresses.add(config.getMasterAddress());
@@ -102,11 +102,11 @@ public class MasterSlaveEntry {
         ConnectionEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
         slaveDown(host, port);
-        oldMaster.getClient().shutdownAsync();
+        connectionManager.shutdownAsync(oldMaster.getClient());
     }
 
     public void shutdownMasterAsync() {
-        masterEntry.getClient().shutdownAsync();
+        connectionManager.shutdownAsync(masterEntry.getClient());
         slaveBalancer.shutdownAsync();
     }
 

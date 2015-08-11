@@ -89,6 +89,10 @@ public class RedisConnection implements RedisCommands {
         return await(r);
     }
 
+    public <T, R> Future<R> async(RedisCommand<T> command, Object ... params) {
+        return async(null, command, params);
+    }
+
     public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
         Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
         send(new CommandData<T, R>(promise, encoder, command, params));

@@ -3,15 +3,11 @@ package org.redisson;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RBucket;
-import org.redisson.core.RMap;
 
 public class RedissonBucketTest extends BaseTest {
 

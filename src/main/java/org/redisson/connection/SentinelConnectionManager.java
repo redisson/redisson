@@ -34,6 +34,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.core.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         c.setRetryInterval(cfg.getRetryInterval());
         c.setRetryAttempts(cfg.getRetryAttempts());
         c.setTimeout(cfg.getTimeout());
+        c.setPingTimeout(cfg.getPingTimeout());
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
         c.setDatabase(cfg.getDatabase());
@@ -61,35 +63,37 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         final Set<String> addedSlaves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
-            RedisConnection connection = client.connect();
+            try {
+                RedisConnection connection = client.connect();
 
-            // TODO async
-            List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
-            String masterHost = master.get(0) + ":" + master.get(1);
-            c.setMasterAddress(masterHost);
-            log.info("master: {} added", masterHost);
+                // TODO async
+                List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
+                String masterHost = master.get(0) + ":" + master.get(1);
+                c.setMasterAddress(masterHost);
+                log.info("master: {} added", masterHost);
 //            c.addSlaveAddress(masterHost);
 
-            // TODO async
-            List<Map<String, String>> slaves = connection.sync(RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
-            for (Map<String, String> map : slaves) {
-                String ip = map.get("ip");
-                String port = map.get("port");
-                String flags = map.get("flags");
+                // TODO async
+                List<Map<String, String>> slaves = connection.sync(RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
+                for (Map<String, String> map : slaves) {
+                    String ip = map.get("ip");
+                    String port = map.get("port");
+                    String flags = map.get("flags");
 
-                if (flags.contains("s_down") || flags.contains("disconnected")) {
-                    log.info("slave: {}:{} is disconnected. skipped, params: {}", ip, port, map);
-                    continue;
+                    if (flags.contains("s_down") || flags.contains("disconnected")) {
+                        log.info("slave: {}:{} is disconnected. skipped, params: {}", ip, port, map);
+                        continue;
+                    }
+
+                    log.info("slave: {}:{} added, params: {}", ip, port, map);
+                    c.addSlaveAddress(ip + ":" + port);
+                    String host = ip + ":" + port;
+                    addedSlaves.add(host);
                 }
-
-                log.info("slave: {}:{} added, params: {}", ip, port, map);
-                c.addSlaveAddress(ip + ":" + port);
-                String host = ip + ":" + port;
-                addedSlaves.add(host);
+                break;
+            } finally {
+                client.shutdownAsync();
             }
-
-            client.shutdown();
-            break;
         }
 
         init(c);
@@ -223,11 +227,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public void shutdown() {
+        super.shutdown();
+
         for (RedisClient sentinel : sentinels) {
             sentinel.shutdown();
         }
-
-        super.shutdown();
     }
 }
 

@@ -158,6 +158,10 @@ public class Config {
         this.masterSlaveServersConfig = masterSlaveConnectionConfig;
     }
 
+    public boolean isClusterConfig() {
+        return clusterServersConfig != null;
+    }
+
     public int getThreads() {
         return threads;
     }

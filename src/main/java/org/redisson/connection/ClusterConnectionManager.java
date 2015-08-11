@@ -72,7 +72,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             } catch (RedisConnectionException e) {
                 log.warn(e.getMessage(), e);
             } finally {
-                client.shutdown();
+                client.shutdownAsync();
             }
         }
 
@@ -92,8 +92,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         RedisClient client = createClient(partition.getMasterAddress().getHost(), partition.getMasterAddress().getPort(), cfg.getTimeout());
         try {
             RedisConnection c = client.connect();
-            String info = c.sync(RedisCommands.CLUSTER_INFO);
-            Map<String, String> params = parseInfo(info);
+            Map<String, String> params = c.sync(RedisCommands.CLUSTER_INFO);
             if ("fail".equals(params.get("cluster_state"))) {
                 log.warn("master: {} for slot range: {}-{} add failed. Reason - cluster_state:fail", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
                 return;
@@ -117,7 +116,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             public void run() {
                 try {
                     for (URI addr : cfg.getNodeAddresses()) {
-                        final RedisClient client = createClient(addr.getHost(), addr.getPort());
+                        final RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getTimeout());
                         try {
                             RedisConnection connection = client.connect();
                             String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
@@ -246,6 +245,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         c.setRetryInterval(cfg.getRetryInterval());
         c.setRetryAttempts(cfg.getRetryAttempts());
         c.setTimeout(cfg.getTimeout());
+        c.setPingTimeout(cfg.getPingTimeout());
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
         c.setDatabase(cfg.getDatabase());
@@ -295,12 +295,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     @Override
     public void shutdown() {
         monitorFuture.cancel(true);
-
-        for (RedisClient sentinel : nodeClients) {
-            sentinel.shutdown();
-        }
-
         super.shutdown();
+
+        for (RedisClient client : nodeClients) {
+            client.shutdown();
+        }
     }
 }
 

@@ -19,6 +19,12 @@ package org.redisson;
 class BaseConfig<T extends BaseConfig<T>> {
 
     /**
+     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation
+     *
+     */
+    private int pingTimeout = 1000;
+
+    /**
      * Redis operation execution timeout.
      * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
      * or <code>Future</code> callback fails in case of <b>async</b> operation.
@@ -60,6 +66,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         setDatabase(config.getDatabase());
         setTimeout(config.getTimeout());
         setClientName(config.getClientName());
+        setPingTimeout(config.getPingTimeout());
     }
 
     /**
@@ -162,4 +169,20 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.clientName = clientName;
         return (T) this;
     }
+
+    /**
+     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation
+     *
+     * @return
+     */
+    public int getPingTimeout() {
+        return pingTimeout;
+    }
+    public T setPingTimeout(int pingTimeout) {
+        this.pingTimeout = pingTimeout;
+        return (T) this;
+    }
+
+
+
 }

@@ -18,6 +18,9 @@ package org.redisson;
 import java.util.Collection;
 import java.util.List;
 
+import org.redisson.core.ClusterNode;
+import org.redisson.core.Node;
+import org.redisson.core.NodesGroup;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBlockingQueue;
@@ -280,6 +283,20 @@ public interface RedissonClient {
     // use RKeys.deleteAsync
     @Deprecated
     Future<Long> deleteAsync(String ... keys);
+
+    /**
+     * Get Redis nodes group for server operations
+     *
+     * @return
+     */
+    NodesGroup<Node> getNodesGroup();
+
+    /**
+     * Get Redis cluster nodes group for server operations
+     *
+     * @return
+     */
+    NodesGroup<ClusterNode> getClusterNodesGroup();
 
     /**
      * Delete all the keys of the currently selected database

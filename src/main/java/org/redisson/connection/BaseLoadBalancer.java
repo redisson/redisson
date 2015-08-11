@@ -39,11 +39,13 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     private MasterSlaveServersConfig config;
 
+    private ConnectionManager connectionManager;
     private final ReclosableLatch clientsEmpty = new ReclosableLatch();
     final Queue<SubscribesConnectionEntry> clients = new ConcurrentLinkedQueue<SubscribesConnectionEntry>();
 
-    public void init(MasterSlaveServersConfig config) {
+    public void init(MasterSlaveServersConfig config, ConnectionManager connectionManager) {
         this.config = config;
+        this.connectionManager = connectionManager;
     }
 
     public synchronized void add(SubscribesConnectionEntry entry) {
@@ -225,7 +227,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public void shutdownAsync() {
         for (SubscribesConnectionEntry entry : clients) {
-            entry.getClient().shutdownAsync();
+            connectionManager.shutdownAsync(entry.getClient());
         }
     }
 
