@@ -44,7 +44,12 @@ public class MasterSlaveEntry {
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
-    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    final int startSlot;
+    final int endSlot;
+
+    public MasterSlaveEntry(int startSlot, int endSlot, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        this.startSlot = startSlot;
+        this.endSlot = endSlot;
         this.connectionManager = connectionManager;
         this.config = config;
 
@@ -166,6 +171,18 @@ public class MasterSlaveEntry {
     public void shutdown() {
         masterEntry.getClient().shutdown();
         slaveBalancer.shutdown();
+    }
+
+    public int getEndSlot() {
+        return endSlot;
+    }
+
+    public int getStartSlot() {
+        return startSlot;
+    }
+
+    public boolean isOwn(int slot) {
+        return slot >= startSlot && slot <= endSlot;
     }
 
 }

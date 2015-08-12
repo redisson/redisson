@@ -24,8 +24,8 @@ import org.redisson.client.protocol.RedisCommands;
 
 public class SingleEntry extends MasterSlaveEntry {
 
-    public SingleEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
-        super(connectionManager, config);
+    public SingleEntry(int startSlot, int endSlot, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        super(startSlot, endSlot, connectionManager, config);
     }
 
     @Override

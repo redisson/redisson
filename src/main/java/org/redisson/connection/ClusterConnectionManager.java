@@ -105,7 +105,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         log.info("master: {} for slot range: {}-{} added", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
         config.setMasterAddress(partition.getMasterAddress());
 
-        SingleEntry entry = new SingleEntry(this, config);
+        SingleEntry entry = new SingleEntry(partition.getStartSlot(), partition.getEndSlot(), this, config);
         entries.put(partition.getEndSlot(), entry);
         lastPartitions.put(partition.getEndSlot(), partition);
     }

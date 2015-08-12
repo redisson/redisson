@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.client.RedisConnectionWriteException;
+import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
@@ -17,7 +17,7 @@ public class RedissonTest extends BaseTest {
         private String field;
     }
 
-    @Test(expected = RedisConnectionWriteException.class)
+    @Test(expected = WriteRedisConnectionException.class)
     public void testSer() {
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6379");

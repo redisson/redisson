@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisConnectionWriteException;
+import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
@@ -258,7 +258,7 @@ public class CommandExecutorService implements CommandExecutor {
                     connectionManager.releaseWrite(slot, connection);
                 }
             }
-        } catch (RedisConnectionException e) {
+        } catch (RedisException e) {
             if (attempt == connectionManager.getConfig().getRetryAttempts()) {
                 throw e;
             }
@@ -422,7 +422,7 @@ public class CommandExecutorService implements CommandExecutor {
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
                         timeout.cancel();
-                        ex.set(new RedisConnectionWriteException(
+                        ex.set(new WriteRedisConnectionException(
                                 "Can't send command: " + command + ", params: " + params + ", channel: " + future.channel(), future.cause()));
                         connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                     }
@@ -434,7 +434,7 @@ public class CommandExecutorService implements CommandExecutor {
             } else {
                 attemptPromise.addListener(connectionManager.createReleaseWriteListener(slot, connection, timeout));
             }
-        } catch (RedisConnectionException e) {
+        } catch (RedisException e) {
             ex.set(e);
             connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
         }

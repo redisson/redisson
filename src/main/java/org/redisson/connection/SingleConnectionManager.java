@@ -41,8 +41,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     protected void initEntry(MasterSlaveServersConfig config) {
-        SingleEntry entry = new SingleEntry(this, config);
-        entries.put(Integer.MAX_VALUE, entry);
+        SingleEntry entry = new SingleEntry(0, MAX_SLOT, this, config);
+        entries.put(MAX_SLOT, entry);
     }
 
 }
