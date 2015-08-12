@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisConnectionClosedException;
+import org.redisson.client.RedisConnectionWriteException;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
@@ -422,7 +422,8 @@ public class CommandExecutorService implements CommandExecutor {
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
                         timeout.cancel();
-                        ex.set(new RedisConnectionClosedException("channel: " + future.channel() + " closed"));
+                        ex.set(new RedisConnectionWriteException(
+                                "Can't send command: " + command + ", params: " + params + ", channel: " + future.channel(), future.cause()));
                         connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                     }
                 }

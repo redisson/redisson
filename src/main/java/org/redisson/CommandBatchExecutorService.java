@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.client.RedisConnectionClosedException;
+import org.redisson.client.RedisConnectionWriteException;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
@@ -212,7 +212,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
                         timeout.cancel();
-                        ex.set(new RedisConnectionClosedException("channel: " + future.channel() + " closed"));
+                        ex.set(new RedisConnectionWriteException("channel: " + future.channel() + " closed"));
                         connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                     }
                 }

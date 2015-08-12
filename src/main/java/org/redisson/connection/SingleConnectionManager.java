@@ -27,6 +27,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
         newconfig.setRetryInterval(cfg.getRetryInterval());
         newconfig.setTimeout(cfg.getTimeout());
+        newconfig.setPingTimeout(cfg.getPingTimeout());
         newconfig.setPassword(cfg.getPassword());
         newconfig.setDatabase(cfg.getDatabase());
         newconfig.setClientName(cfg.getClientName());

@@ -15,15 +15,15 @@
  */
 package org.redisson.client;
 
-public class RedisConnectionClosedException extends RedisException {
+public class RedisConnectionWriteException extends RedisException {
 
     private static final long serialVersionUID = -4756928186967834601L;
 
-    public RedisConnectionClosedException(String msg) {
+    public RedisConnectionWriteException(String msg) {
         super(msg);
     }
 
-    public RedisConnectionClosedException(String msg, Throwable e) {
+    public RedisConnectionWriteException(String msg, Throwable e) {
         super(msg, e);
     }
 
