@@ -23,6 +23,8 @@ import org.redisson.client.RedisPubSubConnection;
 
 public interface LoadBalancer {
 
+    int getAvailableClients();
+
     void shutdownAsync();
 
     void shutdown();

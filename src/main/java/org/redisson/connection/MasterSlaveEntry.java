@@ -81,12 +81,14 @@ public class MasterSlaveEntry {
     }
 
     public void addSlave(String host, int port) {
-        slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
+//        slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
 
         RedisClient client = connectionManager.createClient(host, port);
-        slaveBalancer.add(new SubscribesConnectionEntry(client,
+        SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
-                this.config.getSlaveSubscriptionConnectionPoolSize()));
+                this.config.getSlaveSubscriptionConnectionPoolSize());
+        entry.setFreezed(true);
+        slaveBalancer.add(entry);
     }
 
     public RedisClient getClient() {
@@ -94,6 +96,9 @@ public class MasterSlaveEntry {
     }
 
     public void slaveUp(String host, int port) {
+        if (!masterEntry.getClient().getAddr().getHostName().equals(host) && port != masterEntry.getClient().getAddr().getPort()) {
+            slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
+        }
         slaveBalancer.unfreeze(host, port);
     }
 
@@ -106,7 +111,9 @@ public class MasterSlaveEntry {
     public void changeMaster(String host, int port) {
         ConnectionEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
-        slaveDown(host, port);
+        if (slaveBalancer.getAvailableClients() > 1) {
+            slaveDown(host, port);
+        }
         connectionManager.shutdownAsync(oldMaster.getClient());
     }
 

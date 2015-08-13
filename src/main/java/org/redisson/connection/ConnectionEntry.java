@@ -78,4 +78,9 @@ public class ConnectionEntry {
         return conn;
     }
 
+    @Override
+    public String toString() {
+        return "ConnectionEntry [freezed=" + freezed + ", client=" + client + "]";
+    }
+
 }

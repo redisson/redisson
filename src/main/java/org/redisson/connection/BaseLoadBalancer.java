@@ -50,7 +50,19 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public synchronized void add(SubscribesConnectionEntry entry) {
         clients.add(entry);
-        clientsEmpty.open();
+        if (!entry.isFreezed()) {
+            clientsEmpty.open();
+        }
+    }
+
+    public int getAvailableClients() {
+        int count = 0;
+        for (SubscribesConnectionEntry connectionEntry : clients) {
+            if (!connectionEntry.isFreezed()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public synchronized void unfreeze(String host, int port) {

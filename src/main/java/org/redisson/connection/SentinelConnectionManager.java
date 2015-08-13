@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.SentinelServersConfig;
+import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -110,7 +111,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             sentinels.add(client);
 
             RedisPubSubConnection pubsub = client.connectPubSub();
-            pubsub.addListener(new RedisPubSubListener<String>() {
+            pubsub.addListener(new BaseRedisPubSubListener<String>() {
 
                 @Override
                 public void onMessage(String channel, String msg) {
@@ -126,10 +127,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     if ("+switch-master".equals(channel)) {
                         onMasterChange(cfg, master, addr, msg);
                     }
-                }
-
-                @Override
-                public void onPatternMessage(String pattern, String channel, String message) {
                 }
 
                 @Override
@@ -161,27 +158,32 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 addSlave(ip, Integer.valueOf(port));
             }
         } else {
-            log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
+            log.warn("onSlaveAdded. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
     }
 
     private void onSlaveDown(final Set<String> freezeSlaves, final URI addr, String msg) {
         String[] parts = msg.split(" ");
 
-        if (parts.length > 4
-                 && "slave".equals(parts[0])) {
-            String ip = parts[2];
-            String port = parts[3];
+        if (parts.length > 3) {
+            if ("slave".equals(parts[0])) {
+                String ip = parts[2];
+                String port = parts[3];
 
-            String slaveAddr = ip + ":" + port;
+                String slaveAddr = ip + ":" + port;
 
-            // to avoid freeze twice
-            if (freezeSlaves.add(slaveAddr)) {
-                log.debug("Slave has down - {}", slaveAddr);
-                slaveDown(0, ip, Integer.valueOf(port));
+                // to avoid freeze twice
+                if (freezeSlaves.add(slaveAddr)) {
+                    log.debug("Slave has down - {}", slaveAddr);
+                    slaveDown(0, ip, Integer.valueOf(port));
+                }
+            } else if ("sentinel".equals(parts[0]) || "master".equals(parts[0])) {
+                // skip
+            } else {
+                log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
             }
         } else {
-            log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
+            log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
     }
 
@@ -199,7 +201,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 slaveUp(ip, Integer.valueOf(port));
             }
         } else {
-            log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
+            log.warn("onSlaveUp. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
     }
 
