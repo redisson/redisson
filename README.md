@@ -52,8 +52,8 @@ Projects using Redisson
 Setronica: [setronica.com](http://setronica.com/)  
 Monits: [monits.com](http://monits.com/)  
 Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
-Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
-
+Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)  
+武林Q传:[nbrpg](http://www.nbrpg.com/)  
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
