@@ -77,12 +77,14 @@ public class MasterSlaveEntry {
     }
 
     public Collection<RedisPubSubConnection> slaveDown(String host, int port) {
-        return slaveBalancer.freeze(host, port);
+        Collection<RedisPubSubConnection> conns = slaveBalancer.freeze(host, port);
+        if (slaveBalancer.getAvailableClients() == 0) {
+            slaveUp(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
+        }
+        return conns;
     }
 
     public void addSlave(String host, int port) {
-//        slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
-
         RedisClient client = connectionManager.createClient(host, port);
         SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
