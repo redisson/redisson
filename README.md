@@ -71,6 +71,7 @@ Fixed - connection hangs when there are no slaves in sentinel mode
 Fixed - activate master as slave when there are no more available slaves in sentinel mode  
 Fixed - skip disconnected sentinels during startup  
 Fixed - slave node discovery in sentinel mode which has been disconnected since start  
+__Deprecated__ - Redisson methods `deleteAsync`, `delete`, `deleteByPatternAsync`, `deleteByPattern`, `findKeysByPatternAsync`, `findKeysByPattern`. Use same methods with `RKeys` interface  
 
 ####03-Aug-2015 - version 2.1.0 released  
 Feature - `RTopic` subscribtion/unsubscription status listener added  
@@ -237,7 +238,7 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.1.0</version>
+       <version>2.1.1</version>
     </dependency>
 
 ### Supported by
