@@ -70,7 +70,7 @@ Fixed - cluster empty slot handling
 Fixed - connection hangs when there are no slaves in sentinel mode  
 Fixed - activate master as slave when there are no more available slaves in sentinel mode  
 Fixed - skip disconnected sentinels during startup  
-Fixed - slave node discovery which has been disconnected since start  
+Fixed - slave node discovery in sentinel mode which has been disconnected since start  
 
 ####03-Aug-2015 - version 2.1.0 released  
 Feature - `RTopic` subscribtion/unsubscription status listener added  
