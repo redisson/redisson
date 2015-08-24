@@ -81,18 +81,20 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 // TODO async
                 List<Map<String, String>> sentinelSlaves = connection.sync(RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
                 for (Map<String, String> map : sentinelSlaves) {
-                    String ip = map.get("ip");
-                    String port = map.get("port");
-                    String flags = map.get("flags");
+                    if (!map.isEmpty()) {
+                        String ip = map.get("ip");
+                        String port = map.get("port");
+                        String flags = map.get("flags");
 
-                    String host = ip + ":" + port;
+                        String host = ip + ":" + port;
 
-                    c.addSlaveAddress(host);
-                    slaves.put(host, true);
-                    log.info("slave: {} added, params: {}", host, map);
+                        c.addSlaveAddress(host);
+                        slaves.put(host, true);
+                        log.info("slave: {} added, params: {}", host, map);
 
-                    if (flags.contains("s_down") || flags.contains("disconnected")) {
-                        disconnectedSlaves.add(host);
+                        if (flags.contains("s_down") || flags.contains("disconnected")) {
+                            disconnectedSlaves.add(host);
+                        }                    
                     }
                 }
                 break;
