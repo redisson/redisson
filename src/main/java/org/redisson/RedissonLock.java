@@ -275,6 +275,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
         // lua脚本 {@link http://redis.readthedocs.org/en/latest/script/eval.html}
         // Redis 也保证脚本会以原子性(atomic)的方式执行
+        //其中['o']是一个唯一的值,由UUID和线程id组成, ['c']用来标识当前线程持有当前锁的数量
         return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
@@ -283,7 +284,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "else " +
                                 "  local o = cjson.decode(v); " +
                                 "  if (o['o'] == ARGV[1]) then " + // 当前线程重复获得锁
-                                "    o['c'] = o['c'] + 1; redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[2]); " + // 改变value的值
+                                "    o['c'] = o['c'] + 1; redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[2]); " + // 增加当前线程持有这个锁的数量
                                 "    return nil; " +
                                 "  end;" +
                                 "  return redis.call('pttl', KEYS[1]); " +  //PTTL这个命令类似于 TTL 命令，但它以毫秒为单位返回 key 的剩余生存时间，而不是像 TTL 命令那样，以秒为单位。
