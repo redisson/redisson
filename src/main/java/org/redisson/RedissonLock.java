@@ -282,7 +282,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  return nil; " +
                                 "else " +
                                 "  local o = cjson.decode(v); " +
-                                "  if (o['o'] == ARGV[1]) then " + // 当前线程重复获得锁zhushi l
+                                "  if (o['o'] == ARGV[1]) then " + // 当前线程重复获得锁
                                 "    o['c'] = o['c'] + 1; redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[2]); " + // 改变value的值
                                 "    return nil; " +
                                 "  end;" +
