@@ -233,6 +233,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return ttlRemaining;
     }
 
+    // 好像是刷新client的连接的超时时间,防止client超时断开连接
     private void newRefreshTask() {
         if (refreshTaskMap.containsKey(getName())) {
             return;
