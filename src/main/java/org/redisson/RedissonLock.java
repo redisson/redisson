@@ -15,36 +15,42 @@
  */
 package org.redisson;
 
-import java.util.Collections;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.PlatformDependent;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.core.RLock;
 
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
-import io.netty.util.internal.PlatformDependent;
+import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
  * Implements reentrant lock.<br>
  * Lock will be removed automatically if client disconnects.
  *
+ * {@link java.util.concurrent.locks.Lock}的分布式实现, 实现了可重入锁
+ *
+ * 客户端断开连接的时候会自动移除锁
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonLock extends RedissonExpirable implements RLock {
 
+    // 默认的锁过期时间为30s
     public static final long LOCK_EXPIRATION_INTERVAL_SECONDS = 30;
+    //使用netty,创建平台独立的类实现
     private static final ConcurrentMap<String, Timeout> refreshTaskMap = PlatformDependent.newConcurrentHashMap();
+    // 内部锁占用时间为30s
     protected long internalLockLeaseTime = TimeUnit.SECONDS.toMillis(LOCK_EXPIRATION_INTERVAL_SECONDS);
 
     private final UUID id;
@@ -227,6 +233,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return ttlRemaining;
     }
 
+    // 好像是刷新client的连接的超时时间,防止client超时断开连接
     private void newRefreshTask() {
         if (refreshTaskMap.containsKey(getName())) {
             return;
@@ -258,25 +265,37 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
 
+    /**
+     * 返回null说明已经获得锁
+     * @param leaseTime
+     * @param unit
+     * @return
+     */
     private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
+        // lua脚本 {@link http://redis.readthedocs.org/en/latest/script/eval.html}
+        // Redis 也保证脚本会以原子性(atomic)的方式执行
+        //其中['o']是一个唯一的值,由UUID和线程id组成, ['c']用来标识当前线程持有当前锁的数量
         return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_INTEGER,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
-                                "  redis.call('set', KEYS[1], cjson.encode({['o'] = ARGV[1], ['c'] = 1}), 'px', ARGV[2]); " +
+                                "  redis.call('set', KEYS[1], cjson.encode({['o'] = ARGV[1], ['c'] = 1}), 'px', ARGV[2]); " + // 设置set key value px argv[2]
                                 "  return nil; " +
                                 "else " +
                                 "  local o = cjson.decode(v); " +
-                                "  if (o['o'] == ARGV[1]) then " +
-                                "    o['c'] = o['c'] + 1; redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[2]); " +
+                                "  if (o['o'] == ARGV[1]) then " + // 当前线程重复获得锁
+                                "    o['c'] = o['c'] + 1; redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[2]); " + // 增加当前线程持有这个锁的数量
                                 "    return nil; " +
                                 "  end;" +
-                                "  return redis.call('pttl', KEYS[1]); " +
-                                "end",
-                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId(), internalLockLeaseTime);
+                                "  return redis.call('pttl', KEYS[1]); " +  //PTTL这个命令类似于 TTL 命令，但它以毫秒为单位返回 key 的剩余生存时间，而不是像 TTL 命令那样，以秒为单位。
+
+                        "end",
+                        Collections.<Object>singletonList(getName()) , // keys
+                id.toString() + "-" + Thread.currentThread().getId(), internalLockLeaseTime); // argvs
     }
 
+    // 使用double check
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         long time = unit.toMillis(waitTime);
         Long ttl;
@@ -290,6 +309,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             return true;
         }
 
+        // 在指定的之间内等待操作完成???
         if (!subscribe().awaitUninterruptibly(time, TimeUnit.MILLISECONDS)) {
             return false;
         }
