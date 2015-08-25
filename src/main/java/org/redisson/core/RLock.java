@@ -57,7 +57,7 @@ public interface RLock extends Lock, RExpirable {
      * it is held until <code>unlock</code> is invoked, or until <code>leaseTime</code>
      * have passed since the lock was granted - whichever comes first.
      *
-     * @param waitTime the maximum time to aquire the lock
+     * @param waitTime the maximum time to aquire the lock 也就是超时时间
      * @param leaseTime
      * @param unit
      * @return
