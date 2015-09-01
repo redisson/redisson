@@ -60,6 +60,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
         c.setDatabase(cfg.getDatabase());
+        c.setClientName(cfg.getClientName());
         c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
