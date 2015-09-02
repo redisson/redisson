@@ -60,6 +60,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
         c.setDatabase(cfg.getDatabase());
+        c.setClientName(cfg.getClientName());
         c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
@@ -78,13 +79,15 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 currentMaster.set(masterHost);
                 log.info("master: {} added", masterHost);
 
-                // TODO async
                 List<Map<String, String>> sentinelSlaves = connection.sync(RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
                 for (Map<String, String> map : sentinelSlaves) {
-                    if (!map.isEmpty()) {
-                        String ip = map.get("ip");
-                        String port = map.get("port");
-                        String flags = map.get("flags");
+                    if (map.isEmpty()) {
+                        continue;
+                    }
+
+                    String ip = map.get("ip");
+                    String port = map.get("port");
+                    String flags = map.get("flags");
 
                         String host = ip + ":" + port;
 
@@ -116,12 +119,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         for (URI addr : cfg.getSentinelAddresses()) {
-            registerSentinel(cfg, addr);
+            registerSentinel(cfg, addr, c);
         }
     }
 
-    private void registerSentinel(final SentinelServersConfig cfg, final URI addr) {
-        RedisClient client = createClient(addr.getHost(), addr.getPort());
+    private void registerSentinel(final SentinelServersConfig cfg, final URI addr, final MasterSlaveServersConfig c) {
+        RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
         RedisClient oldClient = sentinels.putIfAbsent(addr.getHost() + ":" + addr.getPort(), client);
         if (oldClient != null) {
             return;
@@ -134,7 +137,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 @Override
                 public void onMessage(String channel, String msg) {
                     if ("+sentinel".equals(channel)) {
-                        onSentinelAdded(cfg, msg);
+                        onSentinelAdded(cfg, msg, c);
                     }
                     if ("+slave".equals(channel)) {
                         onSlaveAdded(addr, msg);
@@ -166,7 +169,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    protected void onSentinelAdded(SentinelServersConfig cfg, String msg) {
+    protected void onSentinelAdded(SentinelServersConfig cfg, String msg, MasterSlaveServersConfig c) {
         String[] parts = msg.split(" ");
         if ("sentinel".equals(parts[0])) {
             String ip = parts[2];
@@ -174,7 +177,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
             String addr = ip + ":" + port;
             URI uri = URIBuilder.create(addr);
-            registerSentinel(cfg, uri);
+            registerSentinel(cfg, uri, c);
         }
     }
 
