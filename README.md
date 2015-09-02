@@ -241,6 +241,10 @@ Include the following to your dependency list:
        <version>2.1.1</version>
     </dependency>
 
+### Gradle
+
+    compile 'org.redisson:redisson:2.1.1'
+
 ### Supported by
 
 YourKit is kindly supporting this open source project with its full-featured Java Profiler.
