@@ -88,10 +88,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public V peek() {
-        if (isEmpty()) {
-            return null;
-        }
-        return get(0);
+        return getValue(0);
     }
 
     @Override
