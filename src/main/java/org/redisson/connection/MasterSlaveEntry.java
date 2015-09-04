@@ -146,6 +146,11 @@ public class MasterSlaveEntry {
         return slaveBalancer.nextConnection();
     }
 
+    public RedisConnection connectionReadOp(RedisClient client) {
+        return slaveBalancer.getConnection(client);
+    }
+
+
     RedisPubSubConnection nextPubSubConnection() {
         return slaveBalancer.nextPubSubConnection();
     }

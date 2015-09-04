@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.Collection;
 import java.util.List;
 
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
@@ -31,6 +32,8 @@ import io.netty.util.concurrent.Future;
  */
 //TODO ping support
 public interface CommandExecutor {
+
+    <T, R> R read(RedisClient client, String key, RedisCommand<T> command, Object ... params);
 
     <T, R> Future<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
 

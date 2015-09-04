@@ -18,10 +18,13 @@ package org.redisson.connection;
 import java.util.Collection;
 
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 
 public interface LoadBalancer {
+
+    RedisConnection getConnection(RedisClient client);
 
     int getAvailableClients();
 
