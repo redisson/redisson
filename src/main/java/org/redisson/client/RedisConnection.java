@@ -42,13 +42,13 @@ public class RedisConnection implements RedisCommands {
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
         this.redisClient = redisClient;
-        this.channel = channel;
 
-        channel.attr(CONNECTION).set(this);
+        updateChannel(channel);
     }
 
     public void updateChannel(Channel channel) {
         this.channel = channel;
+        channel.attr(CONNECTION).set(this);
     }
 
     public RedisClient getRedisClient() {
