@@ -158,8 +158,10 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 commands = null;
             }
         });
+
+        AtomicInteger slots = new AtomicInteger(commands.size());
         for (java.util.Map.Entry<Integer, Entry> e : commands.entrySet()) {
-            execute(e.getValue(), e.getKey(), voidPromise, new AtomicInteger(commands.size()), 0);
+            execute(e.getValue(), e.getKey(), voidPromise, slots, 0);
         }
         return promise;
     }
