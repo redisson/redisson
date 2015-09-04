@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
@@ -68,8 +69,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return commandExecutor.readAsync(getName(), RedisCommands.SISMEMBER, getName(), o);
     }
 
-    private ListScanResult<V> scanIterator(long startPos) {
-        return commandExecutor.read(getName(), RedisCommands.SSCAN, getName(), startPos);
+    private ListScanResult<V> scanIterator(RedisClient client, long startPos) {
+        return commandExecutor.read(client, getName(), RedisCommands.SSCAN, getName(), startPos);
     }
 
     @Override
@@ -77,6 +78,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return new Iterator<V>() {
 
             private Iterator<V> iter;
+            private RedisClient client;
             private Long iterPos;
 
             private boolean removeExecuted;
@@ -85,11 +87,12 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
             @Override
             public boolean hasNext() {
                 if (iter == null) {
-                    ListScanResult<V> res = scanIterator(0);
+                    ListScanResult<V> res = scanIterator(null, 0);
+                    client = res.getRedisClient();
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 } else if (!iter.hasNext() && iterPos != 0) {
-                    ListScanResult<V> res = scanIterator(iterPos);
+                    ListScanResult<V> res = scanIterator(client, iterPos);
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 }

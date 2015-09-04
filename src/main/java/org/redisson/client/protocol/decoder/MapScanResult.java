@@ -17,10 +17,14 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.Map;
 
-public class MapScanResult<K, V> {
+import org.redisson.RedisClientResult;
+import org.redisson.client.RedisClient;
+
+public class MapScanResult<K, V> implements RedisClientResult {
 
     private final Long pos;
     private final Map<K, V> values;
+    private RedisClient client;
 
     public MapScanResult(Long pos, Map<K, V> values) {
         super();
@@ -34,6 +38,15 @@ public class MapScanResult<K, V> {
 
     public Map<K, V> getMap() {
         return values;
+    }
+
+    @Override
+    public void setRedisClient(RedisClient client) {
+        this.client = client;
+    }
+
+    public RedisClient getRedisClient() {
+        return client;
     }
 
 }

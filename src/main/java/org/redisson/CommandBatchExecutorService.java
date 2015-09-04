@@ -24,11 +24,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.client.WriteRedisConnectionException;
-import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisTimeoutException;
+import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
@@ -102,7 +102,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
     @Override
     protected <V, R> void async(boolean readOnlyMode, int slot, MultiDecoder<Object> messageDecoder,
-            Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, int attempt) {
+            Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, RedisClient client, int attempt) {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
@@ -158,8 +158,10 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 commands = null;
             }
         });
+
+        AtomicInteger slots = new AtomicInteger(commands.size());
         for (java.util.Map.Entry<Integer, Entry> e : commands.entrySet()) {
-            execute(e.getValue(), e.getKey(), voidPromise, new AtomicInteger(commands.size()), 0);
+            execute(e.getValue(), e.getKey(), voidPromise, slots, 0);
         }
         return promise;
     }

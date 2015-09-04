@@ -18,7 +18,6 @@ package org.redisson.connection;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -464,6 +463,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             throw new RedisEmptySlotException("No node for slot: " + slot, slot);
         }
         return e.connectionReadOp();
+    }
+
+    @Override
+    public RedisConnection connectionReadOp(int slot, RedisClient client) {
+        MasterSlaveEntry e = getEntry(slot);
+        if (!e.isOwn(slot)) {
+            throw new RedisEmptySlotException("No node for slot: " + slot, slot);
+        }
+        return e.connectionReadOp(client);
     }
 
     RedisPubSubConnection nextPubSubConnection(int slot) {
