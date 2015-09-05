@@ -103,11 +103,11 @@ public class PubSubConnectionEntry {
         }
     }
 
-    public void removeListener(String channelName, RedisPubSubListener listener) {
+    private void removeListener(String channelName, RedisPubSubListener listener) {
         Queue<RedisPubSubListener> queue = channelListeners.get(channelName);
         synchronized (queue) {
-            if (queue.remove(listener)) {
-                channelListeners.remove(channelName, new ConcurrentLinkedQueue<RedisPubSubListener>());
+            if (queue.remove(listener) && queue.isEmpty()) {
+                channelListeners.remove(channelName);
             }
         }
         conn.removeListener(listener);
@@ -139,20 +139,28 @@ public class PubSubConnectionEntry {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
                 if (type == PubSubType.UNSUBSCRIBE && channel.equals(ch)) {
-                    Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
-                    if (listeners != null) {
-                        for (RedisPubSubListener listener : listeners) {
-                            removeListener(channel, listener);
-                        }
-                    }
-                    subscribedChannelsAmount.release();
+                    removeListeners(channel);
                     return true;
                 }
                 return false;
             }
+
         });
         conn.addOneShotListener(listener);
         conn.unsubscribe(channel);
+    }
+
+    private void removeListeners(String channel) {
+        Queue<RedisPubSubListener> queue = channelListeners.get(channel);
+        if (queue != null) {
+            synchronized (queue) {
+                channelListeners.remove(channel);
+            }
+            for (RedisPubSubListener listener : queue) {
+                conn.removeListener(listener);
+            }
+        }
+        subscribedChannelsAmount.release();
     }
 
     public void punsubscribe(final String channel, RedisPubSubListener listener) {
@@ -160,13 +168,7 @@ public class PubSubConnectionEntry {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
                 if (type == PubSubType.PUNSUBSCRIBE && channel.equals(ch)) {
-                    Queue<RedisPubSubListener> listeners = channelListeners.get(channel);
-                    if (listeners != null) {
-                        for (RedisPubSubListener listener : listeners) {
-                            removeListener(channel, listener);
-                        }
-                    }
-                    subscribedChannelsAmount.release();
+                    removeListeners(channel);
                     return true;
                 }
                 return false;
