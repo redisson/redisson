@@ -80,13 +80,13 @@ public class ConnectionEntry {
 
     private void prepareConnection(MasterSlaveServersConfig config, RedisConnection conn) {
         if (config.getPassword() != null) {
-            conn.sync(RedisCommands.AUTH, config.getPassword());
+            conn.async(RedisCommands.AUTH, config.getPassword());
         }
         if (config.getDatabase() != 0) {
-            conn.sync(RedisCommands.SELECT, config.getDatabase());
+            conn.async(RedisCommands.SELECT, config.getDatabase());
         }
         if (config.getClientName() != null) {
-            conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
+            conn.async(RedisCommands.CLIENT_SETNAME, config.getClientName());
         }
     }
 
