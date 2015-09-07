@@ -18,6 +18,7 @@ package org.redisson.client.handler;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,10 +83,20 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                     return;
                 }
 
-                if (future.isSuccess()) {
-                    log.debug("{} connected to {}", connection, connection.getRedisClient().getAddr());
-                    connection.onReconnect(future.channel());
-                    return;
+                try {
+                    if (future.isSuccess()) {
+                        log.debug("{} connected to {}", connection, connection.getRedisClient().getAddr());
+
+                        if (connection.getReconnectListener() != null) {
+                            // new connection used only to init channel
+                            RedisConnection rc = new RedisConnection(connection.getRedisClient(), future.channel());
+                            connection.getReconnectListener().onReconnect(rc);
+                        }
+                        connection.updateChannel(future.channel());
+                        return;
+                    }
+                } catch (RedisException e) {
+                    log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), e);
                 }
 
                 int timeout = 2 << attempts;

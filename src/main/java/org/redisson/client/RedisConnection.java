@@ -51,16 +51,13 @@ public class RedisConnection implements RedisCommands {
         this.reconnectListener = reconnectListener;
     }
 
-    private void updateChannel(Channel channel) {
-        this.channel = channel;
-        channel.attr(CONNECTION).set(this);
+    public ReconnectListener getReconnectListener() {
+        return reconnectListener;
     }
 
-    public void onReconnect(Channel channel) {
-        updateChannel(channel);
-        if (reconnectListener != null) {
-            reconnectListener.onReconnect(this);
-        }
+    public void updateChannel(Channel channel) {
+        this.channel = channel;
+        channel.attr(CONNECTION).set(this);
     }
 
     public RedisClient getRedisClient() {

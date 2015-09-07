@@ -17,6 +17,6 @@ package org.redisson.client;
 
 public interface ReconnectListener {
 
-    void onReconnect(RedisConnection redisConnection);
+    void onReconnect(RedisConnection redisConnection) throws RedisException;
 
 }
