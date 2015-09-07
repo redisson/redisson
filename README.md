@@ -59,6 +59,16 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####05-Sep-2015 - version 2.1.2 released  
+Fixed - possible NPE during channel reconnection  
+Fixed - executeAsync freezes in cluster mode  
+Fixed - use same node for SCAN/SSCAN/HSCAN during iteration  
+Fixed - possible race-condition during master change  
+Fixed - `BlockingQueue.peek` race-condition  
+Fixed - NPE with empty sentinel servers  
+Fixed - unable to read `clientName` config param in Master\Slave and Sentinel modes  
+Fixed - "Too many open files" error in cluster mode
+
 ####15-Aug-2015 - version 2.1.1 released  
 Feature - all keys operations extracted to `RKeys` interface  
 Feature - `RKeys.getKeys`, `RKeys.getKeysByPattern` and `RKeys.randomKey`methods added  
