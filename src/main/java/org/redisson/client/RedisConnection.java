@@ -38,6 +38,7 @@ public class RedisConnection implements RedisCommands {
 
     private volatile boolean closed;
     volatile Channel channel;
+    private ReconnectListener reconnectListener;
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
@@ -46,9 +47,20 @@ public class RedisConnection implements RedisCommands {
         updateChannel(channel);
     }
 
-    public void updateChannel(Channel channel) {
+    public void setReconnectListener(ReconnectListener reconnectListener) {
+        this.reconnectListener = reconnectListener;
+    }
+
+    private void updateChannel(Channel channel) {
         this.channel = channel;
         channel.attr(CONNECTION).set(this);
+    }
+
+    public void onReconnect(Channel channel) {
+        updateChannel(channel);
+        if (reconnectListener != null) {
+            reconnectListener.onReconnect(this);
+        }
     }
 
     public RedisClient getRedisClient() {

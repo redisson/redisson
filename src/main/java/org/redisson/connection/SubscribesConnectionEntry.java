@@ -19,6 +19,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
+import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisPubSubConnection;
 
@@ -52,6 +53,13 @@ public class SubscribesConnectionEntry extends ConnectionEntry {
     public Semaphore getSubscribeConnectionsSemaphore() {
         return subscribeConnectionsSemaphore;
     }
+
+    public RedisPubSubConnection connectPubSub(MasterSlaveServersConfig config) {
+        RedisPubSubConnection conn = super.connectPubSub(config);
+        allSubscribeConnections.offer(conn);
+        return conn;
+    }
+
 
 }
 

@@ -23,11 +23,11 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
-import io.netty.util.concurrent.GenericFutureListener;
 
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
@@ -74,7 +74,8 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
 
-        bootstrap.connect().addListener(new GenericFutureListener<ChannelFuture>() {
+        bootstrap.connect().addListener(new ChannelFutureListener() {
+
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (connection.isClosed()) {
@@ -83,7 +84,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
                 if (future.isSuccess()) {
                     log.debug("{} connected to {}", connection, connection.getRedisClient().getAddr());
-                    connection.updateChannel(future.channel());
+                    connection.onReconnect(future.channel());
                     return;
                 }
 
@@ -95,6 +96,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                     }
                 }, timeout, TimeUnit.MILLISECONDS);
             }
+
         });
     }
 

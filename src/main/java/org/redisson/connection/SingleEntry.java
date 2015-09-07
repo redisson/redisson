@@ -20,7 +20,6 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.protocol.RedisCommands;
 
 public class SingleEntry extends MasterSlaveEntry {
 
@@ -54,18 +53,7 @@ public class SingleEntry extends MasterSlaveEntry {
         }
 
         try {
-            conn = masterEntry.getClient().connectPubSub();
-            if (config.getPassword() != null) {
-                conn.sync(RedisCommands.AUTH, config.getPassword());
-            }
-            if (config.getDatabase() != 0) {
-                conn.sync(RedisCommands.SELECT, config.getDatabase());
-            }
-            if (config.getClientName() != null) {
-                conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
-            }
-
-            return conn;
+            return masterEntry.connectPubSub(config);
         } catch (RedisConnectionException e) {
             ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().release();
             throw e;
