@@ -78,7 +78,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         bootstrap.connect().addListener(new ChannelFutureListener() {
 
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(final ChannelFuture future) throws Exception {
                 if (connection.isClosed()) {
                     return;
                 }
@@ -88,11 +88,18 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                         log.debug("{} connected to {}", connection, connection.getRedisClient().getAddr());
 
                         if (connection.getReconnectListener() != null) {
-                            // new connection used only to init channel
-                            RedisConnection rc = new RedisConnection(connection.getRedisClient(), future.channel());
-                            connection.getReconnectListener().onReconnect(rc);
+                            bootstrap.group().execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // new connection used only to init channel
+                                    RedisConnection rc = new RedisConnection(connection.getRedisClient(), future.channel());
+                                    connection.getReconnectListener().onReconnect(rc);
+                                    connection.updateChannel(future.channel());
+                                }
+                            });
+                        } else {
+                            connection.updateChannel(future.channel());
                         }
-                        connection.updateChannel(future.channel());
                         return;
                     }
                 } catch (RedisException e) {
