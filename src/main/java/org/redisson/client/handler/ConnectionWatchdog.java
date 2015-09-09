@@ -18,16 +18,17 @@ package org.redisson.client.handler;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
-import io.netty.util.concurrent.GenericFutureListener;
 
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
@@ -74,17 +75,35 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
 
-        bootstrap.connect().addListener(new GenericFutureListener<ChannelFuture>() {
+        bootstrap.connect().addListener(new ChannelFutureListener() {
+
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(final ChannelFuture future) throws Exception {
                 if (connection.isClosed()) {
                     return;
                 }
 
-                if (future.isSuccess()) {
-                    log.debug("{} connected to {}", connection, connection.getRedisClient().getAddr());
-                    connection.updateChannel(future.channel());
-                    return;
+                try {
+                    if (future.isSuccess()) {
+                        log.debug("{} connected to {}", connection, connection.getRedisClient().getAddr());
+
+                        if (connection.getReconnectListener() != null) {
+                            bootstrap.group().execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // new connection used only to init channel
+                                    RedisConnection rc = new RedisConnection(connection.getRedisClient(), future.channel());
+                                    connection.getReconnectListener().onReconnect(rc);
+                                    connection.updateChannel(future.channel());
+                                }
+                            });
+                        } else {
+                            connection.updateChannel(future.channel());
+                        }
+                        return;
+                    }
+                } catch (RedisException e) {
+                    log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), e);
                 }
 
                 int timeout = 2 << attempts;
@@ -95,6 +114,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                     }
                 }, timeout, TimeUnit.MILLISECONDS);
             }
+
         });
     }
 

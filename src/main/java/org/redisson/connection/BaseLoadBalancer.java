@@ -28,7 +28,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.misc.ReclosableLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,19 +148,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     if (conn != null) {
                         return conn;
                     }
-                    conn = entry.getClient().connectPubSub();
-                    if (config.getPassword() != null) {
-                        conn.sync(RedisCommands.AUTH, config.getPassword());
-                    }
-                    if (config.getDatabase() != 0) {
-                        conn.sync(RedisCommands.SELECT, config.getDatabase());
-                    }
-                    if (config.getClientName() != null) {
-                        conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
-                    }
-
-                    entry.registerSubscribeConnection(conn);
-                    return conn;
+                    return entry.connectPubSub(config);
                 } catch (RedisConnectionException e) {
                     entry.getSubscribeConnectionsSemaphore().release();
                     // TODO connection scoring

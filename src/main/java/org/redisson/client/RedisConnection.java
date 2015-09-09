@@ -38,12 +38,21 @@ public class RedisConnection implements RedisCommands {
 
     private volatile boolean closed;
     volatile Channel channel;
+    private ReconnectListener reconnectListener;
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
         this.redisClient = redisClient;
 
         updateChannel(channel);
+    }
+
+    public void setReconnectListener(ReconnectListener reconnectListener) {
+        this.reconnectListener = reconnectListener;
+    }
+
+    public ReconnectListener getReconnectListener() {
+        return reconnectListener;
     }
 
     public void updateChannel(Channel channel) {
