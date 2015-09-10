@@ -63,6 +63,8 @@ public interface ConnectionManager {
 
     RedisConnection connectionReadOp(int slot);
 
+    RedisConnection connectionReadOp(int slot, RedisClient client);
+
     RedisConnection connectionWriteOp(int slot);
 
     <T> FutureListener<T> createReleaseReadListener(int slot,

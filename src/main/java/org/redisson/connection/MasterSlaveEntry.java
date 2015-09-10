@@ -44,7 +44,12 @@ public class MasterSlaveEntry {
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
-    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    final int startSlot;
+    final int endSlot;
+
+    public MasterSlaveEntry(int startSlot, int endSlot, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        this.startSlot = startSlot;
+        this.endSlot = endSlot;
         this.connectionManager = connectionManager;
         this.config = config;
 
@@ -72,16 +77,20 @@ public class MasterSlaveEntry {
     }
 
     public Collection<RedisPubSubConnection> slaveDown(String host, int port) {
-        return slaveBalancer.freeze(host, port);
+        Collection<RedisPubSubConnection> conns = slaveBalancer.freeze(host, port);
+        if (slaveBalancer.getAvailableClients() == 0) {
+            slaveUp(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
+        }
+        return conns;
     }
 
     public void addSlave(String host, int port) {
-        slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
-
         RedisClient client = connectionManager.createClient(host, port);
-        slaveBalancer.add(new SubscribesConnectionEntry(client,
+        SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
-                this.config.getSlaveSubscriptionConnectionPoolSize()));
+                this.config.getSlaveSubscriptionConnectionPoolSize());
+        entry.setFreezed(true);
+        slaveBalancer.add(entry);
     }
 
     public RedisClient getClient() {
@@ -89,6 +98,9 @@ public class MasterSlaveEntry {
     }
 
     public void slaveUp(String host, int port) {
+        if (!masterEntry.getClient().getAddr().getHostName().equals(host) && port != masterEntry.getClient().getAddr().getPort()) {
+            slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
+        }
         slaveBalancer.unfreeze(host, port);
     }
 
@@ -101,7 +113,9 @@ public class MasterSlaveEntry {
     public void changeMaster(String host, int port) {
         ConnectionEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
-        slaveDown(host, port);
+        if (slaveBalancer.getAvailableClients() > 1) {
+            slaveDown(host, port);
+        }
         connectionManager.shutdownAsync(oldMaster.getClient());
     }
 
@@ -111,17 +125,19 @@ public class MasterSlaveEntry {
     }
 
     public RedisConnection connectionWriteOp() {
-        acquireMasterConnection();
+        // may changed during changeMaster call
+        ConnectionEntry entry = masterEntry;
+        acquireMasterConnection(entry);
 
-        RedisConnection conn = masterEntry.getConnections().poll();
+        RedisConnection conn = entry.getConnections().poll();
         if (conn != null) {
             return conn;
         }
 
         try {
-            return masterEntry.connect(config);
+            return entry.connect(config);
         } catch (RedisException e) {
-            masterEntry.getConnectionsSemaphore().release();
+            entry.getConnectionsSemaphore().release();
             throw e;
         }
     }
@@ -130,15 +146,20 @@ public class MasterSlaveEntry {
         return slaveBalancer.nextConnection();
     }
 
+    public RedisConnection connectionReadOp(RedisClient client) {
+        return slaveBalancer.getConnection(client);
+    }
+
+
     RedisPubSubConnection nextPubSubConnection() {
         return slaveBalancer.nextPubSubConnection();
     }
 
-    void acquireMasterConnection() {
-        if (!masterEntry.getConnectionsSemaphore().tryAcquire()) {
+    void acquireMasterConnection(ConnectionEntry entry) {
+        if (!entry.getConnectionsSemaphore().tryAcquire()) {
             log.warn("Master connection pool gets exhausted! Trying to acquire connection ...");
             long time = System.currentTimeMillis();
-            masterEntry.getConnectionsSemaphore().acquireUninterruptibly();
+            entry.getConnectionsSemaphore().acquireUninterruptibly();
             long endTime = System.currentTimeMillis() - time;
             log.warn("Master connection acquired, time spended: {} ms", endTime);
         }
@@ -150,13 +171,14 @@ public class MasterSlaveEntry {
 
     public void releaseWrite(RedisConnection connection) {
         // may changed during changeMaster call
-        if (!masterEntry.getClient().equals(connection.getRedisClient())) {
+        ConnectionEntry entry = masterEntry;
+        if (!entry.getClient().equals(connection.getRedisClient())) {
             connection.closeAsync();
             return;
         }
 
-        masterEntry.getConnections().add(connection);
-        masterEntry.getConnectionsSemaphore().release();
+        entry.getConnections().add(connection);
+        entry.getConnectionsSemaphore().release();
     }
 
     public void releaseRead(RedisConnection сonnection) {
@@ -166,6 +188,18 @@ public class MasterSlaveEntry {
     public void shutdown() {
         masterEntry.getClient().shutdown();
         slaveBalancer.shutdown();
+    }
+
+    public int getEndSlot() {
+        return endSlot;
+    }
+
+    public int getStartSlot() {
+        return startSlot;
+    }
+
+    public boolean isOwn(int slot) {
+        return slot >= startSlot && slot <= endSlot;
     }
 
 }

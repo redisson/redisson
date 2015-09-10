@@ -20,18 +20,20 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.client.ReconnectListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ConnectionEntry {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    final Logger log = LoggerFactory.getLogger(getClass());
 
     private volatile boolean freezed;
-    private final RedisClient client;
+    final RedisClient client;
 
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final Semaphore connectionsSemaphore;
@@ -61,8 +63,22 @@ public class ConnectionEntry {
         return connections;
     }
 
-    public RedisConnection connect(MasterSlaveServersConfig config) {
+    public RedisConnection connect(final MasterSlaveServersConfig config) {
         RedisConnection conn = client.connect();
+        log.debug("new connection created: {}", conn);
+
+        prepareConnection(config, conn);
+        conn.setReconnectListener(new ReconnectListener() {
+            @Override
+            public void onReconnect(RedisConnection conn) {
+                prepareConnection(config, conn);
+            }
+        });
+
+        return conn;
+    }
+
+    private void prepareConnection(MasterSlaveServersConfig config, RedisConnection conn) {
         if (config.getPassword() != null) {
             conn.sync(RedisCommands.AUTH, config.getPassword());
         }
@@ -72,10 +88,26 @@ public class ConnectionEntry {
         if (config.getClientName() != null) {
             conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
         }
+    }
 
-        log.debug("new connection created: {}", conn);
+    public RedisPubSubConnection connectPubSub(final MasterSlaveServersConfig config) {
+        RedisPubSubConnection conn = client.connectPubSub();
+        log.debug("new pubsub connection created: {}", conn);
+
+        prepareConnection(config, conn);
+        conn.setReconnectListener(new ReconnectListener() {
+            @Override
+            public void onReconnect(RedisConnection conn) {
+                prepareConnection(config, conn);
+            }
+        });
 
         return conn;
+    }
+
+    @Override
+    public String toString() {
+        return "ConnectionEntry [freezed=" + freezed + ", client=" + client + "]";
     }
 
 }

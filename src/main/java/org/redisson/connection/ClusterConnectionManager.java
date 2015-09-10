@@ -44,7 +44,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final List<RedisClient> nodeClients = new ArrayList<RedisClient>();
+    private final Map<URI, RedisConnection> nodeConnections = new HashMap<URI, RedisConnection>();
 
     private final Map<Integer, ClusterPartition> lastPartitions = new HashMap<Integer, ClusterPartition>();
 
@@ -57,26 +57,39 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         init(this.config);
 
         for (URI addr : cfg.getNodeAddresses()) {
-            RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getTimeout());
-            try {
-                RedisConnection connection = client.connect();
-                String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
-
-                Map<Integer, ClusterPartition> partitions = parsePartitions(nodesValue);
-                for (ClusterPartition partition : partitions.values()) {
-                    addMasterEntry(partition, cfg);
-                }
-
-                break;
-
-            } catch (RedisConnectionException e) {
-                log.warn(e.getMessage(), e);
-            } finally {
-                client.shutdownAsync();
+            RedisConnection connection = connect(cfg, addr);
+            if (connection == null) {
+                continue;
             }
+
+            String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
+
+            Map<Integer, ClusterPartition> partitions = parsePartitions(nodesValue);
+            for (ClusterPartition partition : partitions.values()) {
+                addMasterEntry(partition, cfg);
+            }
+
+            break;
         }
 
         monitorClusterChange(cfg);
+    }
+
+    private RedisConnection connect(ClusterServersConfig cfg, URI addr) {
+        RedisConnection connection = nodeConnections.get(addr);
+        if (connection != null) {
+            return connection;
+        }
+        RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getTimeout());
+        try {
+            connection = client.connect();
+            nodeConnections.put(addr, connection);
+        } catch (RedisConnectionException e) {
+            log.warn(e.getMessage(), e);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return connection;
     }
 
     @Override
@@ -89,23 +102,21 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
 
-        RedisClient client = createClient(partition.getMasterAddress().getHost(), partition.getMasterAddress().getPort(), cfg.getTimeout());
-        try {
-            RedisConnection c = client.connect();
-            Map<String, String> params = c.sync(RedisCommands.CLUSTER_INFO);
-            if ("fail".equals(params.get("cluster_state"))) {
-                log.warn("master: {} for slot range: {}-{} add failed. Reason - cluster_state:fail", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
-                return;
-            }
-        } finally {
-            client.shutdownAsync();
+        RedisConnection connection = connect(cfg, partition.getMasterAddress());
+        if (connection == null) {
+            return;
+        }
+        Map<String, String> params = connection.sync(RedisCommands.CLUSTER_INFO);
+        if ("fail".equals(params.get("cluster_state"))) {
+            log.warn("master: {} for slot range: {}-{} add failed. Reason - cluster_state:fail", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
+            return;
         }
 
         MasterSlaveServersConfig config = create(cfg);
         log.info("master: {} for slot range: {}-{} added", partition.getMasterAddress(), partition.getStartSlot(), partition.getEndSlot());
         config.setMasterAddress(partition.getMasterAddress());
 
-        SingleEntry entry = new SingleEntry(this, config);
+        SingleEntry entry = new SingleEntry(partition.getStartSlot(), partition.getEndSlot(), this, config);
         entries.put(partition.getEndSlot(), entry);
         lastPartitions.put(partition.getEndSlot(), partition);
     }
@@ -116,9 +127,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             public void run() {
                 try {
                     for (URI addr : cfg.getNodeAddresses()) {
-                        final RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getTimeout());
-                        try {
-                            RedisConnection connection = client.connect();
+                        RedisConnection connection = connect(cfg, addr);
                             String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
 
                             log.debug("cluster nodes state: {}", nodesValue);
@@ -152,12 +161,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             checkSlotsChange(cfg, partitions);
 
                             break;
-
-                        } catch (RedisConnectionException e) {
-                            // skip it
-                        } finally {
-                            client.shutdownAsync();
-                        }
                     }
 
                 } catch (Exception e) {
@@ -198,15 +201,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             InetSocketAddress url = entry.getValue().getClient().getAddr();
             slaveDown(entry.getKey(), url.getHostName(), url.getPort());
         }
-    }
-
-    private Map<String, String> parseInfo(String value) {
-        Map<String, String> result = new HashMap<String, String>();
-        for (String entry : value.split("\r\n|\n")) {
-            String[] parts = entry.split(":");
-            result.put(parts[0], parts[1]);
-        }
-        return result;
     }
 
     private Map<Integer, ClusterPartition> parsePartitions(String nodesValue) {
@@ -297,8 +291,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         monitorFuture.cancel(true);
         super.shutdown();
 
-        for (RedisClient client : nodeClients) {
-            client.shutdown();
+        for (RedisConnection connection : nodeConnections.values()) {
+            connection.getRedisClient().shutdown();
         }
     }
 }

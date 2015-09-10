@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -277,8 +278,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    private MapScanResult<Object, V> scanIterator(long startPos) {
-        return commandExecutor.read(getName(), RedisCommands.HSCAN, getName(), startPos);
+    private MapScanResult<Object, V> scanIterator(RedisClient client, long startPos) {
+        return commandExecutor.read(client, getName(), RedisCommands.HSCAN, getName(), startPos);
     }
 
     private Iterator<Map.Entry<K, V>> iterator() {
@@ -286,6 +287,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
             private Iterator<Map.Entry<K, V>> iter;
             private long iterPos = 0;
+            private RedisClient client;
 
             private boolean removeExecuted;
             private Map.Entry<K,V> value;
@@ -294,7 +296,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             public boolean hasNext() {
                 if (iter == null
                         || (!iter.hasNext() && iterPos != 0)) {
-                    MapScanResult<Object, V> res = scanIterator(iterPos);
+                    MapScanResult<Object, V> res = scanIterator(client, iterPos);
+                    if (iter == null) {
+                        client = res.getRedisClient();
+                    }
                     iter = ((Map<K, V>)res.getMap()).entrySet().iterator();
                     iterPos = res.getPos();
                 }

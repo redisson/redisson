@@ -18,7 +18,6 @@ package org.redisson.connection;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -32,6 +31,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisEmptySlotException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
@@ -58,6 +58,8 @@ import io.netty.util.concurrent.Promise;
  *
  */
 public class MasterSlaveConnectionManager implements ConnectionManager {
+
+    static final int MAX_SLOT = 16384;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -126,8 +128,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void initEntry(MasterSlaveServersConfig config) {
-        MasterSlaveEntry entry = new MasterSlaveEntry(this, config);
-        entries.put(Integer.MAX_VALUE, entry);
+        MasterSlaveEntry entry = new MasterSlaveEntry(0, MAX_SLOT, this, config);
+        entries.put(MAX_SLOT, entry);
     }
 
     protected void init(Config cfg) {
@@ -187,7 +189,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public int calcSlot(String key) {
         if (entries.size() == 1 || key == null) {
-            return -1;
+            return 0;
         }
 
         int start = key.indexOf('{');
@@ -196,7 +198,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             key = key.substring(start+1, end);
         }
 
-        int result = CRC16.crc16(key.getBytes()) % 16384;
+        int result = CRC16.crc16(key.getBytes()) % MAX_SLOT;
         log.debug("slot {} for {}", result, key);
         return result;
     }
@@ -234,14 +236,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        int slot = -1;
+        int slot = 0;
         RedisPubSubConnection conn = nextPubSubConnection(slot);
 
         PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
         entry.tryAcquire();
         PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
         if (oldEntry != null) {
-            returnSubscribeConnection(slot, entry);
+            releaseSubscribeConnection(slot, entry);
             return oldEntry;
         }
 
@@ -283,14 +285,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        int slot = -1;
+        int slot = 0;
         RedisPubSubConnection conn = nextPubSubConnection(slot);
 
         PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
         entry.tryAcquire();
         PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
         if (oldEntry != null) {
-            returnSubscribeConnection(slot, entry);
+            releaseSubscribeConnection(slot, entry);
             return oldEntry;
         }
 
@@ -332,14 +334,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        int slot = -1;
+        int slot = 0;
         RedisPubSubConnection conn = nextPubSubConnection(slot);
 
         PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
         entry.tryAcquire();
         PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
         if (oldEntry != null) {
-            returnSubscribeConnection(slot, entry);
+            releaseSubscribeConnection(slot, entry);
             return;
         }
         synchronized (entry) {
@@ -367,7 +369,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (type == PubSubType.UNSUBSCRIBE && channel.equals(channelName)) {
                     synchronized (entry) {
                         if (entry.tryClose()) {
-                            returnSubscribeConnection(-1, entry);
+                            releaseSubscribeConnection(0, entry);
                         }
                     }
                     return true;
@@ -392,7 +394,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 if (type == PubSubType.PUNSUBSCRIBE && channel.equals(channelName)) {
                     synchronized (entry) {
                         if (entry.tryClose()) {
-                            returnSubscribeConnection(-1, entry);
+                            releaseSubscribeConnection(0, entry);
                         }
                     }
                     return true;
@@ -403,14 +405,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
     }
 
-    protected MasterSlaveEntry getEntry() {
-        return getEntry(0);
-    }
-
     protected MasterSlaveEntry getEntry(int slot) {
-        if (slot == -1) {
-            slot = 0;
-        }
         return entries.ceilingEntry(slot).getValue();
     }
 
@@ -444,14 +439,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    protected void addSlave(String host, int port) {
-        getEntry().addSlave(host, port);
-    }
-
-    protected void slaveUp(String host, int port) {
-        getEntry().slaveUp(host, port);
-    }
-
     protected void changeMaster(int endSlot, String host, int port) {
         getEntry(endSlot).changeMaster(host, port);
     }
@@ -462,19 +449,36 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public RedisConnection connectionWriteOp(int slot) {
-        return getEntry(slot).connectionWriteOp();
+        MasterSlaveEntry e = getEntry(slot);
+        if (!e.isOwn(slot)) {
+            throw new RedisEmptySlotException("No node for slot: " + slot, slot);
+        }
+        return e.connectionWriteOp();
     }
 
     @Override
     public RedisConnection connectionReadOp(int slot) {
-        return getEntry(slot).connectionReadOp();
+        MasterSlaveEntry e = getEntry(slot);
+        if (!e.isOwn(slot)) {
+            throw new RedisEmptySlotException("No node for slot: " + slot, slot);
+        }
+        return e.connectionReadOp();
+    }
+
+    @Override
+    public RedisConnection connectionReadOp(int slot, RedisClient client) {
+        MasterSlaveEntry e = getEntry(slot);
+        if (!e.isOwn(slot)) {
+            throw new RedisEmptySlotException("No node for slot: " + slot, slot);
+        }
+        return e.connectionReadOp(client);
     }
 
     RedisPubSubConnection nextPubSubConnection(int slot) {
         return getEntry(slot).nextPubSubConnection();
     }
 
-    protected void returnSubscribeConnection(int slot, PubSubConnectionEntry entry) {
+    protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry entry) {
         this.getEntry(slot).returnSubscribeConnection(entry);
     }
 

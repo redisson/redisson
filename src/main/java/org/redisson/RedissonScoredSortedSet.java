@@ -15,7 +15,7 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -23,25 +23,50 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.RedisClient;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.core.RSet;
+import org.redisson.client.protocol.decoder.ScoredEntry;
+import org.redisson.core.RScoredSortedSet;
 
 import io.netty.util.concurrent.Future;
 
-/**
- * Distributed and concurrent implementation of {@link java.util.Set}
- *
- * @author Nikita Koksharov
- *
- * @param <V> value
- */
-public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
+public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RScoredSortedSet<V> {
 
-    protected RedissonSet(CommandExecutor commandExecutor, String name) {
+    public RedissonScoredSortedSet(CommandExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+    }
+
+    @Override
+    public boolean add(double score, V object) {
+        return get(addAsync(score, object));
+    }
+
+    @Override
+    public Future<Boolean> addAsync(double score, V object) {
+        return commandExecutor.writeAsync(getName(), RedisCommands.ZADD, getName(), BigDecimal.valueOf(score).toPlainString(), object);
+    }
+
+    @Override
+    public boolean remove(Object object) {
+        return get(removeAsync(object));
+    }
+
+    @Override
+    public void clear() {
+        delete();
+    }
+
+    @Override
+    public Future<Boolean> removeAsync(Object object) {
+        return commandExecutor.writeAsync(getName(), RedisCommands.ZREM, getName(), object);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return size() == 0;
     }
 
     @Override
@@ -51,26 +76,31 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Integer> sizeAsync() {
-        return commandExecutor.readAsync(getName(), RedisCommands.SCARD, getName());
+        return commandExecutor.readAsync(getName(), RedisCommands.ZCARD, getName());
     }
 
     @Override
-    public boolean isEmpty() {
-        return size() == 0;
-    }
-
-    @Override
-    public boolean contains(Object o) {
-        return get(containsAsync(o));
+    public boolean contains(Object object) {
+        return get(containsAsync(object));
     }
 
     @Override
     public Future<Boolean> containsAsync(Object o) {
-        return commandExecutor.readAsync(getName(), RedisCommands.SISMEMBER, getName(), o);
+        return commandExecutor.readAsync(getName(), RedisCommands.ZSCORE_CONTAINS, getName(), o);
+    }
+
+    @Override
+    public Double getScore(Object o) {
+        return get(getScoreAsync(o));
+    }
+
+    @Override
+    public Future<Double> getScoreAsync(Object o) {
+        return commandExecutor.readAsync(getName(), RedisCommands.ZSCORE, getName(), o);
     }
 
     private ListScanResult<V> scanIterator(RedisClient client, long startPos) {
-        return commandExecutor.read(client, getName(), RedisCommands.SSCAN, getName(), startPos);
+        return commandExecutor.read(client, getName(), RedisCommands.ZSCAN, getName(), startPos);
     }
 
     @Override
@@ -115,12 +145,9 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                 if (removeExecuted) {
                     throw new IllegalStateException("Element been already deleted");
                 }
-                if (iter == null) {
-                    throw new IllegalStateException();
-                }
 
                 iter.remove();
-                RedissonSet.this.remove(value);
+                RedissonScoredSortedSet.this.remove(value);
                 removeExecuted = true;
             }
 
@@ -128,50 +155,15 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
-    public Future<Collection<V>> readAllAsync() {
-        return commandExecutor.readAsync(getName(), RedisCommands.SMEMBERS, getName());
-    }
-
-    @Override
     public Object[] toArray() {
-        List<Object> res = (List<Object>) get(readAllAsync());
+        List<Object> res = (List<Object>) get(valueRangeAsync(0, -1));
         return res.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<Object> res = (List<Object>) get(readAllAsync());
+        List<Object> res = (List<Object>) get(valueRangeAsync(0, -1));
         return res.toArray(a);
-    }
-
-    @Override
-    public boolean add(V e) {
-        return get(addAsync(e));
-    }
-
-    @Override
-    public Future<Boolean> addAsync(V e) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.SADD_SINGLE, getName(), e);
-    }
-
-    @Override
-    public V removeRandom() {
-        return get(removeRandomAsync());
-    }
-
-    @Override
-    public Future<V> removeRandomAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.SPOP_SINGLE, getName());
-    }
-
-    @Override
-    public Future<Boolean> removeAsync(Object o) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.SREM_SINGLE, getName(), o);
-    }
-
-    @Override
-    public boolean remove(Object value) {
-        return get(removeAsync((V)value));
     }
 
     @Override
@@ -182,7 +174,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
         return commandExecutor.evalReadAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
-                "local s = redis.call('smembers', KEYS[1]);" +
+                "local s = redis.call('zrange', KEYS[1], 0, -1);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "
                             + "if ARGV[j] == s[i] "
@@ -194,58 +186,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
-    public boolean addAll(Collection<? extends V> c) {
-        if (c.isEmpty()) {
-            return false;
-        }
-
-        return get(addAllAsync(c));
-    }
-
-    @Override
-    public Future<Boolean> addAllAsync(Collection<? extends V> c) {
-        List<Object> args = new ArrayList<Object>(c.size() + 1);
-        args.add(getName());
-        args.addAll(c);
-        return commandExecutor.writeAsync(getName(), RedisCommands.SADD, args.toArray());
-    }
-
-    @Override
-    public boolean retainAll(Collection<?> c) {
-        return get(retainAllAsync(c));
-    }
-
-    @Override
-    public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
-                    "local changed = false " +
-                    "local s = redis.call('smembers', KEYS[1]) "
-                       + "local i = 0 "
-                       + "while i <= table.getn(s) do "
-                            + "local element = s[i] "
-                            + "local isInAgrs = false "
-                            + "for j = 0, table.getn(ARGV), 1 do "
-                                + "if ARGV[j] == element then "
-                                    + "isInAgrs = true "
-                                    + "break "
-                                + "end "
-                            + "end "
-                            + "if isInAgrs == false then "
-                                + "redis.call('SREM', KEYS[1], element) "
-                                + "changed = true "
-                            + "end "
-                            + "i = i + 1 "
-                       + "end "
-                       + "return changed ",
-                Collections.<Object>singletonList(getName()), c.toArray());
-    }
-
-    @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                         "local v = false " +
                         "for i = 0, table.getn(ARGV), 1 do "
-                            + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "
+                            + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
                             + "then v = true end "
                         +"end "
                        + "return v ",
@@ -258,8 +203,65 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
-    public void clear() {
-        delete();
+    public boolean retainAll(Collection<?> c) {
+        return get(retainAllAsync(c));
+    }
+
+    @Override
+    public Future<Boolean> retainAllAsync(Collection<?> c) {
+        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+                    "local changed = false " +
+                    "local s = redis.call('zrange', KEYS[1], 0, -1) "
+                       + "local i = 0 "
+                       + "while i <= table.getn(s) do "
+                            + "local element = s[i] "
+                            + "local isInAgrs = false "
+                            + "for j = 0, table.getn(ARGV), 1 do "
+                                + "if ARGV[j] == element then "
+                                    + "isInAgrs = true "
+                                    + "break "
+                                + "end "
+                            + "end "
+                            + "if isInAgrs == false then "
+                                + "redis.call('zrem', KEYS[1], element) "
+                                + "changed = true "
+                            + "end "
+                            + "i = i + 1 "
+                       + "end "
+                       + "return changed ",
+                Collections.<Object>singletonList(getName()), c.toArray());
+    }
+
+    @Override
+    public Double addScore(V object, Number value) {
+        return get(addScoreAsync(object, value));
+    }
+
+    @Override
+    public Future<Double> addScoreAsync(V object, Number value) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZINCRBY,
+                                   getName(), new BigDecimal(value.toString()).toPlainString(), object);
+    }
+
+    @Override
+    public Collection<V> valueRange(int startIndex, int endIndex) {
+        return get(valueRangeAsync(startIndex, endIndex));
+    }
+
+    @Override
+    public Future<Collection<V>> valueRangeAsync(int startIndex, int endIndex) {
+        return commandExecutor.readAsync(getName(), RedisCommands.ZRANGE, getName(), startIndex, endIndex);
+    }
+
+    @Override
+    public Collection<ScoredEntry<V>> entryRange(int startIndex, int endIndex) {
+        return get(entryRangeAsync(startIndex, endIndex));
+    }
+
+    @Override
+    public Future<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex,
+            int endIndex) {
+        return commandExecutor.readAsync(getName(), RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
     }
 
 }

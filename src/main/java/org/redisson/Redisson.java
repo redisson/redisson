@@ -44,6 +44,7 @@ import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
+import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSet;
 import org.redisson.core.RSortedSet;
@@ -214,6 +215,10 @@ public class Redisson implements RedissonClient {
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
         return new RedissonSortedSet<V>(commandExecutor, name);
+    }
+
+    public <V> RScoredSortedSet<V> getScoredSortedSet(String name) {
+        return new RedissonScoredSortedSet<V>(commandExecutor, name);
     }
 
     /**

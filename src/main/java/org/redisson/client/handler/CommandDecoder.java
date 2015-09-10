@@ -21,12 +21,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.handler.CommandsQueue.QueueCommands;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
@@ -132,8 +130,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
                 }
 
-                ctx.channel().attr(CommandsQueue.REPLAY).remove();
-                ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
+                ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx);
 
                 state(null);
             } else {
@@ -143,8 +140,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             return;
         }
 
-        ctx.channel().attr(CommandsQueue.REPLAY).remove();
-        ctx.pipeline().fireUserEventTriggered(QueueCommands.NEXT_COMMAND);
+        ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx);
 
         state(null);
     }
@@ -169,7 +165,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 int slot = Integer.valueOf(errorParts[2]);
                 data.getPromise().setFailure(new RedisMovedException(slot));
             } else {
-                data.getPromise().setFailure(new RedisException(error + ". channel: " + channel));
+                data.getPromise().setFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
             }
         } else if (code == ':') {
             String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);

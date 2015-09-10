@@ -23,6 +23,8 @@ import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
 
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
@@ -36,20 +38,14 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class CommandsQueue extends ChannelDuplexHandler {
 
-    public enum QueueCommands {NEXT_COMMAND}
-
     public static final AttributeKey<QueueCommand> REPLAY = AttributeKey.valueOf("promise");
 
     private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
 
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt == QueueCommands.NEXT_COMMAND) {
-            queue.poll();
-            sendData(ctx);
-        } else {
-            super.userEventTriggered(ctx, evt);
-        }
+    public void sendNextCommand(ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().attr(CommandsQueue.REPLAY).remove();
+        queue.poll();
+        sendData(ctx);
     }
 
     @Override
@@ -67,7 +63,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
         }
     }
 
-    private void sendData(ChannelHandlerContext ctx) throws Exception {
+    private void sendData(final ChannelHandlerContext ctx) throws Exception {
         QueueCommandHolder command = queue.peek();
         if (command != null && command.getSended().compareAndSet(false, true)) {
             QueueCommand data = command.getCommand();
@@ -81,6 +77,14 @@ public class CommandsQueue extends ChannelDuplexHandler {
             } else {
                 ctx.channel().attr(REPLAY).set(data);
             }
+            command.getChannelPromise().addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        sendNextCommand(ctx);
+                    }
+                }
+            });
             ctx.channel().writeAndFlush(data, command.getChannelPromise());
         }
     }

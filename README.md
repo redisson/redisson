@@ -22,8 +22,9 @@ Features
     1. automatic master and slave servers discovery
     2. automatic new master server discovery
     3. automatic new slave servers discovery
-    4. automatic slave servers offline/online discovery
-    5. read data using slave servers, write data using master server
+    4. automatic slave servers offline/online discovery  
+    5. automatic sentinel servers discovery  
+    6. read data using slave servers, write data using master server
 * Master with Slave servers mode: read data using slave servers, write data using master server
 * Single server mode: read and write data using single server
 * Lua scripting  
@@ -52,11 +53,35 @@ Projects using Redisson
 Setronica: [setronica.com](http://setronica.com/)  
 Monits: [monits.com](http://monits.com/)  
 Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
-Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
-
+Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)  
+武林Q传:[nbrpg](http://www.nbrpg.com/)  
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####05-Sep-2015 - version 2.1.2 released  
+Fixed - possible NPE during channel reconnection  
+Fixed - executeAsync freezes in cluster mode  
+Fixed - use same node for SCAN/SSCAN/HSCAN during iteration  
+Fixed - possible race-condition during master change  
+Fixed - `BlockingQueue.peek` race-condition  
+Fixed - NPE with empty sentinel servers  
+Fixed - unable to read `clientName` config param in Master\Slave and Sentinel modes  
+Fixed - "Too many open files" error in cluster mode
+
+####15-Aug-2015 - version 2.1.1 released  
+Feature - all keys operations extracted to `RKeys` interface  
+Feature - `RKeys.getKeys`, `RKeys.getKeysByPattern` and `RKeys.randomKey`methods added  
+Feature - `RBlockingQueueAsync.drainToAsync` method added  
+Feature - Redis nodes info and ping operations via `Redisson.getNodesGroup` or `Redisson.getClusterNodesGroup` now available  
+Improvement - added sentinel nodes discovery  
+Fixed - command encoding errors handling  
+Fixed - cluster empty slot handling  
+Fixed - connection hangs when there are no slaves in sentinel mode  
+Fixed - activate master as slave when there are no more available slaves in sentinel mode  
+Fixed - skip disconnected sentinels during startup  
+Fixed - slave node discovery in sentinel mode which has been disconnected since start  
+__Deprecated__ - Redisson methods `deleteAsync`, `delete`, `deleteByPatternAsync`, `deleteByPattern`, `findKeysByPatternAsync`, `findKeysByPattern`. Use same methods with `RKeys` interface  
 
 ####03-Aug-2015 - version 2.1.0 released  
 Feature - `RTopic` subscribtion/unsubscription status listener added  
@@ -223,8 +248,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.1.0</version>
+       <version>2.1.1</version>
     </dependency>
+
+### Gradle
+
+    compile 'org.redisson:redisson:2.1.1'
 
 ### Supported by
 

@@ -27,6 +27,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
         newconfig.setRetryInterval(cfg.getRetryInterval());
         newconfig.setTimeout(cfg.getTimeout());
+        newconfig.setPingTimeout(cfg.getPingTimeout());
         newconfig.setPassword(cfg.getPassword());
         newconfig.setDatabase(cfg.getDatabase());
         newconfig.setClientName(cfg.getClientName());
@@ -40,8 +41,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     protected void initEntry(MasterSlaveServersConfig config) {
-        SingleEntry entry = new SingleEntry(this, config);
-        entries.put(Integer.MAX_VALUE, entry);
+        SingleEntry entry = new SingleEntry(0, MAX_SLOT, this, config);
+        entries.put(MAX_SLOT, entry);
     }
 
 }

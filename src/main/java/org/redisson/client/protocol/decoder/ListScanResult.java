@@ -17,10 +17,14 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
-public class ListScanResult<V> {
+import org.redisson.RedisClientResult;
+import org.redisson.client.RedisClient;
+
+public class ListScanResult<V> implements RedisClientResult {
 
     private final Long pos;
     private final List<V> values;
+    private RedisClient client;
 
     public ListScanResult(Long pos, List<V> values) {
         this.pos = pos;
@@ -33,6 +37,15 @@ public class ListScanResult<V> {
 
     public List<V> getValues() {
         return values;
+    }
+
+    @Override
+    public void setRedisClient(RedisClient client) {
+        this.client = client;
+    }
+
+    public RedisClient getRedisClient() {
+        return client;
     }
 
 }
