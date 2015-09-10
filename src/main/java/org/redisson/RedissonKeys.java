@@ -116,6 +116,9 @@ public class RedissonKeys implements RKeys {
                 if (removeExecuted) {
                     throw new IllegalStateException("Element been already deleted");
                 }
+                if (iter == null) {
+                    throw new IllegalStateException();
+                }
 
                 iter.remove();
                 delete(value);
