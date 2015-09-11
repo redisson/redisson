@@ -38,6 +38,21 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      */
     private int connectionPoolSize = 100;
 
+        
+    /**
+     * Should the server address be monitored for changes in DNS? Useful for 
+     * AWS ElastiCache where the client is pointed at the endpoint for a replication group
+     * which is a DNS alias to the current master node.<br>
+     * <em>NB: applications must ensure the JVM DNS cache TTL is low enough to support this.</em> 
+     * e.g., http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/java-dg-jvm-ttl.html
+     */
+    private boolean dnsMonitoring = false;
+
+    /**
+     * Interval in milliseconds to check DNS
+     */
+    private long dnsMonitoringInterval = 5000;
+    
     SingleServerConfig() {
     }
 
@@ -46,6 +61,8 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
         setAddress(config.getAddress());
         setConnectionPoolSize(config.getConnectionPoolSize());
         setSubscriptionConnectionPoolSize(config.getSubscriptionConnectionPoolSize());
+        setDnsMonitoring(config.isDnsMonitoring());
+        setDnsMonitoringInterval(config.getDnsMonitoringInterval());
     }
 
     /**
@@ -93,4 +110,33 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
         this.address = address;
     }
 
+    /**
+     * Monitoring of the endpoint address for DNS changes.
+     * Default is false.
+     * 
+     * @param dnsMonitoring
+     * @return
+     */
+    public SingleServerConfig setDnsMonitoring(boolean dnsMonitoring) {
+        this.dnsMonitoring = dnsMonitoring;
+        return this;
+    }
+    public boolean isDnsMonitoring() {
+        return dnsMonitoring;
+    }
+
+    /**
+     * Interval in milliseconds to check the endpoint DNS if {@link #isDnsMonitoring()} is true.
+     * Default is 5000.
+     * 
+     * @param dnsMonitoringInterval
+     * @return
+     */
+    public SingleServerConfig setDnsMonitoringInterval(long dnsMonitoringInterval) {
+        this.dnsMonitoringInterval = dnsMonitoringInterval;
+        return this;
+    }
+    public long getDnsMonitoringInterval() {
+        return dnsMonitoringInterval;
+    }
 }
