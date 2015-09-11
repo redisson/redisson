@@ -195,8 +195,9 @@ class BaseConfig<T extends BaseConfig<T>> {
      *
      * @param failAttemptsAmount
      */
-    public void setCloseConnectionAfterFailAttempts(int failAttemptsAmount) {
+    public T setCloseConnectionAfterFailAttempts(int failAttemptsAmount) {
         this.closeConnectionAfterFailAttempts = failAttemptsAmount;
+        return (T) this;
     }
     public int getCloseConnectionAfterFailAttempts() {
         return closeConnectionAfterFailAttempts;
