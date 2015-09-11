@@ -28,6 +28,7 @@ import org.redisson.core.RKeysAsync;
 import org.redisson.core.RListAsync;
 import org.redisson.core.RMapAsync;
 import org.redisson.core.RQueueAsync;
+import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScriptAsync;
 import org.redisson.core.RSetAsync;
 import org.redisson.core.RTopicAsync;
@@ -90,6 +91,11 @@ public class RedissonBatch implements RBatch {
     @Override
     public RAtomicLongAsync getAtomicLongAsync(String name) {
         return new RedissonAtomicLong(executorService, name);
+    }
+
+    @Override
+    public <V> RScoredSortedSet<V> getScoredSortedSet(String name) {
+        return new RedissonScoredSortedSet<V>(executorService, name);
     }
 
     @Override
