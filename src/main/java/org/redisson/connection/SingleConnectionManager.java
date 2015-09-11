@@ -37,7 +37,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     private final AtomicReference<InetAddress> currentMaster = new AtomicReference<InetAddress>();
 
     private ScheduledFuture<?> monitorFuture;
-    
+
     public SingleConnectionManager(SingleServerConfig cfg, Config config) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
@@ -48,13 +48,14 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setPassword(cfg.getPassword());
         newconfig.setDatabase(cfg.getDatabase());
         newconfig.setClientName(cfg.getClientName());
+        newconfig.setCloseConnectionAfterFailAttempts(cfg.getCloseConnectionAfterFailAttempts());
         newconfig.setMasterAddress(addr);
         newconfig.setMasterConnectionPoolSize(cfg.getConnectionPoolSize());
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         newconfig.setSlaveSubscriptionConnectionPoolSize(cfg.getSubscriptionConnectionPoolSize());
 
         init(newconfig, config);
-        
+
         if (cfg.isDnsMonitoring()) {
             try {
                 this.currentMaster.set(InetAddress.getByName(cfg.getAddress().getHost()));
@@ -71,7 +72,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         SingleEntry entry = new SingleEntry(0, MAX_SLOT, this, config);
         entries.put(MAX_SLOT, entry);
     }
-        
+
     private void monitorDnsChange(final SingleServerConfig cfg) {
         monitorFuture = GlobalEventExecutor.INSTANCE.scheduleWithFixedDelay(new Runnable() {
             @Override
