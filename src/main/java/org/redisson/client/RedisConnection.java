@@ -71,6 +71,7 @@ public class RedisConnection implements RedisCommands {
     public void updateChannel(Channel channel) {
         this.channel = channel;
         channel.attr(CONNECTION).set(this);
+        resetFailAttempt();
     }
 
     public RedisClient getRedisClient() {
