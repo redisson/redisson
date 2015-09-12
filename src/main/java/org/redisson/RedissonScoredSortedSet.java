@@ -278,27 +278,62 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> lexRange(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
+        return get(lexRangeAsync(fromElement, fromInclusive, toElement, toInclusive));
+    }
+
+    @Override
+    public Collection<V> lexRangeHead(V toElement, boolean toInclusive) {
+        return get(lexRangeHeadAsync(toElement, toInclusive));
+    }
+
+    @Override
+    public Future<Collection<V>> lexRangeHeadAsync(V toElement, boolean toInclusive) {
+        String toValue = value(toElement, toInclusive);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue);
+    }
+
+    @Override
+    public Collection<V> lexRangeTail(V fromElement, boolean fromInclusive) {
+        return get(lexRangeTailAsync(fromElement, fromInclusive));
+    }
+
+    @Override
+    public Future<Collection<V>> lexRangeTailAsync(V fromElement, boolean fromInclusive) {
+        String fromValue = value(fromElement, fromInclusive);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+");
+    }
+
+
+    @Override
+    public Future<Collection<V>> lexRangeAsync(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
+        String fromValue = value(fromElement, fromInclusive);
+        String toValue = value(toElement, toInclusive);
+
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue);
+    }
+
+    @Override
     public Integer lexCount(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
         return get(lexCountAsync(fromElement, fromInclusive, toElement, toInclusive));
     }
 
     @Override
     public Future<Integer> lexCountAsync(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
+        String fromValue = value(fromElement, fromInclusive);
+        String toValue = value(toElement, toInclusive);
+
+        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
+    }
+
+    private String value(V fromElement, boolean fromInclusive) {
         String fromValue = fromElement.toString();
         if (fromInclusive) {
             fromValue = "[" + fromValue;
         } else {
             fromValue = "(" + fromValue;
         }
-
-        String toValue = toElement.toString();
-        if (toInclusive) {
-            toValue = "[" + toValue;
-        } else {
-            toValue = "(" + toValue;
-        }
-
-        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
+        return fromValue;
     }
 
 }

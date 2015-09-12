@@ -23,6 +23,12 @@ import io.netty.util.concurrent.Future;
 
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
+    Future<Collection<V>> lexRangeTailAsync(V fromElement, boolean fromInclusive);
+
+    Future<Collection<V>> lexRangeHeadAsync(V toElement, boolean toInclusive);
+
+    Future<Collection<V>> lexRangeAsync(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive);
+
     Future<Integer> lexCountAsync(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive);
 
     Future<Integer> rankAsync(V o);

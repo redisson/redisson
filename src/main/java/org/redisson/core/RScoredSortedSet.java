@@ -21,6 +21,12 @@ import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable {
 
+    Collection<V> lexRangeTail(V fromElement, boolean fromInclusive);
+
+    Collection<V> lexRangeHead(V toElement, boolean toInclusive);
+
+    Collection<V> lexRange(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive);
+
     Integer lexCount(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive);
 
     Integer rank(V o);
