@@ -314,6 +314,30 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Integer lexCountTail(V fromElement, boolean fromInclusive) {
+        return get(lexCountTailAsync(fromElement, fromInclusive));
+    }
+
+    @Override
+    public Future<Integer> lexCountTailAsync(V fromElement, boolean fromInclusive) {
+        String fromValue = value(fromElement, fromInclusive);
+
+        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
+    }
+
+    @Override
+    public Integer lexCountHead(V toElement, boolean toInclusive) {
+        return get(lexCountHeadAsync(toElement, toInclusive));
+    }
+
+    @Override
+    public Future<Integer> lexCountHeadAsync(V toElement, boolean toInclusive) {
+        String toValue = value(toElement, toInclusive);
+
+        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
+    }
+
+    @Override
     public Integer lexCount(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
         return get(lexCountAsync(fromElement, fromInclusive, toElement, toInclusive));
     }
