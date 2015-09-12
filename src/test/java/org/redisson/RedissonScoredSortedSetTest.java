@@ -1,10 +1,7 @@
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -16,12 +13,42 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.client.protocol.decoder.ScoredEntry;
-import org.redisson.core.RMap;
+import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RSortedSet;
 
+import io.netty.util.concurrent.Future;
+
 public class RedissonScoredSortedSetTest extends BaseTest {
+
+    @Test
+    public void testRank() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+        set.add(0.5, "e");
+        set.add(0.6, "f");
+        set.add(0.7, "g");
+
+        Assert.assertEquals(3, (int)set.rank("d"));
+    }
+
+    @Test
+    public void testLexCount() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0, "a");
+        set.add(0, "b");
+        set.add(0, "c");
+        set.add(0, "d");
+        set.add(0, "e");
+        set.add(0, "f");
+        set.add(0, "g");
+
+        Assert.assertEquals(5, (int)set.lexCount("b", true, "f", true));
+        Assert.assertEquals(3, (int)set.lexCount("b", false, "f", false));
+    }
 
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {

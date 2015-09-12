@@ -17,13 +17,17 @@ package org.redisson.core;
 
 import java.util.Collection;
 
-import org.redisson.client.protocol.decoder.ScoredEntry;
+import org.redisson.client.protocol.ScoredEntry;
 
 import io.netty.util.concurrent.Future;
 
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
-    Future<Double> getScoreAsync(Object o);
+    Future<Integer> lexCountAsync(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive);
+
+    Future<Integer> rankAsync(V o);
+
+    Future<Double> getScoreAsync(V o);
 
     Future<Boolean> addAsync(double score, V object);
 

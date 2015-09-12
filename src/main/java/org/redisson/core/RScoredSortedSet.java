@@ -17,11 +17,15 @@ package org.redisson.core;
 
 import java.util.Collection;
 
-import org.redisson.client.protocol.decoder.ScoredEntry;
+import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable {
 
-    Double getScore(Object o);
+    Integer lexCount(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive);
+
+    Integer rank(V o);
+
+    Double getScore(V o);
 
     boolean add(double score, V object);
 

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.ScoredEntry;
 
 import io.netty.buffer.ByteBuf;
 
