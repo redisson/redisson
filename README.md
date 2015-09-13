@@ -55,6 +55,8 @@ Monits: [monits.com](http://monits.com/)
 Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
 Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)  
 武林Q传:[nbrpg](http://www.nbrpg.com/)  
+Ocous: [ocous](http://www.ocous.com/)  
+
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
@@ -248,12 +250,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.1.1</version>
+       <version>2.1.2</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.1.1'
+    compile 'org.redisson:redisson:2.1.2'
 
 ### Supported by
 
