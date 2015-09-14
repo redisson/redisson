@@ -59,6 +59,14 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(removeAsync(object));
     }
 
+    public int removeRangeByRank(int startIndex, int endIndex) {
+        return get(removeRangeByRankAsync(startIndex, endIndex));
+    }
+
+    public Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
+    }
+
     @Override
     public void clear() {
         delete();
