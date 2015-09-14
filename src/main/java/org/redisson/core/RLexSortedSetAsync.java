@@ -21,6 +21,12 @@ import io.netty.util.concurrent.Future;
 
 public interface RLexSortedSetAsync extends RCollectionAsync<String> {
 
+    Future<Integer> removeRangeByLexAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+
+    Future<Integer> removeRangeTailByLexAsync(String fromElement, boolean fromInclusive);
+
+    Future<Integer> removeRangeHeadByLexAsync(String toElement, boolean toInclusive);
+
     Future<Integer> lexCountTailAsync(String fromElement, boolean fromInclusive);
 
     Future<Integer> lexCountHeadAsync(String toElement, boolean toInclusive);

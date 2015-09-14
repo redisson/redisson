@@ -20,9 +20,15 @@ import java.util.Set;
 
 public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirable {
 
-    Integer lexCountTail(String fromElement, boolean fromInclusive);
+    int removeRangeTailByLex(String fromElement, boolean fromInclusive);
 
-    Integer lexCountHead(String toElement, boolean toInclusive);
+    int removeRangeHeadByLex(String toElement, boolean toInclusive);
+
+    int removeRangeByLex(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+
+    int lexCountTail(String fromElement, boolean fromInclusive);
+
+    int lexCountHead(String toElement, boolean toInclusive);
 
     Collection<String> lexRangeTail(String fromElement, boolean fromInclusive);
 
@@ -30,9 +36,9 @@ public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirab
 
     Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Integer lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    int lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Integer rank(String o);
+    int rank(String o);
 
     Collection<String> valueRange(int startIndex, int endIndex);
 

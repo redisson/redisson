@@ -32,6 +32,41 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
+    public int removeRangeByLex(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
+        return get(removeRangeByLexAsync(fromElement, fromInclusive, toElement, toInclusive));
+    }
+
+    @Override
+    public int removeRangeHeadByLex(String toElement, boolean toInclusive) {
+        return get(removeRangeHeadByLexAsync(toElement, toInclusive));
+    }
+
+    @Override
+    public Future<Integer> removeRangeHeadByLexAsync(String toElement, boolean toInclusive) {
+        String toValue = value(toElement, toInclusive);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), "-", toValue);
+    }
+
+    @Override
+    public int removeRangeTailByLex(String fromElement, boolean fromInclusive) {
+        return get(removeRangeTailByLexAsync(fromElement, fromInclusive));
+    }
+
+    @Override
+    public Future<Integer> removeRangeTailByLexAsync(String fromElement, boolean fromInclusive) {
+        String fromValue = value(fromElement, fromInclusive);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, "+");
+    }
+
+    @Override
+    public Future<Integer> removeRangeByLexAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
+        String fromValue = value(fromElement, fromInclusive);
+        String toValue = value(toElement, toInclusive);
+
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, toValue);
+    }
+
+    @Override
     public Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         return get(lexRangeAsync(fromElement, fromInclusive, toElement, toInclusive));
     }
@@ -68,7 +103,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Integer lexCountTail(String fromElement, boolean fromInclusive) {
+    public int lexCountTail(String fromElement, boolean fromInclusive) {
         return get(lexCountTailAsync(fromElement, fromInclusive));
     }
 
@@ -80,7 +115,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Integer lexCountHead(String toElement, boolean toInclusive) {
+    public int lexCountHead(String toElement, boolean toInclusive) {
         return get(lexCountHeadAsync(toElement, toInclusive));
     }
 
@@ -92,7 +127,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Integer lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
+    public int lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         return get(lexCountAsync(fromElement, fromInclusive, toElement, toInclusive));
     }
 

@@ -130,7 +130,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Integer rank(V o) {
+    public int rank(V o) {
         return get(rankAsync(o));
     }
 
