@@ -71,7 +71,10 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
         }
         return this;
     }
-
+    public MasterSlaveServersConfig addSlaveAddress(URI slaveAddress) {
+        slaveAddresses.add(slaveAddress);
+        return this;
+    }
     public List<URI> getSlaveAddresses() {
         return slaveAddresses;
     }

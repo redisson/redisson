@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ClusterConnectionManager;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
@@ -79,6 +80,8 @@ public class Redisson implements RedissonClient {
             connectionManager = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
         } else if (configCopy.getClusterServersConfig() != null) {
             connectionManager = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
+        } else if (configCopy.getElasticacheServersConfig() != null) {
+            connectionManager = new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy);
         } else {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
