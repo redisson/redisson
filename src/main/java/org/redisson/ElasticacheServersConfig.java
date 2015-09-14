@@ -71,7 +71,7 @@ public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<Elast
         return scanInterval;
     }
     /**
-     * Redis cluster scan interval in milliseconds
+     * Elasticache node scan interval in milliseconds
      *
      * @param scanInterval in milliseconds
      * @return
