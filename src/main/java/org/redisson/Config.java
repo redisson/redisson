@@ -34,7 +34,7 @@ public class Config {
 
     private ClusterServersConfig clusterServersConfig;
     
-    private ElasticacheReplicationGroupServersConfig elasticacheReplicationGroupServersConfig;
+    private ElasticacheServersConfig elasticacheServersConfig;
 
     /**
      * Threads amount shared between all redis node clients
@@ -73,8 +73,8 @@ public class Config {
         if (oldConf.getClusterServersConfig() != null ) {
             setClusterServersConfig(new ClusterServersConfig(oldConf.getClusterServersConfig()));
         }
-        if (oldConf.getElasticacheReplicationGroupServersConfig() != null) {
-            setElasticacheReplicationGroupServersConfig(new ElasticacheReplicationGroupServersConfig(oldConf.getElasticacheReplicationGroupServersConfig()));
+        if (oldConf.getElasticacheServersConfig() != null) {
+            setElasticacheServersConfig(new ElasticacheServersConfig(oldConf.getElasticacheServersConfig()));
         }
         
     }
@@ -97,7 +97,7 @@ public class Config {
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
         checkSingleServerConfig();
-        checkElasticacheReplicationGroupServersConfig();
+        checkElasticacheServersConfig();
 
         if (clusterServersConfig == null) {
             clusterServersConfig = new ClusterServersConfig();
@@ -112,30 +112,30 @@ public class Config {
         this.clusterServersConfig = clusterServersConfig;
     }
 
-    public ElasticacheReplicationGroupServersConfig useElasticacheReplicationGroupServers() {
+    public ElasticacheServersConfig useElasticacheServers() {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
         checkSingleServerConfig();
 
-        if (elasticacheReplicationGroupServersConfig == null) {
-            elasticacheReplicationGroupServersConfig = new ElasticacheReplicationGroupServersConfig();
+        if (elasticacheServersConfig == null) {
+            elasticacheServersConfig = new ElasticacheServersConfig();
         }
-        return elasticacheReplicationGroupServersConfig;
+        return elasticacheServersConfig;
     }
 
-    ElasticacheReplicationGroupServersConfig getElasticacheReplicationGroupServersConfig() {
-        return elasticacheReplicationGroupServersConfig;
+    ElasticacheServersConfig getElasticacheServersConfig() {
+        return elasticacheServersConfig;
     }
-    void setElasticacheReplicationGroupServersConfig(ElasticacheReplicationGroupServersConfig elasticacheReplicationGroupServersConfig) {
-        this.elasticacheReplicationGroupServersConfig = elasticacheReplicationGroupServersConfig;
+    void setElasticacheServersConfig(ElasticacheServersConfig elasticacheServersConfig) {
+        this.elasticacheServersConfig = elasticacheServersConfig;
     }
 
     public SingleServerConfig useSingleServer() {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
-        checkElasticacheReplicationGroupServersConfig();
+        checkElasticacheServersConfig();
 
         if (singleServerConfig == null) {
             singleServerConfig = new SingleServerConfig();
@@ -154,7 +154,7 @@ public class Config {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkMasterSlaveServersConfig();
-        checkElasticacheReplicationGroupServersConfig();
+        checkElasticacheServersConfig();
 
         if (sentinelServersConfig == null) {
             sentinelServersConfig = new SentinelServersConfig();
@@ -173,7 +173,7 @@ public class Config {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkSentinelServersConfig();
-        checkElasticacheReplicationGroupServersConfig();
+        checkElasticacheServersConfig();
 
         if (masterSlaveServersConfig == null) {
             masterSlaveServersConfig = new MasterSlaveServersConfig();
@@ -224,8 +224,8 @@ public class Config {
         }
     }
     
-    private void checkElasticacheReplicationGroupServersConfig() {
-        if (elasticacheReplicationGroupServersConfig != null) {
+    private void checkElasticacheServersConfig() {
+        if (elasticacheServersConfig != null) {
             throw new IllegalStateException("elasticache replication group servers config already used!");
         }
     }

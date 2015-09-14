@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
-import org.redisson.ElasticacheReplicationGroupServersConfig;
+import org.redisson.ElasticacheServersConfig;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -42,7 +42,7 @@ import io.netty.util.concurrent.ScheduledFuture;
  *
  * @author Steve Ungerer
  */
-public class ElasticacheReplicationGroupConnectionManager extends MasterSlaveConnectionManager {
+public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
 
     private static final String ROLE_KEY = "role:";
     
@@ -59,7 +59,7 @@ public class ElasticacheReplicationGroupConnectionManager extends MasterSlaveCon
         slave
     }
 
-    public ElasticacheReplicationGroupConnectionManager(ElasticacheReplicationGroupServersConfig cfg, Config config) {
+    public ElasticacheConnectionManager(ElasticacheServersConfig cfg, Config config) {
         init(config);
 
         this.config = create(cfg);
@@ -88,7 +88,7 @@ public class ElasticacheReplicationGroupConnectionManager extends MasterSlaveCon
         monitorRoleChange(cfg);
     }
 
-    private RedisConnection connect(ElasticacheReplicationGroupServersConfig cfg, URI addr) {
+    private RedisConnection connect(ElasticacheServersConfig cfg, URI addr) {
         RedisConnection connection = nodeConnections.get(addr);
         if (connection != null) {
             return connection;
@@ -105,7 +105,7 @@ public class ElasticacheReplicationGroupConnectionManager extends MasterSlaveCon
         return connection;
     }
 
-    private void monitorRoleChange(final ElasticacheReplicationGroupServersConfig cfg) {
+    private void monitorRoleChange(final ElasticacheServersConfig cfg) {
         monitorFuture = GlobalEventExecutor.INSTANCE.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -145,7 +145,7 @@ public class ElasticacheReplicationGroupConnectionManager extends MasterSlaveCon
         throw new RedisException("Cannot determine node role from provided 'INFO replication' data");
     }
 
-    private MasterSlaveServersConfig create(ElasticacheReplicationGroupServersConfig cfg) {
+    private MasterSlaveServersConfig create(ElasticacheServersConfig cfg) {
         MasterSlaveServersConfig c = new MasterSlaveServersConfig();
         c.setRetryInterval(cfg.getRetryInterval());
         c.setRetryAttempts(cfg.getRetryAttempts());

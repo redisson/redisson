@@ -27,7 +27,7 @@ import org.redisson.misc.URIBuilder;
  *
  * @author Steve Ungerer
  */
-public class ElasticacheReplicationGroupServersConfig extends BaseMasterSlaveServersConfig<ElasticacheReplicationGroupServersConfig> {
+public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<ElasticacheServersConfig> {
 
     /**
      * Replication group node urls list
@@ -39,10 +39,10 @@ public class ElasticacheReplicationGroupServersConfig extends BaseMasterSlaveSer
      */
     private int scanInterval = 1000;
 
-    public ElasticacheReplicationGroupServersConfig() {
+    public ElasticacheServersConfig() {
     }
 
-    ElasticacheReplicationGroupServersConfig(ElasticacheReplicationGroupServersConfig config) {
+    ElasticacheServersConfig(ElasticacheServersConfig config) {
         super(config);
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
@@ -54,7 +54,7 @@ public class ElasticacheReplicationGroupServersConfig extends BaseMasterSlaveSer
      * @param addresses in <code>host:port</code> format
      * @return
      */
-    public ElasticacheReplicationGroupServersConfig addNodeAddress(String ... addresses) {
+    public ElasticacheServersConfig addNodeAddress(String ... addresses) {
         for (String address : addresses) {
             nodeAddresses.add(URIBuilder.create(address));
         }
@@ -76,7 +76,7 @@ public class ElasticacheReplicationGroupServersConfig extends BaseMasterSlaveSer
      * @param scanInterval in milliseconds
      * @return
      */
-    public ElasticacheReplicationGroupServersConfig setScanInterval(int scanInterval) {
+    public ElasticacheServersConfig setScanInterval(int scanInterval) {
         this.scanInterval = scanInterval;
         return this;
     }
