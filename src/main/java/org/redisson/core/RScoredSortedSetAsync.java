@@ -23,6 +23,10 @@ import io.netty.util.concurrent.Future;
 
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
+    Future<V> firstAsync();
+
+    Future<V> lastAsync();
+
     Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 
     Future<Integer> rankAsync(V o);

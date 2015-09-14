@@ -49,6 +49,22 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(addAsync(score, object));
     }
 
+    public V first() {
+        return get(firstAsync());
+    }
+
+    public Future<V> firstAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), 0, 0);
+    }
+
+    public V last() {
+        return get(lastAsync());
+    }
+
+    public Future<V> lastAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), -1, -1);
+    }
+
     @Override
     public Future<Boolean> addAsync(double score, V object) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD, getName(), BigDecimal.valueOf(score).toPlainString(), object);

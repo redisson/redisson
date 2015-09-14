@@ -22,6 +22,19 @@ import io.netty.util.concurrent.Future;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testFirstLast() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+
+        Assert.assertEquals("a", set.first());
+        Assert.assertEquals("d", set.last());
+    }
+
+
+    @Test
     public void testRemoveRangeByScore() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(0.1, "a");
