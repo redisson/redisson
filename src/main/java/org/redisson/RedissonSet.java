@@ -127,8 +127,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         };
     }
 
-    @Override
-    public Future<Collection<V>> readAllAsync() {
+    private Future<Collection<V>> readAllAsync() {
         return commandExecutor.readAsync(getName(), RedisCommands.SMEMBERS, getName());
     }
 

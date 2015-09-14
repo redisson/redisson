@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RObject;
 
@@ -31,10 +32,16 @@ abstract class RedissonObject implements RObject {
 
     final CommandExecutor commandExecutor;
     private final String name;
+    final Codec codec;
+
+    public RedissonObject(Codec codec, CommandExecutor commandExecutor, String name) {
+        this.codec = codec;
+        this.name = name;
+        this.commandExecutor = commandExecutor;
+    }
 
     public RedissonObject(CommandExecutor commandExecutor, String name) {
-        this.commandExecutor = commandExecutor;
-        this.name = name;
+        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
     protected <V> V get(Future<V> future) {

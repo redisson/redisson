@@ -22,52 +22,6 @@ import io.netty.util.concurrent.Future;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
-    public void testLexRangeTail() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
-        set.add(0, "a");
-        set.add(0, "b");
-        set.add(0, "c");
-        set.add(0, "d");
-        set.add(0, "e");
-        set.add(0, "f");
-        set.add(0, "g");
-
-        MatcherAssert.assertThat(set.lexRangeTail("c", false), Matchers.contains("d", "e", "f", "g"));
-        MatcherAssert.assertThat(set.lexRangeTail("c", true), Matchers.contains("c", "d", "e", "f", "g"));
-    }
-
-
-    @Test
-    public void testLexRangeHead() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
-        set.add(0, "a");
-        set.add(0, "b");
-        set.add(0, "c");
-        set.add(0, "d");
-        set.add(0, "e");
-        set.add(0, "f");
-        set.add(0, "g");
-
-        MatcherAssert.assertThat(set.lexRangeHead("c", false), Matchers.contains("a", "b"));
-        MatcherAssert.assertThat(set.lexRangeHead("c", true), Matchers.contains("a", "b", "c"));
-    }
-
-
-    @Test
-    public void testLexRange() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
-        set.add(0, "a");
-        set.add(0, "b");
-        set.add(0, "c");
-        set.add(0, "d");
-        set.add(0, "e");
-        set.add(0, "f");
-        set.add(0, "g");
-
-        MatcherAssert.assertThat(set.lexRange("aaa", true, "g", false), Matchers.contains("b", "c", "d", "e", "f"));
-    }
-
-    @Test
     public void testRank() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(0.1, "a");
@@ -79,21 +33,6 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.7, "g");
 
         Assert.assertEquals(3, (int)set.rank("d"));
-    }
-
-    @Test
-    public void testLexCount() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
-        set.add(0, "a");
-        set.add(0, "b");
-        set.add(0, "c");
-        set.add(0, "d");
-        set.add(0, "e");
-        set.add(0, "f");
-        set.add(0, "g");
-
-        Assert.assertEquals(5, (int)set.lexCount("b", true, "f", true));
-        Assert.assertEquals(3, (int)set.lexCount("b", false, "f", false));
     }
 
     @Test

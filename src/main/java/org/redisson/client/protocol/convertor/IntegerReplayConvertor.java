@@ -19,6 +19,9 @@ public class IntegerReplayConvertor extends SingleConvertor<Integer> {
 
     @Override
     public Integer convert(Object obj) {
+        if (obj == null) {
+            return null;
+        }
         return ((Long) obj).intValue();
     }
 

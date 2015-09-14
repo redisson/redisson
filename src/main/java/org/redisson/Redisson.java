@@ -39,6 +39,7 @@ import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RKeys;
+import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
@@ -219,6 +220,10 @@ public class Redisson implements RedissonClient {
 
     public <V> RScoredSortedSet<V> getScoredSortedSet(String name) {
         return new RedissonScoredSortedSet<V>(commandExecutor, name);
+    }
+
+    public RLexSortedSet getLexSortedSet(String name) {
+        return new RedissonLexSortedSet(commandExecutor, name);
     }
 
     /**

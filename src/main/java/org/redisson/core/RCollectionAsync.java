@@ -31,8 +31,6 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
 
     Future<Boolean> removeAsync(Object o);
 
-    Future<Collection<V>> readAllAsync();
-
     Future<Integer> sizeAsync();
 
     Future<Boolean> addAsync(V e);

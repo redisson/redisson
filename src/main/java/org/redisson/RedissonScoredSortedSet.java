@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.RedisClient;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -39,6 +40,10 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         super(commandExecutor, name);
     }
 
+    public RedissonScoredSortedSet(Codec codec, CommandExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name);
+    }
+
     @Override
     public boolean add(double score, V object) {
         return get(addAsync(score, object));
@@ -46,11 +51,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> addAsync(double score, V object) {
-        // String should be encoded as String to let lex functions work properly
-        if (object instanceof String) {
-            return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZADD, getName(), BigDecimal.valueOf(score).toPlainString(), object);
-        }
-        return commandExecutor.writeAsync(getName(), RedisCommands.ZADD, getName(), BigDecimal.valueOf(score).toPlainString(), object);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD, getName(), BigDecimal.valueOf(score).toPlainString(), object);
     }
 
     @Override
@@ -65,7 +66,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> removeAsync(Object object) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.ZREM, getName(), object);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREM, getName(), object);
     }
 
     @Override
@@ -80,7 +81,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Integer> sizeAsync() {
-        return commandExecutor.readAsync(getName(), RedisCommands.ZCARD, getName());
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZCARD, getName());
     }
 
     @Override
@@ -90,7 +91,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> containsAsync(Object o) {
-        return commandExecutor.readAsync(getName(), RedisCommands.ZSCORE_CONTAINS, getName(), o);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZSCORE_CONTAINS, getName(), o);
     }
 
     @Override
@@ -100,7 +101,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Double> getScoreAsync(V o) {
-        return commandExecutor.readAsync(getName(), RedisCommands.ZSCORE, getName(), o);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZSCORE, getName(), o);
     }
 
     @Override
@@ -110,11 +111,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Integer> rankAsync(V o) {
-        return commandExecutor.readAsync(getName(), RedisCommands.ZRANK, getName(), o);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANK, getName(), o);
     }
 
     private ListScanResult<V> scanIterator(RedisClient client, long startPos) {
-        return commandExecutor.read(client, getName(), RedisCommands.ZSCAN, getName(), startPos);
+        return commandExecutor.read(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
     }
 
     @Override
@@ -187,7 +188,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local s = redis.call('zrange', KEYS[1], 0, -1);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "
@@ -201,7 +202,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                         "local v = false " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
@@ -223,7 +224,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                     "local changed = false " +
                     "local s = redis.call('zrange', KEYS[1], 0, -1) "
                        + "local i = 0 "
@@ -264,7 +265,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<V>> valueRangeAsync(int startIndex, int endIndex) {
-        return commandExecutor.readAsync(getName(), RedisCommands.ZRANGE, getName(), startIndex, endIndex);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE, getName(), startIndex, endIndex);
     }
 
     @Override
@@ -274,90 +275,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex) {
-        return commandExecutor.readAsync(getName(), RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
-    }
-
-    @Override
-    public Collection<V> lexRange(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
-        return get(lexRangeAsync(fromElement, fromInclusive, toElement, toInclusive));
-    }
-
-    @Override
-    public Collection<V> lexRangeHead(V toElement, boolean toInclusive) {
-        return get(lexRangeHeadAsync(toElement, toInclusive));
-    }
-
-    @Override
-    public Future<Collection<V>> lexRangeHeadAsync(V toElement, boolean toInclusive) {
-        String toValue = value(toElement, toInclusive);
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue);
-    }
-
-    @Override
-    public Collection<V> lexRangeTail(V fromElement, boolean fromInclusive) {
-        return get(lexRangeTailAsync(fromElement, fromInclusive));
-    }
-
-    @Override
-    public Future<Collection<V>> lexRangeTailAsync(V fromElement, boolean fromInclusive) {
-        String fromValue = value(fromElement, fromInclusive);
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+");
-    }
-
-
-    @Override
-    public Future<Collection<V>> lexRangeAsync(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
-        String fromValue = value(fromElement, fromInclusive);
-        String toValue = value(toElement, toInclusive);
-
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue);
-    }
-
-    @Override
-    public Integer lexCountTail(V fromElement, boolean fromInclusive) {
-        return get(lexCountTailAsync(fromElement, fromInclusive));
-    }
-
-    @Override
-    public Future<Integer> lexCountTailAsync(V fromElement, boolean fromInclusive) {
-        String fromValue = value(fromElement, fromInclusive);
-
-        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
-    }
-
-    @Override
-    public Integer lexCountHead(V toElement, boolean toInclusive) {
-        return get(lexCountHeadAsync(toElement, toInclusive));
-    }
-
-    @Override
-    public Future<Integer> lexCountHeadAsync(V toElement, boolean toInclusive) {
-        String toValue = value(toElement, toInclusive);
-
-        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
-    }
-
-    @Override
-    public Integer lexCount(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
-        return get(lexCountAsync(fromElement, fromInclusive, toElement, toInclusive));
-    }
-
-    @Override
-    public Future<Integer> lexCountAsync(V fromElement, boolean fromInclusive, V toElement, boolean toInclusive) {
-        String fromValue = value(fromElement, fromInclusive);
-        String toValue = value(toElement, toInclusive);
-
-        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
-    }
-
-    private String value(V fromElement, boolean fromInclusive) {
-        String fromValue = fromElement.toString();
-        if (fromInclusive) {
-            fromValue = "[" + fromValue;
-        } else {
-            fromValue = "(" + fromValue;
-        }
-        return fromValue;
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
     }
 
 }

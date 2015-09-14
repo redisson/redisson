@@ -29,11 +29,13 @@ import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RKeys;
+import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
+import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSet;
 import org.redisson.core.RSortedSet;
@@ -103,6 +105,10 @@ public interface RedissonClient {
      * @return
      */
     <V> RSortedSet<V> getSortedSet(String name);
+
+    <V> RScoredSortedSet<V> getScoredSortedSet(String name);
+
+    RLexSortedSet getLexSortedSet(String name);
 
     /**
      * Returns topic instance by name.
