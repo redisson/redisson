@@ -21,6 +21,8 @@ import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable {
 
+    int removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+
     int removeRangeByRank(int startIndex, int endIndex);
 
     Integer rank(V o);

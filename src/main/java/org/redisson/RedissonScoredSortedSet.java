@@ -67,6 +67,23 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
     }
 
+    public int removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        return get(removeRangeByScoreAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
+    }
+
+    public Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
+        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
+    }
+
+    private String value(String element, boolean inclusive) {
+        if (!inclusive) {
+            element = "(" + element;
+        }
+        return element;
+    }
+
     @Override
     public void clear() {
         delete();
