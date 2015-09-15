@@ -113,7 +113,23 @@ public interface RBatch {
      */
     RAtomicLongAsync getAtomicLongAsync(String name);
 
+    /**
+     * Returns Redis Sorted Set instance by name
+     *
+     * @param name
+     * @return
+     */
     <V> RScoredSortedSet<V> getScoredSortedSet(String name);
+
+    /**
+     * Returns String based Redis Sorted Set instance by name
+     * All elements are inserted with the same score during addition,
+     * in order to force lexicographical ordering
+     *
+     * @param name
+     * @return
+     */
+    RLexSortedSet getLexSortedSet(String name);
 
     /**
      * Returns script operations object

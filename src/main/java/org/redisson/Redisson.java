@@ -221,10 +221,24 @@ public class Redisson implements RedissonClient {
         return new RedissonSortedSet<V>(commandExecutor, name);
     }
 
+    /**
+     * Returns Redis Sorted Set instance by name
+     *
+     * @param name
+     * @return
+     */
     public <V> RScoredSortedSet<V> getScoredSortedSet(String name) {
         return new RedissonScoredSortedSet<V>(commandExecutor, name);
     }
 
+    /**
+     * Returns String based Redis Sorted Set instance by name
+     * All elements are inserted with the same score during addition,
+     * in order to force lexicographical ordering
+     *
+     * @param name
+     * @return
+     */
     public RLexSortedSet getLexSortedSet(String name) {
         return new RedissonLexSortedSet(commandExecutor, name);
     }

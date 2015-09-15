@@ -25,6 +25,7 @@ import org.redisson.core.RBucketAsync;
 import org.redisson.core.RDequeAsync;
 import org.redisson.core.RHyperLogLogAsync;
 import org.redisson.core.RKeysAsync;
+import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RListAsync;
 import org.redisson.core.RMapAsync;
 import org.redisson.core.RQueueAsync;
@@ -97,6 +98,12 @@ public class RedissonBatch implements RBatch {
     public <V> RScoredSortedSet<V> getScoredSortedSet(String name) {
         return new RedissonScoredSortedSet<V>(executorService, name);
     }
+
+    @Override
+    public RLexSortedSet getLexSortedSet(String name) {
+        return new RedissonLexSortedSet(executorService, name);
+    }
+
 
     @Override
     public RScriptAsync getScript() {
