@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RBucket;
 
@@ -28,6 +29,10 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         super(connectionManager, name);
     }
 
+    protected RedissonBucket(Codec codec, CommandExecutor connectionManager, String name) {
+        super(codec, connectionManager, name);
+    }
+
     @Override
     public V get() {
         return get(getAsync());
@@ -35,7 +40,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<V> getAsync() {
-        return commandExecutor.readAsync(getName(), RedisCommands.GET, getName());
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.GET, getName());
     }
 
     @Override
@@ -45,7 +50,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Void> setAsync(V value) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.SET, getName(), value);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SET, getName(), value);
     }
 
     @Override
@@ -55,7 +60,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
     }
 
     @Override
@@ -65,7 +70,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Boolean> existsAsync() {
-        return commandExecutor.readAsync(getName(), RedisCommands.EXISTS, getName());
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.EXISTS, getName());
     }
 
 }

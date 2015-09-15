@@ -69,7 +69,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         setTimeout(config.getTimeout());
         setClientName(config.getClientName());
         setPingTimeout(config.getPingTimeout());
-        setCloseConnectionAfterFailAttempts(config.getCloseConnectionAfterFailAttempts());
+        setRefreshConnectionAfterFails(config.getRefreshConnectionAfterFails());
     }
 
     /**
@@ -190,16 +190,16 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Close connection if it has <code>failAttemptsAmount</code>
+     * Reconnect connection if it has <code>failAttemptsAmount</code>
      * fails in a row during command sending. Turned off by default.
      *
      * @param failAttemptsAmount
      */
-    public T setCloseConnectionAfterFailAttempts(int failAttemptsAmount) {
+    public T setRefreshConnectionAfterFails(int failAttemptsAmount) {
         this.closeConnectionAfterFailAttempts = failAttemptsAmount;
         return (T) this;
     }
-    public int getCloseConnectionAfterFailAttempts() {
+    public int getRefreshConnectionAfterFails() {
         return closeConnectionAfterFailAttempts;
     }
 

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
@@ -58,13 +59,17 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         super(commandExecutor, name);
     }
 
+    protected RedissonList(Codec codec, CommandExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name);
+    }
+
     @Override
     public int size() {
         return get(sizeAsync());
     }
 
     public Future<Integer> sizeAsync() {
-        return commandExecutor.readAsync(getName(), LLEN, getName());
+        return commandExecutor.readAsync(getName(), codec, LLEN, getName());
     }
 
     @Override
@@ -93,7 +98,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     private Future<Collection<V>> readAllAsync() {
-        return commandExecutor.readAsync(getName(), LRANGE, getName(), 0, -1);
+        return commandExecutor.readAsync(getName(), codec, LRANGE, getName(), 0, -1);
     }
 
     @Override
@@ -109,7 +114,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> addAsync(V e) {
-        return commandExecutor.writeAsync(getName(), RPUSH_BOOLEAN, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, RPUSH_BOOLEAN, getName(), e);
     }
 
     @Override
@@ -123,7 +128,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     protected Future<Boolean> removeAsync(Object o, int count) {
-        return commandExecutor.writeAsync(getName(), LREM_SINGLE, getName(), count, o);
+        return commandExecutor.writeAsync(getName(), codec, LREM_SINGLE, getName(), count, o);
     }
 
     protected boolean remove(Object o, int count) {
@@ -132,7 +137,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
                 "for i=1, #items do " +
                     "for j = 0, table.getn(ARGV), 1 do " +
@@ -166,7 +171,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
-        Future<Long> res = commandExecutor.writeAsync(getName(), RPUSH, args.toArray());
+        Future<Long> res = commandExecutor.writeAsync(getName(), codec, RPUSH, args.toArray());
         res.addListener(new FutureListener<Long>() {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
@@ -194,7 +199,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 Collections.reverse(elements);
                 elements.add(0, getName());
 
-                Long newSize = commandExecutor.write(getName(), LPUSH, elements.toArray());
+                Long newSize = commandExecutor.write(getName(), codec, LPUSH, elements.toArray());
                 return newSize != size;
             }
 
@@ -203,7 +208,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             List<Object> args = new ArrayList<Object>(coll.size() + 1);
             args.add(index);
             args.addAll(coll);
-            return commandExecutor.evalWrite(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
+            return commandExecutor.evalWrite(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
                     "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                             "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
                             "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
@@ -219,7 +224,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                         "local v = false " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 "
@@ -241,7 +246,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local changed = false " +
                 "local items = redis.call('lrange', KEYS[1], 0, -1) "
                    + "local i = 1 "
@@ -273,7 +278,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<V> getAsync(int index) {
-        return commandExecutor.readAsync(getName(), LINDEX, getName(), index);
+        return commandExecutor.readAsync(getName(), codec, LINDEX, getName(), index);
     }
 
     @Override
@@ -314,7 +319,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<V> setAsync(int index, V element) {
-        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Object>("EVAL", 5),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", 5),
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
@@ -329,7 +334,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Void> fastSetAsync(int index, V element) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.LSET, getName(), index, element);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LSET, getName(), index, element);
     }
 
     @Override
@@ -342,10 +347,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         checkIndex(index);
 
         if (index == 0) {
-            return commandExecutor.write(getName(), LPOP, getName());
+            return commandExecutor.write(getName(), codec, LPOP, getName());
         }
 
-        return commandExecutor.evalWrite(getName(), EVAL_OBJECT,
+        return commandExecutor.evalWrite(getName(), codec, EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "local tail = redis.call('lrange', KEYS[1], ARGV[1]);" +
                         "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +
@@ -365,7 +370,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     private <R> Future<R> indexOfAsync(Object o, Convertor<R> convertor) {
-        return commandExecutor.evalReadAsync(getName(), new RedisCommand<R>("EVAL", convertor, 4),
+        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<R>("EVAL", convertor, 4),
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
                 "local items = redis.call('lrange', key, 0, -1) " +
@@ -390,7 +395,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Integer> lastIndexOfAsync(Object o) {
-        return commandExecutor.evalReadAsync(getName(), new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 4),
+        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 4),
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
                 "local items = redis.call('lrange', key, 0, -1) " +
@@ -513,7 +518,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             throw new IllegalArgumentException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
         }
 
-        return commandExecutor.read(getName(), LRANGE, getName(), fromIndex, toIndex - 1);
+        return commandExecutor.read(getName(), codec, LRANGE, getName(), fromIndex, toIndex - 1);
     }
 
     public String toString() {

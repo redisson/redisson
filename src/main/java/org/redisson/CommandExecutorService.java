@@ -236,17 +236,17 @@ public class CommandExecutorService implements CommandExecutor {
         return readAsync(key, connectionManager.getCodec(), command, params);
     }
 
-    public <R> R write(String key, SyncOperation<R> operation) {
+    public <R> R write(String key, Codec codec, SyncOperation<R> operation) {
         int slot = connectionManager.calcSlot(key);
-        return async(false, slot, operation, 0);
+        return async(false, codec, slot, operation, 0);
     }
 
-    public <R> R read(String key, SyncOperation<R> operation) {
+    public <R> R read(String key, Codec codec, SyncOperation<R> operation) {
         int slot = connectionManager.calcSlot(key);
-        return async(true, slot, operation, 0);
+        return async(true, codec, slot, operation, 0);
     }
 
-    private <R> R async(boolean readOnlyMode, int slot, SyncOperation<R> operation, int attempt) {
+    private <R> R async(boolean readOnlyMode, Codec codec, int slot, SyncOperation<R> operation, int attempt) {
         if (!connectionManager.getShutdownLatch().acquire()) {
             return null;
         }
@@ -259,15 +259,15 @@ public class CommandExecutorService implements CommandExecutor {
                 connection = connectionManager.connectionWriteOp(slot);
             }
             try {
-                return operation.execute(connectionManager.getCodec(), connection);
+                return operation.execute(codec, connection);
             } catch (RedisMovedException e) {
-                return async(readOnlyMode, e.getSlot(), operation, attempt);
+                return async(readOnlyMode, codec, e.getSlot(), operation, attempt);
             } catch (RedisTimeoutException e) {
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
                     throw e;
                 }
                 attempt++;
-                return async(readOnlyMode, slot, operation, attempt);
+                return async(readOnlyMode, codec, slot, operation, attempt);
             } finally {
                 connectionManager.getShutdownLatch().release();
                 if (readOnlyMode) {
@@ -286,7 +286,7 @@ public class CommandExecutorService implements CommandExecutor {
                 Thread.currentThread().interrupt();
             }
             attempt++;
-            return async(readOnlyMode, slot, operation, attempt);
+            return async(readOnlyMode, codec, slot, operation, attempt);
         }
     }
 

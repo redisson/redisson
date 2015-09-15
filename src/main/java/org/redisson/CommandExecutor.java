@@ -60,9 +60,9 @@ public interface CommandExecutor {
     <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
 
-    <R> R read(String key, SyncOperation<R> operation);
+    <R> R read(String key, Codec codec, SyncOperation<R> operation);
 
-    <R> R write(String key, SyncOperation<R> operation);
+    <R> R write(String key, Codec codec, SyncOperation<R> operation);
 
     <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object ... params);
 

@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.NoSuchElementException;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RQueue;
 
@@ -33,6 +34,10 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     protected RedissonQueue(CommandExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+    }
+
+    protected RedissonQueue(Codec codec, CommandExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name);
     }
 
     @Override
@@ -68,7 +73,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public Future<V> pollAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.LPOP, getName());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPOP, getName());
     }
 
     @Override
@@ -98,7 +103,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public Future<V> pollLastAndOfferFirstToAsync(String queueName) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.RPOPLPUSH, getName(), queueName);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOPLPUSH, getName(), queueName);
     }
 
     @Override

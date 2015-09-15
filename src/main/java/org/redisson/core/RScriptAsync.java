@@ -17,6 +17,7 @@ package org.redisson.core;
 
 import java.util.List;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.core.RScript.Mode;
 import org.redisson.core.RScript.ReturnType;
 
@@ -28,11 +29,19 @@ public interface RScriptAsync {
 
     <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
+    <R> Future<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+
     <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType);
+
+    <R> Future<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
 
     <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
+    <R> Future<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+
     <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType);
+
+    <R> Future<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType);
 
     Future<String> scriptLoadAsync(String luaScript);
 

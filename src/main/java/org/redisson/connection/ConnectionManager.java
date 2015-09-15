@@ -79,15 +79,15 @@ public interface ConnectionManager {
 
     PubSubConnectionEntry getEntry(String channelName);
 
-    PubSubConnectionEntry subscribe(String channelName);
+    PubSubConnectionEntry subscribe(String channelName, Codec codec);
 
-    PubSubConnectionEntry psubscribe(String pattern);
+    PubSubConnectionEntry psubscribe(String pattern, Codec codec);
 
     <V> void subscribe(RedisPubSubListener<V> listener, String channelName);
 
-    void unsubscribe(String channelName);
+    Codec unsubscribe(String channelName);
 
-    void punsubscribe(String channelName);
+    Codec punsubscribe(String channelName);
 
     void shutdown();
 

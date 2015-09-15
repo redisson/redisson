@@ -17,6 +17,7 @@ package org.redisson.core;
 
 import java.util.List;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 
@@ -47,11 +48,19 @@ public interface RScript extends RScriptAsync {
 
     <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
+    <R> R evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+
     <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType);
+
+    <R> R evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
 
     <R> R eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
+    <R> R eval(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+
     <R> R eval(Mode mode, String luaScript, ReturnType returnType);
+
+    <R> R eval(Mode mode, Codec codec, String luaScript, ReturnType returnType);
 
     String scriptLoad(String luaScript);
 
