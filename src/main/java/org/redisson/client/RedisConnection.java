@@ -135,6 +135,10 @@ public class RedisConnection implements RedisCommands {
         return closed;
     }
 
+    public void forceReconnect() {
+        channel.close();
+    }
+
     public ChannelFuture closeAsync() {
         setClosed(true);
         return channel.close();
