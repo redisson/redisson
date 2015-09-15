@@ -15,14 +15,12 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class IntegerReplayConvertor extends SingleConvertor<Integer> {
+public class BooleanNotNullReplayConvertor extends SingleConvertor<Boolean> {
 
     @Override
-    public Integer convert(Object obj) {
-        if (obj == null) {
-            return null;
-        }
-        return ((Long) obj).intValue();
+    public Boolean convert(Object obj) {
+        return obj != null;
     }
+
 
 }

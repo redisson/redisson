@@ -175,6 +175,10 @@ public class MasterSlaveEntry {
         if (!entry.getClient().equals(connection.getRedisClient())) {
             connection.closeAsync();
             return;
+        } else if (connection.getFailAttempts() == config.getCloseConnectionAfterFailAttempts()) {
+            connection.closeAsync();
+            entry.getConnectionsSemaphore().release();
+            return;
         }
 
         entry.getConnections().add(connection);

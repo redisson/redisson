@@ -92,8 +92,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return (List<V>) get(readAllAsync());
     }
 
-    @Override
-    public Future<Collection<V>> readAllAsync() {
+    private Future<Collection<V>> readAllAsync() {
         return commandExecutor.readAsync(getName(), LRANGE, getName(), 0, -1);
     }
 

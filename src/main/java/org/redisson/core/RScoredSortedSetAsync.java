@@ -17,24 +17,40 @@ package org.redisson.core;
 
 import java.util.Collection;
 
+import org.redisson.client.protocol.ScoredEntry;
+
 import io.netty.util.concurrent.Future;
 
-public interface RCollectionAsync<V> extends RExpirableAsync {
+public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
-    Future<Boolean> retainAllAsync(Collection<?> c);
+    Future<V> firstAsync();
 
-    Future<Boolean> removeAllAsync(Collection<?> c);
+    Future<V> lastAsync();
+
+    Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
+
+    Future<Integer> rankAsync(V o);
+
+    Future<Double> getScoreAsync(V o);
+
+    Future<Boolean> addAsync(double score, V object);
+
+    Future<Boolean> removeAsync(V object);
+
+    Future<Integer> sizeAsync();
 
     Future<Boolean> containsAsync(Object o);
 
     Future<Boolean> containsAllAsync(Collection<?> c);
 
-    Future<Boolean> removeAsync(Object o);
+    Future<Boolean> removeAllAsync(Collection<?> c);
 
-    Future<Integer> sizeAsync();
+    Future<Boolean> retainAllAsync(Collection<?> c);
 
-    Future<Boolean> addAsync(V e);
+    Future<Double> addScoreAsync(V object, Number value);
 
-    Future<Boolean> addAllAsync(Collection<? extends V> c);
+    Future<Collection<V>> valueRangeAsync(int startIndex, int endIndex);
+
+    Future<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex);
 
 }

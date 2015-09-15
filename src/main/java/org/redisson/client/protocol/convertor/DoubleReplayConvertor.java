@@ -15,14 +15,15 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class IntegerReplayConvertor extends SingleConvertor<Integer> {
+public class DoubleReplayConvertor extends SingleConvertor<Double> {
 
     @Override
-    public Integer convert(Object obj) {
+    public Double convert(Object obj) {
         if (obj == null) {
             return null;
         }
-        return ((Long) obj).intValue();
+        return Double.valueOf(obj.toString());
     }
+
 
 }

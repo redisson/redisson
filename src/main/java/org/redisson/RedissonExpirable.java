@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RExpirable;
@@ -28,6 +29,10 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     RedissonExpirable(CommandExecutor connectionManager, String name) {
         super(connectionManager, name);
+    }
+
+    RedissonExpirable(Codec codec, CommandExecutor connectionManager, String name) {
+        super(codec, connectionManager, name);
     }
 
     @Override

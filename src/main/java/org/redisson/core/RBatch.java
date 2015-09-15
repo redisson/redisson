@@ -113,6 +113,8 @@ public interface RBatch {
      */
     RAtomicLongAsync getAtomicLongAsync(String name);
 
+    <V> RScoredSortedSet<V> getScoredSortedSet(String name);
+
     /**
      * Returns script operations object
      *

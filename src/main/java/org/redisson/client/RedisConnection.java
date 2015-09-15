@@ -39,6 +39,7 @@ public class RedisConnection implements RedisCommands {
     private volatile boolean closed;
     volatile Channel channel;
     private ReconnectListener reconnectListener;
+    private int failAttempts;
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
@@ -55,9 +56,22 @@ public class RedisConnection implements RedisCommands {
         return reconnectListener;
     }
 
+    public void resetFailAttempt() {
+        failAttempts = 0;
+    }
+
+    public void incFailAttempt() {
+        failAttempts++;
+    }
+
+    public int getFailAttempts() {
+        return failAttempts;
+    }
+
     public void updateChannel(Channel channel) {
         this.channel = channel;
         channel.attr(CONNECTION).set(this);
+        resetFailAttempt();
     }
 
     public RedisClient getRedisClient() {

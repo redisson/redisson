@@ -35,6 +35,8 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     private int retryInterval = 1000;
 
+    private int closeConnectionAfterFailAttempts = -1;
+
     /**
      * Database index used for Redis connection
      */
@@ -67,6 +69,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         setTimeout(config.getTimeout());
         setClientName(config.getClientName());
         setPingTimeout(config.getPingTimeout());
+        setCloseConnectionAfterFailAttempts(config.getCloseConnectionAfterFailAttempts());
     }
 
     /**
@@ -159,30 +162,46 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Name for client connection
+     * Setup connection name during connection init
+     * via CLIENT SETNAME command
+     *
+     * @param name
      */
-    public String getClientName() {
-        return clientName;
-    }
-
     public T setClientName(String clientName) {
         this.clientName = clientName;
         return (T) this;
     }
+    public String getClientName() {
+        return clientName;
+    }
+
 
     /**
      * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation
      *
-     * @return
+     * @param ping timeout in milliseconds
      */
-    public int getPingTimeout() {
-        return pingTimeout;
-    }
     public T setPingTimeout(int pingTimeout) {
         this.pingTimeout = pingTimeout;
         return (T) this;
     }
+    public int getPingTimeout() {
+        return pingTimeout;
+    }
 
+    /**
+     * Close connection if it has <code>failAttemptsAmount</code>
+     * fails in a row during command sending. Turned off by default.
+     *
+     * @param failAttemptsAmount
+     */
+    public T setCloseConnectionAfterFailAttempts(int failAttemptsAmount) {
+        this.closeConnectionAfterFailAttempts = failAttemptsAmount;
+        return (T) this;
+    }
+    public int getCloseConnectionAfterFailAttempts() {
+        return closeConnectionAfterFailAttempts;
+    }
 
 
 }

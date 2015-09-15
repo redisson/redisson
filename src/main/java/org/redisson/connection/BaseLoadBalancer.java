@@ -225,7 +225,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public void returnConnection(RedisConnection connection) {
         SubscribesConnectionEntry entry = clients.get(connection.getRedisClient());
-        if (entry.isFreezed()) {
+        if (entry.isFreezed() || connection.getFailAttempts() == config.getCloseConnectionAfterFailAttempts()) {
             connection.closeAsync();
         } else {
             entry.getConnections().add(connection);

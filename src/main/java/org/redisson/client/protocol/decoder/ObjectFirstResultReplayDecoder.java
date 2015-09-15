@@ -13,16 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.convertor;
+package org.redisson.client.protocol.decoder;
 
-public class IntegerReplayConvertor extends SingleConvertor<Integer> {
+import java.util.List;
+
+import org.redisson.client.handler.State;
+
+import io.netty.buffer.ByteBuf;
+
+public class ObjectFirstResultReplayDecoder<T> implements MultiDecoder<T> {
 
     @Override
-    public Integer convert(Object obj) {
-        if (obj == null) {
-            return null;
-        }
-        return ((Long) obj).intValue();
+    public Object decode(ByteBuf buf, State state) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public T decode(List<Object> parts, State state) {
+        return (T) parts.get(0);
+    }
+
+    @Override
+    public boolean isApplicable(int paramNum, State state) {
+        return false;
     }
 
 }

@@ -115,9 +115,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                 if (removeExecuted) {
                     throw new IllegalStateException("Element been already deleted");
                 }
+                if (iter == null) {
+                    throw new IllegalStateException();
+                }
 
-                // lazy init iterator
-//                hasNext();
                 iter.remove();
                 RedissonSet.this.remove(value);
                 removeExecuted = true;
@@ -126,8 +127,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         };
     }
 
-    @Override
-    public Future<Collection<V>> readAllAsync() {
+    private Future<Collection<V>> readAllAsync() {
         return commandExecutor.readAsync(getName(), RedisCommands.SMEMBERS, getName());
     }
 

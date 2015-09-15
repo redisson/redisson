@@ -166,6 +166,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                if (!future.isSuccess()) {
+                    conn.incFailAttempt();
+                } else {
+                    conn.resetFailAttempt();
+                }
+
                 shutdownLatch.release();
                 timeout.cancel();
                 releaseWrite(slot, conn);
@@ -179,6 +185,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                if (!future.isSuccess()) {
+                    conn.incFailAttempt();
+                } else {
+                    conn.resetFailAttempt();
+                }
+
                 shutdownLatch.release();
                 timeout.cancel();
                 releaseRead(slot, conn);
