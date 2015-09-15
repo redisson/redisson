@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
@@ -38,10 +39,16 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     final CommandExecutor commandExecutor;
     private final String name;
+    private final Codec codec;
 
     protected RedissonTopic(CommandExecutor commandExecutor, String name) {
+        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+    }
+
+    protected RedissonTopic(Codec codec, CommandExecutor commandExecutor, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
+        this.codec = codec;
     }
 
     public List<String> getChannelNames() {
@@ -55,7 +62,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public Future<Long> publishAsync(M message) {
-        return commandExecutor.writeAsync(name, RedisCommands.PUBLISH, name, message);
+        return commandExecutor.writeAsync(name, codec, RedisCommands.PUBLISH, name, message);
     }
 
     @Override
@@ -70,7 +77,7 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
 
     private int addListener(RedisPubSubListener<M> pubSubListener) {
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().subscribe(name);
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().subscribe(name, codec);
         synchronized (entry) {
             if (entry.isActive()) {
                 entry.addListener(name, pubSubListener);

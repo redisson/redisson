@@ -221,7 +221,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public PubSubConnectionEntry subscribe(String channelName) {
+    public PubSubConnectionEntry subscribe(String channelName, Codec codec) {
         // multiple channel names per PubSubConnections allowed
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
@@ -240,7 +240,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 synchronized (entry) {
                     if (!entry.isActive()) {
                         entry.release();
-                        return subscribe(channelName);
+                        return subscribe(channelName, codec);
                     }
                     entry.subscribe(codec, channelName);
                     return entry;
@@ -262,7 +262,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         synchronized (entry) {
             if (!entry.isActive()) {
                 entry.release();
-                return subscribe(channelName);
+                return subscribe(channelName, codec);
             }
             entry.subscribe(codec, channelName);
             return entry;
@@ -270,7 +270,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public PubSubConnectionEntry psubscribe(String channelName) {
+    public PubSubConnectionEntry psubscribe(String channelName, Codec codec) {
         // multiple channel names per PubSubConnections allowed
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
@@ -289,7 +289,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 synchronized (entry) {
                     if (!entry.isActive()) {
                         entry.release();
-                        return psubscribe(channelName);
+                        return psubscribe(channelName, codec);
                     }
                     entry.psubscribe(codec, channelName);
                     return entry;
@@ -311,7 +311,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         synchronized (entry) {
             if (!entry.isActive()) {
                 entry.release();
-                return psubscribe(channelName);
+                return psubscribe(channelName, codec);
             }
             entry.psubscribe(codec, channelName);
             return entry;
@@ -368,13 +368,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public void unsubscribe(final String channelName) {
+    public Codec unsubscribe(final String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
-            return;
+            return null;
         }
 
-        entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
+        return entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
 
             @Override
             public boolean onStatus(PubSubType type, String channel) {
@@ -393,13 +393,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public void punsubscribe(final String channelName) {
+    public Codec punsubscribe(final String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
-            return;
+            return null;
         }
 
-        entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
+        return entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
 
             @Override
             public boolean onStatus(PubSubType type, String channel) {
@@ -438,9 +438,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     entry.close();
 
                     Collection<RedisPubSubListener> listeners = entry.getListeners(channelName);
-                    unsubscribe(channelName);
+                    Codec subscribeCodec = unsubscribe(channelName);
                     if (!listeners.isEmpty()) {
-                        PubSubConnectionEntry newEntry = subscribe(channelName);
+                        PubSubConnectionEntry newEntry = subscribe(channelName, subscribeCodec);
                         for (RedisPubSubListener redisPubSubListener : listeners) {
                             newEntry.addListener(channelName, redisPubSubListener);
                         }

@@ -6,10 +6,26 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.core.RBatch;
 import org.redisson.core.RListAsync;
 
+import io.netty.util.concurrent.Future;
+
 public class RedissonBatchTest extends BaseTest {
+
+    @Test
+    public void testDifferentCodecs() {
+        RBatch b = redisson.createBatch();
+        b.getMap("test1").putAsync("1", "2");
+        b.getMap("test2", StringCodec.INSTANCE).putAsync("21", "3");
+        Future<Object> val1 = b.getMap("test1").getAsync("1");
+        Future<Object> val2 = b.getMap("test2", StringCodec.INSTANCE).getAsync("21");
+        b.execute();
+
+        Assert.assertEquals("2", val1.getNow());
+        Assert.assertEquals("3", val2.getNow());
+    }
 
     @Test
     public void testBatchList() {

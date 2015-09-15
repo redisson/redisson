@@ -62,7 +62,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     public static final char LF = '\n';
     private static final char ZERO = '0';
 
-    // no need concurrent map responses are coming consecutive
+    // It is not needed to use concurrent map because responses are coming consecutive
     private final Map<String, MultiDecoder<Object>> messageDecoders = new HashMap<String, MultiDecoder<Object>>();
     private final Map<String, CommandData<Object, Object>> channels = PlatformDependent.newConcurrentHashMap();
 

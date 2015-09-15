@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RHyperLogLog;
 
@@ -29,6 +30,10 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
 
     protected RedissonHyperLogLog(CommandExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+    }
+
+    protected RedissonHyperLogLog(Codec codec, CommandExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name);
     }
 
     @Override
@@ -58,7 +63,7 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
 
     @Override
     public Future<Boolean> addAsync(V obj) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.PFADD, getName(), obj);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, getName(), obj);
     }
 
     @Override
@@ -66,12 +71,12 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
         args.addAll(objects);
-        return commandExecutor.writeAsync(getName(), RedisCommands.PFADD, getName(), args.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, getName(), args.toArray());
     }
 
     @Override
     public Future<Long> countAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.PFCOUNT, getName());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFCOUNT, getName());
     }
 
     @Override
@@ -79,7 +84,7 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
-        return commandExecutor.writeAsync(getName(), RedisCommands.PFCOUNT, args.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFCOUNT, args.toArray());
     }
 
     @Override
@@ -87,7 +92,7 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
-        return commandExecutor.writeAsync(getName(), RedisCommands.PFMERGE, args.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFMERGE, args.toArray());
     }
 
 }

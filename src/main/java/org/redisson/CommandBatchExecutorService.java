@@ -278,12 +278,12 @@ public class CommandBatchExecutorService extends CommandExecutorService {
     }
 
     @Override
-    public <R> R read(String key, SyncOperation<R> operation) {
+    public <R> R read(String key, Codec codec, SyncOperation<R> operation) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <R> R write(String key, SyncOperation<R> operation) {
+    public <R> R write(String key, Codec codec, SyncOperation<R> operation) {
         throw new UnsupportedOperationException();
     }
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.RedisClient;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
@@ -40,8 +41,14 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
+    private static final RedisCommand<Boolean> EVAL_OBJECTS = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
+
     protected RedissonSet(CommandExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+    }
+
+    public RedissonSet(Codec codec, CommandExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name);
     }
 
     @Override
@@ -51,7 +58,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Integer> sizeAsync() {
-        return commandExecutor.readAsync(getName(), RedisCommands.SCARD, getName());
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SCARD, getName());
     }
 
     @Override
@@ -66,11 +73,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> containsAsync(Object o) {
-        return commandExecutor.readAsync(getName(), RedisCommands.SISMEMBER, getName(), o);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SISMEMBER, getName(), o);
     }
 
     private ListScanResult<V> scanIterator(RedisClient client, long startPos) {
-        return commandExecutor.read(client, getName(), RedisCommands.SSCAN, getName(), startPos);
+        return commandExecutor.read(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
     }
 
     @Override
@@ -128,7 +135,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     private Future<Collection<V>> readAllAsync() {
-        return commandExecutor.readAsync(getName(), RedisCommands.SMEMBERS, getName());
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SMEMBERS, getName());
     }
 
     @Override
@@ -150,7 +157,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> addAsync(V e) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.SADD_SINGLE, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD_SINGLE, getName(), e);
     }
 
     @Override
@@ -160,12 +167,12 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<V> removeRandomAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.SPOP_SINGLE, getName());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SPOP_SINGLE, getName());
     }
 
     @Override
     public Future<Boolean> removeAsync(Object o) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.SREM_SINGLE, getName(), o);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SREM_SINGLE, getName(), o);
     }
 
     @Override
@@ -180,7 +187,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalReadAsync(getName(), codec, EVAL_OBJECTS,
                 "local s = redis.call('smembers', KEYS[1]);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "
@@ -206,7 +213,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
-        return commandExecutor.writeAsync(getName(), RedisCommands.SADD, args.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD, args.toArray());
     }
 
     @Override
@@ -216,7 +223,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_OBJECTS,
                     "local changed = false " +
                     "local s = redis.call('smembers', KEYS[1]) "
                        + "local i = 0 "
@@ -241,7 +248,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_OBJECTS,
                         "local v = false " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "

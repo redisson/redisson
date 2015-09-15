@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -47,6 +48,10 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
         super(commandExecutor, name);
     }
 
+    public RedissonDeque(Codec codec, CommandExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name);
+    }
+
     @Override
     public void addFirst(V e) {
         get(addFirstAsync(e));
@@ -54,7 +59,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<Void> addFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), LPUSH_VOID, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, LPUSH_VOID, getName(), e);
     }
 
     @Override
@@ -64,7 +69,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<Void> addLastAsync(V e) {
-        return commandExecutor.writeAsync(getName(), RPUSH_VOID, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, RPUSH_VOID, getName(), e);
     }
 
 
@@ -106,7 +111,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<V> getLastAsync() {
-        return commandExecutor.readAsync(getName(), LRANGE_SINGLE, getName(), -1, -1);
+        return commandExecutor.readAsync(getName(), codec, LRANGE_SINGLE, getName(), -1, -1);
     }
 
     @Override
@@ -125,7 +130,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<Boolean> offerFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), LPUSH_BOOLEAN, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, LPUSH_BOOLEAN, getName(), e);
     }
 
     @Override
@@ -170,7 +175,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<V> pollLastAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.RPOP, getName());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
     }
 
 
@@ -216,7 +221,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<V> removeLastAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.RPOP, getName());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
     }
 
     @Override

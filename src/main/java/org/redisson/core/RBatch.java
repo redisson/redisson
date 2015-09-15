@@ -17,6 +17,8 @@ package org.redisson.core;
 
 import java.util.List;
 
+import org.redisson.client.codec.Codec;
+
 import io.netty.util.concurrent.Future;
 
 /**
@@ -41,6 +43,8 @@ public interface RBatch {
      */
     <V> RBucketAsync<V> getBucket(String name);
 
+    <V> RBucketAsync<V> getBucket(String name, Codec codec);
+
     /**
      * Returns HyperLogLog object
      *
@@ -48,6 +52,8 @@ public interface RBatch {
      * @return
      */
     <V> RHyperLogLogAsync<V> getHyperLogLog(String name);
+
+    <V> RHyperLogLogAsync<V> getHyperLogLog(String name, Codec codec);
 
     /**
      * Returns list instance by name.
@@ -57,6 +63,8 @@ public interface RBatch {
      */
     <V> RListAsync<V> getList(String name);
 
+    <V> RListAsync<V> getList(String name, Codec codec);
+
     /**
      * Returns map instance by name.
      *
@@ -64,6 +72,8 @@ public interface RBatch {
      * @return
      */
     <K, V> RMapAsync<K, V> getMap(String name);
+
+    <K, V> RMapAsync<K, V> getMap(String name, Codec codec);
 
     /**
      * Returns set instance by name.
@@ -73,6 +83,8 @@ public interface RBatch {
      */
     <V> RSetAsync<V> getSet(String name);
 
+    <V> RSetAsync<V> getSet(String name, Codec codec);
+
     /**
      * Returns topic instance by name.
      *
@@ -80,6 +92,8 @@ public interface RBatch {
      * @return
      */
     <M> RTopicAsync<M> getTopic(String name);
+
+    <M> RTopicAsync<M> getTopic(String name, Codec codec);
 
     /**
      * Returns queue instance by name.
@@ -89,6 +103,8 @@ public interface RBatch {
      */
     <V> RQueueAsync<V> getQueue(String name);
 
+    <V> RQueueAsync<V> getQueue(String name, Codec codec);
+
     /**
      * Returns blocking queue instance by name.
      *
@@ -97,6 +113,8 @@ public interface RBatch {
      */
     <V> RBlockingQueueAsync<V> getBlockingQueue(String name);
 
+    <V> RBlockingQueueAsync<V> getBlockingQueue(String name, Codec codec);
+
     /**
      * Returns deque instance by name.
      *
@@ -104,6 +122,8 @@ public interface RBatch {
      * @return
      */
     <V> RDequeAsync<V> getDequeAsync(String name);
+
+    <V> RDequeAsync<V> getDequeAsync(String name, Codec codec);
 
     /**
      * Returns "atomic long" instance by name.
@@ -119,7 +139,9 @@ public interface RBatch {
      * @param name
      * @return
      */
-    <V> RScoredSortedSet<V> getScoredSortedSet(String name);
+    <V> RScoredSortedSetAsync<V> getScoredSortedSet(String name);
+
+    <V> RScoredSortedSetAsync<V> getScoredSortedSet(String name, Codec codec);
 
     /**
      * Returns String based Redis Sorted Set instance by name
@@ -129,7 +151,7 @@ public interface RBatch {
      * @param name
      * @return
      */
-    RLexSortedSet getLexSortedSet(String name);
+    RLexSortedSetAsync getLexSortedSet(String name);
 
     /**
      * Returns script operations object
