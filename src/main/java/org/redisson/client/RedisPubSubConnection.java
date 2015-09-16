@@ -15,6 +15,8 @@
  */
 package org.redisson.client;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -30,10 +32,13 @@ import org.redisson.client.protocol.pubsub.PubSubPatternMessageDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 import io.netty.channel.Channel;
+import io.netty.util.internal.PlatformDependent;
 
 public class RedisPubSubConnection extends RedisConnection {
 
     final Queue<RedisPubSubListener<Object>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<Object>>();
+    final Map<String, Codec> channels = PlatformDependent.newConcurrentHashMap();
+    final Map<String, Codec> patternChannels = PlatformDependent.newConcurrentHashMap();
 
     public RedisPubSubConnection(RedisClient redisClient, Channel channel) {
         super(redisClient, channel);
@@ -71,22 +76,42 @@ public class RedisPubSubConnection extends RedisConnection {
 
     public void subscribe(Codec codec, String ... channel) {
         async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channel);
+        for (String ch : channel) {
+            channels.put(ch, codec);
+        }
     }
 
     public void psubscribe(Codec codec, String ... channel) {
         async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channel);
+        for (String ch : channel) {
+            patternChannels.put(ch, codec);
+        }
     }
 
     public void unsubscribe(String ... channel) {
         async((MultiDecoder)null, RedisCommands.UNSUBSCRIBE, channel);
+        for (String ch : channel) {
+            channels.remove(ch);
+        }
     }
 
     public void punsubscribe(String ... channel) {
         async((MultiDecoder)null, RedisCommands.PUNSUBSCRIBE, channel);
+        for (String ch : channel) {
+            patternChannels.remove(ch);
+        }
     }
 
     private <T, R> void async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object ... params) {
         channel.writeAndFlush(new CommandData<T, R>(null, messageDecoder, null, command, params));
+    }
+
+    public Map<String, Codec> getChannels() {
+        return Collections.unmodifiableMap(channels);
+    }
+
+    public Map<String, Codec> getPatternChannels() {
+        return Collections.unmodifiableMap(patternChannels);
     }
 
 }
