@@ -44,7 +44,21 @@ import io.netty.buffer.ByteBufInputStream;
  */
 public class JsonJacksonCodec implements Codec {
 
-    private ObjectMapper mapObjectMapper = new ObjectMapper();
+    private final ObjectMapper mapObjectMapper = new ObjectMapper();
+
+    private final Encoder encoder = new Encoder() {
+        @Override
+        public byte[] encode(Object in) throws IOException {
+            return mapObjectMapper.writeValueAsBytes(in);
+        }
+    };
+
+    private final Decoder<Object> decoder = new Decoder<Object>() {
+        @Override
+        public Object decode(ByteBuf buf, State state) throws IOException {
+            return mapObjectMapper.readValue(new ByteBufInputStream(buf), Object.class);
+        }
+    };
 
     public JsonJacksonCodec() {
         init(mapObjectMapper);
@@ -94,24 +108,12 @@ public class JsonJacksonCodec implements Codec {
 
     @Override
     public Decoder<Object> getMapValueDecoder() {
-        return new Decoder<Object>() {
-
-            @Override
-            public Object decode(ByteBuf buf, State state) throws IOException {
-                return mapObjectMapper.readValue(new ByteBufInputStream(buf), Object.class);
-            }
-        };
+        return decoder;
     }
 
     @Override
     public Encoder getMapValueEncoder() {
-        return new Encoder() {
-
-            @Override
-            public byte[] encode(Object in) throws IOException {
-                return mapObjectMapper.writeValueAsBytes(in);
-            }
-        };
+        return encoder;
     }
 
     @Override
