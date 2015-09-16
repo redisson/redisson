@@ -25,14 +25,16 @@ public class LongCodec extends StringCodec {
 
     public static final LongCodec INSTANCE = new LongCodec();
 
+    public final Decoder<Object> decoder = new Decoder<Object>() {
+        @Override
+        public Object decode(ByteBuf buf, State state) {
+            return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
+        }
+    };
+
     @Override
     public Decoder<Object> getValueDecoder() {
-        return new Decoder<Object>() {
-            @Override
-            public Object decode(ByteBuf buf, State state) {
-                return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
-            }
-        };
+        return decoder;
     }
 
 }

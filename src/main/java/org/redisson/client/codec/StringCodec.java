@@ -28,24 +28,28 @@ public class StringCodec implements Codec {
 
     public static final StringCodec INSTANCE = new StringCodec();
 
+    private final Encoder encoder = new Encoder() {
+        @Override
+        public byte[] encode(Object in) throws IOException {
+            return in.toString().getBytes("UTF-8");
+        }
+    };
+
+    private final Decoder<Object> decoder = new Decoder<Object>() {
+        @Override
+        public Object decode(ByteBuf buf, State state) {
+            return buf.toString(CharsetUtil.UTF_8);
+        }
+    };
+
     @Override
     public Decoder<Object> getValueDecoder() {
-        return new Decoder<Object>() {
-            @Override
-            public Object decode(ByteBuf buf, State state) {
-                return buf.toString(CharsetUtil.UTF_8);
-            }
-        };
+        return decoder;
     }
 
     @Override
     public Encoder getValueEncoder() {
-        return new Encoder() {
-            @Override
-            public byte[] encode(Object in) throws IOException {
-                return in.toString().getBytes("UTF-8");
-            }
-        };
+        return encoder;
     }
 
     @Override

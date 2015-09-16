@@ -18,7 +18,6 @@ package org.redisson.connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -33,8 +32,6 @@ import org.redisson.client.protocol.pubsub.PubSubType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.internal.PlatformDependent;
-
 public class PubSubConnectionEntry {
 
     public enum Status {ACTIVE, INACTIVE}
@@ -46,7 +43,6 @@ public class PubSubConnectionEntry {
     private final RedisPubSubConnection conn;
     private final int subscriptionsPerConnection;
 
-    private final Map<String, Codec> channel2Codec = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<String, Queue<RedisPubSubListener>> channelListeners = new ConcurrentHashMap<String, Queue<RedisPubSubListener>>();
 
     public PubSubConnectionEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
@@ -127,12 +123,10 @@ public class PubSubConnectionEntry {
     }
 
     public void subscribe(Codec codec, String channelName) {
-        channel2Codec.put(channelName, codec);
         conn.subscribe(codec, channelName);
     }
 
     public void psubscribe(Codec codec, String pattern) {
-        channel2Codec.put(pattern, codec);
         conn.psubscribe(codec, pattern);
     }
 
@@ -141,7 +135,7 @@ public class PubSubConnectionEntry {
         conn.subscribe(codec, channel);
     }
 
-    public Codec unsubscribe(final String channel, RedisPubSubListener listener) {
+    public void unsubscribe(final String channel, RedisPubSubListener listener) {
         conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
@@ -155,7 +149,6 @@ public class PubSubConnectionEntry {
         });
         conn.addOneShotListener(listener);
         conn.unsubscribe(channel);
-        return channel2Codec.remove(channel);
     }
 
     private void removeListeners(String channel) {
@@ -171,7 +164,7 @@ public class PubSubConnectionEntry {
         subscribedChannelsAmount.release();
     }
 
-    public Codec punsubscribe(final String channel, RedisPubSubListener listener) {
+    public void punsubscribe(final String channel, RedisPubSubListener listener) {
         conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
@@ -184,7 +177,6 @@ public class PubSubConnectionEntry {
         });
         conn.addOneShotListener(listener);
         conn.punsubscribe(channel);
-        return channel2Codec.remove(channel);
     }
 
 

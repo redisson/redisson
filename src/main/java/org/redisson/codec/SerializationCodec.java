@@ -35,6 +35,32 @@ import io.netty.buffer.ByteBufInputStream;
  */
 public class SerializationCodec implements Codec {
 
+    private final Decoder<Object> decoder = new Decoder<Object>() {
+        @Override
+        public Object decode(ByteBuf buf, State state) throws IOException {
+            try {
+                ObjectInputStream inputStream = new ObjectInputStream(new ByteBufInputStream(buf));
+                return inputStream.readObject();
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+    };
+
+    private final Encoder encoder = new Encoder() {
+
+        @Override
+        public byte[] encode(Object in) throws IOException {
+            ByteArrayOutputStream result = new ByteArrayOutputStream();
+            ObjectOutputStream outputStream = new ObjectOutputStream(result);
+            outputStream.writeObject(in);
+            outputStream.close();
+            return result.toByteArray();
+        }
+    };
+
     @Override
     public Decoder<Object> getMapValueDecoder() {
         return getValueDecoder();
@@ -57,34 +83,12 @@ public class SerializationCodec implements Codec {
 
     @Override
     public Decoder<Object> getValueDecoder() {
-        return new Decoder<Object>() {
-            @Override
-            public Object decode(ByteBuf buf, State state) throws IOException {
-                try {
-                    ObjectInputStream inputStream = new ObjectInputStream(new ByteBufInputStream(buf));
-                    return inputStream.readObject();
-                } catch (IOException e) {
-                    throw e;
-                } catch (Exception e) {
-                    throw new IOException(e);
-                }
-            }
-        };
+        return decoder;
     }
 
     @Override
     public Encoder getValueEncoder() {
-        return new Encoder() {
-
-            @Override
-            public byte[] encode(Object in) throws IOException {
-                ByteArrayOutputStream result = new ByteArrayOutputStream();
-                ObjectOutputStream outputStream = new ObjectOutputStream(result);
-                outputStream.writeObject(in);
-                outputStream.close();
-                return result.toByteArray();
-            }
-        };
+        return encoder;
     }
 
 }

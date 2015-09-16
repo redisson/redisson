@@ -374,7 +374,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return null;
         }
 
-        return entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
+        Codec entryCodec = entry.getConnection().getChannels().get(channelName);
+        entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
 
             @Override
             public boolean onStatus(PubSubType type, String channel) {
@@ -390,6 +391,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
         });
+        return entryCodec;
     }
 
     @Override
@@ -399,7 +401,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return null;
         }
 
-        return entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
+        Codec entryCodec = entry.getConnection().getPatternChannels().get(channelName);
+        entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
 
             @Override
             public boolean onStatus(PubSubType type, String channel) {
@@ -415,6 +418,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
         });
+        return entryCodec;
     }
 
     protected MasterSlaveEntry getEntry(int slot) {
@@ -438,13 +442,24 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     entry.close();
 
                     Collection<RedisPubSubListener> listeners = entry.getListeners(channelName);
-                    Codec subscribeCodec = unsubscribe(channelName);
-                    if (!listeners.isEmpty()) {
-                        PubSubConnectionEntry newEntry = subscribe(channelName, subscribeCodec);
-                        for (RedisPubSubListener redisPubSubListener : listeners) {
-                            newEntry.addListener(channelName, redisPubSubListener);
+                    if (entry.getConnection().getPatternChannels().get(channelName) != null) {
+                        Codec subscribeCodec = punsubscribe(channelName);
+                        if (!listeners.isEmpty()) {
+                            PubSubConnectionEntry newEntry = psubscribe(channelName, subscribeCodec);
+                            for (RedisPubSubListener redisPubSubListener : listeners) {
+                                newEntry.addListener(channelName, redisPubSubListener);
+                            }
+                            log.debug("resubscribed listeners for '{}' channel-pattern", channelName);
                         }
-                        log.debug("resubscribed listeners for '{}' channel", channelName);
+                    } else {
+                        Codec subscribeCodec = unsubscribe(channelName);
+                        if (!listeners.isEmpty()) {
+                            PubSubConnectionEntry newEntry = subscribe(channelName, subscribeCodec);
+                            for (RedisPubSubListener redisPubSubListener : listeners) {
+                                newEntry.addListener(channelName, redisPubSubListener);
+                            }
+                            log.debug("resubscribed listeners for '{}' channel", channelName);
+                        }
                     }
                 }
             }
