@@ -67,7 +67,7 @@ Feature - `refreshConnectionAfterFails` setting added
 Feature - [AWS Elasticache](https://aws.amazon.com/elasticache/) support via `Config.useElasticacheServers` method (thanks to Steve Ungerer)  
 Feature - `RScoredSortedSet` and `RLexSortedSet` added. Both uses native Redis Sorted Set commands. `RLexSortedSet`s stores only String objects and work with ZLEX-commands  
 Fixed - missed AUTH during channel reconnection  
-Fixed - resubscribe to subscribed channels during channel reconnection  
+Fixed - resubscribe to subscribed topics during channel reconnection  
 
 ####05-Sep-2015 - version 2.1.2 released  
 Fixed - possible NPE during channel reconnection  
