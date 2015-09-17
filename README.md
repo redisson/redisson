@@ -64,7 +64,7 @@ Recent Releases
 ####17-Sep-2015 - version 2.1.3 released  
 Feature - Ability to define `Codec` for each object  
 Feature - `refreshConnectionAfterFails` setting added  
-Feature - AWS Elasticache support via `Config.useElasticacheServers` method (thanks to Steve Ungerer)  
+Feature - [AWS Elasticache](https://aws.amazon.com/elasticache/) support via `Config.useElasticacheServers` method (thanks to Steve Ungerer)  
 Feature - `RScoredSortedSet` and `RLexSortedSet` added. Both uses native Redis Sorted Set commands. `RLexSortedSet`s stores only String objects and work with ZLEX-commands  
 Fixed - missed AUTH during channel reconnection  
 Fixed - resubscribe to subscribed channels during channel reconnection  
