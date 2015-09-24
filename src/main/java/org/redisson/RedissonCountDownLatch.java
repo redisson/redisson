@@ -54,24 +54,32 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         this.id = id;
     }
 
-    private Future<Boolean> subscribe() {
-        Promise<Boolean> promise = aquire();
-        if (promise != null) {
-            return promise;
-        }
-
-        Promise<Boolean> newPromise = newPromise();
-        final RedissonCountDownLatchEntry value = new RedissonCountDownLatchEntry(newPromise);
-        value.aquire();
-        RedissonCountDownLatchEntry oldValue = ENTRIES.putIfAbsent(getEntryName(), value);
-        if (oldValue != null) {
-            Promise<Boolean> oldPromise = aquire();
-            if (oldPromise == null) {
-                return subscribe();
+    private Future<RedissonCountDownLatchEntry> subscribe() {
+        synchronized (ENTRIES) {
+            RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
+            if (entry != null) {
+                entry.aquire();
+                return entry.getPromise();
             }
-            return oldPromise;
-        }
 
+            Promise<RedissonCountDownLatchEntry> newPromise = newPromise();
+            final RedissonCountDownLatchEntry value = new RedissonCountDownLatchEntry(newPromise);
+            value.aquire();
+
+            RedissonCountDownLatchEntry oldValue = ENTRIES.putIfAbsent(getEntryName(), value);
+            if (oldValue != null) {
+                oldValue.aquire();
+                return oldValue.getPromise();
+            }
+
+            RedisPubSubListener<Integer> listener = createListener(value);
+
+            commandExecutor.getConnectionManager().subscribe(listener, getChannelName());
+            return newPromise;
+        }
+    }
+
+    private RedisPubSubListener<Integer> createListener(final RedissonCountDownLatchEntry value) {
         RedisPubSubListener<Integer> listener = new BaseRedisPubSubListener<Integer>() {
 
             @Override
@@ -89,61 +97,32 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
             @Override
             public boolean onStatus(PubSubType type, String channel) {
-                if (channel.equals(getChannelName()) && !value.getPromise().isSuccess()) {
-                    value.getPromise().setSuccess(true);
+                if (channel.equals(getChannelName()) && !value.getPromise().isSuccess()
+                        && type == PubSubType.SUBSCRIBE) {
+                    value.getPromise().setSuccess(value);
                     return true;
                 }
                 return false;
             }
 
         };
+        return listener;
+    }
 
+    private void unsubscribe(RedissonCountDownLatchEntry entry) {
         synchronized (ENTRIES) {
-            commandExecutor.getConnectionManager().subscribe(listener, getChannelName());
-        }
-        return newPromise;
-    }
-
-    private void unsubscribe() {
-        while (true) {
-            RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
-            if (entry == null) {
-                return;
-            }
-            RedissonCountDownLatchEntry newEntry = new RedissonCountDownLatchEntry(entry);
-            newEntry.release();
-            if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
-                if (newEntry.isFree()
-                        && ENTRIES.remove(getEntryName(), newEntry)) {
-                    synchronized (ENTRIES) {
-                        // maybe added during subscription
-                        if (!ENTRIES.containsKey(getEntryName())) {
-                            commandExecutor.getConnectionManager().unsubscribe(getChannelName());
-                        }
-                    }
+            if (entry.release() == 0) {
+                // just an assertion
+                boolean removed = ENTRIES.remove(getEntryName()) == entry;
+                if (removed) {
+                    commandExecutor.getConnectionManager().unsubscribe(getChannelName());
                 }
-                return;
-            }
-        }
-    }
-
-    private Promise<Boolean> aquire() {
-        while (true) {
-            RedissonCountDownLatchEntry entry = ENTRIES.get(getEntryName());
-            if (entry != null) {
-                RedissonCountDownLatchEntry newEntry = new RedissonCountDownLatchEntry(entry);
-                newEntry.aquire();
-                if (ENTRIES.replace(getEntryName(), entry, newEntry)) {
-                    return newEntry.getPromise();
-                }
-            } else {
-                return null;
             }
         }
     }
 
     public void await() throws InterruptedException {
-        Future<Boolean> promise = subscribe();
+        Future<RedissonCountDownLatchEntry> promise = subscribe();
         try {
             promise.await();
 
@@ -155,14 +134,14 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 }
             }
         } finally {
-            unsubscribe();
+            unsubscribe(promise.getNow());
         }
     }
 
 
     @Override
     public boolean await(long time, TimeUnit unit) throws InterruptedException {
-        Future<Boolean> promise = subscribe();
+        Future<RedissonCountDownLatchEntry> promise = subscribe();
         try {
             if (!promise.await(time, unit)) {
                 return false;
@@ -186,7 +165,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
             return true;
         } finally {
-            unsubscribe();
+            unsubscribe(promise.getNow());
         }
     }
 

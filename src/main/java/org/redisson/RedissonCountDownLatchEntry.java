@@ -15,69 +15,37 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Promise;
-
 import org.redisson.misc.ReclosableLatch;
+
+import io.netty.util.concurrent.Promise;
 
 public class RedissonCountDownLatchEntry {
 
     private int counter;
 
     private final ReclosableLatch latch;
-    private final Promise<Boolean> promise;
-    
-    public RedissonCountDownLatchEntry(RedissonCountDownLatchEntry source) {
-        counter = source.counter;
-        latch = source.latch;
-        promise = source.promise;
-    }
-    
-    public RedissonCountDownLatchEntry(Promise<Boolean> promise) {
+    private final Promise<RedissonCountDownLatchEntry> promise;
+
+    public RedissonCountDownLatchEntry(Promise<RedissonCountDownLatchEntry> promise) {
         super();
         this.latch = new ReclosableLatch();
         this.promise = promise;
     }
-    
-    public boolean isFree() {
-        return counter == 0;
-    }
-    
+
     public void aquire() {
         counter++;
     }
-    
-    public void release() {
-        counter--;
+
+    public int release() {
+        return --counter;
     }
-    
-    public Promise<Boolean> getPromise() {
+
+    public Promise<RedissonCountDownLatchEntry> getPromise() {
         return promise;
     }
-    
+
     public ReclosableLatch getLatch() {
         return latch;
     }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + counter;
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        RedissonCountDownLatchEntry other = (RedissonCountDownLatchEntry) obj;
-        if (counter != other.counter)
-            return false;
-        return true;
-    }
-    
 }

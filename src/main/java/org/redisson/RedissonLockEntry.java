@@ -24,36 +24,32 @@ public class RedissonLockEntry {
     private int counter;
 
     private final Semaphore latch;
-    private final Promise<Boolean> promise;
-    
+    private final Promise<RedissonLockEntry> promise;
+
     public RedissonLockEntry(RedissonLockEntry source) {
         counter = source.counter;
         latch = source.latch;
         promise = source.promise;
     }
-    
-    public RedissonLockEntry(Promise<Boolean> promise) {
+
+    public RedissonLockEntry(Promise<RedissonLockEntry> promise) {
         super();
         this.latch = new Semaphore(0);
         this.promise = promise;
     }
-    
-    public boolean isFree() {
-        return counter == 0;
-    }
-    
+
     public void aquire() {
         counter++;
     }
-    
-    public void release() {
-        counter--;
+
+    public int release() {
+        return --counter;
     }
-    
-    public Promise<Boolean> getPromise() {
+
+    public Promise<RedissonLockEntry> getPromise() {
         return promise;
     }
-    
+
     public Semaphore getLatch() {
         return latch;
     }
@@ -79,5 +75,5 @@ public class RedissonLockEntry {
             return false;
         return true;
     }
-    
+
 }
