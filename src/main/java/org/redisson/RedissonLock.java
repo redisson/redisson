@@ -312,7 +312,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void unlock() {
-        Boolean opStatus = commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
+        Boolean opStatus = commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN_R2,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('publish', ARGV[4], ARGV[2]); " +
@@ -355,7 +355,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     private Future<Boolean> forceUnlockAsync() {
         stopRefreshTask();
-        return commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN_R1,
                 "redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return true",
                         Collections.<Object>singletonList(getName()), unlockMessage, getChannelName());
     }

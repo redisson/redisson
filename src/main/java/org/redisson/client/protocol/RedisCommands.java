@@ -120,6 +120,8 @@ public interface RedisCommands {
     RedisStrictCommand<List<Boolean>> SCRIPT_EXISTS = new RedisStrictCommand<List<Boolean>>("SCRIPT", "EXISTS", new ObjectListReplayDecoder<Boolean>(), new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> EVAL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> EVAL_BOOLEAN_R1 = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
+    RedisStrictCommand<Boolean> EVAL_BOOLEAN_R2 = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5);
     RedisStrictCommand<String> EVAL_STRING = new RedisStrictCommand<String>("EVAL", new StringReplayDecoder());
     RedisStrictCommand<Long> EVAL_INTEGER = new RedisStrictCommand<Long>("EVAL");
     RedisCommand<List<Object>> EVAL_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());

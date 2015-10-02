@@ -40,6 +40,10 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
         super(name, convertor, -1);
     }
 
+    public RedisStrictCommand(String name, Convertor<T> convertor, int encodeParamIndex) {
+        super(name, convertor, encodeParamIndex);
+    }
+
     public RedisStrictCommand(String name, String subName, Convertor<T> convertor) {
         super(name, subName, convertor);
     }
