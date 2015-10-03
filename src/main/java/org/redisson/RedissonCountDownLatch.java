@@ -175,7 +175,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return;
         }
 
-        commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
+        commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN_R1,
                 "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
                         "if v == 0 then redis.call('publish', ARGV[2], ARGV[1]) end;" +
@@ -206,14 +206,14 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean trySetCount(long count) {
-        return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN_R1,
                 "if redis.call('exists', KEYS[1]) == 0 then redis.call('set', KEYS[1], ARGV[2]); redis.call('publish', ARGV[3], ARGV[1]); return true else return false end",
                  Collections.<Object>singletonList(getName()), newCountMessage, count, getChannelName());
     }
 
     @Override
     public Future<Boolean> deleteAsync() {
-        return commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN_R1,
                 "if redis.call('del', KEYS[1]) == 1 then redis.call('publish', ARGV[2], ARGV[1]); return true else return false end",
                  Collections.<Object>singletonList(getName()), newCountMessage, getChannelName());
     }
