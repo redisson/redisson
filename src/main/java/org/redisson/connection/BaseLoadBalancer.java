@@ -26,39 +26,41 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.misc.ReclosableLatch;
+import org.redisson.misc.ConnectionPool;
+import org.redisson.misc.PubSubConnectionPoll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
 
 abstract class BaseLoadBalancer implements LoadBalancer {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private MasterSlaveServersConfig config;
-
     private ConnectionManager connectionManager;
-    private final ReclosableLatch clientsEmpty = new ReclosableLatch();
-    final Map<RedisClient, SubscribesConnectionEntry> clients = PlatformDependent.newConcurrentHashMap();
+    final Map<RedisClient, SubscribesConnectionEntry> client2Entry = PlatformDependent.newConcurrentHashMap();
+
+    PubSubConnectionPoll pubSubEntries;
+
+    ConnectionPool<RedisConnection> entries;
 
     public void init(MasterSlaveServersConfig config, ConnectionManager connectionManager) {
-        this.config = config;
         this.connectionManager = connectionManager;
+        entries = new ConnectionPool<RedisConnection>(config, this, connectionManager.getGroup());
+        pubSubEntries = new PubSubConnectionPoll(config, this, connectionManager.getGroup());
     }
 
     public synchronized void add(SubscribesConnectionEntry entry) {
-        clients.put(entry.getClient(), entry);
-        if (!entry.isFreezed()) {
-            clientsEmpty.open();
-        }
+        client2Entry.put(entry.getClient(), entry);
+        entries.add(entry);
+        pubSubEntries.add(entry);
     }
 
     public int getAvailableClients() {
         int count = 0;
-        for (SubscribesConnectionEntry connectionEntry : clients.values()) {
+        for (SubscribesConnectionEntry connectionEntry : client2Entry.values()) {
             if (!connectionEntry.isFreezed()) {
                 count++;
             }
@@ -68,12 +70,11 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public synchronized void unfreeze(String host, int port) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
-        for (SubscribesConnectionEntry connectionEntry : clients.values()) {
+        for (SubscribesConnectionEntry connectionEntry : client2Entry.values()) {
             if (!connectionEntry.getClient().getAddr().equals(addr)) {
                 continue;
             }
             connectionEntry.setFreezed(false);
-            clientsEmpty.open();
             return;
         }
         throw new IllegalStateException("Can't find " + addr + " in slaves!");
@@ -81,7 +82,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public synchronized Collection<RedisPubSubConnection> freeze(String host, int port) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
-        for (SubscribesConnectionEntry connectionEntry : clients.values()) {
+        for (SubscribesConnectionEntry connectionEntry : client2Entry.values()) {
             if (connectionEntry.isFreezed()
                     || !connectionEntry.getClient().getAddr().equals(addr)) {
                 continue;
@@ -92,7 +93,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
             // close all connections
             while (true) {
-                RedisConnection connection = connectionEntry.getConnections().poll();
+                RedisConnection connection = connectionEntry.pollConnection();
                 if (connection == null) {
                     break;
                 }
@@ -109,17 +110,6 @@ abstract class BaseLoadBalancer implements LoadBalancer {
             }
 
 
-            boolean allFreezed = true;
-            for (SubscribesConnectionEntry entry : clients.values()) {
-                if (!entry.isFreezed()) {
-                    allFreezed = false;
-                    break;
-                }
-            }
-            if (allFreezed) {
-                clientsEmpty.close();
-            }
-
             List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
             connectionEntry.getAllSubscribeConnections().clear();
             return list;
@@ -128,122 +118,41 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         return Collections.emptyList();
     }
 
-    public RedisPubSubConnection nextPubSubConnection() {
-        clientsEmpty.awaitUninterruptibly();
-        List<SubscribesConnectionEntry> clientsCopy = new ArrayList<SubscribesConnectionEntry>(clients.values());
-        while (true) {
-            if (clientsCopy.isEmpty()) {
-                throw new RedisConnectionException("Slave subscribe-connection pool gets exhausted!");
-            }
-
-            int index = getIndex(clientsCopy);
-            SubscribesConnectionEntry entry = clientsCopy.get(index);
-
-            if (entry.isFreezed()
-                    || !entry.getSubscribeConnectionsSemaphore().tryAcquire()) {
-                clientsCopy.remove(index);
-            } else {
-                try {
-                    RedisPubSubConnection conn = entry.pollFreeSubscribeConnection();
-                    if (conn != null) {
-                        return conn;
-                    }
-                    return entry.connectPubSub(config);
-                } catch (RedisConnectionException e) {
-                    entry.getSubscribeConnectionsSemaphore().release();
-                    // TODO connection scoring
-                    log.warn("Can't connect to {}, trying next connection!", entry.getClient().getAddr());
-                    clientsCopy.remove(index);
-                }
-            }
-        }
+    public Future<RedisPubSubConnection> nextPubSubConnection() {
+        return pubSubEntries.get();
     }
 
-    public RedisConnection getConnection(RedisClient client) {
-        SubscribesConnectionEntry entry = clients.get(client);
+    public Future<RedisConnection> getConnection(RedisClient client) {
+        SubscribesConnectionEntry entry = client2Entry.get(client);
         if (entry != null) {
-            RedisConnection conn = retrieveConnection(entry);
-            if (conn == null) {
-                throw new RedisConnectionException("Slave connection pool gets exhausted for " + client);
-            }
-            return conn;
+            return entries.get(entry);
         }
-        throw new RedisConnectionException("Can't find entry for " + client);
+        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client);
+        return connectionManager.getGroup().next().newFailedFuture(exception);
     }
 
-    public RedisConnection nextConnection() {
-        clientsEmpty.awaitUninterruptibly();
-        List<SubscribesConnectionEntry> clientsCopy = new ArrayList<SubscribesConnectionEntry>(clients.values());
-        while (true) {
-            if (clientsCopy.isEmpty()) {
-                throw new RedisConnectionException("Slave connection pool gets exhausted!");
-            }
-
-            int index = getIndex(clientsCopy);
-            SubscribesConnectionEntry entry = clientsCopy.get(index);
-
-            RedisConnection conn = retrieveConnection(entry);
-            if (conn == null) {
-                clientsCopy.remove(index);
-            } else {
-                return conn;
-            }
-        }
+    public Future<RedisConnection> nextConnection() {
+        return entries.get();
     }
-
-    private RedisConnection retrieveConnection(SubscribesConnectionEntry entry) {
-        if (entry.isFreezed()
-                || !entry.getConnectionsSemaphore().tryAcquire()) {
-            return null;
-        } else {
-            RedisConnection conn = entry.getConnections().poll();
-            if (conn != null) {
-                return conn;
-            }
-            try {
-                return entry.connect(config);
-            } catch (RedisException e) {
-                entry.getConnectionsSemaphore().release();
-                // TODO connection scoring
-                log.warn("Can't connect to {}, trying next connection!", entry.getClient().getAddr());
-                return null;
-            }
-        }
-    }
-
-    abstract int getIndex(List<SubscribesConnectionEntry> clientsCopy);
 
     public void returnSubscribeConnection(RedisPubSubConnection connection) {
-        SubscribesConnectionEntry entry = clients.get(connection.getRedisClient());
-        if (entry.isFreezed()) {
-            connection.closeAsync();
-        } else {
-            entry.offerFreeSubscribeConnection(connection);
-        }
-        entry.getSubscribeConnectionsSemaphore().release();
+        SubscribesConnectionEntry entry = client2Entry.get(connection.getRedisClient());
+        pubSubEntries.returnConnection(entry, connection);
     }
 
     public void returnConnection(RedisConnection connection) {
-        SubscribesConnectionEntry entry = clients.get(connection.getRedisClient());
-        if (entry.isFreezed()) {
-            connection.closeAsync();
-        } else {
-            if (connection.getFailAttempts() == config.getRefreshConnectionAfterFails()) {
-                connection.forceReconnect();
-            }
-            entry.getConnections().add(connection);
-        }
-        entry.getConnectionsSemaphore().release();
+        SubscribesConnectionEntry entry = client2Entry.get(connection.getRedisClient());
+        entries.returnConnection(entry, connection);
     }
 
     public void shutdown() {
-        for (SubscribesConnectionEntry entry : clients.values()) {
+        for (SubscribesConnectionEntry entry : client2Entry.values()) {
             entry.getClient().shutdown();
         }
     }
 
     public void shutdownAsync() {
-        for (RedisClient client : clients.keySet()) {
+        for (RedisClient client : client2Entry.keySet()) {
             connectionManager.shutdownAsync(client);
         }
     }

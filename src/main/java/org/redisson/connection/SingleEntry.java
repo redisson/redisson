@@ -18,56 +18,41 @@ package org.redisson.connection;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.misc.ConnectionPool;
+import org.redisson.misc.PubSubConnectionPoll;
 
-public class SingleEntry extends MasterSlaveEntry {
+import io.netty.util.concurrent.Future;
+
+public class SingleEntry extends MasterSlaveEntry<SubscribesConnectionEntry> {
+
+    final ConnectionPool<RedisPubSubConnection> pubSubConnectionHolder;
 
     public SingleEntry(int startSlot, int endSlot, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         super(startSlot, endSlot, connectionManager, config);
+        pubSubConnectionHolder = new PubSubConnectionPoll(config, null, connectionManager.getGroup());
     }
 
     @Override
     public void setupMasterEntry(String host, int port) {
         RedisClient masterClient = connectionManager.createClient(host, port);
         masterEntry = new SubscribesConnectionEntry(masterClient, config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize());
-    }
-
-    private void acquireSubscribeConnection() {
-        if (!((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().tryAcquire()) {
-            log.warn("Subscribe connection pool gets exhausted! Trying to acquire connection ...");
-            long time = System.currentTimeMillis();
-            ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().acquireUninterruptibly();
-            long endTime = System.currentTimeMillis() - time;
-            log.warn("Subscribe connection acquired, time spended: {} ms", endTime);
-        }
+        writeConnectionHolder.add(masterEntry);
+        pubSubConnectionHolder.add(masterEntry);
     }
 
     @Override
-    RedisPubSubConnection nextPubSubConnection() {
-        acquireSubscribeConnection();
-
-        RedisPubSubConnection conn = ((SubscribesConnectionEntry)masterEntry).pollFreeSubscribeConnection();
-        if (conn != null) {
-            return conn;
-        }
-
-        try {
-            return masterEntry.connectPubSub(config);
-        } catch (RedisConnectionException e) {
-            ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().release();
-            throw e;
-        }
+    Future<RedisPubSubConnection> nextPubSubConnection() {
+        return pubSubConnectionHolder.get();
     }
 
     @Override
     public void returnSubscribeConnection(PubSubConnectionEntry entry) {
-        ((SubscribesConnectionEntry)masterEntry).offerFreeSubscribeConnection(entry.getConnection());
-        ((SubscribesConnectionEntry)masterEntry).getSubscribeConnectionsSemaphore().release();
+        pubSubConnectionHolder.returnConnection(masterEntry, entry.getConnection());
     }
 
     @Override
-    public RedisConnection connectionReadOp() {
+    public Future<RedisConnection> connectionReadOp() {
         return super.connectionWriteOp();
     }
 
@@ -75,4 +60,5 @@ public class SingleEntry extends MasterSlaveEntry {
     public void releaseRead(RedisConnection сonnection) {
         super.releaseWrite(сonnection);
     }
+
 }

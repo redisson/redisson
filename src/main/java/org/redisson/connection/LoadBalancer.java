@@ -16,15 +16,20 @@
 package org.redisson.connection;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 
+import io.netty.util.concurrent.Future;
+
 public interface LoadBalancer {
 
-    RedisConnection getConnection(RedisClient client);
+    SubscribesConnectionEntry getEntry(List<SubscribesConnectionEntry> clientsCopy);
+
+    Future<RedisConnection> getConnection(RedisClient client);
 
     int getAvailableClients();
 
@@ -40,9 +45,9 @@ public interface LoadBalancer {
 
     void add(SubscribesConnectionEntry entry);
 
-    RedisConnection nextConnection();
+    Future<RedisConnection> nextConnection();
 
-    RedisPubSubConnection nextPubSubConnection();
+    Future<RedisPubSubConnection> nextPubSubConnection();
 
     void returnConnection(RedisConnection connection);
 

@@ -30,6 +30,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
@@ -61,11 +62,11 @@ public interface ConnectionManager {
 
     void releaseWrite(int slot, RedisConnection connection);
 
-    RedisConnection connectionReadOp(int slot);
+    Future<RedisConnection> connectionReadOp(int slot);
 
-    RedisConnection connectionReadOp(int slot, RedisClient client);
+    Future<RedisConnection> connectionReadOp(int slot, RedisClient client);
 
-    RedisConnection connectionWriteOp(int slot);
+    Future<RedisConnection> connectionWriteOp(int slot);
 
     <T> FutureListener<T> createReleaseReadListener(int slot,
             RedisConnection conn, Timeout timeout);
@@ -79,9 +80,9 @@ public interface ConnectionManager {
 
     PubSubConnectionEntry getEntry(String channelName);
 
-    PubSubConnectionEntry subscribe(String channelName, Codec codec);
+    Future<PubSubConnectionEntry> subscribe(String channelName, Codec codec);
 
-    PubSubConnectionEntry psubscribe(String pattern, Codec codec);
+    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec);
 
     <V> void subscribe(RedisPubSubListener<V> listener, String channelName);
 

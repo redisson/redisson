@@ -15,15 +15,17 @@
  */
 package org.redisson.connection;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Random;
 
 public class RandomLoadBalancer extends BaseLoadBalancer {
 
-    private final Random random = new Random();
+    private final Random random = new SecureRandom();
 
-    int getIndex(List<SubscribesConnectionEntry> clientsCopy) {
-        return random.nextInt(clientsCopy.size());
+    public SubscribesConnectionEntry getEntry(List<SubscribesConnectionEntry> clientsCopy) {
+        int ind = random.nextInt(clientsCopy.size());
+        return clientsCopy.get(ind);
     }
 
 }

@@ -252,12 +252,16 @@ public class CommandExecutorService implements CommandExecutor {
         }
 
         try {
-            RedisConnection connection;
+            Future<RedisConnection> connectionFuture;
             if (readOnlyMode) {
-                connection = connectionManager.connectionReadOp(slot);
+                connectionFuture = connectionManager.connectionReadOp(slot);
             } else {
-                connection = connectionManager.connectionWriteOp(slot);
+                connectionFuture = connectionManager.connectionWriteOp(slot);
             }
+            connectionFuture.syncUninterruptibly();
+
+            RedisConnection connection = connectionFuture.getNow();
+
             try {
                 return operation.execute(codec, connection);
             } catch (RedisMovedException e) {
@@ -422,51 +426,64 @@ public class CommandExecutorService implements CommandExecutor {
             }
         };
 
-        try {
-            RedisConnection connection;
-            if (readOnlyMode) {
-                if (client != null) {
-                    connection = connectionManager.connectionReadOp(slot, client);
-                } else {
-                    connection = connectionManager.connectionReadOp(slot);
-                }
+        ex.set(new RedisTimeoutException());
+        final Timeout timeout = connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+
+        Future<RedisConnection> connectionFuture;
+        if (readOnlyMode) {
+            if (client != null) {
+                connectionFuture = connectionManager.connectionReadOp(slot, client);
             } else {
-                connection = connectionManager.connectionWriteOp(slot);
+                connectionFuture = connectionManager.connectionReadOp(slot);
             }
-            log.debug("getting connection for command {} from slot {} using node {}", command, slot, connection.getRedisClient().getAddr());
-            ChannelFuture future = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
-
-            ex.set(new RedisTimeoutException());
-            final Timeout timeout = connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
-
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        timeout.cancel();
-                        ex.set(new WriteRedisConnectionException(
-                                "Can't send command: " + command + ", params: " + params + ", channel: " + future.channel(), future.cause()));
-                        connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
-                    }
-                }
-            });
-
-            if (readOnlyMode) {
-                attemptPromise.addListener(connectionManager.createReleaseReadListener(slot, connection, timeout));
-            } else {
-                attemptPromise.addListener(connectionManager.createReleaseWriteListener(slot, connection, timeout));
-            }
-        } catch (RedisException e) {
-            ex.set(e);
-            connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+        } else {
+            connectionFuture = connectionManager.connectionWriteOp(slot);
         }
+
+        connectionFuture.addListener(new FutureListener<RedisConnection>() {
+            @Override
+            public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
+                if (attemptPromise.isCancelled()) {
+                    return;
+                }
+                if (!connFuture.isSuccess()) {
+                    timeout.cancel();
+                    ex.set((RedisException)connFuture.cause());
+                    connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    return;
+                }
+
+                RedisConnection connection = connFuture.getNow();
+
+                log.debug("getting connection for command {} from slot {} using node {}", command, slot, connection.getRedisClient().getAddr());
+                ChannelFuture future = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if (!future.isSuccess()) {
+                            timeout.cancel();
+                            ex.set(new WriteRedisConnectionException(
+                                    "Can't send command: " + command + ", params: " + params + ", channel: " + future.channel(), future.cause()));
+                            connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                        }
+                    }
+                });
+
+                if (readOnlyMode) {
+                    attemptPromise.addListener(connectionManager.createReleaseReadListener(slot, connection, timeout));
+                } else {
+                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(slot, connection, timeout));
+                }
+            }
+        });
+
         attemptPromise.addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
+                timeout.cancel();
                 if (future.isCancelled()) {
                     return;
                 }
-                // TODO cancel timeout
 
                 if (future.cause() instanceof RedisMovedException) {
                     RedisMovedException ex = (RedisMovedException)future.cause();

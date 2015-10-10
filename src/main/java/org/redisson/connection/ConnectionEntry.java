@@ -17,7 +17,7 @@ package org.redisson.connection;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.ReconnectListener;
@@ -36,11 +36,11 @@ public class ConnectionEntry {
     final RedisClient client;
 
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
-    private final Semaphore connectionsSemaphore;
+    private final AtomicInteger connectionsCounter = new AtomicInteger();
 
     public ConnectionEntry(RedisClient client, int poolSize) {
         this.client = client;
-        this.connectionsSemaphore = new Semaphore(poolSize);
+        this.connectionsCounter.set(poolSize);
     }
 
     public RedisClient getClient() {
@@ -55,12 +55,31 @@ public class ConnectionEntry {
         this.freezed = freezed;
     }
 
-    public Semaphore getConnectionsSemaphore() {
-        return connectionsSemaphore;
+    public int getFreeAmount() {
+        return connectionsCounter.get();
     }
 
-    public Queue<RedisConnection> getConnections() {
-        return connections;
+    public boolean tryAcquireConnection() {
+        while (true) {
+            if (connectionsCounter.get() == 0) {
+                return false;
+            }
+            if (connectionsCounter.compareAndSet(connectionsCounter.get(), connectionsCounter.get() - 1)) {
+                return true;
+            }
+        }
+    }
+
+    public void releaseConnection() {
+        connectionsCounter.incrementAndGet();
+    }
+
+    public RedisConnection pollConnection() {
+        return connections.poll();
+    }
+
+    public void releaseConnection(RedisConnection connection) {
+        connections.add(connection);
     }
 
     public RedisConnection connect(final MasterSlaveServersConfig config) {

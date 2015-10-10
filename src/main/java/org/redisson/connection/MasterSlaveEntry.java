@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,10 +24,12 @@ import java.util.List;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.misc.ConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.netty.util.concurrent.Future;
 
 /**
  *
@@ -34,18 +37,20 @@ import org.slf4j.LoggerFactory;
  *
  */
 //TODO ping support
-public class MasterSlaveEntry {
+public class MasterSlaveEntry<E extends ConnectionEntry> {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
     LoadBalancer slaveBalancer;
-    volatile ConnectionEntry masterEntry;
+    SubscribesConnectionEntry masterEntry;
 
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
     final int startSlot;
     final int endSlot;
+
+    final ConnectionPool<RedisConnection> writeConnectionHolder;
 
     public MasterSlaveEntry(int startSlot, int endSlot, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.startSlot = startSlot;
@@ -68,18 +73,20 @@ public class MasterSlaveEntry {
             slaveDown(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         }
 
-        setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager.getGroup());
     }
 
-    public void setupMasterEntry(String host, int port) {
+    protected void setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(host, port);
-        masterEntry = new ConnectionEntry(client, config.getMasterConnectionPoolSize());
+        masterEntry = new SubscribesConnectionEntry(client, config.getMasterConnectionPoolSize(), 0);
+        writeConnectionHolder.add(masterEntry);
     }
 
     public Collection<RedisPubSubConnection> slaveDown(String host, int port) {
         Collection<RedisPubSubConnection> conns = slaveBalancer.freeze(host, port);
         if (slaveBalancer.getAvailableClients() == 0) {
-            slaveUp(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
+            InetSocketAddress addr = masterEntry.getClient().getAddr();
+            slaveUp(addr.getHostName(), addr.getPort());
         }
         return conns;
     }
@@ -98,8 +105,9 @@ public class MasterSlaveEntry {
     }
 
     public void slaveUp(String host, int port) {
-        if (!masterEntry.getClient().getAddr().getHostName().equals(host) && port != masterEntry.getClient().getAddr().getPort()) {
-            slaveDown(masterEntry.getClient().getAddr().getHostName(), masterEntry.getClient().getAddr().getPort());
+        InetSocketAddress addr = masterEntry.getClient().getAddr();
+        if (!addr.getHostName().equals(host) && port != addr.getPort()) {
+            slaveDown(addr.getHostName(), addr.getPort());
         }
         slaveBalancer.unfreeze(host, port);
     }
@@ -111,8 +119,9 @@ public class MasterSlaveEntry {
      *
      */
     public void changeMaster(String host, int port) {
-        ConnectionEntry oldMaster = masterEntry;
+        SubscribesConnectionEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
+        writeConnectionHolder.remove(oldMaster);
         if (slaveBalancer.getAvailableClients() > 1) {
             slaveDown(host, port);
         }
@@ -124,45 +133,21 @@ public class MasterSlaveEntry {
         slaveBalancer.shutdownAsync();
     }
 
-    public RedisConnection connectionWriteOp() {
-        // may changed during changeMaster call
-        ConnectionEntry entry = masterEntry;
-        acquireMasterConnection(entry);
-
-        RedisConnection conn = entry.getConnections().poll();
-        if (conn != null) {
-            return conn;
-        }
-
-        try {
-            return entry.connect(config);
-        } catch (RedisException e) {
-            entry.getConnectionsSemaphore().release();
-            throw e;
-        }
+    public Future<RedisConnection> connectionWriteOp() {
+        return writeConnectionHolder.get();
     }
 
-    public RedisConnection connectionReadOp() {
+    public Future<RedisConnection> connectionReadOp() {
         return slaveBalancer.nextConnection();
     }
 
-    public RedisConnection connectionReadOp(RedisClient client) {
+    public Future<RedisConnection> connectionReadOp(RedisClient client) {
         return slaveBalancer.getConnection(client);
     }
 
 
-    RedisPubSubConnection nextPubSubConnection() {
+    Future<RedisPubSubConnection> nextPubSubConnection() {
         return slaveBalancer.nextPubSubConnection();
-    }
-
-    void acquireMasterConnection(ConnectionEntry entry) {
-        if (!entry.getConnectionsSemaphore().tryAcquire()) {
-            log.warn("Master connection pool gets exhausted! Trying to acquire connection ...");
-            long time = System.currentTimeMillis();
-            entry.getConnectionsSemaphore().acquireUninterruptibly();
-            long endTime = System.currentTimeMillis() - time;
-            log.warn("Master connection acquired, time spended: {} ms", endTime);
-        }
     }
 
     public void returnSubscribeConnection(PubSubConnectionEntry entry) {
@@ -170,17 +155,7 @@ public class MasterSlaveEntry {
     }
 
     public void releaseWrite(RedisConnection connection) {
-        // may changed during changeMaster call
-        ConnectionEntry entry = masterEntry;
-        if (!entry.getClient().equals(connection.getRedisClient())) {
-            connection.closeAsync();
-            return;
-        } else if (connection.getFailAttempts() == config.getRefreshConnectionAfterFails()) {
-            connection.forceReconnect();
-        }
-
-        entry.getConnections().add(connection);
-        entry.getConnectionsSemaphore().release();
+        writeConnectionHolder.returnConnection(masterEntry, connection);
     }
 
     public void releaseRead(RedisConnection сonnection) {

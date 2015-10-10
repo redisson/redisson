@@ -117,6 +117,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         config.setMasterAddress(partition.getMasterAddress());
 
         SingleEntry entry = new SingleEntry(partition.getStartSlot(), partition.getEndSlot(), this, config);
+        entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         entries.put(partition.getEndSlot(), entry);
         lastPartitions.put(partition.getEndSlot(), partition);
     }
@@ -142,7 +143,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                         if (newPart.isMasterFail()) {
                                             ClusterPartition newMasterPart = partitions.get(part.getEndSlot());
                                             if (!newMasterPart.getMasterAddress().equals(part.getMasterAddress())) {
-                                                log.debug("changing master from {} to {} for {}",
+                                                log.info("changing master from {} to {} for {}",
                                                         part.getMasterAddress(), newMasterPart.getMasterAddress(), newMasterPart.getEndSlot());
                                                 URI newUri = newMasterPart.getMasterAddress();
                                                 URI oldUri = part.getMasterAddress();
@@ -208,6 +209,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Map<Integer, ClusterPartition> result = new HashMap<Integer, ClusterPartition>();
         List<ClusterNodeInfo> nodes = parse(nodesValue);
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
+            if (clusterNodeInfo.getFlags().contains(Flag.NOADDR)) {
+                // skip it
+                continue;
+            }
+
             String id = clusterNodeInfo.getNodeId();
             if (clusterNodeInfo.getFlags().contains(Flag.SLAVE)) {
                 id = clusterNodeInfo.getSlaveOf();

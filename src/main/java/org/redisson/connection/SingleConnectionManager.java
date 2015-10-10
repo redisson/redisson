@@ -70,6 +70,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     @Override
     protected void initEntry(MasterSlaveServersConfig config) {
         SingleEntry entry = new SingleEntry(0, MAX_SLOT, this, config);
+        entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         entries.put(MAX_SLOT, entry);
     }
 
