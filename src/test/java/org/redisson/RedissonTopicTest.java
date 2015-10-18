@@ -1,16 +1,13 @@
 package org.redisson;
 
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.core.BaseStatusListener;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
-import org.redisson.core.StatusListener;
 
 public class RedissonTopicTest {
 

@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Assert;
+
 public abstract class BaseConcurrentTest extends BaseTest {
 
     protected void testMultiInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
@@ -29,7 +31,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
         }
 
         executor.shutdown();
-        executor.awaitTermination(5, TimeUnit.MINUTES);
+        Assert.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
 
         System.out.println("multi: " + (System.currentTimeMillis() - watch));
 
@@ -45,7 +47,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
         }
 
         executor.shutdown();
-        executor.awaitTermination(5, TimeUnit.MINUTES);
+        Assert.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
     }
 
     protected void testSingleInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
@@ -63,7 +65,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
         }
 
         executor.shutdown();
-        executor.awaitTermination(5, TimeUnit.MINUTES);
+        Assert.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
 
         System.out.println(System.currentTimeMillis() - watch);
 

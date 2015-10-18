@@ -48,7 +48,7 @@ public class RedissonCountDownLatchConcurrentTest {
         }
 
         executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
+        Assert.assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
 
         redisson.shutdown();
     }

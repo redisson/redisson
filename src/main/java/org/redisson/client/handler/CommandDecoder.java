@@ -126,7 +126,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
             if (i == commands.getCommands().size()) {
                 Promise<Void> promise = commands.getPromise();
-                if (!promise.trySuccess(null) && promise.isCancelled()) {
+                if (!promise.trySuccess(null)) {
                     log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
                 }
 
@@ -214,7 +214,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private void handleMultiResult(CommandData<Object, Object> data, List<Object> parts,
             Channel channel, Object result) {
-        if (data == null) {
+        if (data != null) {
+            handleResult(data, parts, result, true, channel);
+        } else {
             if (result instanceof PubSubStatusMessage) {
                 String channelName = ((PubSubStatusMessage) result).getChannel();
                 CommandData<Object, Object> d = channels.get(channelName);
@@ -227,11 +229,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     messageDecoders.remove(channelName);
                 }
             }
-        }
 
-        if (data != null) {
-            handleResult(data, parts, result, true, channel);
-        } else {
             RedisPubSubConnection pubSubConnection = (RedisPubSubConnection)channel.attr(RedisPubSubConnection.CONNECTION).get();
             if (result instanceof PubSubStatusMessage) {
                 pubSubConnection.onMessage((PubSubStatusMessage) result);
@@ -254,7 +252,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            if (!data.getPromise().trySuccess(result) && data.getPromise().isCancelled()) {
+            if (!data.getPromise().trySuccess(result)) {
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, data, result);
             }
         }
@@ -264,7 +262,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (data == null) {
             if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(parts.get(0))) {
                 String channelName = (String) parts.get(1);
-                return channels.get(channelName).getCommand().getReplayMultiDecoder();
+                CommandData<Object, Object> commandData = channels.get(channelName);
+                if (commandData == null) {
+                    throw new IllegalStateException("Can't find CommandData for command: " + parts);
+                }
+                return commandData.getCommand().getReplayMultiDecoder();
             } else if (parts.get(0).equals("message")) {
                 String channelName = (String) parts.get(1);
                 return messageDecoders.get(channelName);
