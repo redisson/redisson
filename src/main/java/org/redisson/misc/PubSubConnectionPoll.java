@@ -21,6 +21,7 @@ import org.redisson.connection.LoadBalancer;
 import org.redisson.connection.SubscribesConnectionEntry;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
 
 public class PubSubConnectionPoll extends ConnectionPool<RedisPubSubConnection> {
 
@@ -35,7 +36,7 @@ public class PubSubConnectionPoll extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
-    protected RedisPubSubConnection connect(SubscribesConnectionEntry entry) {
+    protected Future<RedisPubSubConnection> connect(SubscribesConnectionEntry entry) {
         return entry.connectPubSub(config);
     }
 

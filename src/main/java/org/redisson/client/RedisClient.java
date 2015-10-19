@@ -88,7 +88,7 @@ public class RedisClient {
             future.syncUninterruptibly();
             return new RedisConnection(this, future.channel());
         } catch (Exception e) {
-            throw new RedisConnectionException("unable to connect", e);
+            throw new RedisConnectionException("Unable to connect to " + addr, e);
         }
     }
 
@@ -115,8 +115,25 @@ public class RedisClient {
             future.syncUninterruptibly();
             return new RedisPubSubConnection(this, future.channel());
         } catch (Exception e) {
-            throw new RedisConnectionException("unable to connect", e);
+            throw new RedisConnectionException("Unable to connect to " + addr, e);
         }
+    }
+
+    public Future<RedisPubSubConnection> connectPubSubAsync() {
+        final Promise<RedisPubSubConnection> f = bootstrap.group().next().newPromise();
+        ChannelFuture channelFuture = bootstrap.connect();
+        channelFuture.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (future.isSuccess()) {
+                    RedisPubSubConnection c = new RedisPubSubConnection(RedisClient.this, future.channel());
+                    f.setSuccess(c);
+                } else {
+                    f.setFailure(future.cause());
+                }
+            }
+        });
+        return f;
     }
 
     public void shutdown() {

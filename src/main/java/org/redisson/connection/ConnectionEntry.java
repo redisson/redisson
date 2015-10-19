@@ -28,6 +28,9 @@ import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+
 public class ConnectionEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
@@ -82,19 +85,27 @@ public class ConnectionEntry {
         connections.add(connection);
     }
 
-    public RedisConnection connect(final MasterSlaveServersConfig config) {
-        RedisConnection conn = client.connect();
-        log.debug("new connection created: {}", conn);
-
-        prepareConnection(config, conn);
-        conn.setReconnectListener(new ReconnectListener() {
+    public Future<RedisConnection> connect(final MasterSlaveServersConfig config) {
+        Future<RedisConnection> future = client.connectAsync();
+        future.addListener(new FutureListener<RedisConnection>() {
             @Override
-            public void onReconnect(RedisConnection conn) {
+            public void operationComplete(Future<RedisConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                RedisConnection conn = future.getNow();
+                log.debug("new connection created: {}", conn);
+
                 prepareConnection(config, conn);
+                conn.setReconnectListener(new ReconnectListener() {
+                    @Override
+                    public void onReconnect(RedisConnection conn) {
+                        prepareConnection(config, conn);
+                    }
+                });
             }
         });
-
-        return conn;
+        return future;
     }
 
     private void prepareConnection(MasterSlaveServersConfig config, RedisConnection conn) {
@@ -109,19 +120,27 @@ public class ConnectionEntry {
         }
     }
 
-    public RedisPubSubConnection connectPubSub(final MasterSlaveServersConfig config) {
-        RedisPubSubConnection conn = client.connectPubSub();
-        log.debug("new pubsub connection created: {}", conn);
-
-        prepareConnection(config, conn);
-        conn.setReconnectListener(new ReconnectListener() {
+    public Future<RedisPubSubConnection> connectPubSub(final MasterSlaveServersConfig config) {
+        Future<RedisPubSubConnection> future = client.connectPubSubAsync();
+        future.addListener(new FutureListener<RedisPubSubConnection>() {
             @Override
-            public void onReconnect(RedisConnection conn) {
+            public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                RedisPubSubConnection conn = future.getNow();
+                log.debug("new pubsub connection created: {}", conn);
+
                 prepareConnection(config, conn);
+                conn.setReconnectListener(new ReconnectListener() {
+                    @Override
+                    public void onReconnect(RedisConnection conn) {
+                        prepareConnection(config, conn);
+                    }
+                });
             }
         });
-
-        return conn;
+        return future;
     }
 
     @Override

@@ -23,6 +23,9 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisPubSubConnection;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+
 public class SubscribesConnectionEntry extends ConnectionEntry {
 
     private final Queue<RedisPubSubConnection> allSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
@@ -65,10 +68,19 @@ public class SubscribesConnectionEntry extends ConnectionEntry {
         connectionsCounter.incrementAndGet();
     }
 
-    public RedisPubSubConnection connectPubSub(MasterSlaveServersConfig config) {
-        RedisPubSubConnection conn = super.connectPubSub(config);
-        allSubscribeConnections.add(conn);
-        return conn;
+    public Future<RedisPubSubConnection> connectPubSub(MasterSlaveServersConfig config) {
+        Future<RedisPubSubConnection> future = super.connectPubSub(config);
+        future.addListener(new FutureListener<RedisPubSubConnection>() {
+            @Override
+            public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                RedisPubSubConnection conn = future.getNow();
+                allSubscribeConnections.add(conn);
+            }
+        });
+        return future;
     }
 
 

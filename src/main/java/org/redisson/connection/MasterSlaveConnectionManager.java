@@ -52,6 +52,7 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.PlatformDependent;
 
 /**
  *
@@ -73,7 +74,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected Class<? extends SocketChannel> socketChannelClass;
 
-    protected final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<String, PubSubConnectionEntry>();
+    protected final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = PlatformDependent.newConcurrentHashMap();
 
     protected MasterSlaveServersConfig config;
 
@@ -395,28 +396,24 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         final int slot = 0;
         Future<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
-        connFuture.addListener(new FutureListener<RedisPubSubConnection>() {
-            @Override
-            public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
-                RedisPubSubConnection conn = future.getNow();
-                PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-                entry.tryAcquire();
-                PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-                if (oldEntry != null) {
-                    releaseSubscribeConnection(slot, entry);
-                    return;
-                }
-                synchronized (entry) {
-                    if (!entry.isActive()) {
-                        entry.release();
-                        subscribe(listener, channelName);
-                        return;
-                    }
-                    entry.subscribe(codec, listener, channelName);
-                    return;
-                }
+        connFuture.syncUninterruptibly();
+        RedisPubSubConnection conn = connFuture.getNow();
+        PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
+        entry.tryAcquire();
+        PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
+        if (oldEntry != null) {
+            releaseSubscribeConnection(slot, entry);
+            return;
+        }
+        synchronized (entry) {
+            if (!entry.isActive()) {
+                entry.release();
+                subscribe(listener, channelName);
+                return;
             }
-        }).syncUninterruptibly();
+            entry.subscribe(codec, listener, channelName);
+            return;
+        }
 
     }
 

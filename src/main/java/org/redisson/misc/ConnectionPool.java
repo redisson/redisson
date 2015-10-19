@@ -16,20 +16,20 @@
 package org.redisson.misc;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisException;
 import org.redisson.connection.LoadBalancer;
 import org.redisson.connection.SubscribesConnectionEntry;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
-import io.netty.util.internal.OneTimeTask;
 
 public class ConnectionPool<T extends RedisConnection> {
 
@@ -41,6 +41,8 @@ public class ConnectionPool<T extends RedisConnection> {
 
     LoadBalancer loadBalancer;
 
+    final ConcurrentLinkedQueue<Promise<T>> promises = new ConcurrentLinkedQueue<Promise<T>>();
+
     public ConnectionPool(MasterSlaveServersConfig config, LoadBalancer loadBalancer, EventLoopGroup eventLoopGroup) {
         this.config = config;
         this.loadBalancer = loadBalancer;
@@ -49,6 +51,7 @@ public class ConnectionPool<T extends RedisConnection> {
 
     public void add(SubscribesConnectionEntry entry) {
         entries.add(entry);
+        handleQueue(entry);
     }
 
     public void remove(SubscribesConnectionEntry entry) {
@@ -70,8 +73,9 @@ public class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        RedisConnectionException exception = new RedisConnectionException("Connection pool exhausted!");
-        return executor.newFailedFuture(exception);
+        Promise<T> promise = executor.newPromise();
+        promises.add(promise);
+        return promise;
     }
 
     public Future<T> get(SubscribesConnectionEntry entry) {
@@ -93,35 +97,36 @@ public class ConnectionPool<T extends RedisConnection> {
         return (T) entry.pollConnection();
     }
 
-    protected T connect(SubscribesConnectionEntry entry) {
-        return (T) entry.connect(config);
+    protected Future<T> connect(SubscribesConnectionEntry entry) {
+        return (Future<T>) entry.connect(config);
     }
 
-    private Future<T> connect(final SubscribesConnectionEntry entry, final Promise<T> promise) {
+    private void connect(final SubscribesConnectionEntry entry, final Promise<T> promise) {
         T conn = poll(entry);
         if (conn != null) {
             if (!promise.trySuccess(conn)) {
                 releaseConnection(entry, conn);
                 releaseConnection(entry);
             }
-        } else {
-            executor.execute(new OneTimeTask() {
-                @Override
-                public void run() {
-                    try {
-                        T conn = connect(entry);
-                        if (!promise.trySuccess(conn)) {
-                            releaseConnection(entry, conn);
-                            releaseConnection(entry);
-                        }
-                    } catch (RedisException e) {
-                        releaseConnection(entry);
-                        promise.setFailure(e);
-                    }
-                }
-            });
+            return;
         }
-        return promise;
+
+        Future<T> connFuture = connect(entry);
+        connFuture.addListener(new FutureListener<T>() {
+            @Override
+            public void operationComplete(Future<T> future) throws Exception {
+                if (!future.isSuccess()) {
+                    releaseConnection(entry);
+                    promise.setFailure(future.cause());
+                    return;
+                }
+                T conn = future.getNow();
+                if (!promise.trySuccess(conn)) {
+                    releaseConnection(entry, conn);
+                    releaseConnection(entry);
+                }
+            }
+        });
     }
 
     public void returnConnection(SubscribesConnectionEntry entry, T connection) {
@@ -138,6 +143,19 @@ public class ConnectionPool<T extends RedisConnection> {
 
     protected void releaseConnection(SubscribesConnectionEntry entry) {
         entry.releaseConnection();
+
+        handleQueue(entry);
+    }
+
+    private void handleQueue(SubscribesConnectionEntry entry) {
+        Promise<T> promise = promises.poll();
+        if (promise != null) {
+            if (!entry.isFreezed() && tryAcquireConnection(entry)) {
+                connect(entry, promise);
+            } else {
+                promises.add(promise);
+            }
+        }
     }
 
     protected void releaseConnection(SubscribesConnectionEntry entry, T conn) {
