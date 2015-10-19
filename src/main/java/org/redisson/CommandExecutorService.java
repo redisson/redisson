@@ -448,6 +448,9 @@ public class CommandExecutorService implements CommandExecutor {
                 }
                 if (!connFuture.isSuccess()) {
                     timeout.cancel();
+                    if (!connectionManager.getShutdownLatch().acquire()) {
+                        return;
+                    }
                     ex.set((RedisException)connFuture.cause());
                     connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                     return;
@@ -462,6 +465,9 @@ public class CommandExecutorService implements CommandExecutor {
                     public void operationComplete(ChannelFuture future) throws Exception {
                         if (!future.isSuccess()) {
                             timeout.cancel();
+                            if (!connectionManager.getShutdownLatch().acquire()) {
+                                return;
+                            }
                             ex.set(new WriteRedisConnectionException(
                                     "Can't send command: " + command + ", params: " + params + ", channel: " + future.channel(), future.cause()));
                             connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
@@ -486,6 +492,10 @@ public class CommandExecutorService implements CommandExecutor {
                 }
 
                 if (future.cause() instanceof RedisMovedException) {
+                    if (!connectionManager.getShutdownLatch().acquire()) {
+                        return;
+                    }
+
                     RedisMovedException ex = (RedisMovedException)future.cause();
                     connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                     async(readOnlyMode, ex.getSlot(), messageDecoder, codec, command, params, mainPromise, client, attempt);
