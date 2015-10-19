@@ -44,7 +44,11 @@ import io.netty.buffer.ByteBufInputStream;
  */
 public class JsonJacksonCodec implements Codec {
 
-    private final ObjectMapper mapObjectMapper = new ObjectMapper();
+	private final ObjectMapper mapObjectMapper = initObjectMapper();
+
+	protected ObjectMapper initObjectMapper() {
+		return new ObjectMapper();
+	}
 
     private final Encoder encoder = new Encoder() {
         @Override
