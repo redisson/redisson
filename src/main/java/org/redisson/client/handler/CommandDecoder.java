@@ -199,7 +199,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             decode(in, data, respParts, channel, currentDecoder);
         }
 
-        Object result = messageDecoder(data, respParts).decode(respParts, state());
+        MultiDecoder<Object> decoder = messageDecoder(data, respParts, channel);
+        if (decoder == null) {
+            return;
+        }
+
+        Object result = decoder.decode(respParts, state());
 
         if (result instanceof Message) {
             handleMultiResult(data, null, channel, result);
@@ -258,13 +263,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    private MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts) {
+    private MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts, Channel channel) {
         if (data == null) {
             if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(parts.get(0))) {
                 String channelName = (String) parts.get(1);
                 CommandData<Object, Object> commandData = channels.get(channelName);
                 if (commandData == null) {
-                    throw new IllegalStateException("Can't find CommandData for command: " + parts);
+                    return null;
                 }
                 return commandData.getCommand().getReplayMultiDecoder();
             } else if (parts.get(0).equals("message")) {
