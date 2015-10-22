@@ -33,6 +33,17 @@ public class ClusterNodeInfo {
     private int startSlot;
     private int endSlot;
 
+    public ClusterNodeInfo() {
+    }
+
+    public ClusterNodeInfo(ClusterNodeInfo info) {
+        this.nodeId = info.nodeId;
+        this.address = info.address;
+        this.flags = info.flags;
+        this.slaveOf = info.slaveOf;
+        this.startSlot = info.startSlot;
+        this.endSlot = info.endSlot;
+    }
     public String getNodeId() {
         return nodeId;
     }
@@ -74,5 +85,12 @@ public class ClusterNodeInfo {
     public void setEndSlot(int endSlot) {
         this.endSlot = endSlot;
     }
+    @Override
+    public String toString() {
+        return "ClusterNodeInfo [nodeId=" + nodeId + ", address=" + address + ", flags=" + flags
+                + ", slaveOf=" + slaveOf + ", startSlot=" + startSlot + ", endSlot=" + endSlot + "]";
+    }
+
+
 
 }

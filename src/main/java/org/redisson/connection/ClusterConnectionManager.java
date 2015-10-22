@@ -282,13 +282,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
 
             if (params.length > 8) {
-                String slots = params[8];
-                String[] parts = slots.split("-");
-                node.setStartSlot(Integer.valueOf(parts[0]));
-                node.setEndSlot(Integer.valueOf(parts[1]));
+                for (int i = 0; i < params.length - 8; i++) {
+                    String slots = params[i + 8];
+                    String[] parts = slots.split("-");
+                    node = new ClusterNodeInfo(node);
+                    node.setStartSlot(Integer.valueOf(parts[0]));
+                    node.setEndSlot(Integer.valueOf(parts[1]));
+                    nodes.add(node);
+                }
+            } else {
+                nodes.add(node);
             }
 
-            nodes.add(node);
         }
         return nodes;
     }
