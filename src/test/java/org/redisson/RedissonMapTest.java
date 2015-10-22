@@ -278,6 +278,22 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testPutAll() {
+        Map<Integer, String> map = redisson.getMap("simple");
+        map.put(1, "1");
+        map.put(2, "2");
+        map.put(3, "3");
+
+        Map<Integer, String> joinMap = new HashMap<Integer, String>();
+        joinMap.put(4, "4");
+        joinMap.put(5, "5");
+        joinMap.put(6, "6");
+        map.putAll(joinMap);
+
+        MatcherAssert.assertThat(map.keySet(), Matchers.containsInAnyOrder(1, 2, 3, 4, 5, 6));
+    }
+
+    @Test
     public void testKeySet() {
         Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));

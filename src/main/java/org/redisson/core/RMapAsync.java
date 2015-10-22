@@ -16,6 +16,7 @@
 package org.redisson.core;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import io.netty.util.concurrent.Future;
@@ -29,6 +30,8 @@ import io.netty.util.concurrent.Future;
  * @param <V> value
  */
 public interface RMapAsync<K, V> extends RExpirableAsync {
+
+    Future<Void> putAllAsync(Map<? extends K, ? extends V> map);
 
     Future<V> addAndGetAsync(K key, Number value);
 

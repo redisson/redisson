@@ -148,12 +148,23 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public void putAll(final Map<? extends K, ? extends V> map) {
-        if (map.size() == 0) {
-            return;
+    public void putAll(Map<? extends K, ? extends V> map) {
+        get(putAllAsync(map));
+    }
+
+    public Future<Void> putAllAsync(Map<? extends K, ? extends V> map) {
+        if (map.isEmpty()) {
+            return newSucceededFuture(null);
         }
 
-        commandExecutor.write(getName(), codec, RedisCommands.HMSET, getName(), map);
+        List<Object> params = new ArrayList<Object>(map.size()*2 + 1);
+        params.add(getName());
+        for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
+            params.add(t.getKey());
+            params.add(t.getValue());
+        }
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.HMSET, params.toArray());
     }
 
     @Override

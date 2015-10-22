@@ -52,6 +52,10 @@ abstract class RedissonObject implements RObject {
         return commandExecutor.getConnectionManager().getGroup().next().<V>newPromise();
     }
 
+    protected <V> Future<V> newSucceededFuture(V result) {
+        return commandExecutor.getConnectionManager().getGroup().next().<V>newSucceededFuture(result);
+    }
+
     @Override
     public String getName() {
         return name;
