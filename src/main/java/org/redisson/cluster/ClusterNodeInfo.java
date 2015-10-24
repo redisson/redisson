@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.cluster;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -27,23 +27,11 @@ public class ClusterNodeInfo {
 
     private String nodeId;
     private URI address;
-    private List<Flag> flags = new ArrayList<Flag>();
+    private final List<Flag> flags = new ArrayList<Flag>();
     private String slaveOf;
 
-    private int startSlot;
-    private int endSlot;
+    private final List<ClusterSlotRange> slotRanges = new ArrayList<ClusterSlotRange>();
 
-    public ClusterNodeInfo() {
-    }
-
-    public ClusterNodeInfo(ClusterNodeInfo info) {
-        this.nodeId = info.nodeId;
-        this.address = info.address;
-        this.flags = info.flags;
-        this.slaveOf = info.slaveOf;
-        this.startSlot = info.startSlot;
-        this.endSlot = info.endSlot;
-    }
     public String getNodeId() {
         return nodeId;
     }
@@ -58,8 +46,15 @@ public class ClusterNodeInfo {
         this.address = URIBuilder.create(address);
     }
 
-    public List<Flag> getFlags() {
-        return flags;
+    public void addSlotRange(ClusterSlotRange range) {
+        slotRanges.add(range);
+    }
+    public List<ClusterSlotRange> getSlotRanges() {
+        return slotRanges;
+    }
+
+    public boolean containsFlag(Flag flag) {
+        return flags.contains(flag);
     }
     public void addFlag(Flag flag) {
         this.flags.add(flag);
@@ -72,25 +67,10 @@ public class ClusterNodeInfo {
         this.slaveOf = slaveOf;
     }
 
-    public int getStartSlot() {
-        return startSlot;
-    }
-    public void setStartSlot(int startSlot) {
-        this.startSlot = startSlot;
-    }
-
-    public int getEndSlot() {
-        return endSlot;
-    }
-    public void setEndSlot(int endSlot) {
-        this.endSlot = endSlot;
-    }
     @Override
     public String toString() {
         return "ClusterNodeInfo [nodeId=" + nodeId + ", address=" + address + ", flags=" + flags
-                + ", slaveOf=" + slaveOf + ", startSlot=" + startSlot + ", endSlot=" + endSlot + "]";
+                + ", slaveOf=" + slaveOf + ", slotRanges=" + slotRanges + "]";
     }
-
-
 
 }

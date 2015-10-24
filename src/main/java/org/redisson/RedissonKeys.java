@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.core.RKeys;
 import org.redisson.misc.CompositeIterable;
 
@@ -43,11 +44,11 @@ public class RedissonKeys implements RKeys {
     @Override
     public Iterable<String> getKeysByPattern(final String pattern) {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
-        for (final Integer slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
+        for (final ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
             Iterable<String> iterable = new Iterable<String>() {
                 @Override
                 public Iterator<String> iterator() {
-                    return createKeysIterator(slot, pattern);
+                    return createKeysIterator(slot.getStartSlot(), pattern);
                 }
             };
             iterables.add(iterable);
@@ -58,11 +59,11 @@ public class RedissonKeys implements RKeys {
     @Override
     public Iterable<String> getKeys() {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
-        for (final Integer slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
+        for (final ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
             Iterable<String> iterable = new Iterable<String>() {
                 @Override
                 public Iterator<String> iterator() {
-                    return createKeysIterator(slot, null);
+                    return createKeysIterator(slot.getStartSlot(), null);
                 }
             };
             iterables.add(iterable);

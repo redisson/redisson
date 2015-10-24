@@ -17,6 +17,7 @@ package org.redisson.connection;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -24,6 +25,7 @@ import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.SingleServerConfig;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.cluster.ClusterSlotRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,9 +71,9 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     protected void initEntry(MasterSlaveServersConfig config) {
-        SingleEntry entry = new SingleEntry(0, MAX_SLOT, this, config);
+        SingleEntry entry = new SingleEntry(Collections.singletonList(singleSlotRange), this, config);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        entries.put(MAX_SLOT, entry);
+        addMaster(singleSlotRange, entry);
     }
 
     private void monitorDnsChange(final SingleServerConfig cfg) {
@@ -84,7 +86,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
                     if (!now.getHostAddress().equals(master.getHostAddress())) {
                         log.info("Detected DNS change. {} has changed from {} to {}", cfg.getAddress().getHost(), master.getHostAddress(), now.getHostAddress());
                         if (currentMaster.compareAndSet(master, now)) {
-                            changeMaster(MAX_SLOT,cfg.getAddress().getHost(), cfg.getAddress().getPort());
+                            changeMaster(singleSlotRange, cfg.getAddress().getHost(), cfg.getAddress().getPort());
                             log.info("Master has been changed");
                         }
                     }

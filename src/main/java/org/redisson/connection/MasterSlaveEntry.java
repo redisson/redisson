@@ -25,6 +25,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.misc.ConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,14 +48,11 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
-    final int startSlot;
-    final int endSlot;
-
     final ConnectionPool<RedisConnection> writeConnectionHolder;
+    final List<ClusterSlotRange> slotRanges;
 
-    public MasterSlaveEntry(int startSlot, int endSlot, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
-        this.startSlot = startSlot;
-        this.endSlot = endSlot;
+    public MasterSlaveEntry(List<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        this.slotRanges = slotRanges;
         this.connectionManager = connectionManager;
         this.config = config;
 
@@ -167,16 +165,8 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         slaveBalancer.shutdown();
     }
 
-    public int getEndSlot() {
-        return endSlot;
-    }
-
-    public int getStartSlot() {
-        return startSlot;
-    }
-
-    public boolean isOwn(int slot) {
-        return slot >= startSlot && slot <= endSlot;
+    public List<ClusterSlotRange> getSlotRanges() {
+        return slotRanges;
     }
 
 }

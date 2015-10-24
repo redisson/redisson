@@ -15,10 +15,13 @@
  */
 package org.redisson.connection;
 
+import java.util.List;
+
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 
@@ -28,8 +31,8 @@ public class SingleEntry extends MasterSlaveEntry<SubscribesConnectionEntry> {
 
     final ConnectionPool<RedisPubSubConnection> pubSubConnectionHolder;
 
-    public SingleEntry(int startSlot, int endSlot, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
-        super(startSlot, endSlot, connectionManager, config);
+    public SingleEntry(List<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        super(slotRanges, connectionManager, config);
         pubSubConnectionHolder = new PubSubConnectionPoll(config, null, connectionManager.getGroup());
     }
 

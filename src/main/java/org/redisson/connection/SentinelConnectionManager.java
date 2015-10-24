@@ -234,7 +234,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         // to avoid freeze twice
         String addr = ip + ":" + port;
         if (freezeSlaves.putIfAbsent(addr, true) == null) {
-            slaveDown(0, ip, Integer.valueOf(port));
+            slaveDown(singleSlotRange, ip, Integer.valueOf(port));
             log.info("slave: {} has down", addr);
         }
     }
@@ -269,7 +269,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String newMaster = ip + ":" + port;
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
-                    changeMaster(0, ip, Integer.valueOf(port));
+                    changeMaster(singleSlotRange, ip, Integer.valueOf(port));
                     log.info("master has changed from {} to {}", current, newMaster);
                 }
             }

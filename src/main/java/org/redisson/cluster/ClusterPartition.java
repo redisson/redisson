@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.cluster;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -23,11 +23,10 @@ import org.redisson.misc.URIBuilder;
 
 public class ClusterPartition {
 
-    private int startSlot;
-    private int endSlot;
     private boolean masterFail;
     private URI masterAddress;
     private List<URI> slaveAddresses = new ArrayList<URI>();
+    private final List<ClusterSlotRange> slotRanges = new ArrayList<ClusterSlotRange>();
 
     public void setMasterFail(boolean masterFail) {
         this.masterFail = masterFail;
@@ -36,18 +35,11 @@ public class ClusterPartition {
         return masterFail;
     }
 
-    public int getStartSlot() {
-        return startSlot;
+    public void addSlotRanges(List<ClusterSlotRange> ranges) {
+        slotRanges.addAll(ranges);
     }
-    public void setStartSlot(int startSlot) {
-        this.startSlot = startSlot;
-    }
-
-    public int getEndSlot() {
-        return endSlot;
-    }
-    public void setEndSlot(int endSlot) {
-        this.endSlot = endSlot;
+    public List<ClusterSlotRange> getSlotRanges() {
+        return slotRanges;
     }
 
     public URI getMasterAddress() {

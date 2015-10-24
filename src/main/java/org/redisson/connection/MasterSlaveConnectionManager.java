@@ -18,12 +18,10 @@ package org.redisson.connection;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.Config;
@@ -36,6 +34,7 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +62,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     static final int MAX_SLOT = 16384;
 
+    protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT);
+
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private HashedWheelTimer timer;
@@ -78,13 +79,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected MasterSlaveServersConfig config;
 
-    protected final NavigableMap<Integer, MasterSlaveEntry> entries = new ConcurrentSkipListMap<Integer, MasterSlaveEntry>();
+    protected final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
-    private final Set<RedisClientEntry> clients = Collections.newSetFromMap(new ConcurrentHashMap<RedisClientEntry, Boolean>());
+    private final Set<RedisClientEntry> clients = Collections.newSetFromMap(PlatformDependent.<RedisClientEntry, Boolean>newConcurrentHashMap());
 
-    MasterSlaveConnectionManager() {
+    protected MasterSlaveConnectionManager() {
     }
 
     @Override
@@ -103,7 +104,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public NavigableMap<Integer, MasterSlaveEntry> getEntries() {
+    public Map<ClusterSlotRange, MasterSlaveEntry> getEntries() {
         return entries;
     }
 
@@ -130,9 +131,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void initEntry(MasterSlaveServersConfig config) {
-        MasterSlaveEntry entry = new MasterSlaveEntry(0, MAX_SLOT, this, config);
+        ClusterSlotRange range = new ClusterSlotRange(0, MAX_SLOT);
+        MasterSlaveEntry entry = new MasterSlaveEntry(Collections.singletonList(range), this, config);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        entries.put(MAX_SLOT, entry);
+        addMaster(range, entry);
     }
 
     protected void init(Config cfg) {
@@ -471,12 +473,21 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entryCodec;
     }
 
-    protected MasterSlaveEntry getEntry(int slot) {
-        return entries.ceilingEntry(slot).getValue();
+    protected MasterSlaveEntry getEntry(ClusterSlotRange slotRange) {
+        return entries.get(slotRange);
     }
 
-    protected void slaveDown(int slot, String host, int port) {
-        Collection<RedisPubSubConnection> allPubSubConnections = getEntry(slot).slaveDown(host, port);
+    protected MasterSlaveEntry getEntry(int slot) {
+        for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : entries.entrySet()) {
+            if (entry.getKey().isOwn(slot)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    protected void slaveDown(ClusterSlotRange slotRange, String host, int port) {
+        Collection<RedisPubSubConnection> allPubSubConnections = getEntry(slotRange).slaveDown(host, port);
 
         // reattach listeners to other channels
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
@@ -531,18 +542,22 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    protected void changeMaster(int endSlot, String host, int port) {
-        getEntry(endSlot).changeMaster(host, port);
+    protected void changeMaster(ClusterSlotRange slotRange, String host, int port) {
+        getEntry(slotRange).changeMaster(host, port);
     }
 
-    protected MasterSlaveEntry removeMaster(int endSlot) {
-        return entries.remove(endSlot);
+    protected void addMaster(ClusterSlotRange slotRange, MasterSlaveEntry entry) {
+        entries.put(slotRange, entry);
+    }
+
+    protected MasterSlaveEntry removeMaster(ClusterSlotRange slotRange) {
+        return entries.remove(slotRange);
     }
 
     @Override
     public Future<RedisConnection> connectionWriteOp(int slot) {
         MasterSlaveEntry e = getEntry(slot);
-        if (!e.isOwn(slot)) {
+        if (e == null) {
             throw new RedisEmptySlotException("No node for slot: " + slot, slot);
         }
         return e.connectionWriteOp();
@@ -551,7 +566,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public Future<RedisConnection> connectionReadOp(int slot) {
         MasterSlaveEntry e = getEntry(slot);
-        if (!e.isOwn(slot)) {
+        if (e == null) {
             throw new RedisEmptySlotException("No node for slot: " + slot, slot);
         }
         return e.connectionReadOp();
@@ -560,7 +575,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public Future<RedisConnection> connectionReadOp(int slot, RedisClient client) {
         MasterSlaveEntry e = getEntry(slot);
-        if (!e.isOwn(slot)) {
+        if (e == null) {
             throw new RedisEmptySlotException("No node for slot: " + slot, slot);
         }
         return e.connectionReadOp(client);

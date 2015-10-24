@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +25,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
 import io.netty.channel.EventLoopGroup;
@@ -54,7 +56,7 @@ public interface ConnectionManager {
 
     Codec getCodec();
 
-    NavigableMap<Integer, MasterSlaveEntry> getEntries();
+    Map<ClusterSlotRange, MasterSlaveEntry> getEntries();
 
     <R> Promise<R> newPromise();
 

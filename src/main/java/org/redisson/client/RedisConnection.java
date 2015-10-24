@@ -68,6 +68,10 @@ public class RedisConnection implements RedisCommands {
         return failAttempts;
     }
 
+    public boolean isActive() {
+        return channel.isActive();
+    }
+
     public void updateChannel(Channel channel) {
         this.channel = channel;
         channel.attr(CONNECTION).set(this);
