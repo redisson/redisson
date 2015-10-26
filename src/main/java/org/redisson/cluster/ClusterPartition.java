@@ -15,9 +15,12 @@
  */
 package org.redisson.cluster;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.redisson.misc.URIBuilder;
 
@@ -26,7 +29,7 @@ public class ClusterPartition {
     private boolean masterFail;
     private URI masterAddress;
     private List<URI> slaveAddresses = new ArrayList<URI>();
-    private final List<ClusterSlotRange> slotRanges = new ArrayList<ClusterSlotRange>();
+    private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
 
     public void setMasterFail(boolean masterFail) {
         this.masterFail = masterFail;
@@ -38,8 +41,12 @@ public class ClusterPartition {
     public void addSlotRanges(List<ClusterSlotRange> ranges) {
         slotRanges.addAll(ranges);
     }
-    public List<ClusterSlotRange> getSlotRanges() {
+    public Set<ClusterSlotRange> getSlotRanges() {
         return slotRanges;
+    }
+
+    public InetSocketAddress getMasterAddr() {
+        return new InetSocketAddress(masterAddress.getHost(), masterAddress.getPort());
     }
 
     public URI getMasterAddress() {

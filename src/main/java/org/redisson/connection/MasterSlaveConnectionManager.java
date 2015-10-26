@@ -131,10 +131,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void initEntry(MasterSlaveServersConfig config) {
-        ClusterSlotRange range = new ClusterSlotRange(0, MAX_SLOT);
-        MasterSlaveEntry entry = new MasterSlaveEntry(Collections.singletonList(range), this, config);
+        HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
+        slots.add(singleSlotRange);
+        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        addMaster(range, entry);
+        addMaster(singleSlotRange, entry);
     }
 
     protected void init(Config cfg) {

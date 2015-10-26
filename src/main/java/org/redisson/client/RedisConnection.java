@@ -85,7 +85,7 @@ public class RedisConnection implements RedisCommands {
     public <R> R await(Future<R> cmd) {
         if (!cmd.awaitUninterruptibly(redisClient.getTimeout(), TimeUnit.MILLISECONDS)) {
             Promise<R> promise = (Promise<R>)cmd;
-            RedisTimeoutException ex = new RedisTimeoutException();
+            RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
             promise.setFailure(ex);
             throw ex;
         }

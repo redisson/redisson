@@ -20,6 +20,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
@@ -49,9 +51,11 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     final ConnectionManager connectionManager;
 
     final ConnectionPool<RedisConnection> writeConnectionHolder;
-    final List<ClusterSlotRange> slotRanges;
+    final Set<ClusterSlotRange> slotRanges;
 
-    public MasterSlaveEntry(List<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    final AtomicBoolean active = new AtomicBoolean(true);
+
+    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.slotRanges = slotRanges;
         this.connectionManager = connectionManager;
         this.config = config;
@@ -127,6 +131,10 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     }
 
     public void shutdownMasterAsync() {
+        if (!active.compareAndSet(true, false)) {
+            return;
+        }
+
         connectionManager.shutdownAsync(masterEntry.getClient());
         slaveBalancer.shutdownAsync();
     }
@@ -161,11 +169,19 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     }
 
     public void shutdown() {
+        if (!active.compareAndSet(true, false)) {
+            return;
+        }
+
         masterEntry.getClient().shutdown();
         slaveBalancer.shutdown();
     }
 
-    public List<ClusterSlotRange> getSlotRanges() {
+    public void removeSlotRange(ClusterSlotRange range) {
+        slotRanges.remove(range);
+    }
+
+    public Set<ClusterSlotRange> getSlotRanges() {
         return slotRanges;
     }
 

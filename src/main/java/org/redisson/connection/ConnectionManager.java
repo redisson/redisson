@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.MasterSlaveServersConfig;

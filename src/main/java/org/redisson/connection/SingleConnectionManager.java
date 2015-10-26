@@ -18,6 +18,7 @@ package org.redisson.connection;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -71,7 +72,9 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     protected void initEntry(MasterSlaveServersConfig config) {
-        SingleEntry entry = new SingleEntry(Collections.singletonList(singleSlotRange), this, config);
+        HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
+        slots.add(singleSlotRange);
+        SingleEntry entry = new SingleEntry(slots, this, config);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         addMaster(singleSlotRange, entry);
     }

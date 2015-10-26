@@ -135,13 +135,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 try {
                     for (URI addr : cfg.getNodeAddresses()) {
                         RedisConnection connection = connect(cfg, addr);
-                        if (connection == null) {
+                        if (connection == null || !connection.isActive()) {
                             continue;
                         }
 
                         String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
 
-                        log.debug("cluster nodes state: {}", nodesValue);
+                        log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
 
                         Collection<ClusterPartition> newPartitions = parsePartitions(nodesValue);
                         checkMasterNodesChange(newPartitions);
@@ -217,8 +217,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Map<ClusterSlotRange, MasterSlaveEntry> removeAddrs = new HashMap<ClusterSlotRange, MasterSlaveEntry>();
         for (ClusterSlotRange slot : removedSlots) {
             MasterSlaveEntry entry = removeMaster(slot);
-            entry.shutdownMasterAsync();
-            removeAddrs.put(slot, entry);
+            entry.removeSlotRange(slot);
+            if (entry.getSlotRanges().isEmpty()) {
+                entry.shutdownMasterAsync();
+                removeAddrs.put(slot, entry);
+            }
+        }
+        for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : removeAddrs.entrySet()) {
+            InetSocketAddress url = entry.getValue().getClient().getAddr();
+            slaveDown(entry.getKey(), url.getHostName(), url.getPort());
         }
 
         Set<ClusterSlotRange> addedSlots = new HashSet<ClusterSlotRange>(partitionsSlots);
@@ -228,13 +235,20 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
         for (ClusterSlotRange slot : addedSlots) {
             ClusterPartition partition = find(partitions, slot);
-            addMasterEntry(partition, cfg);
+            boolean masterFound = false;
+            for (MasterSlaveEntry entry : getEntries().values()) {
+                if (entry.getClient().getAddr().equals(partition.getMasterAddr())) {
+                    addMaster(slot, entry);
+                    lastPartitions.put(slot, partition);
+                    masterFound = true;
+                    break;
+                }
+            }
+            if (!masterFound) {
+                addMasterEntry(partition, cfg);
+            }
         }
 
-        for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : removeAddrs.entrySet()) {
-            InetSocketAddress url = entry.getValue().getClient().getAddr();
-            slaveDown(entry.getKey(), url.getHostName(), url.getPort());
-        }
     }
 
     private Collection<ClusterPartition> parsePartitions(String nodesValue) {
