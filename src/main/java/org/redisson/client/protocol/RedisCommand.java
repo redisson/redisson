@@ -221,7 +221,7 @@ public class RedisCommand<R> {
 
     @Override
     public String toString() {
-        return "RedisCommand [name=" + name + ", subName=" + subName + "]";
+        return "RedisCommand [" + name + " " + subName != null ? subName : "" + "]";
     }
 
 }

@@ -76,7 +76,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         slots.add(singleSlotRange);
         SingleEntry entry = new SingleEntry(slots, this, config);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        addMaster(singleSlotRange, entry);
+        addEntry(singleSlotRange, entry);
     }
 
     private void monitorDnsChange(final SingleServerConfig cfg) {

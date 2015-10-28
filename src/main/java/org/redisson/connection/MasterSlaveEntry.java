@@ -86,6 +86,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
 
     public Collection<RedisPubSubConnection> slaveDown(String host, int port) {
         Collection<RedisPubSubConnection> conns = slaveBalancer.freeze(host, port);
+        // add master as slave if no more slaves available
         if (slaveBalancer.getAvailableClients() == 0) {
             InetSocketAddress addr = masterEntry.getClient().getAddr();
             slaveUp(addr.getHostName(), addr.getPort());
@@ -175,6 +176,10 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
 
         masterEntry.getClient().shutdown();
         slaveBalancer.shutdown();
+    }
+
+    public void addSlotRange(ClusterSlotRange range) {
+        slotRanges.add(range);
     }
 
     public void removeSlotRange(ClusterSlotRange range) {

@@ -24,6 +24,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
@@ -63,11 +64,11 @@ public interface ConnectionManager {
 
     void releaseWrite(int slot, RedisConnection connection);
 
-    Future<RedisConnection> connectionReadOp(int slot);
+    Future<RedisConnection> connectionReadOp(int slot, RedisCommand<?> command);
 
-    Future<RedisConnection> connectionReadOp(int slot, RedisClient client);
+    Future<RedisConnection> connectionReadOp(int slot, RedisCommand<?> command, RedisClient client);
 
-    Future<RedisConnection> connectionWriteOp(int slot);
+    Future<RedisConnection> connectionWriteOp(int slot, RedisCommand<?> command);
 
     <T> FutureListener<T> createReleaseReadListener(int slot,
             RedisConnection conn, Timeout timeout);

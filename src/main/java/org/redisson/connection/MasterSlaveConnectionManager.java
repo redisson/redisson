@@ -33,6 +33,7 @@ import org.redisson.client.RedisEmptySlotException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.misc.InfinitySemaphoreLatch;
@@ -60,7 +61,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class MasterSlaveConnectionManager implements ConnectionManager {
 
-    static final int MAX_SLOT = 16384;
+    protected static final int MAX_SLOT = 16384;
 
     protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT);
 
@@ -135,7 +136,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         slots.add(singleSlotRange);
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        addMaster(singleSlotRange, entry);
+        addEntry(singleSlotRange, entry);
     }
 
     protected void init(Config cfg) {
@@ -206,19 +207,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public int calcSlot(String key) {
-        if (entries.size() == 1 || key == null) {
-            return 0;
-        }
-
-        int start = key.indexOf('{');
-        if (start != -1) {
-            int end = key.indexOf('}');
-            key = key.substring(start+1, end);
-        }
-
-        int result = CRC16.crc16(key.getBytes()) % MAX_SLOT;
-        log.debug("slot {} for {}", result, key);
-        return result;
+        return 0;
     }
 
     @Override
@@ -547,7 +536,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         getEntry(slotRange).changeMaster(host, port);
     }
 
-    protected void addMaster(ClusterSlotRange slotRange, MasterSlaveEntry entry) {
+    protected void addEntry(ClusterSlotRange slotRange, MasterSlaveEntry entry) {
         entries.put(slotRange, entry);
     }
 
@@ -556,28 +545,28 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<RedisConnection> connectionWriteOp(int slot) {
+    public Future<RedisConnection> connectionWriteOp(int slot, RedisCommand<?> command) {
         MasterSlaveEntry e = getEntry(slot);
         if (e == null) {
-            throw new RedisEmptySlotException("No node for slot: " + slot, slot);
+            throw new RedisEmptySlotException("No node for slot: " + slot + " and command " + command, slot);
         }
         return e.connectionWriteOp();
     }
 
     @Override
-    public Future<RedisConnection> connectionReadOp(int slot) {
+    public Future<RedisConnection> connectionReadOp(int slot, RedisCommand<?> command) {
         MasterSlaveEntry e = getEntry(slot);
         if (e == null) {
-            throw new RedisEmptySlotException("No node for slot: " + slot, slot);
+            throw new RedisEmptySlotException("No node for slot: " + slot + " and command " + command, slot);
         }
         return e.connectionReadOp();
     }
 
     @Override
-    public Future<RedisConnection> connectionReadOp(int slot, RedisClient client) {
+    public Future<RedisConnection> connectionReadOp(int slot, RedisCommand<?> command, RedisClient client) {
         MasterSlaveEntry e = getEntry(slot);
         if (e == null) {
-            throw new RedisEmptySlotException("No node for slot: " + slot, slot);
+            throw new RedisEmptySlotException("No node for slot: " + slot + " and command " + command, slot);
         }
         return e.connectionReadOp(client);
     }

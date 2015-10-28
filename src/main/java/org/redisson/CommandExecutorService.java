@@ -259,9 +259,9 @@ public class CommandExecutorService implements CommandExecutor {
         try {
             Future<RedisConnection> connectionFuture;
             if (readOnlyMode) {
-                connectionFuture = connectionManager.connectionReadOp(slot);
+                connectionFuture = connectionManager.connectionReadOp(slot, null);
             } else {
-                connectionFuture = connectionManager.connectionWriteOp(slot);
+                connectionFuture = connectionManager.connectionWriteOp(slot, null);
             }
             connectionFuture.syncUninterruptibly();
 
@@ -437,12 +437,12 @@ public class CommandExecutorService implements CommandExecutor {
         Future<RedisConnection> connectionFuture;
         if (readOnlyMode) {
             if (client != null) {
-                connectionFuture = connectionManager.connectionReadOp(slot, client);
+                connectionFuture = connectionManager.connectionReadOp(slot, command, client);
             } else {
-                connectionFuture = connectionManager.connectionReadOp(slot);
+                connectionFuture = connectionManager.connectionReadOp(slot, command);
             }
         } else {
-            connectionFuture = connectionManager.connectionWriteOp(slot);
+            connectionFuture = connectionManager.connectionWriteOp(slot, command);
         }
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {

@@ -195,9 +195,9 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
         Future<RedisConnection> connectionFuture;
         if (entry.isReadOnlyMode()) {
-            connectionFuture = connectionManager.connectionReadOp(slot);
+            connectionFuture = connectionManager.connectionReadOp(slot, null);
         } else {
-            connectionFuture = connectionManager.connectionWriteOp(slot);
+            connectionFuture = connectionManager.connectionWriteOp(slot, null);
         }
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
@@ -214,7 +214,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
                 RedisConnection connection = connFuture.getNow();
 
-                ArrayList<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size());
+                List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size());
                 for (CommandEntry c : entry.getCommands()) {
                     list.add(c.getCommand());
                 }

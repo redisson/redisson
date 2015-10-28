@@ -15,7 +15,6 @@
  */
 package org.redisson.cluster;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +33,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
+import org.redisson.connection.CRC16;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.SingleEntry;
@@ -123,7 +122,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         SingleEntry entry = new SingleEntry(partition.getSlotRanges(), this, config);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         for (ClusterSlotRange slotRange : partition.getSlotRanges()) {
-            addMaster(slotRange, entry);
+            addEntry(slotRange, entry);
             lastPartitions.put(slotRange, partition);
         }
     }
@@ -205,40 +204,38 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private void checkSlotsChange(ClusterServersConfig cfg, Collection<ClusterPartition> partitions) {
-        Collection<ClusterSlotRange> partitionsSlots = slots(partitions);
+    private void checkSlotsChange(ClusterServersConfig cfg, Collection<ClusterPartition> newPartitions) {
+        checkSlotsMigration(newPartitions);
+
+        Collection<ClusterSlotRange> newPartitionsSlots = slots(newPartitions);
         Set<ClusterSlotRange> removedSlots = new HashSet<ClusterSlotRange>(lastPartitions.keySet());
-        removedSlots.removeAll(partitionsSlots);
+        removedSlots.removeAll(newPartitionsSlots);
         lastPartitions.keySet().removeAll(removedSlots);
         if (!removedSlots.isEmpty()) {
             log.info("{} slot ranges found to remove", removedSlots.size());
         }
 
-        Map<ClusterSlotRange, MasterSlaveEntry> removeAddrs = new HashMap<ClusterSlotRange, MasterSlaveEntry>();
         for (ClusterSlotRange slot : removedSlots) {
             MasterSlaveEntry entry = removeMaster(slot);
             entry.removeSlotRange(slot);
             if (entry.getSlotRanges().isEmpty()) {
                 entry.shutdownMasterAsync();
-                removeAddrs.put(slot, entry);
+                log.info("{} master and slaves for it removed", entry.getClient().getAddr());
             }
         }
-        for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : removeAddrs.entrySet()) {
-            InetSocketAddress url = entry.getValue().getClient().getAddr();
-            slaveDown(entry.getKey(), url.getHostName(), url.getPort());
-        }
 
-        Set<ClusterSlotRange> addedSlots = new HashSet<ClusterSlotRange>(partitionsSlots);
+
+        Set<ClusterSlotRange> addedSlots = new HashSet<ClusterSlotRange>(newPartitionsSlots);
         addedSlots.removeAll(lastPartitions.keySet());
         if (!addedSlots.isEmpty()) {
             log.info("{} slots found to add", addedSlots.size());
         }
         for (ClusterSlotRange slot : addedSlots) {
-            ClusterPartition partition = find(partitions, slot);
+            ClusterPartition partition = find(newPartitions, slot);
             boolean masterFound = false;
             for (MasterSlaveEntry entry : getEntries().values()) {
                 if (entry.getClient().getAddr().equals(partition.getMasterAddr())) {
-                    addMaster(slot, entry);
+                    addEntry(slot, entry);
                     lastPartitions.put(slot, partition);
                     masterFound = true;
                     break;
@@ -248,7 +245,54 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 addMasterEntry(partition, cfg);
             }
         }
+    }
 
+    private void checkSlotsMigration(Collection<ClusterPartition> newPartitions) {
+        List<ClusterPartition> currentPartitions = new ArrayList<ClusterPartition>(lastPartitions.values());
+        for (ClusterPartition currentPartition : currentPartitions) {
+            for (ClusterPartition newPartition : newPartitions) {
+                if (!currentPartition.getNodeId().equals(newPartition.getNodeId())) {
+                    continue;
+                }
+
+                Set<ClusterSlotRange> addedSlots = new HashSet<ClusterSlotRange>(newPartition.getSlotRanges());
+                addedSlots.removeAll(currentPartition.getSlotRanges());
+                MasterSlaveEntry entry = getEntry(currentPartition.getSlotRanges().iterator().next());
+                for (ClusterSlotRange slot : addedSlots) {
+                    entry.addSlotRange(slot);
+                    addEntry(slot, entry);
+                    log.info("slot {} added for {}", slot, entry.getClient().getAddr());
+                    lastPartitions.put(slot, currentPartition);
+                }
+
+                Set<ClusterSlotRange> removedSlots = new HashSet<ClusterSlotRange>(currentPartition.getSlotRanges());
+                removedSlots.removeAll(newPartition.getSlotRanges());
+                lastPartitions.keySet().removeAll(removedSlots);
+
+                for (ClusterSlotRange slot : removedSlots) {
+                    log.info("slot {} removed for {}", slot, entry.getClient().getAddr());
+                    entry.removeSlotRange(slot);
+                    removeMaster(slot);
+                }
+            }
+        }
+    }
+
+    @Override
+    public int calcSlot(String key) {
+        if (key == null) {
+            return 0;
+        }
+
+        int start = key.indexOf('{');
+        if (start != -1) {
+            int end = key.indexOf('}');
+            key = key.substring(start+1, end);
+        }
+
+        int result = CRC16.crc16(key.getBytes()) % MAX_SLOT;
+        log.debug("slot {} for {}", result, key);
+        return result;
     }
 
     private Collection<ClusterPartition> parsePartitions(String nodesValue) {
@@ -268,7 +312,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             ClusterPartition partition = partitions.get(id);
             if (partition == null) {
-                partition = new ClusterPartition();
+                partition = new ClusterPartition(id);
                 partitions.put(id, partition);
             }
 

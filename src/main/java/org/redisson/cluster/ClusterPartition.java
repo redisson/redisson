@@ -26,10 +26,20 @@ import org.redisson.misc.URIBuilder;
 
 public class ClusterPartition {
 
+    private final String nodeId;
     private boolean masterFail;
     private URI masterAddress;
     private List<URI> slaveAddresses = new ArrayList<URI>();
     private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
+
+    public ClusterPartition(String nodeId) {
+        super();
+        this.nodeId = nodeId;
+    }
+
+    public String getNodeId() {
+        return nodeId;
+    }
 
     public void setMasterFail(boolean masterFail) {
         this.masterFail = masterFail;
