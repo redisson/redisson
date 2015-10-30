@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -67,6 +68,13 @@ public class ClusterPartition {
     }
     public void setMasterAddress(URI masterAddress) {
         this.masterAddress = masterAddress;
+    }
+
+    public Set<URI> getAllAddresses() {
+        Set<URI> result = new LinkedHashSet<URI>();
+        result.add(masterAddress);
+        result.addAll(slaveAddresses);
+        return result;
     }
 
     public void addSlaveAddress(URI address) {

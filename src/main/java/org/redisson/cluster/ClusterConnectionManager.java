@@ -92,6 +92,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+        if (!connection.isActive()) {
+            log.warn("connection for {} is not active!", connection.getRedisClient().getAddr());
+            connection.closeAsync();
+            connection = null;
+        }
+        if (connection == null) {
+            nodeConnections.remove(addr);
+        }
         return connection;
     }
 
@@ -132,30 +140,31 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             @Override
             public void run() {
                 try {
-                    for (URI addr : cfg.getNodeAddresses()) {
-                        RedisConnection connection = connect(cfg, addr);
-                        if (connection == null || !connection.isActive()) {
-                            continue;
+                    for (ClusterPartition partition : lastPartitions.values()) {
+                        for (URI uri : partition.getAllAddresses()) {
+                            RedisConnection connection = connect(cfg, uri);
+                            if (connection == null) {
+                                continue;
+                            }
+
+                            updateClusterState(cfg, connection);
+                            return;
                         }
-
-                        String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
-
-                        log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
-
-                        Collection<ClusterPartition> newPartitions = parsePartitions(nodesValue);
-                        checkMasterNodesChange(newPartitions);
-                        checkSlotsChange(cfg, newPartitions);
-
-                        break;
                     }
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
                 }
-
             }
-
-
         }, cfg.getScanInterval(), cfg.getScanInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    private void updateClusterState(ClusterServersConfig cfg, RedisConnection connection) {
+        String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
+        log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
+
+        Collection<ClusterPartition> newPartitions = parsePartitions(nodesValue);
+        checkMasterNodesChange(newPartitions);
+        checkSlotsChange(cfg, newPartitions);
     }
 
     private Collection<ClusterSlotRange> slots(Collection<ClusterPartition> partitions) {
