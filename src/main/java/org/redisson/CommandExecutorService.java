@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.CommandBatchExecutorService.CommandEntry;
+import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
@@ -34,10 +36,13 @@ import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.NodeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +104,7 @@ public class CommandExecutorService implements CommandExecutor {
         };
 
         for (ClusterSlotRange slot : connectionManager.getEntries().keySet()) {
-            async(true, slot.getStartSlot(), null, connectionManager.getCodec(), command, params, promise, null, 0);
+            async(true, new NodeSource(slot.getStartSlot()), null, connectionManager.getCodec(), command, params, promise, null, 0);
         }
         return mainPromise;
     }
@@ -136,7 +141,7 @@ public class CommandExecutorService implements CommandExecutor {
         });
 
         ClusterSlotRange slot = slots.remove(0);
-        async(true, slot.getStartSlot(), null, connectionManager.getCodec(), command, params, attemptPromise, null, 0);
+        async(true, new NodeSource(slot.getStartSlot()), null, connectionManager.getCodec(), command, params, attemptPromise, null, 0);
     }
 
     public <T> Future<Void> writeAllAsync(RedisCommand<T> command, Object ... params) {
@@ -173,7 +178,7 @@ public class CommandExecutorService implements CommandExecutor {
             }
         };
         for (ClusterSlotRange slot : connectionManager.getEntries().keySet()) {
-            async(readOnlyMode, slot.getStartSlot(), null, connectionManager.getCodec(), command, params, promise, null, 0);
+            async(readOnlyMode, new NodeSource(slot.getStartSlot()), null, connectionManager.getCodec(), command, params, promise, null, 0);
         }
         return mainPromise;
     }
@@ -215,14 +220,14 @@ public class CommandExecutorService implements CommandExecutor {
     public <T, R> Future<R> readAsync(RedisClient client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         int slot = connectionManager.calcSlot(key);
-        async(true, slot, null, codec, command, params, mainPromise, client, 0);
+        async(true, new NodeSource(slot), null, codec, command, params, mainPromise, client, 0);
         return mainPromise;
     }
 
     public <T, R> Future<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         int slot = connectionManager.calcSlot(key);
-        async(true, slot, null, codec, command, params, mainPromise, null, 0);
+        async(true, new NodeSource(slot), null, codec, command, params, mainPromise, null, 0);
         return mainPromise;
     }
 
@@ -233,7 +238,7 @@ public class CommandExecutorService implements CommandExecutor {
 
     public <T, R> Future<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
-        async(false, slot, null, codec, command, params, mainPromise, null, 0);
+        async(false, new NodeSource(slot), null, codec, command, params, mainPromise, null, 0);
         return mainPromise;
     }
 
@@ -243,15 +248,15 @@ public class CommandExecutorService implements CommandExecutor {
 
     public <R> R write(String key, Codec codec, SyncOperation<R> operation) {
         int slot = connectionManager.calcSlot(key);
-        return async(false, codec, slot, operation, 0);
+        return async(false, codec, new NodeSource(slot), operation, 0);
     }
 
     public <R> R read(String key, Codec codec, SyncOperation<R> operation) {
         int slot = connectionManager.calcSlot(key);
-        return async(true, codec, slot, operation, 0);
+        return async(true, codec, new NodeSource(slot), operation, 0);
     }
 
-    private <R> R async(boolean readOnlyMode, Codec codec, int slot, SyncOperation<R> operation, int attempt) {
+    private <R> R async(boolean readOnlyMode, Codec codec, NodeSource source, SyncOperation<R> operation, int attempt) {
         if (!connectionManager.getShutdownLatch().acquire()) {
             return null;
         }
@@ -259,9 +264,9 @@ public class CommandExecutorService implements CommandExecutor {
         try {
             Future<RedisConnection> connectionFuture;
             if (readOnlyMode) {
-                connectionFuture = connectionManager.connectionReadOp(slot, null);
+                connectionFuture = connectionManager.connectionReadOp(source, null);
             } else {
-                connectionFuture = connectionManager.connectionWriteOp(slot, null);
+                connectionFuture = connectionManager.connectionWriteOp(source, null);
             }
             connectionFuture.syncUninterruptibly();
 
@@ -270,19 +275,21 @@ public class CommandExecutorService implements CommandExecutor {
             try {
                 return operation.execute(codec, connection);
             } catch (RedisMovedException e) {
-                return async(readOnlyMode, codec, e.getSlot(), operation, attempt);
+                return async(readOnlyMode, codec, new NodeSource(e.getSlot()), operation, attempt);
+            } catch (RedisAskException e) {
+                return async(readOnlyMode, codec, new NodeSource(e.getAddr()), operation, attempt);
             } catch (RedisTimeoutException e) {
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
                     throw e;
                 }
                 attempt++;
-                return async(readOnlyMode, codec, slot, operation, attempt);
+                return async(readOnlyMode, codec, source, operation, attempt);
             } finally {
                 connectionManager.getShutdownLatch().release();
                 if (readOnlyMode) {
-                    connectionManager.releaseRead(slot, connection);
+                    connectionManager.releaseRead(source, connection);
                 } else {
-                    connectionManager.releaseWrite(slot, connection);
+                    connectionManager.releaseWrite(source, connection);
                 }
             }
         } catch (RedisException e) {
@@ -295,7 +302,7 @@ public class CommandExecutorService implements CommandExecutor {
                 Thread.currentThread().interrupt();
             }
             attempt++;
-            return async(readOnlyMode, codec, slot, operation, attempt);
+            return async(readOnlyMode, codec, source, operation, attempt);
         }
     }
 
@@ -355,7 +362,7 @@ public class CommandExecutorService implements CommandExecutor {
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
         for (ClusterSlotRange slot : connectionManager.getEntries().keySet()) {
-            async(readOnlyMode, slot.getStartSlot(), null, connectionManager.getCodec(), command, args.toArray(), promise, null, 0);
+            async(readOnlyMode, new NodeSource(slot.getStartSlot()), null, connectionManager.getCodec(), command, args.toArray(), promise, null, 0);
         }
         return mainPromise;
     }
@@ -368,7 +375,7 @@ public class CommandExecutorService implements CommandExecutor {
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
         int slot = connectionManager.calcSlot(key);
-        async(readOnlyMode, slot, null, codec, evalCommandType, args.toArray(), mainPromise, null, 0);
+        async(readOnlyMode, new NodeSource(slot), null, codec, evalCommandType, args.toArray(), mainPromise, null, 0);
         return mainPromise;
     }
 
@@ -398,11 +405,11 @@ public class CommandExecutorService implements CommandExecutor {
     public <T, R> Future<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         int slot = connectionManager.calcSlot(key);
-        async(false, slot, null, codec, command, params, mainPromise, null, 0);
+        async(false, new NodeSource(slot), null, codec, command, params, mainPromise, null, 0);
         return mainPromise;
     }
 
-    protected <V, R> void async(final boolean readOnlyMode, final int slot, final MultiDecoder<Object> messageDecoder, final Codec codec, final RedisCommand<V> command,
+    protected <V, R> void async(final boolean readOnlyMode, final NodeSource source, final MultiDecoder<Object> messageDecoder, final Codec codec, final RedisCommand<V> command,
                             final Object[] params, final Promise<R> mainPromise, final RedisClient client, final int attempt) {
         if (!connectionManager.getShutdownLatch().acquire()) {
             mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
@@ -427,7 +434,7 @@ public class CommandExecutorService implements CommandExecutor {
                 }
 
                 int count = attempt + 1;
-                async(readOnlyMode, slot, messageDecoder, codec, command, params, mainPromise, client, count);
+                async(readOnlyMode, source, messageDecoder, codec, command, params, mainPromise, client, count);
             }
         };
 
@@ -437,12 +444,12 @@ public class CommandExecutorService implements CommandExecutor {
         Future<RedisConnection> connectionFuture;
         if (readOnlyMode) {
             if (client != null) {
-                connectionFuture = connectionManager.connectionReadOp(slot, command, client);
+                connectionFuture = connectionManager.connectionReadOp(source, command, client);
             } else {
-                connectionFuture = connectionManager.connectionReadOp(slot, command);
+                connectionFuture = connectionManager.connectionReadOp(source, command);
             }
         } else {
-            connectionFuture = connectionManager.connectionWriteOp(slot, command);
+            connectionFuture = connectionManager.connectionWriteOp(source, command);
         }
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
@@ -463,8 +470,20 @@ public class CommandExecutorService implements CommandExecutor {
 
                 RedisConnection connection = connFuture.getNow();
 
-                log.debug("getting connection for command {} from slot {} using node {}", command, slot, connection.getRedisClient().getAddr());
-                ChannelFuture future = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
+                ChannelFuture future = null;
+                if (source.getAddr() != null) {
+                    // ASK handling
+                    List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
+                    Promise<Void> promise = connectionManager.newPromise();
+                    list.add(new CommandData<Void, Void>(promise, codec, RedisCommands.ASKING, new Object[] {}));
+                    list.add(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
+                    Promise<Void> main = connectionManager.newPromise();
+                    future = connection.send(new CommandsData(main, list));
+                } else {
+                    log.debug("getting connection for command {} from slot {} using node {}", command, source, connection.getRedisClient().getAddr());
+                    future = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
+                }
+
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
@@ -481,9 +500,9 @@ public class CommandExecutorService implements CommandExecutor {
                 });
 
                 if (readOnlyMode) {
-                    attemptPromise.addListener(connectionManager.createReleaseReadListener(slot, connection, timeout));
+                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, timeout));
                 } else {
-                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(slot, connection, timeout));
+                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, timeout));
                 }
             }
         });
@@ -503,7 +522,18 @@ public class CommandExecutorService implements CommandExecutor {
 
                     RedisMovedException ex = (RedisMovedException)future.cause();
                     connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
-                    async(readOnlyMode, ex.getSlot(), messageDecoder, codec, command, params, mainPromise, client, attempt);
+                    async(readOnlyMode, new NodeSource(ex.getSlot()), messageDecoder, codec, command, params, mainPromise, client, attempt);
+                    return;
+                }
+
+                if (future.cause() instanceof RedisAskException) {
+                    if (!connectionManager.getShutdownLatch().acquire()) {
+                        return;
+                    }
+
+                    RedisAskException ex = (RedisAskException)future.cause();
+                    connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    async(readOnlyMode, new NodeSource(ex.getAddr()), messageDecoder, codec, command, params, mainPromise, client, attempt);
                     return;
                 }
 

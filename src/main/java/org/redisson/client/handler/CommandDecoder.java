@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
@@ -160,10 +161,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 data.getPromise().setFailure(new RedisMovedException(slot));
-            } else if (error.startsWith("(error) ASK")) {
+            } else if (error.startsWith("ASK")) {
                 String[] errorParts = error.split(" ");
-                int slot = Integer.valueOf(errorParts[2]);
-                data.getPromise().setFailure(new RedisMovedException(slot));
+                data.getPromise().setFailure(new RedisAskException(errorParts[2]));
             } else {
                 data.getPromise().setFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
             }

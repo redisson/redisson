@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
@@ -36,6 +37,7 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.NodeSource;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -102,15 +104,15 @@ public class CommandBatchExecutorService extends CommandExecutorService {
     }
 
     @Override
-    protected <V, R> void async(boolean readOnlyMode, int slot, MultiDecoder<Object> messageDecoder,
+    protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource, MultiDecoder<Object> messageDecoder,
             Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, RedisClient client, int attempt) {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
-        Entry entry = commands.get(slot);
+        Entry entry = commands.get(nodeSource.getSlot());
         if (entry == null) {
             entry = new Entry();
-            Entry oldEntry = commands.putIfAbsent(slot, entry);
+            Entry oldEntry = commands.putIfAbsent(nodeSource.getSlot(), entry);
             if (oldEntry != null) {
                 entry = oldEntry;
             }
@@ -143,6 +145,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
             public void operationComplete(Future<Void> future) throws Exception {
                 if (!future.isSuccess()) {
                     promise.setFailure(future.cause());
+                    commands = null;
                     return;
                 }
 
@@ -162,12 +165,12 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
         AtomicInteger slots = new AtomicInteger(commands.size());
         for (java.util.Map.Entry<Integer, Entry> e : commands.entrySet()) {
-            execute(e.getValue(), e.getKey(), voidPromise, slots, 0);
+            execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0);
         }
         return promise;
     }
 
-    public void execute(final Entry entry, final int slot, final Promise<Void> mainPromise, final AtomicInteger slots, final int attempt) {
+    public void execute(final Entry entry, final NodeSource source, final Promise<Void> mainPromise, final AtomicInteger slots, final int attempt) {
         if (!connectionManager.getShutdownLatch().acquire()) {
             mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
             return;
@@ -189,15 +192,15 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 attemptPromise.cancel(true);
 
                 int count = attempt + 1;
-                execute(entry, slot, mainPromise, slots, count);
+                execute(entry, source, mainPromise, slots, count);
             }
         };
 
         Future<RedisConnection> connectionFuture;
         if (entry.isReadOnlyMode()) {
-            connectionFuture = connectionManager.connectionReadOp(slot, null);
+            connectionFuture = connectionManager.connectionReadOp(source, null);
         } else {
-            connectionFuture = connectionManager.connectionWriteOp(slot, null);
+            connectionFuture = connectionManager.connectionWriteOp(source, null);
         }
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
@@ -235,9 +238,9 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 });
 
                 if (entry.isReadOnlyMode()) {
-                    attemptPromise.addListener(connectionManager.createReleaseReadListener(slot, connection, timeout));
+                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, timeout));
                 } else {
-                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(slot, connection, timeout));
+                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, timeout));
                 }
             }
         });
@@ -251,7 +254,12 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
                 if (future.cause() instanceof RedisMovedException) {
                     RedisMovedException ex = (RedisMovedException)future.cause();
-                    execute(entry, ex.getSlot(), mainPromise, slots, attempt);
+                    execute(entry, new NodeSource(ex.getSlot()), mainPromise, slots, attempt);
+                    return;
+                }
+                if (future.cause() instanceof RedisAskException) {
+                    RedisAskException ex = (RedisAskException)future.cause();
+                    execute(entry, new NodeSource(ex.getAddr()), mainPromise, slots, attempt);
                     return;
                 }
 

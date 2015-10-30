@@ -15,19 +15,12 @@
  */
 package org.redisson.client;
 
-public class RedisEmptySlotException extends RedisException {
+public class RedisNodeNotFoundException extends RedisException {
 
     private static final long serialVersionUID = -4756928186967834601L;
 
-    private final int slot;
-
-    public RedisEmptySlotException(String msg, int slot) {
+    public RedisNodeNotFoundException(String msg) {
         super(msg);
-        this.slot = slot;
-    }
-
-    public int getSlot() {
-        return slot;
     }
 
 }

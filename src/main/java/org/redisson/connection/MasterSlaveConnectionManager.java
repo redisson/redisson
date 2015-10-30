@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,7 +30,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisEmptySlotException;
+import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
@@ -168,7 +169,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public <T> FutureListener<T> createReleaseWriteListener(final int slot,
+    public <T> FutureListener<T> createReleaseWriteListener(final NodeSource source,
                                     final RedisConnection conn, final Timeout timeout) {
         return new FutureListener<T>() {
             @Override
@@ -181,13 +182,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
                 shutdownLatch.release();
                 timeout.cancel();
-                releaseWrite(slot, conn);
+                releaseWrite(source, conn);
             }
         };
     }
 
     @Override
-    public <T> FutureListener<T> createReleaseReadListener(final int slot,
+    public <T> FutureListener<T> createReleaseReadListener(final NodeSource source,
                                     final RedisConnection conn, final Timeout timeout) {
         return new FutureListener<T>() {
             @Override
@@ -200,7 +201,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
                 shutdownLatch.release();
                 timeout.cancel();
-                releaseRead(slot, conn);
+                releaseRead(source, conn);
             }
         };
     }
@@ -211,7 +212,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public PubSubConnectionEntry getEntry(String channelName) {
+    public PubSubConnectionEntry getPubSubEntry(String channelName) {
         return name2PubSubConnection.get(channelName);
     }
 
@@ -463,11 +464,22 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entryCodec;
     }
 
+    public MasterSlaveEntry getEntry(InetSocketAddress addr) {
+        // TODO optimize
+        for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : entries.entrySet()) {
+            if (entry.getValue().getClient().getAddr().equals(addr)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     protected MasterSlaveEntry getEntry(ClusterSlotRange slotRange) {
         return entries.get(slotRange);
     }
 
     protected MasterSlaveEntry getEntry(int slot) {
+        // TODO optimize
         for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : entries.entrySet()) {
             if (entry.getKey().isOwn(slot)) {
                 return entry.getValue();
@@ -545,29 +557,52 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<RedisConnection> connectionWriteOp(int slot, RedisCommand<?> command) {
-        MasterSlaveEntry e = getEntry(slot);
-        if (e == null) {
-            throw new RedisEmptySlotException("No node for slot: " + slot + " and command " + command, slot);
-        }
+    public Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
+        MasterSlaveEntry e = getEntry(source, command);
         return e.connectionWriteOp();
     }
 
-    @Override
-    public Future<RedisConnection> connectionReadOp(int slot, RedisCommand<?> command) {
-        MasterSlaveEntry e = getEntry(slot);
-        if (e == null) {
-            throw new RedisEmptySlotException("No node for slot: " + slot + " and command " + command, slot);
+    private MasterSlaveEntry getEntry(NodeSource source) {
+        MasterSlaveEntry e = null;
+        if (source.getSlot() != null) {
+            e = getEntry(source.getSlot());
+            if (e == null) {
+                throw new RedisNodeNotFoundException("No node with slot: " + source.getSlot());
+            }
+        } else {
+            e = getEntry(source.getAddr());
+            if (e == null) {
+                throw new RedisNodeNotFoundException("No node with addr: " + source.getAddr());
+            }
         }
+        return e;
+    }
+
+    private MasterSlaveEntry getEntry(NodeSource source, RedisCommand<?> command) {
+        MasterSlaveEntry e = null;
+        if (source.getSlot() != null) {
+            e = getEntry(source.getSlot());
+            if (e == null) {
+                throw new RedisNodeNotFoundException("No node for slot: " + source.getSlot() + " and command " + command);
+            }
+        } else {
+            e = getEntry(source.getAddr());
+            if (e == null) {
+                throw new RedisNodeNotFoundException("No node for addr: " + source.getAddr() + " and command " + command);
+            }
+        }
+        return e;
+    }
+
+    @Override
+    public Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
+        MasterSlaveEntry e = getEntry(source, command);
         return e.connectionReadOp();
     }
 
     @Override
-    public Future<RedisConnection> connectionReadOp(int slot, RedisCommand<?> command, RedisClient client) {
-        MasterSlaveEntry e = getEntry(slot);
-        if (e == null) {
-            throw new RedisEmptySlotException("No node for slot: " + slot + " and command " + command, slot);
-        }
+    public Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command, RedisClient client) {
+        MasterSlaveEntry e = getEntry(source, command);
         return e.connectionReadOp(client);
     }
 
@@ -580,13 +615,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public void releaseWrite(int slot, RedisConnection connection) {
-        getEntry(slot).releaseWrite(connection);
+    public void releaseWrite(NodeSource source, RedisConnection connection) {
+        getEntry(source).releaseWrite(connection);
     }
 
     @Override
-    public void releaseRead(int slot, RedisConnection connection) {
-        getEntry(slot).releaseRead(connection);
+    public void releaseRead(NodeSource source, RedisConnection connection) {
+        getEntry(source).releaseRead(connection);
     }
 
     @Override

@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -60,27 +61,29 @@ public interface ConnectionManager {
 
     <R> Promise<R> newPromise();
 
-    void releaseRead(int slot, RedisConnection connection);
+    void releaseRead(NodeSource source, RedisConnection connection);
 
-    void releaseWrite(int slot, RedisConnection connection);
+    void releaseWrite(NodeSource source, RedisConnection connection);
 
-    Future<RedisConnection> connectionReadOp(int slot, RedisCommand<?> command);
+    Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
 
-    Future<RedisConnection> connectionReadOp(int slot, RedisCommand<?> command, RedisClient client);
+    Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command, RedisClient client);
 
-    Future<RedisConnection> connectionWriteOp(int slot, RedisCommand<?> command);
+    Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    <T> FutureListener<T> createReleaseReadListener(int slot,
+    <T> FutureListener<T> createReleaseReadListener(NodeSource source,
             RedisConnection conn, Timeout timeout);
 
-    <T> FutureListener<T> createReleaseWriteListener(int slot,
+    <T> FutureListener<T> createReleaseWriteListener(NodeSource source,
             RedisConnection conn, Timeout timeout);
 
     RedisClient createClient(String host, int port, int timeout);
 
     RedisClient createClient(String host, int port);
 
-    PubSubConnectionEntry getEntry(String channelName);
+    MasterSlaveEntry getEntry(InetSocketAddress addr);
+
+    PubSubConnectionEntry getPubSubEntry(String channelName);
 
     Future<PubSubConnectionEntry> subscribe(String channelName, Codec codec);
 
