@@ -17,7 +17,9 @@ package org.redisson.cluster;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.redisson.misc.URIBuilder;
 
@@ -30,7 +32,7 @@ public class ClusterNodeInfo {
     private final List<Flag> flags = new ArrayList<Flag>();
     private String slaveOf;
 
-    private final List<ClusterSlotRange> slotRanges = new ArrayList<ClusterSlotRange>();
+    private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
 
     public String getNodeId() {
         return nodeId;
@@ -49,7 +51,7 @@ public class ClusterNodeInfo {
     public void addSlotRange(ClusterSlotRange range) {
         slotRanges.add(range);
     }
-    public List<ClusterSlotRange> getSlotRanges() {
+    public Set<ClusterSlotRange> getSlotRanges() {
         return slotRanges;
     }
 

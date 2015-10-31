@@ -71,7 +71,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
                     this.config.getSlaveConnectionPoolSize(),
                     this.config.getSlaveSubscriptionConnectionPoolSize()));
         }
-        if (config.getSlaveAddresses().size() > 1) {
+        if (!config.getSlaveAddresses().isEmpty()) {
             slaveDown(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         }
 
@@ -110,7 +110,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     public void slaveUp(String host, int port) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         if (!addr.getHostName().equals(host) && port != addr.getPort()) {
-            slaveDown(addr.getHostName(), addr.getPort());
+            connectionManager.slaveDown(this, addr.getHostName(), addr.getPort());
         }
         slaveBalancer.unfreeze(host, port);
     }
@@ -126,7 +126,8 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         setupMasterEntry(host, port);
         writeConnectionHolder.remove(oldMaster);
         if (slaveBalancer.getAvailableClients() > 1) {
-            slaveDown(host, port);
+            // more than one slave avaliable, so master could be removed from slaves
+            connectionManager.slaveDown(this, host, port);
         }
         connectionManager.shutdownAsync(oldMaster.getClient());
     }

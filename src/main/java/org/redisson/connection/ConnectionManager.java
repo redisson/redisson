@@ -45,6 +45,8 @@ import io.netty.util.concurrent.Promise;
 //TODO ping support
 public interface ConnectionManager {
 
+    void slaveDown(MasterSlaveEntry entry, String host, int port);
+
     Collection<RedisClientEntry> getClients();
 
     void shutdownAsync(RedisClient client);

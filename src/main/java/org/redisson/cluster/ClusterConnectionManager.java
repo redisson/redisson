@@ -124,8 +124,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         MasterSlaveServersConfig config = create(cfg);
-        log.info("added master: {} for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
+        log.info("master: {} added for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
         config.setMasterAddress(partition.getMasterAddress());
+        config.setSlaveAddresses(partition.getSlaveAddresses());
+        log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
 
         SingleEntry entry = new SingleEntry(partition.getSlotRanges(), this, config);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
@@ -164,7 +166,41 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         Collection<ClusterPartition> newPartitions = parsePartitions(nodesValue);
         checkMasterNodesChange(newPartitions);
+        checkSlaveNodesChange(newPartitions);
         checkSlotsChange(cfg, newPartitions);
+    }
+
+    private void checkSlaveNodesChange(Collection<ClusterPartition> newPartitions) {
+        for (ClusterPartition newPart : newPartitions) {
+            for (ClusterPartition currentPart : lastPartitions.values()) {
+                if (!newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
+                    continue;
+                }
+                MasterSlaveEntry entry = getEntry(currentPart.getMasterAddr());
+
+                Set<URI> removedSlaves = new HashSet<URI>(currentPart.getSlaveAddresses());
+                removedSlaves.removeAll(newPart.getSlaveAddresses());
+
+                for (URI uri : removedSlaves) {
+                    currentPart.removeSlaveAddress(uri);
+
+                    slaveDown(entry, uri.getHost(), uri.getPort());
+                    log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
+                }
+
+                Set<URI> addedSlaves = new HashSet<URI>(newPart.getSlaveAddresses());
+                addedSlaves.removeAll(currentPart.getSlaveAddresses());
+                for (URI uri : addedSlaves) {
+                    currentPart.addSlaveAddress(uri);
+
+                    entry.addSlave(uri.getHost(), uri.getPort());
+                    entry.slaveUp(uri.getHost(), uri.getPort());
+                    log.info("slave {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
+                }
+
+                break;
+            }
+        }
     }
 
     private Collection<ClusterSlotRange> slots(Collection<ClusterPartition> partitions) {
@@ -221,7 +257,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         removedSlots.removeAll(newPartitionsSlots);
         lastPartitions.keySet().removeAll(removedSlots);
         if (!removedSlots.isEmpty()) {
-            log.info("{} slot ranges found to remove", removedSlots.size());
+            log.info("{} slot ranges found to remove", removedSlots);
         }
 
         for (ClusterSlotRange slot : removedSlots) {
@@ -237,7 +273,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Set<ClusterSlotRange> addedSlots = new HashSet<ClusterSlotRange>(newPartitionsSlots);
         addedSlots.removeAll(lastPartitions.keySet());
         if (!addedSlots.isEmpty()) {
-            log.info("{} slots found to add", addedSlots.size());
+            log.info("{} slots found to add", addedSlots);
         }
         for (ClusterSlotRange slot : addedSlots) {
             ClusterPartition partition = find(newPartitions, slot);
@@ -267,19 +303,21 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 Set<ClusterSlotRange> addedSlots = new HashSet<ClusterSlotRange>(newPartition.getSlotRanges());
                 addedSlots.removeAll(currentPartition.getSlotRanges());
                 MasterSlaveEntry entry = getEntry(currentPartition.getSlotRanges().iterator().next());
+                currentPartition.addSlotRanges(addedSlots);
                 for (ClusterSlotRange slot : addedSlots) {
                     entry.addSlotRange(slot);
                     addEntry(slot, entry);
-                    log.info("slot {} added for {}", slot, entry.getClient().getAddr());
+                    log.info("{} slot added for {}", slot, entry.getClient().getAddr());
                     lastPartitions.put(slot, currentPartition);
                 }
 
                 Set<ClusterSlotRange> removedSlots = new HashSet<ClusterSlotRange>(currentPartition.getSlotRanges());
                 removedSlots.removeAll(newPartition.getSlotRanges());
                 lastPartitions.keySet().removeAll(removedSlots);
+                currentPartition.removeSlotRanges(removedSlots);
 
                 for (ClusterSlotRange slot : removedSlots) {
-                    log.info("slot {} removed for {}", slot, entry.getClient().getAddr());
+                    log.info("{} slot removed for {}", slot, entry.getClient().getAddr());
                     entry.removeSlotRange(slot);
                     removeMaster(slot);
                 }

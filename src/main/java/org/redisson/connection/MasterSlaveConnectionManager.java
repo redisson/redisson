@@ -488,24 +488,24 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return null;
     }
 
-    protected void slaveDown(ClusterSlotRange slotRange, String host, int port) {
-        Collection<RedisPubSubConnection> allPubSubConnections = getEntry(slotRange).slaveDown(host, port);
+    public void slaveDown(MasterSlaveEntry entry, String host, int port) {
+        Collection<RedisPubSubConnection> allPubSubConnections = entry.slaveDown(host, port);
 
         // reattach listeners to other channels
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
             for (RedisPubSubConnection redisPubSubConnection : allPubSubConnections) {
-                PubSubConnectionEntry entry = mapEntry.getValue();
+                PubSubConnectionEntry pubSubEntry = mapEntry.getValue();
                 final String channelName = mapEntry.getKey();
 
-                if (!entry.getConnection().equals(redisPubSubConnection)) {
+                if (!pubSubEntry.getConnection().equals(redisPubSubConnection)) {
                     continue;
                 }
 
-                synchronized (entry) {
-                    entry.close();
+                synchronized (pubSubEntry) {
+                    pubSubEntry.close();
 
-                    final Collection<RedisPubSubListener> listeners = entry.getListeners(channelName);
-                    if (entry.getConnection().getPatternChannels().get(channelName) != null) {
+                    final Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
+                    if (pubSubEntry.getConnection().getPatternChannels().get(channelName) != null) {
                         Codec subscribeCodec = punsubscribe(channelName);
                         if (!listeners.isEmpty()) {
                             Future<PubSubConnectionEntry> future = psubscribe(channelName, subscribeCodec);
@@ -542,6 +542,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
             }
         }
+    }
+
+    protected void slaveDown(ClusterSlotRange slotRange, String host, int port) {
+        MasterSlaveEntry entry = getEntry(slotRange);
+        slaveDown(entry, host, port);
     }
 
     protected void changeMaster(ClusterSlotRange slotRange, String host, int port) {
