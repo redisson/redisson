@@ -117,11 +117,6 @@
   </dependency>
   <dependency>
   	<groupId>io.netty</groupId>
-  	<artifactId>netty-codec-http</artifactId>
-  	<version>4.0.32.Final</version>
-  </dependency>
-  <dependency>
-  	<groupId>io.netty</groupId>
   	<artifactId>netty-codec</artifactId>
   	<version>4.0.32.Final</version>
   </dependency>
