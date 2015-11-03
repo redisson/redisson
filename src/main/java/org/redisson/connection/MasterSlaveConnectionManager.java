@@ -74,6 +74,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected EventLoopGroup group;
 
+    protected ConnectionListener connectListener = new DefaultConnectionListener();
 
     protected Class<? extends SocketChannel> socketChannelClass;
 
@@ -135,7 +136,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void initEntry(MasterSlaveServersConfig config) {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
-        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
+        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config, connectListener);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         addEntry(singleSlotRange, entry);
     }

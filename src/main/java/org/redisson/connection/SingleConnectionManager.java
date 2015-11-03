@@ -74,7 +74,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     protected void initEntry(MasterSlaveServersConfig config) {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
-        SingleEntry entry = new SingleEntry(slots, this, config);
+        SingleEntry entry = new SingleEntry(slots, this, config, connectListener);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         addEntry(singleSlotRange, entry);
     }

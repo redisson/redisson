@@ -17,9 +17,7 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,6 +26,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.connection.ConnectionEntry.Mode;
 import org.redisson.misc.ConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +46,8 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     LoadBalancer slaveBalancer;
     SubscribesConnectionEntry masterEntry;
 
+    final ConnectionListener connectListener;
+
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
@@ -55,32 +56,27 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
 
     final AtomicBoolean active = new AtomicBoolean(true);
 
-    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionListener connectListener) {
         this.slotRanges = slotRanges;
         this.connectionManager = connectionManager;
         this.config = config;
+        this.connectListener = connectListener;
 
         slaveBalancer = config.getLoadBalancer();
         slaveBalancer.init(config, connectionManager);
 
-        List<URI> addresses = new ArrayList<URI>(config.getSlaveAddresses());
-        addresses.add(config.getMasterAddress());
-        for (URI address : addresses) {
-            RedisClient client = connectionManager.createClient(address.getHost(), address.getPort());
-            slaveBalancer.add(new SubscribesConnectionEntry(client,
-                    this.config.getSlaveConnectionPoolSize(),
-                    this.config.getSlaveSubscriptionConnectionPoolSize()));
-        }
-        if (!config.getSlaveAddresses().isEmpty()) {
-            slaveDown(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty();
+        addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, Mode.MASTER);
+        for (URI address : config.getSlaveAddresses()) {
+            addSlave(address.getHost(), address.getPort(), false, Mode.SLAVE);
         }
 
         writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager.getGroup());
     }
 
-    protected void setupMasterEntry(String host, int port) {
+    public void setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(host, port);
-        masterEntry = new SubscribesConnectionEntry(client, config.getMasterConnectionPoolSize(), 0);
+        masterEntry = new SubscribesConnectionEntry(client, config.getMasterConnectionPoolSize(), 0, connectListener, Mode.MASTER);
         writeConnectionHolder.add(masterEntry);
     }
 
@@ -95,11 +91,15 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     }
 
     public void addSlave(String host, int port) {
+        addSlave(host, port, true, Mode.SLAVE);
+    }
+
+    private void addSlave(String host, int port, boolean freezed, Mode mode) {
         RedisClient client = connectionManager.createClient(host, port);
         SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
-                this.config.getSlaveSubscriptionConnectionPoolSize());
-        entry.setFreezed(true);
+                this.config.getSlaveSubscriptionConnectionPoolSize(), connectListener, mode);
+        entry.setFreezed(freezed);
         slaveBalancer.add(entry);
     }
 

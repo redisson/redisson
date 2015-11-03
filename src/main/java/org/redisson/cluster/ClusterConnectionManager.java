@@ -36,7 +36,6 @@ import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.SingleEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +53,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private ScheduledFuture<?> monitorFuture;
 
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
+        connectListener = new ClusterConnectionListener(cfg.isReadFromSlaves());
         init(config);
 
         this.config = create(cfg);
@@ -127,9 +127,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         log.info("master: {} added for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
         config.setMasterAddress(partition.getMasterAddress());
         config.setSlaveAddresses(partition.getSlaveAddresses());
+
         log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
 
-        SingleEntry entry = new SingleEntry(partition.getSlotRanges(), this, config);
+        MasterSlaveEntry entry = new MasterSlaveEntry(partition.getSlotRanges(), this, config, connectListener);
         entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         for (ClusterSlotRange slotRange : partition.getSlotRanges()) {
             addEntry(slotRange, entry);

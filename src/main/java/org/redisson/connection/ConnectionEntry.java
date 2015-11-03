@@ -38,12 +38,18 @@ public class ConnectionEntry {
     private volatile boolean freezed;
     final RedisClient client;
 
+    public enum Mode {SLAVE, MASTER}
+
+    private final Mode serverMode;
+    private final ConnectionListener connectListener;
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final AtomicInteger connectionsCounter = new AtomicInteger();
 
-    public ConnectionEntry(RedisClient client, int poolSize) {
+    public ConnectionEntry(RedisClient client, int poolSize, ConnectionListener connectListener, Mode serverMode) {
         this.client = client;
         this.connectionsCounter.set(poolSize);
+        this.connectListener = connectListener;
+        this.serverMode = serverMode;
     }
 
     public RedisClient getClient() {
@@ -67,7 +73,8 @@ public class ConnectionEntry {
             if (connectionsCounter.get() == 0) {
                 return false;
             }
-            if (connectionsCounter.compareAndSet(connectionsCounter.get(), connectionsCounter.get() - 1)) {
+            int value = connectionsCounter.get();
+            if (connectionsCounter.compareAndSet(value, value - 1)) {
                 return true;
             }
         }
@@ -96,11 +103,11 @@ public class ConnectionEntry {
                 RedisConnection conn = future.getNow();
                 log.debug("new connection created: {}", conn);
 
-                prepareConnection(config, conn);
+                connectListener.onConnect(config, conn, serverMode);
                 conn.setReconnectListener(new ReconnectListener() {
                     @Override
                     public void onReconnect(RedisConnection conn) {
-                        prepareConnection(config, conn);
+                        connectListener.onConnect(config, conn, serverMode);
                     }
                 });
             }
@@ -131,11 +138,11 @@ public class ConnectionEntry {
                 RedisPubSubConnection conn = future.getNow();
                 log.debug("new pubsub connection created: {}", conn);
 
-                prepareConnection(config, conn);
+                connectListener.onConnect(config, conn, serverMode);
                 conn.setReconnectListener(new ReconnectListener() {
                     @Override
                     public void onReconnect(RedisConnection conn) {
-                        prepareConnection(config, conn);
+                        connectListener.onConnect(config, conn, serverMode);
                     }
                 });
             }
