@@ -127,7 +127,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         if (entry != null) {
             return entries.get(entry);
         }
-        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client);
+        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client.getAddr());
         return connectionManager.getGroup().next().newFailedFuture(exception);
     }
 

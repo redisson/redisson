@@ -85,7 +85,7 @@ public class ConnectionPool<T extends RedisConnection> {
             return promise;
         }
 
-        RedisConnectionException exception = new RedisConnectionException("Can't aquire connection for " + entry.getClient());
+        RedisConnectionException exception = new RedisConnectionException("Can't aquire connection to " + entry.getClient().getAddr());
         return executor.newFailedFuture(exception);
     }
 

@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.CommandBatchExecutorService.CommandEntry;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
