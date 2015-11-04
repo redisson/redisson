@@ -231,7 +231,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                     public void operationComplete(ChannelFuture future) throws Exception {
                         if (!future.isSuccess()) {
                             timeout.cancel();
-                            ex.set(new WriteRedisConnectionException("channel: " + future.channel() + " has been closed"));
+                            ex.set(new WriteRedisConnectionException("Can't write commands batch to channel: " + future.channel(), future.cause()));
                             connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                         }
                     }
