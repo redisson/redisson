@@ -493,7 +493,7 @@ public class CommandExecutorService implements CommandExecutor {
                                 return;
                             }
                             ex.set(new WriteRedisConnectionException(
-                                    "Can't send command: " + command + ", params: " + params + ", channel: " + future.channel(), future.cause()));
+                                    "Can't write command: " + command + ", params: " + params + " to channel: " + future.channel(), future.cause()));
                             connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                         }
                     }
