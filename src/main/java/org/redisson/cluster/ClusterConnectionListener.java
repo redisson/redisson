@@ -16,11 +16,11 @@
 package org.redisson.cluster;
 
 import org.redisson.MasterSlaveServersConfig;
-import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.DefaultConnectionListener;
 import org.redisson.connection.ConnectionEntry.Mode;
+import org.redisson.connection.DefaultConnectionListener;
+import org.redisson.connection.FutureConnectionListener;
 
 public class ClusterConnectionListener extends DefaultConnectionListener {
 
@@ -31,10 +31,10 @@ public class ClusterConnectionListener extends DefaultConnectionListener {
     }
 
     @Override
-    public void onConnect(MasterSlaveServersConfig config, RedisConnection conn, Mode serverMode) throws RedisException {
-        super.onConnect(config, conn, serverMode);
+    public void onConnect(MasterSlaveServersConfig config, Mode serverMode, FutureConnectionListener connectionListener) throws RedisException {
+        super.onConnect(config, serverMode, connectionListener);
         if (serverMode == Mode.SLAVE && readFromSlaves) {
-            conn.sync(RedisCommands.READONLY);
+            connectionListener.addCommand(RedisCommands.READONLY);
         }
     }
 

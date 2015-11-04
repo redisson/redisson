@@ -15,8 +15,10 @@
  */
 package org.redisson.client;
 
+import io.netty.util.concurrent.Promise;
+
 public interface ReconnectListener {
 
-    void onReconnect(RedisConnection redisConnection) throws RedisException;
+    void onReconnect(RedisConnection redisConnection, Promise<RedisConnection> connectionFuture) throws RedisException;
 
 }
