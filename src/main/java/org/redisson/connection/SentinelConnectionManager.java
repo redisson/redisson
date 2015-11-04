@@ -235,7 +235,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         String addr = ip + ":" + port;
         if (freezeSlaves.putIfAbsent(addr, true) == null) {
             slaveDown(singleSlotRange, ip, Integer.valueOf(port));
-            log.info("slave: {} has down", addr);
         }
     }
 

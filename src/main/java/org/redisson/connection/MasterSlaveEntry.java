@@ -86,6 +86,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         if (slaveBalancer.getAvailableClients() == 0) {
             InetSocketAddress addr = masterEntry.getClient().getAddr();
             slaveUp(addr.getHostName(), addr.getPort());
+            log.info("master {}:{} used as slave", addr.getHostName(), addr.getPort());
         }
         return conns;
     }
@@ -109,8 +110,9 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
 
     public void slaveUp(String host, int port) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
-        if (!addr.getHostName().equals(host) && port != addr.getPort()) {
+        if (!addr.getHostName().equals(host) || port != addr.getPort()) {
             connectionManager.slaveDown(this, addr.getHostName(), addr.getPort());
+            log.info("master {}:{} removed from slaves", addr.getHostName(), addr.getPort());
         }
         slaveBalancer.unfreeze(host, port);
     }
