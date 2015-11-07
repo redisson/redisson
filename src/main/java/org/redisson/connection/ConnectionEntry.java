@@ -35,7 +35,10 @@ public class ConnectionEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
+    public enum FreezeReason {MANAGER, RECONNECT}
+
     private volatile boolean freezed;
+    private FreezeReason freezeReason;
     final RedisClient client;
 
     public enum Mode {SLAVE, MASTER}
@@ -44,6 +47,7 @@ public class ConnectionEntry {
     private final ConnectionListener connectListener;
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final AtomicInteger connectionsCounter = new AtomicInteger();
+    private AtomicInteger failedAttempts = new AtomicInteger();
 
     public ConnectionEntry(RedisClient client, int poolSize, ConnectionListener connectListener, Mode serverMode) {
         this.client = client;
@@ -52,12 +56,32 @@ public class ConnectionEntry {
         this.serverMode = serverMode;
     }
 
+    public Mode getServerMode() {
+        return serverMode;
+    }
+
+    public void resetFailedAttempts() {
+        failedAttempts.set(0);
+    }
+
+    public int incFailedAttempts() {
+        return failedAttempts.incrementAndGet();
+    }
+
     public RedisClient getClient() {
         return client;
     }
 
     public boolean isFreezed() {
         return freezed;
+    }
+
+    public void setFreezeReason(FreezeReason freezeReason) {
+        this.freezeReason = freezeReason;
+    }
+
+    public FreezeReason getFreezeReason() {
+        return freezeReason;
     }
 
     public void setFreezed(boolean freezed) {
@@ -107,6 +131,7 @@ public class ConnectionEntry {
                 FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
                 connectListener.onConnect(config, serverMode, listener);
                 listener.executeCommands();
+
                 addReconnectListener(config, conn);
             }
 

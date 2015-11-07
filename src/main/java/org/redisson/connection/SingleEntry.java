@@ -34,7 +34,7 @@ public class SingleEntry extends MasterSlaveEntry<SubscribesConnectionEntry> {
 
     public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionListener connectListener) {
         super(slotRanges, connectionManager, config, connectListener);
-        pubSubConnectionHolder = new PubSubConnectionPoll(config, null, connectionManager.getGroup());
+        pubSubConnectionHolder = new PubSubConnectionPoll(config, null, connectionManager, this);
     }
 
     @Override

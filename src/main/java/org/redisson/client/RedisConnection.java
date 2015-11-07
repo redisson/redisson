@@ -28,7 +28,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.ScheduledFuture;
 
 public class RedisConnection implements RedisCommands {
 
@@ -68,6 +70,15 @@ public class RedisConnection implements RedisCommands {
         return failAttempts;
     }
 
+    public boolean isOpen() {
+        return channel.isOpen();
+    }
+
+    /**
+     * Check is channel connected and ready for transfer
+     *
+     * @return true if so
+     */
     public boolean isActive() {
         return channel.isActive();
     }
@@ -122,6 +133,25 @@ public class RedisConnection implements RedisCommands {
 
     public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
         Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        send(new CommandData<T, R>(promise, encoder, command, params));
+        return promise;
+    }
+
+    public <T, R> Future<R> asyncWithTimeout(Codec encoder, RedisCommand<T> command, Object ... params) {
+        final Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        final ScheduledFuture<?> scheduledFuture = redisClient.getBootstrap().group().next().schedule(new Runnable() {
+            @Override
+            public void run() {
+                RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
+                promise.tryFailure(ex);
+            }
+        }, redisClient.getTimeout(), TimeUnit.MILLISECONDS);
+        promise.addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                scheduledFuture.cancel(false);
+            }
+        });
         send(new CommandData<T, R>(promise, encoder, command, params));
         return promise;
     }

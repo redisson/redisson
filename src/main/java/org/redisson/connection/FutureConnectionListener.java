@@ -66,6 +66,7 @@ public class FutureConnectionListener<T extends RedisConnection> implements Futu
     @Override
     public void operationComplete(Future<Object> future) throws Exception {
         if (!future.isSuccess()) {
+            connection.closeAsync();
             connectionPromise.tryFailure(future.cause());
             return;
         }

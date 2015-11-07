@@ -27,6 +27,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
 import io.netty.channel.EventLoopGroup;
@@ -45,7 +46,9 @@ import io.netty.util.concurrent.Promise;
 //TODO ping support
 public interface ConnectionManager {
 
-    void slaveDown(MasterSlaveEntry entry, String host, int port);
+    <R> Future<R> newFailedFuture(Throwable cause);
+
+    void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason);
 
     Collection<RedisClientEntry> getClients();
 

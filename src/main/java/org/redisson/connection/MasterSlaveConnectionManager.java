@@ -37,6 +37,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -489,8 +490,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return null;
     }
 
-    public void slaveDown(MasterSlaveEntry entry, String host, int port) {
-        Collection<RedisPubSubConnection> allPubSubConnections = entry.slaveDown(host, port);
+    public void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason) {
+        Collection<RedisPubSubConnection> allPubSubConnections = entry.slaveDown(host, port, freezeReason);
 
         // reattach listeners to other channels
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
@@ -545,9 +546,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    protected void slaveDown(ClusterSlotRange slotRange, String host, int port) {
+    protected void slaveDown(ClusterSlotRange slotRange, String host, int port, FreezeReason freezeReason) {
         MasterSlaveEntry entry = getEntry(slotRange);
-        slaveDown(entry, host, port);
+        slaveDown(entry, host, port, freezeReason);
         log.info("slave: {}:{} has down", host, port);
     }
 
@@ -648,6 +649,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public <R> Promise<R> newPromise() {
         return group.next().newPromise();
+    }
+
+    @Override
+    public <R> Future<R> newFailedFuture(Throwable cause) {
+        return group.next().newFailedFuture(cause);
     }
 
     @Override

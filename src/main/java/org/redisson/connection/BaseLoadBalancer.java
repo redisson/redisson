@@ -27,6 +27,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 import org.slf4j.Logger;
@@ -46,10 +47,10 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     ConnectionPool<RedisConnection> entries;
 
-    public void init(MasterSlaveServersConfig config, ConnectionManager connectionManager) {
+    public void init(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry entry) {
         this.connectionManager = connectionManager;
-        entries = new ConnectionPool<RedisConnection>(config, this, connectionManager.getGroup());
-        pubSubEntries = new PubSubConnectionPoll(config, this, connectionManager.getGroup());
+        entries = new ConnectionPool<RedisConnection>(config, this, connectionManager, entry);
+        pubSubEntries = new PubSubConnectionPoll(config, this, connectionManager, entry);
     }
 
     public synchronized void add(SubscribesConnectionEntry entry) {
@@ -68,19 +69,27 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         return count;
     }
 
-    public synchronized void unfreeze(String host, int port) {
+    public synchronized boolean unfreeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         for (SubscribesConnectionEntry connectionEntry : client2Entry.values()) {
             if (!connectionEntry.getClient().getAddr().equals(addr)) {
                 continue;
             }
-            connectionEntry.setFreezed(false);
-            return;
+            if (freezeReason == FreezeReason.RECONNECT
+                    && connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
+                connectionEntry.setFreezed(false);
+                return true;
+            }
+            if (freezeReason == FreezeReason.MANAGER) {
+                connectionEntry.setFreezed(false);
+                return true;
+            }
+            return false;
         }
         throw new IllegalStateException("Can't find " + addr + " in slaves!");
     }
 
-    public synchronized Collection<RedisPubSubConnection> freeze(String host, int port) {
+    public synchronized Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         for (SubscribesConnectionEntry connectionEntry : client2Entry.values()) {
             if (connectionEntry.isFreezed()
@@ -90,6 +99,11 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
             log.debug("{} freezed", addr);
             connectionEntry.setFreezed(true);
+            // only RECONNECT freeze reason could be replaced
+            if (connectionEntry.getFreezeReason() == null
+                    || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
+                connectionEntry.setFreezeReason(freezeReason);
+            }
 
             // close all connections
             while (true) {

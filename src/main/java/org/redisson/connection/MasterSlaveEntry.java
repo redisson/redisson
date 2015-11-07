@@ -26,6 +26,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.connection.ConnectionEntry.Mode;
 import org.redisson.misc.ConnectionPool;
 import org.slf4j.Logger;
@@ -63,7 +64,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         this.connectListener = connectListener;
 
         slaveBalancer = config.getLoadBalancer();
-        slaveBalancer.init(config, connectionManager);
+        slaveBalancer.init(config, connectionManager, this);
 
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty();
         addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, Mode.MASTER);
@@ -71,7 +72,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
             addSlave(address.getHost(), address.getPort(), false, Mode.SLAVE);
         }
 
-        writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager.getGroup());
+        writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager, this);
     }
 
     public void setupMasterEntry(String host, int port) {
@@ -80,12 +81,12 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         writeConnectionHolder.add(masterEntry);
     }
 
-    public Collection<RedisPubSubConnection> slaveDown(String host, int port) {
-        Collection<RedisPubSubConnection> conns = slaveBalancer.freeze(host, port);
+    public Collection<RedisPubSubConnection> slaveDown(String host, int port, FreezeReason freezeReason) {
+        Collection<RedisPubSubConnection> conns = slaveBalancer.freeze(host, port, freezeReason);
         // add master as slave if no more slaves available
         if (slaveBalancer.getAvailableClients() == 0) {
             InetSocketAddress addr = masterEntry.getClient().getAddr();
-            slaveUp(addr.getHostName(), addr.getPort());
+            slaveUp(addr.getHostName(), addr.getPort(), FreezeReason.MANAGER);
             log.info("master {}:{} used as slave", addr.getHostName(), addr.getPort());
         }
         return conns;
@@ -108,13 +109,15 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         return masterEntry.getClient();
     }
 
-    public void slaveUp(String host, int port) {
+    public void slaveUp(String host, int port, FreezeReason freezeReason) {
+        if (!slaveBalancer.unfreeze(host, port, freezeReason)) {
+            return;
+        }
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         if (!addr.getHostName().equals(host) || port != addr.getPort()) {
-            connectionManager.slaveDown(this, addr.getHostName(), addr.getPort());
+            connectionManager.slaveDown(this, addr.getHostName(), addr.getPort(), FreezeReason.MANAGER);
             log.info("master {}:{} removed from slaves", addr.getHostName(), addr.getPort());
         }
-        slaveBalancer.unfreeze(host, port);
     }
 
     /**
@@ -129,7 +132,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         writeConnectionHolder.remove(oldMaster);
         if (slaveBalancer.getAvailableClients() > 1) {
             // more than one slave avaliable, so master could be removed from slaves
-            connectionManager.slaveDown(this, host, port);
+            connectionManager.slaveDown(this, host, port, FreezeReason.MANAGER);
         }
         connectionManager.shutdownAsync(oldMaster.getClient());
     }

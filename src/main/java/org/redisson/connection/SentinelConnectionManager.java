@@ -33,6 +33,7 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,7 +235,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         // to avoid freeze twice
         String addr = ip + ":" + port;
         if (freezeSlaves.putIfAbsent(addr, true) == null) {
-            slaveDown(singleSlotRange, ip, Integer.valueOf(port));
+            slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
         }
     }
 
@@ -282,7 +283,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveUp(String host, int port) {
-        getEntry(0).slaveUp(host, port);
+        getEntry(0).slaveUp(host, port, FreezeReason.MANAGER);
     }
 
     @Override

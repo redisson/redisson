@@ -454,7 +454,7 @@ public class CommandExecutorService implements CommandExecutor {
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                if (attemptPromise.isCancelled()) {
+                if (attemptPromise.isCancelled() || connFuture.isCancelled()) {
                     return;
                 }
                 if (!connFuture.isSuccess()) {
@@ -486,6 +486,9 @@ public class CommandExecutorService implements CommandExecutor {
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
+                        if (attemptPromise.isCancelled() || future.isCancelled()) {
+                            return;
+                        }
                         if (!future.isSuccess()) {
                             timeout.cancel();
                             if (!connectionManager.getShutdownLatch().acquire()) {

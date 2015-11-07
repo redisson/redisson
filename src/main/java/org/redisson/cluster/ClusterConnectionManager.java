@@ -36,6 +36,7 @@ import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,7 +186,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 for (URI uri : removedSlaves) {
                     currentPart.removeSlaveAddress(uri);
 
-                    slaveDown(entry, uri.getHost(), uri.getPort());
+                    slaveDown(entry, uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
                     log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
                 }
 
@@ -195,7 +196,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     currentPart.addSlaveAddress(uri);
 
                     entry.addSlave(uri.getHost(), uri.getPort());
-                    entry.slaveUp(uri.getHost(), uri.getPort());
+                    entry.slaveUp(uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
                     log.info("slave {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
                 }
 
@@ -239,7 +240,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             URI oldUri = currentPart.getMasterAddress();
 
                             changeMaster(currentSlotRange, newUri.getHost(), newUri.getPort());
-                            slaveDown(currentSlotRange, oldUri.getHost(), oldUri.getPort());
+                            slaveDown(currentSlotRange, oldUri.getHost(), oldUri.getPort(), FreezeReason.MANAGER);
 
                             currentPart.setMasterAddress(newMasterPart.getMasterAddress());
                         }

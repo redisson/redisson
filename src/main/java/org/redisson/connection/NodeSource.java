@@ -43,4 +43,12 @@ public class NodeSource {
         return addr;
     }
 
+    @Override
+    public String toString() {
+        if (addr != null) {
+            return addr.toString();
+        }
+        return slot.toString();
+    }
+
 }
