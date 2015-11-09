@@ -73,6 +73,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
             try {
                 RedisConnection connection = client.connect();
+                if (!connection.isActive()) {
+                    continue;
+                }
 
                 // TODO async
                 List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
