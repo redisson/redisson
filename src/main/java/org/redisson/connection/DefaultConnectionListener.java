@@ -18,12 +18,12 @@ package org.redisson.connection;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionEntry.Mode;
+import org.redisson.connection.ConnectionEntry.NodeType;
 
 public class DefaultConnectionListener implements ConnectionListener {
 
     @Override
-    public void onConnect(MasterSlaveServersConfig config, Mode serverMode, FutureConnectionListener connectionListener)
+    public void onConnect(MasterSlaveServersConfig config, NodeType serverMode, FutureConnectionListener connectionListener)
             throws RedisException {
         if (config.getPassword() != null) {
             connectionListener.addCommand(RedisCommands.AUTH, config.getPassword());

@@ -27,7 +27,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ConnectionEntry.FreezeReason;
-import org.redisson.connection.ConnectionEntry.Mode;
+import org.redisson.connection.ConnectionEntry.NodeType;
 import org.redisson.misc.ConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,9 +67,9 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         slaveBalancer.init(config, connectionManager, this);
 
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty();
-        addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, Mode.MASTER);
+        addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
         for (URI address : config.getSlaveAddresses()) {
-            addSlave(address.getHost(), address.getPort(), false, Mode.SLAVE);
+            addSlave(address.getHost(), address.getPort(), false, NodeType.SLAVE);
         }
 
         writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager, this);
@@ -77,7 +77,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
 
     public void setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(host, port);
-        masterEntry = new SubscribesConnectionEntry(client, config.getMasterConnectionPoolSize(), 0, connectListener, Mode.MASTER);
+        masterEntry = new SubscribesConnectionEntry(client, config.getMasterConnectionPoolSize(), 0, connectListener, NodeType.MASTER);
         writeConnectionHolder.add(masterEntry);
     }
 
@@ -93,10 +93,10 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     }
 
     public void addSlave(String host, int port) {
-        addSlave(host, port, true, Mode.SLAVE);
+        addSlave(host, port, true, NodeType.SLAVE);
     }
 
-    private void addSlave(String host, int port, boolean freezed, Mode mode) {
+    private void addSlave(String host, int port, boolean freezed, NodeType mode) {
         RedisClient client = connectionManager.createClient(host, port);
         SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),

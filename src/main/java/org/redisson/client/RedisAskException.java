@@ -15,25 +15,12 @@
  */
 package org.redisson.client;
 
-import java.net.InetSocketAddress;
-import java.net.URI;
-
-public class RedisAskException extends RedisException {
+public class RedisAskException extends RedisRedirectException {
 
     private static final long serialVersionUID = -6969734163155547631L;
 
-    private URI url;
-
-    public RedisAskException(String url) {
-        this.url = URI.create("//" + url);
-    }
-
-    public URI getUrl() {
-        return url;
-    }
-
-    public InetSocketAddress getAddr() {
-        return new InetSocketAddress(url.getHost(), url.getPort());
+    public RedisAskException(int slot, String url) {
+        super(slot, url);
     }
 
 }

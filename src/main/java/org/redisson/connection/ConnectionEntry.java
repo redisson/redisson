@@ -41,23 +41,23 @@ public class ConnectionEntry {
     private FreezeReason freezeReason;
     final RedisClient client;
 
-    public enum Mode {SLAVE, MASTER}
+    public enum NodeType {SLAVE, MASTER}
 
-    private final Mode serverMode;
+    private final NodeType nodeType;
     private final ConnectionListener connectListener;
     private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
     private final AtomicInteger connectionsCounter = new AtomicInteger();
     private AtomicInteger failedAttempts = new AtomicInteger();
 
-    public ConnectionEntry(RedisClient client, int poolSize, ConnectionListener connectListener, Mode serverMode) {
+    public ConnectionEntry(RedisClient client, int poolSize, ConnectionListener connectListener, NodeType nodeType) {
         this.client = client;
         this.connectionsCounter.set(poolSize);
         this.connectListener = connectListener;
-        this.serverMode = serverMode;
+        this.nodeType = nodeType;
     }
 
-    public Mode getServerMode() {
-        return serverMode;
+    public NodeType getNodeType() {
+        return nodeType;
     }
 
     public void resetFailedAttempts() {
@@ -129,7 +129,7 @@ public class ConnectionEntry {
                 log.debug("new connection created: {}", conn);
 
                 FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
-                connectListener.onConnect(config, serverMode, listener);
+                connectListener.onConnect(config, nodeType, listener);
                 listener.executeCommands();
 
                 addReconnectListener(config, conn);
@@ -144,7 +144,7 @@ public class ConnectionEntry {
             @Override
             public void onReconnect(RedisConnection conn, Promise<RedisConnection> connectionFuture) {
                 FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
-                connectListener.onConnect(config, serverMode, listener);
+                connectListener.onConnect(config, nodeType, listener);
                 listener.executeCommands();
             }
         });
@@ -163,7 +163,7 @@ public class ConnectionEntry {
                 log.debug("new pubsub connection created: {}", conn);
 
                 FutureConnectionListener<RedisPubSubConnection> listener = new FutureConnectionListener<RedisPubSubConnection>(connectionFuture, conn);
-                connectListener.onConnect(config, serverMode, listener);
+                connectListener.onConnect(config, nodeType, listener);
                 listener.executeCommands();
 
                 addReconnectListener(config, conn);

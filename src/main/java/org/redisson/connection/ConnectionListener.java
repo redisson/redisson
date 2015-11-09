@@ -17,10 +17,10 @@ package org.redisson.connection;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisException;
-import org.redisson.connection.ConnectionEntry.Mode;
+import org.redisson.connection.ConnectionEntry.NodeType;
 
 public interface ConnectionListener {
 
-    void onConnect(MasterSlaveServersConfig config, Mode serverMode, FutureConnectionListener connectionListener) throws RedisException;
+    void onConnect(MasterSlaveServersConfig config, NodeType serverMode, FutureConnectionListener connectionListener) throws RedisException;
 
 }

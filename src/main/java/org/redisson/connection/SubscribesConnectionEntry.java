@@ -32,7 +32,7 @@ public class SubscribesConnectionEntry extends ConnectionEntry {
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
     private final AtomicInteger connectionsCounter = new AtomicInteger();
 
-    public SubscribesConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize, ConnectionListener connectListener, Mode serverMode) {
+    public SubscribesConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize, ConnectionListener connectListener, NodeType serverMode) {
         super(client, poolSize, connectListener, serverMode);
         connectionsCounter.set(subscribePoolSize);
     }

@@ -18,7 +18,7 @@ package org.redisson.cluster;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionEntry.Mode;
+import org.redisson.connection.ConnectionEntry.NodeType;
 import org.redisson.connection.DefaultConnectionListener;
 import org.redisson.connection.FutureConnectionListener;
 
@@ -31,9 +31,9 @@ public class ClusterConnectionListener extends DefaultConnectionListener {
     }
 
     @Override
-    public void onConnect(MasterSlaveServersConfig config, Mode serverMode, FutureConnectionListener connectionListener) throws RedisException {
+    public void onConnect(MasterSlaveServersConfig config, NodeType serverMode, FutureConnectionListener connectionListener) throws RedisException {
         super.onConnect(config, serverMode, connectionListener);
-        if (serverMode == Mode.SLAVE && readFromSlaves) {
+        if (serverMode == NodeType.SLAVE && readFromSlaves) {
             connectionListener.addCommand(RedisCommands.READONLY);
         }
     }

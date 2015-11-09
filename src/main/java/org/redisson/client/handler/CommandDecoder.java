@@ -165,10 +165,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             if (error.startsWith("MOVED")) {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
-                data.getPromise().setFailure(new RedisMovedException(slot));
+                String addr = errorParts[2];
+                data.getPromise().setFailure(new RedisMovedException(slot, addr));
             } else if (error.startsWith("ASK")) {
                 String[] errorParts = error.split(" ");
-                data.getPromise().setFailure(new RedisAskException(errorParts[2]));
+                int slot = Integer.valueOf(errorParts[1]);
+                String addr = errorParts[2];
+                data.getPromise().setFailure(new RedisAskException(slot, addr));
             } else {
                 data.getPromise().setFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
             }

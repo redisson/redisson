@@ -22,7 +22,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ConnectionEntry.Mode;
+import org.redisson.connection.ConnectionEntry.NodeType;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 
@@ -41,7 +41,7 @@ public class SingleEntry extends MasterSlaveEntry<SubscribesConnectionEntry> {
     public void setupMasterEntry(String host, int port) {
         RedisClient masterClient = connectionManager.createClient(host, port);
         masterEntry = new SubscribesConnectionEntry(masterClient,
-                config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize(), connectListener, Mode.MASTER);
+                config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize(), connectListener, NodeType.MASTER);
         writeConnectionHolder.add(masterEntry);
         pubSubConnectionHolder.add(masterEntry);
     }

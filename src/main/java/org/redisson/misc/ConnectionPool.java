@@ -25,7 +25,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionEntry.FreezeReason;
-import org.redisson.connection.ConnectionEntry.Mode;
+import org.redisson.connection.ConnectionEntry.NodeType;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.LoadBalancer;
 import org.redisson.connection.MasterSlaveEntry;
@@ -89,7 +89,8 @@ public class ConnectionPool<T extends RedisConnection> {
     }
 
     public Future<T> get(SubscribesConnectionEntry entry) {
-        if (!entry.isFreezed() && tryAcquireConnection(entry)) {
+        if ((entry.getNodeType() == NodeType.MASTER || !entry.isFreezed())
+                && tryAcquireConnection(entry)) {
             Promise<T> promise = connectionManager.newPromise();
             connect(entry, promise);
             return promise;
@@ -164,7 +165,7 @@ public class ConnectionPool<T extends RedisConnection> {
 
     private void promiseFailure(SubscribesConnectionEntry entry, Promise<T> promise, Throwable cause) {
         if (entry.incFailedAttempts() == config.getSlaveFailedAttempts()
-                && entry.getServerMode() == Mode.SLAVE) {
+                && entry.getNodeType() == NodeType.SLAVE) {
             connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
                     entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
             scheduleCheck(entry);
