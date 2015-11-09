@@ -15,9 +15,8 @@
  */
 package org.redisson.core;
 
-import java.util.concurrent.*;
-
-import io.netty.util.concurrent.Future;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link BlockingQueue} backed by Redis
@@ -26,16 +25,6 @@ import io.netty.util.concurrent.Future;
  * @param <V> the type of elements held in this collection
  */
 public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockingQueueAsync<V> {
-
-    Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit);
-
-    Future<V> pollAsync(long timeout, TimeUnit unit);
-
-    Future<V> takeAsync();
-
-    Future<Boolean> putAsync(V e);
-
-    Future<Boolean> offerAsync(V e);
 
     V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException;
 
