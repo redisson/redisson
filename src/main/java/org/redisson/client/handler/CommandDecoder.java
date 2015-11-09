@@ -95,7 +95,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         state().setDecoderState(null);
 
         if (data == null) {
-              decode(in, null, null, ctx.channel(), currentDecoder);
+            decode(in, null, null, ctx.channel(), currentDecoder);
         } else if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
@@ -110,40 +110,45 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         } else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData)data;
 
-            int i = state().getIndex();
-
-            while (in.writerIndex() > in.readerIndex()) {
-                CommandData<Object, Object> cmd = null;
-                try {
-                    checkpoint();
-                    state().setIndex(i);
-                    cmd = (CommandData<Object, Object>) commands.getCommands().get(i);
-                    decode(in, cmd, null, ctx.channel(), currentDecoder);
-                    i++;
-                } catch (IOException e) {
-                    cmd.getPromise().setFailure(e);
-                }
-            }
-
-            if (i == commands.getCommands().size()) {
-                Promise<Void> promise = commands.getPromise();
-                if (!promise.trySuccess(null)) {
-                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
-                }
-
-                ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx);
-
-                state(null);
-            } else {
-                checkpoint();
-                state().setIndex(i);
-            }
+            handleCommandsDataResponse(ctx, in, data, currentDecoder, commands);
             return;
         }
 
         ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx);
 
         state(null);
+    }
+
+    private void handleCommandsDataResponse(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data,
+            Decoder<Object> currentDecoder, CommandsData commands) throws Exception {
+        int i = state().getIndex();
+
+        while (in.writerIndex() > in.readerIndex()) {
+            CommandData<Object, Object> cmd = null;
+            try {
+                checkpoint();
+                state().setIndex(i);
+                cmd = (CommandData<Object, Object>) commands.getCommands().get(i);
+                decode(in, cmd, null, ctx.channel(), currentDecoder);
+                i++;
+            } catch (IOException e) {
+                cmd.getPromise().setFailure(e);
+            }
+        }
+
+        if (i == commands.getCommands().size()) {
+            Promise<Void> promise = commands.getPromise();
+            if (!promise.trySuccess(null)) {
+                log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+            }
+
+            ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx);
+
+            state(null);
+        } else {
+            checkpoint();
+            state().setIndex(i);
+        }
     }
 
     private void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel, Decoder<Object> currentDecoder) throws IOException {
@@ -205,6 +210,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
 
         Object result = decoder.decode(respParts, state());
+
+        // store current message index
+        checkpoint();
 
         if (result instanceof Message) {
             handleMultiResult(data, null, channel, result);

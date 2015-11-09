@@ -203,6 +203,8 @@ public class RedissonTopicTest {
         redisson2.shutdown();
     }
 
+    volatile long counter;
+
     @Test
     public void testHeavyLoad() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1000);
@@ -214,6 +216,7 @@ public class RedissonTopicTest {
             public void onMessage(String channel, Message msg) {
                 Assert.assertEquals(new Message("123"), msg);
                 messageRecieved.countDown();
+                counter++;
             }
         });
 
@@ -233,11 +236,13 @@ public class RedissonTopicTest {
 
         messageRecieved.await();
 
+        Thread.sleep(1000);
+
+        Assert.assertEquals(500, counter);
+
         redisson1.shutdown();
         redisson2.shutdown();
     }
-
-
     @Test
     public void testListenerRemove() throws InterruptedException {
         Redisson redisson1 = BaseTest.createInstance();
