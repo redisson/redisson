@@ -82,18 +82,14 @@ public class RedissonKeys implements RKeys {
         return new Iterator<String>() {
 
             private Iterator<String> iter;
-            private Long iterPos;
+            private long iterPos;
 
             private boolean removeExecuted;
             private String value;
 
             @Override
             public boolean hasNext() {
-                if (iter == null) {
-                    ListScanResult<String> res = scanIterator(slot, 0, pattern);
-                    iter = res.getValues().iterator();
-                    iterPos = res.getPos();
-                } else if (!iter.hasNext() && iterPos != 0) {
+                if (iter == null || !iter.hasNext()) {
                     ListScanResult<String> res = scanIterator(slot, iterPos, pattern);
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();

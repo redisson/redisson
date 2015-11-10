@@ -86,20 +86,16 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
             private Iterator<V> iter;
             private RedisClient client;
-            private Long iterPos;
+            private long iterPos;
 
             private boolean removeExecuted;
             private V value;
 
             @Override
             public boolean hasNext() {
-                if (iter == null) {
-                    ListScanResult<V> res = scanIterator(null, 0);
-                    client = res.getRedisClient();
-                    iter = res.getValues().iterator();
-                    iterPos = res.getPos();
-                } else if (!iter.hasNext() && iterPos != 0) {
+                if (iter == null || !iter.hasNext()) {
                     ListScanResult<V> res = scanIterator(client, iterPos);
+                    client = res.getRedisClient();
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 }

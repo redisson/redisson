@@ -309,12 +309,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
             @Override
             public boolean hasNext() {
-                if (iter == null
-                        || (!iter.hasNext() && iterPos != 0)) {
+                if (iter == null || !iter.hasNext()) {
                     MapScanResult<Object, V> res = scanIterator(client, iterPos);
-                    if (iter == null) {
-                        client = res.getRedisClient();
-                    }
+                    client = res.getRedisClient();
                     iter = ((Map<K, V>)res.getMap()).entrySet().iterator();
                     iterPos = res.getPos();
                 }
