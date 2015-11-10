@@ -297,7 +297,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return commandExecutor.read(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
     }
 
-    private Iterator<Map.Entry<K, V>> iterator() {
+    public Iterator<Map.Entry<K, V>> iterator() {
         return new Iterator<Map.Entry<K, V>>() {
 
             private Iterator<Map.Entry<K, V>> iter;
