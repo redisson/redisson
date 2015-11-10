@@ -440,7 +440,7 @@ public class CommandExecutorService implements CommandExecutor {
         ex.set(new RedisTimeoutException());
         final Timeout timeout = connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
 
-        Future<RedisConnection> connectionFuture;
+        final Future<RedisConnection> connectionFuture;
         if (readOnlyMode) {
             if (client != null) {
                 connectionFuture = connectionManager.connectionReadOp(source, command, client);
@@ -542,7 +542,11 @@ public class CommandExecutorService implements CommandExecutor {
                 if (future.isSuccess()) {
                     R res = future.getNow();
                     if (res instanceof RedisClientResult) {
-                        ((RedisClientResult)res).setRedisClient(client);
+                        RedisClient redisClient = client;
+                        if (redisClient == null) {
+                            redisClient = connectionFuture.getNow().getRedisClient();
+                        }
+                        ((RedisClientResult)res).setRedisClient(redisClient);
                     }
                     mainPromise.setSuccess(res);
                 } else {
