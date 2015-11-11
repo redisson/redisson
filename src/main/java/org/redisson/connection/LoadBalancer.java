@@ -15,11 +15,11 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 
 import org.redisson.MasterSlaveServersConfig;
-import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.connection.ConnectionEntry.FreezeReason;
@@ -30,7 +30,7 @@ public interface LoadBalancer {
 
     SubscribesConnectionEntry getEntry(List<SubscribesConnectionEntry> clientsCopy);
 
-    Future<RedisConnection> getConnection(RedisClient client);
+    Future<RedisConnection> getConnection(InetSocketAddress addr);
 
     int getAvailableClients();
 

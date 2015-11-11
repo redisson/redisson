@@ -15,12 +15,12 @@
  */
 package org.redisson;
 
-import org.redisson.client.RedisClient;
+import java.net.InetSocketAddress;
 
 public interface RedisClientResult {
 
-    void setRedisClient(RedisClient client);
+    void setRedisClient(InetSocketAddress addr);
 
-    RedisClient getRedisClient();
+    InetSocketAddress getRedisClient();
 
 }

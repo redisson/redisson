@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.util.Set;
 
 import org.redisson.MasterSlaveServersConfig;
@@ -54,6 +55,11 @@ public class SingleEntry extends MasterSlaveEntry<SubscribesConnectionEntry> {
     @Override
     public void returnSubscribeConnection(PubSubConnectionEntry entry) {
         pubSubConnectionHolder.returnConnection(masterEntry, entry.getConnection());
+    }
+
+    @Override
+    public Future<RedisConnection> connectionReadOp(InetSocketAddress addr) {
+        return super.connectionWriteOp();
     }
 
     @Override

@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -76,7 +76,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.SISMEMBER, getName(), o);
     }
 
-    private ListScanResult<V> scanIterator(RedisClient client, long startPos) {
+    private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
         return commandExecutor.read(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
     }
 
@@ -86,7 +86,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
             private List<V> firstValues;
             private Iterator<V> iter;
-            private RedisClient client;
+            private InetSocketAddress client;
             private long iterPos;
 
             private boolean removeExecuted;

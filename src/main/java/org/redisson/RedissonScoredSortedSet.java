@@ -16,13 +16,13 @@
 package org.redisson;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -155,7 +155,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANK, getName(), o);
     }
 
-    private ListScanResult<V> scanIterator(RedisClient client, long startPos) {
+    private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
         return commandExecutor.read(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
     }
 
@@ -165,7 +165,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
             private List<V> firstValues;
             private Iterator<V> iter;
-            private RedisClient client;
+            private InetSocketAddress client;
             private long iterPos;
 
             private boolean removeExecuted;

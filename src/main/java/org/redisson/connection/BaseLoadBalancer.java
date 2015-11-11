@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.MasterSlaveServersConfig;
-import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
@@ -41,7 +40,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private ConnectionManager connectionManager;
-    final Map<RedisClient, SubscribesConnectionEntry> client2Entry = PlatformDependent.newConcurrentHashMap();
+    final Map<InetSocketAddress, SubscribesConnectionEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
 
     PubSubConnectionPoll pubSubEntries;
 
@@ -54,14 +53,14 @@ abstract class BaseLoadBalancer implements LoadBalancer {
     }
 
     public synchronized void add(SubscribesConnectionEntry entry) {
-        client2Entry.put(entry.getClient(), entry);
+        addr2Entry.put(entry.getClient().getAddr(), entry);
         entries.add(entry);
         pubSubEntries.add(entry);
     }
 
     public int getAvailableClients() {
         int count = 0;
-        for (SubscribesConnectionEntry connectionEntry : client2Entry.values()) {
+        for (SubscribesConnectionEntry connectionEntry : addr2Entry.values()) {
             if (!connectionEntry.isFreezed()) {
                 count++;
             }
@@ -71,7 +70,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public synchronized boolean unfreeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
-        for (SubscribesConnectionEntry connectionEntry : client2Entry.values()) {
+        for (SubscribesConnectionEntry connectionEntry : addr2Entry.values()) {
             if (!connectionEntry.getClient().getAddr().equals(addr)) {
                 continue;
             }
@@ -91,7 +90,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
     public synchronized Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
-        for (SubscribesConnectionEntry connectionEntry : client2Entry.values()) {
+        for (SubscribesConnectionEntry connectionEntry : addr2Entry.values()) {
             if (connectionEntry.isFreezed()
                     || !connectionEntry.getClient().getAddr().equals(addr)) {
                 continue;
@@ -136,12 +135,12 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         return pubSubEntries.get();
     }
 
-    public Future<RedisConnection> getConnection(RedisClient client) {
-        SubscribesConnectionEntry entry = client2Entry.get(client);
+    public Future<RedisConnection> getConnection(InetSocketAddress addr) {
+        SubscribesConnectionEntry entry = addr2Entry.get(addr);
         if (entry != null) {
             return entries.get(entry);
         }
-        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client.getAddr());
+        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr);
         return connectionManager.getGroup().next().newFailedFuture(exception);
     }
 
@@ -150,24 +149,24 @@ abstract class BaseLoadBalancer implements LoadBalancer {
     }
 
     public void returnSubscribeConnection(RedisPubSubConnection connection) {
-        SubscribesConnectionEntry entry = client2Entry.get(connection.getRedisClient());
+        SubscribesConnectionEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
         pubSubEntries.returnConnection(entry, connection);
     }
 
     public void returnConnection(RedisConnection connection) {
-        SubscribesConnectionEntry entry = client2Entry.get(connection.getRedisClient());
+        SubscribesConnectionEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
         entries.returnConnection(entry, connection);
     }
 
     public void shutdown() {
-        for (SubscribesConnectionEntry entry : client2Entry.values()) {
+        for (SubscribesConnectionEntry entry : addr2Entry.values()) {
             entry.getClient().shutdown();
         }
     }
 
     public void shutdownAsync() {
-        for (RedisClient client : client2Entry.keySet()) {
-            connectionManager.shutdownAsync(client);
+        for (SubscribesConnectionEntry entry : addr2Entry.values()) {
+            connectionManager.shutdownAsync(entry.getClient());
         }
     }
 

@@ -72,8 +72,6 @@ public interface ConnectionManager {
 
     Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
 
-    Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command, RedisClient client);
-
     Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
     <T> FutureListener<T> createReleaseReadListener(NodeSource source,

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.client.RedisAskException;
-import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisMovedException;
@@ -38,6 +37,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
+import org.redisson.connection.NodeSource.Redirect;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -105,7 +105,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
     @Override
     protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource, MultiDecoder<Object> messageDecoder,
-            Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, RedisClient client, int attempt) {
+            Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, int attempt) {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
@@ -254,12 +254,12 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
                 if (future.cause() instanceof RedisMovedException) {
                     RedisMovedException ex = (RedisMovedException)future.cause();
-                    execute(entry, new NodeSource(ex.getSlot()), mainPromise, slots, attempt);
+                    execute(entry, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), mainPromise, slots, attempt);
                     return;
                 }
                 if (future.cause() instanceof RedisAskException) {
                     RedisAskException ex = (RedisAskException)future.cause();
-                    execute(entry, new NodeSource(ex.getAddr()), mainPromise, slots, attempt);
+                    execute(entry, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), mainPromise, slots, attempt);
                     return;
                 }
 

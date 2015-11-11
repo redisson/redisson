@@ -571,33 +571,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private MasterSlaveEntry getEntry(NodeSource source) {
-        MasterSlaveEntry e = null;
-        if (source.getSlot() != null) {
-            e = getEntry(source.getSlot());
-            if (e == null) {
-                throw new RedisNodeNotFoundException("No node with slot: " + source.getSlot());
-            }
-        } else {
-            e = getEntry(source.getAddr());
-            if (e == null) {
-                throw new RedisNodeNotFoundException("No node with addr: " + source.getAddr());
-            }
+        MasterSlaveEntry e = getEntry(source.getSlot());
+        if (e == null) {
+            throw new RedisNodeNotFoundException("No node with slot: " + source.getSlot());
         }
         return e;
     }
 
     private MasterSlaveEntry getEntry(NodeSource source, RedisCommand<?> command) {
-        MasterSlaveEntry e = null;
-        if (source.getSlot() != null) {
-            e = getEntry(source.getSlot());
-            if (e == null) {
-                throw new RedisNodeNotFoundException("No node for slot: " + source.getSlot() + " and command " + command);
-            }
-        } else {
-            e = getEntry(source.getAddr());
-            if (e == null) {
-                throw new RedisNodeNotFoundException("No node for addr: " + source.getAddr() + " and command " + command);
-            }
+        MasterSlaveEntry e = getEntry(source.getSlot());
+        if (e == null) {
+            throw new RedisNodeNotFoundException("No node for slot: " + source.getSlot() + " and command " + command);
         }
         return e;
     }
@@ -605,13 +589,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry e = getEntry(source, command);
+        if (source.getAddr() != null) {
+            return e.connectionReadOp(source.getAddr());
+        }
         return e.connectionReadOp();
-    }
-
-    @Override
-    public Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command, RedisClient client) {
-        MasterSlaveEntry e = getEntry(source, command);
-        return e.connectionReadOp(client);
     }
 
     Future<RedisPubSubConnection> nextPubSubConnection(int slot) {

@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,7 +28,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -293,7 +293,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    private MapScanResult<Object, V> scanIterator(RedisClient client, long startPos) {
+    private MapScanResult<Object, V> scanIterator(InetSocketAddress client, long startPos) {
         return commandExecutor.read(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
     }
 
@@ -303,7 +303,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             private Map<K, V> firstValues;
             private Iterator<Map.Entry<K, V>> iter;
             private long iterPos = 0;
-            private RedisClient client;
+            private InetSocketAddress client;
 
             private boolean removeExecuted;
             private Map.Entry<K,V> value;

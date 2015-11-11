@@ -154,8 +154,8 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         return slaveBalancer.nextConnection();
     }
 
-    public Future<RedisConnection> connectionReadOp(RedisClient client) {
-        return slaveBalancer.getConnection(client);
+    public Future<RedisConnection> connectionReadOp(InetSocketAddress addr) {
+        return slaveBalancer.getConnection(addr);
     }
 
 

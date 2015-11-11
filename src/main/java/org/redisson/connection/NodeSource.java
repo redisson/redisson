@@ -19,20 +19,28 @@ import java.net.InetSocketAddress;
 
 public class NodeSource {
 
+    public enum Redirect {MOVED, ASK}
+
     private final Integer slot;
     private final InetSocketAddress addr;
+    private final Redirect redirect;
 
     public NodeSource(Integer slot) {
-        this(slot, null);
+        this(slot, null, null);
     }
 
-    public NodeSource(InetSocketAddress addr) {
-        this(null, addr);
+    public NodeSource(Integer slot, InetSocketAddress addr) {
+        this(slot, addr, null);
     }
 
-    private NodeSource(Integer slot, InetSocketAddress addr) {
+    public NodeSource(Integer slot, InetSocketAddress addr, Redirect redirect) {
         this.slot = slot;
         this.addr = addr;
+        this.redirect = redirect;
+    }
+
+    public Redirect getRedirect() {
+        return redirect;
     }
 
     public Integer getSlot() {
@@ -45,10 +53,7 @@ public class NodeSource {
 
     @Override
     public String toString() {
-        if (addr != null) {
-            return addr.toString();
-        }
-        return slot.toString();
+        return "NodeSource [slot=" + slot + ", addr=" + addr + ", redirect=" + redirect + "]";
     }
 
 }

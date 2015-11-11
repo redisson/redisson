@@ -15,16 +15,16 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import java.net.InetSocketAddress;
 import java.util.Map;
 
 import org.redisson.RedisClientResult;
-import org.redisson.client.RedisClient;
 
 public class MapScanResult<K, V> implements RedisClientResult {
 
     private final Long pos;
     private final Map<K, V> values;
-    private RedisClient client;
+    private InetSocketAddress client;
 
     public MapScanResult(Long pos, Map<K, V> values) {
         super();
@@ -41,11 +41,11 @@ public class MapScanResult<K, V> implements RedisClientResult {
     }
 
     @Override
-    public void setRedisClient(RedisClient client) {
+    public void setRedisClient(InetSocketAddress client) {
         this.client = client;
     }
 
-    public RedisClient getRedisClient() {
+    public InetSocketAddress getRedisClient() {
         return client;
     }
 
