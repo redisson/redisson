@@ -82,6 +82,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
 
+        if (bootstrap.group().isShuttingDown()) {
+            return;
+        }
+
         bootstrap.connect().addListener(new ChannelFutureListener() {
 
             @Override
