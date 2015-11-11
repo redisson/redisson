@@ -60,10 +60,10 @@ public class NestedMultiDecoder2<T> implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (getCounter(state) == 2) {
-            setCounter(state, 0);
-        }
         int counter = getCounter(state);
+        if (counter == 2) {
+            counter = 0;
+        }
         counter++;
         setCounter(state, counter);
         MultiDecoder<?> decoder = null;
