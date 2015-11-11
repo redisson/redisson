@@ -100,7 +100,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
 //                if (state().getSize() > 0) {
-//                    decodeMulti(in, cmd, null, ctx.channel(), currentDecoder, state().getSize(), state().getRespParts());
+//                    List<Object> respParts = new ArrayList<Object>();
+//                    respParts.addAll(state().getRespParts());
+//                    decodeMulti(in, cmd, null, ctx.channel(), currentDecoder, state().getSize(), respParts);
 //                } else {
                     decode(in, cmd, null, ctx.channel(), currentDecoder);
 //                }
@@ -189,10 +191,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             handleResult(data, parts, result, false, channel);
         } else if (code == '*') {
             long size = readLong(in);
-//            state().setSize(size);
+//            state().setSizeOnce(size);
 
             List<Object> respParts = new ArrayList<Object>();
-//            state().setRespParts(respParts);
 
             decodeMulti(in, data, parts, channel, currentDecoder, size, respParts);
         } else {
@@ -214,10 +215,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         Object result = decoder.decode(respParts, state());
 
-        // store current message index
-        checkpoint();
 
         if (result instanceof Message) {
+            // store current message index
+            checkpoint();
+
             handleMultiResult(data, null, channel, result);
             // has next messages?
             if (in.writerIndex() > in.readerIndex()) {
@@ -225,6 +227,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
         } else {
             handleMultiResult(data, parts, channel, result);
+//            if (parts != null && !decoder.isApplicable(parts.size(), state())) {
+//                state().setRespParts(parts);
+//            }
         }
     }
 
