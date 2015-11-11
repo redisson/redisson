@@ -113,7 +113,7 @@ public interface RedisCommands {
     RedisStrictCommand<Void> PFMERGE = new RedisStrictCommand<Void>("PFMERGE", new VoidReplayConvertor());
 
     RedisCommand<Long> RPOP = new RedisCommand<Long>("RPOP");
-    RedisCommand<Long> LPUSH = new RedisCommand<Long>("LPUSH");
+    RedisCommand<Long> LPUSH = new RedisCommand<Long>("LPUSH", 2);
     RedisCommand<List<Object>> LRANGE = new RedisCommand<List<Object>>("LRANGE", new ObjectListReplayDecoder<Object>());
     RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH", 2, ValueType.OBJECTS);
     RedisCommand<Boolean> RPUSH_BOOLEAN = new RedisCommand<Boolean>("RPUSH", new TrueReplayConvertor(), 2, ValueType.OBJECTS);
