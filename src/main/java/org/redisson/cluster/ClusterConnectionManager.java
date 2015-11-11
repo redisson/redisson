@@ -93,7 +93,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        if (!connection.isActive()) {
+        if (connection != null && !connection.isActive()) {
             log.warn("connection for {} is not active!", connection.getRedisClient().getAddr());
             connection.closeAsync();
             connection = null;
