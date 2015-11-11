@@ -300,6 +300,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     private Iterator<Map.Entry<K, V>> iterator() {
         return new Iterator<Map.Entry<K, V>>() {
 
+            private Map<K, V> firstValues;
             private Iterator<Map.Entry<K, V>> iter;
             private long iterPos = 0;
             private RedisClient client;
@@ -312,6 +313,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 if (iter == null || !iter.hasNext()) {
                     MapScanResult<Object, V> res = scanIterator(client, iterPos);
                     client = res.getRedisClient();
+                    if (iterPos == 0 && firstValues == null) {
+                        firstValues = (Map<K, V>) res.getMap();
+                    } else if (res.getMap().equals(firstValues)) {
+                        return false;
+                    }
                     iter = ((Map<K, V>)res.getMap()).entrySet().iterator();
                     iterPos = res.getPos();
                 }

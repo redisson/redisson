@@ -80,7 +80,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     public Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
     }
 
     public int removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
@@ -90,7 +90,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
     }
 
     private String value(String element, boolean inclusive) {
@@ -163,6 +163,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public Iterator<V> iterator() {
         return new Iterator<V>() {
 
+            private List<V> firstValues;
             private Iterator<V> iter;
             private RedisClient client;
             private long iterPos;
@@ -175,6 +176,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
                 if (iter == null || !iter.hasNext()) {
                     ListScanResult<V> res = scanIterator(client, iterPos);
                     client = res.getRedisClient();
+                    if (iterPos == 0 && firstValues == null) {
+                        firstValues = res.getValues();
+                    } else if (res.getValues().equals(firstValues)) {
+                        return false;
+                    }
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 }

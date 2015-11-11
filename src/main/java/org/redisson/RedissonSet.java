@@ -84,6 +84,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     public Iterator<V> iterator() {
         return new Iterator<V>() {
 
+            private List<V> firstValues;
             private Iterator<V> iter;
             private RedisClient client;
             private long iterPos;
@@ -96,6 +97,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                 if (iter == null || !iter.hasNext()) {
                     ListScanResult<V> res = scanIterator(client, iterPos);
                     client = res.getRedisClient();
+                    if (iterPos == 0 && firstValues == null) {
+                        firstValues = res.getValues();
+                    } else if (res.getValues().equals(firstValues)) {
+                        return false;
+                    }
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 }
