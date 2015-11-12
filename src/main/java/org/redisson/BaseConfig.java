@@ -35,6 +35,7 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     private int retryInterval = 1000;
 
+    @Deprecated
     private int closeConnectionAfterFailAttempts = -1;
 
     /**
