@@ -12,6 +12,7 @@ import org.redisson.codec.CborJacksonCodec;
 import org.redisson.codec.FstCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.KryoCodec;
+import org.redisson.codec.MsgPackJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.codec.SnappyCodec;
 import org.redisson.core.RMap;
@@ -23,11 +24,21 @@ public class RedissonCodecTest extends BaseTest {
     private Codec cborCodec = new CborJacksonCodec();
     private Codec fstCodec = new FstCodec();
     private Codec snappyCodec = new SnappyCodec();
+    private Codec msgPackCodec = new MsgPackJacksonCodec();
 
     @Test
     public void testJdk() {
         Config config = createConfig();
         config.setCodec(codec);
+        redisson = Redisson.create(config);
+
+        test();
+    }
+
+    @Test
+    public void testMsgPack() {
+        Config config = createConfig();
+        config.setCodec(msgPackCodec);
         redisson = Redisson.create(config);
 
         test();
