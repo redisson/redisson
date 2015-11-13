@@ -1,5 +1,6 @@
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -92,7 +93,7 @@ public class RedissonCodecTest extends BaseTest {
         a.put("boolt", true);
         a.put("boolf", false);
         a.put("string", "testString");
-        a.put("array", Arrays.asList(1, 2.0, "adsfasdfsdf"));
+        a.put("array", new ArrayList<Object>(Arrays.asList(1, 2.0, "adsfasdfsdf")));
 
         map.fastPut(1, a);
         Map<String, Object> resa = map.get(1);
@@ -111,7 +112,7 @@ public class RedissonCodecTest extends BaseTest {
         Assert.assertFalse(set.contains(new TestObject("1", "9")));
     }
 
-//    @Test
+    @Test
     public void testKryo() {
         Config config = createConfig();
         config.setCodec(kryoCodec);
