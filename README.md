@@ -18,9 +18,11 @@ Licensed under the Apache License 2.0.
 Features
 ================================
 * Cluster servers mode:
-    1. automatic master discovery
+    1. automatic master and slave discovery
     2. automatic new master server discovery
-    3. automatic slots change discovery
+    3. automatic new slave servers discovery
+    4. automatic slots change discovery
+    5. read data using slave servers, write data using master server
 * Sentinel servers mode: 
     1. automatic master and slave servers discovery
     2. automatic new master server discovery
@@ -49,7 +51,7 @@ Features
 * All commands are executed in an atomic way
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)
 * Supports OSGi  
-* With over 210 unit tests  
+* With over 250 unit tests  
 
 Projects using Redisson
 ================================
@@ -63,6 +65,31 @@ Ocous: [ocous](http://www.ocous.com/)
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####11-Nov-2015 - version 2.1.4 released  
+Cluster support improvements. New codecs. Stability improvements.
+
+Feature - [LZ4](https://github.com/jpountz/lz4-java) compression codec support  
+Feature - [CBOR](http://cbor.io/) binary json codec support  
+Feature - [MsgPack](http://msgpack.org/) binary json codec support  
+Feature - [Fst](https://github.com/RuedigerMoeller/fast-serialization) serialization codec support  
+Feature - [Snappy](https://github.com/xerial/snappy-java) compression codec support  
+Feature - cluster slave nodes change monitoring  
+Feature - `Config.slaveFailedAttempts` and `Config.slaveReconnectionTimeout` config params added  
+Feature - `ClusterServersConfig.readFromSlaves` config param added  
+Improvement - async channel reconnection  
+Improvement - connection acquisition in async way  
+Improvement - cluster slot change/migration handling  
+Improvement - get cluster info from new cluster nodes not defined in initial config
+Deprecated - `refreshConnectionAfterFails` config param  
+Fixed - `RList.add(pos, element)` fixed  
+Fixed - Publish/Subscribe message decoding under heavy load  
+Fixed - cluster ASK response handling  
+Fixed - `RMap.putAll` fixed  
+Fixed - parsing cluster nodes info  
+Fixed - NPE during Publish/Subscribe event handling  
+Fixed - Redisson shutdown handling  
+Fixed - EOFException during RLock usage with SerializationCodec (thanks to Oleg Ternovoi)
 
 ####17-Sep-2015 - version 2.1.3 released  
 Feature - Ability to define `Codec` for each object  
