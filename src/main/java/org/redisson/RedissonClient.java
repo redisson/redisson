@@ -24,6 +24,7 @@ import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBatch;
+import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
@@ -209,6 +210,8 @@ public interface RedissonClient {
      * @return
      */
     RCountDownLatch getCountDownLatch(String name);
+
+    RBitSet getBitSet(String name);
 
     /**
      * Returns script operations object

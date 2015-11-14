@@ -50,6 +50,12 @@ import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 
 public interface RedisCommands {
 
+    RedisStrictCommand<Boolean> GETBIT = new RedisStrictCommand<Boolean>("GETBIT", new BooleanReplayConvertor());
+    RedisStrictCommand<Integer> STRLEN = new RedisStrictCommand<Integer>("STRLEN", new IntegerReplayConvertor());
+    RedisStrictCommand<Integer> BITCOUNT = new RedisStrictCommand<Integer>("BITCOUNT", new IntegerReplayConvertor());
+    RedisStrictCommand<Void> SETBIT = new RedisStrictCommand<Void>("SETBIT", new VoidReplayConvertor());
+    RedisStrictCommand<Void> BITOP = new RedisStrictCommand<Void>("BITOP", new VoidReplayConvertor());
+
     RedisStrictCommand<Void> ASKING = new RedisStrictCommand<Void>("ASKING", new VoidReplayConvertor());
     RedisStrictCommand<Void> READONLY = new RedisStrictCommand<Void>("READONLY", new VoidReplayConvertor());
 
