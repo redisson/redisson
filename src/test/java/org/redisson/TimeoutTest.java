@@ -14,6 +14,17 @@ import org.redisson.core.RTopic;
 public class TimeoutTest extends BaseTest {
 
 //    @Test
+    public void testBrokenSlave() throws InterruptedException {
+        RMap<Integer, Integer> map = redisson.getMap("simple");
+        for (int i = 0; i < 1000; i++) {
+            map.put(i, i * 1000);
+            Thread.sleep(1000);
+            map.get(i);
+            System.out.println(i);
+        }
+    }
+
+//    @Test
     public void testPubSub() throws InterruptedException, ExecutionException {
         RTopic<String> topic = redisson.getTopic("simple");
         topic.addListener(new MessageListener<String>() {
@@ -32,14 +43,14 @@ public class TimeoutTest extends BaseTest {
 //    @Test
     public void testReplaceTimeout() throws InterruptedException, ExecutionException {
         RMap<Integer, Integer> map = redisson.getMap("simple");
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1000; i++) {
             map.put(i, i * 1000);
             map.replace(i, i * 1000 + 1);
             Thread.sleep(1000);
             System.out.println(i);
         }
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1000; i++) {
             Integer r = map.get(i);
             System.out.println(r);
         }
@@ -49,7 +60,7 @@ public class TimeoutTest extends BaseTest {
     public void testPutAsyncTimeout() throws InterruptedException, ExecutionException {
         RMap<Integer, Integer> map = redisson.getMap("simple");
         List<Future<Integer>> futures = new ArrayList<Future<Integer>>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1000; i++) {
             Future<Integer> future = map.putAsync(i, i*1000);
             Thread.sleep(1000);
             futures.add(future);

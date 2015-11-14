@@ -13,21 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.cluster;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.redisson.misc.URIBuilder;
 
 public class ClusterPartition {
 
-    private int startSlot;
-    private int endSlot;
+    private final String nodeId;
     private boolean masterFail;
     private URI masterAddress;
-    private List<URI> slaveAddresses = new ArrayList<URI>();
+    private Set<URI> slaveAddresses = new HashSet<URI>();
+    private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
+
+    public ClusterPartition(String nodeId) {
+        super();
+        this.nodeId = nodeId;
+    }
+
+    public String getNodeId() {
+        return nodeId;
+    }
 
     public void setMasterFail(boolean masterFail) {
         this.masterFail = masterFail;
@@ -36,18 +47,18 @@ public class ClusterPartition {
         return masterFail;
     }
 
-    public int getStartSlot() {
-        return startSlot;
+    public void addSlotRanges(Set<ClusterSlotRange> ranges) {
+        slotRanges.addAll(ranges);
     }
-    public void setStartSlot(int startSlot) {
-        this.startSlot = startSlot;
+    public void removeSlotRanges(Set<ClusterSlotRange> ranges) {
+        slotRanges.removeAll(ranges);
+    }
+    public Set<ClusterSlotRange> getSlotRanges() {
+        return slotRanges;
     }
 
-    public int getEndSlot() {
-        return endSlot;
-    }
-    public void setEndSlot(int endSlot) {
-        this.endSlot = endSlot;
+    public InetSocketAddress getMasterAddr() {
+        return new InetSocketAddress(masterAddress.getHost(), masterAddress.getPort());
     }
 
     public URI getMasterAddress() {
@@ -60,11 +71,21 @@ public class ClusterPartition {
         this.masterAddress = masterAddress;
     }
 
+    public Set<URI> getAllAddresses() {
+        Set<URI> result = new LinkedHashSet<URI>();
+        result.add(masterAddress);
+        result.addAll(slaveAddresses);
+        return result;
+    }
+
     public void addSlaveAddress(URI address) {
         slaveAddresses.add(address);
     }
-    public List<URI> getSlaveAddresses() {
+    public Set<URI> getSlaveAddresses() {
         return slaveAddresses;
+    }
+    public void removeSlaveAddress(URI uri) {
+        slaveAddresses.remove(uri);
     }
 
 }

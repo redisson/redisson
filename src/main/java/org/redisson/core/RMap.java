@@ -15,6 +15,7 @@
  */
 package org.redisson.core;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -56,7 +57,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
 
     /**
      * Returns a map slice containing the mappings in whose <code>Map.Entry&lt;K, V&gt; entries</code>
-     * satisfy a predicate. This operation traverses all map entries.
+     * satisfy a predicate. This operation traverses all map entries with small memory footprint.
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
@@ -67,7 +68,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
 
     /**
      * Returns a map slice containing the mappings in whose <code>values</code>
-     * satisfy a predicate. Traverses all map entries.
+     * satisfy a predicate. Traverses all map entries with small memory footprint.
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
@@ -78,7 +79,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
 
     /**
      * Returns a map slice containing the mappings in whose <code>keys</code>
-     * satisfy a predicate. Traverses all map entries.
+     * satisfy a predicate. Traverses all map entries with small memory footprint.
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
@@ -110,5 +111,26 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
     boolean fastPut(K key, V value);
+
+    /**
+     * Map entry-iterator with small memory footprint
+     *
+     * @return
+     */
+    Iterator<Map.Entry<K, V>> entryIterator();
+
+    /**
+     * Map key-iterator with small memory footprint
+     *
+     * @return
+     */
+    Iterator<K> keyIterator();
+
+    /**
+     * Map value-iterator with small memory footprint
+     *
+     * @return
+     */
+    Iterator<V> valueIterator();
 
 }

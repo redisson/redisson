@@ -37,7 +37,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 
 /**
  * {@link ConnectionManager} for AWS ElastiCache Replication Groups. By providing all nodes
- * of the replication group to this manager, the role of each node can be polled to determine 
+ * of the replication group to this manager, the role of each node can be polled to determine
  * if a failover has occurred resulting in a new master.
  *
  * @author Steve Ungerer
@@ -45,15 +45,15 @@ import io.netty.util.concurrent.ScheduledFuture;
 public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
 
     private static final String ROLE_KEY = "role:";
-    
+
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private AtomicReference<URI> currentMaster = new AtomicReference<URI>();
-    
+
     private final Map<URI, RedisConnection> nodeConnections = new HashMap<URI, RedisConnection>();
 
     private ScheduledFuture<?> monitorFuture;
-    
+
     private enum Role {
         master,
         slave
@@ -119,12 +119,12 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
 
                         Role role = determineRole(replInfo);
                         log.debug("node {} is {}", addr, role);
-                        
+
                         if (Role.master.equals(role) && master.equals(addr)) {
                             log.debug("Current master {} unchanged", master);
                         } else if (Role.master.equals(role) && !master.equals(addr) && currentMaster.compareAndSet(master, addr)) {
                             log.info("Master has changed from {} to {}", master, addr);
-                            changeMaster(MAX_SLOT, addr.getHost(), addr.getPort());
+                            changeMaster(singleSlotRange, addr.getHost(), addr.getPort());
                             break;
                         }
                     }

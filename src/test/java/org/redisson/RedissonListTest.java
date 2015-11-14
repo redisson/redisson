@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,6 +18,15 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
 public class RedissonListTest extends BaseTest {
+
+    @Test
+    public void testAddByIndex() {
+        RList<String> test2 = redisson.getList("test2");
+        test2.add("foo");
+        test2.add(0, "bar");
+
+        MatcherAssert.assertThat(test2, Matchers.contains("bar", "foo"));
+    }
 
     @Test
     public void testAddAllAsync() throws InterruptedException {

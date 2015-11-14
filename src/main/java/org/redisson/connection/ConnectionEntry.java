@@ -17,30 +17,55 @@ package org.redisson.connection;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.ReconnectListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
 public class ConnectionEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
+    public enum FreezeReason {MANAGER, RECONNECT}
+
     private volatile boolean freezed;
+    private FreezeReason freezeReason;
     final RedisClient client;
 
-    private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
-    private final Semaphore connectionsSemaphore;
+    public enum NodeType {SLAVE, MASTER}
 
-    public ConnectionEntry(RedisClient client, int poolSize) {
+    private final NodeType nodeType;
+    private final ConnectionListener connectListener;
+    private final Queue<RedisConnection> connections = new ConcurrentLinkedQueue<RedisConnection>();
+    private final AtomicInteger connectionsCounter = new AtomicInteger();
+    private AtomicInteger failedAttempts = new AtomicInteger();
+
+    public ConnectionEntry(RedisClient client, int poolSize, ConnectionListener connectListener, NodeType nodeType) {
         this.client = client;
-        this.connectionsSemaphore = new Semaphore(poolSize);
+        this.connectionsCounter.set(poolSize);
+        this.connectListener = connectListener;
+        this.nodeType = nodeType;
+    }
+
+    public NodeType getNodeType() {
+        return nodeType;
+    }
+
+    public void resetFailedAttempts() {
+        failedAttempts.set(0);
+    }
+
+    public int incFailedAttempts() {
+        return failedAttempts.incrementAndGet();
     }
 
     public RedisClient getClient() {
@@ -51,58 +76,100 @@ public class ConnectionEntry {
         return freezed;
     }
 
+    public void setFreezeReason(FreezeReason freezeReason) {
+        this.freezeReason = freezeReason;
+    }
+
+    public FreezeReason getFreezeReason() {
+        return freezeReason;
+    }
+
     public void setFreezed(boolean freezed) {
         this.freezed = freezed;
     }
 
-    public Semaphore getConnectionsSemaphore() {
-        return connectionsSemaphore;
+    public int getFreeAmount() {
+        return connectionsCounter.get();
     }
 
-    public Queue<RedisConnection> getConnections() {
-        return connections;
+    public boolean tryAcquireConnection() {
+        while (true) {
+            if (connectionsCounter.get() == 0) {
+                return false;
+            }
+            int value = connectionsCounter.get();
+            if (connectionsCounter.compareAndSet(value, value - 1)) {
+                return true;
+            }
+        }
     }
 
-    public RedisConnection connect(final MasterSlaveServersConfig config) {
-        RedisConnection conn = client.connect();
-        log.debug("new connection created: {}", conn);
+    public void releaseConnection() {
+        connectionsCounter.incrementAndGet();
+    }
 
-        prepareConnection(config, conn);
+    public RedisConnection pollConnection() {
+        return connections.poll();
+    }
+
+    public void releaseConnection(RedisConnection connection) {
+        connections.add(connection);
+    }
+
+    public Future<RedisConnection> connect(final MasterSlaveServersConfig config) {
+        final Promise<RedisConnection> connectionFuture = client.getBootstrap().group().next().newPromise();
+        Future<RedisConnection> future = client.connectAsync();
+        future.addListener(new FutureListener<RedisConnection>() {
+            @Override
+            public void operationComplete(Future<RedisConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                RedisConnection conn = future.getNow();
+                log.debug("new connection created: {}", conn);
+
+                FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
+                connectListener.onConnect(config, nodeType, listener);
+                listener.executeCommands();
+
+                addReconnectListener(config, conn);
+            }
+
+        });
+        return connectionFuture;
+    }
+
+    private void addReconnectListener(final MasterSlaveServersConfig config, RedisConnection conn) {
         conn.setReconnectListener(new ReconnectListener() {
             @Override
-            public void onReconnect(RedisConnection conn) {
-                prepareConnection(config, conn);
+            public void onReconnect(RedisConnection conn, Promise<RedisConnection> connectionFuture) {
+                FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
+                connectListener.onConnect(config, nodeType, listener);
+                listener.executeCommands();
             }
         });
-
-        return conn;
     }
 
-    private void prepareConnection(MasterSlaveServersConfig config, RedisConnection conn) {
-        if (config.getPassword() != null) {
-            conn.sync(RedisCommands.AUTH, config.getPassword());
-        }
-        if (config.getDatabase() != 0) {
-            conn.sync(RedisCommands.SELECT, config.getDatabase());
-        }
-        if (config.getClientName() != null) {
-            conn.sync(RedisCommands.CLIENT_SETNAME, config.getClientName());
-        }
-    }
-
-    public RedisPubSubConnection connectPubSub(final MasterSlaveServersConfig config) {
-        RedisPubSubConnection conn = client.connectPubSub();
-        log.debug("new pubsub connection created: {}", conn);
-
-        prepareConnection(config, conn);
-        conn.setReconnectListener(new ReconnectListener() {
+    public Future<RedisPubSubConnection> connectPubSub(final MasterSlaveServersConfig config) {
+        final Promise<RedisPubSubConnection> connectionFuture = client.getBootstrap().group().next().newPromise();
+        Future<RedisPubSubConnection> future = client.connectPubSubAsync();
+        future.addListener(new FutureListener<RedisPubSubConnection>() {
             @Override
-            public void onReconnect(RedisConnection conn) {
-                prepareConnection(config, conn);
+            public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                RedisPubSubConnection conn = future.getNow();
+                log.debug("new pubsub connection created: {}", conn);
+
+                FutureConnectionListener<RedisPubSubConnection> listener = new FutureConnectionListener<RedisPubSubConnection>(connectionFuture, conn);
+                connectListener.onConnect(config, nodeType, listener);
+                listener.executeCommands();
+
+                addReconnectListener(config, conn);
             }
         });
-
-        return conn;
+        return connectionFuture;
     }
 
     @Override

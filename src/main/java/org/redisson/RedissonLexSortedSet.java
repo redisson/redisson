@@ -45,7 +45,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     @Override
     public Future<Integer> removeRangeHeadByLexAsync(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), "-", toValue);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), "-", toValue);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     @Override
     public Future<Integer> removeRangeTailByLexAsync(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, "+");
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, "+");
     }
 
     @Override
@@ -64,7 +64,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, toValue);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, toValue);
     }
 
     @Override

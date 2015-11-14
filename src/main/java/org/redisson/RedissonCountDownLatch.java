@@ -97,9 +97,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
             @Override
             public boolean onStatus(PubSubType type, String channel) {
-                if (channel.equals(getChannelName()) && !value.getPromise().isSuccess()
+                if (channel.equals(getChannelName())
                         && type == PubSubType.SUBSCRIBE) {
-                    value.getPromise().setSuccess(value);
+                    value.getPromise().trySuccess(value);
                     return true;
                 }
                 return false;

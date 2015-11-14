@@ -1,10 +1,11 @@
 package org.redisson;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -278,6 +279,22 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testPutAll() {
+        Map<Integer, String> map = redisson.getMap("simple");
+        map.put(1, "1");
+        map.put(2, "2");
+        map.put(3, "3");
+
+        Map<Integer, String> joinMap = new HashMap<Integer, String>();
+        joinMap.put(4, "4");
+        joinMap.put(5, "5");
+        joinMap.put(6, "6");
+        map.putAll(joinMap);
+
+        MatcherAssert.assertThat(map.keySet(), Matchers.containsInAnyOrder(1, 2, 3, 4, 5, 6));
+    }
+
+    @Test
     public void testKeySet() {
         Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
@@ -496,6 +513,46 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertEquals((Long) 3L, map.fastRemoveAsync(1, 3, 7).get());
         Thread.sleep(1);
         Assert.assertEquals(1, map.size());
+    }
+
+    @Test
+    public void testKeyIterator() {
+        RMap<Integer, Integer> map = redisson.getMap("simple");
+        map.put(1, 0);
+        map.put(3, 5);
+        map.put(4, 6);
+        map.put(7, 8);
+
+        Collection<Integer> keys = map.keySet();
+        MatcherAssert.assertThat(keys, Matchers.containsInAnyOrder(1, 3, 4, 7));
+        for (Iterator<Integer> iterator = map.keyIterator(); iterator.hasNext();) {
+            Integer value = iterator.next();
+            if (!keys.remove(value)) {
+                Assert.fail();
+            }
+        }
+
+        Assert.assertEquals(0, keys.size());
+    }
+
+    @Test
+    public void testValueIterator() {
+        RMap<Integer, Integer> map = redisson.getMap("simple");
+        map.put(1, 0);
+        map.put(3, 5);
+        map.put(4, 6);
+        map.put(7, 8);
+
+        Collection<Integer> values = map.values();
+        MatcherAssert.assertThat(values, Matchers.containsInAnyOrder(0, 5, 6, 8));
+        for (Iterator<Integer> iterator = map.valueIterator(); iterator.hasNext();) {
+            Integer value = iterator.next();
+            if (!values.remove(value)) {
+                Assert.fail();
+            }
+        }
+
+        Assert.assertEquals(0, values.size());
     }
 
     @Test

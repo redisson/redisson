@@ -90,7 +90,7 @@ public class RedisClientTest {
         }
 
         pool.shutdown();
-        pool.awaitTermination(1, TimeUnit.HOURS);
+        Assert.assertTrue(pool.awaitTermination(1, TimeUnit.HOURS));
 
         Assert.assertEquals(100000L, conn.sync(LongCodec.INSTANCE, RedisCommands.GET, "test"));
 

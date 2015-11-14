@@ -33,6 +33,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
@@ -79,6 +82,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
 
+        if (bootstrap.group().isShuttingDown()) {
+            return;
+        }
+
         bootstrap.connect().addListener(new ChannelFutureListener() {
 
             @Override
@@ -112,21 +119,21 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private void reconnect(final RedisConnection connection, final Channel channel) {
         if (connection.getReconnectListener() != null) {
-            bootstrap.group().execute(new Runnable() {
+            // new connection used only for channel init
+            RedisConnection rc = new RedisConnection(connection.getRedisClient(), channel);
+            Promise<RedisConnection> connectionFuture = bootstrap.group().next().newPromise();
+            connection.getReconnectListener().onReconnect(rc, connectionFuture);
+            connectionFuture.addListener(new FutureListener<RedisConnection>() {
                 @Override
-                public void run() {
-                    // new connection used only for channel init
-                    RedisConnection rc = new RedisConnection(connection.getRedisClient(), channel);
-                    connection.getReconnectListener().onReconnect(rc);
-                    connection.updateChannel(channel);
-
-                    resubscribe(connection);
+                public void operationComplete(Future<RedisConnection> future) throws Exception {
+                    if (future.isSuccess()) {
+                        connection.updateChannel(channel);
+                        resubscribe(connection);
+                    }
                 }
-
             });
         } else {
             connection.updateChannel(channel);
-
             resubscribe(connection);
         }
     }

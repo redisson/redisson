@@ -15,8 +15,9 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.NavigableMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.MasterSlaveServersConfig;
@@ -24,12 +25,16 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
@@ -40,6 +45,10 @@ import io.netty.util.concurrent.Promise;
  */
 //TODO ping support
 public interface ConnectionManager {
+
+    <R> Future<R> newFailedFuture(Throwable cause);
+
+    void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason);
 
     Collection<RedisClientEntry> getClients();
 
@@ -53,35 +62,35 @@ public interface ConnectionManager {
 
     Codec getCodec();
 
-    NavigableMap<Integer, MasterSlaveEntry> getEntries();
+    Map<ClusterSlotRange, MasterSlaveEntry> getEntries();
 
     <R> Promise<R> newPromise();
 
-    void releaseRead(int slot, RedisConnection connection);
+    void releaseRead(NodeSource source, RedisConnection connection);
 
-    void releaseWrite(int slot, RedisConnection connection);
+    void releaseWrite(NodeSource source, RedisConnection connection);
 
-    RedisConnection connectionReadOp(int slot);
+    Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
 
-    RedisConnection connectionReadOp(int slot, RedisClient client);
+    Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    RedisConnection connectionWriteOp(int slot);
-
-    <T> FutureListener<T> createReleaseReadListener(int slot,
+    <T> FutureListener<T> createReleaseReadListener(NodeSource source,
             RedisConnection conn, Timeout timeout);
 
-    <T> FutureListener<T> createReleaseWriteListener(int slot,
+    <T> FutureListener<T> createReleaseWriteListener(NodeSource source,
             RedisConnection conn, Timeout timeout);
 
     RedisClient createClient(String host, int port, int timeout);
 
     RedisClient createClient(String host, int port);
 
-    PubSubConnectionEntry getEntry(String channelName);
+    MasterSlaveEntry getEntry(InetSocketAddress addr);
 
-    PubSubConnectionEntry subscribe(String channelName, Codec codec);
+    PubSubConnectionEntry getPubSubEntry(String channelName);
 
-    PubSubConnectionEntry psubscribe(String pattern, Codec codec);
+    Future<PubSubConnectionEntry> subscribe(String channelName, Codec codec);
+
+    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec);
 
     <V> void subscribe(RedisPubSubListener<V> listener, String channelName);
 

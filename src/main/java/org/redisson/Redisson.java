@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ClusterConnectionManager;
+import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
@@ -35,6 +35,7 @@ import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBatch;
+import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
@@ -392,6 +393,11 @@ public class Redisson implements RedissonClient {
     @Override
     public RCountDownLatch getCountDownLatch(String name) {
         return new RedissonCountDownLatch(commandExecutor, name, id);
+    }
+
+    @Override
+    public RBitSet getBitSet(String name) {
+        return new RedissonBitSet(commandExecutor, name);
     }
 
     /**

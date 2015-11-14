@@ -16,8 +16,8 @@
 package org.redisson;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.redisson.misc.URIBuilder;
 
@@ -26,7 +26,7 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     /**
      * Redis slave servers addresses
      */
-    private List<URI> slaveAddresses = new ArrayList<URI>();
+    private Set<URI> slaveAddresses = new HashSet<URI>();
 
     /**
      * Redis master server address
@@ -75,10 +75,10 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
         slaveAddresses.add(slaveAddress);
         return this;
     }
-    public List<URI> getSlaveAddresses() {
+    public Set<URI> getSlaveAddresses() {
         return slaveAddresses;
     }
-    void setSlaveAddresses(List<URI> readAddresses) {
+    public void setSlaveAddresses(Set<URI> readAddresses) {
         this.slaveAddresses = readAddresses;
     }
 

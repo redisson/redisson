@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -76,7 +76,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.SISMEMBER, getName(), o);
     }
 
-    private ListScanResult<V> scanIterator(RedisClient client, long startPos) {
+    private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
         return commandExecutor.read(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
     }
 
@@ -84,22 +84,24 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     public Iterator<V> iterator() {
         return new Iterator<V>() {
 
+            private List<V> firstValues;
             private Iterator<V> iter;
-            private RedisClient client;
-            private Long iterPos;
+            private InetSocketAddress client;
+            private long iterPos;
 
             private boolean removeExecuted;
             private V value;
 
             @Override
             public boolean hasNext() {
-                if (iter == null) {
-                    ListScanResult<V> res = scanIterator(null, 0);
-                    client = res.getRedisClient();
-                    iter = res.getValues().iterator();
-                    iterPos = res.getPos();
-                } else if (!iter.hasNext() && iterPos != 0) {
+                if (iter == null || !iter.hasNext()) {
                     ListScanResult<V> res = scanIterator(client, iterPos);
+                    client = res.getRedisClient();
+                    if (iterPos == 0 && firstValues == null) {
+                        firstValues = res.getValues();
+                    } else if (res.getValues().equals(firstValues)) {
+                        return false;
+                    }
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 }

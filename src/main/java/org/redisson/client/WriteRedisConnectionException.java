@@ -19,10 +19,6 @@ public class WriteRedisConnectionException extends RedisException {
 
     private static final long serialVersionUID = -4756928186967834601L;
 
-    public WriteRedisConnectionException(String msg) {
-        super(msg);
-    }
-
     public WriteRedisConnectionException(String msg, Throwable e) {
         super(msg, e);
     }

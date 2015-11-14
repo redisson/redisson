@@ -15,18 +15,12 @@
  */
 package org.redisson.client;
 
-public class RedisMovedException extends RedisException {
+public class RedisMovedException extends RedisRedirectException {
 
     private static final long serialVersionUID = -6969734163155547631L;
 
-    private int slot;
-
-    public RedisMovedException(int slot) {
-        this.slot = slot;
-    }
-
-    public int getSlot() {
-        return slot;
+    public RedisMovedException(int slot, String url) {
+        super(slot, url);
     }
 
 }

@@ -148,6 +148,11 @@ public class RedisCommand<R> {
         this(name, null, null, reponseDecoder, objectParamIndex);
     }
 
+    public RedisCommand(String name, String subName, MultiDecoder<R> replayMultiDecoder, ValueType outParamType) {
+        this(name, subName, replayMultiDecoder, -1);
+        this.outParamType = outParamType;
+    }
+
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, ValueType outParamType) {
         this(name, replayMultiDecoder, -1);
         this.outParamType = outParamType;
@@ -221,7 +226,7 @@ public class RedisCommand<R> {
 
     @Override
     public String toString() {
-        return "RedisCommand [name=" + name + ", subName=" + subName + "]";
+        return "RedisCommand [" + name + " " + subName != null ? subName : "" + "]";
     }
 
 }

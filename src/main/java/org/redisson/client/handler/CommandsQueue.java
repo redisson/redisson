@@ -52,7 +52,8 @@ public class CommandsQueue extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof QueueCommand) {
             QueueCommand data = (QueueCommand) msg;
-            if (queue.peek() != null && queue.peek().getCommand() == data) {
+            QueueCommandHolder holder = queue.peek();
+            if (holder != null && holder.getCommand() == data) {
                 super.write(ctx, msg, promise);
             } else {
                 queue.add(new QueueCommandHolder(data, promise));

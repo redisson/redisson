@@ -40,6 +40,4 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V>, RExpirableAsync 
 
     Future<Boolean> putAsync(V e);
 
-    Future<Boolean> offerAsync(V e);
-
 }

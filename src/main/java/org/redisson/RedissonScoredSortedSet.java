@@ -16,13 +16,13 @@
 package org.redisson;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -80,7 +80,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     public Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
     }
 
     public int removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
@@ -90,7 +90,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
     }
 
     private String value(String element, boolean inclusive) {
@@ -155,7 +155,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANK, getName(), o);
     }
 
-    private ListScanResult<V> scanIterator(RedisClient client, long startPos) {
+    private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
         return commandExecutor.read(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
     }
 
@@ -163,22 +163,24 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public Iterator<V> iterator() {
         return new Iterator<V>() {
 
+            private List<V> firstValues;
             private Iterator<V> iter;
-            private RedisClient client;
-            private Long iterPos;
+            private InetSocketAddress client;
+            private long iterPos;
 
             private boolean removeExecuted;
             private V value;
 
             @Override
             public boolean hasNext() {
-                if (iter == null) {
-                    ListScanResult<V> res = scanIterator(null, 0);
-                    client = res.getRedisClient();
-                    iter = res.getValues().iterator();
-                    iterPos = res.getPos();
-                } else if (!iter.hasNext() && iterPos != 0) {
+                if (iter == null || !iter.hasNext()) {
                     ListScanResult<V> res = scanIterator(client, iterPos);
+                    client = res.getRedisClient();
+                    if (iterPos == 0 && firstValues == null) {
+                        firstValues = res.getValues();
+                    } else if (res.getValues().equals(firstValues)) {
+                        return false;
+                    }
                     iter = res.getValues().iterator();
                     iterPos = res.getPos();
                 }

@@ -30,9 +30,11 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +74,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
             try {
                 RedisConnection connection = client.connect();
+                if (!connection.isActive()) {
+                    continue;
+                }
 
                 // TODO async
                 List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
@@ -80,7 +85,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 currentMaster.set(masterHost);
                 log.info("master: {} added", masterHost);
 
-                List<Map<String, String>> sentinelSlaves = connection.sync(RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
+                List<Map<String, String>> sentinelSlaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
                 for (Map<String, String> map : sentinelSlaves) {
                     if (map.isEmpty()) {
                         continue;
@@ -103,7 +108,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
                 break;
             } catch (RedisConnectionException e) {
-                // skip
+                log.warn("can't connect to sentinel", e);
             } finally {
                 client.shutdownAsync();
             }
@@ -235,8 +240,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         // to avoid freeze twice
         String addr = ip + ":" + port;
         if (freezeSlaves.putIfAbsent(addr, true) == null) {
-            slaveDown(0, ip, Integer.valueOf(port));
-            log.info("slave: {} has down", addr);
+            slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
         }
     }
 
@@ -270,7 +274,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String newMaster = ip + ":" + port;
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
-                    changeMaster(0, ip, Integer.valueOf(port));
+                    changeMaster(singleSlotRange, ip, Integer.valueOf(port));
                     log.info("master has changed from {} to {}", current, newMaster);
                 }
             }
@@ -284,7 +288,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveUp(String host, int port) {
-        getEntry(0).slaveUp(host, port);
+        getEntry(0).slaveUp(host, port, FreezeReason.MANAGER);
     }
 
     @Override

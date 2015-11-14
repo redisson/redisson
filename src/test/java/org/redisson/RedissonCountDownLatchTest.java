@@ -44,7 +44,7 @@ public class RedissonCountDownLatchTest extends BaseTest {
         });
 
         executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
+        Assert.assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
 
     }
 
@@ -82,7 +82,7 @@ public class RedissonCountDownLatchTest extends BaseTest {
         });
 
         executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
+        Assert.assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
     }
 
     @Test

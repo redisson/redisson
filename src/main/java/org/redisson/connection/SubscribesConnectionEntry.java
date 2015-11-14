@@ -17,47 +17,71 @@ package org.redisson.connection;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisPubSubConnection;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+
 public class SubscribesConnectionEntry extends ConnectionEntry {
 
-    private final Semaphore subscribeConnectionsSemaphore;
     private final Queue<RedisPubSubConnection> allSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
+    private final AtomicInteger connectionsCounter = new AtomicInteger();
 
-    public SubscribesConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize) {
-        super(client, poolSize);
-        this.subscribeConnectionsSemaphore = new Semaphore(subscribePoolSize);
+    public SubscribesConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize, ConnectionListener connectListener, NodeType serverMode) {
+        super(client, poolSize, connectListener, serverMode);
+        connectionsCounter.set(subscribePoolSize);
     }
 
     public Queue<RedisPubSubConnection> getAllSubscribeConnections() {
         return allSubscribeConnections;
     }
 
-    public void registerSubscribeConnection(RedisPubSubConnection connection) {
-        allSubscribeConnections.offer(connection);
-    }
-
     public RedisPubSubConnection pollFreeSubscribeConnection() {
         return freeSubscribeConnections.poll();
     }
 
-    public void offerFreeSubscribeConnection(RedisPubSubConnection connection) {
-        freeSubscribeConnections.offer(connection);
+    public void releaseSubscribeConnection(RedisPubSubConnection connection) {
+        freeSubscribeConnections.add(connection);
     }
 
-    public Semaphore getSubscribeConnectionsSemaphore() {
-        return subscribeConnectionsSemaphore;
+    public int getFreeSubscribeAmount() {
+        return connectionsCounter.get();
     }
 
-    public RedisPubSubConnection connectPubSub(MasterSlaveServersConfig config) {
-        RedisPubSubConnection conn = super.connectPubSub(config);
-        allSubscribeConnections.offer(conn);
-        return conn;
+    public boolean tryAcquireSubscribeConnection() {
+        while (true) {
+            if (connectionsCounter.get() == 0) {
+                return false;
+            }
+            int value = connectionsCounter.get();
+            if (connectionsCounter.compareAndSet(value, value - 1)) {
+                return true;
+            }
+        }
+    }
+
+    public void releaseSubscribeConnection() {
+        connectionsCounter.incrementAndGet();
+    }
+
+    public Future<RedisPubSubConnection> connectPubSub(MasterSlaveServersConfig config) {
+        Future<RedisPubSubConnection> future = super.connectPubSub(config);
+        future.addListener(new FutureListener<RedisPubSubConnection>() {
+            @Override
+            public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                RedisPubSubConnection conn = future.getNow();
+                allSubscribeConnections.add(conn);
+            }
+        });
+        return future;
     }
 
 

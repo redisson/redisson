@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +33,11 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      */
     private int scanInterval = 1000;
 
+    /**
+     * Use cluster slave nodes for read-operations
+     */
+    private boolean readFromSlaves = true;
+
     public ClusterServersConfig() {
     }
 
@@ -41,6 +45,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         super(config);
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
+        setReadFromSlaves(config.isReadFromSlaves());
     }
 
     /**
@@ -76,6 +81,18 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         return this;
     }
 
-
+    public boolean isReadFromSlaves() {
+        return readFromSlaves;
+    }
+    /**
+     * Use cluster slave nodes for read-operations
+     *
+     * @param readFromSlaves
+     * @return
+     */
+    public ClusterServersConfig setReadFromSlaves(boolean readFromSlaves) {
+        this.readFromSlaves = readFromSlaves;
+        return this;
+    }
 
 }

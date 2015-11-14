@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisConnection;
@@ -40,7 +41,9 @@ import org.redisson.core.RSortedSet;
 
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 /**
@@ -310,21 +313,18 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     public Future<Boolean> addAsync(final V value) {
-        EventLoop loop = commandExecutor.getConnectionManager().getGroup().next();
-        final Promise<Boolean> promise = loop.newPromise();
-
-        loop.execute(new Runnable() {
+        final Promise<Boolean> promise = new DefaultPromise<Boolean>(){};
+        GlobalEventExecutor.INSTANCE.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    boolean result = add(value);
-                    promise.setSuccess(result);
+                    boolean res = add(value);
+                    promise.setSuccess(res);
                 } catch (Exception e) {
                     promise.setFailure(e);
                 }
             }
         });
-
         return promise;
     }
 

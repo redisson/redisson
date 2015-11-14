@@ -104,9 +104,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 @Override
                 public boolean onStatus(PubSubType type, String channel) {
                     if (channel.equals(getChannelName())
-                            && !value.getPromise().isSuccess()
-                                && type == PubSubType.SUBSCRIBE) {
-                        value.getPromise().setSuccess(value);
+                            && type == PubSubType.SUBSCRIBE) {
+                        value.getPromise().trySuccess(value);
                         return true;
                     }
                     return false;
@@ -161,7 +160,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         Future<RedissonLockEntry> future = subscribe();
-        future.awaitUninterruptibly();
+        future.syncUninterruptibly();
 
         try {
             while (true) {
