@@ -14,6 +14,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RSortedSet;
 
@@ -438,6 +439,20 @@ public class RedissonScoredSortedSetTest extends BaseTest {
                 new ScoredEntry<Integer>(50D, 5)));
     }
 
+    @Test
+    public void testLexSortedSet() {
+        RLexSortedSet set = redisson.getLexSortedSet("simple");
+
+        set.add("a");
+        set.add("b");
+        set.add("c");
+        set.add("d");
+        set.add("e");
+
+        Collection<String> r = set.lexRange("b", true, "e", false, 1, 2);
+        String[] a = r.toArray(new String[0]);
+        Assert.assertArrayEquals(new String[]{"c", "d"}, a);
+    }
 
     @Test
     public void testAddAndGet() throws InterruptedException {
