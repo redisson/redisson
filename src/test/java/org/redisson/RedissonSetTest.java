@@ -178,27 +178,23 @@ public class RedissonSetTest extends BaseTest {
         Assert.assertEquals(2, set.size());
     }
 
-//    @Test
-//    public void testIteratorRemoveHighVolume() {
-//        Set<Integer> set = redisson.getSet("set") /*new HashSet<Integer>()*/;
-//        for (int i = 0; i < 120000; i++) {
-//            set.add(i);
-//        }
-//        int cnt = 0;
-//        Iterator<Integer> iterator = set.iterator();
-//        while (iterator.hasNext()) {
-//            Integer integer = iterator.next();
-//            if (integer > -1) { // always
-//                iterator.remove();
-//            }
-//            cnt++;
-//        }
-//        System.out.println("-----------");
-//        for (Integer integer : set) {
-//            System.out.println(integer);
-//        }
-//        Assert.assertEquals(20000, cnt);
-//    }
+    @Test
+    public void testIteratorRemoveHighVolume() throws InterruptedException {
+        Set<Integer> set = redisson.getSet("set") /*new HashSet<Integer>()*/;
+        for (int i = 0; i < 10000; i++) {
+            set.add(i);
+        }
+        int cnt = 0;
+
+        Iterator<Integer> iterator = set.iterator();
+        while (iterator.hasNext()) {
+            Integer integer = iterator.next();
+            iterator.remove();
+            cnt++;
+        }
+        Assert.assertEquals(0, set.size());
+        Assert.assertEquals(10000, cnt);
+    }
 
     @Test
     public void testContainsAll() {
