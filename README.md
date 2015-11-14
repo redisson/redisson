@@ -71,7 +71,7 @@ Recent Releases
 Cluster support improvements. New codecs. Stability improvements.
 
 Feature - [LZ4](https://github.com/jpountz/lz4-java) compression codec support  
-Feature - [CBOR](http://cbor.io/) binary json codec support  
+Feature - [CBOR](http://cbor.io/) binary json codec support (thanks to lefay)  
 Feature - [MsgPack](http://msgpack.org/) binary json codec support  
 Feature - [Fst](https://github.com/RuedigerMoeller/fast-serialization) serialization codec support  
 Feature - [Snappy](https://github.com/xerial/snappy-java) compression codec support  
