@@ -289,12 +289,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.1.3</version>
+       <version>2.1.4</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.1.3'
+    compile 'org.redisson:redisson:2.1.4'
 
 ### Supported by
 
