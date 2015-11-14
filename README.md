@@ -81,8 +81,8 @@ Feature - `ClusterServersConfig.readFromSlaves` config param added
 Improvement - async channel reconnection  
 Improvement - connection acquisition in async way  
 Improvement - cluster slot change/migration handling  
-Improvement - get cluster info from new cluster nodes not defined in initial config
-Deprecated - `refreshConnectionAfterFails` config param  
+Improvement - get cluster info from new cluster nodes not defined in initial config  
+__Deprecated__ - `refreshConnectionAfterFails` config param  
 Fixed - `RList.add(pos, element)` fixed  
 Fixed - Publish/Subscribe message decoding under heavy load  
 Fixed - cluster ASK response handling  
