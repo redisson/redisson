@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.redisson.client.codec.Codec;
@@ -293,68 +292,37 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    private MapScanResult<Object, V> scanIterator(InetSocketAddress client, long startPos) {
+    MapScanResult<Object, V> scanIterator(InetSocketAddress client, long startPos) {
         return commandExecutor.read(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
     }
 
-    public Iterator<Map.Entry<K, V>> iterator() {
-        return new Iterator<Map.Entry<K, V>>() {
+    public Iterator<Map.Entry<K, V>> entryIterator() {
+        return new RedissonMapIterator<K, V, Map.Entry<K, V>>(this);
+    }
 
-            private Map<K, V> firstValues;
-            private Iterator<Map.Entry<K, V>> iter;
-            private long iterPos = 0;
-            private InetSocketAddress client;
-
-            private boolean removeExecuted;
-            private Map.Entry<K,V> value;
-
+    public Iterator<V> valueIterator() {
+        return new RedissonMapIterator<K, V, V>(this) {
             @Override
-            public boolean hasNext() {
-                if (iter == null || !iter.hasNext()) {
-                    MapScanResult<Object, V> res = scanIterator(client, iterPos);
-                    client = res.getRedisClient();
-                    if (iterPos == 0 && firstValues == null) {
-                        firstValues = (Map<K, V>) res.getMap();
-                    } else if (res.getMap().equals(firstValues)) {
-                        return false;
-                    }
-                    iter = ((Map<K, V>)res.getMap()).entrySet().iterator();
-                    iterPos = res.getPos();
-                }
-                return iter.hasNext();
+            V getValue(java.util.Map.Entry<K, V> entry) {
+                return entry.getValue();
             }
-
-            @Override
-            public Map.Entry<K, V> next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index");
-                }
-
-                value = iter.next();
-                removeExecuted = false;
-                return value;
-            }
-
-            @Override
-            public void remove() {
-                if (removeExecuted) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-
-                // lazy init iterator
-                hasNext();
-                iter.remove();
-                RedissonMap.this.fastRemove(value.getKey());
-                removeExecuted = true;
-            }
-
         };
     }
+
+    public Iterator<K> keyIterator() {
+        return new RedissonMapIterator<K, V, K>(this) {
+            @Override
+            K getValue(java.util.Map.Entry<K, V> entry) {
+                return entry.getKey();
+            }
+        };
+    }
+
 
     @Override
     public Map<K, V> filterKeys(Predicate<K> predicate) {
         Map<K, V> result = new HashMap<K, V>();
-        for (Iterator<Map.Entry<K, V>> iterator = iterator(); iterator.hasNext();) {
+        for (Iterator<Map.Entry<K, V>> iterator = entryIterator(); iterator.hasNext();) {
             Map.Entry<K, V> entry = iterator.next();
             if (predicate.apply(entry.getKey())) {
                 result.put(entry.getKey(), entry.getValue());
@@ -366,7 +334,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Map<K, V> filterValues(Predicate<V> predicate) {
         Map<K, V> result = new HashMap<K, V>();
-        for (Iterator<Map.Entry<K, V>> iterator = iterator(); iterator.hasNext();) {
+        for (Iterator<Map.Entry<K, V>> iterator = entryIterator(); iterator.hasNext();) {
             Map.Entry<K, V> entry = iterator.next();
             if (predicate.apply(entry.getValue())) {
                 result.put(entry.getKey(), entry.getValue());
@@ -377,7 +345,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     public Map<K, V> filterEntries(Predicate<Map.Entry<K, V>> predicate) {
         Map<K, V> result = new HashMap<K, V>();
-        for (Iterator<Map.Entry<K, V>> iterator = iterator(); iterator.hasNext();) {
+        for (Iterator<Map.Entry<K, V>> iterator = entryIterator(); iterator.hasNext();) {
             Map.Entry<K, V> entry = iterator.next();
             if (predicate.apply(entry)) {
                 result.put(entry.getKey(), entry.getValue());
