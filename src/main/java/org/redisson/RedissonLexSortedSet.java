@@ -104,41 +104,6 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count) {
-        return get(lexRangeAsync(fromElement, fromInclusive, toElement, toInclusive, offset, count));
-    }
-
-    @Override
-    public Collection<String> lexRangeHead(String toElement, boolean toInclusive, int offset, int count) {
-        return get(lexRangeHeadAsync(toElement, toInclusive, offset, count));
-    }
-
-    @Override
-    public Future<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive, int offset, int count) {
-        String toValue = value(toElement, toInclusive);
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue, "LIMIT", offset, count);
-    }
-
-    @Override
-    public Collection<String> lexRangeTail(String fromElement, boolean fromInclusive, int offset, int count) {
-        return get(lexRangeTailAsync(fromElement, fromInclusive, offset, count));
-    }
-
-    @Override
-    public Future<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count) {
-        String fromValue = value(fromElement, fromInclusive);
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+", "LIMIT", offset, count);
-    }
-
-    @Override
-    public Future<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count) {
-        String fromValue = value(fromElement, fromInclusive);
-        String toValue = value(toElement, toInclusive);
-
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue, "LIMIT", offset, count);
-    }
-
-    @Override
     public int lexCountTail(String fromElement, boolean fromInclusive) {
         return get(lexCountTailAsync(fromElement, fromInclusive));
     }

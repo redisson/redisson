@@ -36,12 +36,6 @@ public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirab
 
     Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Collection<String> lexRangeTail(String fromElement, boolean fromInclusive, int offset, int count);
-
-    Collection<String> lexRangeHead(String toElement, boolean toInclusive, int offset, int count);
-
-    Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
-
     int lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     int rank(String o);

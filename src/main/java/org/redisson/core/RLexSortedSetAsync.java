@@ -37,12 +37,6 @@ public interface RLexSortedSetAsync extends RCollectionAsync<String> {
 
     Future<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Future<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count);
-
-    Future<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive, int offset, int count);
-
-    Future<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
-
     Future<Integer> lexCountAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     Future<Integer> rankAsync(String o);
