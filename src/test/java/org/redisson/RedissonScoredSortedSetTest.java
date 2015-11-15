@@ -14,6 +14,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RSortedSet;
 
@@ -438,6 +439,53 @@ public class RedissonScoredSortedSetTest extends BaseTest {
                 new ScoredEntry<Integer>(50D, 5)));
     }
 
+    @Test
+    public void testLexSortedSet() {
+        RLexSortedSet set = redisson.getLexSortedSet("simple");
+
+        set.add("a");
+        set.add("b");
+        set.add("c");
+        set.add("d");
+        set.add("e");
+
+        Collection<String> r = set.lexRange("b", true, "e", false, 1, 2);
+        String[] a = r.toArray(new String[0]);
+        Assert.assertArrayEquals(new String[]{"c", "d"}, a);
+    }
+
+    @Test
+    public void testScoredSortedSetValueRange() {
+        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<String> r = set.valueRange(1, true, 4, false, 1, 2);
+        String[] a = r.toArray(new String[0]);
+        Assert.assertArrayEquals(new String[]{"c", "d"}, a);
+    }
+
+    @Test
+    public void testScoredSortedSetEntryRange() {
+        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<ScoredEntry<String>> r = set.entryRange(1, true, 4, false, 1, 2);
+        ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
+        Assert.assertEquals(2d, a[0].getScore(), 0);
+        Assert.assertEquals(3d, a[1].getScore(), 0);
+        Assert.assertEquals("c", a[0].getValue());
+        Assert.assertEquals("d", a[1].getValue());
+    }
 
     @Test
     public void testAddAndGet() throws InterruptedException {
