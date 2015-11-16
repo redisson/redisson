@@ -116,7 +116,6 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         if (!addr.getHostName().equals(host) || port != addr.getPort()) {
             connectionManager.slaveDown(this, addr.getHostName(), addr.getPort(), FreezeReason.MANAGER);
-            log.info("master {}:{} removed from slaves", addr.getHostName(), addr.getPort());
         }
     }
 
