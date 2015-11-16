@@ -429,7 +429,7 @@ public class CommandExecutorService implements CommandExecutor {
                     return;
                 }
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
-                    attemptPromise.setFailure(ex.get());
+                    attemptPromise.tryFailure(ex.get());
                     return;
                 }
                 if (!attemptPromise.cancel(false)) {

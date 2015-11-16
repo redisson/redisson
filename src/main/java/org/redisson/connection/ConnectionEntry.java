@@ -64,6 +64,10 @@ public class ConnectionEntry {
         failedAttempts.set(0);
     }
 
+    public int getFailedAttempts() {
+        return failedAttempts.get();
+    }
+
     public int incFailedAttempts() {
         return failedAttempts.incrementAndGet();
     }

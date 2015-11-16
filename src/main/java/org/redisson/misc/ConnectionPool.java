@@ -102,7 +102,7 @@ public class ConnectionPool<T extends RedisConnection> {
     }
 
     protected boolean tryAcquireConnection(SubscribesConnectionEntry entry) {
-        return entry.tryAcquireConnection();
+        return entry.getFailedAttempts() < config.getSlaveFailedAttempts() && entry.tryAcquireConnection();
     }
 
     protected T poll(SubscribesConnectionEntry entry) {
@@ -168,8 +168,8 @@ public class ConnectionPool<T extends RedisConnection> {
 
 
     private void promiseFailure(SubscribesConnectionEntry entry, Promise<T> promise, T conn) {
+        int attempts = entry.incFailedAttempts();
         if (entry.getNodeType() == NodeType.SLAVE) {
-            int attempts = entry.incFailedAttempts();
             if (attempts == config.getSlaveFailedAttempts()) {
                 connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
                         entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
