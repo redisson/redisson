@@ -58,7 +58,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        RedisConnection connection = ctx.channel().attr(RedisConnection.CONNECTION).get();
+        RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         if (!connection.isClosed()) {
             EventLoopGroup group = ctx.channel().eventLoop().parent();
             reconnect(group, connection);

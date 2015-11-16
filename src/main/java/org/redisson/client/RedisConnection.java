@@ -34,7 +34,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 
 public class RedisConnection implements RedisCommands {
 
-    public static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
+    private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
 
     final RedisClient redisClient;
 
@@ -43,11 +43,16 @@ public class RedisConnection implements RedisCommands {
     private ReconnectListener reconnectListener;
     private int failAttempts;
 
+
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
         this.redisClient = redisClient;
 
         updateChannel(channel);
+    }
+
+    public static <C extends RedisConnection> C getFrom(Channel channel) {
+        return (C) channel.attr(RedisConnection.CONNECTION).get();
     }
 
     public void setReconnectListener(ReconnectListener reconnectListener) {

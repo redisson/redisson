@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.WriteRedisConnectionException;
@@ -260,6 +261,10 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 if (future.cause() instanceof RedisAskException) {
                     RedisAskException ex = (RedisAskException)future.cause();
                     execute(entry, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), mainPromise, slots, attempt);
+                    return;
+                }
+                if (future.cause() instanceof RedisLoadingException) {
+                    execute(entry, source, mainPromise, slots, attempt);
                     return;
                 }
 

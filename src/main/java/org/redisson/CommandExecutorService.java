@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.WriteRedisConnectionException;
@@ -278,6 +279,8 @@ public class CommandExecutorService implements CommandExecutor {
                 return async(readOnlyMode, codec, new NodeSource(e.getSlot(), e.getAddr(), Redirect.MOVED), operation, attempt);
             } catch (RedisAskException e) {
                 return async(readOnlyMode, codec, new NodeSource(e.getSlot(), e.getAddr(), Redirect.ASK), operation, attempt);
+            } catch (RedisLoadingException e) {
+                return async(readOnlyMode, codec, source, operation, attempt);
             } catch (RedisTimeoutException e) {
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
                     throw e;
@@ -438,7 +441,7 @@ public class CommandExecutorService implements CommandExecutor {
             }
         };
 
-        ex.set(new RedisTimeoutException("Command execution timeout for " + command + " with params " + Arrays.toString(params)));
+        ex.set(new RedisTimeoutException("Command execution timeout for command: " + command + " with params " + Arrays.toString(params)));
         final Timeout timeout = connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
 
         final Future<RedisConnection> connectionFuture;
@@ -532,6 +535,16 @@ public class CommandExecutorService implements CommandExecutor {
                     RedisAskException ex = (RedisAskException)future.cause();
                     connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                     async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), messageDecoder, codec, command, params, mainPromise, attempt);
+                    return;
+                }
+
+                if (future.cause() instanceof RedisLoadingException) {
+                    if (!connectionManager.getShutdownLatch().acquire()) {
+                        return;
+                    }
+
+                    connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    async(readOnlyMode, source, messageDecoder, codec, command, params, mainPromise, attempt);
                     return;
                 }
 

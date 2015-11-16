@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.RedisAskException;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
@@ -174,6 +176,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
                 data.getPromise().setFailure(new RedisAskException(slot, addr));
+            } else if (error.startsWith("LOADING")) {
+                data.getPromise().setFailure(new RedisLoadingException(error
+                        + ". channel: " + channel + " data: " + data));
             } else {
                 data.getPromise().setFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
             }
@@ -251,7 +256,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
 
-            RedisPubSubConnection pubSubConnection = (RedisPubSubConnection)channel.attr(RedisPubSubConnection.CONNECTION).get();
+            RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
             if (result instanceof PubSubStatusMessage) {
                 pubSubConnection.onMessage((PubSubStatusMessage) result);
             } else if (result instanceof PubSubMessage) {
