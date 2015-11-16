@@ -109,7 +109,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     decode(in, cmd, null, ctx.channel(), currentDecoder);
 //                }
             } catch (IOException e) {
-                cmd.getPromise().setFailure(e);
+                cmd.getPromise().tryFailure(e);
             }
         } else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData)data;
@@ -136,7 +136,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 decode(in, cmd, null, ctx.channel(), currentDecoder);
                 i++;
             } catch (IOException e) {
-                cmd.getPromise().setFailure(e);
+                cmd.getPromise().tryFailure(e);
             }
         }
 
@@ -170,17 +170,17 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
-                data.getPromise().setFailure(new RedisMovedException(slot, addr));
+                data.getPromise().tryFailure(new RedisMovedException(slot, addr));
             } else if (error.startsWith("ASK")) {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
-                data.getPromise().setFailure(new RedisAskException(slot, addr));
+                data.getPromise().tryFailure(new RedisAskException(slot, addr));
             } else if (error.startsWith("LOADING")) {
-                data.getPromise().setFailure(new RedisLoadingException(error
+                data.getPromise().tryFailure(new RedisLoadingException(error
                         + ". channel: " + channel + " data: " + data));
             } else {
-                data.getPromise().setFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
+                data.getPromise().tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
             }
         } else if (code == ':') {
             String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
