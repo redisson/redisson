@@ -438,7 +438,7 @@ public class CommandExecutorService implements CommandExecutor {
             }
         };
 
-        ex.set(new RedisTimeoutException());
+        ex.set(new RedisTimeoutException("Command execution timeout for " + command + " with params " + Arrays.toString(params)));
         final Timeout timeout = connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
 
         final Future<RedisConnection> connectionFuture;
