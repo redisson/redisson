@@ -492,7 +492,7 @@ public class Redisson implements RedissonClient {
      */
     @Override
     public Future<Long> deleteByPatternAsync(String pattern) {
-        return commandExecutor.evalWriteAllAsync(RedisCommands.EVAL_INTEGER, new SlotCallback<Long, Long>() {
+        return commandExecutor.evalWriteAllAsync(RedisCommands.EVAL_LONG, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
             @Override
             public void onSlotResult(Long result) {

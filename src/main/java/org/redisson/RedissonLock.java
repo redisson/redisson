@@ -235,7 +235,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_INTEGER,
+        return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_LONG,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('set', KEYS[1], cjson.encode({['o'] = ARGV[1], ['c'] = 1}), 'px', ARGV[2]); " +
@@ -384,7 +384,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public int getHoldCount() {
-        Long opStatus = commandExecutor.evalRead(getName(), RedisCommands.EVAL_INTEGER,
+        Long opStatus = commandExecutor.evalRead(getName(), RedisCommands.EVAL_LONG,
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  return 0; " +

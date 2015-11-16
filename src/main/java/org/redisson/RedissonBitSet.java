@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 
 import org.redisson.client.codec.ByteArrayCodec;
@@ -32,6 +33,24 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         super(connectionManager, name);
     }
 
+    public int length() {
+        return commandExecutor.evalRead(getName(), codec, RedisCommands.EVAL_INTEGER,
+                "local fromBit = redis.call('bitpos', KEYS[1], 1, -1);"
+                + "local toBit = 8*(fromBit/8 + 1) - fromBit % 8;"
+                        + "for i = toBit, fromBit, -1 do "
+                            + "if redis.call('getbit', KEYS[1], i) == 1 then "
+                                + "return i+1;"
+                            + "end;"
+                       + "end;" +
+                     "return fromBit+1",
+                Collections.<Object>singletonList(getName()));
+
+    }
+
+    public void set(BitSet bs) {
+        commandExecutor.write(getName(), ByteArrayCodec.INSTANCE, RedisCommands.SET, getName(), toByteArrayReverse(bs));
+    }
+
     public boolean get(int bitIndex) {
         return get(getAsync(bitIndex));
     }
@@ -42,6 +61,14 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     public void set(int bitIndex) {
         set(bitIndex, true);
+    }
+
+    public void set(int fromIndex, int toIndex, boolean value) {
+        if (value) {
+            set(fromIndex, toIndex);
+            return;
+        }
+        clear(fromIndex, toIndex);
     }
 
     public void set(int fromIndex, int toIndex) {
@@ -73,6 +100,14 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         return r * 8;
     }
 
+    public void clear(int fromIndex, int toIndex) {
+        CommandBatchExecutorService executorService = new CommandBatchExecutorService(commandExecutor.getConnectionManager());
+        for (int i = fromIndex; i < toIndex; i++) {
+            executorService.writeAsync(getName(), codec, RedisCommands.SETBIT, getName(), i, 0);
+        }
+        executorService.execute();
+    }
+
     public void clear(int bitIndex) {
         set(bitIndex, false);
     }
@@ -91,6 +126,10 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     public void xor(String... bitSetNames) {
         op("XOR", bitSetNames);
+    }
+
+    public void not() {
+        op("NOT");
     }
 
     private void op(String op, String... bitSetNames) {

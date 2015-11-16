@@ -27,6 +27,16 @@ import io.netty.util.concurrent.Future;
  */
 public interface RBitSet extends RExpirable {
 
+    int length();
+
+    void set(int fromIndex, int toIndex, boolean value);
+
+    void clear(int fromIndex, int toIndex);
+
+    void set(BitSet bs);
+
+    void not();
+
     void set(int fromIndex, int toIndex);
 
     int size();

@@ -89,7 +89,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     @Override
     public Future<Long> getAndAddAsync(long delta) {
         return commandExecutor.evalWriteAsync(getName(),
-                StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local v = redis.call('get', KEYS[1]) or 0; "
                 + "redis.call('set', KEYS[1], v + ARGV[1]); "
                 + "return tonumber(v)",
@@ -105,7 +105,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     @Override
     public Future<Long> getAndSetAsync(long newValue) {
         return commandExecutor.evalWriteAsync(getName(),
-                StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local v = redis.call('get', KEYS[1]) or 0; redis.call('set', KEYS[1], ARGV[1]); return tonumber(v)",
                 Collections.<Object>singletonList(getName()), newValue);
     }
