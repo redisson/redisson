@@ -129,6 +129,31 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         return get(executeAsync());
     }
 
+    public Future<Void> executeAsyncVoid() {
+        if (executed) {
+            throw new IllegalStateException("Batch already executed!");
+        }
+
+        if (commands.isEmpty()) {
+            return connectionManager.getGroup().next().newSucceededFuture(null);
+        }
+        executed = true;
+
+        Promise<Void> voidPromise = connectionManager.newPromise();
+        voidPromise.addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                commands = null;
+            }
+        });
+
+        AtomicInteger slots = new AtomicInteger(commands.size());
+        for (java.util.Map.Entry<Integer, Entry> e : commands.entrySet()) {
+            execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0);
+        }
+        return voidPromise;
+    }
+
     public Future<List<?>> executeAsync() {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");

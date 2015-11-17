@@ -24,46 +24,40 @@ import io.netty.util.concurrent.Future;
  * @author Nikita Koksharov
  *
  */
-public interface RBitSet extends RExpirable, RBitSetAsync {
+public interface RBitSetAsync extends RExpirableAsync {
 
-    int length();
+    Future<byte[]> toByteArrayAsync();
 
-    void set(int fromIndex, int toIndex, boolean value);
+    Future<Integer> lengthAsync();
 
-    void clear(int fromIndex, int toIndex);
+    Future<Void> setAsync(int fromIndex, int toIndex, boolean value);
 
-    void set(BitSet bs);
+    Future<Void> clearAsync(int fromIndex, int toIndex);
 
-    void not();
+    Future<Void> setAsync(BitSet bs);
 
-    void set(int fromIndex, int toIndex);
+    Future<Void> notAsync();
 
-    int size();
+    Future<Void> setAsync(int fromIndex, int toIndex);
 
-    boolean get(int bitIndex);
+    Future<Integer> sizeAsync();
 
     Future<Boolean> getAsync(int bitIndex);
 
-    void set(int bitIndex);
-
-    void set(int bitIndex, boolean value);
+    Future<Void> setAsync(int bitIndex);
 
     Future<Void> setAsync(int bitIndex, boolean value);
 
-    byte[] toByteArray();
+    Future<Integer> cardinalityAsync();
 
-    int cardinality();
+    Future<Void> clearAsync(int bitIndex);
 
-    void clear(int bitIndex);
+    Future<Void> clearAsync();
 
-    void clear();
+    Future<Void> orAsync(String... bitSetNames);
 
-    BitSet asBitSet();
+    Future<Void> andAsync(String... bitSetNames);
 
-    void or(String... bitSetNames);
-
-    void and(String... bitSetNames);
-
-    void xor(String... bitSetNames);
+    Future<Void> xorAsync(String... bitSetNames);
 
 }

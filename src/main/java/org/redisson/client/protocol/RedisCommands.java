@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.convertor.BitsSizeReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanNotNullReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
@@ -51,6 +52,7 @@ import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 public interface RedisCommands {
 
     RedisStrictCommand<Boolean> GETBIT = new RedisStrictCommand<Boolean>("GETBIT", new BooleanReplayConvertor());
+    RedisStrictCommand<Integer> BITS_SIZE = new RedisStrictCommand<Integer>("STRLEN", new BitsSizeReplayConvertor());
     RedisStrictCommand<Integer> STRLEN = new RedisStrictCommand<Integer>("STRLEN", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> BITCOUNT = new RedisStrictCommand<Integer>("BITCOUNT", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> BITPOS = new RedisStrictCommand<Integer>("BITPOS", new IntegerReplayConvertor());
@@ -171,6 +173,7 @@ public interface RedisCommands {
 
     RedisStrictCommand<Long> DEL = new RedisStrictCommand<Long>("DEL");
     RedisStrictCommand<Boolean> DEL_SINGLE = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
+    RedisStrictCommand<Void> DEL_VOID = new RedisStrictCommand<Void>("DEL", new VoidReplayConvertor());
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
     RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor(), 2);
