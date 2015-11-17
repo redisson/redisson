@@ -40,10 +40,15 @@ public interface RObjectAsync {
      * Move object to another database in async mode
      *
      * @param database
-     * @return <code>true</code> if key was moved else <code>false</code>
+     * @return <code>true</code> if key was moved <code>false</code> if not
      */
     Future<Boolean> moveAsync(int database);
 
+    /**
+     * Delete object in async mode
+     *
+     * @return <code>true</code> if object was deleted <code>false</code> if not
+     */
     Future<Boolean> deleteAsync();
 
     /**
