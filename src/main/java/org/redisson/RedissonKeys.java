@@ -42,6 +42,16 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
+    public int getSlot(String key) {
+        return commandExecutor.get(getSlotAsync(key));
+    }
+
+    @Override
+    public Future<Integer> getSlotAsync(String key) {
+        return commandExecutor.readAsync(null, RedisCommands.KEYSLOT, key);
+    }
+
+    @Override
     public Iterable<String> getKeysByPattern(final String pattern) {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
         for (final ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {

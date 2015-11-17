@@ -20,6 +20,15 @@ import java.util.Collection;
 public interface RKeys extends RKeysAsync {
 
     /**
+     * Get hash slot identifier for key.
+     * Available for cluster nodes only
+     *
+     * @param key
+     * @return
+     */
+    int getSlot(String key);
+
+    /**
      * Get all keys by pattern using iterator. Keys traversing with SCAN operation
      *
      *  Supported glob-style patterns:

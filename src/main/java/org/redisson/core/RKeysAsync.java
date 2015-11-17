@@ -22,6 +22,15 @@ import io.netty.util.concurrent.Future;
 public interface RKeysAsync {
 
     /**
+     * Get hash slot identifier for key in async mode.
+     * Available for cluster nodes only
+     *
+     * @param key
+     * @return
+     */
+    Future<Integer> getSlotAsync(String key);
+
+    /**
      * Get random key in async mode
      *
      * @return
