@@ -17,8 +17,6 @@ package org.redisson.core;
 
 import java.util.BitSet;
 
-import io.netty.util.concurrent.Future;
-
 /**
  *
  * @author Nikita Koksharov
@@ -42,13 +40,9 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
 
     boolean get(int bitIndex);
 
-    Future<Boolean> getAsync(int bitIndex);
-
     void set(int bitIndex);
 
     void set(int bitIndex, boolean value);
-
-    Future<Void> setAsync(int bitIndex, boolean value);
 
     byte[] toByteArray();
 
