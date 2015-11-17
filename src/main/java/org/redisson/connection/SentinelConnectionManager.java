@@ -70,7 +70,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         List<String> disconnectedSlaves = new ArrayList<String>();
         for (URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
+            RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getConnectTimeout());
             try {
                 RedisConnection connection = client.connect();
                 if (!connection.isActive()) {
@@ -128,7 +128,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void registerSentinel(final SentinelServersConfig cfg, final URI addr, final MasterSlaveServersConfig c) {
-        RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
+        RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getConnectTimeout());
         RedisClient oldClient = sentinels.putIfAbsent(addr.getHost() + ":" + addr.getPort(), client);
         if (oldClient != null) {
             return;

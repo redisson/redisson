@@ -155,7 +155,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public RedisClient createClient(String host, int port) {
-        RedisClient client = createClient(host, port, config.getTimeout());
+        RedisClient client = createClient(host, port, config.getConnectTimeout());
         clients.add(new RedisClientEntry(client));
         return client;
     }

@@ -19,10 +19,18 @@ package org.redisson;
 class BaseConfig<T extends BaseConfig<T>> {
 
     /**
-     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation
+     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation.
+     * Value in milliseconds.
      *
      */
     private int pingTimeout = 1000;
+
+    /**
+     * Connect timeout used for any Redis server connection.
+     * Value in milliseconds.
+     *
+     */
+    private int connectTimeout = 1000;
 
     /**
      * Redis operation execution timeout.
@@ -71,6 +79,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         setClientName(config.getClientName());
         setPingTimeout(config.getPingTimeout());
         setRefreshConnectionAfterFails(config.getRefreshConnectionAfterFails());
+        setConnectTimeout(config.getConnectTimeout());
     }
 
     /**
@@ -204,5 +213,18 @@ class BaseConfig<T extends BaseConfig<T>> {
         return closeConnectionAfterFailAttempts;
     }
 
+    /**
+     * Connect timeout used for any Redis server connection.
+     *
+     * @param connectTimeout - timeout in milliseconds
+     * @return
+     */
+    public T setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
+        return (T) this;
+    }
+    public int getConnectTimeout() {
+        return connectTimeout;
+    }
 
 }
