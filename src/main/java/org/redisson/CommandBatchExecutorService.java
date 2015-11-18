@@ -198,6 +198,10 @@ public class CommandBatchExecutorService extends CommandExecutorService {
     }
 
     public void execute(final Entry entry, final NodeSource source, final Promise<Void> mainPromise, final AtomicInteger slots, final int attempt) {
+        if (mainPromise.isCancelled()) {
+            return;
+        }
+
         if (!connectionManager.getShutdownLatch().acquire()) {
             mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
             return;
@@ -220,7 +224,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                     connectionManager.getShutdownLatch().release();
                 }
 
-                if (attemptPromise.isDone()) {
+                if (attemptPromise.isDone() || mainPromise.isCancelled()) {
                     return;
                 }
 
@@ -243,7 +247,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                if (attemptPromise.isDone() || connFuture.isCancelled()) {
+                if (attemptPromise.isDone() || connFuture.isCancelled() || mainPromise.isCancelled()) {
                     return;
                 }
                 if (!connFuture.isSuccess()) {
@@ -266,7 +270,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 writeFuture.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if (attemptPromise.isDone() || future.isCancelled()) {
+                        if (attemptPromise.isDone() || future.isCancelled() || mainPromise.isCancelled()) {
                             return;
                         }
 
@@ -290,7 +294,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 timeout.cancel();
-                if (future.isCancelled()) {
+                if (future.isCancelled() || mainPromise.isCancelled()) {
                     return;
                 }
 
