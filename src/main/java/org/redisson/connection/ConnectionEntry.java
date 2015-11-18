@@ -35,7 +35,7 @@ public class ConnectionEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
-    public enum FreezeReason {MANAGER, RECONNECT}
+    public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
 
     private volatile boolean freezed;
     private FreezeReason freezeReason;
@@ -127,6 +127,7 @@ public class ConnectionEntry {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
                 if (!future.isSuccess()) {
+                    connectionFuture.tryFailure(future.cause());
                     return;
                 }
                 RedisConnection conn = future.getNow();
@@ -161,6 +162,7 @@ public class ConnectionEntry {
             @Override
             public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
                 if (!future.isSuccess()) {
+                    connectionFuture.tryFailure(future.cause());
                     return;
                 }
                 RedisPubSubConnection conn = future.getNow();

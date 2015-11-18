@@ -176,6 +176,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                if (future.isCancelled()) {
+                    return;
+                }
+
                 if (!future.isSuccess()) {
                     conn.incFailAttempt();
                 } else {
@@ -195,6 +199,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
+                if (future.isCancelled()) {
+                    return;
+                }
+
                 if (!future.isSuccess()) {
                     conn.incFailAttempt();
                 } else {
@@ -492,6 +500,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason) {
         Collection<RedisPubSubConnection> allPubSubConnections = entry.slaveDown(host, port, freezeReason);
+        if (allPubSubConnections.isEmpty()) {
+            return;
+        }
 
         // reattach listeners to other channels
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {

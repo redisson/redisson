@@ -192,7 +192,7 @@ public class CommandExecutorService implements CommandExecutor {
         throw convertException(future);
     }
 
-    private <V> RedisException convertException(Future<V> future) {
+    protected <V> RedisException convertException(Future<V> future) {
         return future.cause() instanceof RedisException ?
                 (RedisException) future.cause() :
                 new RedisException("Unexpected exception while processing command", future.cause());
@@ -422,12 +422,22 @@ public class CommandExecutorService implements CommandExecutor {
         final Promise<R> attemptPromise = connectionManager.newPromise();
         final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
 
+        final Future<RedisConnection> connectionFuture;
+        if (readOnlyMode) {
+            connectionFuture = connectionManager.connectionReadOp(source, command);
+        } else {
+            connectionFuture = connectionManager.connectionWriteOp(source, command);
+        }
+
         final TimerTask retryTimerTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 if (attemptPromise.isDone()) {
                     return;
                 }
+
+                connectionFuture.cancel(false);
+
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
                     attemptPromise.tryFailure(ex.get());
                     return;
@@ -444,17 +454,10 @@ public class CommandExecutorService implements CommandExecutor {
         ex.set(new RedisTimeoutException("Command execution timeout for command: " + command + " with params " + Arrays.toString(params)));
         final Timeout timeout = connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
 
-        final Future<RedisConnection> connectionFuture;
-        if (readOnlyMode) {
-            connectionFuture = connectionManager.connectionReadOp(source, command);
-        } else {
-            connectionFuture = connectionManager.connectionWriteOp(source, command);
-        }
-
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                if (attemptPromise.isCancelled() || connFuture.isCancelled()) {
+                if (attemptPromise.isDone() || connFuture.isCancelled()) {
                     return;
                 }
                 if (!connFuture.isSuccess()) {
@@ -469,23 +472,23 @@ public class CommandExecutorService implements CommandExecutor {
 
                 RedisConnection connection = connFuture.getNow();
 
-                ChannelFuture future = null;
+                ChannelFuture writeFuture = null;
                 if (source.getRedirect() == Redirect.ASK) {
                     List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
                     Promise<Void> promise = connectionManager.newPromise();
                     list.add(new CommandData<Void, Void>(promise, codec, RedisCommands.ASKING, new Object[] {}));
                     list.add(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
                     Promise<Void> main = connectionManager.newPromise();
-                    future = connection.send(new CommandsData(main, list));
+                    writeFuture = connection.send(new CommandsData(main, list));
                 } else {
                     log.debug("getting connection for command {} from slot {} using node {}", command, source, connection.getRedisClient().getAddr());
-                    future = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
+                    writeFuture = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
                 }
 
-                future.addListener(new ChannelFutureListener() {
+                writeFuture.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if (attemptPromise.isCancelled() || future.isCancelled()) {
+                        if (attemptPromise.isDone() || future.isCancelled()) {
                             return;
                         }
                         if (!future.isSuccess()) {

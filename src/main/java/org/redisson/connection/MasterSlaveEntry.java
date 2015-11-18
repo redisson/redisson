@@ -90,7 +90,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         // add master as slave if no more slaves available
         if (slaveBalancer.getAvailableClients() == 0) {
             InetSocketAddress addr = masterEntry.getClient().getAddr();
-            slaveUp(addr.getHostName(), addr.getPort(), FreezeReason.MANAGER);
+            slaveUp(addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM);
             log.info("master {}:{} used as slave", addr.getHostName(), addr.getPort());
         }
         return conns;
@@ -105,7 +105,10 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSlaveSubscriptionConnectionPoolSize(), connectListener, mode);
-        entry.setFreezed(freezed);
+        if (freezed) {
+            entry.setFreezed(freezed);
+            entry.setFreezeReason(FreezeReason.SYSTEM);
+        }
         slaveBalancer.add(entry);
     }
 
@@ -118,8 +121,9 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
             return;
         }
         InetSocketAddress addr = masterEntry.getClient().getAddr();
+        // exclude master from slaves
         if (!addr.getHostName().equals(host) || port != addr.getPort()) {
-            connectionManager.slaveDown(this, addr.getHostName(), addr.getPort(), FreezeReason.MANAGER);
+            connectionManager.slaveDown(this, addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM);
         }
     }
 
@@ -134,8 +138,8 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         setupMasterEntry(host, port);
         writeConnectionHolder.remove(oldMaster);
         if (slaveBalancer.getAvailableClients() > 1) {
-            // more than one slave avaliable, so master could be removed from slaves
-            connectionManager.slaveDown(this, host, port, FreezeReason.MANAGER);
+            // more than one slave available, so master could be removed from slaves
+            connectionManager.slaveDown(this, host, port, FreezeReason.SYSTEM);
         }
         connectionManager.shutdownAsync(oldMaster.getClient());
     }

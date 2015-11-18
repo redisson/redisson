@@ -68,34 +68,36 @@ abstract class BaseLoadBalancer implements LoadBalancer {
         return count;
     }
 
-    public synchronized boolean unfreeze(String host, int port, FreezeReason freezeReason) {
+    public boolean unfreeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
-        for (SubscribesConnectionEntry connectionEntry : addr2Entry.values()) {
-            if (!connectionEntry.getClient().getAddr().equals(addr)) {
-                continue;
-            }
-            if (freezeReason == FreezeReason.RECONNECT
-                    && connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
-                connectionEntry.setFreezed(false);
-                return true;
-            }
-            if (freezeReason == FreezeReason.MANAGER) {
-                connectionEntry.setFreezed(false);
-                return true;
-            }
-            return false;
+        SubscribesConnectionEntry entry = addr2Entry.get(addr);
+        if (entry == null) {
+            throw new IllegalStateException("Can't find " + addr + " in slaves!");
         }
-        throw new IllegalStateException("Can't find " + addr + " in slaves!");
+
+        synchronized (entry) {
+            if (!entry.isFreezed()) {
+                return false;
+            }
+            if ((freezeReason == FreezeReason.RECONNECT
+                    && entry.getFreezeReason() == FreezeReason.RECONNECT)
+                        || freezeReason != FreezeReason.RECONNECT) {
+                entry.setFreezed(false);
+                entry.setFreezeReason(null);
+                return true;
+            }
+        }
+        return false;
     }
 
-    public synchronized Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
+    public Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
-        for (SubscribesConnectionEntry connectionEntry : addr2Entry.values()) {
-            if (connectionEntry.isFreezed()
-                    || !connectionEntry.getClient().getAddr().equals(addr)) {
-                continue;
-            }
+        SubscribesConnectionEntry connectionEntry = addr2Entry.get(addr);
+        if (connectionEntry == null) {
+            return Collections.emptyList();
+        }
 
+        synchronized (connectionEntry) {
             log.debug("{} freezed", addr);
             connectionEntry.setFreezed(true);
             // only RECONNECT freeze reason could be replaced
@@ -103,32 +105,29 @@ abstract class BaseLoadBalancer implements LoadBalancer {
                     || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
                 connectionEntry.setFreezeReason(freezeReason);
             }
-
-            // close all connections
-            while (true) {
-                RedisConnection connection = connectionEntry.pollConnection();
-                if (connection == null) {
-                    break;
-                }
-                connection.closeAsync();
-            }
-
-            // close all pub/sub connections
-            while (true) {
-                RedisPubSubConnection connection = connectionEntry.pollFreeSubscribeConnection();
-                if (connection == null) {
-                    break;
-                }
-                connection.closeAsync();
-            }
-
-
-            List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
-            connectionEntry.getAllSubscribeConnections().clear();
-            return list;
         }
 
-        return Collections.emptyList();
+        // close all connections
+        while (true) {
+            RedisConnection connection = connectionEntry.pollConnection();
+            if (connection == null) {
+                break;
+            }
+            connection.closeAsync();
+        }
+
+        // close all pub/sub connections
+        while (true) {
+            RedisPubSubConnection connection = connectionEntry.pollFreeSubscribeConnection();
+            if (connection == null) {
+                break;
+            }
+            connection.closeAsync();
+        }
+
+        List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
+        connectionEntry.getAllSubscribeConnections().clear();
+        return list;
     }
 
     public Future<RedisPubSubConnection> nextPubSubConnection() {
