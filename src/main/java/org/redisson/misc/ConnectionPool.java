@@ -215,7 +215,7 @@ public class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        promises.addFirst(promise);
+        promises.add(promise);
 //        promise.tryFailure(cause);
     }
 
@@ -248,7 +248,7 @@ public class ConnectionPool<T extends RedisConnection> {
 
         releaseConnection(entry);
 
-        promises.addFirst(promise);
+        promises.add(promise);
 //        RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
 //        promise.tryFailure(cause);
     }
