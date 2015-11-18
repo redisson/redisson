@@ -50,6 +50,7 @@ Features
 * Thread-safe implementation  
 * All commands are executed in an atomic way
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)
+* Supports Android platform  
 * Supports OSGi  
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
 * With over 250 unit tests  
