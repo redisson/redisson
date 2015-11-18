@@ -440,7 +440,12 @@ public class CommandExecutorService implements CommandExecutor {
                     connectionManager.getShutdownLatch().release();
                 }
 
-                if (attemptPromise.isDone() || mainPromise.isCancelled()) {
+                if (attemptPromise.isDone()) {
+                    return;
+                }
+
+                if (mainPromise.isCancelled()) {
+                    attemptPromise.cancel(false);
                     return;
                 }
 
@@ -457,7 +462,7 @@ public class CommandExecutorService implements CommandExecutor {
             }
         };
 
-        ex.set(new RedisTimeoutException("Command execution timeout for command: " + command + " with params " + Arrays.toString(params)));
+        ex.set(new RedisTimeoutException("Command execution timeout for command: " + command + " with params " + Arrays.toString(params) + " attempt " + attempt));
         final Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {

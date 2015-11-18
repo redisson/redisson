@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -224,7 +223,12 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                     connectionManager.getShutdownLatch().release();
                 }
 
-                if (attemptPromise.isDone() || mainPromise.isCancelled()) {
+                if (attemptPromise.isDone()) {
+                    return;
+                }
+
+                if (mainPromise.isCancelled()) {
+                    attemptPromise.cancel(false);
                     return;
                 }
 
