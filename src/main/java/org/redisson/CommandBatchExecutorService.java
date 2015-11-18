@@ -216,14 +216,16 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         final TimerTask retryTimerTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
+                if (connectionFuture.cancel(false)) {
+                    connectionManager.getShutdownLatch().release();
+                }
+
                 if (attemptPromise.isDone()) {
                     return;
                 }
 
-                connectionFuture.cancel(false);
-
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
-                    attemptPromise.setFailure(ex.get());
+                    attemptPromise.tryFailure(ex.get());
                     return;
                 }
                 if (!attemptPromise.cancel(false)) {
@@ -236,7 +238,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         };
 
         ex.set(new RedisTimeoutException("Batch command execution timeout"));
-        final Timeout timeout = connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+        final Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
@@ -246,12 +248,9 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 }
                 if (!connFuture.isSuccess()) {
                     timeout.cancel();
-                    if (!connectionManager.getShutdownLatch().acquire()) {
-                        return;
-                    }
 
                     ex.set(convertException(connFuture));
-                    connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                     return;
                 }
 
@@ -273,12 +272,8 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
                         if (!future.isSuccess()) {
                             timeout.cancel();
-                            if (!connectionManager.getShutdownLatch().acquire()) {
-                                return;
-                            }
-
                             ex.set(new WriteRedisConnectionException("Can't write commands batch to channel: " + future.channel(), future.cause()));
-                            connectionManager.getTimer().newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                            connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                         }
                     }
                 });
@@ -300,28 +295,16 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 }
 
                 if (future.cause() instanceof RedisMovedException) {
-                    if (!connectionManager.getShutdownLatch().acquire()) {
-                        return;
-                    }
-
                     RedisMovedException ex = (RedisMovedException)future.cause();
                     execute(entry, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), mainPromise, slots, attempt);
                     return;
                 }
                 if (future.cause() instanceof RedisAskException) {
-                    if (!connectionManager.getShutdownLatch().acquire()) {
-                        return;
-                    }
-
                     RedisAskException ex = (RedisAskException)future.cause();
                     execute(entry, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), mainPromise, slots, attempt);
                     return;
                 }
                 if (future.cause() instanceof RedisLoadingException) {
-                    if (!connectionManager.getShutdownLatch().acquire()) {
-                        return;
-                    }
-
                     execute(entry, source, mainPromise, slots, attempt);
                     return;
                 }

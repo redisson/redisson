@@ -254,7 +254,7 @@ public class ConnectionPool<T extends RedisConnection> {
     }
 
     private void scheduleCheck(final SubscribesConnectionEntry entry) {
-        connectionManager.getTimer().newTimeout(new TimerTask() {
+        connectionManager.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 if (entry.getFreezeReason() != FreezeReason.RECONNECT

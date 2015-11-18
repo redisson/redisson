@@ -50,6 +50,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
+import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -62,6 +63,33 @@ import io.netty.util.internal.PlatformDependent;
  *
  */
 public class MasterSlaveConnectionManager implements ConnectionManager {
+
+    private final Timeout dummyTimeout = new Timeout() {
+        @Override
+        public Timer timer() {
+            return null;
+        }
+
+        @Override
+        public TimerTask task() {
+            return null;
+        }
+
+        @Override
+        public boolean isExpired() {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public boolean cancel() {
+            return false;
+        }
+    };
 
     protected static final int MAX_SLOT = 16384;
 
@@ -90,11 +118,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final Set<RedisClientEntry> clients = Collections.newSetFromMap(PlatformDependent.<RedisClientEntry, Boolean>newConcurrentHashMap());
 
     protected MasterSlaveConnectionManager() {
-    }
-
-    @Override
-    public HashedWheelTimer getTimer() {
-        return timer;
     }
 
     @Override
@@ -655,7 +678,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public Timeout newTimeout(TimerTask task, long delay, TimeUnit unit) {
-        return timer.newTimeout(task, delay, unit);
+        try {
+            return timer.newTimeout(task, delay, unit);
+        } catch (IllegalStateException e) {
+            // timer is shutdown
+            return dummyTimeout;
+        }
     }
 
     public InfinitySemaphoreLatch getShutdownLatch() {

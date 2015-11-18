@@ -31,7 +31,6 @@ import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
@@ -55,8 +54,6 @@ public interface ConnectionManager {
     void shutdownAsync(RedisClient client);
 
     int calcSlot(String key);
-
-    HashedWheelTimer getTimer();
 
     MasterSlaveServersConfig getConfig();
 
