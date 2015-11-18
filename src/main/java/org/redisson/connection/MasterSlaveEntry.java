@@ -66,13 +66,17 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         slaveBalancer = config.getLoadBalancer();
         slaveBalancer.init(config, connectionManager, this);
 
+        initSlaveBalancer(config);
+
+        writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager, this);
+    }
+
+    protected void initSlaveBalancer(MasterSlaveServersConfig config) {
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty();
         addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
         for (URI address : config.getSlaveAddresses()) {
             addSlave(address.getHost(), address.getPort(), false, NodeType.SLAVE);
         }
-
-        writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager, this);
     }
 
     public void setupMasterEntry(String host, int port) {

@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -56,6 +55,10 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setMasterConnectionPoolSize(cfg.getConnectionPoolSize());
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         newconfig.setSlaveSubscriptionConnectionPoolSize(cfg.getSubscriptionConnectionPoolSize());
+        newconfig.setConnectTimeout(cfg.getConnectTimeout());
+
+        newconfig.setMasterConnectionMinimumIdleSize(cfg.getConnectionMinimumIdleSize());
+        newconfig.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
 
         init(newconfig, config);
 

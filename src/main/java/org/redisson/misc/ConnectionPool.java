@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
@@ -59,9 +60,48 @@ public class ConnectionPool<T extends RedisConnection> {
         this.connectionManager = connectionManager;
     }
 
-    public void add(SubscribesConnectionEntry entry) {
-        entries.add(entry);
-        handleQueue(entry);
+    public void add(final SubscribesConnectionEntry entry) {
+        // is it a master connection pool?
+        int minimumIdleSize = getMinimumIdleSize(entry);
+
+        if (minimumIdleSize == 0) {
+            entries.add(entry);
+            handleQueue(entry);
+            return;
+        }
+
+        final AtomicInteger completedConnections = new AtomicInteger(minimumIdleSize);
+        for (int i = 0; i < minimumIdleSize; i++) {
+            if (entry.isFreezed() || !tryAcquireConnection(entry)) {
+                continue;
+            }
+
+            Promise<T> promise = connectionManager.newPromise();
+            connect(entry, promise);
+            promise.addListener(new FutureListener<T>() {
+                @Override
+                public void operationComplete(Future<T> future) throws Exception {
+                    if (future.isSuccess()) {
+                        T conn = future.getNow();
+                        releaseConnection(entry, conn);
+                    }
+                    releaseConnection(entry);
+
+                    if (completedConnections.decrementAndGet() == 0) {
+                        entries.add(entry);
+                        handleQueue(entry);
+                    }
+                }
+            });
+        }
+    }
+
+    protected int getMinimumIdleSize(SubscribesConnectionEntry entry) {
+        int minimumIdleSize = config.getSlaveConnectionMinimumIdleSize();
+        if (entry.getNodeType() == NodeType.MASTER && loadBalancer == null) {
+            minimumIdleSize = config.getMasterConnectionMinimumIdleSize();
+        }
+        return minimumIdleSize;
     }
 
     public void remove(SubscribesConnectionEntry entry) {

@@ -205,10 +205,12 @@ class BaseConfig<T extends BaseConfig<T>> {
      *
      * @param failAttemptsAmount
      */
+    @Deprecated
     public T setRefreshConnectionAfterFails(int failAttemptsAmount) {
         this.closeConnectionAfterFailAttempts = failAttemptsAmount;
         return (T) this;
     }
+    @Deprecated
     public int getRefreshConnectionAfterFails() {
         return closeConnectionAfterFailAttempts;
     }

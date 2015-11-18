@@ -26,22 +26,37 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
 
     /**
-     * Redis 'slave' servers subscription (pub/sub) connection pool size for <b>each</b> slave node
+     * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node
+     */
+    private int slaveSubscriptionConnectionMinimumIdleSize = 1;
+
+    /**
+     * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
      */
     private int slaveSubscriptionConnectionPoolSize = 25;
 
     /**
-     * Redis 'slave' servers connection pool size for <b>each</b> slave node
+     * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
+     */
+    private int slaveConnectionMinimumIdleSize = 5;
+
+    /**
+     * Redis 'slave' node maximum connection pool size for <b>each</b> slave node
      */
     private int slaveConnectionPoolSize = 100;
 
     /**
-     * Redis 'master' server connection pool size
+     * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
+     */
+    private int masterConnectionMinimumIdleSize = 5;
+
+    /**
+     * Redis 'master' node maximum connection pool size
      */
     private int masterConnectionPoolSize = 100;
 
     /**
-     * Redis 'slave' server reconnection attempt timeout
+     * Redis 'slave' server reconnection attempt timeout in milliseconds
      * used then server excluded from the list of available slave nodes
      * due to reach limit of sequential unsuccessful execution attempts
      *
@@ -67,10 +82,14 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setSlaveSubscriptionConnectionPoolSize(config.getSlaveSubscriptionConnectionPoolSize());
         setSlaveFailedAttempts(config.getSlaveFailedAttempts());
         setSlaveReconnectionTimeout(config.getSlaveReconnectionTimeout());
+        setMasterConnectionMinimumIdleSize(config.getMasterConnectionMinimumIdleSize());
+        setSlaveConnectionMinimumIdleSize(config.getSlaveConnectionMinimumIdleSize());
+        setSlaveSubscriptionConnectionMinimumIdleSize(config.getSlaveSubscriptionConnectionMinimumIdleSize());
     }
 
     /**
-     * Redis 'slave' servers connection pool size for <b>each</b> slave node
+     * Redis 'slave' servers connection pool size for <b>each</b> slave node.
+     *
      * Default is 100
      *
      * @param slaveConnectionPoolSize
@@ -85,11 +104,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Redis 'master' server connection pool size
+     * Redis 'master' server connection pool size.
+     *
      * Default is 100
      *
-     * @param masterConnectionPoolSize
-     * @return
      */
     public T setMasterConnectionPoolSize(int masterConnectionPoolSize) {
         this.masterConnectionPoolSize = masterConnectionPoolSize;
@@ -118,11 +136,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Redis 'slave' servers subscription connection pool size for <b>each</b> slave node
+     * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
+     *
      * Default is 25
      *
-     * @param slaveSubscriptionConnectionPoolSize
-     * @return
      */
     public T setSlaveSubscriptionConnectionPoolSize(int slaveSubscriptionConnectionPoolSize) {
         this.slaveSubscriptionConnectionPoolSize = slaveSubscriptionConnectionPoolSize;
@@ -133,9 +150,11 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Redis 'slave' server reconnection attempt timeout
+     * Redis 'slave' server reconnection attempt timeout in milliseconds
      * used then server excluded from the list of available slave nodes
-     * due to reach limit of sequential unsuccessful execution attempts
+     * due to reach limit of sequential unsuccessful execution attempts.
+     *
+     * Default is 3000
      *
      * @see #slaveFailedAttempts
      *
@@ -150,7 +169,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'slave' server will be excluded from the list of available slave nodes
-     * when sequential unsuccessful execution attempts of any Redis command on slave node reaches <code>slaveFailedAttempts</code>
+     * when sequential unsuccessful execution attempts of any Redis command on slave node reaches <code>slaveFailedAttempts</code>.
+     *
+     * Default is 3
+     *
      */
     public T setSlaveFailedAttempts(int slaveFailedAttempts) {
         this.slaveFailedAttempts = slaveFailedAttempts;
@@ -158,6 +180,47 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public int getSlaveFailedAttempts() {
         return slaveFailedAttempts;
+    }
+
+    /**
+     * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
+     *
+     * Default is 5
+     *
+     */
+    public T setSlaveConnectionMinimumIdleSize(int slaveConnectionMinimumIdleSize) {
+        this.slaveConnectionMinimumIdleSize = slaveConnectionMinimumIdleSize;
+        return (T) this;
+    }
+    public int getSlaveConnectionMinimumIdleSize() {
+        return slaveConnectionMinimumIdleSize;
+    }
+
+    /**
+     * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
+     *
+     * Default is 5
+     *
+     */
+    public T setMasterConnectionMinimumIdleSize(int masterConnectionMinimumIdleSize) {
+        this.masterConnectionMinimumIdleSize = masterConnectionMinimumIdleSize;
+        return (T) this;
+    }
+    public int getMasterConnectionMinimumIdleSize() {
+        return masterConnectionMinimumIdleSize;
+    }
+
+    /**
+     * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node
+     * Default is 1
+     *
+     */
+    public T setSlaveSubscriptionConnectionMinimumIdleSize(int slaveSubscriptionConnectionMinimumIdleSize) {
+        this.slaveSubscriptionConnectionMinimumIdleSize = slaveSubscriptionConnectionMinimumIdleSize;
+        return (T) this;
+    }
+    public int getSlaveSubscriptionConnectionMinimumIdleSize() {
+        return slaveSubscriptionConnectionMinimumIdleSize;
     }
 
 }

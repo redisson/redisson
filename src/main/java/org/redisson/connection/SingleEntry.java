@@ -48,6 +48,10 @@ public class SingleEntry extends MasterSlaveEntry<SubscribesConnectionEntry> {
     }
 
     @Override
+    protected void initSlaveBalancer(MasterSlaveServersConfig config) {
+    }
+
+    @Override
     Future<RedisPubSubConnection> nextPubSubConnection() {
         return pubSubConnectionHolder.get();
     }

@@ -37,6 +37,11 @@ public class PubSubConnectionPoll extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
+    protected int getMinimumIdleSize(SubscribesConnectionEntry entry) {
+        return config.getSlaveSubscriptionConnectionMinimumIdleSize();
+    }
+
+    @Override
     protected Future<RedisPubSubConnection> connect(SubscribesConnectionEntry entry) {
         return entry.connectPubSub(config);
     }

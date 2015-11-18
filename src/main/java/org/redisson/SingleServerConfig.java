@@ -28,22 +28,32 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     private URI address;
 
     /**
-     * Redis subscription connection pool size
+     * Minimum idle subscription connection amount
+     */
+    private int subscriptionConnectionMinimumIdleSize = 1;
+
+    /**
+     * Redis subscription connection maximum pool size
      *
      */
     private int subscriptionConnectionPoolSize = 25;
 
     /**
-     * Redis connection pool size
+     * Minimum idle Redis connection amount
+     */
+    private int connectionMinimumIdleSize = 5;
+
+    /**
+     * Redis connection maximum pool size
      */
     private int connectionPoolSize = 100;
 
-        
+
     /**
-     * Should the server address be monitored for changes in DNS? Useful for 
+     * Should the server address be monitored for changes in DNS? Useful for
      * AWS ElastiCache where the client is pointed at the endpoint for a replication group
      * which is a DNS alias to the current master node.<br>
-     * <em>NB: applications must ensure the JVM DNS cache TTL is low enough to support this.</em> 
+     * <em>NB: applications must ensure the JVM DNS cache TTL is low enough to support this.</em>
      * e.g., http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/java-dg-jvm-ttl.html
      */
     private boolean dnsMonitoring = false;
@@ -52,7 +62,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * Interval in milliseconds to check DNS
      */
     private long dnsMonitoringInterval = 5000;
-    
+
     SingleServerConfig() {
     }
 
@@ -63,6 +73,8 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
         setSubscriptionConnectionPoolSize(config.getSubscriptionConnectionPoolSize());
         setDnsMonitoring(config.isDnsMonitoring());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
+        setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
+        setConnectionMinimumIdleSize(config.getConnectionMinimumIdleSize());
     }
 
     /**
@@ -112,8 +124,9 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Monitoring of the endpoint address for DNS changes.
-     * Default is false.
-     * 
+     *
+     * Default is false
+     *
      * @param dnsMonitoring
      * @return
      */
@@ -127,8 +140,9 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Interval in milliseconds to check the endpoint DNS if {@link #isDnsMonitoring()} is true.
-     * Default is 5000.
-     * 
+     *
+     * Default is 5000
+     *
      * @param dnsMonitoringInterval
      * @return
      */
@@ -139,4 +153,33 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     public long getDnsMonitoringInterval() {
         return dnsMonitoringInterval;
     }
+
+    /**
+     * Minimum idle subscription connection amount.
+     *
+     * Default is 1
+     *
+     */
+    public SingleServerConfig setSubscriptionConnectionMinimumIdleSize(int subscriptionConnectionMinimumIdleSize) {
+        this.subscriptionConnectionMinimumIdleSize = subscriptionConnectionMinimumIdleSize;
+        return this;
+    }
+    public int getSubscriptionConnectionMinimumIdleSize() {
+        return subscriptionConnectionMinimumIdleSize;
+    }
+
+    /**
+     * Minimum idle Redis connection amount.
+     *
+     * Default is 5
+     *
+     */
+    public SingleServerConfig setConnectionMinimumIdleSize(int connectionMinimumIdleSize) {
+        this.connectionMinimumIdleSize = connectionMinimumIdleSize;
+        return this;
+    }
+    public int getConnectionMinimumIdleSize() {
+        return connectionMinimumIdleSize;
+    }
+
 }

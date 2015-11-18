@@ -394,6 +394,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
         c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        c.setConnectTimeout(cfg.getConnectTimeout());
+
+        c.setSlaveFailedAttempts(cfg.getSlaveFailedAttempts());
+        c.setSlaveReconnectionTimeout(cfg.getSlaveReconnectionTimeout());
+        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
+        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
+        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
+
         return c;
     }
 

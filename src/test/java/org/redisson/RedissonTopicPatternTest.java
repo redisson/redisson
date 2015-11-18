@@ -77,7 +77,7 @@ public class RedissonTopicPatternTest {
 //        topic1 = redisson.getPatternTopic("topic1.*");
         redisson.getTopic("topic1.t3").publish(new Message("123"));
 
-        messageRecieved.await();
+        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
 
         redisson.shutdown();
     }
