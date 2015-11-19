@@ -69,6 +69,19 @@ public class SubscribesConnectionEntry extends ConnectionEntry {
         connectionsCounter.incrementAndGet();
     }
 
+    public boolean freezeMaster(FreezeReason reason) {
+        synchronized (this) {
+            setFreezed(true);
+            // only RECONNECT freeze reason could be replaced
+            if (getFreezeReason() == null
+                    || getFreezeReason() == FreezeReason.RECONNECT) {
+                setFreezeReason(reason);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Future<RedisPubSubConnection> connectPubSub(MasterSlaveServersConfig config) {
         Future<RedisPubSubConnection> future = super.connectPubSub(config);
         future.addListener(new FutureListener<RedisPubSubConnection>() {

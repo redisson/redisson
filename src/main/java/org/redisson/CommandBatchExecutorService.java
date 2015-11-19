@@ -246,7 +246,9 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         };
 
         ex.set(new RedisTimeoutException("Batch command execution timeout"));
-        final Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+        final AtomicReference<Timeout> timeoutRef = new AtomicReference<Timeout>();
+        Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+        timeoutRef.set(timeout);
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
@@ -255,10 +257,10 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                     return;
                 }
                 if (!connFuture.isSuccess()) {
-                    timeout.cancel();
-
                     ex.set(convertException(connFuture));
-                    connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    if (timeoutRef.get().cancel()) {
+                        connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    }
                     return;
                 }
 
@@ -279,17 +281,18 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                         }
 
                         if (!future.isSuccess()) {
-                            timeout.cancel();
                             ex.set(new WriteRedisConnectionException("Can't write commands batch to channel: " + future.channel(), future.cause()));
-                            connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                            if (timeoutRef.get().cancel()) {
+                                connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                            }
                         }
                     }
                 });
 
                 if (entry.isReadOnlyMode()) {
-                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, timeout));
+                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, timeoutRef));
                 } else {
-                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, timeout));
+                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, timeoutRef));
                 }
             }
         });
@@ -297,7 +300,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         attemptPromise.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
-                timeout.cancel();
+                timeoutRef.get().cancel();
                 if (future.isCancelled() || mainPromise.isCancelled()) {
                     return;
                 }

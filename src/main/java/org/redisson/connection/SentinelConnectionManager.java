@@ -154,7 +154,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         onSlaveAdded(addr, msg);
                     }
                     if ("+sdown".equals(channel)) {
-                        onSlaveDown(addr, msg);
+                        onNodeDown(addr, msg);
                     }
                     if ("-sdown".equals(channel)) {
                         onSlaveUp(addr, msg);
@@ -212,7 +212,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private void onSlaveDown(URI sentinelAddr, String msg) {
+    private void onNodeDown(URI sentinelAddr, String msg) {
         String[] parts = msg.split(" ");
 
         if (parts.length > 3) {
@@ -232,7 +232,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     log.info("sentinel: {} has down", addr);
                 }
             } else if ("master".equals(parts[0])) {
-                // skip
+                String ip = parts[2];
+                String port = parts[3];
+
+                MasterSlaveEntry entry = getEntry(singleSlotRange);
+                entry.freeze();
+                String addr = ip + ":" + port;
+                log.info("master: {} has down", addr);
             } else {
                 log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, sentinelAddr.getHost(), sentinelAddr.getPort());
             }

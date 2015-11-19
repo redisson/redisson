@@ -141,7 +141,12 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
             // more than one slave available, so master could be removed from slaves
             connectionManager.slaveDown(this, host, port, FreezeReason.SYSTEM);
         }
+        oldMaster.freezeMaster(FreezeReason.MANAGER);
         connectionManager.shutdownAsync(oldMaster.getClient());
+    }
+
+    public void freeze() {
+        masterEntry.freezeMaster(FreezeReason.MANAGER);
     }
 
     public void shutdownMasterAsync() {

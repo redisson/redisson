@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.RedisAskException;
-import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;

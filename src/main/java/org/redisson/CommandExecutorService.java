@@ -424,7 +424,11 @@ public class CommandExecutorService implements CommandExecutor {
         }
 
         final Promise<R> attemptPromise = connectionManager.newPromise();
-        final AtomicReference<RedisException> ex = new AtomicReference<RedisException>();
+
+        final AtomicReference<ChannelFuture> writeFutureRef = new AtomicReference<ChannelFuture>();
+        final AtomicReference<RedisException> exceptionRef = new AtomicReference<RedisException>();
+        final AtomicReference<Timeout> timeoutRef = new AtomicReference<Timeout>();
+
 
         final Future<RedisConnection> connectionFuture;
         if (readOnlyMode) {
@@ -440,6 +444,17 @@ public class CommandExecutorService implements CommandExecutor {
                     connectionManager.getShutdownLatch().release();
                 }
 
+                if ((writeFutureRef.get() == null || !writeFutureRef.get().isDone())
+                        && connectionFuture.isSuccess()) {
+                    Timeout newTimeout = connectionManager.newTimeout(this, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    timeoutRef.set(newTimeout);
+                    return;
+                }
+
+                if (writeFutureRef.get() != null && writeFutureRef.get().isSuccess()) {
+                    return;
+                }
+
                 if (attemptPromise.isDone()) {
                     return;
                 }
@@ -450,7 +465,7 @@ public class CommandExecutorService implements CommandExecutor {
                 }
 
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
-                    attemptPromise.tryFailure(ex.get());
+                    attemptPromise.tryFailure(exceptionRef.get());
                     return;
                 }
                 if (!attemptPromise.cancel(false)) {
@@ -462,56 +477,69 @@ public class CommandExecutorService implements CommandExecutor {
             }
         };
 
-        ex.set(new RedisTimeoutException("Command execution timeout for command: " + command + " with params " + Arrays.toString(params) + " attempt " + attempt));
-        final Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+        exceptionRef.set(new RedisTimeoutException("Command execution timeout for command: " + command + " with params " + Arrays.toString(params)));
+        Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+        timeoutRef.set(timeout);
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                if (attemptPromise.isDone() || connFuture.isCancelled() || mainPromise.isCancelled()) {
+                if (attemptPromise.isDone() || connFuture.isCancelled() || mainPromise.isCancelled() || timeoutRef.get().isExpired()) {
                     return;
                 }
+
                 if (!connFuture.isSuccess()) {
-                    timeout.cancel();
-                    ex.set(convertException(connFuture));
-                    connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    exceptionRef.set(convertException(connFuture));
                     return;
                 }
 
                 RedisConnection connection = connFuture.getNow();
 
-                ChannelFuture writeFuture = null;
                 if (source.getRedirect() == Redirect.ASK) {
                     List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
                     Promise<Void> promise = connectionManager.newPromise();
                     list.add(new CommandData<Void, Void>(promise, codec, RedisCommands.ASKING, new Object[] {}));
                     list.add(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
                     Promise<Void> main = connectionManager.newPromise();
-                    writeFuture = connection.send(new CommandsData(main, list));
+                    ChannelFuture future = connection.send(new CommandsData(main, list));
+                    writeFutureRef.set(future);
                 } else {
                     log.debug("getting connection for command {} from slot {} using node {}", command, source, connection.getRedisClient().getAddr());
-                    writeFuture = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
+                    ChannelFuture future = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
+                    writeFutureRef.set(future);
                 }
 
-                writeFuture.addListener(new ChannelFutureListener() {
+                writeFutureRef.get().addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if (attemptPromise.isDone() || future.isCancelled() || mainPromise.isCancelled()) {
+                        if (attemptPromise.isDone() || mainPromise.isCancelled()) {
                             return;
                         }
                         if (!future.isSuccess()) {
-                            timeout.cancel();
-                            ex.set(new WriteRedisConnectionException(
+                            exceptionRef.set(new WriteRedisConnectionException(
                                     "Can't write command: " + command + ", params: " + params + " to channel: " + future.channel(), future.cause()));
-                            connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                        } else {
+                            timeoutRef.get().cancel();
+                            TimerTask timeoutTask = new TimerTask() {
+                                @Override
+                                public void run(Timeout timeout) throws Exception {
+                                    if (attemptPromise.isDone()) {
+                                        return;
+                                    }
+
+                                    attemptPromise.tryFailure(exceptionRef.get());
+                                }
+                            };
+                            Timeout timeout = connectionManager.newTimeout(timeoutTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+                            timeoutRef.set(timeout);
                         }
                     }
                 });
 
                 if (readOnlyMode) {
-                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, timeout));
+                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, timeoutRef));
                 } else {
-                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, timeout));
+                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, timeoutRef));
                 }
             }
         });
@@ -519,28 +547,25 @@ public class CommandExecutorService implements CommandExecutor {
         attemptPromise.addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
-                timeout.cancel();
+                timeoutRef.get().cancel();
                 if (future.isCancelled() || mainPromise.isCancelled()) {
                     return;
                 }
 
                 if (future.cause() instanceof RedisMovedException) {
                     RedisMovedException ex = (RedisMovedException)future.cause();
-                    connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
-                    async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), messageDecoder, codec, command, params, mainPromise, attempt);
+                    async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), messageDecoder, codec, command, params, mainPromise, 0);
                     return;
                 }
 
                 if (future.cause() instanceof RedisAskException) {
                     RedisAskException ex = (RedisAskException)future.cause();
-                    connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
-                    async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), messageDecoder, codec, command, params, mainPromise, attempt);
+                    async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), messageDecoder, codec, command, params, mainPromise, 0);
                     return;
                 }
 
                 if (future.cause() instanceof RedisLoadingException) {
-                    connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
-                    async(readOnlyMode, source, messageDecoder, codec, command, params, mainPromise, attempt);
+                    async(readOnlyMode, source, messageDecoder, codec, command, params, mainPromise, 0);
                     return;
                 }
 

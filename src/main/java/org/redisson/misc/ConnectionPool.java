@@ -18,6 +18,7 @@ package org.redisson.misc;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +60,17 @@ public class ConnectionPool<T extends RedisConnection> {
         this.loadBalancer = loadBalancer;
         this.masterSlaveEntry = masterSlaveEntry;
         this.connectionManager = connectionManager;
+
+//        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
+//
+//            @Override
+//            public void run() {
+//                if (promises.size() > 0) {
+//                    System.out.println("promises " + promises.size());
+//                }
+//
+//            }
+//        }, 1, 1, TimeUnit.SECONDS);
     }
 
     public void add(final SubscribesConnectionEntry entry) {
@@ -215,19 +227,13 @@ public class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        promises.add(promise);
-//        promise.tryFailure(cause);
+//        promises.add(promise);
+        promise.tryFailure(cause);
     }
 
     private void freezeMaster(SubscribesConnectionEntry entry) {
-        synchronized (entry) {
-            if (!entry.isFreezed()) {
-                entry.setFreezed(true);
-                if (entry.getFreezeReason() == null) {
-                    entry.setFreezeReason(FreezeReason.RECONNECT);
-                }
-                scheduleCheck(entry);
-            }
+        if (entry.freezeMaster(FreezeReason.RECONNECT)) {
+            scheduleCheck(entry);
         }
     }
 
@@ -248,9 +254,9 @@ public class ConnectionPool<T extends RedisConnection> {
 
         releaseConnection(entry);
 
-        promises.add(promise);
-//        RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
-//        promise.tryFailure(cause);
+//        promises.add(promise);
+        RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
+        promise.tryFailure(cause);
     }
 
     private void scheduleCheck(final SubscribesConnectionEntry entry) {

@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
@@ -72,10 +73,10 @@ public interface ConnectionManager {
     Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
     <T> FutureListener<T> createReleaseReadListener(NodeSource source,
-            RedisConnection conn, Timeout timeout);
+            RedisConnection conn, AtomicReference<Timeout> timeout);
 
     <T> FutureListener<T> createReleaseWriteListener(NodeSource source,
-            RedisConnection conn, Timeout timeout);
+            RedisConnection conn, AtomicReference<Timeout> timeout);
 
     RedisClient createClient(String host, int port, int timeout);
 

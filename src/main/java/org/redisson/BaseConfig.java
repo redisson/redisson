@@ -26,7 +26,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     private int pingTimeout = 1000;
 
     /**
-     * Connect timeout used for any Redis server connection.
+     * This timeout used during connection establishment to any Redis server.
      * Value in milliseconds.
      *
      */
@@ -37,9 +37,9 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
      * or <code>Future</code> callback fails in case of <b>async</b> operation.
      */
-    private int timeout = 60000;
+    private int timeout = 1000;
 
-    private int retryAttempts = 20;
+    private int retryAttempts = 3;
 
     private int retryInterval = 1000;
 
@@ -128,7 +128,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Time pause before next reconnection attempt.
+     * Time pause before next command attempt.
      *
      * Used then connection with redis server is down.
      *
@@ -216,7 +216,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Connect timeout used for any Redis server connection.
+     * This timeout used during connection establishment to any Redis server.
      *
      * @param connectTimeout - timeout in milliseconds
      * @return

@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
@@ -147,12 +149,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
-        int minTimeout = Math.min(config.getRetryInterval(), config.getTimeout());
+        int[] timeouts = new int[] {config.getRetryInterval(), config.getTimeout(), config.getSlaveReconnectionTimeout()};
+        Arrays.sort(timeouts);
+        int minTimeout = timeouts[0];
         if (minTimeout % 100 != 0) {
-            timer = new HashedWheelTimer((minTimeout % 100) / 2, TimeUnit.MILLISECONDS);
+            minTimeout = (minTimeout % 100) / 2;
+        } else if (minTimeout == 100) {
+            minTimeout = 50;
         } else {
-            timer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS);
+            minTimeout = 100;
         }
+        timer = new HashedWheelTimer(minTimeout, TimeUnit.MILLISECONDS);
 
         initEntry(config);
     }
@@ -195,7 +202,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public <T> FutureListener<T> createReleaseWriteListener(final NodeSource source,
-                                    final RedisConnection conn, final Timeout timeout) {
+                                    final RedisConnection conn, final AtomicReference<Timeout> timeout) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -210,7 +217,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
 
                 shutdownLatch.release();
-                timeout.cancel();
+                timeout.get().cancel();
                 releaseWrite(source, conn);
             }
         };
@@ -218,7 +225,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public <T> FutureListener<T> createReleaseReadListener(final NodeSource source,
-                                    final RedisConnection conn, final Timeout timeout) {
+                                    final RedisConnection conn, final AtomicReference<Timeout> timeout) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -233,7 +240,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
 
                 shutdownLatch.release();
-                timeout.cancel();
+                timeout.get().cancel();
                 releaseRead(source, conn);
             }
         };
