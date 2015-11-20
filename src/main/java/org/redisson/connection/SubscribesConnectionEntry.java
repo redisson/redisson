@@ -103,16 +103,20 @@ public class SubscribesConnectionEntry {
         return freeConnectionsCounter.get();
     }
 
-    public boolean tryAcquireConnection() {
+    private boolean tryAcquire(AtomicInteger counter) {
         while (true) {
-            int value = freeConnectionsCounter.get();
+            int value = counter.get();
             if (value == 0) {
                 return false;
             }
-            if (freeConnectionsCounter.compareAndSet(value, value - 1)) {
+            if (counter.compareAndSet(value, value - 1)) {
                 return true;
             }
         }
+    }
+
+    public boolean tryAcquireConnection() {
+        return tryAcquire(freeConnectionsCounter);
     }
 
     public void releaseConnection() {
@@ -200,15 +204,7 @@ public class SubscribesConnectionEntry {
     }
 
     public boolean tryAcquireSubscribeConnection() {
-        while (true) {
-            if (freeSubscribeConnectionsCounter.get() == 0) {
-                return false;
-            }
-            int value = freeSubscribeConnectionsCounter.get();
-            if (freeSubscribeConnectionsCounter.compareAndSet(value, value - 1)) {
-                return true;
-            }
-        }
+        return tryAcquire(freeSubscribeConnectionsCounter);
     }
 
     public void releaseSubscribeConnection() {
