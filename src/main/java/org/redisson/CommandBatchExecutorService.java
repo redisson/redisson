@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -277,8 +278,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                     return;
                 }
 
-                RedisConnection connection = connFuture.getNow();
-
+                final RedisConnection connection = connFuture.getNow();
 
                 if (source.getRedirect() == Redirect.ASK) {
                     List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size() + 1);
@@ -312,7 +312,8 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                             TimerTask timeoutTask = new TimerTask() {
                                 @Override
                                 public void run(Timeout timeout) throws Exception {
-                                    attemptPromise.tryFailure(exceptionRef.get());
+                                    attemptPromise.tryFailure(
+                                            new RedisTimeoutException("Redis server response timeout during batch command execution. Channel: " + connection.getChannel()));
                                 }
                             };
                             Timeout timeout = connectionManager.newTimeout(timeoutTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
