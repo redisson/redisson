@@ -167,19 +167,30 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             promise.setSuccess(false);
             return promise;
         }
-        final int listSize = size();
-        List<Object> args = new ArrayList<Object>(c.size() + 1);
-        args.add(getName());
-        args.addAll(c);
-        Future<Long> res = commandExecutor.writeAsync(getName(), codec, RPUSH, args.toArray());
-        res.addListener(new FutureListener<Long>() {
+        Future<Integer> sizeFuture = sizeAsync();
+        sizeFuture.addListener(new FutureListener<Integer>() {
             @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (future.isSuccess()) {
-                    promise.setSuccess(listSize != future.getNow());
-                } else {
+            public void operationComplete(Future<Integer> future) throws Exception {
+                if (!future.isSuccess()) {
                     promise.setFailure(future.cause());
+                    return;
                 }
+
+                final int listSize = future.getNow();
+                List<Object> args = new ArrayList<Object>(c.size() + 1);
+                args.add(getName());
+                args.addAll(c);
+                Future<Long> res = commandExecutor.writeAsync(getName(), codec, RPUSH, args.toArray());
+                res.addListener(new FutureListener<Long>() {
+                    @Override
+                    public void operationComplete(Future<Long> future) throws Exception {
+                        if (future.isSuccess()) {
+                            promise.setSuccess(listSize != future.getNow());
+                        } else {
+                            promise.setFailure(future.cause());
+                        }
+                    }
+                });
             }
         });
         return promise;
