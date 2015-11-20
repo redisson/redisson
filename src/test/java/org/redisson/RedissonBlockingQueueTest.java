@@ -20,7 +20,10 @@ public class RedissonBlockingQueueTest extends BaseTest {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
         queue1.put(1);
         Assert.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
-        Assert.assertNull(queue1.poll(2, TimeUnit.SECONDS));
+
+        long s = System.currentTimeMillis();
+        Assert.assertNull(queue1.poll(5, TimeUnit.SECONDS));
+        Assert.assertTrue(System.currentTimeMillis() - s > 5000);
     }
     @Test
     public void testAwait() throws InterruptedException {

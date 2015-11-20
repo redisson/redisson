@@ -178,6 +178,15 @@ public class RedisConnection implements RedisCommands {
         channel.close();
     }
 
+    /**
+     * Access to Netty channel.
+     * This method is only provided to use in debug info.
+     *
+     */
+    public Channel getChannel() {
+        return channel;
+    }
+
     public ChannelFuture closeAsync() {
         setClosed(true);
         return channel.close();
