@@ -2,6 +2,7 @@ package org.redisson;
 
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -67,14 +68,14 @@ public class RedissonTopicTest {
                 messageRecieved.countDown();
                 Message m = new Message("test");
                 if (!msg.equals(m)) {
-                    topic1.publish(m);
-                    topic2.publish(m);
+                    topic1.publishAsync(m);
+                    topic2.publishAsync(m);
                 }
             }
         });
         topic2.publish(new Message("123"));
 
-        messageRecieved.await();
+        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
 
         redisson1.shutdown();
         redisson2.shutdown();
