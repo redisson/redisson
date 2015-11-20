@@ -26,7 +26,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.connection.ConnectionEntry.FreezeReason;
+import org.redisson.connection.SubscribesConnectionEntry.FreezeReason;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 import org.slf4j.Logger;

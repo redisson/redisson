@@ -33,7 +33,7 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.connection.ConnectionEntry.FreezeReason;
+import org.redisson.connection.SubscribesConnectionEntry.FreezeReason;
 import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

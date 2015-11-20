@@ -20,7 +20,7 @@ import java.util.Collection;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.connection.ConnectionEntry.FreezeReason;
+import org.redisson.connection.SubscribesConnectionEntry.FreezeReason;
 
 import io.netty.util.concurrent.Future;
 

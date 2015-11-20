@@ -23,13 +23,13 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ConnectionEntry.NodeType;
+import org.redisson.connection.SubscribesConnectionEntry.NodeType;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 
 import io.netty.util.concurrent.Future;
 
-public class SingleEntry extends MasterSlaveEntry<SubscribesConnectionEntry> {
+public class SingleEntry extends MasterSlaveEntry {
 
     final ConnectionPool<RedisPubSubConnection> pubSubConnectionHolder;
 

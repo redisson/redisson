@@ -18,9 +18,9 @@ package org.redisson.cluster;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionEntry.NodeType;
 import org.redisson.connection.DefaultConnectionListener;
 import org.redisson.connection.FutureConnectionListener;
+import org.redisson.connection.SubscribesConnectionEntry.NodeType;
 
 public class ClusterConnectionListener extends DefaultConnectionListener {
 

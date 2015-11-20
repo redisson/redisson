@@ -17,7 +17,7 @@ package org.redisson.connection;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisException;
-import org.redisson.connection.ConnectionEntry.NodeType;
+import org.redisson.connection.SubscribesConnectionEntry.NodeType;
 
 public interface ConnectionListener {
 

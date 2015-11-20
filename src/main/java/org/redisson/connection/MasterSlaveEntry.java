@@ -26,8 +26,8 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ConnectionEntry.FreezeReason;
-import org.redisson.connection.ConnectionEntry.NodeType;
+import org.redisson.connection.SubscribesConnectionEntry.FreezeReason;
+import org.redisson.connection.SubscribesConnectionEntry.NodeType;
 import org.redisson.misc.MasterConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ import io.netty.util.concurrent.Future;
  *
  */
 //TODO ping support
-public class MasterSlaveEntry<E extends ConnectionEntry> {
+public class MasterSlaveEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
