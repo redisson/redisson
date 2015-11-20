@@ -523,10 +523,6 @@ public class CommandExecutorService implements CommandExecutor {
                             TimerTask timeoutTask = new TimerTask() {
                                 @Override
                                 public void run(Timeout timeout) throws Exception {
-                                    if (attemptPromise.isDone()) {
-                                        return;
-                                    }
-
                                     attemptPromise.tryFailure(exceptionRef.get());
                                 }
                             };
@@ -554,18 +550,18 @@ public class CommandExecutorService implements CommandExecutor {
 
                 if (future.cause() instanceof RedisMovedException) {
                     RedisMovedException ex = (RedisMovedException)future.cause();
-                    async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), messageDecoder, codec, command, params, mainPromise, 0);
+                    async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), messageDecoder, codec, command, params, mainPromise, attempt);
                     return;
                 }
 
                 if (future.cause() instanceof RedisAskException) {
                     RedisAskException ex = (RedisAskException)future.cause();
-                    async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), messageDecoder, codec, command, params, mainPromise, 0);
+                    async(readOnlyMode, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), messageDecoder, codec, command, params, mainPromise, attempt);
                     return;
                 }
 
                 if (future.cause() instanceof RedisLoadingException) {
-                    async(readOnlyMode, source, messageDecoder, codec, command, params, mainPromise, 0);
+                    async(readOnlyMode, source, messageDecoder, codec, command, params, mainPromise, attempt);
                     return;
                 }
 

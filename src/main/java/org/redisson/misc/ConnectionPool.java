@@ -282,50 +282,51 @@ public class ConnectionPool<T extends RedisConnection> {
                             return;
                         }
                         final RedisConnection c = future.getNow();
-                        if (c.isActive()) {
-                            Future<String> f = c.asyncWithTimeout(null, RedisCommands.PING);
-                            f.addListener(new FutureListener<String>() {
-                                @Override
-                                public void operationComplete(Future<String> future) throws Exception {
-                                    try {
-                                        if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                                                || !entry.isFreezed()) {
-                                            return;
-                                        }
+                        if (!c.isActive()) {
+                            c.closeAsync();
+                            scheduleCheck(entry);
+                            return;
+                        }
 
-                                        if (future.isSuccess() && "PONG".equals(future.getNow())) {
-                                            entry.resetFailedAttempts();
-                                            initConnections(entry, new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    if (entry.getNodeType() == NodeType.SLAVE) {
-                                                        handleQueue(entry, false);
-                                                        masterSlaveEntry.slaveUp(entry.getClient().getAddr().getHostName(), entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
-                                                    } else {
-                                                        synchronized (entry) {
-                                                            if (entry.getFreezeReason() == FreezeReason.RECONNECT) {
-                                                                handleQueue(entry, false);
+                        Future<String> f = c.asyncWithTimeout(null, RedisCommands.PING);
+                        f.addListener(new FutureListener<String>() {
+                            @Override
+                            public void operationComplete(Future<String> future) throws Exception {
+                                try {
+                                    if (entry.getFreezeReason() != FreezeReason.RECONNECT
+                                            || !entry.isFreezed()) {
+                                        return;
+                                    }
 
-                                                                entry.setFreezed(false);
-                                                                entry.setFreezeReason(null);
-                                                            }
+                                    if (future.isSuccess() && "PONG".equals(future.getNow())) {
+                                        entry.resetFailedAttempts();
+                                        initConnections(entry, new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (entry.getNodeType() == NodeType.SLAVE) {
+                                                    handleQueue(entry, false);
+                                                    masterSlaveEntry.slaveUp(entry.getClient().getAddr().getHostName(), entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
+                                                } else {
+                                                    synchronized (entry) {
+                                                        if (entry.getFreezeReason() == FreezeReason.RECONNECT) {
+                                                            handleQueue(entry, false);
+
+                                                            entry.setFreezed(false);
+                                                            entry.setFreezeReason(null);
                                                         }
                                                     }
                                                 }
-                                            }, false);
+                                            }
+                                        }, false);
 
-                                        } else {
-                                            scheduleCheck(entry);
-                                        }
-                                    } finally {
-                                        c.closeAsync();
+                                    } else {
+                                        scheduleCheck(entry);
                                     }
+                                } finally {
+                                    c.closeAsync();
                                 }
-                            });
-                        } else {
-                            c.closeAsync();
-                            scheduleCheck(entry);
-                        }
+                            }
+                        });
                     }
                 });
             }

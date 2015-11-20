@@ -41,7 +41,7 @@ public class SubscribesConnectionEntry extends ConnectionEntry {
         return allSubscribeConnections;
     }
 
-    public RedisPubSubConnection pollFreeSubscribeConnection() {
+    public RedisPubSubConnection pollSubscribeConnection() {
         return freeSubscribeConnections.poll();
     }
 

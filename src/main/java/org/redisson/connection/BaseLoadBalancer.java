@@ -118,7 +118,7 @@ abstract class BaseLoadBalancer implements LoadBalancer {
 
         // close all pub/sub connections
         while (true) {
-            RedisPubSubConnection connection = connectionEntry.pollFreeSubscribeConnection();
+            RedisPubSubConnection connection = connectionEntry.pollSubscribeConnection();
             if (connection == null) {
                 break;
             }

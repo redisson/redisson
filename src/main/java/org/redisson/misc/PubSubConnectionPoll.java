@@ -33,7 +33,7 @@ public class PubSubConnectionPoll extends ConnectionPool<RedisPubSubConnection> 
 
     @Override
     protected RedisPubSubConnection poll(SubscribesConnectionEntry entry) {
-        return entry.pollFreeSubscribeConnection();
+        return entry.pollSubscribeConnection();
     }
 
     @Override
