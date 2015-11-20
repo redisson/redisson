@@ -30,7 +30,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.connection.ConnectionEntry.NodeType;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.LoadBalancer;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.SubscribesConnectionEntry;
 
@@ -42,7 +41,7 @@ import io.netty.util.concurrent.Promise;
 
 public class ConnectionPool<T extends RedisConnection> {
 
-    final List<SubscribesConnectionEntry> entries = new CopyOnWriteArrayList<SubscribesConnectionEntry>();
+    protected final List<SubscribesConnectionEntry> entries = new CopyOnWriteArrayList<SubscribesConnectionEntry>();
 
     final Deque<Promise<T>> promises = new LinkedBlockingDeque<Promise<T>>();
 
@@ -50,14 +49,10 @@ public class ConnectionPool<T extends RedisConnection> {
 
     final MasterSlaveServersConfig config;
 
-    final LoadBalancer loadBalancer;
-
     final MasterSlaveEntry masterSlaveEntry;
 
-    public ConnectionPool(MasterSlaveServersConfig config, LoadBalancer loadBalancer,
-            ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
+    public ConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
         this.config = config;
-        this.loadBalancer = loadBalancer;
         this.masterSlaveEntry = masterSlaveEntry;
         this.connectionManager = connectionManager;
 
@@ -117,26 +112,20 @@ public class ConnectionPool<T extends RedisConnection> {
     }
 
     protected int getMinimumIdleSize(SubscribesConnectionEntry entry) {
-        int minimumIdleSize = config.getSlaveConnectionMinimumIdleSize();
-        // is it a master connection pool?
-        if (entry.getNodeType() == NodeType.MASTER && loadBalancer == null) {
-            minimumIdleSize = config.getMasterConnectionMinimumIdleSize();
-        }
-        return minimumIdleSize;
+        return config.getSlaveConnectionMinimumIdleSize();
     }
 
     public void remove(SubscribesConnectionEntry entry) {
         entries.remove(entry);
     }
 
+    protected SubscribesConnectionEntry getEntry() {
+        return config.getLoadBalancer().getEntry(entries);
+    }
+
     public Future<T> get() {
         for (int j = entries.size() - 1; j >= 0; j--) {
-            SubscribesConnectionEntry entry;
-            if (ConnectionPool.this.loadBalancer != null) {
-                entry = ConnectionPool.this.loadBalancer.getEntry(entries);
-            } else {
-                entry = entries.get(0);
-            }
+            SubscribesConnectionEntry entry = getEntry();
             if (!entry.isFreezed() && tryAcquireConnection(entry)) {
                 Promise<T> promise = connectionManager.newPromise();
                 connect(entry, promise);

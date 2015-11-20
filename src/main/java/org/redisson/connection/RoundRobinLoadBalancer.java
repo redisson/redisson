@@ -18,7 +18,7 @@ package org.redisson.connection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class RoundRobinLoadBalancer extends BaseLoadBalancer {
+public class RoundRobinLoadBalancer implements LoadBalancer {
 
     private final AtomicInteger index = new AtomicInteger(-1);
 

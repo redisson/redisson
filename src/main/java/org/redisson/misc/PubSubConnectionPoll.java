@@ -18,7 +18,6 @@ package org.redisson.misc;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.LoadBalancer;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.SubscribesConnectionEntry;
 
@@ -26,9 +25,8 @@ import io.netty.util.concurrent.Future;
 
 public class PubSubConnectionPoll extends ConnectionPool<RedisPubSubConnection> {
 
-    public PubSubConnectionPoll(MasterSlaveServersConfig config,
-            LoadBalancer loadBalancer, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
-        super(config, loadBalancer, connectionManager, masterSlaveEntry);
+    public PubSubConnectionPoll(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
+        super(config, connectionManager, masterSlaveEntry);
     }
 
     @Override

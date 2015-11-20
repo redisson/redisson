@@ -19,7 +19,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Random;
 
-public class RandomLoadBalancer extends BaseLoadBalancer {
+public class RandomLoadBalancer implements LoadBalancer {
 
     private final Random random = new SecureRandom();
 

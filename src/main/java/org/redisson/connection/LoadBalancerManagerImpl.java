@@ -35,21 +35,19 @@ import org.slf4j.LoggerFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
 
-abstract class BaseLoadBalancer implements LoadBalancer {
+public class LoadBalancerManagerImpl implements LoadBalancerManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private ConnectionManager connectionManager;
-    final Map<InetSocketAddress, SubscribesConnectionEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
+    private final ConnectionManager connectionManager;
+    private final Map<InetSocketAddress, SubscribesConnectionEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
+    private final PubSubConnectionPoll pubSubEntries;
+    private final ConnectionPool<RedisConnection> entries;
 
-    PubSubConnectionPoll pubSubEntries;
-
-    ConnectionPool<RedisConnection> entries;
-
-    public void init(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry entry) {
+    public LoadBalancerManagerImpl(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry entry) {
         this.connectionManager = connectionManager;
-        entries = new ConnectionPool<RedisConnection>(config, this, connectionManager, entry);
-        pubSubEntries = new PubSubConnectionPoll(config, this, connectionManager, entry);
+        entries = new ConnectionPool<RedisConnection>(config, connectionManager, entry);
+        pubSubEntries = new PubSubConnectionPoll(config, connectionManager, entry);
     }
 
     public synchronized void add(SubscribesConnectionEntry entry) {

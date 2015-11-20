@@ -28,7 +28,7 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ConnectionEntry.FreezeReason;
 import org.redisson.connection.ConnectionEntry.NodeType;
-import org.redisson.misc.ConnectionPool;
+import org.redisson.misc.MasterConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +44,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
-    LoadBalancer slaveBalancer;
+    LoadBalancerManager slaveBalancer;
     SubscribesConnectionEntry masterEntry;
 
     final ConnectionListener connectListener;
@@ -52,7 +52,7 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
-    final ConnectionPool<RedisConnection> writeConnectionHolder;
+    final MasterConnectionPool writeConnectionHolder;
     final Set<ClusterSlotRange> slotRanges;
 
     final AtomicBoolean active = new AtomicBoolean(true);
@@ -63,12 +63,11 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         this.config = config;
         this.connectListener = connectListener;
 
-        slaveBalancer = config.getLoadBalancer();
-        slaveBalancer.init(config, connectionManager, this);
+        slaveBalancer = new LoadBalancerManagerImpl(config, connectionManager, this);
 
         initSlaveBalancer(config);
 
-        writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager, this);
+        writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
     }
 
     protected void initSlaveBalancer(MasterSlaveServersConfig config) {
