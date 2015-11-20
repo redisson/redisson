@@ -98,10 +98,10 @@ public class ConnectionEntry {
 
     public boolean tryAcquireConnection() {
         while (true) {
-            if (connectionsCounter.get() == 0) {
+            int value = connectionsCounter.get();
+            if (value == 0) {
                 return false;
             }
-            int value = connectionsCounter.get();
             if (connectionsCounter.compareAndSet(value, value - 1)) {
                 return true;
             }
