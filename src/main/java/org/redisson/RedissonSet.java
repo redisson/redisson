@@ -19,9 +19,11 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -87,23 +89,31 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
             private List<V> firstValues;
             private Iterator<V> iter;
             private InetSocketAddress client;
-            private long iterPos;
+            private long nextIterPos;
 
+            private boolean currentElementRemoved;
             private boolean removeExecuted;
             private V value;
 
             @Override
             public boolean hasNext() {
                 if (iter == null || !iter.hasNext()) {
-                    ListScanResult<V> res = scanIterator(client, iterPos);
+                    if (nextIterPos == -1) {
+                        return false;
+                    }
+                    long prevIterPos = nextIterPos;
+                    ListScanResult<V> res = scanIterator(client, nextIterPos);
                     client = res.getRedisClient();
-                    if (iterPos == 0 && firstValues == null) {
+                    if (nextIterPos == 0 && firstValues == null) {
                         firstValues = res.getValues();
                     } else if (res.getValues().equals(firstValues)) {
                         return false;
                     }
                     iter = res.getValues().iterator();
-                    iterPos = res.getPos();
+                    nextIterPos = res.getPos();
+                    if (prevIterPos == nextIterPos && !removeExecuted) {
+                        nextIterPos = -1;
+                    }
                 }
                 return iter.hasNext();
             }
@@ -115,13 +125,13 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                 }
 
                 value = iter.next();
-                removeExecuted = false;
+                currentElementRemoved = false;
                 return value;
             }
 
             @Override
             public void remove() {
-                if (removeExecuted) {
+                if (currentElementRemoved) {
                     throw new IllegalStateException("Element been already deleted");
                 }
                 if (iter == null) {
@@ -130,6 +140,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
                 iter.remove();
                 RedissonSet.this.remove(value);
+                currentElementRemoved = true;
                 removeExecuted = true;
             }
 
