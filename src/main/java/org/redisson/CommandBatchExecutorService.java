@@ -225,23 +225,19 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         final TimerTask retryTimerTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (connectionFuture.cancel(false)) {
-                    connectionManager.getShutdownLatch().release();
-                }
-
-                if ((writeFutureRef.get() == null || !writeFutureRef.get().isDone())
-                        && connectionFuture.isSuccess()) {
-                    Timeout newTimeout = connectionManager.newTimeout(this, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
-                    timeoutRef.set(newTimeout);
-                    return;
-                }
-
-                if (writeFutureRef.get() != null && writeFutureRef.get().isSuccess()) {
-                    return;
-                }
-
                 if (attemptPromise.isDone()) {
                     return;
+                }
+
+                if (connectionFuture.cancel(false)) {
+                    connectionManager.getShutdownLatch().release();
+                } else {
+                    if (connectionFuture.isSuccess()) {
+                        ChannelFuture writeFuture = writeFutureRef.get();
+                        if (writeFuture != null && !writeFuture.cancel(false) && writeFuture.isSuccess()) {
+                            return;
+                        }
+                    }
                 }
 
                 if (mainPromise.isCancelled()) {
@@ -269,7 +265,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                if (attemptPromise.isDone() || connFuture.isCancelled() || mainPromise.isCancelled()) {
+                if (attemptPromise.isDone() || mainPromise.isCancelled() || connFuture.isCancelled()) {
                     return;
                 }
 
@@ -302,18 +298,19 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 writeFutureRef.get().addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if (attemptPromise.isDone() || mainPromise.isCancelled()) {
+                        if (attemptPromise.isDone() || future.isCancelled()) {
                             return;
                         }
+
                         if (!future.isSuccess()) {
-                            exceptionRef.set(new WriteRedisConnectionException("Can't write commands batch to channel: " + future.channel(), future.cause()));
+                            exceptionRef.set(new WriteRedisConnectionException("Can't write command batch to channel: " + future.channel(), future.cause()));
                         } else {
                             timeoutRef.get().cancel();
                             TimerTask timeoutTask = new TimerTask() {
                                 @Override
                                 public void run(Timeout timeout) throws Exception {
                                     attemptPromise.tryFailure(
-                                            new RedisTimeoutException("Redis server response timeout during batch command execution. Channel: " + connection.getChannel()));
+                                            new RedisTimeoutException("Redis server response timeout during command batch execution. Channel: " + connection.getChannel()));
                                 }
                             };
                             Timeout timeout = connectionManager.newTimeout(timeoutTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
@@ -334,7 +331,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 timeoutRef.get().cancel();
-                if (future.isCancelled() || mainPromise.isCancelled()) {
+                if (future.isCancelled()) {
                     return;
                 }
 
