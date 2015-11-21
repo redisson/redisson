@@ -27,6 +27,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
@@ -123,7 +124,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     private void handleCommandsDataResponse(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data,
-            Decoder<Object> currentDecoder, CommandsData commands) throws Exception {
+            Decoder<Object> currentDecoder, CommandsData commands) {
         int i = state().getIndex();
 
         while (in.writerIndex() > in.readerIndex()) {
@@ -141,7 +142,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         if (i == commands.getCommands().size()) {
             Promise<Void> promise = commands.getPromise();
-            if (!promise.trySuccess(null)) {
+            if (!promise.trySuccess(null) && promise.cause() instanceof RedisTimeoutException) {
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
             }
 
@@ -277,7 +278,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            if (!data.getPromise().trySuccess(result)) {
+            if (!data.getPromise().trySuccess(result) && data.getPromise().cause() instanceof RedisTimeoutException) {
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, data, result);
             }
         }

@@ -42,7 +42,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
 
     private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
 
-    public void sendNextCommand(ChannelHandlerContext ctx) throws Exception {
+    public void sendNextCommand(ChannelHandlerContext ctx) {
         ctx.channel().attr(CommandsQueue.REPLAY).remove();
         queue.poll();
         sendData(ctx);
@@ -64,7 +64,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
         }
     }
 
-    private void sendData(final ChannelHandlerContext ctx) throws Exception {
+    private void sendData(final ChannelHandlerContext ctx) {
         QueueCommandHolder command = queue.peek();
         if (command != null && command.getSended().compareAndSet(false, true)) {
             QueueCommand data = command.getCommand();
