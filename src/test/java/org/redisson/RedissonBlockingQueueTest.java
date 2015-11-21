@@ -16,6 +16,31 @@ import org.redisson.core.*;
 public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
+    public void testTake() throws InterruptedException {
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:take");
+        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
+            @Override
+            public void run() {
+                RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue:take");
+                try {
+                    queue.put(3);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }, 10, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        int l = queue1.take();
+
+        Assert.assertEquals(3, l);
+        Assert.assertTrue(System.currentTimeMillis() - s > 9000);
+
+
+    }
+
+    @Test
     public void testPoll() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
         queue1.put(1);

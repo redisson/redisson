@@ -528,10 +528,17 @@ public class CommandExecutorService implements CommandExecutor {
 
                             int timeoutTime = connectionManager.getConfig().getTimeout();
                             if (command.getName().equals(RedisCommands.BLPOP_VALUE.getName())) {
-                                timeoutTime += Integer.valueOf(params[params.length - 1].toString())*1000;
+                                Integer blPopTimeout = Integer.valueOf(params[params.length - 1].toString());
+                                if (blPopTimeout == 0) {
+                                    timeoutTime = -1;
+                                } else {
+                                    timeoutTime += blPopTimeout*1000;
+                                }
                             }
-                            Timeout timeout = connectionManager.newTimeout(timeoutTask, timeoutTime, TimeUnit.MILLISECONDS);
-                            timeoutRef.set(timeout);
+                            if (timeoutTime != -1) {
+                                Timeout timeout = connectionManager.newTimeout(timeoutTask, timeoutTime, TimeUnit.MILLISECONDS);
+                                timeoutRef.set(timeout);
+                            }
                         }
                     }
                 });
