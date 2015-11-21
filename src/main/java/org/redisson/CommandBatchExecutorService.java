@@ -49,6 +49,7 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
@@ -183,7 +184,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                     entries.addAll(e.getCommands());
                 }
                 Collections.sort(entries);
-                List<Object> result = new ArrayList<Object>();
+                List<Object> result = new ArrayList<Object>(entries.size());
                 for (CommandEntry commandEntry : entries) {
                     result.add(commandEntry.getCommand().getPromise().getNow());
                 }
@@ -225,7 +226,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
         final TimerTask retryTimerTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (attemptPromise.isDone()) {
+                if (attemptPromise.isDone() || mainPromise.isDone()) {
                     return;
                 }
 
@@ -287,13 +288,22 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                     writeFutureRef.set(future);
                 } else {
                     List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size());
+                    FutureListener<Object> listener = new FutureListener<Object>() {
+                        @Override
+                        public void operationComplete(Future<Object> future) throws Exception {
+                            if (!future.isSuccess() && !mainPromise.isDone()) {
+                                mainPromise.setFailure(future.cause());
+                            }
+                        }
+                    };
+
                     for (CommandEntry c : entry.getCommands()) {
+                        c.getCommand().getPromise().addListener(listener);
                         list.add(c.getCommand());
                     }
                     ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
                     writeFutureRef.set(future);
                 }
-
 
                 writeFutureRef.get().addListener(new ChannelFutureListener() {
                     @Override
@@ -331,7 +341,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 timeoutRef.get().cancel();
-                if (future.isCancelled()) {
+                if (future.isCancelled() || mainPromise.isDone()) {
                     return;
                 }
 

@@ -6,9 +6,12 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.core.RScript;
 import org.redisson.core.RBatch;
 import org.redisson.core.RListAsync;
+import org.redisson.core.RScript.Mode;
 
 import io.netty.util.concurrent.Future;
 
@@ -50,6 +53,14 @@ public class RedissonBatchTest extends BaseTest {
         }
         List<?> res = batch.execute();
         Assert.assertEquals(210*5, res.size());
+    }
+
+    @Test(expected=RedisException.class)
+    public void testExceptionHandling() {
+        RBatch batch = redisson.createBatch();
+        batch.getMap("test").putAsync("1", "2");
+        batch.getScript().evalAsync(Mode.READ_WRITE, "wrong_code", RScript.ReturnType.VALUE);
+        batch.execute();
     }
 
     @Test(expected=IllegalStateException.class)

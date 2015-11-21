@@ -17,6 +17,7 @@ package org.redisson.core;
 
 import java.util.List;
 
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 
 import io.netty.util.concurrent.Future;
@@ -171,10 +172,10 @@ public interface RBatch {
     /**
      * Executes all operations accumulated during async methods invocations.
      *
-     * In cluster configurations operations grouped by slot ids
-     * so may be executed on different servers. Thus command execution order could be changed
+     * If cluster configuration used then operations are grouped by slot ids
+     * and may be executed on different servers. Thus command execution order could be changed
      *
-     * @return
+     * @return List with result object for each command
      */
     List<?> execute();
 
@@ -184,7 +185,7 @@ public interface RBatch {
      * In cluster configurations operations grouped by slot ids
      * so may be executed on different servers. Thus command execution order could be changed
      *
-     * @return
+     * @return List with result object for each command
      */
     Future<List<?>> executeAsync();
 
