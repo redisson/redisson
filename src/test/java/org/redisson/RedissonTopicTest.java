@@ -68,8 +68,8 @@ public class RedissonTopicTest {
                 messageRecieved.countDown();
                 Message m = new Message("test");
                 if (!msg.equals(m)) {
-                    topic1.publishAsync(m);
-                    topic2.publishAsync(m);
+                    topic1.publish(m);
+                    topic2.publish(m);
                 }
             }
         });
