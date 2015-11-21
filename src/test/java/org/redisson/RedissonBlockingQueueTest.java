@@ -13,7 +13,35 @@ import org.hamcrest.*;
 import org.junit.*;
 import org.redisson.core.*;
 
+import io.netty.util.concurrent.Future;
+
 public class RedissonBlockingQueueTest extends BaseTest {
+
+    @Test
+    public void testPollFromAny() throws InterruptedException {
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
+            @Override
+            public void run() {
+                RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
+                RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+                try {
+                    queue1.put(1);
+                    queue3.put(2);
+                    queue2.put(3);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }, 3, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        int l = queue1.pollFromAny(4, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
+
+        Assert.assertEquals(2, l);
+        Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+    }
 
     @Test
     public void testTake() throws InterruptedException {

@@ -28,6 +28,8 @@ import io.netty.util.concurrent.Future;
  */
 public interface RBlockingQueueAsync<V> extends RQueueAsync<V>, RExpirableAsync {
 
+    Future<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+
     Future<Integer> drainToAsync(Collection<? super V> c, int maxElements);
 
     Future<Integer> drainToAsync(Collection<? super V> c);

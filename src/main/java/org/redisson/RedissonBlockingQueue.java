@@ -15,8 +15,10 @@
  */
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -83,6 +85,20 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     public V poll(long timeout, TimeUnit unit) throws InterruptedException {
         Future<V> res = pollAsync(timeout, unit);
         return res.await().getNow();
+    }
+
+    public V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+        Future<V> res = pollFromAnyAsync(timeout, unit, queueNames);
+        return res.await().getNow();
+    }
+
+    public Future<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+        List<Object> params = new ArrayList<Object>(queueNames.length);
+        for (Object name : queueNames) {
+            params.add(name);
+        }
+        params.add(unit.toSeconds(timeout));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, params.toArray());
     }
 
     @Override

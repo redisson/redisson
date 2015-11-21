@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
  */
 public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockingQueueAsync<V> {
 
+    V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException;
+
     V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException;
 
     V pollLastAndOfferFirstTo(RBlockingQueue<V> queue, long timeout, TimeUnit unit) throws InterruptedException;
