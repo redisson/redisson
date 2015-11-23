@@ -50,7 +50,6 @@ import io.netty.util.concurrent.Future;
  * @param <K> key
  * @param <V> value
  */
-//TODO implement watching by keys instead of map name
 public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
@@ -205,7 +204,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Future<V> putIfAbsentAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_PUT,
-                "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return nil else return redis.call('hget', KEYS[1], ARGV[1]) end",
+                "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then "
+                    + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "return nil "
+                + "else "
+                    + "return redis.call('hget', KEYS[1], ARGV[1]) "
+                + "end",
                 Collections.<Object>singletonList(getName()), key, value);
     }
 
@@ -217,7 +221,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Future<Long> removeAsync(Object key, Object value) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_REMOVE_VALUE,
-                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then return redis.call('hdel', KEYS[1], ARGV[1]) else return 0 end",
+                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
+                        + "return redis.call('hdel', KEYS[1], ARGV[1]) "
+                + "else "
+                    + "return 0 "
+                + "end",
             Collections.<Object>singletonList(getName()), key, value);
     }
 
@@ -229,7 +237,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Future<Boolean> replaceAsync(K key, V oldValue, V newValue) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_REPLACE_VALUE,
-                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); return true; else return false; end",
+                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
+                    + "redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); "
+                    + "return true; "
+                + "else "
+                    + "return false; "
+                + "end",
                 Collections.<Object>singletonList(getName()), key, oldValue, newValue);
     }
 
@@ -241,7 +254,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Future<V> replaceAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_REPLACE,
-                "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return v; else return nil; end",
+                "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
+                    + "local v = redis.call('hget', KEYS[1], ARGV[1]); "
+                    + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "return v; "
+                + "else "
+                    + "return nil; "
+                + "end",
             Collections.<Object>singletonList(getName()), key, value);
     }
 
@@ -253,7 +272,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Future<V> putAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_PUT,
-                "local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); return v",
+                "local v = redis.call('hget', KEYS[1], ARGV[1]); "
+                + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
+                + "return v",
                 Collections.<Object>singletonList(getName()), key, value);
     }
 
@@ -261,7 +282,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Future<V> removeAsync(K key) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_REMOVE,
-                "local v = redis.call('hget', KEYS[1], ARGV[1]); redis.call('hdel', KEYS[1], ARGV[1]); return v",
+                "local v = redis.call('hget', KEYS[1], ARGV[1]); "
+                + "redis.call('hdel', KEYS[1], ARGV[1]); "
+                + "return v",
                 Collections.<Object>singletonList(getName()), key);
     }
 
