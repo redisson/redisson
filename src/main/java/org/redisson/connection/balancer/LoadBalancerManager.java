@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 
 import io.netty.util.concurrent.Future;

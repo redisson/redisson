@@ -114,10 +114,6 @@ public class ConnectionPool<T extends RedisConnection> {
         return config.getSlaveConnectionMinimumIdleSize();
     }
 
-    public void remove(ClientConnectionsEntry entry) {
-        entries.remove(entry);
-    }
-
     protected ClientConnectionsEntry getEntry() {
         return config.getLoadBalancer().getEntry(entries);
     }
@@ -215,7 +211,6 @@ public class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-//        promises.add(promise);
         promise.tryFailure(cause);
     }
 
@@ -242,7 +237,6 @@ public class ConnectionPool<T extends RedisConnection> {
 
         releaseConnection(entry);
 
-//        promises.add(promise);
         RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
         promise.tryFailure(cause);
     }

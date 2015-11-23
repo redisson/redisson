@@ -68,6 +68,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
         c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         c.setConnectTimeout(cfg.getConnectTimeout());
+        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
 
         c.setSlaveFailedAttempts(cfg.getSlaveFailedAttempts());
         c.setSlaveReconnectionTimeout(cfg.getSlaveReconnectionTimeout());

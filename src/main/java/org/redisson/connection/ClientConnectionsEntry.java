@@ -39,6 +39,9 @@ public class ClientConnectionsEntry {
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
     private final AtomicInteger freeSubscribeConnectionsCounter = new AtomicInteger();
 
+    private final Queue<RedisConnection> freeConnections = new ConcurrentLinkedQueue<RedisConnection>();
+    private final AtomicInteger freeConnectionsCounter = new AtomicInteger();
+
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
 
     private volatile boolean freezed;
@@ -50,17 +53,21 @@ public class ClientConnectionsEntry {
     private final NodeType nodeType;
     private final ConnectionListener connectionListener;
 
-    private final Queue<RedisConnection> freeConnections = new ConcurrentLinkedQueue<RedisConnection>();
-    private final AtomicInteger freeConnectionsCounter = new AtomicInteger();
-
     private final AtomicInteger failedAttempts = new AtomicInteger();
 
-    public ClientConnectionsEntry(RedisClient client, int poolSize, int subscribePoolSize, ConnectionListener connectionListener, NodeType serverMode) {
+    public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
+            ConnectionListener connectionListener, NodeType serverMode,
+            IdleConnectionWatcher watcher, MasterSlaveServersConfig config) {
         this.client = client;
-        this.freeConnectionsCounter.set(poolSize);
+        this.freeConnectionsCounter.set(poolMaxSize);
         this.connectionListener = connectionListener;
         this.nodeType = serverMode;
-        freeSubscribeConnectionsCounter.set(subscribePoolSize);
+        this.freeSubscribeConnectionsCounter.set(subscribePoolMaxSize);
+
+        if (subscribePoolMaxSize > 0) {
+            watcher.add(subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter);
+        }
+        watcher.add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter);
     }
 
     public NodeType getNodeType() {
@@ -128,6 +135,7 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseConnection(RedisConnection connection) {
+        connection.setLastUsageTime(System.currentTimeMillis());
         freeConnections.add(connection);
     }
 
@@ -200,6 +208,7 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseSubscribeConnection(RedisPubSubConnection connection) {
+        connection.setLastUsageTime(System.currentTimeMillis());
         freeSubscribeConnections.add(connection);
     }
 

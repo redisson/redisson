@@ -33,6 +33,10 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
         return entries.get(0);
     }
 
+    public void remove(ClientConnectionsEntry entry) {
+        entries.remove(entry);
+    }
+
     @Override
     protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
         return config.getMasterConnectionMinimumIdleSize();

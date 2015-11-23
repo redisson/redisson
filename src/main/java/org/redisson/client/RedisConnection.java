@@ -40,7 +40,10 @@ public class RedisConnection implements RedisCommands {
 
     private volatile boolean closed;
     volatile Channel channel;
+
     private ReconnectListener reconnectListener;
+    private long lastUsageTime;
+    @Deprecated
     private int failAttempts;
 
 
@@ -49,10 +52,19 @@ public class RedisConnection implements RedisCommands {
         this.redisClient = redisClient;
 
         updateChannel(channel);
+        lastUsageTime = System.currentTimeMillis();
     }
 
     public static <C extends RedisConnection> C getFrom(Channel channel) {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
+    }
+
+    public long getLastUsageTime() {
+        return lastUsageTime;
+    }
+
+    public void setLastUsageTime(long lastUsageTime) {
+        this.lastUsageTime = lastUsageTime;
     }
 
     public void setReconnectListener(ReconnectListener reconnectListener) {
@@ -180,7 +192,7 @@ public class RedisConnection implements RedisCommands {
 
     /**
      * Access to Netty channel.
-     * This method is only provided to use in debug info.
+     * This method is provided to use in debug info only.
      *
      */
     public Channel getChannel() {

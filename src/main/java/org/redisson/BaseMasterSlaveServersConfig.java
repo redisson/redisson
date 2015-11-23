@@ -15,8 +15,8 @@
  */
 package org.redisson;
 
-import org.redisson.connection.LoadBalancer;
-import org.redisson.connection.RoundRobinLoadBalancer;
+import org.redisson.connection.balancer.LoadBalancer;
+import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
 public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig<T>> extends BaseConfig<T> {
 
@@ -124,7 +124,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * @param loadBalancer
      * @return
      *
-     * @see org.redisson.connection.RoundRobinLoadBalancer
+     * @see org.redisson.connection.balancer.RoundRobinLoadBalancer
      * @see org.redisson.connection.BaseLoadBalancer
      */
     public T setLoadBalancer(LoadBalancer loadBalancer) {

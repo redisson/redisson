@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -26,6 +26,9 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.connection.ClientConnectionsEntry;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;

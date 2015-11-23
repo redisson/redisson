@@ -41,6 +41,20 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     private ScheduledFuture<?> monitorFuture;
 
     public SingleConnectionManager(SingleServerConfig cfg, Config config) {
+        super(create(cfg), config);
+
+        if (cfg.isDnsMonitoring()) {
+            try {
+                this.currentMaster.set(InetAddress.getByName(cfg.getAddress().getHost()));
+            } catch (UnknownHostException e) {
+                throw new RedisConnectionException("Unknown host", e);
+            }
+            log.debug("DNS monitoring enabled; Current master set to {}", currentMaster.get());
+            monitorDnsChange(cfg);
+        }
+    }
+
+    private static MasterSlaveServersConfig create(SingleServerConfig cfg) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
@@ -56,21 +70,11 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         newconfig.setSlaveSubscriptionConnectionPoolSize(cfg.getSubscriptionConnectionPoolSize());
         newconfig.setConnectTimeout(cfg.getConnectTimeout());
+        newconfig.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
 
         newconfig.setMasterConnectionMinimumIdleSize(cfg.getConnectionMinimumIdleSize());
         newconfig.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
-
-        init(newconfig, config);
-
-        if (cfg.isDnsMonitoring()) {
-            try {
-                this.currentMaster.set(InetAddress.getByName(cfg.getAddress().getHost()));
-            } catch (UnknownHostException e) {
-                throw new RedisConnectionException("Unknown host", e);
-            }
-            log.debug("DNS monitoring enabled; Current master set to {}", currentMaster.get());
-            monitorDnsChange(cfg);
-        }
+        return newconfig;
     }
 
     @Override

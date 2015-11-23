@@ -46,7 +46,10 @@ public class SingleEntry extends MasterSlaveEntry {
     public void setupMasterEntry(String host, int port) {
         RedisClient masterClient = connectionManager.createClient(host, port);
         masterEntry = new ClientConnectionsEntry(masterClient,
-                config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize(), connectListener, NodeType.MASTER);
+                config.getMasterConnectionMinimumIdleSize(),
+                config.getMasterConnectionPoolSize(),
+                config.getSlaveConnectionMinimumIdleSize(),
+                config.getSlaveSubscriptionConnectionPoolSize(), connectListener, NodeType.MASTER, connectionManager.getConnectionWatcher(), config);
         writeConnectionHolder.add(masterEntry);
         pubSubConnectionHolder.add(masterEntry);
     }

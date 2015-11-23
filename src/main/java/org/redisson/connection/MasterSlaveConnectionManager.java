@@ -119,7 +119,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Set<RedisClientEntry> clients = Collections.newSetFromMap(PlatformDependent.<RedisClientEntry, Boolean>newConcurrentHashMap());
 
+    private IdleConnectionWatcher connectionWatcher;
+
+    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
+        init(config);
+        init(cfg);
+    }
+
     protected MasterSlaveConnectionManager() {
+    }
+
+    public IdleConnectionWatcher getConnectionWatcher() {
+        return connectionWatcher;
     }
 
     @Override
@@ -137,15 +148,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entries;
     }
 
-    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
-        init(cfg, config);
-    }
-
-    protected void init(MasterSlaveServersConfig config, Config cfg) {
-        init(cfg);
-        init(config);
-    }
-
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
@@ -160,6 +162,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             minTimeout = 100;
         }
         timer = new HashedWheelTimer(minTimeout, TimeUnit.MILLISECONDS);
+
+        connectionWatcher = new IdleConnectionWatcher(this, config);
 
         initEntry(config);
     }

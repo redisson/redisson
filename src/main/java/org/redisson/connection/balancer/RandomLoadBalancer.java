@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.connection.balancer;
 
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Random;
+
+import org.redisson.connection.ClientConnectionsEntry;
 
 public class RandomLoadBalancer implements LoadBalancer {
 

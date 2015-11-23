@@ -28,6 +28,8 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ClientConnectionsEntry.NodeType;
+import org.redisson.connection.balancer.LoadBalancerManager;
+import org.redisson.connection.balancer.LoadBalancerManagerImpl;
 import org.redisson.misc.MasterConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +82,8 @@ public class MasterSlaveEntry {
 
     public void setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(host, port);
-        masterEntry = new ClientConnectionsEntry(client, config.getMasterConnectionPoolSize(), 0, connectListener, NodeType.MASTER);
+        masterEntry = new ClientConnectionsEntry(client, config.getMasterConnectionMinimumIdleSize(), config.getMasterConnectionPoolSize(),
+                                                    0, 0, connectListener, NodeType.MASTER, connectionManager.getConnectionWatcher(), config);
         writeConnectionHolder.add(masterEntry);
     }
 
@@ -102,8 +105,10 @@ public class MasterSlaveEntry {
     private void addSlave(String host, int port, boolean freezed, NodeType mode) {
         RedisClient client = connectionManager.createClient(host, port);
         ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
+                this.config.getSlaveConnectionMinimumIdleSize(),
                 this.config.getSlaveConnectionPoolSize(),
-                this.config.getSlaveSubscriptionConnectionPoolSize(), connectListener, mode);
+                this.config.getSlaveSubscriptionConnectionMinimumIdleSize(),
+                this.config.getSlaveSubscriptionConnectionPoolSize(), connectListener, mode, connectionManager.getConnectionWatcher(), config);
         if (freezed) {
             entry.setFreezed(freezed);
             entry.setFreezeReason(FreezeReason.SYSTEM);
@@ -136,11 +141,12 @@ public class MasterSlaveEntry {
         ClientConnectionsEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
         writeConnectionHolder.remove(oldMaster);
+        oldMaster.freezeMaster(FreezeReason.MANAGER);
+
         if (slaveBalancer.getAvailableClients() > 1) {
             // more than one slave available, so master could be removed from slaves
             connectionManager.slaveDown(this, host, port, FreezeReason.SYSTEM);
         }
-        oldMaster.freezeMaster(FreezeReason.MANAGER);
         connectionManager.shutdownAsync(oldMaster.getClient());
     }
 

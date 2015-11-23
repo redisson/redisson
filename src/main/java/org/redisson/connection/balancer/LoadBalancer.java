@@ -13,19 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.connection.balancer;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class RoundRobinLoadBalancer implements LoadBalancer {
+import org.redisson.connection.ClientConnectionsEntry;
 
-    private final AtomicInteger index = new AtomicInteger(-1);
+public interface LoadBalancer {
 
-    @Override
-    public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
-        int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
-        return clientsCopy.get(ind);
-    }
+    ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy);
 
 }

@@ -19,6 +19,15 @@ package org.redisson;
 class BaseConfig<T extends BaseConfig<T>> {
 
     /**
+     * If pooled connection not used for a <code>timeout</code> time
+     * and current connections amount bigger than minimum idle connections pool size,
+     * then it will closed and removed from pool.
+     * Value in milliseconds.
+     *
+     */
+    private int idleConnectionTimeout = 10000;
+
+    /**
      * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation.
      * Value in milliseconds.
      *
@@ -26,7 +35,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     private int pingTimeout = 1000;
 
     /**
-     * This timeout used during connection establishment to any Redis server.
+     * Timeout during connecting to any Redis server.
      * Value in milliseconds.
      *
      */
@@ -36,6 +45,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Redis operation execution timeout.
      * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
      * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     * Value in milliseconds.
+     *
      */
     private int timeout = 1000;
 
@@ -80,6 +91,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         setPingTimeout(config.getPingTimeout());
         setRefreshConnectionAfterFails(config.getRefreshConnectionAfterFails());
         setConnectTimeout(config.getConnectTimeout());
+        setIdleConnectionTimeout(config.getIdleConnectionTimeout());
     }
 
     /**
@@ -216,7 +228,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * This timeout used during connection establishment to any Redis server.
+     * Timeout during connecting to any Redis server.
      *
      * @param connectTimeout - timeout in milliseconds
      * @return
@@ -228,5 +240,22 @@ class BaseConfig<T extends BaseConfig<T>> {
     public int getConnectTimeout() {
         return connectTimeout;
     }
+
+    /**
+     * If pooled connection not used for a <code>timeout</code> time
+     * and current connections amount bigger than minimum idle connections pool size,
+     * then it will closed and removed from pool.
+     *
+     * @param idleConnectionTimeout - timeout in milliseconds
+     * @return
+     */
+    public T setIdleConnectionTimeout(int idleConnectionTimeout) {
+        this.idleConnectionTimeout = idleConnectionTimeout;
+        return (T) this;
+    }
+    public int getIdleConnectionTimeout() {
+        return idleConnectionTimeout;
+    }
+
 
 }

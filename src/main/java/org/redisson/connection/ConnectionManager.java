@@ -43,8 +43,9 @@ import io.netty.util.concurrent.Promise;
  * @author Nikita Koksharov
  *
  */
-//TODO ping support
 public interface ConnectionManager {
+
+    IdleConnectionWatcher getConnectionWatcher();
 
     <R> Future<R> newFailedFuture(Throwable cause);
 
