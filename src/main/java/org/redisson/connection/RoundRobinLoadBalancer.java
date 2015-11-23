@@ -23,7 +23,7 @@ public class RoundRobinLoadBalancer implements LoadBalancer {
     private final AtomicInteger index = new AtomicInteger(-1);
 
     @Override
-    public SubscribesConnectionEntry getEntry(List<SubscribesConnectionEntry> clientsCopy) {
+    public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
         int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
         return clientsCopy.get(ind);
     }

@@ -19,6 +19,6 @@ import java.util.List;
 
 public interface LoadBalancer {
 
-    SubscribesConnectionEntry getEntry(List<SubscribesConnectionEntry> clientsCopy);
+    ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy);
 
 }

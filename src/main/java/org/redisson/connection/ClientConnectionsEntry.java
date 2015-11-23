@@ -31,7 +31,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
-public class SubscribesConnectionEntry {
+public class ClientConnectionsEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -48,17 +48,17 @@ public class SubscribesConnectionEntry {
     public enum NodeType {SLAVE, MASTER}
 
     private final NodeType nodeType;
-    private final ConnectionListener connectListener;
+    private final ConnectionListener connectionListener;
 
     private final Queue<RedisConnection> freeConnections = new ConcurrentLinkedQueue<RedisConnection>();
     private final AtomicInteger freeConnectionsCounter = new AtomicInteger();
 
     private final AtomicInteger failedAttempts = new AtomicInteger();
 
-    public SubscribesConnectionEntry(RedisClient client, int poolSize, int subscribePoolSize, ConnectionListener connectListener, NodeType serverMode) {
+    public ClientConnectionsEntry(RedisClient client, int poolSize, int subscribePoolSize, ConnectionListener connectionListener, NodeType serverMode) {
         this.client = client;
         this.freeConnectionsCounter.set(poolSize);
-        this.connectListener = connectListener;
+        this.connectionListener = connectionListener;
         this.nodeType = serverMode;
         freeSubscribeConnectionsCounter.set(subscribePoolSize);
     }
@@ -145,7 +145,7 @@ public class SubscribesConnectionEntry {
                 log.debug("new connection created: {}", conn);
 
                 FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
-                connectListener.onConnect(config, nodeType, listener);
+                connectionListener.onConnect(config, nodeType, listener);
                 listener.executeCommands();
 
                 addReconnectListener(config, conn);
@@ -160,7 +160,7 @@ public class SubscribesConnectionEntry {
             @Override
             public void onReconnect(RedisConnection conn, Promise<RedisConnection> connectionFuture) {
                 FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
-                connectListener.onConnect(config, nodeType, listener);
+                connectionListener.onConnect(config, nodeType, listener);
                 listener.executeCommands();
             }
         });
@@ -180,7 +180,7 @@ public class SubscribesConnectionEntry {
                 log.debug("new pubsub connection created: {}", conn);
 
                 FutureConnectionListener<RedisPubSubConnection> listener = new FutureConnectionListener<RedisPubSubConnection>(connectionFuture, conn);
-                connectListener.onConnect(config, nodeType, listener);
+                connectionListener.onConnect(config, nodeType, listener);
                 listener.executeCommands();
 
                 addReconnectListener(config, conn);

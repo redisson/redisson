@@ -26,8 +26,8 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.SubscribesConnectionEntry.FreezeReason;
-import org.redisson.connection.SubscribesConnectionEntry.NodeType;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.misc.MasterConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class MasterSlaveEntry {
     final Logger log = LoggerFactory.getLogger(getClass());
 
     LoadBalancerManager slaveBalancer;
-    SubscribesConnectionEntry masterEntry;
+    ClientConnectionsEntry masterEntry;
 
     final ConnectionListener connectListener;
 
@@ -80,7 +80,7 @@ public class MasterSlaveEntry {
 
     public void setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(host, port);
-        masterEntry = new SubscribesConnectionEntry(client, config.getMasterConnectionPoolSize(), 0, connectListener, NodeType.MASTER);
+        masterEntry = new ClientConnectionsEntry(client, config.getMasterConnectionPoolSize(), 0, connectListener, NodeType.MASTER);
         writeConnectionHolder.add(masterEntry);
     }
 
@@ -101,7 +101,7 @@ public class MasterSlaveEntry {
 
     private void addSlave(String host, int port, boolean freezed, NodeType mode) {
         RedisClient client = connectionManager.createClient(host, port);
-        SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
+        ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSlaveSubscriptionConnectionPoolSize(), connectListener, mode);
         if (freezed) {
@@ -133,7 +133,7 @@ public class MasterSlaveEntry {
      *
      */
     public void changeMaster(String host, int port) {
-        SubscribesConnectionEntry oldMaster = masterEntry;
+        ClientConnectionsEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
         writeConnectionHolder.remove(oldMaster);
         if (slaveBalancer.getAvailableClients() > 1) {

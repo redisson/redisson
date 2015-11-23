@@ -19,7 +19,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.SubscribesConnectionEntry;
+import org.redisson.connection.ClientConnectionsEntry;
 
 public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
 
@@ -29,12 +29,12 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
     }
 
     @Override
-    protected SubscribesConnectionEntry getEntry() {
+    protected ClientConnectionsEntry getEntry() {
         return entries.get(0);
     }
 
     @Override
-    protected int getMinimumIdleSize(SubscribesConnectionEntry entry) {
+    protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
         return config.getMasterConnectionMinimumIdleSize();
     }
 

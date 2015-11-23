@@ -23,7 +23,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.SubscribesConnectionEntry.NodeType;
+import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 
@@ -36,7 +36,7 @@ public class SingleEntry extends MasterSlaveEntry {
     public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionListener connectListener) {
         super(slotRanges, connectionManager, config, connectListener);
         pubSubConnectionHolder = new PubSubConnectionPoll(config, connectionManager, this) {
-            protected SubscribesConnectionEntry getEntry() {
+            protected ClientConnectionsEntry getEntry() {
                 return entries.get(0);
             }
         };
@@ -45,7 +45,7 @@ public class SingleEntry extends MasterSlaveEntry {
     @Override
     public void setupMasterEntry(String host, int port) {
         RedisClient masterClient = connectionManager.createClient(host, port);
-        masterEntry = new SubscribesConnectionEntry(masterClient,
+        masterEntry = new ClientConnectionsEntry(masterClient,
                 config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize(), connectListener, NodeType.MASTER);
         writeConnectionHolder.add(masterEntry);
         pubSubConnectionHolder.add(masterEntry);

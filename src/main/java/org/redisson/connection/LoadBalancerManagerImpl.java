@@ -26,7 +26,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.connection.SubscribesConnectionEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final ConnectionManager connectionManager;
-    private final Map<InetSocketAddress, SubscribesConnectionEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
+    private final Map<InetSocketAddress, ClientConnectionsEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
     private final PubSubConnectionPoll pubSubEntries;
     private final ConnectionPool<RedisConnection> entries;
 
@@ -50,7 +50,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         pubSubEntries = new PubSubConnectionPoll(config, connectionManager, entry);
     }
 
-    public synchronized void add(SubscribesConnectionEntry entry) {
+    public synchronized void add(ClientConnectionsEntry entry) {
         addr2Entry.put(entry.getClient().getAddr(), entry);
         entries.add(entry);
         pubSubEntries.add(entry);
@@ -58,7 +58,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
 
     public int getAvailableClients() {
         int count = 0;
-        for (SubscribesConnectionEntry connectionEntry : addr2Entry.values()) {
+        for (ClientConnectionsEntry connectionEntry : addr2Entry.values()) {
             if (!connectionEntry.isFreezed()) {
                 count++;
             }
@@ -68,7 +68,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
 
     public boolean unfreeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
-        SubscribesConnectionEntry entry = addr2Entry.get(addr);
+        ClientConnectionsEntry entry = addr2Entry.get(addr);
         if (entry == null) {
             throw new IllegalStateException("Can't find " + addr + " in slaves!");
         }
@@ -90,7 +90,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
 
     public Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
-        SubscribesConnectionEntry connectionEntry = addr2Entry.get(addr);
+        ClientConnectionsEntry connectionEntry = addr2Entry.get(addr);
         if (connectionEntry == null) {
             return Collections.emptyList();
         }
@@ -133,7 +133,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
     }
 
     public Future<RedisConnection> getConnection(InetSocketAddress addr) {
-        SubscribesConnectionEntry entry = addr2Entry.get(addr);
+        ClientConnectionsEntry entry = addr2Entry.get(addr);
         if (entry != null) {
             return entries.get(entry);
         }
@@ -146,23 +146,23 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
     }
 
     public void returnSubscribeConnection(RedisPubSubConnection connection) {
-        SubscribesConnectionEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
+        ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
         pubSubEntries.returnConnection(entry, connection);
     }
 
     public void returnConnection(RedisConnection connection) {
-        SubscribesConnectionEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
+        ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
         entries.returnConnection(entry, connection);
     }
 
     public void shutdown() {
-        for (SubscribesConnectionEntry entry : addr2Entry.values()) {
+        for (ClientConnectionsEntry entry : addr2Entry.values()) {
             entry.getClient().shutdown();
         }
     }
 
     public void shutdownAsync() {
-        for (SubscribesConnectionEntry entry : addr2Entry.values()) {
+        for (ClientConnectionsEntry entry : addr2Entry.values()) {
             connectionManager.shutdownAsync(entry.getClient());
         }
     }

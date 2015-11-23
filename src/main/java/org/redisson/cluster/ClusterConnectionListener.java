@@ -20,7 +20,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.DefaultConnectionListener;
 import org.redisson.connection.FutureConnectionListener;
-import org.redisson.connection.SubscribesConnectionEntry.NodeType;
+import org.redisson.connection.ClientConnectionsEntry.NodeType;
 
 public class ClusterConnectionListener extends DefaultConnectionListener {
 

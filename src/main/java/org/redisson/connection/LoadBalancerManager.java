@@ -20,7 +20,7 @@ import java.util.Collection;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.connection.SubscribesConnectionEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 
 import io.netty.util.concurrent.Future;
 
@@ -38,7 +38,7 @@ public interface LoadBalancerManager {
 
     Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason);
 
-    void add(SubscribesConnectionEntry entry);
+    void add(ClientConnectionsEntry entry);
 
     Future<RedisConnection> nextConnection();
 

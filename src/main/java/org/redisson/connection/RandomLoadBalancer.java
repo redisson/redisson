@@ -23,7 +23,7 @@ public class RandomLoadBalancer implements LoadBalancer {
 
     private final Random random = new SecureRandom();
 
-    public SubscribesConnectionEntry getEntry(List<SubscribesConnectionEntry> clientsCopy) {
+    public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
         int ind = random.nextInt(clientsCopy.size());
         return clientsCopy.get(ind);
     }
