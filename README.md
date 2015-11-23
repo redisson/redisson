@@ -3,8 +3,6 @@ Redisson - distributed and scalable Java data structures on top of Redis server.
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/)
 
-[![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
 Based on high-performance async and lock-free Java Redis client and [Netty 4](http://netty.io) framework.  
@@ -16,6 +14,7 @@ Read [wiki](https://github.com/mrniko/redisson/wiki) for more Redisson usage det
 
 Licensed under the Apache License 2.0.
 
+Support - [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Features
 ================================
