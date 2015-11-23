@@ -162,8 +162,8 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         c.setConnectTimeout(cfg.getConnectTimeout());
         c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
 
-        c.setSlaveFailedAttempts(cfg.getSlaveFailedAttempts());
-        c.setSlaveReconnectionTimeout(cfg.getSlaveReconnectionTimeout());
+        c.setFailedAttempts(cfg.getFailedAttempts());
+        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
         c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
         c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
         c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());

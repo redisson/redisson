@@ -55,22 +55,6 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     private int masterConnectionPoolSize = 100;
 
-    /**
-     * Redis 'slave' server reconnection attempt timeout in milliseconds
-     * used then server excluded from the list of available slave nodes
-     * due to reach limit of sequential unsuccessful execution attempts
-     *
-     * @see #slaveFailedAttempts
-     *
-     */
-    private int slaveReconnectionTimeout = 3000;
-
-    /**
-     * Redis 'slave' server will be excluded from the list of available slave nodes
-     * when sequential unsuccessful execution attempts of any Redis command on slave node reaches <code>slaveFailedAttempts</code>
-     */
-    private int slaveFailedAttempts = 3;
-
     public BaseMasterSlaveServersConfig() {
     }
 
@@ -80,8 +64,6 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setMasterConnectionPoolSize(config.getMasterConnectionPoolSize());
         setSlaveConnectionPoolSize(config.getSlaveConnectionPoolSize());
         setSlaveSubscriptionConnectionPoolSize(config.getSlaveSubscriptionConnectionPoolSize());
-        setSlaveFailedAttempts(config.getSlaveFailedAttempts());
-        setSlaveReconnectionTimeout(config.getSlaveReconnectionTimeout());
         setMasterConnectionMinimumIdleSize(config.getMasterConnectionMinimumIdleSize());
         setSlaveConnectionMinimumIdleSize(config.getSlaveConnectionMinimumIdleSize());
         setSlaveSubscriptionConnectionMinimumIdleSize(config.getSlaveSubscriptionConnectionMinimumIdleSize());
@@ -147,39 +129,6 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public int getSlaveSubscriptionConnectionPoolSize() {
         return slaveSubscriptionConnectionPoolSize;
-    }
-
-    /**
-     * Redis 'slave' server reconnection attempt timeout in milliseconds
-     * used then server excluded from the list of available slave nodes
-     * due to reach limit of sequential unsuccessful execution attempts.
-     *
-     * Default is 3000
-     *
-     * @see #slaveFailedAttempts
-     *
-     */
-    public T setSlaveReconnectionTimeout(int slaveRetryTimeout) {
-        this.slaveReconnectionTimeout = slaveRetryTimeout;
-        return (T)this;
-    }
-    public int getSlaveReconnectionTimeout() {
-        return slaveReconnectionTimeout;
-    }
-
-    /**
-     * Redis 'slave' server will be excluded from the list of available slave nodes
-     * when sequential unsuccessful execution attempts of any Redis command on slave node reaches <code>slaveFailedAttempts</code>.
-     *
-     * Default is 3
-     *
-     */
-    public T setSlaveFailedAttempts(int slaveFailedAttempts) {
-        this.slaveFailedAttempts = slaveFailedAttempts;
-        return (T)this;
-    }
-    public int getSlaveFailedAttempts() {
-        return slaveFailedAttempts;
     }
 
     /**

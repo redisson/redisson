@@ -54,6 +54,24 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     private int retryInterval = 1000;
 
+    /**
+     * Redis server reconnection attempt timeout.
+     *
+     * On every such timeout event Redisson tries
+     * to connect to disconnected Redis server.
+     *
+     * @see #failedAttempts
+     *
+     */
+    private int reconnectionTimeout = 3000;
+
+    /**
+     * Redis server will be excluded from the list of available slave nodes
+     * when sequential unsuccessful execution attempts of any Redis command
+     * reaches <code>slaveFailedAttempts</code>.
+     */
+    private int failedAttempts = 3;
+
     @Deprecated
     private int closeConnectionAfterFailAttempts = -1;
 
@@ -92,6 +110,8 @@ class BaseConfig<T extends BaseConfig<T>> {
         setRefreshConnectionAfterFails(config.getRefreshConnectionAfterFails());
         setConnectTimeout(config.getConnectTimeout());
         setIdleConnectionTimeout(config.getIdleConnectionTimeout());
+        setFailedAttempts(config.getFailedAttempts());
+        setReconnectionTimeout(config.getReconnectionTimeout());
     }
 
     /**
@@ -257,5 +277,39 @@ class BaseConfig<T extends BaseConfig<T>> {
         return idleConnectionTimeout;
     }
 
+    /**
+     * Redis server reconnection attempt timeout.
+     *
+     * On every such timeout event Redisson tries
+     * to connect to disconnected Redis server.
+     *
+     * Default is 3000
+     *
+     * @see #failedAttempts
+     *
+     */
+
+    public T setReconnectionTimeout(int slaveRetryTimeout) {
+        this.reconnectionTimeout = slaveRetryTimeout;
+        return (T)this;
+    }
+    public int getReconnectionTimeout() {
+        return reconnectionTimeout;
+    }
+
+    /**
+     * Redis 'slave' server will be excluded from the list of available slave nodes
+     * when sequential unsuccessful execution attempts of any Redis command on slave node reaches <code>slaveFailedAttempts</code>.
+     *
+     * Default is 3
+     *
+     */
+    public T setFailedAttempts(int slaveFailedAttempts) {
+        this.failedAttempts = slaveFailedAttempts;
+        return (T)this;
+    }
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
 
 }

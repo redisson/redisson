@@ -147,7 +147,7 @@ public class ConnectionPool<T extends RedisConnection> {
     }
 
     protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
-        return entry.getFailedAttempts() < config.getSlaveFailedAttempts() && entry.tryAcquireConnection();
+        return entry.getFailedAttempts() < config.getFailedAttempts() && entry.tryAcquireConnection();
     }
 
     protected T poll(ClientConnectionsEntry entry) {
@@ -201,7 +201,7 @@ public class ConnectionPool<T extends RedisConnection> {
     }
 
     private void promiseFailure(ClientConnectionsEntry entry, Promise<T> promise, Throwable cause) {
-        if (entry.incFailedAttempts() == config.getSlaveFailedAttempts()) {
+        if (entry.incFailedAttempts() == config.getFailedAttempts()) {
             if (entry.getNodeType() == NodeType.SLAVE) {
                 connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
                         entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
@@ -223,7 +223,7 @@ public class ConnectionPool<T extends RedisConnection> {
 
     private void promiseFailure(ClientConnectionsEntry entry, Promise<T> promise, T conn) {
         int attempts = entry.incFailedAttempts();
-        if (attempts == config.getSlaveFailedAttempts()) {
+        if (attempts == config.getFailedAttempts()) {
             if (entry.getNodeType() == NodeType.SLAVE) {
                 connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
                         entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
@@ -231,7 +231,7 @@ public class ConnectionPool<T extends RedisConnection> {
             } else {
                 freezeMaster(entry);
             }
-        } else if (attempts < config.getSlaveFailedAttempts()) {
+        } else if (attempts < config.getFailedAttempts()) {
             releaseConnection(entry, conn);
         }
 
@@ -312,7 +312,7 @@ public class ConnectionPool<T extends RedisConnection> {
                     }
                 });
             }
-        }, config.getSlaveReconnectionTimeout(), TimeUnit.MILLISECONDS);
+        }, config.getReconnectionTimeout(), TimeUnit.MILLISECONDS);
     }
 
     public void returnConnection(ClientConnectionsEntry entry, T connection) {

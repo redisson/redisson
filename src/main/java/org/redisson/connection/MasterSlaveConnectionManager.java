@@ -151,7 +151,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
-        int[] timeouts = new int[] {config.getRetryInterval(), config.getTimeout(), config.getSlaveReconnectionTimeout()};
+        int[] timeouts = new int[] {config.getRetryInterval(), config.getTimeout(), config.getReconnectionTimeout()};
         Arrays.sort(timeouts);
         int minTimeout = timeouts[0];
         if (minTimeout % 100 != 0) {
