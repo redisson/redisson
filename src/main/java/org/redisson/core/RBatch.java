@@ -176,8 +176,10 @@ public interface RBatch {
      * and may be executed on different servers. Thus command execution order could be changed
      *
      * @return List with result object for each command
+     * @throws RedisException in case of any error
+     *
      */
-    List<?> execute();
+    List<?> execute() throws RedisException;
 
     /**
      * Executes all operations accumulated during async methods invocations asynchronously.
