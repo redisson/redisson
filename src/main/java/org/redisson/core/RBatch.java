@@ -154,6 +154,8 @@ public interface RBatch {
      */
     RLexSortedSetAsync getLexSortedSet(String name);
 
+    RBitSetAsync getBitSet(String name);
+
     /**
      * Returns script operations object
      *

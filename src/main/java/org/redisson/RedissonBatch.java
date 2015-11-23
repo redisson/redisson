@@ -21,6 +21,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLongAsync;
 import org.redisson.core.RBatch;
+import org.redisson.core.RBitSetAsync;
 import org.redisson.core.RBlockingQueueAsync;
 import org.redisson.core.RBucketAsync;
 import org.redisson.core.RDequeAsync;
@@ -50,6 +51,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonBucket<V>(executorService, name);
     }
 
+    @Override
     public <V> RBucketAsync<V> getBucket(String name, Codec codec) {
         return new RedissonBucket<V>(codec, executorService, name);
     }
@@ -59,6 +61,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonHyperLogLog<V>(executorService, name);
     }
 
+    @Override
     public <V> RHyperLogLogAsync<V> getHyperLogLog(String name, Codec codec) {
         return new RedissonHyperLogLog<V>(codec, executorService, name);
     }
@@ -68,6 +71,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonList<V>(executorService, name);
     }
 
+    @Override
     public <V> RListAsync<V> getList(String name, Codec codec) {
         return new RedissonList<V>(codec, executorService, name);
     }
@@ -77,6 +81,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonMap<K, V>(executorService, name);
     }
 
+    @Override
     public <K, V> RMapAsync<K, V> getMap(String name, Codec codec) {
         return new RedissonMap<K, V>(codec, executorService, name);
     }
@@ -86,6 +91,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonSet<V>(executorService, name);
     }
 
+    @Override
     public <V> RSetAsync<V> getSet(String name, Codec codec) {
         return new RedissonSet<V>(codec, executorService, name);
     }
@@ -95,6 +101,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonTopic<M>(executorService, name);
     }
 
+    @Override
     public <M> RTopicAsync<M> getTopic(String name, Codec codec) {
         return new RedissonTopic<M>(codec, executorService, name);
     }
@@ -104,6 +111,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonQueue<V>(executorService, name);
     }
 
+    @Override
     public <V> RQueueAsync<V> getQueue(String name, Codec codec) {
         return new RedissonQueue<V>(codec, executorService, name);
     }
@@ -113,6 +121,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonBlockingQueue<V>(executorService, name);
     }
 
+    @Override
     public <V> RBlockingQueueAsync<V> getBlockingQueue(String name, Codec codec) {
         return new RedissonBlockingQueue<V>(codec, executorService, name);
     }
@@ -122,6 +131,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonDeque<V>(executorService, name);
     }
 
+    @Override
     public <V> RDequeAsync<V> getDequeAsync(String name, Codec codec) {
         return new RedissonDeque<V>(codec, executorService, name);
     }
@@ -136,6 +146,7 @@ public class RedissonBatch implements RBatch {
         return new RedissonScoredSortedSet<V>(executorService, name);
     }
 
+    @Override
     public <V> RScoredSortedSetAsync<V> getScoredSortedSet(String name, Codec codec) {
         return new RedissonScoredSortedSet<V>(codec, executorService, name);
     }
@@ -143,6 +154,11 @@ public class RedissonBatch implements RBatch {
     @Override
     public RLexSortedSetAsync getLexSortedSet(String name) {
         return new RedissonLexSortedSet(executorService, name);
+    }
+
+    @Override
+    public RBitSetAsync getBitSet(String name) {
+        return new RedissonBitSet(executorService, name);
     }
 
     @Override
