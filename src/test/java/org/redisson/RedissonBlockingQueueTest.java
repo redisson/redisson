@@ -5,15 +5,22 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hamcrest.*;
-import org.junit.*;
-import org.redisson.core.*;
-
-import io.netty.util.concurrent.Future;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
+import org.redisson.core.RBlockingQueue;
 
 public class RedissonBlockingQueueTest extends BaseTest {
 
@@ -26,12 +33,11 @@ public class RedissonBlockingQueueTest extends BaseTest {
                 RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
                 RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
                 try {
-                    queue1.put(1);
                     queue3.put(2);
+                    queue1.put(1);
                     queue2.put(3);
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    Assert.fail();
                 }
             }
         }, 3, TimeUnit.SECONDS);

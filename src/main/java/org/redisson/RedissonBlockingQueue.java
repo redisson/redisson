@@ -55,6 +55,10 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         return offerAsync(e);
     }
 
+    /*
+     * (non-Javadoc)
+     * @see java.util.concurrent.BlockingQueue#put(java.lang.Object)
+     */
     @Override
     public void put(V e) throws InterruptedException {
         offer(e);
@@ -70,6 +74,10 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), 0);
     }
 
+    /*
+     * (non-Javadoc)
+     * @see java.util.concurrent.BlockingQueue#take()
+     */
     @Override
     public V take() throws InterruptedException {
         Future<V> res = takeAsync();
@@ -81,19 +89,34 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
     }
 
+    /*
+     * (non-Javadoc)
+     * @see java.util.concurrent.BlockingQueue#poll(long, java.util.concurrent.TimeUnit)
+     */
     @Override
     public V poll(long timeout, TimeUnit unit) throws InterruptedException {
         Future<V> res = pollAsync(timeout, unit);
         return res.await().getNow();
     }
 
+    /*
+     * (non-Javadoc)
+     * @see org.redisson.core.RBlockingQueue#pollFromAny(long, java.util.concurrent.TimeUnit, java.lang.String[])
+     */
+    @Override
     public V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
         Future<V> res = pollFromAnyAsync(timeout, unit, queueNames);
         return res.await().getNow();
     }
 
+    /*
+     * (non-Javadoc)
+     * @see org.redisson.core.RBlockingQueueAsync#pollFromAnyAsync(long, java.util.concurrent.TimeUnit, java.lang.String[])
+     */
+    @Override
     public Future<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
-        List<Object> params = new ArrayList<Object>(queueNames.length);
+        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+        params.add(getName());
         for (Object name : queueNames) {
             params.add(name);
         }
