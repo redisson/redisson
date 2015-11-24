@@ -71,6 +71,22 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####24-Nov-2015 - version 2.1.5 released  
+Feature - new methods with `limit` option support were added to `RLexSortedSet`: `lexRange`, `lexRangeHead`, `lexRangeHeadAsync`, `lexRangeTail`, `lexRangeTailAsync`, `lexRangeAsync` (thanks to jackygurui)  
+Feature - new methods with `limit` option support were added to `RScoredSortedSet`: `valueRange`, `valueRangeAsync`, `entryRange`, `entryRangeAsync`, `valueRange`, `valueRangeAsync` (thanks to jackygurui)  
+Feature - `LOADING` Redis server response handling  
+Feature - `RKeys.getSlot` method added  
+Feature - new config options `reconnectionTimeout`, `failedAttempts`, `connectTimeout`, `slaveSubscriptionConnectionMinimumIdleSize`, `masterConnectionMinimumIdleSize`, `'slaveConnectionMinimumIdleSize`, `idleConnectionTimeout`  
+Feature - `RBitSet` object added  
+Feature - `RBlockingQueue.pollFromAny` and `RBlockingQueue.pollFromAnyAsync` methods added  
+Improvements - `LoadBalancer` interface refactored  
+Fixed - RedisTimeoutException message  
+Fixed - command execution timeout handling  
+Fixed - `RList.addAllAsync`  
+Fixed - `RSet.iterator`  
+Fixed - `RBatch.execute` and `RBatch.executeAsync` errors handling  
+
+
 ####11-Nov-2015 - version 2.1.4 released  
 Cluster support improvements. New codecs. Stability improvements.
 
