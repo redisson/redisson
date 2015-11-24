@@ -58,13 +58,14 @@ public class IdleConnectionWatcher {
 
             @Override
             public void run() {
+                long currTime = System.currentTimeMillis();
                 for (Entry entry : entries) {
                     if (!validateAmount(entry)) {
                         continue;
                     }
 
                     for (final RedisConnection c : entry.connections) {
-                        final long timeInPool = System.currentTimeMillis() - c.getLastUsageTime();
+                        final long timeInPool = currTime - c.getLastUsageTime();
                         if (timeInPool > config.getIdleConnectionTimeout()
                                 && validateAmount(entry) && entry.connections.remove(c)) {
                             ChannelFuture future = c.closeAsync();
