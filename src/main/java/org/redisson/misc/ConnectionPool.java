@@ -128,9 +128,12 @@ public class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        Promise<T> promise = connectionManager.newPromise();
-        promises.add(promise);
-        return promise;
+        RedisConnectionException exception = new RedisConnectionException(
+                "Can't aquire connection from pool");
+        return connectionManager.newFailedFuture(exception);
+//        Promise<T> promise = connectionManager.newPromise();
+//        promises.add(promise);
+//        return promise;
     }
 
     public Future<T> get(ClientConnectionsEntry entry) {
