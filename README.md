@@ -1,7 +1,7 @@
+Redisson - distributed and scalable Java data structures on top of Redis server. Advanced Java Redis client
+====
+
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/)
-
-
-##Redisson - distributed and scalable Java data structures on top of Redis server. Advanced Java Redis client
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
@@ -14,6 +14,7 @@ Read [wiki](https://github.com/mrniko/redisson/wiki) for more Redisson usage det
 
 Licensed under the Apache License 2.0.
 
+Welcome to support chat - [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Features
 ================================
