@@ -34,7 +34,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     private int scanInterval = 1000;
 
     /**
-     * Use cluster slave nodes for read-operations
+     * Whether to use cluster slave nodes for read-operations
      */
     private boolean readFromSlaves = true;
 

@@ -42,9 +42,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     private int connectTimeout = 1000;
 
     /**
-     * Redis operation execution timeout.
-     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
-     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     * Redis server response timeout. Starts to countdown when Redis command was succesfully sent.
      * Value in milliseconds.
      *
      */
@@ -68,7 +66,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Redis server will be excluded from the list of available slave nodes
      * when sequential unsuccessful execution attempts of any Redis command
-     * reaches <code>slaveFailedAttempts</code>.
+     * reaches <code>failedAttempts</code>.
      */
     private int failedAttempts = 3;
 
@@ -143,12 +141,10 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Reconnection attempts amount.
-     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
-     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     * Error will be thrown if Redis command can't be sended to Redis server after <code>retryAttempts</code>.
+     * But if it sent succesfully then <code>timeout</code> will be started.
      *
-     * Used then connection with redis server is down.
-     *
+     * @see #timeout
      * @param retryAttempts
      */
     public T setRetryAttempts(int retryAttempts) {
@@ -160,10 +156,9 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Time pause before next command attempt.
+     * Time interval after which another one attempt to send Redis command will be executed.
      *
-     * Used then connection with redis server is down.
-     *
+     * @see retryAttempts
      * @param retryInterval - time in milliseconds
      */
     public T setRetryInterval(int retryInterval) {
@@ -189,9 +184,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Redis operation execution timeout.
-     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
-     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     * Redis server response timeout.
      *
      * @param timeout in milliseconds
      */
