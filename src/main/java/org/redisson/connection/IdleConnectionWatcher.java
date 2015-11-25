@@ -84,7 +84,7 @@ public class IdleConnectionWatcher {
     }
 
     private boolean validateAmount(Entry entry) {
-        return entry.maximumAmount - entry.freeConnectionsCounter.get() + entry.connections.size() >= entry.minimumAmount;
+        return entry.maximumAmount - entry.freeConnectionsCounter.get() + entry.connections.size() > entry.minimumAmount;
     }
 
     public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AtomicInteger freeConnectionsCounter) {
