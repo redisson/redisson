@@ -18,6 +18,7 @@ package org.redisson.cluster;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +41,8 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -70,7 +73,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             Collection<ClusterPartition> partitions = parsePartitions(nodesValue);
             for (ClusterPartition partition : partitions) {
-                addMasterEntry(partition, cfg);
+                Collection<Future<Void>> s = addMasterEntry(partition, cfg);
+                for (Future<Void> future : s) {
+                    future.syncUninterruptibly();
+                }
             }
 
             break;
@@ -108,20 +114,23 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     protected void initEntry(MasterSlaveServersConfig config) {
     }
 
-    private void addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
+    private Collection<Future<Void>> addMasterEntry(final ClusterPartition partition, ClusterServersConfig cfg) {
         if (partition.isMasterFail()) {
             log.warn("add master: {} for slot ranges: {} failed. Reason - server has FAIL flag", partition.getMasterAddress(), partition.getSlotRanges());
-            return;
+            Future<Void> f = newSucceededFuture();
+            return Collections.singletonList(f);
         }
 
         RedisConnection connection = connect(cfg, partition.getMasterAddress());
         if (connection == null) {
-            return;
+            Future<Void> f = newSucceededFuture();
+            return Collections.singletonList(f);
         }
         Map<String, String> params = connection.sync(RedisCommands.CLUSTER_INFO);
         if ("fail".equals(params.get("cluster_state"))) {
             log.warn("add master: {} for slot ranges: {} failed. Reason - cluster_state:fail", partition.getMasterAddress(), partition.getSlotRanges());
-            return;
+            Future<Void> f = newSucceededFuture();
+            return Collections.singletonList(f);
         }
 
         MasterSlaveServersConfig config = create(cfg);
@@ -131,12 +140,20 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
 
-        MasterSlaveEntry entry = new MasterSlaveEntry(partition.getSlotRanges(), this, config, connectListener);
-        entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        for (ClusterSlotRange slotRange : partition.getSlotRanges()) {
-            addEntry(slotRange, entry);
-            lastPartitions.put(slotRange, partition);
-        }
+        final MasterSlaveEntry entry = new MasterSlaveEntry(partition.getSlotRanges(), this, config, connectListener);
+        List<Future<Void>> fs = entry.initSlaveBalancer(config);
+        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        f.addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                for (ClusterSlotRange slotRange : partition.getSlotRanges()) {
+                    addEntry(slotRange, entry);
+                    lastPartitions.put(slotRange, partition);
+                }
+            }
+        });
+        fs.add(f);
+        return fs;
     }
 
     private void monitorClusterChange(final ClusterServersConfig cfg) {

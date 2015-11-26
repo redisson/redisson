@@ -52,19 +52,22 @@ public class ConnectionPool<T extends RedisConnection> {
         this.connectionManager = connectionManager;
     }
 
-    public void add(final ClientConnectionsEntry entry) {
+    public Future<Void> add(final ClientConnectionsEntry entry) {
+        final Promise<Void> promise = connectionManager.newPromise();
         initConnections(entry, new Runnable() {
             @Override
             public void run() {
                 entries.add(entry);
+                promise.setSuccess(null);
             }
         }, true);
+        return promise;
     }
 
     private void initConnections(final ClientConnectionsEntry entry, final Runnable runnable, boolean checkFreezed) {
         int minimumIdleSize = getMinimumIdleSize(entry);
 
-        if (minimumIdleSize == 0) {
+        if (minimumIdleSize == 0 || (checkFreezed && entry.isFreezed())) {
             runnable.run();
             return;
         }
@@ -72,6 +75,9 @@ public class ConnectionPool<T extends RedisConnection> {
         final AtomicInteger completedConnections = new AtomicInteger(minimumIdleSize);
         for (int i = 0; i < minimumIdleSize; i++) {
             if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
+                if (completedConnections.decrementAndGet() == 0) {
+                    runnable.run();
+                }
                 continue;
             }
 

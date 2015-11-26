@@ -17,6 +17,7 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
@@ -28,6 +29,8 @@ import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
 public class SingleEntry extends MasterSlaveEntry {
 
@@ -43,19 +46,28 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public void setupMasterEntry(String host, int port) {
+    public Future<Void> setupMasterEntry(String host, int port) {
         RedisClient masterClient = connectionManager.createClient(host, port);
         masterEntry = new ClientConnectionsEntry(masterClient,
                 config.getMasterConnectionMinimumIdleSize(),
                 config.getMasterConnectionPoolSize(),
                 config.getSlaveConnectionMinimumIdleSize(),
                 config.getSlaveSubscriptionConnectionPoolSize(), connectListener, NodeType.MASTER, connectionManager.getConnectionWatcher(), config);
-        writeConnectionHolder.add(masterEntry);
-        pubSubConnectionHolder.add(masterEntry);
-    }
-
-    @Override
-    protected void initSlaveBalancer(MasterSlaveServersConfig config) {
+        final Promise<Void> res = connectionManager.newPromise();
+        Future<Void> f = writeConnectionHolder.add(masterEntry);
+        Future<Void> s = pubSubConnectionHolder.add(masterEntry);
+        FutureListener<Void> listener = new FutureListener<Void>() {
+            AtomicInteger counter = new AtomicInteger(2);
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (counter.decrementAndGet() == 0) {
+                    res.setSuccess(null);
+                }
+            }
+        };
+        f.addListener(listener);
+        s.addListener(listener);
+        return res;
     }
 
     @Override

@@ -29,6 +29,7 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -82,7 +83,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
         SingleEntry entry = new SingleEntry(slots, this, config, connectListener);
-        entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        f.syncUninterruptibly();
         addEntry(singleSlotRange, entry);
     }
 
