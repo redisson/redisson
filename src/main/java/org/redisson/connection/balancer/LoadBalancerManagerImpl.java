@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
 public class LoadBalancerManagerImpl implements LoadBalancerManager {
@@ -53,10 +54,16 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         pubSubEntries = new PubSubConnectionPoll(config, connectionManager, entry);
     }
 
-    public synchronized void add(ClientConnectionsEntry entry) {
-        addr2Entry.put(entry.getClient().getAddr(), entry);
-        entries.add(entry);
-        pubSubEntries.add(entry);
+    public Future<Void> add(final ClientConnectionsEntry entry) {
+        Future<Void> f = entries.add(entry);
+        f.addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                addr2Entry.put(entry.getClient().getAddr(), entry);
+                pubSubEntries.add(entry);
+            }
+        });
+        return f;
     }
 
     public int getAvailableClients() {

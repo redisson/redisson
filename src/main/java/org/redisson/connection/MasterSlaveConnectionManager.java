@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -172,7 +173,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config, connectListener);
-        entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        List<Future<Void>> fs = entry.initSlaveBalancer(config);
+        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        fs.add(f);
+        for (Future<Void> future : fs) {
+            future.syncUninterruptibly();
+        }
         addEntry(singleSlotRange, entry);
     }
 
@@ -675,6 +681,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public <R> Promise<R> newPromise() {
         return group.next().newPromise();
+    }
+
+    public <R> Future<R> newSucceededFuture() {
+        return group.next().newSucceededFuture(null);
     }
 
     @Override

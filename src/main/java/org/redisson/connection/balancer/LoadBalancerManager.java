@@ -39,7 +39,7 @@ public interface LoadBalancerManager {
 
     Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason);
 
-    void add(ClientConnectionsEntry entry);
+    Future<Void> add(ClientConnectionsEntry entry);
 
     Future<RedisConnection> nextConnection();
 
