@@ -28,9 +28,9 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonScript implements RScript {
 
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
 
-    protected RedissonScript(CommandExecutor commandExecutor) {
+    protected RedissonScript(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
     }
 

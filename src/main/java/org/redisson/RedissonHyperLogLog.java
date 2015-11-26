@@ -28,11 +28,11 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
-    protected RedissonHyperLogLog(CommandExecutor commandExecutor, String name) {
+    protected RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonHyperLogLog(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonHyperLogLog(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 

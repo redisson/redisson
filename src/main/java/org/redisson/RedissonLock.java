@@ -53,8 +53,11 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = PlatformDependent.newConcurrentHashMap();
 
+    private final CommandExecutor commandExecutor;
+
     protected RedissonLock(CommandExecutor commandExecutor, String name, UUID id) {
         super(commandExecutor, name);
+        this.commandExecutor = commandExecutor;
         this.id = id;
     }
 

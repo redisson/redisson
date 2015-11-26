@@ -37,15 +37,15 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonTopic<M> implements RTopic<M> {
 
-    final CommandExecutor commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
     private final String name;
     private final Codec codec;
 
-    protected RedissonTopic(CommandExecutor commandExecutor, String name) {
+    protected RedissonTopic(CommandAsyncExecutor commandExecutor, String name) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
-    protected RedissonTopic(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.codec = codec;

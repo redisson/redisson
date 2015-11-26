@@ -19,11 +19,9 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -45,11 +43,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     private static final RedisCommand<Boolean> EVAL_OBJECTS = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
 
-    protected RedissonSet(CommandExecutor commandExecutor, String name) {
+    protected RedissonSet(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    public RedissonSet(Codec codec, CommandExecutor commandExecutor, String name) {
+    public RedissonSet(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 
@@ -79,7 +77,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        return commandExecutor.read(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
+        Future<ListScanResult<V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
+        return get(f);
     }
 
     @Override

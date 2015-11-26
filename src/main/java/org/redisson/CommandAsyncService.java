@@ -61,13 +61,13 @@ import io.netty.util.concurrent.Promise;
  * @author Nikita Koksharov
  *
  */
-public class CommandExecutorService implements CommandExecutor {
+public class CommandAsyncService implements CommandAsyncExecutor {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
     final ConnectionManager connectionManager;
 
-    public CommandExecutorService(ConnectionManager connectionManager) {
+    public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
 
@@ -76,6 +76,24 @@ public class CommandExecutorService implements CommandExecutor {
         return connectionManager;
     }
 
+    @Override
+    public <V> V get(Future<V> future) {
+        future.awaitUninterruptibly();
+        if (future.isSuccess()) {
+            return future.getNow();
+        }
+        throw convertException(future);
+    }
+
+    @Override
+    public <T, R> Future<R> readAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
+        Promise<R> mainPromise = connectionManager.newPromise();
+        int slot = connectionManager.calcSlot(key);
+        async(true, new NodeSource(slot, client), null, codec, command, params, mainPromise, 0);
+        return mainPromise;
+    }
+
+    @Override
     public <T, R> Future<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params) {
         final Promise<Collection<R>> mainPromise = connectionManager.newPromise();
         Promise<R> promise = new DefaultPromise<R>() {
@@ -110,6 +128,7 @@ public class CommandExecutorService implements CommandExecutor {
         return mainPromise;
     }
 
+    @Override
     public <T, R> Future<R> readRandomAsync(final RedisCommand<T> command, final Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
         final List<ClusterSlotRange> slots = new ArrayList<ClusterSlotRange>(connectionManager.getEntries().keySet());
@@ -145,10 +164,12 @@ public class CommandExecutorService implements CommandExecutor {
         async(true, new NodeSource(slot.getStartSlot()), null, connectionManager.getCodec(), command, params, attemptPromise, 0);
     }
 
+    @Override
     public <T> Future<Void> writeAllAsync(RedisCommand<T> command, Object ... params) {
         return writeAllAsync(command, null, params);
     }
 
+    @Override
     public <R, T> Future<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
         return allAsync(false, command, callback, params);
     }
@@ -184,47 +205,13 @@ public class CommandExecutorService implements CommandExecutor {
         return mainPromise;
     }
 
-    public <V> V get(Future<V> future) {
-        future.awaitUninterruptibly();
-        if (future.isSuccess()) {
-            return future.getNow();
-        }
-        throw convertException(future);
-    }
-
     protected <V> RedisException convertException(Future<V> future) {
         return future.cause() instanceof RedisException ?
                 (RedisException) future.cause() :
                 new RedisException("Unexpected exception while processing command", future.cause());
     }
 
-    public <T, R> R read(String key, RedisCommand<T> command, Object ... params) {
-        return read(key, connectionManager.getCodec(), command, params);
-    }
-
-    public <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = readAsync(key, codec, command, params);
-        return get(res);
-    }
-
-    public <T, R> R read(InetSocketAddress client, String key, RedisCommand<T> command, Object ... params) {
-        Future<R> res = readAsync(client, key, connectionManager.getCodec(), command, params);
-        return get(res);
-    }
-
-    public <T, R> R read(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = readAsync(client, key, codec, command, params);
-        return get(res);
-    }
-
-
-    public <T, R> Future<R> readAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
-        int slot = connectionManager.calcSlot(key);
-        async(true, new NodeSource(slot, client), null, codec, command, params, mainPromise, 0);
-        return mainPromise;
-    }
-
+    @Override
     public <T, R> Future<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         int slot = connectionManager.calcSlot(key);
@@ -232,108 +219,39 @@ public class CommandExecutorService implements CommandExecutor {
         return mainPromise;
     }
 
-    public <T, R> R write(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(slot, codec, command, params);
-        return get(res);
-    }
-
+    @Override
     public <T, R> Future<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         async(false, new NodeSource(slot), null, codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
+    @Override
     public <T, R> Future<R> readAsync(String key, RedisCommand<T> command, Object ... params) {
         return readAsync(key, connectionManager.getCodec(), command, params);
     }
 
-    public <R> R write(String key, Codec codec, SyncOperation<R> operation) {
-        int slot = connectionManager.calcSlot(key);
-        return async(false, codec, new NodeSource(slot), operation, 0);
-    }
-
-    public <R> R read(String key, Codec codec, SyncOperation<R> operation) {
-        int slot = connectionManager.calcSlot(key);
-        return async(true, codec, new NodeSource(slot), operation, 0);
-    }
-
-    private <R> R async(boolean readOnlyMode, Codec codec, NodeSource source, SyncOperation<R> operation, int attempt) {
-        if (!connectionManager.getShutdownLatch().acquire()) {
-            throw new IllegalStateException("Redisson is shutdown");
-        }
-
-        try {
-            Future<RedisConnection> connectionFuture;
-            if (readOnlyMode) {
-                connectionFuture = connectionManager.connectionReadOp(source, null);
-            } else {
-                connectionFuture = connectionManager.connectionWriteOp(source, null);
-            }
-            connectionFuture.syncUninterruptibly();
-
-            RedisConnection connection = connectionFuture.getNow();
-
-            try {
-                return operation.execute(codec, connection);
-            } catch (RedisMovedException e) {
-                return async(readOnlyMode, codec, new NodeSource(e.getSlot(), e.getAddr(), Redirect.MOVED), operation, attempt);
-            } catch (RedisAskException e) {
-                return async(readOnlyMode, codec, new NodeSource(e.getSlot(), e.getAddr(), Redirect.ASK), operation, attempt);
-            } catch (RedisLoadingException e) {
-                return async(readOnlyMode, codec, source, operation, attempt);
-            } catch (RedisTimeoutException e) {
-                if (attempt == connectionManager.getConfig().getRetryAttempts()) {
-                    throw e;
-                }
-                attempt++;
-                return async(readOnlyMode, codec, source, operation, attempt);
-            } finally {
-                connectionManager.getShutdownLatch().release();
-                if (readOnlyMode) {
-                    connectionManager.releaseRead(source, connection);
-                } else {
-                    connectionManager.releaseWrite(source, connection);
-                }
-            }
-        } catch (RedisException e) {
-            if (attempt == connectionManager.getConfig().getRetryAttempts()) {
-                throw e;
-            }
-            try {
-                Thread.sleep(connectionManager.getConfig().getRetryInterval());
-            } catch (InterruptedException e1) {
-                Thread.currentThread().interrupt();
-            }
-            attempt++;
-            return async(readOnlyMode, codec, source, operation, attempt);
-        }
-    }
-
+    @Override
     public <T, R> Future<R> evalReadAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(true, key, connectionManager.getCodec(), evalCommandType, script, keys, params);
     }
 
+    @Override
     public <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(true, key, codec, evalCommandType, script, keys, params);
     }
 
-    public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalRead(key, connectionManager.getCodec(), evalCommandType, script, keys, params);
-    }
-
-    public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Future<R> res = evalReadAsync(key, codec, evalCommandType, script, keys, params);
-        return get(res);
-    }
-
+    @Override
     public <T, R> Future<R> evalWriteAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(false, key, connectionManager.getCodec(), evalCommandType, script, keys, params);
     }
 
+    @Override
     public <T, R> Future<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(false, key, codec, evalCommandType, script, keys, params);
     }
 
+    @Override
     public <T, R> Future<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
         return evalAllAsync(false, command, callback, script, keys, params);
     }
@@ -382,29 +300,12 @@ public class CommandExecutorService implements CommandExecutor {
         return mainPromise;
     }
 
-    public <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalWrite(key, connectionManager.getCodec(), evalCommandType, script, keys, params);
-    }
-
-    public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Future<R> res = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-        return get(res);
-    }
-
-    public <T, R> R write(String key, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(key, command, params);
-        return get(res);
-    }
-
+    @Override
     public <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params) {
         return writeAsync(key, connectionManager.getCodec(), command, params);
     }
 
-    public <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(key, codec, command, params);
-        return get(res);
-    }
-
+    @Override
     public <T, R> Future<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         int slot = connectionManager.calcSlot(key);

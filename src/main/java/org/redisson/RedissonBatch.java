@@ -40,10 +40,10 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonBatch implements RBatch {
 
-    private final CommandBatchExecutorService executorService;
+    private final CommandBatchAsyncService executorService;
 
     public RedissonBatch(ConnectionManager connectionManager) {
-        this.executorService = new CommandBatchExecutorService(connectionManager);
+        this.executorService = new CommandBatchAsyncService(connectionManager);
     }
 
     @Override

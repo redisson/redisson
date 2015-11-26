@@ -29,7 +29,7 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
-    protected RedissonBitSet(CommandExecutor connectionManager, String name) {
+    protected RedissonBitSet(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
@@ -178,7 +178,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public Future<Void> clearAsync(int fromIndex, int toIndex) {
-        CommandBatchExecutorService executorService = new CommandBatchExecutorService(commandExecutor.getConnectionManager());
+        CommandBatchAsyncService executorService = new CommandBatchAsyncService(commandExecutor.getConnectionManager());
         for (int i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), codec, RedisCommands.SETBIT, getName(), i, 0);
         }
@@ -197,7 +197,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public Future<Void> setAsync(int fromIndex, int toIndex) {
-        CommandBatchExecutorService executorService = new CommandBatchExecutorService(commandExecutor.getConnectionManager());
+        CommandBatchAsyncService executorService = new CommandBatchAsyncService(commandExecutor.getConnectionManager());
         for (int i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), codec, RedisCommands.SETBIT, getName(), i, 1);
         }

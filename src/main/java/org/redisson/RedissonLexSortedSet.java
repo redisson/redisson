@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RLexSortedSet;
@@ -28,7 +27,7 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implements RLexSortedSet {
 
-    public RedissonLexSortedSet(CommandExecutor commandExecutor, String name) {
+    public RedissonLexSortedSet(CommandAsyncExecutor commandExecutor, String name) {
         super(StringCodec.INSTANCE, commandExecutor, name);
     }
 

@@ -25,11 +25,11 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
-    protected RedissonBucket(CommandExecutor connectionManager, String name) {
+    protected RedissonBucket(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
-    protected RedissonBucket(Codec codec, CommandExecutor connectionManager, String name) {
+    protected RedissonBucket(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
     }
 

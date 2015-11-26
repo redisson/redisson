@@ -49,7 +49,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     private final UUID id;
 
-    protected RedissonCountDownLatch(CommandExecutor commandExecutor, String name, UUID id) {
+    protected RedissonCountDownLatch(CommandAsyncExecutor commandExecutor, String name, UUID id) {
         super(commandExecutor, name);
         this.id = id;
     }
@@ -175,12 +175,13 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             return;
         }
 
-        commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN_R1,
+        Future<Boolean> f = commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN_R1,
                 "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
                         "if v == 0 then redis.call('publish', ARGV[2], ARGV[1]) end;" +
                         "return true",
                  Collections.<Object>singletonList(getName()), zeroCountMessage, getChannelName());
+        get(f);
     }
 
     private String getEntryName() {
@@ -197,7 +198,8 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private long getCountInner() {
-        Long val = commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.GET, getName());
+        Future<Long> f = commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET, getName());
+        Long val = get(f);
         if (val == null) {
             return 0;
         }
@@ -206,9 +208,16 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean trySetCount(long count) {
-        return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN_R1,
-                "if redis.call('exists', KEYS[1]) == 0 then redis.call('set', KEYS[1], ARGV[2]); redis.call('publish', ARGV[3], ARGV[1]); return true else return false end",
+        Future<Boolean> f = commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN_R1,
+                "if redis.call('exists', KEYS[1]) == 0 then "
+                    + "redis.call('set', KEYS[1], ARGV[2]); "
+                    + "redis.call('publish', ARGV[3], ARGV[1]); "
+                    + "return true "
+                + "else "
+                    + "return false "
+                + "end",
                  Collections.<Object>singletonList(getName()), newCountMessage, count, getChannelName());
+        return get(f);
     }
 
     @Override

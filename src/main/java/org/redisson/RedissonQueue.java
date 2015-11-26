@@ -32,11 +32,11 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
-    protected RedissonQueue(CommandExecutor commandExecutor, String name) {
+    protected RedissonQueue(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonQueue(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 

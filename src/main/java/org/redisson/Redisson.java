@@ -87,8 +87,10 @@ public class Redisson implements RedissonClient {
         } else {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
-        commandExecutor = new CommandExecutorService(connectionManager);
+        commandExecutor = new CommandSyncService(connectionManager);
     }
+
+
 
     /**
      * Creates an Redisson instance
@@ -112,6 +114,10 @@ public class Redisson implements RedissonClient {
      */
     public static Redisson create(Config config) {
         return new Redisson(config);
+    }
+
+    public static RedissonReactiveClient createReactive(Config config) {
+        return new RedissonReactive(config);
     }
 
     /**

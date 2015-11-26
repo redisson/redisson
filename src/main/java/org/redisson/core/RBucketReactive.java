@@ -13,13 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.core;
+
+import java.util.concurrent.TimeUnit;
+
+import rx.Single;
 
 /**
+ *  object functions
  *
  * @author Nikita Koksharov
  *
+ * @param <V> - the type of object
  */
-public interface CommandExecutor extends CommandSyncExecutor, CommandAsyncExecutor {
+public interface RBucketReactive<V> extends RExpirableReactive {
+
+    Single<V> get();
+
+    Single<Void> set(V value);
+
+    Single<Void> set(V value, long timeToLive, TimeUnit timeUnit);
+
+    Single<Boolean> exists();
 
 }

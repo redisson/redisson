@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -49,12 +48,10 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
-public class CommandBatchExecutorService extends CommandExecutorService {
-
+public class CommandBatchAsyncService extends CommandAsyncService {
 
     public static class CommandEntry implements Comparable<CommandEntry> {
 
@@ -104,7 +101,7 @@ public class CommandBatchExecutorService extends CommandExecutorService {
 
     private boolean executed;
 
-    public CommandBatchExecutorService(ConnectionManager connectionManager) {
+    public CommandBatchAsyncService(ConnectionManager connectionManager) {
         super(connectionManager);
     }
 
@@ -369,60 +366,6 @@ public class CommandBatchExecutorService extends CommandExecutorService {
                 }
             }
         });
-    }
-
-    @Override
-    public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys,
-            Object... params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script,
-            List<Object> keys, Object... params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys,
-            Object... params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script,
-            List<Object> keys, Object... params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <R> R read(String key, Codec codec, SyncOperation<R> operation) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <R> R write(String key, Codec codec, SyncOperation<R> operation) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object... params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T, R> R read(String key, RedisCommand<T> command, Object... params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object... params) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T, R> R write(String key, RedisCommand<T> command, Object... params) {
-        throw new UnsupportedOperationException();
     }
 
 }

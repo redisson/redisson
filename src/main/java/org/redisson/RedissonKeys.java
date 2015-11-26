@@ -34,9 +34,9 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonKeys implements RKeys {
 
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
 
-    public RedissonKeys(CommandExecutor commandExecutor) {
+    public RedissonKeys(CommandAsyncExecutor commandExecutor) {
         super();
         this.commandExecutor = commandExecutor;
     }
@@ -83,9 +83,11 @@ public class RedissonKeys implements RKeys {
 
     private ListScanResult<String> scanIterator(int slot, long startPos, String pattern) {
         if (pattern == null) {
-            return commandExecutor.write(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+            Future<ListScanResult<String>> f = commandExecutor.writeAsync(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+            return commandExecutor.get(f);
         }
-        return commandExecutor.write(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+        Future<ListScanResult<String>> f = commandExecutor.writeAsync(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+        return commandExecutor.get(f);
     }
 
     private Iterator<String> createKeysIterator(final int slot, final String pattern) {

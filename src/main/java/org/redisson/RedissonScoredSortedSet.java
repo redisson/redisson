@@ -36,11 +36,11 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RScoredSortedSet<V> {
 
-    public RedissonScoredSortedSet(CommandExecutor commandExecutor, String name) {
+    public RedissonScoredSortedSet(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    public RedissonScoredSortedSet(Codec codec, CommandExecutor commandExecutor, String name) {
+    public RedissonScoredSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 
@@ -156,7 +156,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        return commandExecutor.read(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
+        Future<ListScanResult<V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
+        return get(f);
     }
 
     @Override

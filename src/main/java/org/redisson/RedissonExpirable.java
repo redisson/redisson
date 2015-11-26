@@ -27,11 +27,11 @@ import io.netty.util.concurrent.Future;
 
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
-    RedissonExpirable(CommandExecutor connectionManager, String name) {
+    RedissonExpirable(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
-    RedissonExpirable(Codec codec, CommandExecutor connectionManager, String name) {
+    RedissonExpirable(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
     }
 

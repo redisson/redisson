@@ -42,11 +42,11 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlockingQueue<V> {
 
-    protected RedissonBlockingQueue(CommandExecutor commandExecutor, String name) {
+    protected RedissonBlockingQueue(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonBlockingQueue(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 

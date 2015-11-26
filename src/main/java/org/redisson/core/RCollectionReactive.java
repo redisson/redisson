@@ -13,13 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.core;
 
-/**
- *
- * @author Nikita Koksharov
- *
- */
-public interface CommandExecutor extends CommandSyncExecutor, CommandAsyncExecutor {
+import java.util.Collection;
+
+import rx.Observable;
+import rx.Single;
+
+public interface RCollectionReactive<V> extends RExpirableReactive {
+
+    Observable<V> iterator();
+
+    Single<Boolean> retainAll(Collection<?> c);
+
+    Single<Boolean> removeAll(Collection<?> c);
+
+    Single<Boolean> contains(Object o);
+
+    Single<Boolean> containsAll(Collection<?> c);
+
+    Single<Boolean> remove(Object o);
+
+    Single<Long> size();
+
+    Single<Boolean> add(V e);
+
+    Single<Long> addAll(Collection<? extends V> c);
 
 }

@@ -31,7 +31,7 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong {
 
-    protected RedissonAtomicLong(CommandExecutor commandExecutor, String name) {
+    protected RedissonAtomicLong(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 

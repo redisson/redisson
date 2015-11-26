@@ -13,13 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.core;
 
-/**
- *
- * @author Nikita Koksharov
- *
- */
-public interface CommandExecutor extends CommandSyncExecutor, CommandAsyncExecutor {
+import java.util.Collection;
+
+import rx.Single;
+
+public interface RHyperLogLogReactive<V> extends RExpirableReactive {
+
+    Single<Boolean> add(V obj);
+
+    Single<Boolean> addAll(Collection<V> objects);
+
+    Single<Long> count();
+
+    Single<Long> countWith(String ... otherLogNames);
+
+    Single<Void> mergeWith(String ... otherLogNames);
 
 }

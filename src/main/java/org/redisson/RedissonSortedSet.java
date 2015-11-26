@@ -97,8 +97,11 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     private Comparator<? super V> comparator = NaturalComparator.NATURAL_ORDER;
 
+    CommandExecutor commandExecutor;
+
     protected RedissonSortedSet(CommandExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        this.commandExecutor = commandExecutor;
 
         loadComparator();
 
@@ -166,11 +169,11 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public int size() {
-        return commandExecutor.read(getName(), codec, RedisCommands.LLEN, getName());
+        return commandExecutor.read(getName(), codec, RedisCommands.LLEN_INT, getName());
     }
 
     private int size(RedisConnection connection) {
-        return connection.sync(RedisCommands.LLEN, getName()).intValue();
+        return connection.sync(RedisCommands.LLEN_INT, getName()).intValue();
     }
 
     @Override

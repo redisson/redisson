@@ -58,11 +58,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     private static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 4, ValueType.MAP);
     private static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
 
-    protected RedissonMap(CommandExecutor commandExecutor, String name) {
+    protected RedissonMap(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    public RedissonMap(Codec codec, CommandExecutor commandExecutor, String name) {
+    public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 
@@ -83,7 +83,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean containsKey(Object key) {
-        return commandExecutor.read(getName(), codec, RedisCommands.HEXISTS, getName(), key);
+        return get(containsKeyAsync(key));
     }
 
     @Override
@@ -117,7 +117,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(getName());
         args.addAll(keys);
-        List<V> list = commandExecutor.read(getName(), codec, RedisCommands.HMGET, args.toArray());
+        Future<List<V>> f = commandExecutor.readAsync(getName(), codec, RedisCommands.HMGET, args.toArray());
+        List<V> list = get(f);
 
         Map<K, V> result = new HashMap<K, V>(list.size());
         for (int index = 0; index < args.size()-1; index++) {
@@ -192,7 +193,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet() {
-        Map<K, V> map = commandExecutor.read(getName(), codec, RedisCommands.HGETALL, getName());
+        Future<Map<K, V>> f = commandExecutor.readAsync(getName(), codec, RedisCommands.HGETALL, getName());
+        Map<K, V> map = get(f);
         return map.entrySet();
     }
 
@@ -316,7 +318,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     MapScanResult<Object, V> scanIterator(InetSocketAddress client, long startPos) {
-        return commandExecutor.read(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
+        Future<MapScanResult<Object, V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
+        return get(f);
     }
 
     public Iterator<Map.Entry<K, V>> entryIterator() {

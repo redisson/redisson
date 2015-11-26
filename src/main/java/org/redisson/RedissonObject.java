@@ -30,17 +30,17 @@ import io.netty.util.concurrent.Promise;
  */
 abstract class RedissonObject implements RObject {
 
-    final CommandExecutor commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
     private final String name;
     final Codec codec;
 
-    public RedissonObject(Codec codec, CommandExecutor commandExecutor, String name) {
+    public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.codec = codec;
         this.name = name;
         this.commandExecutor = commandExecutor;
     }
 
-    public RedissonObject(CommandExecutor commandExecutor, String name) {
+    public RedissonObject(CommandAsyncExecutor commandExecutor, String name) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
