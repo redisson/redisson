@@ -109,7 +109,7 @@ public interface RedisCommands {
     RedisCommand<Object> LINDEX = new RedisCommand<Object>("LINDEX");
     RedisCommand<Object> LINSERT = new RedisCommand<Object>("LINSERT", 3, ValueType.OBJECTS);
     RedisStrictCommand<Integer> LLEN_INT = new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor());
-    RedisStrictCommand<Integer> LLEN = new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor());
+    RedisStrictCommand<Long> LLEN = new RedisStrictCommand<Long>("LLEN");
     RedisStrictCommand<Boolean> LTRIM = new RedisStrictCommand<Boolean>("LTRIM", new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> EXPIRE = new RedisStrictCommand<Boolean>("EXPIRE", new BooleanReplayConvertor());

@@ -513,6 +513,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         };
     }
 
+    // TODO use RedissonList with bounds
     @Override
     public List<V> subList(int fromIndex, int toIndex) {
         int size = size();

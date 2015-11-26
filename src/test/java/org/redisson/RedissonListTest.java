@@ -741,13 +741,6 @@ public class RedissonListTest extends BaseTest {
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
-    public void testGetFail2() {
-        List<String> list = redisson.getList("list");
-
-        list.get(0);
-    }
-
-    @Test(expected = IndexOutOfBoundsException.class)
     public void testGetFail() {
         List<String> list = redisson.getList("list");
 

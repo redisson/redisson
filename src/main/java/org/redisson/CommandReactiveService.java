@@ -22,7 +22,9 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import rx.Single;
+import rx.SingleSubscriber;
 
 /**
  *
@@ -30,6 +32,29 @@ import rx.Single;
  *
  */
 public class CommandReactiveService extends CommandAsyncService implements CommandReactiveExecutor {
+
+    static class ToObservableFuture<T> implements Single.OnSubscribe<T> {
+        private final Future<? extends T> that;
+
+        public ToObservableFuture(Future<? extends T> that) {
+            this.that = that;
+        }
+
+        @Override
+        public void call(final SingleSubscriber<? super T> subscriber) {
+            that.addListener(new FutureListener<T>() {
+                @Override
+                public void operationComplete(Future<T> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        subscriber.onError(future.cause());
+                        return;
+                    }
+
+                    subscriber.onSuccess(future.getNow());
+                }
+            });
+        }
+    }
 
     public CommandReactiveService(ConnectionManager connectionManager) {
         super(connectionManager);
@@ -43,7 +68,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     @Override
     public <T, R> Single<R> writeObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = writeAsync(key, codec, command, params);
-        return Single.from(f);
+        return Single.create(new ToObservableFuture<R>(f));
     }
 
     @Override
@@ -54,21 +79,21 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     @Override
     public <T, R> Single<R> readObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = readAsync(key, codec, command, params);
-        return Single.from(f);
+        return Single.create(new ToObservableFuture<R>(f));
     }
 
     @Override
     public <T, R> Single<R> evalReadObservable(String key, Codec codec, RedisCommand<T> evalCommandType,
             String script, List<Object> keys, Object... params) {
         Future<R> f = evalReadAsync(key, codec, evalCommandType, script, keys, params);
-        return Single.from(f);
+        return Single.create(new ToObservableFuture<R>(f));
     }
 
     @Override
     public <T, R> Single<R> evalWriteObservable(String key, Codec codec, RedisCommand<T> evalCommandType,
             String script, List<Object> keys, Object... params) {
         Future<R> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-        return Single.from(f);
+        return Single.create(new ToObservableFuture<R>(f));
     }
 
 }

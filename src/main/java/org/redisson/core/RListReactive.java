@@ -27,6 +27,7 @@ import rx.Single;
  *
  * @param <V> the type of elements held in this collection
  */
+// TODO add sublist support
 public interface RListReactive<V> extends RCollectionReactive<V> {
 
     Observable<V> descendingIterator();

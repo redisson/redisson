@@ -22,7 +22,6 @@ import static org.redisson.client.protocol.RedisCommands.LPOP;
 import static org.redisson.client.protocol.RedisCommands.LPUSH;
 import static org.redisson.client.protocol.RedisCommands.LREM_SINGLE;
 import static org.redisson.client.protocol.RedisCommands.RPUSH;
-import static org.redisson.client.protocol.RedisCommands.RPUSH_BOOLEAN;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +43,7 @@ import rx.Observable.OnSubscribe;
 import rx.Single;
 import rx.SingleSubscriber;
 import rx.Subscriber;
+import rx.observables.ConnectableObservable;
 import rx.subjects.PublishSubject;
 
 /**
@@ -70,7 +70,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Observable<V> descendingIterator() {
-        return iterator(0, false);
+        return iterator(-1, false);
     }
 
     @Override
@@ -123,8 +123,8 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Single<Boolean> add(V e) {
-        return commandExecutor.writeObservable(getName(), codec, RPUSH_BOOLEAN, getName(), e);
+    public Single<Long> add(V e) {
+        return commandExecutor.writeObservable(getName(), codec, RPUSH, getName(), e);
     }
 
     @Override
@@ -158,6 +158,8 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         }
 
         final PublishSubject<Long> promise = newObservable();
+        ConnectableObservable<Long> r = promise.replay();
+        r.connect();
         Single<Long> sizeObservable = size();
         sizeObservable.subscribe(new SingleSubscriber<Long>() {
             @Override
@@ -187,7 +189,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
             }
 
         });
-        return promise.toSingle();
+        return r.toSingle();
     }
 
     @Override

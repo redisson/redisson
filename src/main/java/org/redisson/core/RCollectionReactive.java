@@ -36,7 +36,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
 
     Single<Long> size();
 
-    Single<Boolean> add(V e);
+    Single<Long> add(V e);
 
     Single<Long> addAll(Collection<? extends V> c);
 
