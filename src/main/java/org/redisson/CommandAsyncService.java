@@ -418,28 +418,27 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                     "Can't write command: " + command + ", params: " + params + " to channel: " + future.channel(), future.cause()));
                         } else {
                             timeoutRef.get().cancel();
-                            TimerTask timeoutTask = new TimerTask() {
-                                @Override
-                                public void run(Timeout timeout) throws Exception {
-                                    attemptPromise.tryFailure(
-                                            new RedisTimeoutException("Redis server response timeout for command: " + command
-                                                    + " with params: " + Arrays.toString(params) + " channel: " + connection.getChannel()));
-                                }
-                            };
-
                             int timeoutTime = connectionManager.getConfig().getTimeout();
                             if (command.getName().equals(RedisCommands.BLPOP_VALUE.getName())) {
                                 Integer blPopTimeout = Integer.valueOf(params[params.length - 1].toString());
                                 if (blPopTimeout == 0) {
-                                    timeoutTime = -1;
-                                } else {
-                                    timeoutTime += blPopTimeout*1000;
+                                    return;
                                 }
+                                timeoutTime += blPopTimeout*1000;
                             }
-                            if (timeoutTime != -1) {
-                                Timeout timeout = connectionManager.newTimeout(timeoutTask, timeoutTime, TimeUnit.MILLISECONDS);
-                                timeoutRef.set(timeout);
-                            }
+
+                            final int timeoutAmount = timeoutTime;
+                            TimerTask timeoutTask = new TimerTask() {
+                                @Override
+                                public void run(Timeout timeout) throws Exception {
+                                    attemptPromise.tryFailure(
+                                            new RedisTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured for command: " + command
+                                                    + " with params: " + Arrays.toString(params) + " channel: " + connection.getChannel()));
+                                }
+                            };
+
+                            Timeout timeout = connectionManager.newTimeout(timeoutTask, timeoutTime, TimeUnit.MILLISECONDS);
+                            timeoutRef.set(timeout);
                         }
                     }
                 });
