@@ -15,20 +15,19 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.ClusterNode;
+
+import java.net.InetSocketAddress;
+import java.util.Map;
 
 public class RedisClientEntry implements ClusterNode {
 
     private final RedisClient client;
 
     public RedisClientEntry(RedisClient client) {
-        super();
         this.client = client;
     }
 
@@ -43,13 +42,16 @@ public class RedisClientEntry implements ClusterNode {
 
     @Override
     public boolean ping() {
-        RedisConnection c = client.connect();
+        RedisConnection connection = null;
         try {
-            return "PONG".equals(c.sync(RedisCommands.PING));
+            connection = client.connect();
+            return "PONG".equals(connection.sync(RedisCommands.PING));
         } catch (Exception e) {
             return false;
         } finally {
-            c.closeAsync();
+            if (connection != null) {
+                connection.closeAsync();
+            }
         }
     }
 
@@ -80,13 +82,13 @@ public class RedisClientEntry implements ClusterNode {
 
     @Override
     public Map<String, String> info() {
-        RedisConnection c = client.connect();
+        RedisConnection connection = client.connect();
         try {
-            return c.sync(RedisCommands.CLUSTER_INFO);
+            return connection.sync(RedisCommands.CLUSTER_INFO);
         } catch (Exception e) {
             return null;
         } finally {
-            c.closeAsync();
+            connection.closeAsync();
         }
     }
 
