@@ -21,6 +21,8 @@ import org.redisson.client.codec.Codec;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RListReactive;
+import org.redisson.core.RMap;
+import org.redisson.core.RMapReactive;
 
 public interface RedissonReactiveClient {
 
@@ -58,17 +60,17 @@ public interface RedissonReactiveClient {
     <V> RListReactive<V> getList(String name);
 
     <V> RListReactive<V> getList(String name, Codec codec);
-//
-//    /**
-//     * Returns map instance by name.
-//     *
-//     * @param name of map
-//     * @return
-//     */
-//    <K, V> RMap<K, V> getMap(String name);
-//
-//    <K, V> RMap<K, V> getMap(String name, Codec codec);
-//
+
+    /**
+     * Returns map instance by name.
+     *
+     * @param name of map
+     * @return
+     */
+    <K, V> RMapReactive<K, V> getMap(String name);
+
+    <K, V> RMapReactive<K, V> getMap(String name, Codec codec);
+
 //    /**
 //     * Returns lock instance by name.
 //     *

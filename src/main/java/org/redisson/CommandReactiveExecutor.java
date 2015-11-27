@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
@@ -30,6 +31,8 @@ import org.redisson.connection.ConnectionManager;
 public interface CommandReactiveExecutor {
 
     ConnectionManager getConnectionManager();
+
+    <T, R> Publisher<R> readObservable(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> Publisher<R> evalWriteObservable(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 

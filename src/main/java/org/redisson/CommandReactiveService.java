@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
@@ -80,6 +81,12 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
 
     public CommandReactiveService(ConnectionManager connectionManager) {
         super(connectionManager);
+    }
+
+    @Override
+    public <T, R> Publisher<R> readObservable(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
+        Future<R> f = readAsync(client, key, codec, command, params);
+        return new NettyFuturePublisher<R>(f);
     }
 
     @Override

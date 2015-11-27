@@ -31,6 +31,8 @@ import org.redisson.connection.SingleConnectionManager;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RListReactive;
+import org.redisson.core.RMap;
+import org.redisson.core.RMapReactive;
 
 import io.netty.util.concurrent.Future;
 
@@ -117,6 +119,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <V> RListReactive<V> getList(String name, Codec codec) {
         return new RedissonListReactive<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RMapReactive<K, V> getMap(String name) {
+        return new RedissonMapReactive<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
+        return new RedissonMapReactive<K, V>(codec, commandExecutor, name);
     }
 
     @Override
