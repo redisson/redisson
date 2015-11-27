@@ -15,13 +15,18 @@
  */
 package org.redisson;
 
+import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RObjectReactive;
 
-import rx.Single;
-import rx.SingleSubscriber;
-import rx.subjects.PublishSubject;
+import reactor.core.reactivestreams.SubscriberBarrier;
+import reactor.rx.Stream;
+import reactor.rx.Streams;
+import reactor.rx.broadcast.Broadcaster;
 
 /**
  * Base Redisson object
@@ -45,27 +50,21 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
-    protected <V> SingleSubscriber<V> toSubscriber(final PublishSubject<V> promise) {
-        return new SingleSubscriber<V>() {
+    protected <V> Subscriber<V> toSubscriber(final Subscriber<V> promise) {
+        return new SubscriberBarrier<V, V>(promise) {
             @Override
-            public void onSuccess(V value) {
-                promise.onNext(value);
-                promise.onCompleted();
-            }
-
-            @Override
-            public void onError(Throwable error) {
-                promise.onError(error);
+            protected void doSubscribe(Subscription subscription) {
+                subscription.request(1);
             }
         };
     }
 
-    protected <V> PublishSubject<V> newObservable() {
-        return PublishSubject.create();
+    protected <V> Processor<V, V> newObservable() {
+        return Broadcaster.create();
     }
 
-    protected <V> Single<V> newSucceededObservable(V result) {
-        return Single.just(result);
+    protected <V> Stream<V> newSucceededObservable(V result) {
+        return Streams.just(result);
     }
 
     @Override
@@ -74,27 +73,27 @@ abstract class RedissonObjectReactive implements RObjectReactive {
     }
 
     @Override
-    public Single<Void> rename(String newName) {
+    public Publisher<Void> rename(String newName) {
         return commandExecutor.writeObservable(getName(), RedisCommands.RENAME, getName(), newName);
     }
 
     @Override
-    public Single<Void> migrate(String host, int port, int database) {
+    public Publisher<Void> migrate(String host, int port, int database) {
         return commandExecutor.writeObservable(getName(), RedisCommands.MIGRATE, host, port, getName(), database);
     }
 
     @Override
-    public Single<Boolean> move(int database) {
+    public Publisher<Boolean> move(int database) {
         return commandExecutor.writeObservable(getName(), RedisCommands.MOVE, getName(), database);
     }
 
     @Override
-    public Single<Boolean> renamenx(String newName) {
+    public Publisher<Boolean> renamenx(String newName) {
         return commandExecutor.writeObservable(getName(), RedisCommands.RENAMENX, getName(), newName);
     }
 
     @Override
-    public Single<Boolean> delete() {
+    public Publisher<Boolean> delete() {
         return commandExecutor.writeObservable(getName(), RedisCommands.DEL_SINGLE, getName());
     }
 

@@ -17,18 +17,18 @@ package org.redisson.core;
 
 import java.util.Collection;
 
-import rx.Single;
+import org.reactivestreams.Publisher;
 
 public interface RHyperLogLogReactive<V> extends RExpirableReactive {
 
-    Single<Boolean> add(V obj);
+    Publisher<Boolean> add(V obj);
 
-    Single<Boolean> addAll(Collection<V> objects);
+    Publisher<Boolean> addAll(Collection<V> objects);
 
-    Single<Long> count();
+    Publisher<Long> count();
 
-    Single<Long> countWith(String ... otherLogNames);
+    Publisher<Long> countWith(String ... otherLogNames);
 
-    Single<Void> mergeWith(String ... otherLogNames);
+    Publisher<Void> mergeWith(String ... otherLogNames);
 
 }

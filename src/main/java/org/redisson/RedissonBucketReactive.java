@@ -17,11 +17,10 @@ package org.redisson;
 
 import java.util.concurrent.TimeUnit;
 
+import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RBucketReactive;
-
-import rx.Single;
 
 public class RedissonBucketReactive<V> extends RedissonExpirableReactive implements RBucketReactive<V> {
 
@@ -34,22 +33,22 @@ public class RedissonBucketReactive<V> extends RedissonExpirableReactive impleme
     }
 
     @Override
-    public Single<V> get() {
+    public Publisher<V> get() {
         return commandExecutor.readObservable(getName(), codec, RedisCommands.GET, getName());
     }
 
     @Override
-    public Single<Void> set(V value) {
+    public Publisher<Void> set(V value) {
         return commandExecutor.writeObservable(getName(), codec, RedisCommands.SET, getName(), value);
     }
 
     @Override
-    public Single<Void> set(V value, long timeToLive, TimeUnit timeUnit) {
+    public Publisher<Void> set(V value, long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.writeObservable(getName(), codec, RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
     }
 
     @Override
-    public Single<Boolean> exists() {
+    public Publisher<Boolean> exists() {
         return commandExecutor.readObservable(getName(), codec, RedisCommands.EXISTS, getName());
     }
 

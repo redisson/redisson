@@ -20,11 +20,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RHyperLogLogReactive;
-
-import rx.Single;
 
 public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive implements RHyperLogLogReactive<V> {
 
@@ -37,12 +36,12 @@ public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive im
     }
 
     @Override
-    public Single<Boolean> add(V obj) {
+    public Publisher<Boolean> add(V obj) {
         return commandExecutor.writeObservable(getName(), codec, RedisCommands.PFADD, getName(), obj);
     }
 
     @Override
-    public Single<Boolean> addAll(Collection<V> objects) {
+    public Publisher<Boolean> addAll(Collection<V> objects) {
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
         args.addAll(objects);
@@ -50,12 +49,12 @@ public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive im
     }
 
     @Override
-    public Single<Long> count() {
+    public Publisher<Long> count() {
         return commandExecutor.writeObservable(getName(), codec, RedisCommands.PFCOUNT, getName());
     }
 
     @Override
-    public Single<Long> countWith(String... otherLogNames) {
+    public Publisher<Long> countWith(String... otherLogNames) {
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
@@ -63,7 +62,7 @@ public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive im
     }
 
     @Override
-    public Single<Void> mergeWith(String... otherLogNames) {
+    public Publisher<Void> mergeWith(String... otherLogNames) {
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));

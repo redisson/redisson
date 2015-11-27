@@ -15,7 +15,7 @@
  */
 package org.redisson.core;
 
-import rx.Single;
+import org.reactivestreams.Publisher;
 
 /**
  * Base interface for all Redisson objects
@@ -36,7 +36,7 @@ public interface RObjectReactive {
      * @param database - destination database
      * @return
      */
-    Single<Void> migrate(String host, int port, int database);
+    Publisher<Void> migrate(String host, int port, int database);
 
     /**
      * Move object to another database in  mode
@@ -44,14 +44,14 @@ public interface RObjectReactive {
      * @param database
      * @return <code>true</code> if key was moved <code>false</code> if not
      */
-    Single<Boolean> move(int database);
+    Publisher<Boolean> move(int database);
 
     /**
      * Delete object in  mode
      *
      * @return <code>true</code> if object was deleted <code>false</code> if not
      */
-    Single<Boolean> delete();
+    Publisher<Boolean> delete();
 
     /**
      * Rename current object key to <code>newName</code>
@@ -60,7 +60,7 @@ public interface RObjectReactive {
      * @param newName
      * @return
      */
-    Single<Void> rename(String newName);
+    Publisher<Void> rename(String newName);
 
     /**
      * Rename current object key to <code>newName</code>
@@ -69,6 +69,6 @@ public interface RObjectReactive {
      * @param newName
      * @return
      */
-    Single<Boolean> renamenx(String newName);
+    Publisher<Boolean> renamenx(String newName);
 
 }

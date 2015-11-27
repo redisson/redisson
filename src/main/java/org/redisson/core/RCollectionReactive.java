@@ -17,27 +17,26 @@ package org.redisson.core;
 
 import java.util.Collection;
 
-import rx.Observable;
-import rx.Single;
+import org.reactivestreams.Publisher;
 
 public interface RCollectionReactive<V> extends RExpirableReactive {
 
-    Observable<V> iterator();
+    Publisher<V> iterator();
 
-    Single<Boolean> retainAll(Collection<?> c);
+    Publisher<Boolean> retainAll(Collection<?> c);
 
-    Single<Boolean> removeAll(Collection<?> c);
+    Publisher<Boolean> removeAll(Collection<?> c);
 
-    Single<Boolean> contains(Object o);
+    Publisher<Boolean> contains(Object o);
 
-    Single<Boolean> containsAll(Collection<?> c);
+    Publisher<Boolean> containsAll(Collection<?> c);
 
-    Single<Boolean> remove(Object o);
+    Publisher<Boolean> remove(Object o);
 
-    Single<Long> size();
+    Publisher<Long> size();
 
-    Single<Long> add(V e);
+    Publisher<Long> add(V e);
 
-    Single<Long> addAll(Collection<? extends V> c);
+    Publisher<Long> addAll(Collection<? extends V> c);
 
 }

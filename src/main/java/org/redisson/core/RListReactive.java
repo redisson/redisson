@@ -17,8 +17,7 @@ package org.redisson.core;
 
 import java.util.Collection;
 
-import rx.Observable;
-import rx.Single;
+import org.reactivestreams.Publisher;
 
 /**
  *  list functions
@@ -30,26 +29,26 @@ import rx.Single;
 // TODO add sublist support
 public interface RListReactive<V> extends RCollectionReactive<V> {
 
-    Observable<V> descendingIterator();
+    Publisher<V> descendingIterator();
 
-    Observable<V> descendingIterator(int startIndex);
+    Publisher<V> descendingIterator(int startIndex);
 
-    Observable<V> iterator(int startIndex);
+    Publisher<V> iterator(int startIndex);
 
-    Single<Integer> lastIndexOf(Object o);
+    Publisher<Integer> lastIndexOf(Object o);
 
-    Single<Integer> indexOf(Object o);
+    Publisher<Integer> indexOf(Object o);
 
-    Single<Long> add(long index, V element);
+    Publisher<Long> add(long index, V element);
 
-    Single<Long> addAll(long index, Collection<? extends V> coll);
+    Publisher<Long> addAll(long index, Collection<? extends V> coll);
 
-    Single<Void> fastSet(long index, V element);
+    Publisher<Void> fastSet(long index, V element);
 
-    Single<V> set(long index, V element);
+    Publisher<V> set(long index, V element);
 
-    Single<V> get(long index);
+    Publisher<V> get(long index);
 
-    Single<V> remove(int index);
+    Publisher<V> remove(int index);
 
 }

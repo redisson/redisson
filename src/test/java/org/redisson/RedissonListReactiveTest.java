@@ -8,19 +8,24 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import org.redisson.client.RedisException;
 import org.redisson.core.RListReactive;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import rx.Observable;
-import rx.Single;
-import rx.SingleSubscriber;
+import reactor.core.queue.CompletableBlockingQueue;
+import reactor.fn.Consumer;
+import reactor.rx.Promise;
+import reactor.rx.Stream;
+import reactor.rx.Streams;
 
 public class RedissonListReactiveTest extends BaseReactiveTest {
 
@@ -30,19 +35,20 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(test2.add("foo"));
         sync(test2.add(0, "bar"));
 
-        MatcherAssert.assertThat(test2.iterator().toBlocking().toIterable(), Matchers.contains("bar", "foo"));
+        MatcherAssert.assertThat(sync(test2), Matchers.contains("bar", "foo"));
     }
 
     @Test
     public void testAddAllWithIndex() throws InterruptedException {
         final RListReactive<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
-        list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe(new SingleSubscriber<Long>() {
+        list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe(new Promise<Long>() {
+
             @Override
-            public void onSuccess(Long value) {
-                list.addAll(Arrays.asList(1L, 24L, 3L)).subscribe(new SingleSubscriber<Long>() {
+            public void onNext(Long element) {
+                list.addAll(Arrays.asList(1L, 24L, 3L)).subscribe(new Promise<Long>() {
                     @Override
-                    public void onSuccess(Long value) {
+                    public void onNext(Long value) {
                         latch.countDown();
                     }
 
@@ -68,12 +74,12 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     public void testAdd() throws InterruptedException {
         final RListReactive<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
-        list.add(1L).subscribe(new SingleSubscriber<Long>() {
+        list.add(1L).subscribe(new Promise<Long>() {
             @Override
-            public void onSuccess(Long value) {
-                list.add(2L).subscribe(new SingleSubscriber<Long>() {
+            public void onNext(Long value) {
+                list.add(2L).subscribe(new Promise<Long>() {
                     @Override
-                    public void onSuccess(Long value) {
+                    public void onNext(Long value) {
                         latch.countDown();
                     }
 
@@ -96,7 +102,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     }
 
     private <V> Iterable<V> sync(RListReactive<V> list) {
-        return list.iterator().toBlocking().toIterable();
+        return Streams.create(list.iterator()).toList().poll();
     }
 
     @Test
@@ -122,7 +128,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(0));
         sync(list.add(10));
 
-        Iterator<Integer> iterator = list.iterator().toBlocking().getIterator();
+        Iterator<Integer> iterator = toIterator(list.iterator());
 
         Assert.assertTrue(1 == iterator.next());
         Assert.assertTrue(2 == iterator.next());
@@ -151,7 +157,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(0));
         sync(list.add(10));
 
-        Iterator<Integer> iterator = list.descendingIterator().toBlocking().getIterator();
+        Iterator<Integer> iterator = toIterator(list.descendingIterator());
 
         Assert.assertTrue(10 == iterator.next());
         Assert.assertTrue(0 == iterator.next());
@@ -175,7 +181,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Assert.assertEquals(-1, list.lastIndexOf(10).toBlocking().value().intValue());
+        Assert.assertEquals(-1, sync(list.lastIndexOf(10)).intValue());
     }
 
     @Test
@@ -192,7 +198,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(0));
         sync(list.add(10));
 
-        int index = list.lastIndexOf(3).toBlocking().value();
+        int index = sync(list.lastIndexOf(3));
         Assert.assertEquals(2, index);
     }
 
@@ -210,7 +216,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(0));
         sync(list.add(10));
 
-        int index = list.lastIndexOf(3).toBlocking().value();
+        int index = sync(list.lastIndexOf(3));
         Assert.assertEquals(5, index);
     }
 
@@ -228,7 +234,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(3));
         sync(list.add(10));
 
-        int index = list.lastIndexOf(3).toBlocking().value();
+        int index = sync(list.lastIndexOf(3));
         Assert.assertEquals(8, index);
     }
 
@@ -239,10 +245,10 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
             sync(list.add(i));
         }
 
-        Assert.assertTrue(55 == list.indexOf(56).toBlocking().value());
-        Assert.assertTrue(99 == list.indexOf(100).toBlocking().value());
-        Assert.assertTrue(-1 == list.indexOf(200).toBlocking().value());
-        Assert.assertTrue(-1 == list.indexOf(0).toBlocking().value());
+        Assert.assertTrue(55 == sync(list.indexOf(56)));
+        Assert.assertTrue(99 == sync(list.indexOf(100)));
+        Assert.assertTrue(-1 == sync(list.indexOf(200)));
+        Assert.assertTrue(-1 == sync(list.indexOf(0)));
     }
 
     @Test
@@ -254,7 +260,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(4));
         sync(list.add(5));
 
-        Integer val = list.remove(0).toBlocking().value();
+        Integer val = sync(list.remove(0));
         Assert.assertTrue(1 == val);
 
         Assert.assertThat(sync(list), Matchers.contains(2, 3, 4, 5));
@@ -435,7 +441,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     public void testContainsAllEmpty() {
         RListReactive<Integer> list = redisson.getList("list");
         for (int i = 0; i < 200; i++) {
-            list.add(i);
+            sync(list.add(i));
         }
 
         Assert.assertTrue(sync(list.containsAll(Collections.emptyList())));
@@ -458,7 +464,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     private void checkIterator(RListReactive<String> list) {
         int iteration = 0;
-        for (Iterator<String> iterator = list.iterator().toBlocking().getIterator(); iterator.hasNext();) {
+        for (Iterator<String> iterator = toIterator(list.iterator()); iterator.hasNext();) {
             String value = iterator.next();
             String val = sync(list.get(iteration));
             Assert.assertEquals(val, value);

@@ -18,12 +18,12 @@ package org.redisson;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.RExpirableReactive;
 
-import rx.Single;
 
 abstract class RedissonExpirableReactive extends RedissonObjectReactive implements RExpirableReactive {
 
@@ -36,27 +36,27 @@ abstract class RedissonExpirableReactive extends RedissonObjectReactive implemen
     }
 
     @Override
-    public Single<Boolean> expire(long timeToLive, TimeUnit timeUnit) {
+    public Publisher<Boolean> expire(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.EXPIRE, getName(), timeUnit.toSeconds(timeToLive));
     }
 
     @Override
-    public Single<Boolean> expireAt(long timestamp) {
+    public Publisher<Boolean> expireAt(long timestamp) {
         return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.EXPIREAT, getName(), timestamp);
     }
 
     @Override
-    public Single<Boolean> expireAt(Date timestamp) {
+    public Publisher<Boolean> expireAt(Date timestamp) {
         return expireAt(timestamp.getTime() / 1000);
     }
 
     @Override
-    public Single<Boolean> clearExpire() {
+    public Publisher<Boolean> clearExpire() {
         return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.PERSIST, getName());
     }
 
     @Override
-    public Single<Long> remainTimeToLive() {
+    public Publisher<Long> remainTimeToLive() {
         return commandExecutor.readObservable(getName(), StringCodec.INSTANCE, RedisCommands.TTL, getName());
     }
 

@@ -17,14 +17,18 @@ package org.redisson;
 
 import java.util.List;
 
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import rx.Single;
-import rx.SingleSubscriber;
+import reactor.core.support.Exceptions;
+import reactor.rx.Stream;
+import reactor.rx.action.Action;
+import reactor.rx.subscription.ReactiveSubscription;
 
 /**
  *
@@ -33,27 +37,45 @@ import rx.SingleSubscriber;
  */
 public class CommandReactiveService extends CommandAsyncService implements CommandReactiveExecutor {
 
-    static class ToObservableFuture<T> implements Single.OnSubscribe<T> {
+    static class NettyFuturePublisher<T> extends Stream<T> {
         private final Future<? extends T> that;
 
-        public ToObservableFuture(Future<? extends T> that) {
+        public NettyFuturePublisher(Future<? extends T> that) {
             this.that = that;
         }
 
         @Override
-        public void call(final SingleSubscriber<? super T> subscriber) {
-            that.addListener(new FutureListener<T>() {
-                @Override
-                public void operationComplete(Future<T> future) throws Exception {
-                    if (!future.isSuccess()) {
-                        subscriber.onError(future.cause());
-                        return;
-                    }
+        public void subscribe(final Subscriber<? super T> subscriber) {
+            try {
+                subscriber.onSubscribe(new ReactiveSubscription<T>(this, subscriber) {
 
-                    subscriber.onSuccess(future.getNow());
-                }
-            });
+                    @Override
+                    public void request(long elements) {
+                        Action.checkRequest(elements);
+                        if (isComplete()) return;
+
+                        that.addListener(new FutureListener<T>() {
+                            @Override
+                            public void operationComplete(Future<T> future) throws Exception {
+                                if (!future.isSuccess()) {
+                                    subscriber.onError(future.cause());
+                                    return;
+                                }
+
+                                if (future.getNow() != null) {
+                                    subscriber.onNext(future.getNow());
+                                }
+                                onComplete();
+                            }
+                        });
+                    }
+                });
+            } catch (Throwable throwable) {
+                Exceptions.throwIfFatal(throwable);
+                subscriber.onError(throwable);
+            }
         }
+
     }
 
     public CommandReactiveService(ConnectionManager connectionManager) {
@@ -61,39 +83,39 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
-    public <T, R> Single<R> writeObservable(String key, RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<R> writeObservable(String key, RedisCommand<T> command, Object ... params) {
         return writeObservable(key, connectionManager.getCodec(), command, params);
     }
 
     @Override
-    public <T, R> Single<R> writeObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<R> writeObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = writeAsync(key, codec, command, params);
-        return Single.create(new ToObservableFuture<R>(f));
+        return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Single<R> readObservable(String key, RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<R> readObservable(String key, RedisCommand<T> command, Object ... params) {
         return readObservable(key, connectionManager.getCodec(), command, params);
     }
 
     @Override
-    public <T, R> Single<R> readObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<R> readObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = readAsync(key, codec, command, params);
-        return Single.create(new ToObservableFuture<R>(f));
+        return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Single<R> evalReadObservable(String key, Codec codec, RedisCommand<T> evalCommandType,
+    public <T, R> Publisher<R> evalReadObservable(String key, Codec codec, RedisCommand<T> evalCommandType,
             String script, List<Object> keys, Object... params) {
         Future<R> f = evalReadAsync(key, codec, evalCommandType, script, keys, params);
-        return Single.create(new ToObservableFuture<R>(f));
+        return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Single<R> evalWriteObservable(String key, Codec codec, RedisCommand<T> evalCommandType,
+    public <T, R> Publisher<R> evalWriteObservable(String key, Codec codec, RedisCommand<T> evalCommandType,
             String script, List<Object> keys, Object... params) {
         Future<R> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-        return Single.create(new ToObservableFuture<R>(f));
+        return new NettyFuturePublisher<R>(f);
     }
 
 }

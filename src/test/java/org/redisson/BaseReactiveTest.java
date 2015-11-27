@@ -1,11 +1,17 @@
 package org.redisson;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.reactivestreams.Publisher;
 
-import rx.Observable;
-import rx.Single;
+import reactor.fn.Consumer;
+import reactor.rx.Streams;
 
 public abstract class BaseReactiveTest {
 
@@ -21,8 +27,16 @@ public abstract class BaseReactiveTest {
         redisson.shutdown();
     }
 
-    public <V> V sync(Single<V> ob) {
-        return ob.toBlocking().value();
+    public <V> Iterator<V> toIterator(Publisher<V> pub) {
+        return Streams.create(pub).toList().poll().iterator();
+    }
+
+    public <V> V sync(Publisher<V> ob) {
+        List<V> t = Streams.create(ob).toList().poll();
+        if (t == null) {
+            return null;
+        }
+        return t.iterator().next();
     }
 
     public static Config createConfig() {

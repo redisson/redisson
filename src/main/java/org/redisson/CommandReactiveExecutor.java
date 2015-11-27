@@ -17,11 +17,10 @@ package org.redisson;
 
 import java.util.List;
 
+import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
-
-import rx.Single;
 
 /**
  *
@@ -32,16 +31,16 @@ public interface CommandReactiveExecutor {
 
     ConnectionManager getConnectionManager();
 
-    <T, R> Single<R> evalWriteObservable(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
+    <T, R> Publisher<R> evalWriteObservable(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
-    <T, R> Single<R> evalReadObservable(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+    <T, R> Publisher<R> evalReadObservable(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
-    <T, R> Single<R> writeObservable(String key, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> writeObservable(String key, RedisCommand<T> command, Object ... params);
 
-    <T, R> Single<R> writeObservable(String key, Codec codec, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> writeObservable(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
-    <T, R> Single<R> readObservable(String key, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> readObservable(String key, RedisCommand<T> command, Object ... params);
 
-    <T, R> Single<R> readObservable(String key, Codec codec, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> readObservable(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
 }

@@ -17,7 +17,8 @@ package org.redisson.core;
 
 import java.util.concurrent.TimeUnit;
 
-import rx.Single;
+import org.reactivestreams.Publisher;
+
 
 /**
  *  object functions
@@ -28,12 +29,12 @@ import rx.Single;
  */
 public interface RBucketReactive<V> extends RExpirableReactive {
 
-    Single<V> get();
+    Publisher<V> get();
 
-    Single<Void> set(V value);
+    Publisher<Void> set(V value);
 
-    Single<Void> set(V value, long timeToLive, TimeUnit timeUnit);
+    Publisher<Void> set(V value, long timeToLive, TimeUnit timeUnit);
 
-    Single<Boolean> exists();
+    Publisher<Boolean> exists();
 
 }
