@@ -34,6 +34,8 @@ public interface NodesGroup<N extends Node> {
 
     /**
      * Ping all Redis nodes
+     *
+     * @return <code>true</code> if all nodes have replied "PONG", <code>false</code> in other case.
      */
     boolean pingAll();
 

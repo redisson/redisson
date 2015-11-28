@@ -152,10 +152,7 @@ public class ClientConnectionsEntry {
                 RedisConnection conn = future.getNow();
                 log.debug("new connection created: {}", conn);
 
-                FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
-                connectionListener.onConnect(config, nodeType, listener);
-                listener.executeCommands();
-
+                connectionListener.onConnect(connectionFuture, conn, nodeType, config);
                 addReconnectListener(config, conn);
             }
 
@@ -167,9 +164,7 @@ public class ClientConnectionsEntry {
         conn.setReconnectListener(new ReconnectListener() {
             @Override
             public void onReconnect(RedisConnection conn, Promise<RedisConnection> connectionFuture) {
-                FutureConnectionListener<RedisConnection> listener = new FutureConnectionListener<RedisConnection>(connectionFuture, conn);
-                connectionListener.onConnect(config, nodeType, listener);
-                listener.executeCommands();
+                connectionListener.onConnect(connectionFuture, conn, nodeType, config);
             }
         });
     }
@@ -187,10 +182,7 @@ public class ClientConnectionsEntry {
                 RedisPubSubConnection conn = future.getNow();
                 log.debug("new pubsub connection created: {}", conn);
 
-                FutureConnectionListener<RedisPubSubConnection> listener = new FutureConnectionListener<RedisPubSubConnection>(connectionFuture, conn);
-                connectionListener.onConnect(config, nodeType, listener);
-                listener.executeCommands();
-
+                connectionListener.onConnect(connectionFuture, conn, nodeType, config);
                 addReconnectListener(config, conn);
 
                 allSubscribeConnections.add(conn);

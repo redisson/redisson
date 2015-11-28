@@ -169,6 +169,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         initEntry(config);
     }
 
+    public ConnectionListener getConnectListener() {
+        return connectListener;
+    }
+
     protected void initEntry(MasterSlaveServersConfig config) {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
@@ -196,12 +200,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public RedisClient createClient(String host, int port) {
         RedisClient client = createClient(host, port, config.getConnectTimeout());
-        clients.add(new RedisClientEntry(client));
+        clients.add(new RedisClientEntry(client, this));
         return client;
     }
 
     public void shutdownAsync(RedisClient client) {
-        clients.remove(new RedisClientEntry(client));
+        clients.remove(new RedisClientEntry(client, this));
         client.shutdownAsync();
     }
 

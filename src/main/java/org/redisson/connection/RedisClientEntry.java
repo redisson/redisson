@@ -18,18 +18,23 @@ package org.redisson.connection;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.ClusterNode;
 
+import io.netty.util.concurrent.Promise;
+
 public class RedisClientEntry implements ClusterNode {
 
     private final RedisClient client;
+    private final ConnectionManager manager;
 
-    public RedisClientEntry(RedisClient client) {
+    public RedisClientEntry(RedisClient client, ConnectionManager manager) {
         super();
         this.client = client;
+        this.manager = manager;
     }
 
     public RedisClient getClient() {
@@ -41,9 +46,17 @@ public class RedisClientEntry implements ClusterNode {
         return client.getAddr();
     }
 
+    private RedisConnection connect() {
+        RedisConnection c = client.connect();
+        Promise<RedisConnection> future = manager.newPromise();
+        manager.getConnectListener().onConnect(future, c, null, manager.getConfig());
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
+
     @Override
     public boolean ping() {
-        RedisConnection c = client.connect();
+        RedisConnection c = connect();
         try {
             return "PONG".equals(c.sync(RedisCommands.PING));
         } catch (Exception e) {
@@ -80,7 +93,7 @@ public class RedisClientEntry implements ClusterNode {
 
     @Override
     public Map<String, String> info() {
-        RedisConnection c = client.connect();
+        RedisConnection c = connect();
         try {
             return c.sync(RedisCommands.CLUSTER_INFO);
         } catch (Exception e) {
