@@ -33,6 +33,7 @@ import org.redisson.core.NodesGroup;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
 public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
@@ -58,34 +59,43 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
                 @Override
                 public void operationComplete(Future<RedisConnection> future) throws Exception {
                     if (future.isSuccess()) {
-                        RedisConnection c = future.getNow();
-                        Future<String> r = future.getNow().async(RedisCommands.PING);
-                        result.put(c, r);
+                        final RedisConnection c = future.getNow();
+                        Promise<RedisConnection> connectionFuture = connectionManager.newPromise();
+                        connectionManager.getConnectListener().onConnect(connectionFuture, c, null, connectionManager.getConfig());
+                        connectionFuture.addListener(new FutureListener<RedisConnection>() {
+                            @Override
+                            public void operationComplete(Future<RedisConnection> future) throws Exception {
+                                Future<String> r = c.async(RedisCommands.PING);
+                                result.put(c, r);
+                                latch.countDown();
+                            }
+                        });
+                    } else {
+                        latch.countDown();
                     }
-                    latch.countDown();
                 }
             });
         }
 
         long time = System.currentTimeMillis();
         try {
-            latch.await(connectionManager.getConfig().getPingTimeout(), TimeUnit.MILLISECONDS);
+            latch.await(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
-        if (System.currentTimeMillis() - time >= connectionManager.getConfig().getPingTimeout()) {
+        if (System.currentTimeMillis() - time >= connectionManager.getConfig().getConnectTimeout()) {
             for (Entry<RedisConnection, Future<String>> entry : result.entrySet()) {
                 entry.getKey().closeAsync();
             }
             return false;
         }
 
+        time = System.currentTimeMillis();
         boolean res = true;
         for (Entry<RedisConnection, Future<String>> entry : result.entrySet()) {
             Future<String> f = entry.getValue();
-            long timeout = Math.max(connectionManager.getConfig().getPingTimeout() - (System.currentTimeMillis() - time), 0);
-            f.awaitUninterruptibly(timeout, TimeUnit.MILLISECONDS);
+            f.awaitUninterruptibly(connectionManager.getConfig().getPingTimeout(), TimeUnit.MILLISECONDS);
             if (!"PONG".equals(f.getNow())) {
                 res = false;
             }

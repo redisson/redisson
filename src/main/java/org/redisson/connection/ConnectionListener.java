@@ -16,11 +16,13 @@
 package org.redisson.connection;
 
 import org.redisson.MasterSlaveServersConfig;
-import org.redisson.client.RedisException;
+import org.redisson.client.RedisConnection;
 import org.redisson.connection.ClientConnectionsEntry.NodeType;
+
+import io.netty.util.concurrent.Promise;
 
 public interface ConnectionListener {
 
-    void onConnect(MasterSlaveServersConfig config, NodeType serverMode, FutureConnectionListener connectionListener) throws RedisException;
+    <T extends RedisConnection> void onConnect(Promise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config);
 
 }

@@ -45,6 +45,8 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
+    ConnectionListener getConnectListener();
+
     IdleConnectionWatcher getConnectionWatcher();
 
     <R> Future<R> newFailedFuture(Throwable cause);

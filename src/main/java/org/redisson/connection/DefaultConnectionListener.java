@@ -16,14 +16,22 @@
 package org.redisson.connection;
 
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ClientConnectionsEntry.NodeType;
 
+import io.netty.util.concurrent.Promise;
+
 public class DefaultConnectionListener implements ConnectionListener {
 
-    @Override
-    public void onConnect(MasterSlaveServersConfig config, NodeType serverMode, FutureConnectionListener connectionListener)
+    public <T extends RedisConnection> void onConnect(Promise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config) {
+        FutureConnectionListener<T> listener = new FutureConnectionListener<T>(connectionFuture, conn);
+        doConnect(config, nodeType, listener);
+        listener.executeCommands();
+    }
+
+    protected void doConnect(MasterSlaveServersConfig config, NodeType serverMode, FutureConnectionListener<? extends RedisConnection> connectionListener)
             throws RedisException {
         if (config.getPassword() != null) {
             connectionListener.addCommand(RedisCommands.AUTH, config.getPassword());
