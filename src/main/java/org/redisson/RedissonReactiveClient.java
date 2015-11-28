@@ -23,6 +23,7 @@ import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
+import org.redisson.core.RSetReactive;
 
 public interface RedissonReactiveClient {
 
@@ -71,34 +72,16 @@ public interface RedissonReactiveClient {
 
     <K, V> RMapReactive<K, V> getMap(String name, Codec codec);
 
-//    /**
-//     * Returns lock instance by name.
-//     *
-//     * @param name of lock
-//     * @return
-//     */
-//    RLock getLock(String name);
-//
-//    /**
-//     * Returns set instance by name.
-//     *
-//     * @param name of set
-//     * @return
-//     */
-//    <V> RSet<V> getSet(String name);
-//
-//    <V> RSet<V> getSet(String name, Codec codec);
-//
-//    /**
-//     * Returns sorted set instance by name.
-//     *
-//     * @param name of sorted set
-//     * @return
-//     */
-//    <V> RSortedSet<V> getSortedSet(String name);
-//
-//    <V> RSortedSet<V> getSortedSet(String name, Codec codec);
-//
+    /**
+     * Returns set instance by name.
+     *
+     * @param name of set
+     * @return
+     */
+    <V> RSetReactive<V> getSet(String name);
+
+    <V> RSetReactive<V> getSet(String name, Codec codec);
+
 //    /**
 //     * Returns Redis Sorted Set instance by name
 //     *

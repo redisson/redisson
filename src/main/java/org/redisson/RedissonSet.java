@@ -58,7 +58,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Integer> sizeAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.SCARD, getName());
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SCARD_INT, getName());
     }
 
     @Override
@@ -225,7 +225,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD, args.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD_BOOL, args.toArray());
     }
 
     @Override

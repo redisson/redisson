@@ -33,6 +33,7 @@ import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
+import org.redisson.core.RSetReactive;
 
 import io.netty.util.concurrent.Future;
 
@@ -129,6 +130,15 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
         return new RedissonMapReactive<K, V>(codec, commandExecutor, name);
+    }
+
+    public <V> RSetReactive<V> getSet(String name) {
+        return new RedissonSetReactive<V>(commandExecutor, name);
+    }
+
+    public <V> RSetReactive<V> getSet(String name, Codec codec) {
+        return new RedissonSetReactive<V>(codec, commandExecutor, name);
+
     }
 
     @Override
