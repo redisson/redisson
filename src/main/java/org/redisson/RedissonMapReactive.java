@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,12 +37,10 @@ import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.connection.decoder.MapGetAllDecoder;
-import org.redisson.core.Predicate;
 import org.redisson.core.RMapReactive;
 
 import reactor.fn.BiFunction;
 import reactor.fn.Function;
-import reactor.rx.Promise;
 import reactor.rx.Streams;
 
 
@@ -250,19 +246,6 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         }.stream();
     }
 
-//
-//    @Override
-//    public Map<K, V> filterKeys(Predicate<K> predicate) {
-//        Map<K, V> result = new HashMap<K, V>();
-//        for (Iterator<Map.Entry<K, V>> iterator = entryIterator(); iterator.hasNext();) {
-//            Map.Entry<K, V> entry = iterator.next();
-//            if (predicate.apply(entry.getKey())) {
-//                result.put(entry.getKey(), entry.getValue());
-//            }
-//        }
-//        return result;
-//    }
-
     @Override
     public Publisher<V> addAndGet(K key, Number value) {
         return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE,
@@ -270,39 +253,75 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
                    getName(), key, new BigDecimal(value.toString()).toPlainString());
     }
 
-//    @Override
-//    public boolean equals(Object o) {
-//        if (o == this)
-//            return true;
-//
-//        if (!(o instanceof Map))
-//            return false;
-//        Map<?,?> m = (Map<?,?>) o;
-//        if (m.size() != size())
-//            return false;
-//
-//        try {
-//            Iterator<Entry<K,V>> i = entrySet().iterator();
-//            while (i.hasNext()) {
-//                Entry<K,V> e = i.next();
-//                K key = e.getKey();
-//                V value = e.getValue();
-//                if (value == null) {
-//                    if (!(m.get(key)==null && m.containsKey(key)))
-//                        return false;
-//                } else {
-//                    if (!value.equals(m.get(key)))
-//                        return false;
-//                }
-//            }
-//        } catch (ClassCastException unused) {
-//            return false;
-//        } catch (NullPointerException unused) {
-//            return false;
-//        }
-//
-//        return true;
-//    }
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+
+        if (o instanceof Map) {
+            final Map<?,?> m = (Map<?,?>) o;
+            if (m.size() != Streams.create(size()).next().poll()) {
+                return false;
+            }
+
+            return Streams.create(entryIterator()).map(mapFunction(m)).reduce(true, booleanAnd()).next().poll();
+        } else if (o instanceof RMapReactive) {
+            final RMapReactive<Object, Object> m = (RMapReactive<Object, Object>) o;
+            if (Streams.create(m.size()).next().poll() != Streams.create(size()).next().poll()) {
+                return false;
+            }
+
+            return Streams.create(entryIterator()).map(mapFunction(m)).reduce(true, booleanAnd()).next().poll();
+        }
+
+        return true;
+    }
+
+    private BiFunction<Boolean, Boolean, Boolean> booleanAnd() {
+        return new BiFunction<Boolean, Boolean, Boolean>() {
+
+            @Override
+            public Boolean apply(Boolean t, Boolean u) {
+                return t & u;
+            }
+        };
+    }
+
+    private Function<Entry<K, V>, Boolean> mapFunction(final Map<?, ?> m) {
+        return new Function<Map.Entry<K, V>, Boolean>() {
+            @Override
+            public Boolean apply(Entry<K, V> e) {
+                K key = e.getKey();
+                V value = e.getValue();
+                if (value == null) {
+                    if (!(m.get(key)==null && m.containsKey(key)))
+                        return false;
+                } else {
+                    if (!value.equals(m.get(key)))
+                        return false;
+                }
+                return true;
+            }
+        };
+    }
+
+    private Function<Entry<K, V>, Boolean> mapFunction(final RMapReactive<Object, Object> m) {
+        return new Function<Map.Entry<K, V>, Boolean>() {
+            @Override
+            public Boolean apply(Entry<K, V> e) {
+                Object key = e.getKey();
+                Object value = e.getValue();
+                if (value == null) {
+                    if (!(Streams.create(m.get(key)).next().poll() ==null && Streams.create(m.containsKey(key)).next().poll()))
+                        return false;
+                } else {
+                    if (!value.equals(Streams.create(m.get(key)).next().poll()))
+                        return false;
+                }
+                return true;
+            }
+        };
+    }
 
     @Override
     public int hashCode() {

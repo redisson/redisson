@@ -564,6 +564,22 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testEquals() {
+        RMap<String, String> map = redisson.getMap("simple");
+        map.put("1", "7");
+        map.put("2", "4");
+        map.put("3", "5");
+
+        Map<String, String> testMap = new HashMap<String, String>();
+        testMap.put("1", "7");
+        testMap.put("2", "4");
+        testMap.put("3", "5");
+
+        Assert.assertEquals(testMap, map);
+        Assert.assertEquals(testMap.hashCode(), map.hashCode());
+    }
+
+    @Test
     public void testFastRemoveEmpty() throws Exception {
         RMap<Integer, Integer> map = redisson.getMap("simple");
         map.put(1, 3);
