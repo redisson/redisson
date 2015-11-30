@@ -18,6 +18,10 @@ Welcome to support chat - [![Join the chat at https://gitter.im/mrniko/redisson]
 
 Features
 ================================
+* [AWS ElastiCache](https://aws.amazon.com/elasticache/) servers mode:
+    1. automatic new master server discovery
+    2. automatic new slave servers discovery
+    3. read data using slave servers, write data using master server
 * Cluster servers mode:
     1. automatic master and slave discovery
     2. automatic new master server discovery
@@ -34,6 +38,7 @@ Features
 * Master with Slave servers mode: read data using slave servers, write data using master server
 * Single server mode: read and write data using single server
 * Lua scripting  
+* Distributed implementation of `java.util.BitSet`  
 * Distributed implementation of `java.util.List`  
 * Distributed implementation of `java.util.Set`  
 * Distributed implementation of `java.util.SortedSet`  
@@ -47,13 +52,13 @@ Features
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
 * Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
-* Asynchronous interface for each object
+* Asynchronous interface for each object  
 * Thread-safe implementation  
-* All commands are executed in an atomic way
-* Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)
+* All commands are executed in an atomic way  
+* Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
 * Supports Android platform  
 * Supports auto-reconnect  
-* Supports command auto-retry  
+* Supports failed to send command auto-retry  
 * Supports OSGi  
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
 * With over 250 unit tests  
