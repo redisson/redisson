@@ -56,7 +56,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
 
     @Override
     public Publisher<Boolean> add(double score, V object) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.ZADD, getName(), BigDecimal.valueOf(score).toPlainString(), object);
+        return commandExecutor.writeObservable(getName(), codec, RedisCommands.ZADD_BOOL, getName(), BigDecimal.valueOf(score).toPlainString(), object);
     }
 
     public Publisher<Integer> removeRangeByRank(int startIndex, int endIndex) {
@@ -82,7 +82,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     }
 
     @Override
-    public Publisher<Integer> size() {
+    public Publisher<Long> size() {
         return commandExecutor.readObservable(getName(), codec, RedisCommands.ZCARD, getName());
     }
 
@@ -97,7 +97,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     }
 
     @Override
-    public Publisher<Integer> rank(V o) {
+    public Publisher<Long> rank(V o) {
         return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANK, getName(), o);
     }
 

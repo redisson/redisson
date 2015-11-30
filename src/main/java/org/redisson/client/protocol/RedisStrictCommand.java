@@ -24,6 +24,10 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
         super(name, (Decoder<T>)null, objectParamIndex, inParamType);
     }
 
+    public RedisStrictCommand(String name, int encodeParamIndex) {
+        super(name, null, null, null, encodeParamIndex);
+    }
+
     public RedisStrictCommand(String name, MultiDecoder<T> replayMultiDecoder) {
         super(name, replayMultiDecoder);
     }

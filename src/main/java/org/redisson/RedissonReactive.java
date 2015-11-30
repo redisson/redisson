@@ -30,6 +30,7 @@ import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RHyperLogLogReactive;
+import org.redisson.core.RLexSortedSetReactive;
 import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
@@ -149,6 +150,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec) {
         return new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public RLexSortedSetReactive getLexSortedSet(String name) {
+        return new RedissonLexSortedSetReactive(commandExecutor, name);
     }
 
     @Override

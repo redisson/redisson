@@ -20,6 +20,8 @@ import java.util.List;
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RHyperLogLogReactive;
+import org.redisson.core.RLexSortedSet;
+import org.redisson.core.RLexSortedSetReactive;
 import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
@@ -93,16 +95,16 @@ public interface RedissonReactiveClient {
 
     <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec);
 
-//    /**
-//     * Returns String based Redis Sorted Set instance by name
-//     * All elements are inserted with the same score during addition,
-//     * in order to force lexicographical ordering
-//     *
-//     * @param name
-//     * @return
-//     */
-//    RLexSortedSet getLexSortedSet(String name);
-//
+    /**
+     * Returns String based Redis Sorted Set instance by name
+     * All elements are inserted with the same score during addition,
+     * in order to force lexicographical ordering
+     *
+     * @param name
+     * @return
+     */
+    RLexSortedSetReactive getLexSortedSet(String name);
+
 //    /**
 //     * Returns topic instance by name.
 //     *

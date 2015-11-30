@@ -69,7 +69,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Long> add(V e) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SADD_SINGLE, getName(), e);
+        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SADD, getName(), e);
     }
 
     @Override

@@ -196,7 +196,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
             params.add(0);
             params.add(param);
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD, getName(), params.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), params.toArray());
     }
 
     @Override

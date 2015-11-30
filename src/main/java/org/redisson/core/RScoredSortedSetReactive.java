@@ -32,7 +32,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive {
 
     Publisher<Integer> removeRangeByRank(int startIndex, int endIndex);
 
-    Publisher<Integer> rank(V o);
+    Publisher<Long> rank(V o);
 
     Publisher<Double> getScore(V o);
 
@@ -40,7 +40,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive {
 
     Publisher<Boolean> remove(V object);
 
-    Publisher<Integer> size();
+    Publisher<Long> size();
 
     Publisher<Boolean> contains(Object o);
 
