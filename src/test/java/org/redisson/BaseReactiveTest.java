@@ -2,15 +2,13 @@ package org.redisson;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.reactivestreams.Publisher;
+import org.redisson.core.RCollectionReactive;
 
-import reactor.fn.Consumer;
 import reactor.rx.Streams;
 
 public abstract class BaseReactiveTest {
@@ -25,6 +23,10 @@ public abstract class BaseReactiveTest {
     @AfterClass
     public static void afterClass() {
         redisson.shutdown();
+    }
+
+    public <V> Iterable<V> sync(RCollectionReactive<V> list) {
+        return Streams.create(list.iterator()).toList().poll();
     }
 
     public <V> Iterator<V> toIterator(Publisher<V> pub) {

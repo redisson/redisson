@@ -104,7 +104,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
                             @Override
                             public void onSubscribe(Subscription s) {
-                                s.request(1);
+                                s.request(Long.MAX_VALUE);
                             }
 
                             @Override

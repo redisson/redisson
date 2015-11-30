@@ -60,7 +60,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
 
                             @Override
                             public void onSubscribe(Subscription s) {
-                                s.request(1);
+                                s.request(Long.MAX_VALUE);
                             }
 
                             @Override
@@ -81,6 +81,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
                                     currentIndex--;
                                     if (currentIndex == 0) {
                                         m.onComplete();
+                                        return;
                                     }
                                 }
                             }

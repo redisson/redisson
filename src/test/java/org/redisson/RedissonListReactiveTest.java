@@ -1,31 +1,18 @@
 package org.redisson;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.redisson.client.RedisException;
 import org.redisson.core.RListReactive;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import reactor.core.queue.CompletableBlockingQueue;
-import reactor.fn.Consumer;
 import reactor.rx.Promise;
-import reactor.rx.Stream;
-import reactor.rx.Streams;
 
 public class RedissonListReactiveTest extends BaseReactiveTest {
 
@@ -99,10 +86,6 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         latch.await();
 
         Assert.assertThat(sync(list), Matchers.contains(1L, 2L));
-    }
-
-    private <V> Iterable<V> sync(RListReactive<V> list) {
-        return Streams.create(list.iterator()).toList().poll();
     }
 
     @Test
