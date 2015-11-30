@@ -94,13 +94,16 @@ public class RedisClientEntry implements ClusterNode {
 
     @Override
     public Map<String, String> info() {
-        RedisConnection c = connect();
+        RedisConnection c = null;
         try {
+            c = connect();
             return c.sync(RedisCommands.CLUSTER_INFO);
         } catch (Exception e) {
             return null;
         } finally {
-            c.closeAsync();
+            if (c != null) {
+                c.closeAsync();
+            }
         }
     }
 
