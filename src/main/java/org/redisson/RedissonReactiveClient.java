@@ -23,6 +23,7 @@ import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
+import org.redisson.core.RScoredSortedSetReactive;
 import org.redisson.core.RSetReactive;
 
 public interface RedissonReactiveClient {
@@ -82,16 +83,16 @@ public interface RedissonReactiveClient {
 
     <V> RSetReactive<V> getSet(String name, Codec codec);
 
-//    /**
-//     * Returns Redis Sorted Set instance by name
-//     *
-//     * @param name
-//     * @return
-//     */
-//    <V> RScoredSortedSet<V> getScoredSortedSet(String name);
-//
-//    <V> RScoredSortedSet<V> getScoredSortedSet(String name, Codec codec);
-//
+    /**
+     * Returns Redis Sorted Set instance by name
+     *
+     * @param name
+     * @return
+     */
+    <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name);
+
+    <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec);
+
 //    /**
 //     * Returns String based Redis Sorted Set instance by name
 //     * All elements are inserted with the same score during addition,

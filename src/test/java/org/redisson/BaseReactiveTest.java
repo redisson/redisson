@@ -8,6 +8,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.reactivestreams.Publisher;
 import org.redisson.core.RCollectionReactive;
+import org.redisson.core.RScoredSortedSetReactive;
 
 import reactor.rx.Streams;
 
@@ -23,6 +24,10 @@ public abstract class BaseReactiveTest {
     @AfterClass
     public static void afterClass() {
         redisson.shutdown();
+    }
+
+    public <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
+        return Streams.create(list.iterator()).toList().poll();
     }
 
     public <V> Iterable<V> sync(RCollectionReactive<V> list) {
