@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RAtomicLongReactive;
+import org.redisson.core.RBitSetReactive;
 import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RDequeReactive;
@@ -174,16 +175,8 @@ public interface RedissonReactiveClient {
      */
     RAtomicLongReactive getAtomicLong(String name);
 
-//    /**
-//     * Returns "count down latch" instance by name.
-//     *
-//     * @param name of the "count down latch"
-//     * @return
-//     */
-//    RCountDownLatch getCountDownLatch(String name);
-//
-//    RBitSet getBitSet(String name);
-//
+    RBitSetReactive getBitSet(String name);
+
 //    /**
 //     * Returns script operations object
 //     *
