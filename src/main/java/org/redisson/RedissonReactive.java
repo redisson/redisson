@@ -41,6 +41,7 @@ import org.redisson.core.RMapReactive;
 import org.redisson.core.RPatternTopicReactive;
 import org.redisson.core.RQueueReactive;
 import org.redisson.core.RScoredSortedSetReactive;
+import org.redisson.core.RScriptReactive;
 import org.redisson.core.RSetReactive;
 import org.redisson.core.RTopicReactive;
 
@@ -224,6 +225,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public RBitSetReactive getBitSet(String name) {
         return new RedissonBitSetReactive(commandExecutor, name);
+    }
+
+    @Override
+    public RScriptReactive getScript() {
+        return new RedissonScriptReactive(commandExecutor);
     }
 
     public Config getConfig() {

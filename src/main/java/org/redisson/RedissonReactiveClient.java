@@ -32,6 +32,7 @@ import org.redisson.core.RMapReactive;
 import org.redisson.core.RPatternTopicReactive;
 import org.redisson.core.RQueueReactive;
 import org.redisson.core.RScoredSortedSetReactive;
+import org.redisson.core.RScriptReactive;
 import org.redisson.core.RSetReactive;
 import org.redisson.core.RTopicReactive;
 
@@ -177,13 +178,13 @@ public interface RedissonReactiveClient {
 
     RBitSetReactive getBitSet(String name);
 
-//    /**
-//     * Returns script operations object
-//     *
-//     * @return
-//     */
-//    RScript getScript();
-//
+    /**
+     * Returns script operations object
+     *
+     * @return
+     */
+    RScriptReactive getScript();
+
 //    /**
 //     * Return batch object which executes group of
 //     * command in pipeline.

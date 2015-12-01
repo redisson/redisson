@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.redisson.NettyFuturePublisher;
+import org.redisson.SlotCallback;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
@@ -78,5 +79,18 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         Future<R> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         return new NettyFuturePublisher<R>(f);
     }
+
+    @Override
+    public <T> Publisher<Void> writeAllObservable(RedisCommand<T> command, Object ... params) {
+        Future<Void> f = writeAllAsync(command, params);
+        return new NettyFuturePublisher<Void>(f);
+    }
+
+    @Override
+    public <R, T> Publisher<R> writeAllObservable(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
+        Future<R> f = writeAllAsync(command, callback, params);
+        return new NettyFuturePublisher<R>(f);
+    }
+
 
 }

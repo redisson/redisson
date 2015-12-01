@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
+import org.redisson.SlotCallback;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
@@ -31,6 +32,10 @@ import org.redisson.connection.ConnectionManager;
 public interface CommandReactiveExecutor {
 
     ConnectionManager getConnectionManager();
+
+    <T> Publisher<Void> writeAllObservable(RedisCommand<T> command, Object ... params);
+
+    <R, T> Publisher<R> writeAllObservable(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params);
 
     <T, R> Publisher<R> readObservable(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params);
 
