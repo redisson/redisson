@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandBatchAsyncService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLongAsync;
 import org.redisson.core.RBatch;

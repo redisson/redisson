@@ -27,6 +27,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RKeys;
 import org.redisson.misc.CompositeIterable;
 

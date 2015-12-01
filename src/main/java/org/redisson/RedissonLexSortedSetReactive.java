@@ -22,6 +22,7 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.core.RLexSortedSetReactive;
 
 public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactive<String> implements RLexSortedSetReactive {

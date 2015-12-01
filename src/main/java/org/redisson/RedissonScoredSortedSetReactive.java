@@ -31,6 +31,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.core.RScoredSortedSetReactive;
 
 import reactor.rx.Stream;

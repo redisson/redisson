@@ -19,6 +19,7 @@ import java.util.NoSuchElementException;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RQueue;
 
 import io.netty.util.concurrent.Future;

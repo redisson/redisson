@@ -19,6 +19,7 @@ import java.util.Collections;
 
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RAtomicLong;
 
 import io.netty.util.concurrent.Future;

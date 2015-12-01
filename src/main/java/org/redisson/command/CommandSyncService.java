@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.command;
 
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import org.redisson.SyncOperation;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;

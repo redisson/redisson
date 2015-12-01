@@ -27,6 +27,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.command.CommandExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.RLock;
 

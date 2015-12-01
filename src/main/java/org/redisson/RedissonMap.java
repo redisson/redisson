@@ -36,6 +36,7 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
 

@@ -21,6 +21,7 @@ import java.util.List;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;

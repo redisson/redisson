@@ -30,6 +30,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RScoredSortedSet;
 
 import io.netty.util.concurrent.Future;

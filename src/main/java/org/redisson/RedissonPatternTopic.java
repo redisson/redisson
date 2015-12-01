@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.PatternMessageListener;
 import org.redisson.core.PatternStatusListener;

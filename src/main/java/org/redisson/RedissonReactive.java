@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterConnectionManager;
+import org.redisson.command.CommandReactiveService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;

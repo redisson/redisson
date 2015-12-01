@@ -29,6 +29,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.core.RSetReactive;
 
 import reactor.rx.Stream;

@@ -39,6 +39,7 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
+import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.core.RListReactive;
 
 import reactor.core.reactivestreams.SubscriberBarrier;

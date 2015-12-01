@@ -32,6 +32,7 @@ import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RList;
 
 import io.netty.util.concurrent.Future;

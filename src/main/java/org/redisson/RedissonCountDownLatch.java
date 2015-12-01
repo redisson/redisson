@@ -25,6 +25,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RCountDownLatch;
 
 import io.netty.util.concurrent.Future;

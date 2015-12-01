@@ -23,6 +23,8 @@ import java.util.List;
 
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandBatchAsyncService;
 import org.redisson.core.RBitSet;
 
 import io.netty.util.concurrent.Future;

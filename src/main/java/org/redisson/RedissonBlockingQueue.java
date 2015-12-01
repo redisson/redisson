@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.core.RBlockingQueue;
 

@@ -28,6 +28,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RSet;
 
 import io.netty.util.concurrent.Future;

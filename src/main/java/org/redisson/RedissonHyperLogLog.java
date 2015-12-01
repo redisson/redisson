@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RHyperLogLog;
 
 import io.netty.util.concurrent.Future;

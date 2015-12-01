@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RLexSortedSet;
 
 import io.netty.util.concurrent.Future;

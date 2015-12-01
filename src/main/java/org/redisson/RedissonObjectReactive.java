@@ -21,6 +21,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.core.RObjectReactive;
 
 import reactor.core.reactivestreams.SubscriberBarrier;

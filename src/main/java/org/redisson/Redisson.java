@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterConnectionManager;
+import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandSyncService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;

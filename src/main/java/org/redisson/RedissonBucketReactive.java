@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.core.RBucketReactive;
 
 public class RedissonBucketReactive<V> extends RedissonExpirableReactive implements RBucketReactive<V> {

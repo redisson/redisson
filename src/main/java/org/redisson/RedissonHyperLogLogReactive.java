@@ -23,6 +23,7 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.core.RHyperLogLogReactive;
 
 public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive implements RHyperLogLogReactive<V> {
