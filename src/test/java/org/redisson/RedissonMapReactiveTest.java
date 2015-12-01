@@ -14,7 +14,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.redisson.core.RMapReactive;
+import org.redisson.api.RMapReactive;
 
 import reactor.rx.Streams;
 

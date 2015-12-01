@@ -33,7 +33,7 @@ public class Config {
     private SingleServerConfig singleServerConfig;
 
     private ClusterServersConfig clusterServersConfig;
-    
+
     private ElasticacheServersConfig elasticacheServersConfig;
 
     /**
@@ -51,7 +51,7 @@ public class Config {
     public Config() {
     }
 
-    Config(Config oldConf) {
+    public Config(Config oldConf) {
         setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());
 
         if (oldConf.getCodec() == null) {
@@ -76,7 +76,7 @@ public class Config {
         if (oldConf.getElasticacheServersConfig() != null) {
             setElasticacheServersConfig(new ElasticacheServersConfig(oldConf.getElasticacheServersConfig()));
         }
-        
+
     }
 
     /**
@@ -142,7 +142,7 @@ public class Config {
         }
         return singleServerConfig;
     }
-    
+
     SingleServerConfig getSingleServerConfig() {
         return singleServerConfig;
     }
@@ -223,7 +223,7 @@ public class Config {
             throw new IllegalStateException("single server config already used!");
         }
     }
-    
+
     private void checkElasticacheServersConfig() {
         if (elasticacheServersConfig != null) {
             throw new IllegalStateException("elasticache replication group servers config already used!");

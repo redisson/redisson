@@ -4,7 +4,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RLexSortedSetReactive;
+import org.redisson.api.RLexSortedSetReactive;
 
 public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
 

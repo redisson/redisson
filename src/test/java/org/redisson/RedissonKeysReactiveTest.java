@@ -6,8 +6,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBucketReactive;
-import org.redisson.core.RMapReactive;
+import org.redisson.api.RBucketReactive;
+import org.redisson.api.RMapReactive;
 
 public class RedissonKeysReactiveTest extends BaseReactiveTest {
 

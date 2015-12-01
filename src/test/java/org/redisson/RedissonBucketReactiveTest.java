@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBucketReactive;
+import org.redisson.api.RBucketReactive;
 
 public class RedissonBucketReactiveTest extends BaseReactiveTest {
 

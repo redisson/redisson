@@ -7,9 +7,9 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RScriptReactive;
 import org.redisson.client.RedisException;
 import org.redisson.core.RScript;
-import org.redisson.core.RScriptReactive;
 
 public class RedissonScriptReactiveTest extends BaseReactiveTest {
 

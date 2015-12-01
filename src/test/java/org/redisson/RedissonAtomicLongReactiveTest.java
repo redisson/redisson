@@ -2,7 +2,7 @@ package org.redisson;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RAtomicLongReactive;
+import org.redisson.api.RAtomicLongReactive;
 
 public class RedissonAtomicLongReactiveTest extends BaseReactiveTest {
 

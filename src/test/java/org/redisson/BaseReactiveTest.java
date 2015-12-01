@@ -7,8 +7,9 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.reactivestreams.Publisher;
-import org.redisson.core.RCollectionReactive;
-import org.redisson.core.RScoredSortedSetReactive;
+import org.redisson.api.RCollectionReactive;
+import org.redisson.api.RScoredSortedSetReactive;
+import org.redisson.api.RedissonReactiveClient;
 
 import reactor.rx.Streams;
 

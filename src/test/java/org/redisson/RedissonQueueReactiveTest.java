@@ -4,7 +4,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RQueueReactive;
+import org.redisson.api.RQueueReactive;
 
 public class RedissonQueueReactiveTest extends BaseReactiveTest {
 

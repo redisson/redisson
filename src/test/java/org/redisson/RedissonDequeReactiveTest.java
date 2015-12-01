@@ -1,16 +1,13 @@
 package org.redisson;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.Iterator;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RDeque;
-import org.redisson.core.RDequeReactive;
+import org.redisson.api.RDequeReactive;
 
 public class RedissonDequeReactiveTest extends BaseReactiveTest {
 

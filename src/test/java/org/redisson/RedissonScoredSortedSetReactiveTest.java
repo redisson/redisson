@@ -11,8 +11,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.core.RScoredSortedSetReactive;
 
 public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 

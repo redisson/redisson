@@ -4,7 +4,7 @@ import java.util.BitSet;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBitSetReactive;
+import org.redisson.api.RBitSetReactive;
 
 public class RedissonBitSetReactiveTest extends BaseReactiveTest {
 

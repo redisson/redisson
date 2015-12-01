@@ -9,8 +9,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RListReactive;
 import org.redisson.client.RedisException;
-import org.redisson.core.RListReactive;
 
 import reactor.rx.Promise;
 

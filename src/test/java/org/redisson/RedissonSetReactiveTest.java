@@ -12,7 +12,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RSetReactive;
+import org.redisson.api.RSetReactive;
 
 public class RedissonSetReactiveTest extends BaseReactiveTest {
 

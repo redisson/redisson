@@ -20,11 +20,11 @@ import java.util.Collection;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
-import org.redisson.NettyFuturePublisher;
 import org.redisson.SlotCallback;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.reactive.NettyFuturePublisher;
 
 import io.netty.util.concurrent.Future;
 

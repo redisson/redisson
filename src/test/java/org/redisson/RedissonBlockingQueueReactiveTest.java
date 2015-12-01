@@ -16,7 +16,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBlockingQueueReactive;
+import org.redisson.api.RBlockingQueueReactive;
 
 public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
