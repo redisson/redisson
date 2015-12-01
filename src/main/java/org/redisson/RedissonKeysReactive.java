@@ -150,6 +150,22 @@ public class RedissonKeysReactive implements RKeysReactive {
         };
     }
 
+    /**
+     * Find keys by key search pattern by one Redis call
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern
+     * @return
+     */
+    @Override
+    public Publisher<Collection<String>> findKeysByPattern(String pattern) {
+        return commandExecutor.readAllObservable(RedisCommands.KEYS, pattern);
+    }
+
     @Override
     public Publisher<String> randomKey() {
         return commandExecutor.readRandomObservable(RedisCommands.RANDOM_KEY);

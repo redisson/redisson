@@ -15,7 +15,11 @@
  */
 package org.redisson.core;
 
+import java.util.Collection;
+
 import org.reactivestreams.Publisher;
+
+import io.netty.util.concurrent.Future;
 
 public interface RKeysReactive {
 
@@ -31,6 +35,19 @@ public interface RKeysReactive {
      * @return
      */
     Publisher<Integer> getSlot(String key);
+
+    /**
+     * Find keys by key search pattern by one Redis call
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern
+     * @return
+     */
+    Publisher<Collection<String>> findKeysByPattern(String pattern);
 
     /**
      * Get random key in  mode
