@@ -27,6 +27,7 @@ import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
 import org.redisson.core.RScoredSortedSetReactive;
 import org.redisson.core.RSetReactive;
+import org.redisson.core.RTopicReactive;
 
 public interface RedissonReactiveClient {
 
@@ -105,16 +106,16 @@ public interface RedissonReactiveClient {
      */
     RLexSortedSetReactive getLexSortedSet(String name);
 
-//    /**
-//     * Returns topic instance by name.
-//     *
-//     * @param name of topic
-//     * @return
-//     */
-//    <M> RTopic<M> getTopic(String name);
-//
-//    <M> RTopic<M> getTopic(String name, Codec codec);
-//
+    /**
+     * Returns topic instance by name.
+     *
+     * @param name of topic
+     * @return
+     */
+    <M> RTopicReactive<M> getTopic(String name);
+
+    <M> RTopicReactive<M> getTopic(String name, Codec codec);
+
 //    /**
 //     * Returns topic instance satisfies by pattern name.
 //     *

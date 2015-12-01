@@ -36,6 +36,7 @@ import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
 import org.redisson.core.RScoredSortedSetReactive;
 import org.redisson.core.RSetReactive;
+import org.redisson.core.RTopicReactive;
 
 import io.netty.util.concurrent.Future;
 
@@ -155,6 +156,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public RLexSortedSetReactive getLexSortedSet(String name) {
         return new RedissonLexSortedSetReactive(commandExecutor, name);
+    }
+
+    @Override
+    public <M> RTopicReactive<M> getTopic(String name) {
+        return new RedissonTopicReactive<M>(commandExecutor, name);
+    }
+
+    @Override
+    public <M> RTopicReactive<M> getTopic(String name, Codec codec) {
+        return new RedissonTopicReactive<M>(codec, commandExecutor, name);
     }
 
     @Override
