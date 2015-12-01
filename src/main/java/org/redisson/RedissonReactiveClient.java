@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RLexSortedSet;
@@ -143,16 +144,16 @@ public interface RedissonReactiveClient {
 
     <V> RQueueReactive<V> getQueue(String name, Codec codec);
 
-//    /**
-//     * Returns blocking queue instance by name.
-//     *
-//     * @param name of queue
-//     * @return
-//     */
-//    <V> RBlockingQueue<V> getBlockingQueue(String name);
-//
-//    <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec);
-//
+    /**
+     * Returns blocking queue instance by name.
+     *
+     * @param name of queue
+     * @return
+     */
+    <V> RBlockingQueueReactive<V> getBlockingQueue(String name);
+
+    <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec);
+
 //    /**
 //     * Returns deque instance by name.
 //     *

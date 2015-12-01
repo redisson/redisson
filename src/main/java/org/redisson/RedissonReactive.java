@@ -29,11 +29,11 @@ import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
+import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RLexSortedSetReactive;
 import org.redisson.core.RListReactive;
-import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
 import org.redisson.core.RPatternTopicReactive;
 import org.redisson.core.RQueueReactive;
@@ -191,6 +191,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <V> RQueueReactive<V> getQueue(String name, Codec codec) {
         return new RedissonQueueReactive<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBlockingQueueReactive<V> getBlockingQueue(String name) {
+        return new RedissonBlockingQueueReactive<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec) {
+        return new RedissonBlockingQueueReactive<V>(codec, commandExecutor, name);
     }
 
     public Config getConfig() {
