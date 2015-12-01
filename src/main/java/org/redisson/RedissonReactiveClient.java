@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.core.RAtomicLongReactive;
 import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RDequeReactive;
@@ -165,14 +166,14 @@ public interface RedissonReactiveClient {
 
     <V> RDequeReactive<V> getDeque(String name, Codec codec);
 
-//    /**
-//     * Returns "atomic long" instance by name.
-//     *
-//     * @param name of the "atomic long"
-//     * @return
-//     */
-//    RAtomicLong getAtomicLong(String name);
-//
+    /**
+     * Returns "atomic long" instance by name.
+     *
+     * @param name of the "atomic long"
+     * @return
+     */
+    RAtomicLongReactive getAtomicLong(String name);
+
 //    /**
 //     * Returns "count down latch" instance by name.
 //     *

@@ -29,6 +29,7 @@ import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
+import org.redisson.core.RAtomicLongReactive;
 import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RDequeReactive;
@@ -212,6 +213,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <V> RDequeReactive<V> getDeque(String name, Codec codec) {
         return new RedissonDequeReactive<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public RAtomicLongReactive getAtomicLong(String name) {
+        return new RedissonAtomicLongReactive(commandExecutor, name);
     }
 
     public Config getConfig() {
