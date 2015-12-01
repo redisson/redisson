@@ -58,6 +58,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        if (ctx.channel().eventLoop().parent().isShuttingDown()) {
+            return;
+        }
+
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         if (!connection.isClosed()) {
             EventLoopGroup group = ctx.channel().eventLoop().parent();
@@ -112,8 +116,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                     }
                 }, timeout, TimeUnit.MILLISECONDS);
             }
-
-
         });
     }
 
