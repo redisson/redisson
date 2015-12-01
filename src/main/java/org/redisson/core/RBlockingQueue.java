@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockingQueueAsync<V> {
 
     /**
-     * Retrieves and removes the head of this queue in async mode, waiting up to the
+     * Retrieves and removes first available head of <b>any</b> queue, waiting up to the
      * specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
      *

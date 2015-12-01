@@ -26,10 +26,10 @@ import io.netty.util.concurrent.Future;
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection
  */
-public interface RBlockingQueueAsync<V> extends RQueueAsync<V>, RExpirableAsync {
+public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
 
     /**
-     * Retrieves and removes the head of this queue in async mode, waiting up to the
+     * Retrieves and removes first available head of <b>any</b> queue in async mode, waiting up to the
      * specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
      *
