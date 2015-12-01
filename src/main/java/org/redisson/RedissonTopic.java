@@ -77,17 +77,9 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
 
     private int addListener(RedisPubSubListener<M> pubSubListener) {
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(name, codec);
+        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
         future.syncUninterruptibly();
-        PubSubConnectionEntry entry = future.getNow();
-        synchronized (entry) {
-            if (entry.isActive()) {
-                entry.addListener(name, pubSubListener);
-                return pubSubListener.hashCode();
-            }
-        }
-        // entry is inactive trying add again
-        return addListener(pubSubListener);
+        return pubSubListener.hashCode();
     }
 
     @Override
@@ -106,7 +98,7 @@ public class RedissonTopic<M> implements RTopic<M> {
             }
         }
 
-        // entry is inactive trying add again
+        // listener has been re-attached
         removeListener(listenerId);
     }
 

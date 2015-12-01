@@ -110,7 +110,7 @@ public interface RedisCommands {
     RedisCommand<Void> LSET = new RedisCommand<Void>("LSET", new VoidReplayConvertor(), 3);
     RedisCommand<Object> LPOP = new RedisCommand<Object>("LPOP");
     RedisCommand<Boolean> LREM_SINGLE = new RedisCommand<Boolean>("LREM", new BooleanReplayConvertor(), 3);
-    RedisCommand<Long> LREM = new RedisCommand<Long>("LREM", 3);
+    RedisStrictCommand<Long> LREM = new RedisStrictCommand<Long>("LREM", 3);
     RedisCommand<Object> LINDEX = new RedisCommand<Object>("LINDEX");
     RedisCommand<Object> LINSERT = new RedisCommand<Object>("LINSERT", 3, ValueType.OBJECTS);
     RedisStrictCommand<Integer> LLEN_INT = new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor());
@@ -128,11 +128,11 @@ public interface RedisCommands {
     RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder(), new KeyValueConvertor());
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor(), 2);
-    RedisCommand<Long> PFCOUNT = new RedisCommand<Long>("PFCOUNT");
+    RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");
     RedisStrictCommand<Void> PFMERGE = new RedisStrictCommand<Void>("PFMERGE", new VoidReplayConvertor());
 
-    RedisCommand<Long> RPOP = new RedisCommand<Long>("RPOP");
-    RedisCommand<Long> LPUSH = new RedisCommand<Long>("LPUSH", 2);
+    RedisStrictCommand<Long> RPOP = new RedisStrictCommand<Long>("RPOP");
+    RedisStrictCommand<Long> LPUSH = new RedisStrictCommand<Long>("LPUSH", 2);
     RedisCommand<List<Object>> LRANGE = new RedisCommand<List<Object>>("LRANGE", new ObjectListReplayDecoder<Object>());
     RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH", 2, ValueType.OBJECTS);
     RedisCommand<Boolean> RPUSH_BOOLEAN = new RedisCommand<Boolean>("RPUSH", new TrueReplayConvertor(), 2, ValueType.OBJECTS);
@@ -194,7 +194,7 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> MOVE = new RedisStrictCommand<Boolean>("MOVE", new BooleanReplayConvertor());
     RedisStrictCommand<Void> MIGRATE = new RedisStrictCommand<Void>("MIGRATE", new VoidReplayConvertor());
 
-    RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 2);
+    RedisStrictCommand<Long> PUBLISH = new RedisStrictCommand<Long>("PUBLISH", 2);
 
     RedisCommand<Object> SUBSCRIBE = new RedisCommand<Object>("SUBSCRIBE", new PubSubStatusDecoder());
     RedisCommand<Object> UNSUBSCRIBE = new RedisCommand<Object>("UNSUBSCRIBE", new PubSubStatusDecoder());

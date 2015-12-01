@@ -45,6 +45,8 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
+    Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener listener);
+
     ConnectionListener getConnectListener();
 
     IdleConnectionWatcher getConnectionWatcher();
@@ -89,11 +91,7 @@ public interface ConnectionManager {
 
     PubSubConnectionEntry getPubSubEntry(String channelName);
 
-    Future<PubSubConnectionEntry> subscribe(String channelName, Codec codec);
-
     Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec);
-
-    <V> void subscribe(RedisPubSubListener<V> listener, String channelName);
 
     Codec unsubscribe(String channelName);
 

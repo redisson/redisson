@@ -25,11 +25,14 @@ import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.RLock;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
@@ -116,7 +119,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
             };
 
-            commandExecutor.getConnectionManager().subscribe(listener, getChannelName());
+            commandExecutor.getConnectionManager().subscribe(commandExecutor.getConnectionManager().getCodec(), getChannelName(), listener);
             return newPromise;
         }
     }

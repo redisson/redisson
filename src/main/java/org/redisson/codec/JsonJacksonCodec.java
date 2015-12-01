@@ -18,6 +18,7 @@ package org.redisson.codec;
 import java.io.IOException;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -44,11 +45,13 @@ import io.netty.buffer.ByteBufInputStream;
  */
 public class JsonJacksonCodec implements Codec {
 
-	private final ObjectMapper mapObjectMapper = initObjectMapper();
+    public static final JsonJacksonCodec INSTANCE = new JsonJacksonCodec();
 
-	protected ObjectMapper initObjectMapper() {
-		return new ObjectMapper();
-	}
+    private final ObjectMapper mapObjectMapper = initObjectMapper();
+
+    protected ObjectMapper initObjectMapper() {
+        return new ObjectMapper();
+    }
 
     private final Encoder encoder = new Encoder() {
         @Override
