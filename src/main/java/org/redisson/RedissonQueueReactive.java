@@ -59,9 +59,4 @@ public class RedissonQueueReactive<V> extends RedissonListReactive<V> implements
         return commandExecutor.writeObservable(getName(), codec, RedisCommands.RPOPLPUSH, getName(), queueName);
     }
 
-    @Override
-    public Publisher<V> pollLastAndOfferFirstTo(RQueue<V> queue) {
-        return pollLastAndOfferFirstTo(queue.getName());
-    }
-
 }
