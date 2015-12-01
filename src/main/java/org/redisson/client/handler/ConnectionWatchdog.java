@@ -58,10 +58,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        if (ctx.channel().eventLoop().parent().isShuttingDown()) {
-            return;
-        }
-
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         if (!connection.isClosed()) {
             EventLoopGroup group = ctx.channel().eventLoop().parent();
@@ -80,15 +76,11 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     }
 
     private void tryReconnect(final EventLoopGroup group, final RedisConnection connection, final int attempts) {
-        if (connection.isClosed()) {
+        if (connection.isClosed() || group.isShuttingDown()) {
             return;
         }
 
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
-
-        if (bootstrap.group().isShuttingDown()) {
-            return;
-        }
 
         bootstrap.connect().addListener(new ChannelFutureListener() {
 
