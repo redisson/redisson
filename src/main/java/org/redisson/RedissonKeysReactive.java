@@ -47,7 +47,7 @@ public class RedissonKeysReactive implements RKeysReactive {
 
     @Override
     public Publisher<Integer> getSlot(String key) {
-        return commandExecutor.readObservable(null, RedisCommands.KEYSLOT, key);
+        return commandExecutor.readReactive(null, RedisCommands.KEYSLOT, key);
     }
 
     @Override
@@ -66,9 +66,9 @@ public class RedissonKeysReactive implements RKeysReactive {
 
     private Publisher<ListScanResult<String>> scanIterator(int slot, long startPos, String pattern) {
         if (pattern == null) {
-            return commandExecutor.writeObservable(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+            return commandExecutor.writeReactive(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
         }
-        return commandExecutor.writeObservable(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+        return commandExecutor.writeReactive(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
     }
 
     private Publisher<String> createKeysIterator(final int slot, final String pattern) {
@@ -163,12 +163,12 @@ public class RedissonKeysReactive implements RKeysReactive {
      */
     @Override
     public Publisher<Collection<String>> findKeysByPattern(String pattern) {
-        return commandExecutor.readAllObservable(RedisCommands.KEYS, pattern);
+        return commandExecutor.readAllReactive(RedisCommands.KEYS, pattern);
     }
 
     @Override
     public Publisher<String> randomKey() {
-        return commandExecutor.readRandomObservable(RedisCommands.RANDOM_KEY);
+        return commandExecutor.readRandomReactive(RedisCommands.RANDOM_KEY);
     }
 
     /**
@@ -184,7 +184,7 @@ public class RedissonKeysReactive implements RKeysReactive {
      */
     @Override
     public Publisher<Long> deleteByPattern(String pattern) {
-        return commandExecutor.evalWriteAllObservable(RedisCommands.EVAL_LONG, new SlotCallback<Long, Long>() {
+        return commandExecutor.evalWriteAllReactive(RedisCommands.EVAL_LONG, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
             @Override
             public void onSlotResult(Long result) {
@@ -211,7 +211,7 @@ public class RedissonKeysReactive implements RKeysReactive {
      */
     @Override
     public Publisher<Long> delete(String ... keys) {
-        return commandExecutor.writeAllObservable(RedisCommands.DEL, new SlotCallback<Long, Long>() {
+        return commandExecutor.writeAllReactive(RedisCommands.DEL, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
             @Override
             public void onSlotResult(Long result) {

@@ -48,26 +48,26 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     }
 
     public Publisher<V> first() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), 0, 0);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), 0, 0);
     }
 
     public Publisher<V> last() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), -1, -1);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), -1, -1);
     }
 
     @Override
     public Publisher<Boolean> add(double score, V object) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.ZADD_BOOL, getName(), BigDecimal.valueOf(score).toPlainString(), object);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_BOOL, getName(), BigDecimal.valueOf(score).toPlainString(), object);
     }
 
     public Publisher<Integer> removeRangeByRank(int startIndex, int endIndex) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
     }
 
     public Publisher<Integer> removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
     }
 
     private String value(String element, boolean inclusive) {
@@ -79,31 +79,31 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
 
     @Override
     public Publisher<Boolean> remove(Object object) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.ZREM, getName(), object);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZREM, getName(), object);
     }
 
     @Override
     public Publisher<Long> size() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZCARD, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZCARD, getName());
     }
 
     @Override
     public Publisher<Boolean> contains(Object o) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZSCORE_CONTAINS, getName(), o);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZSCORE_CONTAINS, getName(), o);
     }
 
     @Override
     public Publisher<Double> getScore(V o) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZSCORE, getName(), o);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZSCORE, getName(), o);
     }
 
     @Override
     public Publisher<Long> rank(V o) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANK, getName(), o);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANK, getName(), o);
     }
 
     private Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readObservable(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
+        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
     }
 
     @Override
@@ -188,7 +188,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
 
     @Override
     public Publisher<Boolean> containsAll(Collection<?> c) {
-        return commandExecutor.evalReadObservable(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local s = redis.call('zrange', KEYS[1], 0, -1);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "
@@ -202,7 +202,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
 
     @Override
     public Publisher<Boolean> removeAll(Collection<?> c) {
-        return commandExecutor.evalWriteObservable(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                         "local v = false " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
@@ -214,7 +214,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
 
     @Override
     public Publisher<Boolean> retainAll(Collection<?> c) {
-        return commandExecutor.evalWriteObservable(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                     "local changed = false " +
                     "local s = redis.call('zrange', KEYS[1], 0, -1) "
                        + "local i = 0 "
@@ -239,46 +239,46 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
 
     @Override
     public Publisher<Double> addScore(V object, Number value) {
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZINCRBY,
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZINCRBY,
                                    getName(), new BigDecimal(value.toString()).toPlainString(), object);
     }
 
     @Override
     public Publisher<Collection<V>> valueRange(int startIndex, int endIndex) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANGE, getName(), startIndex, endIndex);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE, getName(), startIndex, endIndex);
     }
 
     @Override
     public Publisher<Collection<ScoredEntry<V>>> entryRange(int startIndex, int endIndex) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
     }
 
     @Override
     public Publisher<Collection<V>> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue);
     }
 
     @Override
     public Publisher<Collection<ScoredEntry<V>>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES");
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES");
     }
 
     @Override
     public Publisher<Collection<V>> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue, "LIMIT", offset, count);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue, "LIMIT", offset, count);
     }
 
     @Override
     public Publisher<Collection<ScoredEntry<V>>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
 }

@@ -1,17 +1,12 @@
 package org.redisson;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBucket;
 import org.redisson.core.RBucketReactive;
-import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
 
 public class RedissonKeysReactiveTest extends BaseReactiveTest {

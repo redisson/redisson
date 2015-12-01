@@ -34,13 +34,13 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
     @Override
     public Publisher<Integer> removeRangeHeadByLex(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), "-", toValue);
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), "-", toValue);
     }
 
     @Override
     public Publisher<Integer> removeRangeTailByLex(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, "+");
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, "+");
     }
 
     @Override
@@ -48,19 +48,19 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, toValue);
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, toValue);
     }
 
     @Override
     public Publisher<Collection<String>> lexRangeHead(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
-        return commandExecutor.readObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue);
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue);
     }
 
     @Override
     public Publisher<Collection<String>> lexRangeTail(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
-        return commandExecutor.readObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+");
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+");
     }
 
 
@@ -69,19 +69,19 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue);
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue);
     }
 
     @Override
     public Publisher<Collection<String>> lexRangeHead(String toElement, boolean toInclusive, int offset, int count) {
         String toValue = value(toElement, toInclusive);
-        return commandExecutor.readObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue, "LIMIT", offset, count);
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue, "LIMIT", offset, count);
     }
 
     @Override
     public Publisher<Collection<String>> lexRangeTail(String fromElement, boolean fromInclusive, int offset, int count) {
         String fromValue = value(fromElement, fromInclusive);
-        return commandExecutor.readObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+", "LIMIT", offset, count);
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+", "LIMIT", offset, count);
     }
 
     @Override
@@ -89,21 +89,21 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readObservable(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue, "LIMIT", offset, count);
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue, "LIMIT", offset, count);
     }
 
     @Override
     public Publisher<Integer> lexCountTail(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
 
-        return commandExecutor.readObservable(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
+        return commandExecutor.readReactive(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
     }
 
     @Override
     public Publisher<Integer> lexCountHead(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readObservable(getName(), RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
+        return commandExecutor.readReactive(getName(), RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
     }
 
     @Override
@@ -111,7 +111,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readObservable(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
+        return commandExecutor.readReactive(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
     }
 
     private String value(String fromElement, boolean fromInclusive) {
@@ -126,7 +126,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
 
     @Override
     public Publisher<Long> add(String e) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.ZADD, getName(), 0, e);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD, getName(), 0, e);
     }
 
     @Override
@@ -136,7 +136,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
             params.add(0);
             params.add(param);
         }
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.ZADD, getName(), params.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD, getName(), params.toArray());
     }
 
 }

@@ -38,7 +38,7 @@ public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive im
 
     @Override
     public Publisher<Boolean> add(V obj) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.PFADD, getName(), obj);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFADD, getName(), obj);
     }
 
     @Override
@@ -46,12 +46,12 @@ public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive im
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
         args.addAll(objects);
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.PFADD, getName(), args.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFADD, getName(), args.toArray());
     }
 
     @Override
     public Publisher<Long> count() {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.PFCOUNT, getName());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFCOUNT, getName());
     }
 
     @Override
@@ -59,7 +59,7 @@ public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive im
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.PFCOUNT, args.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFCOUNT, args.toArray());
     }
 
     @Override
@@ -67,7 +67,7 @@ public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive im
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.PFMERGE, args.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFMERGE, args.toArray());
     }
 
 }

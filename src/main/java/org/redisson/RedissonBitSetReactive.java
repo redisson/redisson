@@ -38,15 +38,15 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     public Publisher<Boolean> get(int bitIndex) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.GETBIT, getName(), bitIndex);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.GETBIT, getName(), bitIndex);
     }
 
     public Publisher<Void> set(int bitIndex, boolean value) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SETBIT, getName(), bitIndex, value ? 1 : 0);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SETBIT, getName(), bitIndex, value ? 1 : 0);
     }
 
     public Publisher<byte[]> toByteArray() {
-        return commandExecutor.readObservable(getName(), ByteArrayCodec.INSTANCE, RedisCommands.GET, getName());
+        return commandExecutor.readReactive(getName(), ByteArrayCodec.INSTANCE, RedisCommands.GET, getName());
     }
 
     private Publisher<Void> op(String op, String... bitSetNames) {
@@ -55,11 +55,11 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
         params.add(getName());
         params.add(getName());
         params.addAll(Arrays.asList(bitSetNames));
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.BITOP, params.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BITOP, params.toArray());
     }
 
     public Publisher<BitSet> asBitSet() {
-        return commandExecutor.readObservable(getName(), BitSetCodec.INSTANCE, RedisCommands.GET, getName());
+        return commandExecutor.readReactive(getName(), BitSetCodec.INSTANCE, RedisCommands.GET, getName());
     }
 
     //Copied from: https://github.com/xetorthio/jedis/issues/301
@@ -76,7 +76,7 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Integer> length() {
-        return commandExecutor.evalReadObservable(getName(), codec, RedisCommands.EVAL_INTEGER,
+        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "local fromBit = redis.call('bitpos', KEYS[1], 1, -1);"
                 + "local toBit = 8*(fromBit/8 + 1) - fromBit % 8;"
                         + "for i = toBit, fromBit, -1 do "
@@ -107,7 +107,7 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Void> set(BitSet bs) {
-        return commandExecutor.writeObservable(getName(), ByteArrayCodec.INSTANCE, RedisCommands.SET, getName(), toByteArrayReverse(bs));
+        return commandExecutor.writeReactive(getName(), ByteArrayCodec.INSTANCE, RedisCommands.SET, getName(), toByteArrayReverse(bs));
     }
 
     @Override
@@ -126,7 +126,7 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.BITS_SIZE, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.BITS_SIZE, getName());
     }
 
     @Override
@@ -136,7 +136,7 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Integer> cardinality() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.BITCOUNT, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.BITCOUNT, getName());
     }
 
     @Override
@@ -146,7 +146,7 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Void> clear() {
-        return commandExecutor.writeObservable(getName(), RedisCommands.DEL_VOID, getName());
+        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_VOID, getName());
     }
 
     @Override

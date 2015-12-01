@@ -65,7 +65,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Long> size() {
-        return commandExecutor.readObservable(getName(), codec, LLEN, getName());
+        return commandExecutor.readReactive(getName(), codec, LLEN, getName());
     }
 
     @Override
@@ -145,7 +145,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Long> add(V e) {
-        return commandExecutor.writeObservable(getName(), codec, RPUSH, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, RPUSH, getName(), e);
     }
 
     @Override
@@ -154,12 +154,12 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     protected Publisher<Boolean> remove(Object o, int count) {
-        return commandExecutor.writeObservable(getName(), codec, LREM_SINGLE, getName(), count, o);
+        return commandExecutor.writeReactive(getName(), codec, LREM_SINGLE, getName(), count, o);
     }
 
     @Override
     public Publisher<Boolean> containsAll(Collection<?> c) {
-        return commandExecutor.evalReadObservable(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
                 "for i=1, #items do " +
                     "for j = 0, table.getn(ARGV), 1 do " +
@@ -181,7 +181,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
-        return commandExecutor.writeObservable(getName(), codec, RPUSH, args.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RPUSH, args.toArray());
     }
 
     @Override
@@ -195,7 +195,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
             Collections.reverse(elements);
             elements.add(0, getName());
 
-            return commandExecutor.writeObservable(getName(), codec, RedisCommands.LPUSH, elements.toArray());
+            return commandExecutor.writeReactive(getName(), codec, RedisCommands.LPUSH, elements.toArray());
         }
 
         final Processor<Long, Long> promise = newObservable();
@@ -220,7 +220,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
                 List<Object> args = new ArrayList<Object>(coll.size() + 1);
                 args.add(index);
                 args.addAll(coll);
-                Publisher<Long> f = commandExecutor.evalWriteObservable(getName(), codec, new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5),
+                Publisher<Long> f = commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5),
                         "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                                 "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
                                 "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
@@ -237,7 +237,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Boolean> removeAll(Collection<?> c) {
-        return commandExecutor.evalWriteObservable(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                         "local v = false " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 "
@@ -249,7 +249,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Boolean> retainAll(Collection<?> c) {
-        return commandExecutor.evalWriteObservable(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local changed = false " +
                 "local items = redis.call('lrange', KEYS[1], 0, -1) "
                    + "local i = 1 "
@@ -275,7 +275,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<V> get(long index) {
-        return commandExecutor.readObservable(getName(), codec, LINDEX, getName(), index);
+        return commandExecutor.readReactive(getName(), codec, LINDEX, getName(), index);
     }
 
     private boolean isPositionInRange(long index, long size) {
@@ -284,7 +284,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<V> set(long index, V element) {
-        return commandExecutor.evalWriteObservable(getName(), codec, new RedisCommand<Object>("EVAL", 5),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Object>("EVAL", 5),
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
@@ -293,7 +293,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Void> fastSet(long index, V element) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.LSET, getName(), index, element);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.LSET, getName(), index, element);
     }
 
     @Override
@@ -304,10 +304,10 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     @Override
     public Publisher<V> remove(int index) {
         if (index == 0) {
-            return commandExecutor.writeObservable(getName(), codec, LPOP, getName());
+            return commandExecutor.writeReactive(getName(), codec, LPOP, getName());
         }
 
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_OBJECT,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "local tail = redis.call('lrange', KEYS[1], ARGV[1]);" +
                         "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +
@@ -322,7 +322,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     private <R> Publisher<R> indexOf(Object o, Convertor<R> convertor) {
-        return commandExecutor.evalReadObservable(getName(), codec, new RedisCommand<R>("EVAL", convertor, 4),
+        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<R>("EVAL", convertor, 4),
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
                 "local items = redis.call('lrange', key, 0, -1) " +
@@ -342,7 +342,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Integer> lastIndexOf(Object o) {
-        return commandExecutor.evalReadObservable(getName(), codec, new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 4),
+        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 4),
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
                 "local items = redis.call('lrange', key, 0, -1) " +

@@ -75,27 +75,27 @@ abstract class RedissonObjectReactive implements RObjectReactive {
 
     @Override
     public Publisher<Void> rename(String newName) {
-        return commandExecutor.writeObservable(getName(), RedisCommands.RENAME, getName(), newName);
+        return commandExecutor.writeReactive(getName(), RedisCommands.RENAME, getName(), newName);
     }
 
     @Override
     public Publisher<Void> migrate(String host, int port, int database) {
-        return commandExecutor.writeObservable(getName(), RedisCommands.MIGRATE, host, port, getName(), database);
+        return commandExecutor.writeReactive(getName(), RedisCommands.MIGRATE, host, port, getName(), database);
     }
 
     @Override
     public Publisher<Boolean> move(int database) {
-        return commandExecutor.writeObservable(getName(), RedisCommands.MOVE, getName(), database);
+        return commandExecutor.writeReactive(getName(), RedisCommands.MOVE, getName(), database);
     }
 
     @Override
     public Publisher<Boolean> renamenx(String newName) {
-        return commandExecutor.writeObservable(getName(), RedisCommands.RENAMENX, getName(), newName);
+        return commandExecutor.writeReactive(getName(), RedisCommands.RENAMENX, getName(), newName);
     }
 
     @Override
     public Publisher<Boolean> delete() {
-        return commandExecutor.writeObservable(getName(), RedisCommands.DEL_SINGLE, getName());
+        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_SINGLE, getName());
     }
 
 }

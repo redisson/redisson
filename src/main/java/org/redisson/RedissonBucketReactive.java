@@ -35,22 +35,22 @@ public class RedissonBucketReactive<V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<V> get() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.GET, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.GET, getName());
     }
 
     @Override
     public Publisher<Void> set(V value) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SET, getName(), value);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SET, getName(), value);
     }
 
     @Override
     public Publisher<Void> set(V value, long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
     }
 
     @Override
     public Publisher<Boolean> exists() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.EXISTS, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.EXISTS, getName());
     }
 
 }

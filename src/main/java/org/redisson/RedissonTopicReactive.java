@@ -62,7 +62,7 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
 
     @Override
     public Publisher<Long> publish(M message) {
-        return commandExecutor.writeObservable(name, codec, RedisCommands.PUBLISH, name, message);
+        return commandExecutor.writeReactive(name, codec, RedisCommands.PUBLISH, name, message);
     }
 
     @Override

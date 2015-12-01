@@ -40,78 +40,79 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
-    public <T, R> Publisher<R> evalWriteAllObservable(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
+    public <T, R> Publisher<R> evalWriteAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
         Future<R> f = evalWriteAllAsync(command, callback, script, keys, params);
         return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Publisher<Collection<R>> readAllObservable(RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<Collection<R>> readAllReactive(RedisCommand<T> command, Object ... params) {
         Future<Collection<R>> f = readAllAsync(command, params);
         return new NettyFuturePublisher<Collection<R>>(f);
     }
 
     @Override
-    public <T, R> Publisher<R> readRandomObservable(RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<R> readRandomReactive(RedisCommand<T> command, Object ... params) {
         Future<R> f = readRandomAsync(command, params);
         return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Publisher<R> readObservable(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<R> readReactive(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = readAsync(client, key, codec, command, params);
         return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Publisher<R> writeObservable(String key, RedisCommand<T> command, Object ... params) {
-        return writeObservable(key, connectionManager.getCodec(), command, params);
+    public <T, R> Publisher<R> writeReactive(String key, RedisCommand<T> command, Object ... params) {
+        return writeReactive(key, connectionManager.getCodec(), command, params);
     }
 
     @Override
-    public <T, R> Publisher<R> writeObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<R> writeReactive(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = writeAsync(key, codec, command, params);
         return new NettyFuturePublisher<R>(f);
     }
 
-    public <T, R> Publisher<R> writeObservable(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
+    @Override
+    public <T, R> Publisher<R> writeReactive(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = writeAsync(slot, codec, command, params);
         return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Publisher<R> readObservable(String key, RedisCommand<T> command, Object ... params) {
-        return readObservable(key, connectionManager.getCodec(), command, params);
+    public <T, R> Publisher<R> readReactive(String key, RedisCommand<T> command, Object ... params) {
+        return readReactive(key, connectionManager.getCodec(), command, params);
     }
 
     @Override
-    public <T, R> Publisher<R> readObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
+    public <T, R> Publisher<R> readReactive(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = readAsync(key, codec, command, params);
         return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Publisher<R> evalReadObservable(String key, Codec codec, RedisCommand<T> evalCommandType,
+    public <T, R> Publisher<R> evalReadReactive(String key, Codec codec, RedisCommand<T> evalCommandType,
             String script, List<Object> keys, Object... params) {
         Future<R> f = evalReadAsync(key, codec, evalCommandType, script, keys, params);
         return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T, R> Publisher<R> evalWriteObservable(String key, Codec codec, RedisCommand<T> evalCommandType,
+    public <T, R> Publisher<R> evalWriteReactive(String key, Codec codec, RedisCommand<T> evalCommandType,
             String script, List<Object> keys, Object... params) {
         Future<R> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         return new NettyFuturePublisher<R>(f);
     }
 
     @Override
-    public <T> Publisher<Void> writeAllObservable(RedisCommand<T> command, Object ... params) {
+    public <T> Publisher<Void> writeAllReactive(RedisCommand<T> command, Object ... params) {
         Future<Void> f = writeAllAsync(command, params);
         return new NettyFuturePublisher<Void>(f);
     }
 
     @Override
-    public <R, T> Publisher<R> writeAllObservable(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
+    public <R, T> Publisher<R> writeAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
         Future<R> f = writeAllAsync(command, callback, params);
         return new NettyFuturePublisher<R>(f);
     }

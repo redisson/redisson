@@ -34,30 +34,30 @@ public interface CommandReactiveExecutor {
 
     ConnectionManager getConnectionManager();
 
-    <T, R> Publisher<R> evalWriteAllObservable(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
+    <T, R> Publisher<R> evalWriteAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
 
-    <T, R> Publisher<Collection<R>> readAllObservable(RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<Collection<R>> readAllReactive(RedisCommand<T> command, Object ... params);
 
-    <T, R> Publisher<R> readRandomObservable(RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> readRandomReactive(RedisCommand<T> command, Object ... params);
 
-    <T, R> Publisher<R> writeObservable(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> writeReactive(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
 
-    <T> Publisher<Void> writeAllObservable(RedisCommand<T> command, Object ... params);
+    <T> Publisher<Void> writeAllReactive(RedisCommand<T> command, Object ... params);
 
-    <R, T> Publisher<R> writeAllObservable(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params);
+    <R, T> Publisher<R> writeAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params);
 
-    <T, R> Publisher<R> readObservable(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> readReactive(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params);
 
-    <T, R> Publisher<R> evalWriteObservable(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
+    <T, R> Publisher<R> evalWriteReactive(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
-    <T, R> Publisher<R> evalReadObservable(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+    <T, R> Publisher<R> evalReadReactive(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
-    <T, R> Publisher<R> writeObservable(String key, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> writeReactive(String key, RedisCommand<T> command, Object ... params);
 
-    <T, R> Publisher<R> writeObservable(String key, Codec codec, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> writeReactive(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
-    <T, R> Publisher<R> readObservable(String key, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> readReactive(String key, RedisCommand<T> command, Object ... params);
 
-    <T, R> Publisher<R> readObservable(String key, Codec codec, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> readReactive(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
 }

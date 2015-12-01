@@ -37,7 +37,7 @@ public class RedissonScriptReactive implements RScriptReactive {
 
     @Override
     public Publisher<String> scriptLoad(String luaScript) {
-        return commandExecutor.writeAllObservable(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
+        return commandExecutor.writeAllReactive(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
             volatile String result;
             @Override
             public void onSlotResult(String result) {
@@ -52,7 +52,7 @@ public class RedissonScriptReactive implements RScriptReactive {
     }
 
     public Publisher<String> scriptLoad(String key, String luaScript) {
-        return commandExecutor.writeObservable(key, RedisCommands.SCRIPT_LOAD, luaScript);
+        return commandExecutor.writeReactive(key, RedisCommands.SCRIPT_LOAD, luaScript);
     }
 
     @Override
@@ -67,9 +67,9 @@ public class RedissonScriptReactive implements RScriptReactive {
 
     public <R> Publisher<R> eval(String key, RScript.Mode mode, Codec codec, String luaScript, RScript.ReturnType returnType, List<Object> keys, Object... values) {
         if (mode == RScript.Mode.READ_ONLY) {
-            return commandExecutor.evalReadObservable(key, codec, returnType.getCommand(), luaScript, keys, values);
+            return commandExecutor.evalReadReactive(key, codec, returnType.getCommand(), luaScript, keys, values);
         }
-        return commandExecutor.evalWriteObservable(key, codec, returnType.getCommand(), luaScript, keys, values);
+        return commandExecutor.evalWriteReactive(key, codec, returnType.getCommand(), luaScript, keys, values);
     }
 
     @Override
@@ -85,19 +85,19 @@ public class RedissonScriptReactive implements RScriptReactive {
     public <R> Publisher<R> evalSha(String key, RScript.Mode mode, Codec codec, String shaDigest, RScript.ReturnType returnType, List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
         if (mode == RScript.Mode.READ_ONLY) {
-            return commandExecutor.evalReadObservable(key, codec, command, shaDigest, keys, values);
+            return commandExecutor.evalReadReactive(key, codec, command, shaDigest, keys, values);
         }
-        return commandExecutor.evalWriteObservable(key, codec, command, shaDigest, keys, values);
+        return commandExecutor.evalWriteReactive(key, codec, command, shaDigest, keys, values);
     }
 
     @Override
     public Publisher<Void> scriptKill() {
-        return commandExecutor.writeAllObservable(RedisCommands.SCRIPT_KILL);
+        return commandExecutor.writeAllReactive(RedisCommands.SCRIPT_KILL);
     }
 
     @Override
     public Publisher<List<Boolean>> scriptExists(final String ... shaDigests) {
-         return commandExecutor.writeAllObservable(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
+         return commandExecutor.writeAllReactive(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
             volatile List<Boolean> result = new ArrayList<Boolean>(shaDigests.length);
             @Override
             public synchronized void onSlotResult(List<Boolean> result) {
@@ -117,12 +117,12 @@ public class RedissonScriptReactive implements RScriptReactive {
     }
 
     public Publisher<List<Boolean>> scriptExists(String key, String ... shaDigests) {
-        return commandExecutor.writeObservable(key, RedisCommands.SCRIPT_EXISTS, (Object[])shaDigests);
+        return commandExecutor.writeReactive(key, RedisCommands.SCRIPT_EXISTS, (Object[])shaDigests);
     }
 
     @Override
     public Publisher<Void> scriptFlush() {
-        return commandExecutor.writeAllObservable(RedisCommands.SCRIPT_FLUSH);
+        return commandExecutor.writeAllReactive(RedisCommands.SCRIPT_FLUSH);
     }
 
     @Override

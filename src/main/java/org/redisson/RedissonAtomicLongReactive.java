@@ -39,12 +39,12 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
 
     @Override
     public Publisher<Long> addAndGet(long delta) {
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getName(), delta);
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getName(), delta);
     }
 
     @Override
     public Publisher<Boolean> compareAndSet(long expect, long update) {
-        return commandExecutor.evalWriteObservable(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteReactive(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('get', KEYS[1]) == ARGV[1] then "
                      + "redis.call('set', KEYS[1], ARGV[2]); "
                      + "return true "
@@ -55,7 +55,7 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
 
     @Override
     public Publisher<Long> decrementAndGet() {
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.DECR, getName());
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.DECR, getName());
     }
 
     @Override
@@ -65,7 +65,7 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
 
     @Override
     public Publisher<Long> getAndAdd(long delta) {
-        return commandExecutor.evalWriteObservable(getName(),
+        return commandExecutor.evalWriteReactive(getName(),
                 StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local v = redis.call('get', KEYS[1]) or 0; "
                 + "redis.call('set', KEYS[1], v + ARGV[1]); "
@@ -76,7 +76,7 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
 
     @Override
     public Publisher<Long> getAndSet(long newValue) {
-        return commandExecutor.evalWriteObservable(getName(),
+        return commandExecutor.evalWriteReactive(getName(),
                 StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local v = redis.call('get', KEYS[1]) or 0; redis.call('set', KEYS[1], ARGV[1]); return tonumber(v)",
                 Collections.<Object>singletonList(getName()), newValue);
@@ -84,7 +84,7 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
 
     @Override
     public Publisher<Long> incrementAndGet() {
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.INCR, getName());
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.INCR, getName());
     }
 
     @Override
@@ -99,7 +99,7 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
 
     @Override
     public Publisher<Void> set(long newValue) {
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE, RedisCommands.SET, getName(), newValue);
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.SET, getName(), newValue);
     }
 
     public String toString() {

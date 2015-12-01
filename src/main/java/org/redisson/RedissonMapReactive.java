@@ -72,17 +72,17 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.HLEN, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.HLEN, getName());
     }
 
     @Override
     public Publisher<Boolean> containsKey(Object key) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.HEXISTS, getName(), key);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.HEXISTS, getName(), key);
     }
 
     @Override
     public Publisher<Boolean> containsValue(Object value) {
-        return commandExecutor.evalReadObservable(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local s = redis.call('hvals', KEYS[1]);" +
                         "for i = 0, table.getn(s), 1 do "
                             + "if ARGV[1] == s[i] then "
@@ -101,7 +101,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(getName());
         args.addAll(keys);
-        return commandExecutor.readObservable(getName(), codec, new RedisCommand<Map<Object, Object>>("HMGET", new MapGetAllDecoder(args), 2, ValueType.MAP_KEY, ValueType.MAP_VALUE), args.toArray());
+        return commandExecutor.readReactive(getName(), codec, new RedisCommand<Map<Object, Object>>("HMGET", new MapGetAllDecoder(args), 2, ValueType.MAP_KEY, ValueType.MAP_VALUE), args.toArray());
     }
 
     public Publisher<Void> putAll(Map<? extends K, ? extends V> map) {
@@ -116,22 +116,22 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
             params.add(t.getValue());
         }
 
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.HMSET, params.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.HMSET, params.toArray());
     }
 
     @Override
     public Publisher<Set<K>> keySet() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.HKEYS, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.HKEYS, getName());
     }
 
     @Override
     public Publisher<Collection<V>> values() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.HVALS, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.HVALS, getName());
     }
 
     @Override
     public Publisher<V> putIfAbsent(K key, V value) {
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_PUT,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_PUT,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
                     + "return nil "
@@ -143,7 +143,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<Long> remove(Object key, Object value) {
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_REMOVE_VALUE,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_REMOVE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                         + "return redis.call('hdel', KEYS[1], ARGV[1]) "
                 + "else "
@@ -154,7 +154,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<Boolean> replace(K key, V oldValue, V newValue) {
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_REPLACE_VALUE,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_REPLACE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); "
                     + "return true; "
@@ -166,7 +166,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<V> replace(K key, V value) {
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_REPLACE,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_REPLACE,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
                     + "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
@@ -179,12 +179,12 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<V> get(K key) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.HGET, getName(), key);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.HGET, getName(), key);
     }
 
     @Override
     public Publisher<V> put(K key, V value) {
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_PUT,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_PUT,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
                 + "return v",
@@ -194,7 +194,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<V> remove(K key) {
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_REMOVE,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_REMOVE,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('hdel', KEYS[1], ARGV[1]); "
                 + "return v",
@@ -203,7 +203,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<Boolean> fastPut(K key, V value) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.HSET, getName(), key, value);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.HSET, getName(), key, value);
     }
 
     @Override
@@ -215,11 +215,11 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         List<Object> args = new ArrayList<Object>(keys.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(keys));
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.HDEL, args.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.HDEL, args.toArray());
     }
 
     Publisher<MapScanResult<Object, V>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readObservable(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
+        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
     }
 
     @Override
@@ -249,7 +249,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<V> addAndGet(K key, Number value) {
-        return commandExecutor.writeObservable(getName(), StringCodec.INSTANCE,
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE,
                 new RedisCommand<Object>("HINCRBYFLOAT", new NumberConvertor(value.getClass())),
                    getName(), key, new BigDecimal(value.toString()).toPlainString());
     }

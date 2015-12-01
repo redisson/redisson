@@ -56,36 +56,36 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Long> size() {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.SCARD, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.SCARD, getName());
     }
 
     @Override
     public Publisher<Boolean> contains(Object o) {
-        return commandExecutor.readObservable(getName(), codec, RedisCommands.SISMEMBER, getName(), o);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.SISMEMBER, getName(), o);
     }
 
     private Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readObservable(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
+        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
     }
 
     @Override
     public Publisher<Long> add(V e) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SADD, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SADD, getName(), e);
     }
 
     @Override
     public Publisher<V> removeRandom() {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SPOP_SINGLE, getName());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SPOP_SINGLE, getName());
     }
 
     @Override
     public Publisher<Boolean> remove(Object o) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SREM_SINGLE, getName(), o);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SREM_SINGLE, getName(), o);
     }
 
     @Override
     public Publisher<Boolean> containsAll(Collection<?> c) {
-        return commandExecutor.evalReadObservable(getName(), codec, EVAL_OBJECTS,
+        return commandExecutor.evalReadReactive(getName(), codec, EVAL_OBJECTS,
                 "local s = redis.call('smembers', KEYS[1]);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "
@@ -102,12 +102,12 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.SADD, args.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SADD, args.toArray());
     }
 
     @Override
     public Publisher<Boolean> retainAll(Collection<?> c) {
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_OBJECTS,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_OBJECTS,
                     "local changed = false " +
                     "local s = redis.call('smembers', KEYS[1]) "
                        + "local i = 0 "
@@ -132,7 +132,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Boolean> removeAll(Collection<?> c) {
-        return commandExecutor.evalWriteObservable(getName(), codec, EVAL_OBJECTS,
+        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_OBJECTS,
                         "local v = false " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "

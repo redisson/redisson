@@ -51,22 +51,22 @@ public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implement
 
     @Override
     public Publisher<Void> addFirst(V e) {
-        return commandExecutor.writeObservable(getName(), codec, LPUSH_VOID, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, LPUSH_VOID, getName(), e);
     }
 
     @Override
     public Publisher<Void> addLast(V e) {
-        return commandExecutor.writeObservable(getName(), codec, RPUSH_VOID, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, RPUSH_VOID, getName(), e);
     }
 
     @Override
     public Publisher<V> getLast() {
-        return commandExecutor.readObservable(getName(), codec, LRANGE_SINGLE, getName(), -1, -1);
+        return commandExecutor.readReactive(getName(), codec, LRANGE_SINGLE, getName(), -1, -1);
     }
 
     @Override
     public Publisher<Boolean> offerFirst(V e) {
-        return commandExecutor.writeObservable(getName(), codec, LPUSH_BOOLEAN, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, LPUSH_BOOLEAN, getName(), e);
     }
 
     @Override
@@ -91,7 +91,7 @@ public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implement
 
     @Override
     public Publisher<V> pollLast() {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.RPOP, getName());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.RPOP, getName());
     }
 
     @Override
@@ -116,7 +116,7 @@ public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implement
 
     @Override
     public Publisher<V> removeLast() {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.RPOP, getName());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.RPOP, getName());
     }
 
     @Override

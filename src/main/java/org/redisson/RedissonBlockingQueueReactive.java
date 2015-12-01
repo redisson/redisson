@@ -56,12 +56,12 @@ public class RedissonBlockingQueueReactive<V> extends RedissonQueueReactive<V> i
 
     @Override
     public Publisher<V> take() {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), 0);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), 0);
     }
 
     @Override
     public Publisher<V> poll(long timeout, TimeUnit unit) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
     }
 
     /*
@@ -76,12 +76,12 @@ public class RedissonBlockingQueueReactive<V> extends RedissonQueueReactive<V> i
             params.add(name);
         }
         params.add(unit.toSeconds(timeout));
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.BLPOP_VALUE, params.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BLPOP_VALUE, params.toArray());
     }
 
     @Override
     public Publisher<V> pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) {
-        return commandExecutor.writeObservable(getName(), codec, RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
     }
 
     @Override
@@ -90,7 +90,7 @@ public class RedissonBlockingQueueReactive<V> extends RedissonQueueReactive<V> i
             throw new NullPointerException();
         }
 
-        return commandExecutor.evalWriteObservable(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
               "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
               "redis.call('ltrim', KEYS[1], -1, 0); " +
               "return vals", Collections.<Object>singletonList(getName()));
@@ -101,7 +101,7 @@ public class RedissonBlockingQueueReactive<V> extends RedissonQueueReactive<V> i
         if (c == null) {
             throw new NullPointerException();
         }
-        return commandExecutor.evalWriteObservable(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
                 "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
                         "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
                         "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
