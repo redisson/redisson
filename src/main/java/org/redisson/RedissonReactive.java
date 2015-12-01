@@ -35,6 +35,7 @@ import org.redisson.core.RLexSortedSetReactive;
 import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
+import org.redisson.core.RPatternTopicReactive;
 import org.redisson.core.RScoredSortedSetReactive;
 import org.redisson.core.RSetReactive;
 import org.redisson.core.RTopicReactive;
@@ -167,6 +168,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <M> RTopicReactive<M> getTopic(String name, Codec codec) {
         return new RedissonTopicReactive<M>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <M> RPatternTopicReactive<M> getPatternTopic(String pattern) {
+        return new RedissonPatternTopicReactive<M>(commandExecutor, pattern);
+    }
+
+    @Override
+    public <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec) {
+        return new RedissonPatternTopicReactive<M>(codec, commandExecutor, pattern);
     }
 
     @Override

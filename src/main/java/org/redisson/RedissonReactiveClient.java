@@ -25,6 +25,7 @@ import org.redisson.core.RLexSortedSetReactive;
 import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
+import org.redisson.core.RPatternTopicReactive;
 import org.redisson.core.RScoredSortedSetReactive;
 import org.redisson.core.RSetReactive;
 import org.redisson.core.RTopicReactive;
@@ -116,20 +117,20 @@ public interface RedissonReactiveClient {
 
     <M> RTopicReactive<M> getTopic(String name, Codec codec);
 
-//    /**
-//     * Returns topic instance satisfies by pattern name.
-//     *
-//     *  Supported glob-style patterns:
-//     *    h?llo subscribes to hello, hallo and hxllo
-//     *    h*llo subscribes to hllo and heeeello
-//     *    h[ae]llo subscribes to hello and hallo, but not hillo
-//     *
-//     * @param pattern of the topic
-//     * @return
-//     */
-//    <M> RPatternTopic<M> getPatternTopic(String pattern);
-//
-//    <M> RPatternTopic<M> getPatternTopic(String pattern, Codec codec);
+    /**
+     * Returns topic instance satisfies by pattern name.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern of the topic
+     * @return
+     */
+    <M> RPatternTopicReactive<M> getPatternTopic(String pattern);
+
+    <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec);
 //
 //    /**
 //     * Returns queue instance by name.
@@ -217,86 +218,6 @@ public interface RedissonReactiveClient {
 //     * @return Config object
 //     */
 //    Config getConfig();
-//
-//    /**
-//     * Find keys by key search pattern
-//     *
-//     *  Supported glob-style patterns:
-//     *    h?llo subscribes to hello, hallo and hxllo
-//     *    h*llo subscribes to hllo and heeeello
-//     *    h[ae]llo subscribes to hello and hallo, but not hillo
-//     *
-//     * @param pattern
-//     * @return
-//     */
-//    // use RKeys.findKeysByPattern
-//    @Deprecated
-//    Collection<String> findKeysByPattern(String pattern);
-//
-//    /**
-//     * Find keys by key search pattern in async mode
-//     *
-//     *  Supported glob-style patterns:
-//     *    h?llo subscribes to hello, hallo and hxllo
-//     *    h*llo subscribes to hllo and heeeello
-//     *    h[ae]llo subscribes to hello and hallo, but not hillo
-//     *
-//     * @param pattern
-//     * @return
-//     */
-//    // use RKeys.findKeysByPatternAsync
-//    @Deprecated
-//    Future<Collection<String>> findKeysByPatternAsync(String pattern);
-//
-//    /**
-//     * Delete multiple objects by a key pattern
-//     *
-//     *  Supported glob-style patterns:
-//     *    h?llo subscribes to hello, hallo and hxllo
-//     *    h*llo subscribes to hllo and heeeello
-//     *    h[ae]llo subscribes to hello and hallo, but not hillo
-//     *
-//     * @param pattern
-//     * @return
-//     */
-//    // use RKeys.deleteByPattern
-//    @Deprecated
-//    long deleteByPattern(String pattern);
-//
-//    /**
-//     * Delete multiple objects by a key pattern in async mode
-//     *
-//     *  Supported glob-style patterns:
-//     *    h?llo subscribes to hello, hallo and hxllo
-//     *    h*llo subscribes to hllo and heeeello
-//     *    h[ae]llo subscribes to hello and hallo, but not hillo
-//     *
-//     * @param pattern
-//     * @return
-//     */
-//    // use RKeys.deleteByPatternAsync
-//    @Deprecated
-//    Future<Long> deleteByPatternAsync(String pattern);
-//
-//    /**
-//     * Delete multiple objects by name
-//     *
-//     * @param keys - object names
-//     * @return
-//     */
-//    // use RKeys.delete
-//    @Deprecated
-//    long delete(String ... keys);
-//
-//    /**
-//     * Delete multiple objects by name in async mode
-//     *
-//     * @param keys - object names
-//     * @return
-//     */
-//    // use RKeys.deleteAsync
-//    @Deprecated
-//    Future<Long> deleteAsync(String ... keys);
 //
 //    /**
 //     * Get Redis nodes group for server operations
