@@ -18,20 +18,44 @@ package org.redisson.core;
 import org.reactivestreams.Publisher;
 
 /**
- * {@link java.util.Queue} backed by Redis
+ * {@link java.util.Deque} backed by Redis
  *
  * @author Nikita Koksharov
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RQueueReactive<V> extends RCollectionReactive<V> {
+public interface RDequeReactive<V> extends RQueueReactive<V> {
 
-    Publisher<V> peek();
+    Publisher<V> descendingIterator();
 
-    Publisher<V> poll();
+    Publisher<Boolean> removeLastOccurrence(Object o);
 
-    Publisher<Long> offer(V e);
+    Publisher<V> removeLast();
 
-    Publisher<V> pollLastAndOfferFirstTo(String queueName);
+    Publisher<V> removeFirst();
+
+    Publisher<Boolean> removeFirstOccurrence(Object o);
+
+    Publisher<Void> push(V e);
+
+    Publisher<V> pop();
+
+    Publisher<V> pollLast();
+
+    Publisher<V> pollFirst();
+
+    Publisher<V> peekLast();
+
+    Publisher<V> peekFirst();
+
+    Publisher<Long> offerLast(V e);
+
+    Publisher<V> getLast();
+
+    Publisher<Void> addLast(V e);
+
+    Publisher<Void> addFirst(V e);
+
+    Publisher<Boolean> offerFirst(V e);
 
 }

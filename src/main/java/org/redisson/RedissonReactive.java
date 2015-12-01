@@ -31,6 +31,7 @@ import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
 import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
+import org.redisson.core.RDequeReactive;
 import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RLexSortedSetReactive;
 import org.redisson.core.RListReactive;
@@ -201,6 +202,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec) {
         return new RedissonBlockingQueueReactive<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RDequeReactive<V> getDeque(String name) {
+        return new RedissonDequeReactive<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RDequeReactive<V> getDeque(String name, Codec codec) {
+        return new RedissonDequeReactive<V>(codec, commandExecutor, name);
     }
 
     public Config getConfig() {

@@ -20,6 +20,7 @@ import java.util.List;
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
+import org.redisson.core.RDequeReactive;
 import org.redisson.core.RHyperLogLogReactive;
 import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RLexSortedSetReactive;
@@ -154,16 +155,16 @@ public interface RedissonReactiveClient {
 
     <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec);
 
-//    /**
-//     * Returns deque instance by name.
-//     *
-//     * @param name of deque
-//     * @return
-//     */
-//    <V> RDeque<V> getDeque(String name);
-//
-//    <V> RDeque<V> getDeque(String name, Codec codec);
-//
+    /**
+     * Returns deque instance by name.
+     *
+     * @param name of deque
+     * @return
+     */
+    <V> RDequeReactive<V> getDeque(String name);
+
+    <V> RDequeReactive<V> getDeque(String name, Codec codec);
+
 //    /**
 //     * Returns "atomic long" instance by name.
 //     *
