@@ -26,6 +26,7 @@ import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
 import org.redisson.core.RPatternTopicReactive;
+import org.redisson.core.RQueueReactive;
 import org.redisson.core.RScoredSortedSetReactive;
 import org.redisson.core.RSetReactive;
 import org.redisson.core.RTopicReactive;
@@ -131,17 +132,17 @@ public interface RedissonReactiveClient {
     <M> RPatternTopicReactive<M> getPatternTopic(String pattern);
 
     <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec);
-//
-//    /**
-//     * Returns queue instance by name.
-//     *
-//     * @param name of queue
-//     * @return
-//     */
-//    <V> RQueue<V> getQueue(String name);
-//
-//    <V> RQueue<V> getQueue(String name, Codec codec);
-//
+
+    /**
+     * Returns queue instance by name.
+     *
+     * @param name of queue
+     * @return
+     */
+    <V> RQueueReactive<V> getQueue(String name);
+
+    <V> RQueueReactive<V> getQueue(String name, Codec codec);
+
 //    /**
 //     * Returns blocking queue instance by name.
 //     *
@@ -210,15 +211,15 @@ public interface RedissonReactiveClient {
      */
     void shutdown();
 
-//    /**
-//     * Allows to get configuration provided
-//     * during Redisson instance creation. Further changes on
-//     * this object not affect Redisson instance.
-//     *
-//     * @return Config object
-//     */
-//    Config getConfig();
-//
+    /**
+     * Allows to get configuration provided
+     * during Redisson instance creation. Further changes on
+     * this object not affect Redisson instance.
+     *
+     * @return Config object
+     */
+    Config getConfig();
+
 //    /**
 //     * Get Redis nodes group for server operations
 //     *

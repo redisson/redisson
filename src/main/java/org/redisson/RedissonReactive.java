@@ -36,6 +36,7 @@ import org.redisson.core.RListReactive;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapReactive;
 import org.redisson.core.RPatternTopicReactive;
+import org.redisson.core.RQueueReactive;
 import org.redisson.core.RScoredSortedSetReactive;
 import org.redisson.core.RSetReactive;
 import org.redisson.core.RTopicReactive;
@@ -124,7 +125,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RListReactive<V> getList(String name, Codec codec) {
-        return new RedissonListReactive<V>(commandExecutor, name);
+        return new RedissonListReactive<V>(codec, commandExecutor, name);
     }
 
     @Override
@@ -137,10 +138,12 @@ public class RedissonReactive implements RedissonReactiveClient {
         return new RedissonMapReactive<K, V>(codec, commandExecutor, name);
     }
 
+    @Override
     public <V> RSetReactive<V> getSet(String name) {
         return new RedissonSetReactive<V>(commandExecutor, name);
     }
 
+    @Override
     public <V> RSetReactive<V> getSet(String name, Codec codec) {
         return new RedissonSetReactive<V>(codec, commandExecutor, name);
     }
@@ -178,6 +181,20 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec) {
         return new RedissonPatternTopicReactive<M>(codec, commandExecutor, pattern);
+    }
+
+    @Override
+    public <V> RQueueReactive<V> getQueue(String name) {
+        return new RedissonQueueReactive<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RQueueReactive<V> getQueue(String name, Codec codec) {
+        return new RedissonQueueReactive<V>(codec, commandExecutor, name);
+    }
+
+    public Config getConfig() {
+        return config;
     }
 
     @Override
