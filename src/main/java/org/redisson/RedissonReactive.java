@@ -30,6 +30,7 @@ import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
 import org.redisson.core.RAtomicLongReactive;
+import org.redisson.core.RBatchReactive;
 import org.redisson.core.RBitSetReactive;
 import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
@@ -230,6 +231,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public RScriptReactive getScript() {
         return new RedissonScriptReactive(commandExecutor);
+    }
+
+    @Override
+    public RBatchReactive createBatch() {
+        return new RedissonBatchReactive(connectionManager);
     }
 
     public Config getConfig() {

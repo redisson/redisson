@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RAtomicLongReactive;
+import org.redisson.core.RBatchReactive;
 import org.redisson.core.RBitSetReactive;
 import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
@@ -185,16 +186,16 @@ public interface RedissonReactiveClient {
      */
     RScriptReactive getScript();
 
-//    /**
-//     * Return batch object which executes group of
-//     * command in pipeline.
-//     *
-//     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
-//     *
-//     * @return
-//     */
-//    RBatch createBatch();
-//
+    /**
+     * Return batch object which executes group of
+     * command in pipeline.
+     *
+     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
+     *
+     * @return
+     */
+    RBatchReactive createBatch();
+
 //    /**
 //     * Returns keys operations.
 //     * Each of Redis/Redisson object associated with own key

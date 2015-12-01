@@ -18,7 +18,7 @@ package org.redisson;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandBatchAsyncService;
+import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLongAsync;
 import org.redisson.core.RBatch;
@@ -41,10 +41,10 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonBatch implements RBatch {
 
-    private final CommandBatchAsyncService executorService;
+    private final CommandBatchService executorService;
 
     public RedissonBatch(ConnectionManager connectionManager) {
-        this.executorService = new CommandBatchAsyncService(connectionManager);
+        this.executorService = new CommandBatchService(connectionManager);
     }
 
     @Override

@@ -24,7 +24,7 @@ import java.util.List;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandBatchAsyncService;
+import org.redisson.command.CommandBatchService;
 import org.redisson.core.RBitSet;
 
 import io.netty.util.concurrent.Future;
@@ -180,7 +180,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public Future<Void> clearAsync(int fromIndex, int toIndex) {
-        CommandBatchAsyncService executorService = new CommandBatchAsyncService(commandExecutor.getConnectionManager());
+        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
         for (int i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), codec, RedisCommands.SETBIT, getName(), i, 0);
         }
@@ -199,7 +199,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public Future<Void> setAsync(int fromIndex, int toIndex) {
-        CommandBatchAsyncService executorService = new CommandBatchAsyncService(commandExecutor.getConnectionManager());
+        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
         for (int i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), codec, RedisCommands.SETBIT, getName(), i, 1);
         }

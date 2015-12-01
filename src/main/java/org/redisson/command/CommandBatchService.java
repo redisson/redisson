@@ -51,7 +51,7 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
-public class CommandBatchAsyncService extends CommandAsyncService {
+public class CommandBatchService extends CommandReactiveService {
 
     public static class CommandEntry implements Comparable<CommandEntry> {
 
@@ -101,7 +101,7 @@ public class CommandBatchAsyncService extends CommandAsyncService {
 
     private boolean executed;
 
-    public CommandBatchAsyncService(ConnectionManager connectionManager) {
+    public CommandBatchService(ConnectionManager connectionManager) {
         super(connectionManager);
     }
 
