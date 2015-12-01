@@ -131,7 +131,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> Future<R> readRandomAsync(final RedisCommand<T> command, final Object ... params) {
+    public <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
         final List<ClusterSlotRange> slots = new ArrayList<ClusterSlotRange>(connectionManager.getEntries().keySet());
         Collections.shuffle(slots);

@@ -16,6 +16,7 @@
 package org.redisson.command;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
@@ -39,6 +40,24 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
+    public <T, R> Publisher<R> evalWriteAllObservable(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
+        Future<R> f = evalWriteAllAsync(command, callback, script, keys, params);
+        return new NettyFuturePublisher<R>(f);
+    }
+
+    @Override
+    public <T, R> Publisher<Collection<R>> readAllObservable(RedisCommand<T> command, Object ... params) {
+        Future<Collection<R>> f = readAllAsync(command, params);
+        return new NettyFuturePublisher<Collection<R>>(f);
+    }
+
+    @Override
+    public <T, R> Publisher<R> readRandomObservable(RedisCommand<T> command, Object ... params) {
+        Future<R> f = readRandomAsync(command, params);
+        return new NettyFuturePublisher<R>(f);
+    }
+
+    @Override
     public <T, R> Publisher<R> readObservable(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = readAsync(client, key, codec, command, params);
         return new NettyFuturePublisher<R>(f);
@@ -52,6 +71,11 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     @Override
     public <T, R> Publisher<R> writeObservable(String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> f = writeAsync(key, codec, command, params);
+        return new NettyFuturePublisher<R>(f);
+    }
+
+    public <T, R> Publisher<R> writeObservable(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
+        Future<R> f = writeAsync(slot, codec, command, params);
         return new NettyFuturePublisher<R>(f);
     }
 

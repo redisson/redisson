@@ -25,6 +25,7 @@ import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RDequeReactive;
 import org.redisson.core.RHyperLogLogReactive;
+import org.redisson.core.RKeysReactive;
 import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RLexSortedSetReactive;
 import org.redisson.core.RListReactive;
@@ -196,13 +197,13 @@ public interface RedissonReactiveClient {
      */
     RBatchReactive createBatch();
 
-//    /**
-//     * Returns keys operations.
-//     * Each of Redis/Redisson object associated with own key
-//     *
-//     * @return
-//     */
-//    RKeys getKeys();
+    /**
+     * Returns keys operations.
+     * Each of Redis/Redisson object associated with own key
+     *
+     * @return
+     */
+    RKeysReactive getKeys();
 
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server

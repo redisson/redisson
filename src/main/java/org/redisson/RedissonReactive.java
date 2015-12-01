@@ -36,6 +36,7 @@ import org.redisson.core.RBlockingQueueReactive;
 import org.redisson.core.RBucketReactive;
 import org.redisson.core.RDequeReactive;
 import org.redisson.core.RHyperLogLogReactive;
+import org.redisson.core.RKeysReactive;
 import org.redisson.core.RLexSortedSetReactive;
 import org.redisson.core.RListReactive;
 import org.redisson.core.RMapReactive;
@@ -236,6 +237,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public RBatchReactive createBatch() {
         return new RedissonBatchReactive(connectionManager);
+    }
+
+    @Override
+    public RKeysReactive getKeys() {
+        return new RedissonKeysReactive(commandExecutor);
     }
 
     public Config getConfig() {

@@ -16,6 +16,7 @@
 package org.redisson.command;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
@@ -32,6 +33,14 @@ import org.redisson.connection.ConnectionManager;
 public interface CommandReactiveExecutor {
 
     ConnectionManager getConnectionManager();
+
+    <T, R> Publisher<R> evalWriteAllObservable(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
+
+    <T, R> Publisher<Collection<R>> readAllObservable(RedisCommand<T> command, Object ... params);
+
+    <T, R> Publisher<R> readRandomObservable(RedisCommand<T> command, Object ... params);
+
+    <T, R> Publisher<R> writeObservable(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T> Publisher<Void> writeAllObservable(RedisCommand<T> command, Object ... params);
 
