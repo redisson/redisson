@@ -18,7 +18,6 @@ package org.redisson;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
@@ -47,6 +46,9 @@ import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
+import org.redisson.core.ClusterNode;
+import org.redisson.core.Node;
+import org.redisson.core.NodesGroup;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
@@ -79,8 +81,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     private final CommandReactiveService commandExecutor;
     private final ConnectionManager connectionManager;
     private final Config config;
-
-    private final UUID id = UUID.randomUUID();
 
     RedissonReactive(Config config) {
         this.config = config;
@@ -262,8 +262,22 @@ public class RedissonReactive implements RedissonReactiveClient {
         return new RedissonKeysReactive(commandExecutor);
     }
 
+    @Override
     public Config getConfig() {
         return config;
+    }
+
+    @Override
+    public NodesGroup<Node> getNodesGroup() {
+        return new RedisNodes<Node>(connectionManager);
+    }
+
+    @Override
+    public NodesGroup<ClusterNode> getClusterNodesGroup() {
+        if (!config.isClusterConfig()) {
+            throw new IllegalStateException("Redisson not in cluster mode!");
+        }
+        return new RedisNodes<ClusterNode>(connectionManager);
     }
 
     @Override
@@ -271,14 +285,5 @@ public class RedissonReactive implements RedissonReactiveClient {
         connectionManager.shutdown();
     }
 
-    @Override
-    public void flushdb() {
-        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHDB));
-    }
-
-    @Override
-    public void flushall() {
-        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
-    }
 }
 

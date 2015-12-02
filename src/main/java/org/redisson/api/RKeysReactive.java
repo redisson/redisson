@@ -19,17 +19,38 @@ import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 
-import io.netty.util.concurrent.Future;
-
 public interface RKeysReactive {
 
+    /**
+     * Load keys in incrementally iterate mode.
+     *
+     * Uses <code>SCAN</code> Redis command.
+     *
+     * @param pattern
+     * @return
+     */
     Publisher<String> getKeys();
 
+    /**
+     * Find keys by pattern and load it in incrementally iterate mode.
+     *
+     * Uses <code>SCAN</code> Redis command.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern
+     * @return
+     */
     Publisher<String> getKeysByPattern(String pattern);
 
     /**
-     * Get hash slot identifier for key in  mode.
-     * Available for cluster nodes only
+     * Get hash slot identifier for key.
+     * Available for cluster nodes only.
+     *
+     * Uses <code>KEYSLOT</code> Redis command.
      *
      * @param key
      * @return
@@ -37,7 +58,9 @@ public interface RKeysReactive {
     Publisher<Integer> getSlot(String key);
 
     /**
-     * Find keys by key search pattern by one Redis call
+     * Find keys by key search pattern by one Redis call.
+     *
+     * Uses <code>KEYS</code> Redis command.
      *
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
@@ -50,14 +73,18 @@ public interface RKeysReactive {
     Publisher<Collection<String>> findKeysByPattern(String pattern);
 
     /**
-     * Get random key in  mode
+     * Get random key
+     *
+     * Uses <code>RANDOM_KEY</code> Redis command.
      *
      * @return
      */
     Publisher<String> randomKey();
 
     /**
-     * Delete multiple objects by a key pattern in  mode
+     * Delete multiple objects by a key pattern.
+     *
+     * Uses Lua script.
      *
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
@@ -70,11 +97,29 @@ public interface RKeysReactive {
     Publisher<Long> deleteByPattern(String pattern);
 
     /**
-     * Delete multiple objects by name in  mode
+     * Delete multiple objects by name.
+     *
+     * Uses <code>DEL</code> Redis command.
      *
      * @param keys - object names
      * @return
      */
     Publisher<Long> delete(String ... keys);
+
+    /**
+     * Delete all the keys of the currently selected database
+     *
+     * Uses <code>FLUSHDB</code> Redis command.
+     *
+     */
+    Publisher<Void> flushdb();
+
+    /**
+     * Delete all the keys of all the existing databases
+     *
+     * Uses <code>FLUSHALL</code> Redis command.
+     *
+     */
+    Publisher<Void> flushall();
 
 }

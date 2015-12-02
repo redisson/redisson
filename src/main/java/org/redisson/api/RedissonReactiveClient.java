@@ -19,6 +19,9 @@ import java.util.List;
 
 import org.redisson.Config;
 import org.redisson.client.codec.Codec;
+import org.redisson.core.ClusterNode;
+import org.redisson.core.Node;
+import org.redisson.core.NodesGroup;
 
 public interface RedissonReactiveClient {
 
@@ -201,28 +204,18 @@ public interface RedissonReactiveClient {
      */
     Config getConfig();
 
-//    /**
-//     * Get Redis nodes group for server operations
-//     *
-//     * @return
-//     */
-//    NodesGroup<Node> getNodesGroup();
-//
-//    /**
-//     * Get Redis cluster nodes group for server operations
-//     *
-//     * @return
-//     */
-//    NodesGroup<ClusterNode> getClusterNodesGroup();
-//
     /**
-     * Delete all the keys of the currently selected database
+     * Get Redis nodes group for server operations
+     *
+     * @return
      */
-    void flushdb();
+    NodesGroup<Node> getNodesGroup();
 
     /**
-     * Delete all the keys of all the existing databases
+     * Get Redis cluster nodes group for server operations
+     *
+     * @return
      */
-    void flushall();
+    NodesGroup<ClusterNode> getClusterNodesGroup();
 
 }

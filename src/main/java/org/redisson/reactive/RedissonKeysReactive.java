@@ -151,17 +151,6 @@ public class RedissonKeysReactive implements RKeysReactive {
         };
     }
 
-    /**
-     * Find keys by key search pattern by one Redis call
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
     @Override
     public Publisher<Collection<String>> findKeysByPattern(String pattern) {
         return commandExecutor.readAllReactive(RedisCommands.KEYS, pattern);
@@ -172,17 +161,6 @@ public class RedissonKeysReactive implements RKeysReactive {
         return commandExecutor.readRandomReactive(RedisCommands.RANDOM_KEY);
     }
 
-    /**
-     * Delete multiple objects by a key pattern
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
     @Override
     public Publisher<Long> deleteByPattern(String pattern) {
         return commandExecutor.evalWriteAllReactive(RedisCommands.EVAL_LONG, new SlotCallback<Long, Long>() {
@@ -204,12 +182,6 @@ public class RedissonKeysReactive implements RKeysReactive {
             + "return n;",Collections.emptyList(), pattern);
     }
 
-    /**
-     * Delete multiple objects by name
-     *
-     * @param keys - object names
-     * @return
-     */
     @Override
     public Publisher<Long> delete(String ... keys) {
         return commandExecutor.writeAllReactive(RedisCommands.DEL, new SlotCallback<Long, Long>() {
@@ -226,5 +198,14 @@ public class RedissonKeysReactive implements RKeysReactive {
         }, (Object[])keys);
     }
 
+    @Override
+    public Publisher<Void> flushdb() {
+        return commandExecutor.writeAllReactive(RedisCommands.FLUSHDB);
+    }
+
+    @Override
+    public Publisher<Void> flushall() {
+        return commandExecutor.writeAllReactive(RedisCommands.FLUSHALL);
+    }
 
 }
