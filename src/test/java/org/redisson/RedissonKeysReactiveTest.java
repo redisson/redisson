@@ -36,7 +36,7 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
         MatcherAssert.assertThat(sync(redisson.getKeys().randomKey()), Matchers.isOneOf("test1", "test2"));
         sync(redisson.getKeys().delete("test1"));
         Assert.assertEquals(sync(redisson.getKeys().randomKey()), "test2");
-        redisson.flushdb();
+        sync(redisson.getKeys().flushdb());
         Assert.assertNull(sync(redisson.getKeys().randomKey()));
     }
 

@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -42,7 +41,6 @@ import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
-import reactor.core.reactivestreams.SubscriberBarrier;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -173,7 +171,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> addAll(final Collection<? extends V> c) {
+    public Publisher<Long> addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
             return size();
         }
@@ -185,7 +183,11 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> addAll(final long index, final Collection<? extends V> coll) {
+    public Publisher<Long> addAll(long index, Collection<? extends V> coll) {
+        if (index < 0) {
+            throw new IndexOutOfBoundsException("index: " + index);
+        }
+
         if (coll.isEmpty()) {
             return size();
         }
@@ -198,41 +200,19 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
             return commandExecutor.writeReactive(getName(), codec, RedisCommands.LPUSH, elements.toArray());
         }
 
-        final Processor<Long, Long> promise = newObservable();
-
-        Publisher<Long> s = size();
-        s.subscribe(new SubscriberBarrier<Long, Long>(promise) {
-            @Override
-            public void doNext(Long size) {
-                if (!isPositionInRange(index, size)) {
-                    IndexOutOfBoundsException e = new IndexOutOfBoundsException("index: " + index + " but current size: "+ size);
-                    promise.onError(e);
-                    return;
-                }
-
-                if (index >= size) {
-                    addAll(coll).subscribe(toSubscriber(promise));
-                    return;
-                }
-
-                // insert into middle of list
-
-                List<Object> args = new ArrayList<Object>(coll.size() + 1);
-                args.add(index);
-                args.addAll(coll);
-                Publisher<Long> f = commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5),
-                        "local ind = table.remove(ARGV, 1); " + // index is the first parameter
-                                "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
-                                "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
-                                "for i, v in ipairs(ARGV) do redis.call('rpush', KEYS[1], v) end;" +
-                                "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
-                                "return redis.call('llen', KEYS[1]);",
-                        Collections.<Object>singletonList(getName()), args.toArray());
-                f.subscribe(toSubscriber(promise));
-            }
-
-        });
-        return promise;
+        List<Object> args = new ArrayList<Object>(coll.size() + 1);
+        args.add(index);
+        args.addAll(coll);
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5),
+                "local ind = table.remove(ARGV, 1); " + // index is the first parameter
+                        "local size = redis.call('llen', KEYS[1]); " +
+                        "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
+                        "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
+                        "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
+                        "for i, v in ipairs(ARGV) do redis.call('rpush', KEYS[1], v) end;" +
+                        "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
+                        "return redis.call('llen', KEYS[1]);",
+                Collections.<Object>singletonList(getName()), args.toArray());
     }
 
     @Override

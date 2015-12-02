@@ -60,10 +60,6 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         };
     }
 
-    protected <V> Processor<V, V> newObservable() {
-        return Broadcaster.create();
-    }
-
     protected <V> Stream<V> newSucceededObservable(V result) {
         return Streams.just(result);
     }
