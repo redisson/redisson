@@ -31,6 +31,20 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
     }
 
     @Test
+    public void testAddAllReactive() {
+        RSetReactive<Integer> list = redisson.getSet("set");
+        sync(list.add(1));
+        sync(list.add(2));
+        sync(list.add(3));
+        sync(list.add(4));
+        sync(list.add(5));
+
+        RSetReactive<Integer> list2 = redisson.getSet("set2");
+        Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
+        Assert.assertEquals(5, sync(list2.size()).intValue());
+    }
+
+    @Test
     public void testRemoveRandom() {
         RSetReactive<Integer> set = redisson.getSet("simple");
         sync(set.add(1));

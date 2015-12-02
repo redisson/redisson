@@ -37,6 +37,8 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
 
     Publisher<Long> add(V e);
 
+    Publisher<Long> addAll(Publisher<? extends V> c);
+
     Publisher<Long> addAll(Collection<? extends V> c);
 
 }

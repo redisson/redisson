@@ -41,6 +41,8 @@ import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
+import reactor.fn.BiFunction;
+import reactor.fn.Function;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -51,7 +53,7 @@ import reactor.rx.subscription.ReactiveSubscription;
  *
  * @param <V> the type of elements held in this collection
  */
-public class RedissonListReactive<V> extends RedissonExpirableReactive implements RListReactive<V> {
+public class RedissonListReactive<V> extends RedissonCollectionReactive<V> implements RListReactive<V> {
 
     public RedissonListReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -168,6 +170,21 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
                 "end " +
                 "return table.getn(ARGV) == 0",
                 Collections.<Object>singletonList(getName()), c.toArray());
+    }
+
+    @Override
+    public Publisher<Long> addAll(Publisher<? extends V> c) {
+        return addAll(c, new Function<V, Publisher<Long>>() {
+            @Override
+            public Publisher<Long> apply(V o) {
+                return add(o);
+            }
+        }, new BiFunction<Long, Long, Long>() {
+            @Override
+            public Long apply(Long left, Long right) {
+                return right;
+            }
+        });
     }
 
     @Override

@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -27,7 +26,6 @@ import org.redisson.command.CommandReactiveExecutor;
 import reactor.core.reactivestreams.SubscriberBarrier;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
-import reactor.rx.broadcast.Broadcaster;
 
 /**
  * Base Redisson object

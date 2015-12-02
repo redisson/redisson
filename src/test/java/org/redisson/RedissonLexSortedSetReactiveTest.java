@@ -9,6 +9,20 @@ import org.redisson.api.RLexSortedSetReactive;
 public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
+    public void testAddAllReactive() {
+        RLexSortedSetReactive list = redisson.getLexSortedSet("set");
+        Assert.assertTrue(sync(list.add("1")) == 1);
+        Assert.assertTrue(sync(list.add("2"))  == 1);
+        Assert.assertTrue(sync(list.add("3")) == 1);
+        Assert.assertTrue(sync(list.add("4")) == 1);
+        Assert.assertTrue(sync(list.add("5")) == 1);
+
+        RLexSortedSetReactive list2 = redisson.getLexSortedSet("set2");
+        Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
+        Assert.assertEquals(5, sync(list2.size()).intValue());
+    }
+
+    @Test
     public void testRemoveLexRangeTail() {
         RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
         Assert.assertTrue(sync(set.add("a")) == 1);

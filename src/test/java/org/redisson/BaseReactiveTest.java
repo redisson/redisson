@@ -12,6 +12,7 @@ import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RedissonReactiveClient;
 
 import reactor.rx.Promise;
+import reactor.rx.Stream;
 import reactor.rx.Streams;
 
 public abstract class BaseReactiveTest {
@@ -41,15 +42,18 @@ public abstract class BaseReactiveTest {
     }
 
     public <V> V sync(Publisher<V> ob) {
-        Promise<List<V>> promise = Streams.create(ob).toList();
-        List<V> t = promise.poll();
+        Promise<V> promise;
+        if (Promise.class.isAssignableFrom(ob.getClass())) {
+            promise = (Promise<V>) ob;
+        } else {
+            promise = Streams.wrap(ob).next();
+        }
+
+        V val = promise.poll();
         if (promise.isError()) {
             throw new RuntimeException(promise.reason());
         }
-        if (t == null) {
-            return null;
-        }
-        return t.iterator().next();
+        return val;
     }
 
     public static Config createConfig() {

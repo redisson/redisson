@@ -17,6 +17,7 @@ package org.redisson.reactive;
 
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -34,10 +35,11 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandReactiveExecutor;
 
+import reactor.core.reactivestreams.SubscriberBarrier;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
-public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactive implements RScoredSortedSetReactive<V> {
+public class RedissonScoredSortedSetReactive<V> extends RedissonCollectionReactive<V> implements RScoredSortedSetReactive<V> {
 
     public RedissonScoredSortedSetReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -112,22 +114,49 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
 
             @Override
             public void subscribe(final Subscriber<? super V> t) {
-                t.onSubscribe(new ReactiveSubscription<V>(this, t) {
+                t.onSubscribe(new SubscriberBarrier<V, V>(t) {
 
                     private List<V> firstValues;
                     private long nextIterPos;
                     private InetSocketAddress client;
 
                     private long currentIndex;
+                    private List<V> prevValues = new ArrayList<V>();
 
                     @Override
-                    protected void onRequest(final long n) {
+                    protected void doRequest(long n) {
                         currentIndex = n;
+
+                        if (!prevValues.isEmpty()) {
+                            List<V> vals = new ArrayList<V>(prevValues);
+                            prevValues.clear();
+
+                            handle(vals);
+
+                            if (currentIndex == 0) {
+                                return;
+                            }
+                        }
+
                         nextValues();
                     }
 
+                    private void handle(List<V> vals) {
+                        for (V val : vals) {
+                            if (currentIndex > 0) {
+                                onNext(val);
+                            } else {
+                                prevValues.add(val);
+                            }
+                            currentIndex--;
+                            if (currentIndex == 0) {
+                                onComplete();
+                            }
+                        }
+                    }
+
                     protected void nextValues() {
-                        final ReactiveSubscription<V> m = this;
+                        final SubscriberBarrier<V, V> m = this;
                         scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<V>>() {
 
                             @Override
@@ -152,14 +181,13 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
                                 if (prevIterPos == nextIterPos) {
                                     nextIterPos = -1;
                                 }
-                                for (V val : res.getValues()) {
-                                    m.onNext(val);
-                                    currentIndex--;
-                                    if (currentIndex == 0) {
-                                        m.onComplete();
-                                        return;
-                                    }
+
+                                handle(res.getValues());
+
+                                if (currentIndex == 0) {
+                                    return;
                                 }
+
                                 if (nextIterPos == -1) {
                                     m.onComplete();
                                     currentIndex = 0;

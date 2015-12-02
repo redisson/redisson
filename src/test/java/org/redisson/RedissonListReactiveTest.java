@@ -26,6 +26,20 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     }
 
     @Test
+    public void testAddAllReactive() {
+        RListReactive<Integer> list = redisson.getList("list");
+        sync(list.add(1));
+        sync(list.add(2));
+        sync(list.add(3));
+        sync(list.add(4));
+        sync(list.add(5));
+
+        RListReactive<Integer> list2 = redisson.getList("list2");
+        Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
+        Assert.assertEquals(5, sync(list2.size()).intValue());
+    }
+
+    @Test
     public void testAddAllWithIndex() throws InterruptedException {
         final RListReactive<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
