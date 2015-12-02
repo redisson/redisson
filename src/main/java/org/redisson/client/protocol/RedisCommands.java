@@ -133,6 +133,8 @@ public interface RedisCommands {
 
     RedisStrictCommand<Long> RPOP = new RedisStrictCommand<Long>("RPOP");
     RedisStrictCommand<Long> LPUSH = new RedisStrictCommand<Long>("LPUSH", 2);
+    RedisStrictCommand<Boolean> LPUSH_BOOLEAN = new RedisStrictCommand<Boolean>("LPUSH", new TrueReplayConvertor(), 2);
+    RedisStrictCommand<Void> LPUSH_VOID = new RedisStrictCommand<Void>("LPUSH", new VoidReplayConvertor(), 2);
     RedisCommand<List<Object>> LRANGE = new RedisCommand<List<Object>>("LRANGE", new ObjectListReplayDecoder<Object>());
     RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH", 2, ValueType.OBJECTS);
     RedisCommand<Boolean> RPUSH_BOOLEAN = new RedisCommand<Boolean>("RPUSH", new TrueReplayConvertor(), 2, ValueType.OBJECTS);

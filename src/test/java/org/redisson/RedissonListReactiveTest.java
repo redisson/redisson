@@ -1,10 +1,8 @@
 package org.redisson;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.hamcrest.MatcherAssert;
@@ -362,7 +360,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     }
 
     @Test(expected = RedisException.class)
-    public void testAddAllError() {
+    public void testAddAllIndexError() {
         RListReactive<Integer> list = redisson.getList("list");
         sync(list.addAll(2, Arrays.asList(7, 8, 9)));
     }
@@ -388,7 +386,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
         Assert.assertThat(sync(list), Matchers.contains(1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
 
-        sync(list.addAll(0, Arrays.asList(6, 7)));
+        Assert.assertEquals(15, sync(list.addAll(0, Arrays.asList(6, 7))).intValue());
 
         Assert.assertThat(sync(list), Matchers.contains(6,7,1, 2, 7, 8, 9, 3, 4, 9, 1, 9, 5, 0, 5));
     }

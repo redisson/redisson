@@ -12,6 +12,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RListReactive;
+import org.redisson.client.RedisException;
 import org.redisson.core.RList;
 
 import io.netty.util.concurrent.Future;
@@ -554,6 +556,11 @@ public class RedissonListTest extends BaseTest {
         Assert.assertThat(list, Matchers.contains(1, 2));
     }
 
+    @Test(expected = RedisException.class)
+    public void testAddAllIndexError() {
+        RList<Integer> list = redisson.getList("list");
+        list.addAll(2, Arrays.asList(7, 8, 9));
+    }
 
     @Test
     public void testAddAllIndex() {

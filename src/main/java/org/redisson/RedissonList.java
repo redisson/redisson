@@ -15,7 +15,14 @@
  */
 package org.redisson;
 
-import static org.redisson.client.protocol.RedisCommands.*;
+import static org.redisson.client.protocol.RedisCommands.EVAL_OBJECT;
+import static org.redisson.client.protocol.RedisCommands.LINDEX;
+import static org.redisson.client.protocol.RedisCommands.LLEN_INT;
+import static org.redisson.client.protocol.RedisCommands.LPOP;
+import static org.redisson.client.protocol.RedisCommands.LPUSH_BOOLEAN;
+import static org.redisson.client.protocol.RedisCommands.LRANGE;
+import static org.redisson.client.protocol.RedisCommands.LREM_SINGLE;
+import static org.redisson.client.protocol.RedisCommands.RPUSH_BOOLEAN;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,8 +43,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RList;
 
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -155,75 +160,51 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> addAllAsync(final Collection<? extends V> c) {
-        final Promise<Boolean> promise = newPromise();
         if (c.isEmpty()) {
-            promise.setSuccess(false);
-            return promise;
+            return newSucceededFuture(false);
         }
-        Future<Integer> sizeFuture = sizeAsync();
-        sizeFuture.addListener(new FutureListener<Integer>() {
-            @Override
-            public void operationComplete(Future<Integer> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
-                    return;
-                }
 
-                final int listSize = future.getNow();
-                List<Object> args = new ArrayList<Object>(c.size() + 1);
-                args.add(getName());
-                args.addAll(c);
-                Future<Long> res = commandExecutor.writeAsync(getName(), codec, RPUSH, args.toArray());
-                res.addListener(new FutureListener<Long>() {
-                    @Override
-                    public void operationComplete(Future<Long> future) throws Exception {
-                        if (future.isSuccess()) {
-                            promise.setSuccess(listSize != future.getNow());
-                        } else {
-                            promise.setFailure(future.cause());
-                        }
-                    }
-                });
-            }
-        });
-        return promise;
+        List<Object> args = new ArrayList<Object>(c.size() + 1);
+        args.add(getName());
+        args.addAll(c);
+        return commandExecutor.writeAsync(getName(), codec, RPUSH_BOOLEAN, args.toArray());
     }
 
-    @Override
-    public boolean addAll(final int index, final Collection<? extends V> coll) {
-        if (coll.isEmpty()) {
-            return false;
+    public Future<Boolean> addAllAsync(int index, Collection<? extends V> coll) {
+        if (index < 0) {
+            throw new IndexOutOfBoundsException("index: " + index);
         }
+
+        if (coll.isEmpty()) {
+            return newSucceededFuture(false);
+        }
+
         if (index == 0) { // prepend elements to list
             List<Object> elements = new ArrayList<Object>(coll);
             Collections.reverse(elements);
             elements.add(0, getName());
 
-            Future<Long> f = commandExecutor.writeAsync(getName(), codec, LPUSH, elements.toArray());
-            Long newSize = get(f);
-            return newSize != size();
+            return commandExecutor.writeAsync(getName(), codec, LPUSH_BOOLEAN, elements.toArray());
         }
 
-        checkPosition(index);
-        int size = size();
-        if (index < size) {
-            // insert into middle of list
-            List<Object> args = new ArrayList<Object>(coll.size() + 1);
-            args.add(index);
-            args.addAll(coll);
-            Future<Boolean> f = commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
-                    "local ind = table.remove(ARGV, 1); " + // index is the first parameter
-                            "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
-                            "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
-                            "for i, v in ipairs(ARGV) do redis.call('rpush', KEYS[1], v) end;" +
-                            "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
-                            "return true",
-                    Collections.<Object>singletonList(getName()), args.toArray());
-            return get(f);
-        } else {
-            // append to list
-            return addAll(coll);
-        }
+        List<Object> args = new ArrayList<Object>(coll.size() + 1);
+        args.add(index);
+        args.addAll(coll);
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
+                "local ind = table.remove(ARGV, 1); " + // index is the first parameter
+                        "local size = redis.call('llen', KEYS[1]); " +
+                        "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
+                        "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
+                        "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
+                        "for i, v in ipairs(ARGV) do redis.call('rpush', KEYS[1], v) end;" +
+                        "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
+                        "return true",
+                Collections.<Object>singletonList(getName()), args.toArray());
+    }
+
+    @Override
+    public boolean addAll(final int index, final Collection<? extends V> coll) {
+        return get(addAllAsync(index, coll));
     }
 
     @Override
@@ -303,16 +284,6 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     private boolean isInRange(int index, int size) {
         return index >= 0 && index < size;
-    }
-
-    private void checkPosition(int index) {
-        int size = size();
-        if (!isPositionInRange(index, size))
-            throw new IndexOutOfBoundsException("index: " + index + " but current size: "+ size);
-    }
-
-    private boolean isPositionInRange(int index, int size) {
-        return index >= 0 && index <= size;
     }
 
     @Override

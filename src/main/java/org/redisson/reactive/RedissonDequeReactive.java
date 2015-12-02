@@ -21,7 +21,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.TrueReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.decoder.ListFirstObjectDecoder;
@@ -35,8 +34,6 @@ import org.redisson.connection.decoder.ListFirstObjectDecoder;
  */
 public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implements RDequeReactive<V> {
 
-    private static final RedisCommand<Void> LPUSH_VOID = new RedisCommand<Void>("LPUSH", new VoidReplayConvertor());
-    private static final RedisCommand<Boolean> LPUSH_BOOLEAN = new RedisCommand<Boolean>("LPUSH", new TrueReplayConvertor());
     private static final RedisCommand<Void> RPUSH_VOID = new RedisCommand<Void>("RPUSH", new VoidReplayConvertor(), 2, ValueType.OBJECTS);
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
@@ -50,7 +47,7 @@ public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implement
 
     @Override
     public Publisher<Void> addFirst(V e) {
-        return commandExecutor.writeReactive(getName(), codec, LPUSH_VOID, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.LPUSH_VOID, getName(), e);
     }
 
     @Override
@@ -65,7 +62,7 @@ public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implement
 
     @Override
     public Publisher<Boolean> offerFirst(V e) {
-        return commandExecutor.writeReactive(getName(), codec, LPUSH_BOOLEAN, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.LPUSH_BOOLEAN, getName(), e);
     }
 
     @Override
