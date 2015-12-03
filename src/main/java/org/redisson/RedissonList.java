@@ -39,6 +39,9 @@ import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
+import org.redisson.client.protocol.decoder.ListIteratorReplayDecoder;
+import org.redisson.client.protocol.decoder.ListIteratorResult;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RList;
 
@@ -231,7 +234,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_R1,
                 "local changed = false " +
                 "local items = redis.call('lrange', KEYS[1], 0, -1) "
                    + "local i = 1 "
@@ -264,6 +267,15 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public Future<V> getAsync(int index) {
         return commandExecutor.readAsync(getName(), codec, LINDEX, getName(), index);
+    }
+
+    ListIteratorResult<Object> getIteratorValue(int index) {
+        Future<ListIteratorResult<Object>> f = commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Object>("EVAL", (MultiDecoder)new ListIteratorReplayDecoder()),
+                "local len = redis.call('llen', KEYS[1]); " +
+                "local item = redis.call('lindex', KEYS[1], ARGV[1]); " +
+                "return {item, len}",
+                Collections.<Object>singletonList(getName()), index);
+        return get(f);
     }
 
     @Override
@@ -514,6 +526,34 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 return sb.append(']').toString();
             sb.append(',').append(' ');
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof List))
+            return false;
+
+        Iterator<V> e1 = iterator();
+        Iterator<?> e2 = ((List<?>) o).iterator();
+        while (e1.hasNext() && e2.hasNext()) {
+            V o1 = e1.next();
+            Object o2 = e2.next();
+            if (!(o1==null ? o2==null : o1.equals(o2)))
+                return false;
+        }
+        return !(e1.hasNext() || e2.hasNext());
+    }
+
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        for (V e : this) {
+            System.out.println("t " + hashCode + " u " + e.hashCode());
+            hashCode = 31*hashCode + (e==null ? 0 : e.hashCode());
+        }
+        return hashCode;
     }
 
 }

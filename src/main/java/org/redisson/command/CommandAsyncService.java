@@ -234,18 +234,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> Future<R> evalReadAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalAsync(true, key, connectionManager.getCodec(), evalCommandType, script, keys, params);
-    }
-
-    @Override
     public <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(true, key, codec, evalCommandType, script, keys, params);
-    }
-
-    @Override
-    public <T, R> Future<R> evalWriteAsync(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalAsync(false, key, connectionManager.getCodec(), evalCommandType, script, keys, params);
     }
 
     @Override

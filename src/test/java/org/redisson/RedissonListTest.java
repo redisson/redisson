@@ -12,7 +12,6 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.api.RListReactive;
 import org.redisson.client.RedisException;
 import org.redisson.core.RList;
 
@@ -20,6 +19,37 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
 public class RedissonListTest extends BaseTest {
+
+    @Test
+    public void testEquals() {
+        RList<String> list1 = redisson.getList("list1");
+        list1.add("1");
+        list1.add("2");
+        list1.add("3");
+
+        RList<String> list2 = redisson.getList("list2");
+        list2.add("1");
+        list2.add("2");
+        list2.add("3");
+
+        RList<String> list3 = redisson.getList("list3");
+        list3.add("0");
+        list3.add("2");
+        list3.add("3");
+
+        Assert.assertEquals(list1, list2);
+        Assert.assertNotEquals(list1, list3);
+    }
+
+    @Test
+    public void testHashCode() {
+        RList<String> list = redisson.getList("list");
+        list.add("a");
+        list.add("b");
+        list.add("c");
+
+        Assert.assertEquals(126145, list.hashCode());
+    }
 
     @Test
     public void testAddByIndex() {
@@ -779,6 +809,8 @@ public class RedissonListTest extends BaseTest {
         list.add(new TestObject("2", "3"));
         list.add(new TestObject("3", "4"));
         list.add(new TestObject("5", "6"));
+
+        System.out.println(list);
 
         Assert.assertEquals(5, list.size());
     }

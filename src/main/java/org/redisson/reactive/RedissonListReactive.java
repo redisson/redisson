@@ -23,6 +23,7 @@ import static org.redisson.client.protocol.RedisCommands.LREM_SINGLE;
 import static org.redisson.client.protocol.RedisCommands.RPUSH;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +44,9 @@ import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.BiFunction;
 import reactor.fn.Function;
+import reactor.fn.tuple.Tuple;
 import reactor.rx.Stream;
+import reactor.rx.Streams;
 import reactor.rx.subscription.ReactiveSubscription;
 
 /**
@@ -350,6 +353,48 @@ public class RedissonListReactive<V> extends RedissonCollectionReactive<V> imple
                 "end " +
                 "return -1",
                 Collections.<Object>singletonList(getName()), o);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof RedissonListReactive))
+            return false;
+
+        Stream<Object> e1 = Streams.wrap((Publisher<Object>)iterator());
+        Stream<Object> e2 = Streams.wrap(((RedissonListReactive<Object>) o).iterator());
+        Long count = Streams.merge(e1, e2).groupBy(new Function<Object, Object>() {
+            @Override
+            public Object apply(Object t) {
+                return t;
+            }
+        }).count().next().poll();
+
+        boolean res = count.equals(Streams.wrap(size()).next().poll());
+        res &= count.equals(Streams.wrap(((RedissonListReactive<Object>) o).size()).next().poll());
+        return res;
+    }
+
+    @Override
+    public int hashCode() {
+        Integer hash = Streams.wrap(iterator()).map(new Function<V, Integer>() {
+            @Override
+            public Integer apply(V t) {
+                return t.hashCode();
+            }
+        }).reduce(1, new BiFunction<Integer, Integer, Integer>() {
+
+            @Override
+            public Integer apply(Integer t, Integer u) {
+                return 31*t + u;
+            }
+        }).next().poll();
+
+        if (hash == null) {
+            return 1;
+        }
+        return hash;
     }
 
 }

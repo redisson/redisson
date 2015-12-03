@@ -2,7 +2,9 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.hamcrest.MatcherAssert;
@@ -11,10 +13,42 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RListReactive;
 import org.redisson.client.RedisException;
+import org.redisson.core.RMap;
 
 import reactor.rx.Promise;
 
 public class RedissonListReactiveTest extends BaseReactiveTest {
+
+    @Test
+    public void testEquals() {
+        RListReactive<String> list1 = redisson.getList("list1");
+        sync(list1.add("1"));
+        sync(list1.add("2"));
+        sync(list1.add("3"));
+
+        RListReactive<String> list2 = redisson.getList("list2");
+        sync(list2.add("1"));
+        sync(list2.add("2"));
+        sync(list2.add("3"));
+
+        RListReactive<String> list3 = redisson.getList("list3");
+        sync(list3.add("0"));
+        sync(list3.add("2"));
+        sync(list3.add("3"));
+
+        Assert.assertEquals(list1, list2);
+        Assert.assertNotEquals(list1, list3);
+    }
+
+    @Test
+    public void testHashCode() throws InterruptedException {
+        RListReactive<String> list = redisson.getList("list");
+        sync(list.add("a"));
+        sync(list.add("b"));
+        sync(list.add("c"));
+
+        Assert.assertEquals(126145, list.hashCode());
+    }
 
     @Test
     public void testAddByIndex() {
