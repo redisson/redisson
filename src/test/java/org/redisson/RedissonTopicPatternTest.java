@@ -55,7 +55,7 @@ public class RedissonTopicPatternTest {
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
-        Redisson redisson = BaseTest.createInstance();
+        RedissonClient redisson = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson.getPatternTopic("topic1.*");
         int listenerId = topic1.addListener(new PatternMessageListener<Message>() {
             @Override
@@ -86,7 +86,7 @@ public class RedissonTopicPatternTest {
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
-        Redisson redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
         int listenerId = topic1.addListener(new PatternMessageListener<Message>() {
             @Override
@@ -99,7 +99,7 @@ public class RedissonTopicPatternTest {
         topic1.removeListener(listenerId);
         Thread.sleep(1000);
 
-        Redisson redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = BaseTest.createInstance();
         RPatternTopic<Message> topic2 = redisson2.getPatternTopic("topic.*");
         topic2.addListener(new PatternMessageListener<Message>() {
             @Override
@@ -125,7 +125,7 @@ public class RedissonTopicPatternTest {
         final CountDownLatch messageRecieved = new CountDownLatch(5);
 
         final CountDownLatch statusRecieved = new CountDownLatch(1);
-        Redisson redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
         topic1.addListener(new BasePatternStatusListener() {
             @Override
@@ -142,7 +142,7 @@ public class RedissonTopicPatternTest {
             }
         });
 
-        Redisson redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
         topic2.addListener(new MessageListener<Message>() {
             @Override
@@ -171,7 +171,7 @@ public class RedissonTopicPatternTest {
 
     @Test
     public void testListenerRemove() throws InterruptedException {
-        Redisson redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
         final CountDownLatch l = new CountDownLatch(1);
         topic1.addListener(new BasePatternStatusListener() {
@@ -188,7 +188,7 @@ public class RedissonTopicPatternTest {
             }
         });
 
-        Redisson redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
         topic1.removeListener(id);
         topic2.publish(new Message("123"));

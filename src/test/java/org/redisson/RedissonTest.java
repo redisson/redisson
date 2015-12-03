@@ -22,7 +22,7 @@ public class RedissonTest extends BaseTest {
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6379");
         config.setCodec(new SerializationCodec());
-        Redisson r = Redisson.create(config);
+        RedissonClient r = Redisson.create(config);
         r.getMap("test").put("1", new Dummy());
     }
 

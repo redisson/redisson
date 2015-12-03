@@ -26,7 +26,7 @@ public class RedissonTwoLockedThread {
     @Parameterized.Parameter(0)
     public Codec codec;
 
-    private Redisson redisson;
+    private RedissonClient redisson;
 
     @Before
     public void before() {

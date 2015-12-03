@@ -26,15 +26,12 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.command.CommandExecutor;
-import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.RLock;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
@@ -363,7 +360,12 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     private Future<Boolean> forceUnlockAsync() {
         stopRefreshTask();
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN_R1,
-                "redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return true",
+                "if (redis.call('del', KEYS[1]) == 1) then "
+                + "redis.call('publish', ARGV[2], ARGV[1]); "
+                + "return true "
+                + "else "
+                + "return false "
+                + "end",
                         Collections.<Object>singletonList(getName()), unlockMessage, getChannelName());
     }
 
@@ -402,12 +404,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "end",
                         Collections.<Object>singletonList(getName()));
         return opStatus.intValue();
-    }
-
-    @Override
-    public boolean delete() {
-        forceUnlock();
-        return true;
     }
 
     @Override

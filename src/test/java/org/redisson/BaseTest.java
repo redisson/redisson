@@ -6,7 +6,7 @@ import org.junit.BeforeClass;
 
 public abstract class BaseTest {
 
-    protected static Redisson redisson;
+    protected static RedissonClient redisson;
 
     @BeforeClass
     public static void beforeClass() {
@@ -35,7 +35,7 @@ public abstract class BaseTest {
         return config;
     }
 
-    public static Redisson createInstance() {
+    public static RedissonClient createInstance() {
         Config config = createConfig();
         return Redisson.create(config);
     }

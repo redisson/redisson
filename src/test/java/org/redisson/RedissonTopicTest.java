@@ -49,7 +49,7 @@ public class RedissonTopicTest {
     @Test
     public void testInnerPublish() throws InterruptedException {
 
-        Redisson redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = BaseTest.createInstance();
         final RTopic<Message> topic1 = redisson1.getTopic("topic1");
         final CountDownLatch messageRecieved = new CountDownLatch(3);
         int listenerId = topic1.addListener(new MessageListener<Message>() {
@@ -60,7 +60,7 @@ public class RedissonTopicTest {
             }
         });
 
-        Redisson redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = BaseTest.createInstance();
         final RTopic<Message> topic2 = redisson2.getTopic("topic2");
         topic2.addListener(new MessageListener<Message>() {
             @Override
@@ -83,7 +83,7 @@ public class RedissonTopicTest {
 
     @Test
     public void testStatus() throws InterruptedException {
-        Redisson redisson = BaseTest.createInstance();
+        RedissonClient redisson = BaseTest.createInstance();
         final RTopic<Message> topic1 = redisson.getTopic("topic1");
         final CountDownLatch l = new CountDownLatch(1);
         int listenerId = topic1.addListener(new BaseStatusListener() {
@@ -112,7 +112,7 @@ public class RedissonTopicTest {
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
-        Redisson redisson = BaseTest.createInstance();
+        RedissonClient redisson = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson.getTopic("topic1");
         int listenerId = topic1.addListener(new MessageListener<Message>() {
             @Override
@@ -143,7 +143,7 @@ public class RedissonTopicTest {
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
-        Redisson redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
         int listenerId = topic1.addListener(new MessageListener<Message>() {
             @Override
@@ -155,7 +155,7 @@ public class RedissonTopicTest {
         topic1.removeListener(listenerId);
         Thread.sleep(1000);
 
-        Redisson redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic");
         topic2.addListener(new MessageListener<Message>() {
             @Override
@@ -177,7 +177,7 @@ public class RedissonTopicTest {
     public void test() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(2);
 
-        Redisson redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
         topic1.addListener(new MessageListener<Message>() {
             @Override
@@ -187,7 +187,7 @@ public class RedissonTopicTest {
             }
         });
 
-        Redisson redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic");
         topic2.addListener(new MessageListener<Message>() {
             @Override
@@ -210,7 +210,7 @@ public class RedissonTopicTest {
     public void testHeavyLoad() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1000);
 
-        Redisson redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
         topic1.addListener(new MessageListener<Message>() {
             @Override
@@ -221,7 +221,7 @@ public class RedissonTopicTest {
             }
         });
 
-        Redisson redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic");
         topic2.addListener(new MessageListener<Message>() {
             @Override
@@ -246,7 +246,7 @@ public class RedissonTopicTest {
     }
     @Test
     public void testListenerRemove() throws InterruptedException {
-        Redisson redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
         int id = topic1.addListener(new MessageListener<Message>() {
             @Override
@@ -255,7 +255,7 @@ public class RedissonTopicTest {
             }
         });
 
-        Redisson redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic");
         topic1.removeListener(id);
         topic2.publish(new Message("123"));

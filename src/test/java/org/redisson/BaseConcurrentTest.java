@@ -13,7 +13,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
     protected void testMultiInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
         ExecutorService executor = Executors.newCachedThreadPool();
 
-        final Map<Integer, Redisson> instances = new HashMap<Integer, Redisson>();
+        final Map<Integer, RedissonClient> instances = new HashMap<Integer, RedissonClient>();
         for (int i = 0; i < iterations; i++) {
             instances.put(i, BaseTest.createInstance());
         }
@@ -24,7 +24,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    Redisson redisson = instances.get(n);
+                    RedissonClient redisson = instances.get(n);
                     runnable.run(redisson);
                 }
             });
@@ -37,7 +37,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
 
         executor = Executors.newCachedThreadPool();
 
-        for (final Redisson redisson : instances.values()) {
+        for (final RedissonClient redisson : instances.values()) {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -53,7 +53,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
     protected void testSingleInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-        final Redisson redisson = BaseTest.createInstance();
+        final RedissonClient redisson = BaseTest.createInstance();
         long watch = System.currentTimeMillis();
         for (int i = 0; i < iterations; i++) {
             executor.execute(new Runnable() {

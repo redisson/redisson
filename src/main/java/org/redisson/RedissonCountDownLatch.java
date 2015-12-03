@@ -224,8 +224,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     public Future<Boolean> deleteAsync() {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN_R1,
                 "if redis.call('del', KEYS[1]) == 1 then "
-                + "redis.call('publish', ARGV[2], ARGV[1]); "
-                + "return true else return false end",
+                    + "redis.call('publish', ARGV[2], ARGV[1]); "
+                    + "return true "
+                + "else "
+                    + "return false "
+                + "end",
                  Collections.<Object>singletonList(getName()), newCountMessage, getChannelName());
     }
 

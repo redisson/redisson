@@ -12,6 +12,15 @@ import org.redisson.core.RLock;
 public class RedissonLockTest extends BaseConcurrentTest {
 
     @Test
+    public void testDelete() {
+        RLock lock = redisson.getLock("lock");
+        Assert.assertFalse(lock.delete());
+
+        lock.lock();
+        Assert.assertTrue(lock.delete());
+    }
+
+    @Test
     public void testForceUnlock() {
         RLock lock = redisson.getLock("lock");
         lock.lock();
@@ -50,7 +59,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         final CountDownLatch latch = new CountDownLatch(1);
         testSingleInstanceConcurrency(1, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 RLock lock = redisson.getLock("lock");
                 lock.lock();
                 latch.countDown();
@@ -204,7 +213,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         int iterations = 15;
         testSingleInstanceConcurrency(iterations, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 Lock lock = redisson.getLock("testConcurrency_SingleInstance");
                 System.out.println("lock1 " + Thread.currentThread().getId());
                 lock.lock();
@@ -227,7 +236,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         testMultiInstanceConcurrency(16, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 for (int i = 0; i < iterations; i++) {
                     redisson.getLock("testConcurrency_MultiInstance1").lock();
                     try {
@@ -251,7 +260,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         testMultiInstanceConcurrency(iterations, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 Lock lock = redisson.getLock("testConcurrency_MultiInstance2");
                 lock.lock();
                 lockedCounter.incrementAndGet();

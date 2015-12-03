@@ -17,7 +17,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
     public void testAdd_SingleInstance() throws InterruptedException {
         final String name = "testAdd_SingleInstance";
 
-        Redisson r = BaseTest.createInstance();
+        RedissonClient r = BaseTest.createInstance();
         RSortedSet<Integer> map = r.getSortedSet(name);
         map.clear();
 
@@ -30,7 +30,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
         final AtomicInteger counter = new AtomicInteger(-1);
         testSingleInstanceConcurrency(length, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 RSortedSet<Integer> set = redisson.getSortedSet(name);
                 int c = counter.incrementAndGet();
                 Integer element = elements.get(c);
@@ -41,7 +41,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 //        for (Integer integer : map) {
 //            System.out.println("int: " + integer);
 //        }
-        
+
         Collections.sort(elements);
         Integer[] p = elements.toArray(new Integer[elements.size()]);
         MatcherAssert.assertThat(map, Matchers.contains(p));
@@ -54,7 +54,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
     public void testAddNegative_SingleInstance() throws InterruptedException {
         final String name = "testAddNegative_SingleInstance";
 
-        Redisson r = BaseTest.createInstance();
+        RedissonClient r = BaseTest.createInstance();
         RSortedSet<Integer> map = r.getSortedSet(name);
         map.clear();
 
@@ -62,7 +62,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
         final AtomicInteger counter = new AtomicInteger();
         testSingleInstanceConcurrency(length, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 RSortedSet<Integer> set = redisson.getSortedSet(name);
                 int c = counter.decrementAndGet();
                 Assert.assertTrue(set.add(c));
