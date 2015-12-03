@@ -76,15 +76,11 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     }
 
     private void tryReconnect(final EventLoopGroup group, final RedisConnection connection, final int attempts) {
-        if (connection.isClosed()) {
+        if (connection.isClosed() || group.isShuttingDown()) {
             return;
         }
 
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
-
-        if (bootstrap.group().isShuttingDown()) {
-            return;
-        }
 
         bootstrap.connect().addListener(new ChannelFutureListener() {
 
@@ -112,8 +108,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                     }
                 }, timeout, TimeUnit.MILLISECONDS);
             }
-
-
         });
     }
 

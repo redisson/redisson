@@ -76,6 +76,11 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####30-Nov-2015 - version 2.1.6 released  
+Fixed - connection pool regression bug  
+Fixed - connection init during `Node.ping` and `ClusterNode.info` invocation  
+
+
 ####24-Nov-2015 - version 2.1.5 released  
 Feature - new methods with `limit` option support were added to `RLexSortedSet`: `lexRange`, `lexRangeHead`, `lexRangeHeadAsync`, `lexRangeTail`, `lexRangeTailAsync`, `lexRangeAsync` (thanks to jackygurui)  
 Feature - new methods with `limit` option support were added to `RScoredSortedSet`: `valueRange`, `valueRangeAsync`, `entryRange`, `entryRangeAsync`, `valueRange`, `valueRangeAsync` (thanks to jackygurui)  
