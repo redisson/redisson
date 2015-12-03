@@ -44,7 +44,7 @@ import org.redisson.core.RTopic;
 
 /**
  * Main Redisson interface for access
- * to all redisson objects with sync and async interfaces.
+ * to all redisson objects with sync/async interface.
  *
  * @author Nikita Koksharov
  *
@@ -52,7 +52,7 @@ import org.redisson.core.RTopic;
 public interface RedissonClient {
 
     /**
-     * Returns object holder by name.
+     * Returns object holder instance by name.
      *
      * @param name of object
      * @return
@@ -60,7 +60,7 @@ public interface RedissonClient {
     <V> RBucket<V> getBucket(String name);
 
     /**
-     * Returns object holder by name
+     * Returns object holder instance by name
      * using provided codec for object.
      *
      * @param name of object
@@ -70,12 +70,12 @@ public interface RedissonClient {
     <V> RBucket<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns a list of object holder by a key pattern.
+     * Returns a list of object holder instances by a key pattern.
      */
     <V> List<RBucket<V>> getBuckets(String pattern);
 
     /**
-     * Returns HyperLogLog object by name.
+     * Returns HyperLogLog instance by name.
      *
      * @param name of object
      * @return
@@ -83,7 +83,7 @@ public interface RedissonClient {
     <V> RHyperLogLog<V> getHyperLogLog(String name);
 
     /**
-     * Returns HyperLogLog object by name
+     * Returns HyperLogLog instance by name
      * using provided codec for hll objects.
      *
      * @param name of object
@@ -93,7 +93,7 @@ public interface RedissonClient {
     <V> RHyperLogLog<V> getHyperLogLog(String name, Codec codec);
 
     /**
-     * Returns list object by name.
+     * Returns list instance by name.
      *
      * @param name of object
      * @return
@@ -101,7 +101,7 @@ public interface RedissonClient {
     <V> RList<V> getList(String name);
 
     /**
-     * Returns list object by name
+     * Returns list instance by name
      * using provided codec for list objects.
      *
      * @param name of object

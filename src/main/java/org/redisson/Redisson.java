@@ -94,11 +94,11 @@ public class Redisson implements RedissonClient {
 
 
     /**
-     * Creates an Redisson instance
+     * Create sync/async Redisson instance with default config
      *
      * @return Redisson instance
      */
-    public static Redisson create() {
+    public static RedissonClient create() {
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6379");
 //        config.useMasterSlaveConnection().setMasterAddress("127.0.0.1:6379").addSlaveAddress("127.0.0.1:6389").addSlaveAddress("127.0.0.1:6399");
@@ -108,15 +108,34 @@ public class Redisson implements RedissonClient {
     }
 
     /**
-     * Creates an Redisson instance with configuration
+     * Create sync/async Redisson instance with provided config
      *
      * @param config
      * @return Redisson instance
      */
-    public static Redisson create(Config config) {
+    public static RedissonClient create(Config config) {
         return new Redisson(config);
     }
 
+    /**
+     * Create reactive Redisson instance with default config
+     *
+     * @return Redisson instance
+     */
+    public static RedissonClient createReactive() {
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6379");
+//        config.useMasterSlaveConnection().setMasterAddress("127.0.0.1:6379").addSlaveAddress("127.0.0.1:6389").addSlaveAddress("127.0.0.1:6399");
+//        config.useSentinelConnection().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26389", "127.0.0.1:26379");
+//        config.useClusterServers().addNodeAddress("127.0.0.1:7000");
+        return create(config);
+    }
+
+    /**
+     * Create reactive Redisson instance with provided config
+     *
+     * @return Redisson instance
+     */
     public static RedissonReactiveClient createReactive(Config config) {
         return new RedissonReactive(config);
     }

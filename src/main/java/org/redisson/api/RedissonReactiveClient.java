@@ -23,41 +23,72 @@ import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
 
+/**
+ * Main Redisson interface for access
+ * to all redisson objects with reactive interface.
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface RedissonReactiveClient {
 
     /**
-     * Returns object holder by name
+     * Returns object holder instance by name
      *
      * @param name of object
      * @return
      */
     <V> RBucketReactive<V> getBucket(String name);
 
+    /**
+     * Returns object holder instance by name
+     * using provided codec for object.
+     *
+     * @param name of object
+     * @param object codec
+     * @return
+     */
     <V> RBucketReactive<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns a list of object holder by a key pattern
+     * Returns a list of object holder instances by a key pattern
      */
     <V> List<RBucketReactive<V>> findBuckets(String pattern);
 
     /**
-     * Returns HyperLogLog object
+     * Returns HyperLogLog instance by name.
      *
      * @param name of object
      * @return
      */
     <V> RHyperLogLogReactive<V> getHyperLogLog(String name);
 
+    /**
+     * Returns HyperLogLog instance by name
+     * using provided codec for hll objects.
+     *
+     * @param name of object
+     * @param object codec
+     * @return
+     */
     <V> RHyperLogLogReactive<V> getHyperLogLog(String name, Codec codec);
 
     /**
      * Returns list instance by name.
      *
-     * @param name of list
+     * @param name of object
      * @return
      */
     <V> RListReactive<V> getList(String name);
 
+    /**
+     * Returns list instance by name
+     * using provided codec for list objects.
+     *
+     * @param name of object
+     * @param list object codec
+     * @return
+     */
     <V> RListReactive<V> getList(String name, Codec codec);
 
     /**
@@ -68,6 +99,14 @@ public interface RedissonReactiveClient {
      */
     <K, V> RMapReactive<K, V> getMap(String name);
 
+    /**
+     * Returns map instance by name
+     * using provided codec for both map keys and values.
+     *
+     * @param name of map
+     * @param map key and value codec
+     * @return
+     */
     <K, V> RMapReactive<K, V> getMap(String name, Codec codec);
 
     /**
@@ -78,16 +117,34 @@ public interface RedissonReactiveClient {
      */
     <V> RSetReactive<V> getSet(String name);
 
+    /**
+     * Returns set instance by name
+     * using provided codec for set objects.
+     *
+     * @param name of set
+     * @param set object codec
+     * @return
+     */
     <V> RSetReactive<V> getSet(String name, Codec codec);
 
     /**
-     * Returns Redis Sorted Set instance by name
+     * Returns Redis Sorted Set instance by name.
+     * This sorted set sorts objects by object score.
      *
-     * @param name
+     * @param name of scored sorted set
      * @return
      */
     <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name);
 
+    /**
+     * Returns Redis Sorted Set instance by name
+     * using provided codec for sorted set objects.
+     * This sorted set sorts objects by object score.
+     *
+     * @param name of scored sorted set
+     * @param scored sorted set object codec
+     * @return
+     */
     <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec);
 
     /**
@@ -108,6 +165,14 @@ public interface RedissonReactiveClient {
      */
     <M> RTopicReactive<M> getTopic(String name);
 
+    /**
+     * Returns topic instance by name
+     * using provided codec for messages.
+     *
+     * @param name of topic
+     * @param message codec
+     * @return
+     */
     <M> RTopicReactive<M> getTopic(String name, Codec codec);
 
     /**
@@ -123,6 +188,19 @@ public interface RedissonReactiveClient {
      */
     <M> RPatternTopicReactive<M> getPatternTopic(String pattern);
 
+    /**
+     * Returns topic instance satisfies by pattern name
+     * using provided codec for messages.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern of the topic
+     * @param message codec
+     * @return
+     */
     <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec);
 
     /**
@@ -133,6 +211,14 @@ public interface RedissonReactiveClient {
      */
     <V> RQueueReactive<V> getQueue(String name);
 
+    /**
+     * Returns queue instance by name
+     * using provided codec for queue objects.
+     *
+     * @param name of queue
+     * @param queue objects codec
+     * @return
+     */
     <V> RQueueReactive<V> getQueue(String name, Codec codec);
 
     /**
@@ -143,6 +229,14 @@ public interface RedissonReactiveClient {
      */
     <V> RBlockingQueueReactive<V> getBlockingQueue(String name);
 
+    /**
+     * Returns blocking queue instance by name
+     * using provided codec for queue objects.
+     *
+     * @param name of queue
+     * @param queue objects codec
+     * @return
+     */
     <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec);
 
     /**
@@ -153,6 +247,14 @@ public interface RedissonReactiveClient {
      */
     <V> RDequeReactive<V> getDeque(String name);
 
+    /**
+     * Returns deque instance by name
+     * using provided codec for deque objects.
+     *
+     * @param name of deque
+     * @param deque objects codec
+     * @return
+     */
     <V> RDequeReactive<V> getDeque(String name, Codec codec);
 
     /**
@@ -163,6 +265,12 @@ public interface RedissonReactiveClient {
      */
     RAtomicLongReactive getAtomicLong(String name);
 
+    /**
+     * Returns bitSet instance by name.
+     *
+     * @param name of bitSet
+     * @return
+     */
     RBitSetReactive getBitSet(String name);
 
     /**
