@@ -19,7 +19,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 /**
- * Redis code
+ * Redis codec interface
  *
  * @author Nikita Koksharov
  *

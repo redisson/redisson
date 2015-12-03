@@ -42,41 +42,72 @@ import org.redisson.core.RSet;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
+/**
+ * Main Redisson interface for access
+ * to all redisson objects with sync and async interfaces.
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public interface RedissonClient {
 
     /**
-     * Returns object holder by name
+     * Returns object holder by name.
      *
      * @param name of object
      * @return
      */
     <V> RBucket<V> getBucket(String name);
 
+    /**
+     * Returns object holder by name
+     * using provided codec for object.
+     *
+     * @param name of object
+     * @param object codec
+     * @return
+     */
     <V> RBucket<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns a list of object holder by a key pattern
+     * Returns a list of object holder by a key pattern.
      */
     <V> List<RBucket<V>> getBuckets(String pattern);
 
     /**
-     * Returns HyperLogLog object
+     * Returns HyperLogLog object by name.
      *
      * @param name of object
      * @return
      */
     <V> RHyperLogLog<V> getHyperLogLog(String name);
 
+    /**
+     * Returns HyperLogLog object by name
+     * using provided codec for hll objects.
+     *
+     * @param name of object
+     * @param object codec
+     * @return
+     */
     <V> RHyperLogLog<V> getHyperLogLog(String name, Codec codec);
 
     /**
-     * Returns list instance by name.
+     * Returns list object by name.
      *
-     * @param name of list
+     * @param name of object
      * @return
      */
     <V> RList<V> getList(String name);
 
+    /**
+     * Returns list object by name
+     * using provided codec for list objects.
+     *
+     * @param name of object
+     * @param list object codec
+     * @return
+     */
     <V> RList<V> getList(String name, Codec codec);
 
     /**
@@ -87,6 +118,14 @@ public interface RedissonClient {
      */
     <K, V> RMap<K, V> getMap(String name);
 
+    /**
+     * Returns map instance by name
+     * using provided codec for both map keys and values.
+     *
+     * @param name of map
+     * @param map key and value codec
+     * @return
+     */
     <K, V> RMap<K, V> getMap(String name, Codec codec);
 
     /**
@@ -105,26 +144,54 @@ public interface RedissonClient {
      */
     <V> RSet<V> getSet(String name);
 
+    /**
+     * Returns set instance by name
+     * using provided codec for set objects.
+     *
+     * @param name of set
+     * @param set object codec
+     * @return
+     */
     <V> RSet<V> getSet(String name, Codec codec);
 
     /**
      * Returns sorted set instance by name.
+     * This sorted set uses comparator to sort objects.
      *
      * @param name of sorted set
      * @return
      */
     <V> RSortedSet<V> getSortedSet(String name);
 
+    /**
+     * Returns sorted set instance by name
+     * using provided codec for sorted set objects.
+     * This sorted set sorts objects using comparator.
+     *
+     * @param name of sorted set
+     * @param sorted set object codec
+     * @return
+     */
     <V> RSortedSet<V> getSortedSet(String name, Codec codec);
 
     /**
-     * Returns Redis Sorted Set instance by name
+     * Returns Redis Sorted Set instance by name.
+     * This sorted set sorts objects by object score.
      *
-     * @param name
+     * @param name of scored sorted set
      * @return
      */
     <V> RScoredSortedSet<V> getScoredSortedSet(String name);
 
+    /**
+     * Returns Redis Sorted Set instance by name
+     * using provided codec for sorted set objects.
+     * This sorted set sorts objects by object score.
+     *
+     * @param name of scored sorted set
+     * @param scored sorted set object codec
+     * @return
+     */
     <V> RScoredSortedSet<V> getScoredSortedSet(String name, Codec codec);
 
     /**
@@ -145,6 +212,14 @@ public interface RedissonClient {
      */
     <M> RTopic<M> getTopic(String name);
 
+    /**
+     * Returns topic instance by name
+     * using provided codec for messages.
+     *
+     * @param name of topic
+     * @param message codec
+     * @return
+     */
     <M> RTopic<M> getTopic(String name, Codec codec);
 
     /**
@@ -160,6 +235,19 @@ public interface RedissonClient {
      */
     <M> RPatternTopic<M> getPatternTopic(String pattern);
 
+    /**
+     * Returns topic instance satisfies by pattern name
+     * using provided codec for messages.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern of the topic
+     * @param message codec
+     * @return
+     */
     <M> RPatternTopic<M> getPatternTopic(String pattern, Codec codec);
 
     /**
@@ -170,6 +258,14 @@ public interface RedissonClient {
      */
     <V> RQueue<V> getQueue(String name);
 
+    /**
+     * Returns queue instance by name
+     * using provided codec for queue objects.
+     *
+     * @param name of queue
+     * @param queue objects codec
+     * @return
+     */
     <V> RQueue<V> getQueue(String name, Codec codec);
 
     /**
@@ -180,6 +276,14 @@ public interface RedissonClient {
      */
     <V> RBlockingQueue<V> getBlockingQueue(String name);
 
+    /**
+     * Returns blocking queue instance by name
+     * using provided codec for queue objects.
+     *
+     * @param name of queue
+     * @param queue objects codec
+     * @return
+     */
     <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec);
 
     /**
@@ -190,24 +294,38 @@ public interface RedissonClient {
      */
     <V> RDeque<V> getDeque(String name);
 
+    /**
+     * Returns deque instance by name
+     * using provided codec for deque objects.
+     *
+     * @param name of deque
+     * @param deque objects codec
+     * @return
+     */
     <V> RDeque<V> getDeque(String name, Codec codec);
 
     /**
-     * Returns "atomic long" instance by name.
+     * Returns atomicLong instance by name.
      *
-     * @param name of the "atomic long"
+     * @param name of atomicLong
      * @return
      */
     RAtomicLong getAtomicLong(String name);
 
     /**
-     * Returns "count down latch" instance by name.
+     * Returns countDownLatch instance by name.
      *
-     * @param name of the "count down latch"
+     * @param name of countDownLatch
      * @return
      */
     RCountDownLatch getCountDownLatch(String name);
 
+    /**
+     * Returns bitSet instance by name.
+     *
+     * @param name of bitSet
+     * @return
+     */
     RBitSet getBitSet(String name);
 
     /**

@@ -121,12 +121,6 @@ public class Redisson implements RedissonClient {
         return new RedissonReactive(config);
     }
 
-    /**
-     * Returns object holder by name
-     *
-     * @param name of object
-     * @return
-     */
     @Override
     public <V> RBucket<V> getBucket(String name) {
         return new RedissonBucket<V>(commandExecutor, name);
@@ -137,16 +131,6 @@ public class Redisson implements RedissonClient {
         return new RedissonBucket<V>(codec, commandExecutor, name);
     }
 
-
-    /**
-     * Returns a list of object holder by a key pattern
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     */
     @Override
     public <V> List<RBucket<V>> getBuckets(String pattern) {
         Future<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
@@ -160,13 +144,6 @@ public class Redisson implements RedissonClient {
         return buckets;
     }
 
-
-    /**
-     * Returns HyperLogLog object
-     *
-     * @param name of object
-     * @return
-     */
     @Override
     public <V> RHyperLogLog<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLog<V>(commandExecutor, name);
@@ -177,13 +154,6 @@ public class Redisson implements RedissonClient {
         return new RedissonHyperLogLog<V>(codec, commandExecutor, name);
     }
 
-
-    /**
-     * Returns distributed list instance by name.
-     *
-     * @param name of the distributed list
-     * @return distributed list
-     */
     @Override
     public <V> RList<V> getList(String name) {
         return new RedissonList<V>(commandExecutor, name);
@@ -194,12 +164,6 @@ public class Redisson implements RedissonClient {
         return new RedissonList<V>(codec, commandExecutor, name);
     }
 
-    /**
-     * Returns distributed map instance by name.
-     *
-     * @param name of the distributed map
-     * @return distributed map
-     */
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
         return new RedissonMap<K, V>(commandExecutor, name);
@@ -210,23 +174,11 @@ public class Redisson implements RedissonClient {
         return new RedissonMap<K, V>(codec, commandExecutor, name);
     }
 
-    /**
-     * Returns distributed lock instance by name.
-     *
-     * @param name of the distributed lock
-     * @return distributed lock
-     */
     @Override
     public RLock getLock(String name) {
         return new RedissonLock(commandExecutor, name, id);
     }
 
-    /**
-     * Returns distributed set instance by name.
-     *
-     * @param name of the distributed set
-     * @return distributed set
-     */
     @Override
     public <V> RSet<V> getSet(String name) {
         return new RedissonSet<V>(commandExecutor, name);
@@ -237,23 +189,11 @@ public class Redisson implements RedissonClient {
         return new RedissonSet<V>(codec, commandExecutor, name);
     }
 
-
-    /**
-     * Returns script with eval-operations support
-     *
-     * @return
-     */
     @Override
     public RScript getScript() {
         return new RedissonScript(commandExecutor);
     }
 
-    /**
-     * Returns distributed sorted set instance by name.
-     *
-     * @param name of the distributed set
-     * @return distributed set
-     */
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
         return new RedissonSortedSet<V>(commandExecutor, name);
@@ -264,13 +204,6 @@ public class Redisson implements RedissonClient {
         return new RedissonSortedSet<V>(codec, commandExecutor, name);
     }
 
-
-    /**
-     * Returns Redis Sorted Set instance by name
-     *
-     * @param name
-     * @return
-     */
     @Override
     public <V> RScoredSortedSet<V> getScoredSortedSet(String name) {
         return new RedissonScoredSortedSet<V>(commandExecutor, name);
@@ -281,25 +214,11 @@ public class Redisson implements RedissonClient {
         return new RedissonScoredSortedSet<V>(codec, commandExecutor, name);
     }
 
-    /**
-     * Returns String based Redis Sorted Set instance by name
-     * All elements are inserted with the same score during addition,
-     * in order to force lexicographical ordering
-     *
-     * @param name
-     * @return
-     */
     @Override
     public RLexSortedSet getLexSortedSet(String name) {
         return new RedissonLexSortedSet(commandExecutor, name);
     }
 
-    /**
-     * Returns topic instance by name.
-     *
-     * @param name of the distributed topic
-     * @return distributed topic
-     */
     @Override
     public <M> RTopic<M> getTopic(String name) {
         return new RedissonTopic<M>(commandExecutor, name);
@@ -310,17 +229,6 @@ public class Redisson implements RedissonClient {
         return new RedissonTopic<M>(codec, commandExecutor, name);
     }
 
-    /**
-     * Returns topic instance satisfies by pattern name.
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern of the topic
-     * @return
-     */
     @Override
     public <M> RPatternTopic<M> getPatternTopic(String pattern) {
         return new RedissonPatternTopic<M>(commandExecutor, pattern);
@@ -331,13 +239,6 @@ public class Redisson implements RedissonClient {
         return new RedissonPatternTopic<M>(codec, commandExecutor, pattern);
     }
 
-
-    /**
-     * Returns distributed queue instance by name.
-     *
-     * @param name of the distributed queue
-     * @return distributed queue
-     */
     @Override
     public <V> RQueue<V> getQueue(String name) {
         return new RedissonQueue<V>(commandExecutor, name);
@@ -348,12 +249,6 @@ public class Redisson implements RedissonClient {
         return new RedissonQueue<V>(codec, commandExecutor, name);
     }
 
-    /**
-     * Returns distributed blocking queue instance by name.
-     *
-     * @param name of the distributed blocking queue
-     * @return distributed queue
-     */
     @Override
     public <V> RBlockingQueue<V> getBlockingQueue(String name) {
         return new RedissonBlockingQueue<V>(commandExecutor, name);
@@ -364,12 +259,6 @@ public class Redisson implements RedissonClient {
         return new RedissonBlockingQueue<V>(codec, commandExecutor, name);
     }
 
-    /**
-     * Returns distributed deque instance by name.
-     *
-     * @param name of the distributed queue
-     * @return distributed queue
-     */
     @Override
     public <V> RDeque<V> getDeque(String name) {
         return new RedissonDeque<V>(commandExecutor, name);
@@ -380,23 +269,11 @@ public class Redisson implements RedissonClient {
         return new RedissonDeque<V>(codec, commandExecutor, name);
     }
 
-    /**
-     * Returns distributed "atomic long" instance by name.
-     *
-     * @param name of the distributed "atomic long"
-     * @return distributed "atomic long"
-     */
     @Override
     public RAtomicLong getAtomicLong(String name) {
         return new RedissonAtomicLong(commandExecutor, name);
     }
 
-    /**
-     * Returns distributed "count down latch" instance by name.
-     *
-     * @param name of the distributed "count down latch"
-     * @return distributed "count down latch"
-     */
     @Override
     public RCountDownLatch getCountDownLatch(String name) {
         return new RedissonCountDownLatch(commandExecutor, name, id);
@@ -407,51 +284,25 @@ public class Redisson implements RedissonClient {
         return new RedissonBitSet(commandExecutor, name);
     }
 
-    /**
-     * Returns keys operations.
-     * Each of Redis/Redisson object associated with own key
-     *
-     * @return
-     */
     @Override
     public RKeys getKeys() {
         return new RedissonKeys(commandExecutor);
     }
 
-    /**
-     * Shuts down Redisson instance <b>NOT</b> Redis server
-     */
     @Override
     public void shutdown() {
         connectionManager.shutdown();
     }
 
-    /**
-     * Allows to get configuration provided
-     * during Redisson instance creation. Further changes on
-     * this object not affect Redisson instance.
-     *
-     * @return Config object
-     */
     @Override
     public Config getConfig() {
         return config;
     }
 
-    /**
-     * Get Redis nodes group for server operations
-     *
-     * @return
-     */
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);
     }
 
-    /**
-     * Get Redis cluster nodes group for server operations
-     *
-     * @return
-     */
     public NodesGroup<ClusterNode> getClusterNodesGroup() {
         if (!config.isClusterConfig()) {
             throw new IllegalStateException("Redisson not in cluster mode!");
@@ -459,30 +310,16 @@ public class Redisson implements RedissonClient {
         return new RedisNodes<ClusterNode>(connectionManager);
     }
 
-    /**
-     * Delete all the keys of the currently selected database
-     */
     @Override
     public void flushdb() {
         commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHDB));
     }
 
-    /**
-     * Delete all the keys of all the existing databases
-     */
     @Override
     public void flushall() {
         commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
     }
 
-    /**
-     * Return batch object which executes group of
-     * command in pipeline.
-     *
-     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
-     *
-     * @return
-     */
     @Override
     public RBatch createBatch() {
         return new RedissonBatch(connectionManager);

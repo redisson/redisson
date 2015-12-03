@@ -18,7 +18,6 @@ package org.redisson.codec;
 import java.io.IOException;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -39,6 +38,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 
 /**
+ *
+ * @see org.redisson.codec.CborJacksonCodec
+ * @see org.redisson.codec.MsgPackJacksonCodec
  *
  * @author Nikita Koksharov
  *
