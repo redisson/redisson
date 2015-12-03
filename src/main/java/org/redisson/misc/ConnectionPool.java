@@ -306,9 +306,6 @@ public class ConnectionPool<T extends RedisConnection> {
         if (entry.isFreezed()) {
             connection.closeAsync();
         } else {
-            if (connection.getFailAttempts() == config.getRefreshConnectionAfterFails()) {
-                connection.forceReconnect();
-            }
             releaseConnection(entry, connection);
         }
         releaseConnection(entry);

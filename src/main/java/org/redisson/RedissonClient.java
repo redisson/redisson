@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
@@ -42,8 +41,6 @@ import org.redisson.core.RScript;
 import org.redisson.core.RSet;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
-
-import io.netty.util.concurrent.Future;
 
 public interface RedissonClient {
 
@@ -251,86 +248,6 @@ public interface RedissonClient {
      * @return Config object
      */
     Config getConfig();
-
-    /**
-     * Find keys by key search pattern
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
-    // use RKeys.findKeysByPattern
-    @Deprecated
-    Collection<String> findKeysByPattern(String pattern);
-
-    /**
-     * Find keys by key search pattern in async mode
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
-    // use RKeys.findKeysByPatternAsync
-    @Deprecated
-    Future<Collection<String>> findKeysByPatternAsync(String pattern);
-
-    /**
-     * Delete multiple objects by a key pattern
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
-    // use RKeys.deleteByPattern
-    @Deprecated
-    long deleteByPattern(String pattern);
-
-    /**
-     * Delete multiple objects by a key pattern in async mode
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
-    // use RKeys.deleteByPatternAsync
-    @Deprecated
-    Future<Long> deleteByPatternAsync(String pattern);
-
-    /**
-     * Delete multiple objects by name
-     *
-     * @param keys - object names
-     * @return
-     */
-    // use RKeys.delete
-    @Deprecated
-    long delete(String ... keys);
-
-    /**
-     * Delete multiple objects by name in async mode
-     *
-     * @param keys - object names
-     * @return
-     */
-    // use RKeys.deleteAsync
-    @Deprecated
-    Future<Long> deleteAsync(String ... keys);
 
     /**
      * Get Redis nodes group for server operations

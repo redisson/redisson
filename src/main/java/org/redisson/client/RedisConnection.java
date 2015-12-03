@@ -43,8 +43,6 @@ public class RedisConnection implements RedisCommands {
 
     private ReconnectListener reconnectListener;
     private long lastUsageTime;
-    @Deprecated
-    private int failAttempts;
 
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
@@ -75,18 +73,6 @@ public class RedisConnection implements RedisCommands {
         return reconnectListener;
     }
 
-    public void resetFailAttempt() {
-        failAttempts = 0;
-    }
-
-    public void incFailAttempt() {
-        failAttempts++;
-    }
-
-    public int getFailAttempts() {
-        return failAttempts;
-    }
-
     public boolean isOpen() {
         return channel.isOpen();
     }
@@ -103,7 +89,6 @@ public class RedisConnection implements RedisCommands {
     public void updateChannel(Channel channel) {
         this.channel = channel;
         channel.attr(CONNECTION).set(this);
-        resetFailAttempt();
     }
 
     public RedisClient getRedisClient() {

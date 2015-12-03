@@ -70,9 +70,6 @@ class BaseConfig<T extends BaseConfig<T>> {
      */
     private int failedAttempts = 3;
 
-    @Deprecated
-    private int closeConnectionAfterFailAttempts = -1;
-
     /**
      * Database index used for Redis connection
      */
@@ -105,7 +102,6 @@ class BaseConfig<T extends BaseConfig<T>> {
         setTimeout(config.getTimeout());
         setClientName(config.getClientName());
         setPingTimeout(config.getPingTimeout());
-        setRefreshConnectionAfterFails(config.getRefreshConnectionAfterFails());
         setConnectTimeout(config.getConnectTimeout());
         setIdleConnectionTimeout(config.getIdleConnectionTimeout());
         setFailedAttempts(config.getFailedAttempts());
@@ -222,22 +218,6 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
     public int getPingTimeout() {
         return pingTimeout;
-    }
-
-    /**
-     * Reconnect connection if it has <code>failAttemptsAmount</code>
-     * fails in a row during command sending. Turned off by default.
-     *
-     * @param failAttemptsAmount
-     */
-    @Deprecated
-    public T setRefreshConnectionAfterFails(int failAttemptsAmount) {
-        this.closeConnectionAfterFailAttempts = failAttemptsAmount;
-        return (T) this;
-    }
-    @Deprecated
-    public int getRefreshConnectionAfterFails() {
-        return closeConnectionAfterFailAttempts;
     }
 
     /**

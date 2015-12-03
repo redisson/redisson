@@ -224,12 +224,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     return;
                 }
 
-                if (!future.isSuccess()) {
-                    conn.incFailAttempt();
-                } else {
-                    conn.resetFailAttempt();
-                }
-
                 shutdownLatch.release();
                 timeout.get().cancel();
                 releaseWrite(source, conn);
@@ -245,12 +239,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
                 if (future.isCancelled()) {
                     return;
-                }
-
-                if (!future.isSuccess()) {
-                    conn.incFailAttempt();
-                } else {
-                    conn.resetFailAttempt();
                 }
 
                 shutdownLatch.release();
