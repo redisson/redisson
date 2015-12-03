@@ -31,6 +31,8 @@ import io.netty.util.concurrent.Future;
  */
 public interface RMapAsync<K, V> extends RExpirableAsync {
 
+    Future<Map<K, V>> getAllAsync(Set<K> keys);
+
     Future<Void> putAllAsync(Map<? extends K, ? extends V> map);
 
     Future<V> addAndGetAsync(K key, Number value);

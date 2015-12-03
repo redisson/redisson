@@ -37,6 +37,7 @@ import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
 
@@ -112,24 +113,19 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Map<K, V> getAll(Set<K> keys) {
+        return get(getAllAsync(keys));
+    }
+
+    @Override
+    public Future<Map<K, V>> getAllAsync(Set<K> keys) {
         if (keys.size() == 0) {
-            return Collections.emptyMap();
+            return newSucceededFuture(Collections.<K, V>emptyMap());
         }
+
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(getName());
         args.addAll(keys);
-        Future<List<V>> f = commandExecutor.readAsync(getName(), codec, RedisCommands.HMGET, args.toArray());
-        List<V> list = get(f);
-
-        Map<K, V> result = new HashMap<K, V>(list.size());
-        for (int index = 0; index < args.size()-1; index++) {
-            V value = list.get(index);
-            if (value == null) {
-                continue;
-            }
-            result.put((K) args.get(index+1), value);
-        }
-        return result;
+        return commandExecutor.readAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("HMGET", new MapGetAllDecoder(args), 2, ValueType.MAP_KEY, ValueType.MAP_VALUE), args.toArray());
     }
 
     @Override
@@ -152,6 +148,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         get(putAllAsync(map));
     }
 
+    @Override
     public Future<Void> putAllAsync(Map<? extends K, ? extends V> map) {
         if (map.isEmpty()) {
             return newSucceededFuture(null);
@@ -323,10 +320,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(f);
     }
 
+    @Override
     public Iterator<Map.Entry<K, V>> entryIterator() {
         return new RedissonMapIterator<K, V, Map.Entry<K, V>>(this);
     }
 
+    @Override
     public Iterator<V> valueIterator() {
         return new RedissonMapIterator<K, V, V>(this) {
             @Override
@@ -336,6 +335,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         };
     }
 
+    @Override
     public Iterator<K> keyIterator() {
         return new RedissonMapIterator<K, V, K>(this) {
             @Override
@@ -370,6 +370,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return result;
     }
 
+    @Override
     public Map<K, V> filterEntries(Predicate<Map.Entry<K, V>> predicate) {
         Map<K, V> result = new HashMap<K, V>();
         for (Iterator<Map.Entry<K, V>> iterator = entryIterator(); iterator.hasNext();) {
