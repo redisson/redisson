@@ -550,7 +550,6 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public int hashCode() {
         int hashCode = 1;
         for (V e : this) {
-            System.out.println("t " + hashCode + " u " + e.hashCode());
             hashCode = 31*hashCode + (e==null ? 0 : e.hashCode());
         }
         return hashCode;
