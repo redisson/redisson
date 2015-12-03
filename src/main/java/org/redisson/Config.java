@@ -150,7 +150,7 @@ public class Config {
         this.singleServerConfig = singleConnectionConfig;
     }
 
-    public SentinelServersConfig useSentinelConnection() {
+    public SentinelServersConfig useSentinelServers() {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkMasterSlaveServersConfig();
@@ -162,6 +162,14 @@ public class Config {
         return sentinelServersConfig;
     }
 
+    /**
+     * Deprecated. Use {@link #useSentinelServers()} instead
+     */
+    @Deprecated
+    public SentinelServersConfig useSentinelConnection() {
+        return useSentinelServers();
+    }
+
     SentinelServersConfig getSentinelServersConfig() {
         return sentinelServersConfig;
     }
@@ -169,7 +177,7 @@ public class Config {
         this.sentinelServersConfig = sentinelConnectionConfig;
     }
 
-    public MasterSlaveServersConfig useMasterSlaveConnection() {
+    public MasterSlaveServersConfig useMasterSlaveServers() {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkSentinelServersConfig();
@@ -179,6 +187,14 @@ public class Config {
             masterSlaveServersConfig = new MasterSlaveServersConfig();
         }
         return masterSlaveServersConfig;
+    }
+
+    /**
+     * Deprecated. Use {@link #useMasterSlaveServers()} instead
+     */
+    @Deprecated
+    public MasterSlaveServersConfig useMasterSlaveConnection() {
+        return useMasterSlaveServers();
     }
     MasterSlaveServersConfig getMasterSlaveServersConfig() {
         return masterSlaveServersConfig;
