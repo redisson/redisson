@@ -38,17 +38,17 @@ abstract class RedissonExpirableReactive extends RedissonObjectReactive implemen
 
     @Override
     public Publisher<Boolean> expire(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.EXPIRE, getName(), timeUnit.toSeconds(timeToLive));
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getName(), timeUnit.toSeconds(timeToLive));
     }
 
     @Override
     public Publisher<Boolean> expireAt(long timestamp) {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.EXPIREAT, getName(), timestamp);
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIREAT, getName(), timestamp);
     }
 
     @Override
     public Publisher<Boolean> expireAt(Date timestamp) {
-        return expireAt(timestamp.getTime() / 1000);
+        return expireAt(timestamp.getTime());
     }
 
     @Override
@@ -58,7 +58,7 @@ abstract class RedissonExpirableReactive extends RedissonObjectReactive implemen
 
     @Override
     public Publisher<Long> remainTimeToLive() {
-        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.TTL, getName());
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.PTTL, getName());
     }
 
 }

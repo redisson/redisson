@@ -41,7 +41,7 @@ public interface RExpirable extends RObject, RExpirableAsync {
      * Set an expire date for object. When expire date comes
      * the key will automatically be deleted.
      *
-     * @param timestamp - expire date in seconds (Unix timestamp)
+     * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     boolean expireAt(long timestamp);
@@ -66,7 +66,7 @@ public interface RExpirable extends RObject, RExpirableAsync {
     /**
      * Remaining time to live of Redisson object that has a timeout
      *
-     * @return time in seconds
+     * @return time in milliseconds
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */

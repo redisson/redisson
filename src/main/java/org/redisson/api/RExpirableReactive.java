@@ -52,7 +52,7 @@ public interface RExpirableReactive extends RObjectReactive {
      * Set an expire date for object in  mode. When expire date comes
      * the key will automatically be deleted.
      *
-     * @param timestamp - expire date in seconds (Unix timestamp)
+     * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     Publisher<Boolean> expireAt(long timestamp);
@@ -66,9 +66,11 @@ public interface RExpirableReactive extends RObjectReactive {
     Publisher<Boolean> clearExpire();
 
     /**
-     * Get remaining time to live of object in seconds.
+     * Get remaining time to live of object in milliseconds.
      *
-     * @return <code>-1</code> if object does not exist or time in seconds
+     * @return time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
      */
     Publisher<Long> remainTimeToLive();
 
