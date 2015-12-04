@@ -171,10 +171,6 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public void countDown() {
-        if (getCount() <= 0) {
-            return;
-        }
-
         Future<Boolean> f = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN_R1,
                 "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
