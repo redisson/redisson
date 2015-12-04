@@ -25,6 +25,7 @@ import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
 import org.redisson.api.RHyperLogLogReactive;
+import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
 import org.redisson.api.RListReactive;
 import org.redisson.api.RMapReactive;
@@ -165,10 +166,10 @@ public class RedissonBatchReactive implements RBatchReactive {
         return new RedissonScriptReactive(executorService);
     }
 
-//    @Override
-//    public RKeysReactive getKeys() {
-//        return new RedissonKeys(executorService);
-//    }
+    @Override
+    public RKeysReactive getKeys() {
+        return new RedissonKeysReactive(executorService);
+    }
 
     @Override
     public Publisher<List<?>> executeReactive() {

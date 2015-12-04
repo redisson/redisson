@@ -164,13 +164,13 @@ public interface RBatchReactive {
      */
     RScriptReactive getScript();
 
-//    /**
-//     * Returns keys operations.
-//     * Each of Redis/Redisson object associated with own key
-//     *
-//     * @return
-//     */
-//    RKeysReactive getKeys();
+    /**
+     * Returns keys operations.
+     * Each of Redis/Redisson object associated with own key
+     *
+     * @return
+     */
+    RKeysReactive getKeys();
 
     /**
      * Executes all operations accumulated during Reactive methods invocations Reactivehronously.
