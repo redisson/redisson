@@ -26,6 +26,7 @@ import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
+import org.redisson.core.RCache;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
@@ -50,6 +51,8 @@ import org.redisson.core.RTopic;
  *
  */
 public interface RedissonClient {
+
+    <K, V> RCache<K, V> getCache(String name);
 
     /**
      * Returns object holder instance by name.

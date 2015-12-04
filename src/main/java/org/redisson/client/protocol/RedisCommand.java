@@ -87,41 +87,41 @@ public class RedisCommand<R> {
         this(name, subName, null, null, objectParamIndex);
     }
 
-    public RedisCommand(String name, int encodeParamIndex) {
-        this(name, null, null, null, encodeParamIndex);
+    public RedisCommand(String name, int inParamIndex) {
+        this(name, null, null, null, inParamIndex);
     }
 
-    public RedisCommand(String name, int encodeParamIndex, ValueType inParamType, ValueType outParamType) {
-        this(name, null, null, null, encodeParamIndex);
+    public RedisCommand(String name, int inParamIndex, ValueType inParamType, ValueType outParamType) {
+        this(name, null, null, null, inParamIndex);
         this.inParamType = Arrays.asList(inParamType);
         this.outParamType = outParamType;
     }
 
-    public RedisCommand(String name, int encodeParamIndex, List<ValueType> inParamType, ValueType outParamType) {
-        this(name, null, null, null, encodeParamIndex);
+    public RedisCommand(String name, int inParamIndex, List<ValueType> inParamType, ValueType outParamType) {
+        this(name, null, null, null, inParamIndex);
         this.inParamType = inParamType;
         this.outParamType = outParamType;
     }
 
-    public RedisCommand(String name, Decoder<R> reponseDecoder, int encodeParamIndex, List<ValueType> inParamType, ValueType outParamType) {
-        this(name, null, null, reponseDecoder, encodeParamIndex);
+    public RedisCommand(String name, Decoder<R> reponseDecoder, int inParamIndex, List<ValueType> inParamType, ValueType outParamType) {
+        this(name, null, null, reponseDecoder, inParamIndex);
         this.inParamType = inParamType;
         this.outParamType = outParamType;
     }
 
-    public RedisCommand(String name, Decoder<R> reponseDecoder, int encodeParamIndex, List<ValueType> inParamType) {
-        this(name, null, null, reponseDecoder, encodeParamIndex);
+    public RedisCommand(String name, Decoder<R> reponseDecoder, int inParamIndex, List<ValueType> inParamType) {
+        this(name, null, null, reponseDecoder, inParamIndex);
         this.inParamType = inParamType;
     }
 
-    public RedisCommand(String name, Convertor<R> convertor, int encodeParamIndex, ValueType inParamType) {
-        this(name, null, null, null, encodeParamIndex);
+    public RedisCommand(String name, Convertor<R> convertor, int inParamIndex, ValueType inParamType) {
+        this(name, null, null, null, inParamIndex);
         this.convertor = convertor;
         this.inParamType = Arrays.asList(inParamType);
     }
 
-    public RedisCommand(String name, Convertor<R> convertor, int encodeParamIndex, List<ValueType> inParamTypes) {
-        this(name, null, null, null, encodeParamIndex);
+    public RedisCommand(String name, Convertor<R> convertor, int inParamIndex, List<ValueType> inParamTypes) {
+        this(name, null, null, null, inParamIndex);
         this.convertor = convertor;
         this.inParamType = inParamTypes;
     }
@@ -130,8 +130,8 @@ public class RedisCommand<R> {
         this(name, convertor, -1);
     }
 
-    public RedisCommand(String name, Convertor<R> convertor, int encodeParamIndex) {
-        this(name, null, null, null, encodeParamIndex);
+    public RedisCommand(String name, Convertor<R> convertor, int inParamIndex) {
+        this(name, null, null, null, inParamIndex);
         this.convertor = convertor;
     }
 
@@ -183,13 +183,13 @@ public class RedisCommand<R> {
         this(name, subName, replayMultiDecoder, null, objectParamIndex);
     }
 
-    public RedisCommand(String name, String subName, MultiDecoder<R> replayMultiDecoder, Decoder<R> reponseDecoder, int objectParamIndex) {
+    public RedisCommand(String name, String subName, MultiDecoder<R> replayMultiDecoder, Decoder<R> reponseDecoder, int inParamIndex) {
         super();
         this.name = name;
         this.subName = subName;
         this.replayMultiDecoder = replayMultiDecoder;
         this.replayDecoder = reponseDecoder;
-        this.inParamIndex = objectParamIndex;
+        this.inParamIndex = inParamIndex;
     }
 
     public String getSubName() {

@@ -39,6 +39,7 @@ import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
+import org.redisson.core.RCache;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
@@ -186,6 +187,11 @@ public class Redisson implements RedissonClient {
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
         return new RedissonMap<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RCache<K, V> getCache(String name) {
+        return new RedissonCache<K, V>(commandExecutor, name);
     }
 
     @Override
