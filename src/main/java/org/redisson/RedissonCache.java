@@ -351,4 +351,9 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
         return h;
     }
 
+    @Override
+    public Future<Boolean> deleteAsync() {
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_SINGLE, getName(), getTimeoutSetName());
+    }
+
 }
