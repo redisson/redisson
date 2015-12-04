@@ -78,13 +78,13 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     @Override
     public Future<Integer> sizeAsync() {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_INTEGER,
-                "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1]); "
+                  "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1]); "
                 + "if table.getn(expiredKeys) > 0 then "
                     + "expiredKeys = unpack(expiredKeys); "
                     + "redis.call('zrem', KEYS[2], expiredKeys); "
                     + "redis.call('hdel', KEYS[1], expiredKeys); "
                 + "end; "
-                + "return redis.call('hlen', KEYS[1]);",
+              + "return redis.call('hlen', KEYS[1]);",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis());
     }
 
@@ -108,15 +108,18 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     @Override
     public Future<Boolean> containsValueAsync(Object value) {
         return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 6),
-                "local s = redis.call('hgetall', KEYS[1]);" +
+                  "local expireSize = redis.call('zcard', KEYS[2])"
+                + "local s = redis.call('hgetall', KEYS[1]);" +
                         "for i, v in ipairs(s) do "
                             + "if ARGV[2] == v and i % 2 == 0 then "
-                                + "local key = s[i-1];"
-                                + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                                + "if expireDate ~= false and expireDate <= ARGV[1] then "
-                                    + "redis.call('zrem', KEYS[2], key); "
-                                    + "redis.call('hdel', KEYS[1], key); "
-                                    + "return false;"
+                                + "if expireSize > 0 then "
+                                    + "local key = s[i-1];"
+                                    + "local expireDate = redis.call('zscore', KEYS[2], key); "
+                                    + "if expireDate ~= false and expireDate <= ARGV[1] then "
+                                        + "redis.call('zrem', KEYS[2], key); "
+                                        + "redis.call('hdel', KEYS[1], key); "
+                                        + "return false;"
+                                    + "end;"
                                 + "end;"
                                 + "return true "
                             + "end "
@@ -135,15 +138,17 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
         args.add(System.currentTimeMillis());
         args.addAll(keys);
         return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args), 6, ValueType.MAP_KEY, ValueType.MAP_VALUE),
-                "local maxDate = table.remove(ARGV, 1); " + // index is the first parameter
-                        "for i, key in ipairs(ARGV) do "
-                        + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                        + "if expireDate ~= false and expireDate <= maxDate then "
-                        + "print ('delete ' .. key)"
-                            + "redis.call('zrem', KEYS[2], key); "
-                            + "redis.call('hdel', KEYS[1], key); "
+                "local expireSize = redis.call('zcard', KEYS[2])" +
+                        "local maxDate = table.remove(ARGV, 1); " + // index is the first parameter
+                        "if expireSize > 0 then "
+                        + "for i, key in ipairs(ARGV) do "
+                            + "local expireDate = redis.call('zscore', KEYS[2], key); "
+                            + "if expireDate ~= false and expireDate <= maxDate then "
+                                + "redis.call('zrem', KEYS[2], key); "
+                                + "redis.call('hdel', KEYS[1], key); "
+                            + "end;"
                         + "end;"
-                       + "end;" +
+                      + "end;" +
                        "return redis.call('hmget', KEYS[1], unpack(ARGV));",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), args.toArray());
     }
@@ -195,8 +200,11 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     }
 
     public Future<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit unit) {
-        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
+        if (unit == null) {
+            throw new NullPointerException("TimeUnit param can't be null");
+        }
 
+        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_PUT,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then "
                     + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); "
@@ -238,8 +246,11 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     }
 
     public Future<V> putAsync(K key, V value, long ttl, TimeUnit unit) {
-        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
+        if (unit == null) {
+            throw new NullPointerException("TimeUnit param can't be null");
+        }
 
+        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_PUT_TTL,
                 "local v = redis.call('hget', KEYS[1], ARGV[2]); "
                 + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); "
