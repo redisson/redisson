@@ -22,6 +22,10 @@ import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSetReactive<V> extends RExpirableReactive {
 
+    Publisher<V> pollFirst();
+
+    Publisher<V> pollLast();
+
     Publisher<V> iterator();
 
     Publisher<V> first();

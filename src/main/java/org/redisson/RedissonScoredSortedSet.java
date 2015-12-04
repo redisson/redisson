@@ -46,22 +46,57 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public V pollFirst() {
+        return get(pollFirstAsync());
+    }
+
+    @Override
+    public V pollLast() {
+        return get(pollLastAsync());
+    }
+
+    @Override
+    public Future<V> pollFirstAsync() {
+        return poll(0);
+    }
+
+    @Override
+    public Future<V> pollLastAsync() {
+        return poll(-1);
+    }
+
+    private Future<V> poll(int index) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
+                "local v = redis.call('zrange', KEYS[1], ARGV[1], ARGV[2]); "
+                + "if v[1] ~= nil then "
+                    + "redis.call('zremrangebyrank', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "return v[1]; "
+                + "end "
+                + "return nil;",
+                Collections.<Object>singletonList(getName()), index, index);
+    }
+
+    @Override
     public boolean add(double score, V object) {
         return get(addAsync(score, object));
     }
 
+    @Override
     public V first() {
         return get(firstAsync());
     }
 
+    @Override
     public Future<V> firstAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), 0, 0);
     }
 
+    @Override
     public V last() {
         return get(lastAsync());
     }
 
+    @Override
     public Future<V> lastAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), -1, -1);
     }
@@ -76,18 +111,22 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(removeAsync(object));
     }
 
+    @Override
     public int removeRangeByRank(int startIndex, int endIndex) {
         return get(removeRangeByRankAsync(startIndex, endIndex));
     }
 
+    @Override
     public Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
     }
 
+    @Override
     public int removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         return get(removeRangeByScoreAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
     }
 
+    @Override
     public Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);

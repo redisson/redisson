@@ -21,6 +21,10 @@ import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable {
 
+    V pollFirst();
+
+    V pollLast();
+
     V first();
 
     V last();

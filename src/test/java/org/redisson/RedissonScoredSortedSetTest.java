@@ -23,6 +23,32 @@ import io.netty.util.concurrent.Future;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testPollLast() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        Assert.assertNull(set.pollLast());
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+
+        Assert.assertEquals("c", set.pollLast());
+        MatcherAssert.assertThat(set, Matchers.contains("a", "b"));
+    }
+
+    @Test
+    public void testPollFirst() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        Assert.assertNull(set.pollFirst());
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+
+        Assert.assertEquals("a", set.pollFirst());
+        MatcherAssert.assertThat(set, Matchers.contains("b", "c"));
+    }
+
+    @Test
     public void testFirstLast() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(0.1, "a");

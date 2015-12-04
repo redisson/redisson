@@ -37,7 +37,6 @@ import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.core.reactivestreams.SubscriberBarrier;
 import reactor.rx.Stream;
-import reactor.rx.subscription.ReactiveSubscription;
 
 public class RedissonScoredSortedSetReactive<V> extends RedissonCollectionReactive<V> implements RScoredSortedSetReactive<V> {
 
@@ -49,10 +48,33 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonCollectionReacti
         super(codec, commandExecutor, name);
     }
 
+    @Override
+    public Publisher<V> pollFirst() {
+        return poll(0);
+    }
+
+    @Override
+    public Publisher<V> pollLast() {
+        return poll(-1);
+    }
+
+    private Publisher<V> poll(int index) {
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_OBJECT,
+                "local v = redis.call('zrange', KEYS[1], ARGV[1], ARGV[2]); "
+                + "if v[1] ~= nil then "
+                    + "redis.call('zremrangebyrank', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "return v[1]; "
+                + "end "
+                + "return nil;",
+                Collections.<Object>singletonList(getName()), index, index);
+    }
+
+    @Override
     public Publisher<V> first() {
         return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), 0, 0);
     }
 
+    @Override
     public Publisher<V> last() {
         return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), -1, -1);
     }
@@ -62,10 +84,12 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonCollectionReacti
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_BOOL, getName(), BigDecimal.valueOf(score).toPlainString(), object);
     }
 
+    @Override
     public Publisher<Integer> removeRangeByRank(int startIndex, int endIndex) {
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
     }
 
+    @Override
     public Publisher<Integer> removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);

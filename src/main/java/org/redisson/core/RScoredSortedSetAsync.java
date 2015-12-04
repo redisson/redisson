@@ -23,6 +23,10 @@ import io.netty.util.concurrent.Future;
 
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
+    Future<V> pollLastAsync();
+
+    Future<V> pollFirstAsync();
+
     Future<V> firstAsync();
 
     Future<V> lastAsync();
