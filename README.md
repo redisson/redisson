@@ -55,6 +55,7 @@ Features
 * Asynchronous interface for each object  
 * Thread-safe implementation  
 * All commands are executed in an atomic way  
+* Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
 * Supports Android platform  
 * Supports auto-reconnect  
@@ -75,6 +76,21 @@ Ocous: [ocous](http://www.ocous.com/)
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####04-Dec-2015 - version 2.2.0 released  
+Since 2.2.0 version Redisson supports [Reactive Streams](http://www.reactive-streams.org). Use `Redisson.createReactive` method to access Reactive objects.
+
+Feature - [Reactive Streams](http://www.reactive-streams.org) support  
+Feature - `RList.addAllAsync` and `RMap.getAllAsync` methods added  
+Feature - `RList.equals` and `RList.hashCode` methods implemented  
+Feature - `pollFirst`, `pollFirstAsync`, `pollLast`, `pollLastAsync` methods added to `RScoredSortedSet`  
+Improvement - `RLock` and `RCountDownLatch` switched to `LongCodec`  
+__Breaking api change__ - `RExpirable` methods now uses milliseconds instead of seconds  
+Fixed - `RLock.delete` didn't check lock existence  
+
+`Config.useMasterSlaveConnection` and `Config.useSentinelConnection` methods renamed to `Config.useSentinelServers` and `Config.useMasterSlaveServers` respectively  
+Deprecated methods are dropped
+
 
 ####30-Nov-2015 - version 2.1.6 released  
 Fixed - connection pool regression bug  
