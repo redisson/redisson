@@ -165,22 +165,25 @@ public class RedisCommand<R> {
     }
 
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder) {
-        this(name, replayMultiDecoder, -1);
+        this(name, replayMultiDecoder, null, -1);
     }
 
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, Convertor<R> convertor) {
-        this(name, replayMultiDecoder, -1);
+        this(name, replayMultiDecoder, convertor, -1);
+    }
+
+    public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, Convertor<R> convertor, int inParamIndex) {
+        this(name, replayMultiDecoder, inParamIndex);
         this.convertor = convertor;
     }
 
-
-    public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, int objectParamIndex) {
-        this(name, null, replayMultiDecoder, null, objectParamIndex);
+    public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, int inParamIndex) {
+        this(name, null, replayMultiDecoder, null, inParamIndex);
     }
 
     public RedisCommand(String name, String subName, MultiDecoder<R> replayMultiDecoder,
-            int objectParamIndex) {
-        this(name, subName, replayMultiDecoder, null, objectParamIndex);
+            int inParamIndex) {
+        this(name, subName, replayMultiDecoder, null, inParamIndex);
     }
 
     public RedisCommand(String name, String subName, MultiDecoder<R> replayMultiDecoder, Decoder<R> reponseDecoder, int inParamIndex) {

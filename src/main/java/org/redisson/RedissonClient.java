@@ -52,6 +52,8 @@ import org.redisson.core.RTopic;
  */
 public interface RedissonClient {
 
+    <K, V> RCache<K, V> getCache(String name, Codec codec);
+
     <K, V> RCache<K, V> getCache(String name);
 
     /**

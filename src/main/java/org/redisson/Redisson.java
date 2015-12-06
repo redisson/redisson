@@ -195,6 +195,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public <K, V> RCache<K, V> getCache(String name, Codec codec) {
+        return new RedissonCache<K, V>(codec, commandExecutor, name);
+    }
+
+    @Override
     public <K, V> RMap<K, V> getMap(String name, Codec codec) {
         return new RedissonMap<K, V>(codec, commandExecutor, name);
     }
