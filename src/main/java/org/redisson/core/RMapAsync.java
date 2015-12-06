@@ -37,10 +37,6 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
 
     Future<V> addAndGetAsync(K key, Number value);
 
-    Future<Collection<V>> valuesAsync();
-
-    Future<Set<K>> keySetAsync();
-
     Future<Boolean> containsValueAsync(Object value);
 
     Future<Boolean> containsKeyAsync(Object key);

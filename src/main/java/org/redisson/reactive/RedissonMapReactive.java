@@ -19,7 +19,6 @@ import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -117,16 +116,6 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         }
 
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.HMSET, params.toArray());
-    }
-
-    @Override
-    public Publisher<Set<K>> keySet() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.HKEYS, getName());
-    }
-
-    @Override
-    public Publisher<Collection<V>> values() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.HVALS, getName());
     }
 
     @Override

@@ -37,10 +37,6 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
 
     Publisher<V> addAndGet(K key, Number value);
 
-    Publisher<Collection<V>> values();
-
-    Publisher<Set<K>> keySet();
-
     Publisher<Boolean> containsValue(Object value);
 
     Publisher<Boolean> containsKey(Object key);

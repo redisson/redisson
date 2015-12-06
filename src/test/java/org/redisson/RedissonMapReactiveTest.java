@@ -1,11 +1,12 @@
 package org.redisson;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -470,8 +471,7 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         sync(map.put(4, 6));
         sync(map.put(7, 8));
 
-        Collection<Integer> keys = sync(map.keySet());
-        MatcherAssert.assertThat(keys, Matchers.containsInAnyOrder(1, 3, 4, 7));
+        List<Integer> keys = new ArrayList<Integer>(Arrays.asList(1, 3, 4, 7));
         for (Iterator<Integer> iterator = toIterator(map.keyIterator()); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!keys.remove(value)) {
@@ -490,8 +490,7 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         sync(map.put(4, 6));
         sync(map.put(7, 8));
 
-        Collection<Integer> values = sync(map.values());
-        MatcherAssert.assertThat(values, Matchers.containsInAnyOrder(0, 5, 6, 8));
+        List<Integer> values = new ArrayList<Integer>(Arrays.asList(0, 5, 6, 8));
         for (Iterator<Integer> iterator = toIterator(map.valueIterator()); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!values.remove(value)) {

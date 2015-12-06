@@ -17,6 +17,8 @@ package org.redisson;
 
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
+import java.util.AbstractCollection;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -171,29 +173,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Set<K> keySet() {
-        return get(keySetAsync());
-    }
-
-    @Override
-    public Future<Set<K>> keySetAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.HKEYS, getName());
+        return new KeySet();
     }
 
     @Override
     public Collection<V> values() {
-        return get(valuesAsync());
-    }
-
-    @Override
-    public Future<Collection<V>> valuesAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.HVALS, getName());
+        return new Values();
     }
 
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet() {
-        Future<Map<K, V>> f = commandExecutor.readAsync(getName(), codec, RedisCommands.HGETALL, getName());
-        Map<K, V> map = get(f);
-        return map.entrySet();
+        return new EntrySet();
     }
 
     @Override
@@ -435,6 +425,94 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         while (i.hasNext())
             h += i.next().hashCode();
         return h;
+    }
+
+    final class KeySet extends AbstractSet<K> {
+
+        @Override
+        public Iterator<K> iterator() {
+            return RedissonMap.this.keyIterator();
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return RedissonMap.this.containsKey(o);
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            return RedissonMap.this.fastRemove((K)o) == 1;
+        }
+
+        @Override
+        public int size() {
+            return RedissonMap.this.size();
+        }
+
+        @Override
+        public void clear() {
+            RedissonMap.this.clear();
+        }
+
+    }
+
+    final class Values extends AbstractCollection<V> {
+
+        @Override
+        public Iterator<V> iterator() {
+            return valueIterator();
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return RedissonMap.this.containsValue(o);
+        }
+
+        @Override
+        public int size() {
+            return RedissonMap.this.size();
+        }
+
+        @Override
+        public void clear() {
+            RedissonMap.this.clear();
+        }
+
+    }
+
+    final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
+
+        public final Iterator<Map.Entry<K,V>> iterator() {
+            return entryIterator();
+        }
+
+        public final boolean contains(Object o) {
+            if (!(o instanceof Map.Entry))
+                return false;
+            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+            Object key = e.getKey();
+            V value = get(key);
+            return value != null && value.equals(e);
+        }
+
+        public final boolean remove(Object o) {
+            if (o instanceof Map.Entry) {
+                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                Object key = e.getKey();
+                Object value = e.getValue();
+                return RedissonMap.this.remove(key, value);
+            }
+            return false;
+        }
+
+        public final int size() {
+            return RedissonMap.this.size();
+        }
+
+        public final void clear() {
+            RedissonMap.this.clear();
+        }
+
     }
 
 }
