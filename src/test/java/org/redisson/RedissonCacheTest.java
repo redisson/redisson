@@ -252,6 +252,20 @@ public class RedissonCacheTest extends BaseTest {
     }
 
     @Test
+    public void testExpiredIterator() throws InterruptedException {
+        RCache<String, String> cache = redisson.getCache("simple");
+        cache.put("0", "8");
+        cache.put("1", "6", 1, TimeUnit.SECONDS);
+        cache.put("2", "4", 3, TimeUnit.SECONDS);
+        cache.put("3", "2", 4, TimeUnit.SECONDS);
+        cache.put("4", "4", 1, TimeUnit.SECONDS);
+
+        Thread.sleep(1000);
+
+        MatcherAssert.assertThat(cache.keySet(), Matchers.contains("0", "2", "3"));
+    }
+
+    @Test
     public void testEntrySet() throws InterruptedException {
         RCache<Integer, String> map = redisson.getCache("simple12");
         map.put(1, "12");

@@ -19,12 +19,10 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -35,12 +33,13 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
+import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.TTLMapValueReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.CacheGetAllDecoder;
-import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.core.RCache;
 
 import io.netty.util.concurrent.Future;
@@ -59,6 +58,7 @@ import io.netty.util.concurrent.Promise;
 // TODO override expire methods
 public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, V> {
 
+    private static final RedisCommand<MapScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapScanResult<Object, Object>>("EVAL", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
     private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     private static final RedisCommand<Object> EVAL_REPLACE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5, ValueType.MAP);
@@ -151,7 +151,6 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
                             + "local expireDate = redis.call('zscore', KEYS[2], key); "
                             + "if expireDate ~= false and expireDate <= maxDate then "
                                 + "minExpireDate = math.min(tonumber(expireDate), minExpireDate); "
-                                + "print ('expired ' .. key) "
                                 + "ARGV[i] = ARGV[i] .. '__redisson__skip' "
                             + "end;"
                         + "end;"
@@ -315,77 +314,22 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     }
 
     MapScanResult<Object, V> scanIterator(InetSocketAddress client, long startPos) {
-        Future<MapScanResult<Object, V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
+        Future<MapScanResult<Object, V>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_HSCAN,
+                "local result = {}; "
+                + "local res = redis.call('hscan', KEYS[1], ARGV[1]); "
+                + "for i, value in ipairs(res[2]) do "
+                    + "if i % 2 == 0 then "
+                        + "local key = res[2][i-1]; "
+                        + "local expireDate = redis.call('zscore', KEYS[2], key); "
+                        + "if (expireDate == false) or (expireDate ~= false and expireDate > ARGV[2]) then "
+                            + "table.insert(result, key); "
+                            + "table.insert(result, value); "
+                        + "end; "
+                    + "end; "
+                + "end;"
+                + "return {res[1], result};", Arrays.<Object>asList(getName(), getTimeoutSetName()), startPos, System.currentTimeMillis());
+
         return get(f);
-    }
-
-//    @Override
-//    public Iterator<Map.Entry<K, V>> entryIterator() {
-//        return new RedissonMapIterator<K, V, Map.Entry<K, V>>(this);
-//    }
-//
-//    @Override
-//    public Iterator<V> valueIterator() {
-//        return new RedissonMapIterator<K, V, V>(this) {
-//            @Override
-//            V getValue(java.util.Map.Entry<K, V> entry) {
-//                return entry.getValue();
-//            }
-//        };
-//    }
-//
-//    @Override
-//    public Iterator<K> keyIterator() {
-//        return new RedissonMapIterator<K, V, K>(this) {
-//            @Override
-//            K getValue(java.util.Map.Entry<K, V> entry) {
-//                return entry.getKey();
-//            }
-//        };
-//    }
-
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == this)
-            return true;
-
-        if (!(o instanceof Map))
-            return false;
-        Map<?,?> m = (Map<?,?>) o;
-        if (m.size() != size())
-            return false;
-
-        try {
-            Iterator<Entry<K,V>> i = entrySet().iterator();
-            while (i.hasNext()) {
-                Entry<K,V> e = i.next();
-                K key = e.getKey();
-                V value = e.getValue();
-                if (value == null) {
-                    if (!(m.get(key)==null && m.containsKey(key)))
-                        return false;
-                } else {
-                    if (!value.equals(m.get(key)))
-                        return false;
-                }
-            }
-        } catch (ClassCastException unused) {
-            return false;
-        } catch (NullPointerException unused) {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int h = 0;
-        Iterator<Entry<K,V>> i = entrySet().iterator();
-        while (i.hasNext())
-            h += i.next().hashCode();
-        return h;
     }
 
     @Override

@@ -235,12 +235,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalAsync(true, key, codec, evalCommandType, script, keys, params);
+        int slot = connectionManager.calcSlot(key);
+        return evalAsync(new NodeSource(slot), true, key, codec, evalCommandType, script, keys, params);
+    }
+
+    @Override
+    public <T, R> Future<R> evalReadAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        int slot = connectionManager.calcSlot(key);
+        return evalAsync(new NodeSource(slot, client), true, key, codec, evalCommandType, script, keys, params);
     }
 
     @Override
     public <T, R> Future<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        return evalAsync(false, key, codec, evalCommandType, script, keys, params);
+        int slot = connectionManager.calcSlot(key);
+        return evalAsync(new NodeSource(slot), false, key, codec, evalCommandType, script, keys, params);
     }
 
     @Override
@@ -280,15 +288,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    private <T, R> Future<R> evalAsync(boolean readOnlyMode, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    private <T, R> Future<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
         args.add(script);
         args.add(keys.size());
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
-        int slot = connectionManager.calcSlot(key);
-        async(readOnlyMode, new NodeSource(slot), null, codec, evalCommandType, args.toArray(), mainPromise, 0);
+        async(readOnlyMode, nodeSource, null, codec, evalCommandType, args.toArray(), mainPromise, 0);
         return mainPromise;
     }
 
@@ -393,7 +400,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     ChannelFuture future = connection.send(new CommandsData(main, list));
                     writeFutureRef.set(future);
                 } else {
-                    log.debug("getting connection for command {} from slot {} using node {}", command, source, connection.getRedisClient().getAddr());
+                    log.debug("aquired connection for command {} from slot {} using node {}", command, source, connection.getRedisClient().getAddr());
                     ChannelFuture future = connection.send(new CommandData<V, R>(attemptPromise, messageDecoder, codec, command, params));
                     writeFutureRef.set(future);
                 }
