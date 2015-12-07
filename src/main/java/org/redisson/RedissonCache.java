@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -66,37 +67,21 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     private static final RedisCommand<List<Object>> EVAL_GET_TTL = new RedisCommand<List<Object>>("EVAL", new TTLMapValueReplayDecoder<Object>(), 5, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_KEY);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_VALUE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_VALUE);
-
-    private static final RedisCommand<Map<Object, Object>> EVAL_HGETALL = new RedisCommand<Map<Object, Object>>("EVAL", new ObjectMapReplayDecoder(), ValueType.MAP);
     private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
-
     private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
+
+    private static final RedissonCacheEvictScheduler SCHEDULER = new RedissonCacheEvictScheduler();
+
+    {
+        SCHEDULER.schedule(this);
+    }
 
     protected RedissonCache(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    public RedissonCache(Codec codec, final CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonCache(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-
-//        commandExecutor.getConnectionManager().getGroup().scheduleWithFixedDelay(new Runnable() {
-//            @Override
-//            public void run() {
-//                commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
-//                        "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, 1000); "
-//                      + "if table.getn(expiredKeys) > 0 then "
-//                          + "expiredKeys = unpack(expiredKeys); "
-//                          + "redis.call('zrem', KEYS[2], expiredKeys); "
-//                          + "redis.call('hdel', KEYS[1], expiredKeys); "
-//                      + "end; ",
-//                      Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis());
-//            }
-//        }, initialDelay, delay, unit)
-    }
-
-    @Override
-    public Future<Integer> sizeAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.HLEN, getName());
     }
 
     @Override
