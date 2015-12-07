@@ -36,7 +36,6 @@ import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.client.protocol.decoder.TTLMapValueReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
@@ -64,7 +63,8 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     private static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
     private static final RedisCommand<Object> EVAL_PUT_TTL = new RedisCommand<Object>("EVAL", 6, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<List<Object>> EVAL_GET_TTL = new RedisCommand<List<Object>>("EVAL", new TTLMapValueReplayDecoder<Object>(), 5, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<List<Object>> EVAL_CONTAINS = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5);
+    private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_KEY);
+    private static final RedisCommand<List<Object>> EVAL_CONTAINS_VALUE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_VALUE);
 
     private static final RedisCommand<Map<Object, Object>> EVAL_HGETALL = new RedisCommand<Map<Object, Object>>("EVAL", new ObjectMapReplayDecoder(), ValueType.MAP);
     private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 2, ValueType.MAP_KEY);
@@ -102,14 +102,14 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     public Future<Boolean> containsKeyAsync(Object key) {
         Promise<Boolean> result = newPromise();
 
-        Future<List<Object>> future = commandExecutor.evalReadAsync(getName(), codec, EVAL_CONTAINS,
+        Future<List<Object>> future = commandExecutor.evalReadAsync(getName(), codec, EVAL_CONTAINS_KEY,
                 "local value = redis.call('hexists', KEYS[1], ARGV[1]); " +
                 "local expireDate = 92233720368547758; " +
                 "if value == 1 then " +
                     "expireDate = redis.call('zscore', KEYS[2], ARGV[1]); "
                     + "if expireDate ~= false then "
                         + "expireDate = tonumber(expireDate) "
-                        + "end; " +
+                    + "end; " +
                 "end;" +
                 "return {expireDate, value}; ",
                Arrays.<Object>asList(getName(), getTimeoutSetName()), key);
@@ -121,25 +121,28 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
 
     @Override
     public Future<Boolean> containsValueAsync(Object value) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 6),
-                  "local expireSize = redis.call('zcard', KEYS[2])"
-                + "local s = redis.call('hgetall', KEYS[1]);" +
+        Promise<Boolean> result = newPromise();
+
+        Future<List<Object>> future = commandExecutor.evalReadAsync(getName(), codec, EVAL_CONTAINS_VALUE,
+                        "local s = redis.call('hgetall', KEYS[1]);" +
                         "for i, v in ipairs(s) do "
-                            + "if ARGV[2] == v and i % 2 == 0 then "
-                                + "if expireSize > 0 then "
-                                    + "local key = s[i-1];"
-                                    + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                                    + "if expireDate ~= false and expireDate <= ARGV[1] then "
-                                        + "redis.call('zrem', KEYS[2], key); "
-                                        + "redis.call('hdel', KEYS[1], key); "
-                                        + "return false;"
-                                    + "end;"
-                                + "end;"
-                                + "return true "
+                            + "if i % 2 == 0 and ARGV[1] == v then "
+                                + "local key = s[i-1];"
+                                + "local expireDate = redis.call('zscore', KEYS[2], key); "
+                                + "if expireDate == false then "
+                                    + "expireDate = 92233720368547758 "
+                                + "else "
+                                    + "expireDate = tonumber(expireDate) "
+                                + "end; "
+                                + "return {expireDate, 1}; "
                             + "end "
                        + "end;" +
-                     "return false",
-                 Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis(), value);
+                     "return {92233720368547758, 0};",
+                 Arrays.<Object>asList(getName(), getTimeoutSetName()), value);
+
+        addExpireListener(result, future, new BooleanReplayConvertor(), false);
+
+        return result;
     }
 
     @Override

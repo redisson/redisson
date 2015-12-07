@@ -177,6 +177,10 @@ public class RedisCommand<R> {
         this.convertor = convertor;
     }
 
+    public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, int objectParamIndex, ValueType inParamType) {
+        this(name, replayMultiDecoder, objectParamIndex, inParamType, null);
+    }
+
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, int inParamIndex) {
         this(name, null, replayMultiDecoder, null, inParamIndex);
     }
