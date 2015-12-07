@@ -55,7 +55,6 @@ import io.netty.util.concurrent.Promise;
  * @param <K> key
  * @param <V> value
  */
-// TODO override expire methods
 public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, V> {
 
     private static final RedisCommand<MapScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapScanResult<Object, Object>>("EVAL", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
@@ -335,6 +334,30 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     @Override
     public Future<Boolean> deleteAsync() {
         return commandExecutor.writeAsync(getName(), RedisCommands.DEL_SINGLE, getName(), getTimeoutSetName());
+    }
+
+    @Override
+    public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('pexpire', KEYS[2], ARGV[1]); "
+                + "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), timeUnit.toSeconds(timeToLive));
+    }
+
+    @Override
+    public Future<Boolean> expireAtAsync(long timestamp) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('pexpireat', KEYS[2], ARGV[1]); "
+                + "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), timestamp);
+    }
+
+    @Override
+    public Future<Boolean> clearExpireAsync() {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('persist', KEYS[2]); "
+                + "return redis.call('persist', KEYS[1]); ",
+                Arrays.<Object>asList(getName(), getTimeoutSetName()));
     }
 
 }

@@ -266,6 +266,44 @@ public class RedissonCacheTest extends BaseTest {
     }
 
     @Test
+    public void testExpire() throws InterruptedException {
+        RCache<String, String> cache = redisson.getCache("simple");
+        cache.put("0", "8");
+
+        cache.expire(100, TimeUnit.MILLISECONDS);
+
+        Thread.sleep(500);
+
+        Assert.assertEquals(0, cache.size());
+    }
+
+    @Test
+    public void testExpireAt() throws InterruptedException {
+        RCache<String, String> cache = redisson.getCache("simple");
+        cache.put("0", "8");
+
+        cache.expireAt(System.currentTimeMillis() + 100);
+
+        Thread.sleep(500);
+
+        Assert.assertEquals(0, cache.size());
+    }
+
+    @Test
+    public void testClearExpire() throws InterruptedException {
+        RCache<String, String> cache = redisson.getCache("simple");
+        cache.put("0", "8");
+
+        cache.expireAt(System.currentTimeMillis() + 100);
+
+        cache.clearExpire();
+
+        Thread.sleep(500);
+
+        Assert.assertEquals(1, cache.size());
+    }
+
+    @Test
     public void testEntrySet() throws InterruptedException {
         RCache<Integer, String> map = redisson.getCache("simple12");
         map.put(1, "12");
