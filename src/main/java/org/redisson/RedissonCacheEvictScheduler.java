@@ -70,6 +70,11 @@ public class RedissonCacheEvictScheduler {
             future.addListener(new FutureListener<Integer>() {
                 @Override
                 public void operationComplete(Future<Integer> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        schedule();
+                        return;
+                    }
+
                     Integer size = future.getNow();
 
                     if (sizeHistory.size() == 2) {
