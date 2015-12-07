@@ -68,7 +68,7 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_VALUE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_VALUE);
 
     private static final RedisCommand<Map<Object, Object>> EVAL_HGETALL = new RedisCommand<Map<Object, Object>>("EVAL", new ObjectMapReplayDecoder(), ValueType.MAP);
-    private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 2, ValueType.MAP_KEY);
+    private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
 
     private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
 
@@ -107,9 +107,9 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
                 "local value = redis.call('hexists', KEYS[1], ARGV[1]); " +
                 "local expireDate = 92233720368547758; " +
                 "if value == 1 then " +
-                    "expireDate = redis.call('zscore', KEYS[2], ARGV[1]); "
-                    + "if expireDate ~= false then "
-                        + "expireDate = tonumber(expireDate) "
+                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[1]); "
+                    + "if expireDateScore ~= false then "
+                        + "expireDate = tonumber(expireDateScore) "
                     + "end; " +
                 "end;" +
                 "return {expireDate, value}; ",
@@ -276,7 +276,7 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
 
     private void expireMap(long currentDate) {
         commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, EVAL_REMOVE_EXPIRED,
-                "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1]); "
+                "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, 100); "
                         + "if #expiredKeys > 0 then "
                             + "local s = redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
                             + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
@@ -323,12 +323,10 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
             return newSucceededFuture(0L);
         }
 
-        List<Object> args = new ArrayList<Object>(keys.length);
-        args.addAll(Arrays.asList(keys));
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_FAST_REMOVE,
                 "redis.call('zrem', KEYS[2], unpack(ARGV)); "
                 + "return redis.call('hdel', KEYS[1], unpack(ARGV)); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), args.toArray());
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), keys);
     }
 
     MapScanResult<Object, V> scanIterator(InetSocketAddress client, long startPos) {
