@@ -35,6 +35,4 @@ public interface RBucketReactive<V> extends RExpirableReactive {
 
     Publisher<Void> set(V value, long timeToLive, TimeUnit timeUnit);
 
-    Publisher<Boolean> exists();
-
 }

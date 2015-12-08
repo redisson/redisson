@@ -92,4 +92,9 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         return commandExecutor.writeReactive(getName(), RedisCommands.DEL_SINGLE, getName());
     }
 
+    @Override
+    public Publisher<Boolean> isExists() {
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.EXISTS, getName());
+    }
+
 }

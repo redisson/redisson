@@ -71,4 +71,11 @@ public interface RObjectReactive {
      */
     Publisher<Boolean> renamenx(String newName);
 
+    /**
+     * Check object existence
+     *
+     * @return <code>true</code> if object exists and <code>false</code> otherwise
+     */
+    Publisher<Boolean> isExists();
+
 }

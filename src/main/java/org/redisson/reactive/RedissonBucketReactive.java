@@ -48,9 +48,4 @@ public class RedissonBucketReactive<V> extends RedissonExpirableReactive impleme
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
     }
 
-    @Override
-    public Publisher<Boolean> exists() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.EXISTS, getName());
-    }
-
 }
