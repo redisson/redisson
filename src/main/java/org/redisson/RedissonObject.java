@@ -112,4 +112,14 @@ abstract class RedissonObject implements RObject {
         return commandExecutor.writeAsync(getName(), RedisCommands.DEL_SINGLE, getName());
     }
 
+    @Override
+    public boolean isExists() {
+        return get(isExistsAsync());
+    }
+
+    @Override
+    public Future<Boolean> isExistsAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.EXISTS, getName());
+    }
+
 }

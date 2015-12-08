@@ -69,4 +69,11 @@ public interface RObjectAsync {
      */
     Future<Boolean> renamenxAsync(String newName);
 
+    /**
+     * Check object existence in async mode.
+     *
+     * @return <code>true</code> if object exists and <code>false</code> otherwise
+     */
+    Future<Boolean> isExistsAsync();
+
 }

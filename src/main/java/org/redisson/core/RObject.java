@@ -69,4 +69,11 @@ public interface RObject extends RObjectAsync {
      */
     boolean renamenx(String newName);
 
+    /**
+     * Check object existence
+     *
+     * @return <code>true</code> if object exists and <code>false</code> otherwise
+     */
+    boolean isExists();
+
 }
