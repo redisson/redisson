@@ -37,6 +37,24 @@ import io.netty.util.concurrent.Future;
 public interface RBatch {
 
     /**
+     * Returns map-based cache instance with eviction support by name
+     * using provided codec for both cache keys and values.
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <K, V> RCacheAsync<K, V> getCache(String name, Codec codec);
+
+    /**
+     * Returns map-based cache instance with eviction support by name.
+     *
+     * @param name
+     * @return
+     */
+    <K, V> RCacheAsync<K, V> getCache(String name);
+
+    /**
      * Returns object holder by name
      *
      * @param name of object

@@ -22,7 +22,7 @@ import io.netty.util.concurrent.Future;
 
 /**
  * Base async interface for all Redisson objects
- * which support expiration or TTL
+ * which supports expiration (TTL)
  *
  * @author Nikita Koksharov
  *

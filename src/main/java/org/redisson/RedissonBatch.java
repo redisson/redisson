@@ -25,6 +25,7 @@ import org.redisson.core.RBatch;
 import org.redisson.core.RBitSetAsync;
 import org.redisson.core.RBlockingQueueAsync;
 import org.redisson.core.RBucketAsync;
+import org.redisson.core.RCacheAsync;
 import org.redisson.core.RDequeAsync;
 import org.redisson.core.RHyperLogLogAsync;
 import org.redisson.core.RKeysAsync;
@@ -160,6 +161,16 @@ public class RedissonBatch implements RBatch {
     @Override
     public RBitSetAsync getBitSet(String name) {
         return new RedissonBitSet(executorService, name);
+    }
+
+    @Override
+    public <K, V> RCacheAsync<K, V> getCache(String name, Codec codec) {
+        return new RedissonCache<K, V>(codec, executorService, name);
+    }
+
+    @Override
+    public <K, V> RCacheAsync<K, V> getCache(String name) {
+        return new RedissonCache<K, V>(executorService, name);
     }
 
     @Override

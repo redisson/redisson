@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import io.netty.util.concurrent.Future;
 
 /**
- * Async map functions
+ * Async map-based cache functions
  *
  * @author Nikita Koksharov
  *

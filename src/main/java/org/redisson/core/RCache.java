@@ -18,8 +18,11 @@ package org.redisson.core;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
- * and {@link java.util.Map}
+ * <p>Map-based cache with ability to set TTL for each entry via
+ * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)}
+ * And therefore has an complex lua-scripts inside.</p>
+ *
+ * <p>If TTL is not required then it's better to use {@link org.redisson.RedissonMap}.</p>
  *
  * @author Nikita Koksharov
  *
