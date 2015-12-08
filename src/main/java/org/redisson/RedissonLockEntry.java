@@ -19,18 +19,12 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.concurrent.Semaphore;
 
-public class RedissonLockEntry {
+public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
 
     private int counter;
 
     private final Semaphore latch;
     private final Promise<RedissonLockEntry> promise;
-
-    public RedissonLockEntry(RedissonLockEntry source) {
-        counter = source.counter;
-        latch = source.latch;
-        promise = source.promise;
-    }
 
     public RedissonLockEntry(Promise<RedissonLockEntry> promise) {
         super();
@@ -52,28 +46,6 @@ public class RedissonLockEntry {
 
     public Semaphore getLatch() {
         return latch;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + counter;
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        RedissonLockEntry other = (RedissonLockEntry) obj;
-        if (counter != other.counter)
-            return false;
-        return true;
     }
 
 }

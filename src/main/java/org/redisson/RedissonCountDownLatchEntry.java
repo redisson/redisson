@@ -19,7 +19,7 @@ import org.redisson.misc.ReclosableLatch;
 
 import io.netty.util.concurrent.Promise;
 
-public class RedissonCountDownLatchEntry {
+public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDownLatchEntry> {
 
     private int counter;
 
