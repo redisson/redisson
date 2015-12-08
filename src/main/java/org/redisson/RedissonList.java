@@ -35,6 +35,7 @@ import java.util.NoSuchElementException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
@@ -55,6 +56,9 @@ import io.netty.util.concurrent.Future;
  * @param <V> the type of elements held in this collection
  */
 public class RedissonList<V> extends RedissonExpirable implements RList<V> {
+
+    public static final RedisCommand<Boolean> EVAL_BOOLEAN_ARGS1 = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
+    public static final RedisCommand<Boolean> EVAL_BOOLEAN_ARGS2 = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5);
 
     protected RedissonList(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -138,7 +142,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalReadAsync(getName(), codec, EVAL_BOOLEAN_ARGS1,
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
                 "for i=1, #items do " +
                     "for j = 0, table.getn(ARGV), 1 do " +
@@ -193,7 +197,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         List<Object> args = new ArrayList<Object>(coll.size() + 1);
         args.add(index);
         args.addAll(coll);
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
+        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_BOOLEAN_ARGS2,
                 "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                         "local size = redis.call('llen', KEYS[1]); " +
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
@@ -212,7 +216,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_BOOLEAN_ARGS1,
                         "local v = false " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 "
@@ -234,7 +238,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_R1,
+        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_BOOLEAN_ARGS1,
                 "local changed = false " +
                 "local items = redis.call('lrange', KEYS[1], 0, -1) "
                    + "local i = 1 "
