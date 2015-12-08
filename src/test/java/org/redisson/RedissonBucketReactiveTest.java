@@ -76,7 +76,7 @@ public class RedissonBucketReactiveTest extends BaseReactiveTest {
         sync(bucket.set(value));
         Assert.assertEquals(value, sync(bucket.get()));
 
-        Assert.assertTrue(sync(bucket.exists()));
+        Assert.assertTrue(sync(bucket.isExists()));
     }
 
     @Test
@@ -87,11 +87,11 @@ public class RedissonBucketReactiveTest extends BaseReactiveTest {
         sync(bucket.set(value));
         Assert.assertEquals(value, sync(bucket.get()));
 
-        Assert.assertTrue(sync(bucket.exists()));
+        Assert.assertTrue(sync(bucket.isExists()));
 
         bucket.delete();
 
-        Assert.assertFalse(sync(bucket.exists()));
+        Assert.assertFalse(sync(bucket.isExists()));
     }
 
     @Test
