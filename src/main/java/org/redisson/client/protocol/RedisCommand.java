@@ -165,7 +165,7 @@ public class RedisCommand<R> {
     }
 
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder) {
-        this(name, replayMultiDecoder, null, -1);
+        this(name, replayMultiDecoder, -1);
     }
 
     public RedisCommand(String name, MultiDecoder<R> replayMultiDecoder, Convertor<R> convertor) {
