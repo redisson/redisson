@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
 
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
@@ -50,6 +51,7 @@ import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
+import org.redisson.core.RReadWriteLock;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSet;
@@ -139,6 +141,11 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonReactiveClient createReactive(Config config) {
         return new RedissonReactive(config);
+    }
+
+    @Override
+    public RReadWriteLock getReadWriteLock(String name) {
+        return new RedissonReadWriteLock(commandExecutor, name, id);
     }
 
     @Override

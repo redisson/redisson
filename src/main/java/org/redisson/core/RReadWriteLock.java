@@ -13,16 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.core;
 
-import io.netty.util.concurrent.Promise;
+import java.util.concurrent.locks.ReadWriteLock;
 
-public interface PubSubEntry<E> {
+/**
+ * Distributed implementation of {@link java.util.concurrent.locks.Lock}
+ * Implements reentrant lock.
+ * Use {@link RReadWriteLock#getHoldCount()} to get a holds count.
+ *
+ * @author Nikita Koksharov
+ *
+ */
 
-    void aquire();
+public interface RReadWriteLock extends ReadWriteLock, RExpirable {
 
-    int release();
+    RLock readLock();
 
-    Promise<E> getPromise();
+    RLock writeLock();
 
 }

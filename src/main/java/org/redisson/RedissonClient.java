@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.util.List;
+import java.util.concurrent.locks.ReadWriteLock;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.core.ClusterNode;
@@ -37,6 +38,7 @@ import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
+import org.redisson.core.RReadWriteLock;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSet;
@@ -51,6 +53,8 @@ import org.redisson.core.RTopic;
  *
  */
 public interface RedissonClient {
+
+    RReadWriteLock getReadWriteLock(String name);
 
     /**
      * Returns map-based cache instance with eviction support by name
