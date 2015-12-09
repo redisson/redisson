@@ -77,30 +77,31 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                                 "if (mode == false) then " +
                                     "redis.call('publish', KEYS[3], ARGV[1]); " +
-                                    "return true; " +
-                                "else if (mode == 'read') then " +
+                                    "return 1; " +
+                                "end; "
+                              + "if (mode == 'read') then " +
                                     "local lockExists = redis.call('hexists', KEYS[1], KEYS[2]); " +
-                                    "if (lockExists == false) then " +
+                                    "if (lockExists == 0) then " +
                                         "return nil;" +
                                     "else " +
                                         "local counter = redis.call('hincrby', KEYS[1], KEYS[2], -1); " +
                                         "if (counter > 0) then " +
                                             "redis.call('pexpire', KEYS[1], ARGV[2]); " +
-                                            "return false; " +
+                                            "return 0; " +
                                         "else " +
                                             "redis.call('hdel', KEYS[1], KEYS[2]); " +
                                             "if (redis.call('hlen', KEYS[1]) == 1) then " +
                                                 "redis.call('del', KEYS[1]); " +
                                                 "redis.call('publish', KEYS[3], ARGV[1]); " +
                                             "end; " +
-                                            "return true; "+
+                                            "return 1; "+
                                         "end; " +
                                     "end; " +
                                 "end; " +
                                 "return nil; ",
                         Arrays.<Object>asList(getName(), getLockName(), getChannelName()), RedissonReadWriteLock.unlockMessage, internalLockLeaseTime);
         if (opStatus == null) {
-            throw new IllegalStateException("Can't unlock lock Current id: "
+            throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
         }
         if (opStatus) {
@@ -121,9 +122,9 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                       "redis.call('del', KEYS[1]); " +
                       "redis.call('publish', KEYS[3], ARGV[1]); " +
                   "end; " +
-                  "return true; " +
+                  "return 1; " +
               "else " +
-                  "return false; " +
+                  "return 0; " +
               "end;",
               Arrays.<Object>asList(getName(), getLockName(), getChannelName()), RedissonReadWriteLock.unlockMessage);
     }

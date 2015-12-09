@@ -85,10 +85,10 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
                 "local s = redis.call('hvals', KEYS[1]);" +
                         "for i = 0, table.getn(s), 1 do "
                             + "if ARGV[1] == s[i] then "
-                                + "return true "
+                                + "return 1 "
                             + "end "
                        + "end;" +
-                     "return false",
+                     "return 0",
                 Collections.<Object>singletonList(getName()), value);
     }
 
@@ -146,9 +146,9 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         return commandExecutor.evalWriteReactive(getName(), codec, EVAL_REPLACE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); "
-                    + "return true; "
+                    + "return 1; "
                 + "else "
-                    + "return false; "
+                    + "return 0; "
                 + "end",
                 Collections.<Object>singletonList(getName()), key, oldValue, newValue);
     }

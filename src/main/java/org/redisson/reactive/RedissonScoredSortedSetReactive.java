@@ -248,17 +248,17 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonCollectionReacti
                             + "then table.remove(ARGV, j) end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 0; ",
+                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
     @Override
     public Publisher<Boolean> removeAll(Collection<?> c) {
         return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
-                        "local v = false " +
+                        "local v = 0 " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = true end "
+                            + "then v = 1 end "
                         +"end "
                        + "return v ",
                 Collections.<Object>singletonList(getName()), c.toArray());
@@ -267,7 +267,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonCollectionReacti
     @Override
     public Publisher<Boolean> retainAll(Collection<?> c) {
         return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
-                    "local changed = false " +
+                    "local changed = 0 " +
                     "local s = redis.call('zrange', KEYS[1], 0, -1) "
                        + "local i = 0 "
                        + "while i <= table.getn(s) do "
@@ -281,7 +281,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonCollectionReacti
                             + "end "
                             + "if isInAgrs == false then "
                                 + "redis.call('zrem', KEYS[1], element) "
-                                + "changed = true "
+                                + "changed = 1 "
                             + "end "
                             + "i = i + 1 "
                        + "end "

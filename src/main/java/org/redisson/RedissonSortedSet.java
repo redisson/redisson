@@ -615,8 +615,12 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         final String comparatorSign = className + ":" + calcClassSign(className);
 
         Boolean res = commandExecutor.evalWrite(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "if redis.call('llen', KEYS[1]) == 0 then redis.call('set', KEYS[2], ARGV[1]); return true; "
-                + "else return false; end",
+                "if redis.call('llen', KEYS[1]) == 0 then "
+                + "redis.call('set', KEYS[2], ARGV[1]); "
+                + "return 1; "
+                + "else "
+                + "return 0; "
+                + "end",
                 Arrays.<Object>asList(getName(), getComparatorKeyName()), comparatorSign);
         if (res) {
             this.comparator = comparator;

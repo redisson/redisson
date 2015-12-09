@@ -208,7 +208,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                             + "then table.remove(ARGV, j) end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 0; ",
+                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -237,7 +237,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_OBJECTS,
-                    "local changed = false " +
+                    "local changed = 0 " +
                     "local s = redis.call('smembers', KEYS[1]) "
                        + "local i = 0 "
                        + "while i <= table.getn(s) do "
@@ -251,7 +251,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                             + "end "
                             + "if isInAgrs == false then "
                                 + "redis.call('SREM', KEYS[1], element) "
-                                + "changed = true "
+                                + "changed = 1 "
                             + "end "
                             + "i = i + 1 "
                        + "end "
@@ -262,10 +262,10 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_OBJECTS,
-                        "local v = false " +
+                        "local v = 0 " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = true end "
+                            + "then v = 1 end "
                         +"end "
                        + "return v ",
                 Collections.<Object>singletonList(getName()), c.toArray());

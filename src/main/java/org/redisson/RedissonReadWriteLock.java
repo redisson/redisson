@@ -16,11 +16,25 @@
 package org.redisson;
 
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 
 import org.redisson.command.CommandExecutor;
 import org.redisson.core.RLock;
 import org.redisson.core.RReadWriteLock;
 
+/**
+ * A {@code ReadWriteLock} maintains a pair of associated {@link
+ * Lock locks}, one for read-only operations and one for writing.
+ * The {@link #readLock read lock} may be held simultaneously by
+ * multiple reader threads, so long as there are no writers.  The
+ * {@link #writeLock write lock} is exclusive.
+ *
+ * Works in non-fair mode. Therefore order of read and write
+ * locking is unspecified.
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonReadWriteLock extends RedissonExpirable implements RReadWriteLock {
 
     public static final Long unlockMessage = 0L;

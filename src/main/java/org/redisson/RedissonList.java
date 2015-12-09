@@ -151,7 +151,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                         "end " +
                     "end " +
                 "end " +
-                "return table.getn(ARGV) == 0",
+                "return table.getn(ARGV) == 0 and 1 or 0",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -217,10 +217,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_BOOLEAN_ARGS1,
-                        "local v = false " +
+                        "local v = 0 " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 "
-                            + "then v = true end "
+                            + "then v = 1 end "
                         +"end "
                        + "return v ",
                 Collections.<Object>singletonList(getName()), c.toArray());
@@ -239,7 +239,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_BOOLEAN_ARGS1,
-                "local changed = false " +
+                "local changed = 0 " +
                 "local items = redis.call('lrange', KEYS[1], 0, -1) "
                    + "local i = 1 "
                    + "local s = table.getn(items) "
@@ -254,7 +254,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                         + "end "
                         + "if isInAgrs == false then "
                             + "redis.call('LREM', KEYS[1], 0, element) "
-                            + "changed = true "
+                            + "changed = 1 "
                         + "end "
                         + "i = i + 1 "
                    + "end "

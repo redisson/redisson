@@ -15,21 +15,36 @@
  */
 package org.redisson.core;
 
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.locks.Lock}
- * Implements reentrant lock.
- * Use {@link RReadWriteLock#getHoldCount()} to get a holds count.
+ * A {@code ReadWriteLock} maintains a pair of associated {@link
+ * Lock locks}, one for read-only operations and one for writing.
+ * The {@link #readLock read lock} may be held simultaneously by
+ * multiple reader threads, so long as there are no writers.  The
+ * {@link #writeLock write lock} is exclusive.
+ *
+ * Works in non-fair mode. Therefore order of read and write
+ * locking is unspecified.
  *
  * @author Nikita Koksharov
  *
  */
-
 public interface RReadWriteLock extends ReadWriteLock, RExpirable {
 
+    /**
+     * Returns the lock used for reading.
+     *
+     * @return the lock used for reading
+     */
     RLock readLock();
 
+    /**
+     * Returns the lock used for writing.
+     *
+     * @return the lock used for writing
+     */
     RLock writeLock();
 
 }

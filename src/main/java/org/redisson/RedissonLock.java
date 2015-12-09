@@ -275,25 +275,25 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
                                 "  redis.call('publish', KEYS[2], ARGV[2]); " +
-                                "  return true; " +
+                                "  return 1; " +
                                 "else " +
                                 "  local o = cjson.decode(v); " +
                                 "  if (o['o'] == ARGV[1]) then " +
                                 "    o['c'] = o['c'] - 1; " +
                                 "    if (o['c'] > 0) then " +
                                 "      redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[3]); " +
-                                "      return false;"+
+                                "      return 0;"+
                                 "    else " +
                                 "      redis.call('del', KEYS[1]);" +
                                 "      redis.call('publish', KEYS[2], ARGV[2]); " +
-                                "      return true;"+
+                                "      return 1;"+
                                 "    end" +
                                 "  end;" +
                                 "  return nil; " +
                                 "end",
                         Arrays.<Object>asList(getName(), getChannelName()), id.toString() + "-" + Thread.currentThread().getId(), unlockMessage, internalLockLeaseTime);
         if (opStatus == null) {
-            throw new IllegalStateException("Can't unlock lock Current id: "
+            throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
         }
         if (opStatus) {
@@ -317,9 +317,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
                 + "redis.call('publish', KEYS[2], ARGV[1]); "
-                + "return true "
+                + "return 1 "
                 + "else "
-                + "return false "
+                + "return 0 "
                 + "end",
                 Arrays.<Object>asList(getName(), getChannelName()), unlockMessage);
     }
@@ -334,13 +334,13 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         Boolean opStatus = commandExecutor.evalRead(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                             "local v = redis.call('get', KEYS[1]); " +
                                 "if (v == false) then " +
-                                "  return false; " +
+                                "  return 0; " +
                                 "else " +
                                 "  local o = cjson.decode(v); " +
                                 "  if (o['o'] == ARGV[1]) then " +
-                                "    return true; " +
+                                "    return 1; " +
                                 "  else" +
-                                "    return false; " +
+                                "    return 0; " +
                                 "  end;" +
                                 "end",
                         Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId());

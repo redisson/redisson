@@ -56,9 +56,9 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('get', KEYS[1]) == ARGV[1] then "
                      + "redis.call('set', KEYS[1], ARGV[2]); "
-                     + "return true "
+                     + "return 1 "
                    + "else "
-                     + "return false end",
+                     + "return 0 end",
                 Collections.<Object>singletonList(getName()), expect, update);
     }
 

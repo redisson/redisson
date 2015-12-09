@@ -115,7 +115,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
                         "if v == 0 then redis.call('publish', KEYS[2], ARGV[1]) end;" +
-                        "return true",
+                        "return 1",
                  Arrays.<Object>asList(getName(), getChannelName()), zeroCountMessage);
         get(f);
     }
@@ -148,9 +148,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 "if redis.call('exists', KEYS[1]) == 0 then "
                     + "redis.call('set', KEYS[1], ARGV[2]); "
                     + "redis.call('publish', KEYS[2], ARGV[1]); "
-                    + "return true "
+                    + "return 1 "
                 + "else "
-                    + "return false "
+                    + "return 0 "
                 + "end",
                 Arrays.<Object>asList(getName(), getChannelName()), newCountMessage, count);
         return get(f);
@@ -161,9 +161,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1]) == 1 then "
                     + "redis.call('publish', KEYS[2], ARGV[1]); "
-                    + "return true "
+                    + "return 1 "
                 + "else "
-                    + "return false "
+                    + "return 0 "
                 + "end",
                 Arrays.<Object>asList(getName(), getChannelName()), newCountMessage);
     }
