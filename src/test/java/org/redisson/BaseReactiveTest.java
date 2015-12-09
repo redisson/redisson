@@ -41,6 +41,10 @@ public abstract class BaseReactiveTest {
         return Streams.create(pub).toList().poll().iterator();
     }
 
+    public <V> Iterable<V> toIterable(Publisher<V> pub) {
+        return Streams.create(pub).toList().poll();
+    }
+
     public <V> V sync(Publisher<V> ob) {
         Promise<V> promise;
         if (Promise.class.isAssignableFrom(ob.getClass())) {

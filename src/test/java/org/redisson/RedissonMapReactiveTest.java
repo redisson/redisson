@@ -276,11 +276,6 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         MatcherAssert.assertThat(toIterable(map.keyIterator()), Matchers.containsInAnyOrder(1, 2, 3, 4, 5, 6));
     }
 
-    private <V> Iterable<V> toIterable(Publisher<V> iterator) {
-        return Streams.create(iterator).toList().poll();
-    }
-
-
     @Test
     public void testContainsValue() {
         RMapReactive<SimpleKey, SimpleValue> map = redisson.getMap("simple");

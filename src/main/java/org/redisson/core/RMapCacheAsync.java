@@ -20,14 +20,25 @@ import java.util.concurrent.TimeUnit;
 import io.netty.util.concurrent.Future;
 
 /**
- * Async map-based cache functions
+ * <p>Async interface for map-based cache with ability to set TTL for each entry via
+ * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)}
+ * And therefore has an complex lua-scripts inside.</p>
+ *
+ * <p>Redis doesn't support map entries eviction by design.
+ * Thus entries are checked for TTL expiration during any key/value/entry read operation.
+ * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
+ * Clean task deletes removes 100 expired entries at once.
+ * In addition there is {@link org.redisson.RedissonCacheEvictionScheduler}. This scheduler
+ * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
+ *
+ * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
  *
  * @author Nikita Koksharov
  *
  * @param <K> key
  * @param <V> value
  */
-public interface RCacheAsync<K, V> extends RMapAsync<K, V> {
+public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
 
     Future<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit unit);
 

@@ -40,7 +40,7 @@ import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
-import org.redisson.core.RCache;
+import org.redisson.core.RMapCache;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
@@ -197,13 +197,13 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <K, V> RCache<K, V> getCache(String name) {
-        return new RedissonCache<K, V>(commandExecutor, name);
+    public <K, V> RMapCache<K, V> getMapCache(String name) {
+        return new RedissonMapCache<K, V>(commandExecutor, name);
     }
 
     @Override
-    public <K, V> RCache<K, V> getCache(String name, Codec codec) {
-        return new RedissonCache<K, V>(codec, commandExecutor, name);
+    public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
+        return new RedissonMapCache<K, V>(codec, commandExecutor, name);
     }
 
     @Override

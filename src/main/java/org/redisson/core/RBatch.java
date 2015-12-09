@@ -37,25 +37,31 @@ import io.netty.util.concurrent.Future;
 public interface RBatch {
 
     /**
-     * Returns map-based cache instance with eviction support by name
-     * using provided codec for both cache keys and values.
+     * Returns map-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for both cache keys and values.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
      *
      * @param name
      * @param codec
      * @return
      */
-    <K, V> RCacheAsync<K, V> getCache(String name, Codec codec);
+    <K, V> RMapCacheAsync<K, V> getMapCache(String name, Codec codec);
 
     /**
-     * Returns map-based cache instance with eviction support by name.
+     * Returns map-based cache instance by <code>name</code>.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
      *
      * @param name
      * @return
      */
-    <K, V> RCacheAsync<K, V> getCache(String name);
+    <K, V> RMapCacheAsync<K, V> getMapCache(String name);
 
     /**
-     * Returns object holder by name
+     * Returns object holder by <code>name</code>
      *
      * @param name of object
      * @return

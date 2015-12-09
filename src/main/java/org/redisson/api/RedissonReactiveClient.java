@@ -33,6 +33,30 @@ import org.redisson.core.NodesGroup;
 public interface RedissonReactiveClient {
 
     /**
+     * Returns map-based cache instance by name
+     * using provided codec for both cache keys and values.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec);
+
+    /**
+     * Returns map-based cache instance by name.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     *
+     * @param name
+     * @return
+     */
+    <K, V> RMapCacheReactive<K, V> getMapCache(String name);
+
+    /**
      * Returns object holder instance by name
      *
      * @param name of object

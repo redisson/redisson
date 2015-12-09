@@ -95,7 +95,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     @Override
     public Publisher<Map<K, V>> getAll(Set<K> keys) {
         if (keys.size() == 0) {
-            return newSucceededObservable(Collections.<K, V>emptyMap());
+            return newSucceeded(Collections.<K, V>emptyMap());
         }
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(getName());
@@ -105,7 +105,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     public Publisher<Void> putAll(Map<? extends K, ? extends V> map) {
         if (map.isEmpty()) {
-            return newSucceededObservable(null);
+            return newSucceeded(null);
         }
 
         List<Object> params = new ArrayList<Object>(map.size()*2 + 1);
@@ -198,7 +198,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     @Override
     public Publisher<Long> fastRemove(K ... keys) {
         if (keys == null || keys.length == 0) {
-            return newSucceededObservable(0L);
+            return newSucceeded(0L);
         }
 
         List<Object> args = new ArrayList<Object>(keys.length + 1);

@@ -28,6 +28,7 @@ import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
 import org.redisson.api.RListReactive;
+import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RQueueReactive;
 import org.redisson.api.RScoredSortedSetReactive;
@@ -174,6 +175,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public Publisher<List<?>> executeReactive() {
         return new NettyFuturePublisher<List<?>>(executorService.executeAsync());
+    }
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
+        return new RedissonMapCacheReactive<K, V>(codec, executorService, name);
+    }
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
+        return new RedissonMapCacheReactive<K, V>(executorService, name);
     }
 
 }

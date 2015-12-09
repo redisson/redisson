@@ -40,7 +40,7 @@ import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.TTLMapValueReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.CacheGetAllDecoder;
-import org.redisson.core.RCache;
+import org.redisson.core.RMapCache;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -58,13 +58,11 @@ import io.netty.util.concurrent.Promise;
  * @param <K> key
  * @param <V> value
  */
-public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, V> {
+public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCache<K, V> {
 
     private static final RedisCommand<MapScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapScanResult<Object, Object>>("EVAL", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
     private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<Object> EVAL_REPLACE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5, ValueType.MAP);
-    private static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
     private static final RedisCommand<Object> EVAL_PUT_TTL = new RedisCommand<Object>("EVAL", 6, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<List<Object>> EVAL_GET_TTL = new RedisCommand<List<Object>>("EVAL", new TTLMapValueReplayDecoder<Object>(), 5, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_KEY);
@@ -72,18 +70,16 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
     private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
     private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
 
-    private static final RedissonCacheEvictScheduler SCHEDULER = new RedissonCacheEvictScheduler();
+    private static final RedissonCacheEvictionScheduler SCHEDULER = new RedissonCacheEvictionScheduler();
 
-    {
-        SCHEDULER.schedule(this);
-    }
-
-    protected RedissonCache(CommandAsyncExecutor commandExecutor, String name) {
+    protected RedissonMapCache(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        SCHEDULER.schedule(getName(), getTimeoutSetName(), commandExecutor);
     }
 
-    public RedissonCache(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonMapCache(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        SCHEDULER.schedule(getName(), getTimeoutSetName(), commandExecutor);
     }
 
     @Override
@@ -183,24 +179,26 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
 
     }
 
+    @Override
     public V putIfAbsent(K key, V value, long ttl, TimeUnit unit) {
         return get(putIfAbsentAsync(key, value, ttl, unit));
     }
 
+    @Override
     public Future<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit unit) {
         if (unit == null) {
             throw new NullPointerException("TimeUnit param can't be null");
         }
 
         long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
-        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_PUT,
-                "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then "
-                    + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); "
-                    + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
-                    + "return nil "
-                + "else "
-                    + "return redis.call('hget', KEYS[1], ARGV[1]) "
-                + "end",
+        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_PUT_TTL,
+                "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
+                        + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); "
+                        + "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); "
+                        + "return nil "
+                    + "else "
+                        + "return redis.call('hget', KEYS[1], ARGV[2]) "
+                    + "end",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), timeoutDate, key, value);
     }
 
@@ -216,6 +214,7 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), key, value);
     }
 
+    @Override
     public Future<V> getAsync(K key) {
         Promise<V> result = newPromise();
 
@@ -270,10 +269,12 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
                         Arrays.<Object>asList(getName(), getTimeoutSetName()), currentDate);
     }
 
+    @Override
     public V put(K key, V value, long ttl, TimeUnit unit) {
         return get(putAsync(key, value, ttl, unit));
     }
 
+    @Override
     public Future<V> putAsync(K key, V value, long ttl, TimeUnit unit) {
         if (unit == null) {
             throw new NullPointerException("TimeUnit param can't be null");
@@ -315,6 +316,7 @@ public class RedissonCache<K, V> extends RedissonMap<K, V> implements RCache<K, 
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), keys);
     }
 
+    @Override
     MapScanResult<Object, V> scanIterator(InetSocketAddress client, long startPos) {
         Future<MapScanResult<Object, V>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_HSCAN,
                 "local result = {}; "

@@ -18,10 +18,7 @@ package org.redisson.api;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
-import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Interface for using pipeline feature.
@@ -36,6 +33,30 @@ import io.netty.util.concurrent.Future;
  *
  */
 public interface RBatchReactive {
+
+    /**
+     * Returns map-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for both cache keys and values.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec);
+
+    /**
+     * Returns map-based cache instance by <code>name</code>.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     *
+     * @param name
+     * @return
+     */
+    <K, V> RMapCacheReactive<K, V> getMapCache(String name);
 
     /**
      * Returns object holder by name

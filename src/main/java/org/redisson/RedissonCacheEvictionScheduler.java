@@ -23,24 +23,28 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Eviction scheduler for RCache object.
+ * Eviction scheduler for RMapCache object.
+ * Deletes expired entries in time interval between 5 seconds to 2 hours.
  * It analyzes deleted amount of expired keys
  * and 'tune' next execution delay depending on it.
  *
  * @author Nikita Koksharov
  *
  */
-public class RedissonCacheEvictScheduler {
+public class RedissonCacheEvictionScheduler {
 
     public static class RedissonCacheTask implements Runnable {
 
-        final RedissonCache<?, ?> cache;
+        final String name;
+        final String timeoutSetName;
+        final CommandAsyncExecutor executor;
         final Deque<Integer> sizeHistory = new LinkedList<Integer>();
         int delay = 10;
 
@@ -48,24 +52,26 @@ public class RedissonCacheEvictScheduler {
         int maxDelay = 2*60*60;
         int keysLimit = 500;
 
-        public RedissonCacheTask(RedissonCache<?, ?> cache) {
-            this.cache = cache;
+        public RedissonCacheTask(String name, String timeoutSetName, CommandAsyncExecutor executor) {
+            this.name = name;
+            this.timeoutSetName = timeoutSetName;
+            this.executor = executor;
         }
 
         public void schedule() {
-            cache.commandExecutor.getConnectionManager().getGroup().schedule(this, delay, TimeUnit.SECONDS);
+            executor.getConnectionManager().getGroup().schedule(this, delay, TimeUnit.SECONDS);
         }
 
         @Override
         public void run() {
-            Future<Integer> future = cache.commandExecutor.evalWriteAsync(cache.getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+            Future<Integer> future = executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                     "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
                   + "if #expiredKeys > 0 then "
                       + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
                       + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
                   + "end; "
                   + "return #expiredKeys;",
-                  Arrays.<Object>asList(cache.getName(), cache.getTimeoutSetName()), System.currentTimeMillis(), keysLimit);
+                  Arrays.<Object>asList(name, timeoutSetName), System.currentTimeMillis(), keysLimit);
 
             future.addListener(new FutureListener<Integer>() {
                 @Override
@@ -111,9 +117,9 @@ public class RedissonCacheEvictScheduler {
 
     private final ConcurrentMap<String, RedissonCacheTask> tasks = PlatformDependent.newConcurrentHashMap();
 
-    public void schedule(RedissonCache<?, ?> cache) {
-        RedissonCacheTask task = new RedissonCacheTask(cache);
-        RedissonCacheTask prevTask = tasks.putIfAbsent(cache.getName(), task);
+    public void schedule(String name, String timeoutSetName, CommandAsyncExecutor executor) {
+        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, executor);
+        RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();
         }

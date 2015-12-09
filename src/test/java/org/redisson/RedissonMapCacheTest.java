@@ -15,15 +15,18 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.RedissonMapCacheReactiveTest.SimpleKey;
+import org.redisson.RedissonMapCacheReactiveTest.SimpleValue;
+import org.redisson.api.RMapCacheReactive;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
 import org.redisson.core.Predicate;
-import org.redisson.core.RCache;
+import org.redisson.core.RMapCache;
 import org.redisson.core.RMap;
 
 import io.netty.util.concurrent.Future;
 
-public class RedissonCacheTest extends BaseTest {
+public class RedissonMapCacheTest extends BaseTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -128,27 +131,8 @@ public class RedissonCacheTest extends BaseTest {
     }
 
     @Test
-    public void testAddAndGet() throws InterruptedException {
-        RCache<Integer, Integer> map = redisson.getCache("getAll");
-        map.put(1, 100);
-
-        Integer res = map.addAndGet(1, 12);
-        Assert.assertEquals(112, (int)res);
-        res = map.get(1);
-        Assert.assertEquals(112, (int)res);
-
-        RCache<Integer, Double> map2 = redisson.getCache("getAll2");
-        map2.put(1, new Double(100.2));
-
-        Double res2 = map2.addAndGet(1, new Double(12.1));
-        Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
-        res2 = map2.get(1);
-        Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
-    }
-
-    @Test
     public void testGetAll() throws InterruptedException {
-        RCache<Integer, Integer> map = redisson.getCache("getAll");
+        RMapCache<Integer, Integer> map = redisson.getMapCache("getAll");
         map.put(1, 100);
         map.put(2, 200, 1, TimeUnit.SECONDS);
         map.put(3, 300, 1, TimeUnit.SECONDS);
@@ -171,7 +155,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testGetAllWithStringKeys() {
-        RCache<String, Integer> map = redisson.getCache("getAllStrings");
+        RMapCache<String, Integer> map = redisson.getMapCache("getAllStrings");
         map.put("A", 100);
         map.put("B", 200);
         map.put("C", 300);
@@ -207,53 +191,8 @@ public class RedissonCacheTest extends BaseTest {
 //    }
 
     @Test
-    public void testInteger() {
-        Map<Integer, Integer> map = redisson.getCache("test_int");
-        map.put(1, 2);
-        map.put(3, 4);
-
-        Assert.assertEquals(2, map.size());
-
-        Integer val = map.get(1);
-        Assert.assertEquals(2, val.intValue());
-        Integer val2 = map.get(3);
-        Assert.assertEquals(4, val2.intValue());
-    }
-
-    @Test
-    public void testLong() {
-        Map<Long, Long> map = redisson.getCache("test_long");
-        map.put(1L, 2L);
-        map.put(3L, 4L);
-
-        Assert.assertEquals(2, map.size());
-
-        Long val = map.get(1L);
-        Assert.assertEquals(2L, val.longValue());
-        Long val2 = map.get(3L);
-        Assert.assertEquals(4L, val2.longValue());
-    }
-
-    @Test
-    public void testNull() {
-        Map<Integer, String> map = redisson.getCache("simple12");
-        map.put(1, null);
-        map.put(2, null);
-        map.put(3, "43");
-
-        Assert.assertEquals(3, map.size());
-
-        String val = map.get(2);
-        Assert.assertNull(val);
-        String val2 = map.get(1);
-        Assert.assertNull(val2);
-        String val3 = map.get(3);
-        Assert.assertEquals("43", val3);
-    }
-
-    @Test
     public void testExpiredIterator() throws InterruptedException {
-        RCache<String, String> cache = redisson.getCache("simple");
+        RMapCache<String, String> cache = redisson.getMapCache("simple");
         cache.put("0", "8");
         cache.put("1", "6", 1, TimeUnit.SECONDS);
         cache.put("2", "4", 3, TimeUnit.SECONDS);
@@ -267,8 +206,8 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testExpire() throws InterruptedException {
-        RCache<String, String> cache = redisson.getCache("simple");
-        cache.put("0", "8");
+        RMapCache<String, String> cache = redisson.getMapCache("simple");
+        cache.put("0", "8", 1, TimeUnit.SECONDS);
 
         cache.expire(100, TimeUnit.MILLISECONDS);
 
@@ -279,8 +218,8 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testExpireAt() throws InterruptedException {
-        RCache<String, String> cache = redisson.getCache("simple");
-        cache.put("0", "8");
+        RMapCache<String, String> cache = redisson.getMapCache("simple");
+        cache.put("0", "8", 1, TimeUnit.SECONDS);
 
         cache.expireAt(System.currentTimeMillis() + 100);
 
@@ -291,8 +230,8 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testClearExpire() throws InterruptedException {
-        RCache<String, String> cache = redisson.getCache("simple");
-        cache.put("0", "8");
+        RMapCache<String, String> cache = redisson.getMapCache("simple");
+        cache.put("0", "8", 1, TimeUnit.SECONDS);
 
         cache.expireAt(System.currentTimeMillis() + 100);
 
@@ -305,7 +244,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testEntrySet() throws InterruptedException {
-        RCache<Integer, String> map = redisson.getCache("simple12");
+        RMapCache<Integer, String> map = redisson.getMapCache("simple12");
         map.put(1, "12");
         map.put(2, "33", 1, TimeUnit.SECONDS);
         map.put(3, "43");
@@ -317,19 +256,8 @@ public class RedissonCacheTest extends BaseTest {
     }
 
     @Test
-    public void testSimpleTypes() {
-        Map<Integer, String> map = redisson.getCache("simple12");
-        map.put(1, "12");
-        map.put(2, "33");
-        map.put(3, "43");
-
-        String val = map.get(2);
-        Assert.assertEquals("33", val);
-    }
-
-    @Test
     public void testRemove() {
-        Map<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        Map<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -342,7 +270,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testPutAll() {
-        Map<Integer, String> map = redisson.getCache("simple");
+        Map<Integer, String> map = redisson.getMapCache("simple");
         map.put(1, "1");
         map.put(2, "2");
         map.put(3, "3");
@@ -358,7 +286,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testKeySet() throws InterruptedException {
-        RCache<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS);
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -377,7 +305,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testValues() throws InterruptedException {
-        RCache<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS);
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -395,7 +323,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testContainsValue() throws InterruptedException {
-        RCache<SimpleKey, SimpleValue> map = redisson.getCache("simple", new MsgPackJacksonCodec());
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
         Assert.assertFalse(map.containsValue(new SimpleValue("34")));
         map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS);
 
@@ -411,7 +339,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testContainsKey() throws InterruptedException {
-        RCache<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS);
 
         Assert.assertTrue(map.containsKey(new SimpleKey("33")));
@@ -426,8 +354,8 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testRemoveValue() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getCache("simple");
-        map.put(new SimpleKey("1"), new SimpleValue("2"));
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"), 1, TimeUnit.SECONDS);
 
         boolean res = map.remove(new SimpleKey("1"), new SimpleValue("2"));
         Assert.assertTrue(res);
@@ -440,7 +368,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testRemoveValueFail() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.remove(new SimpleKey("2"), new SimpleValue("1"));
@@ -456,7 +384,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testReplaceOldValueFail() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.replace(new SimpleKey("1"), new SimpleValue("43"), new SimpleValue("31"));
@@ -468,7 +396,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testReplaceOldValueSuccess() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.replace(new SimpleKey("1"), new SimpleValue("2"), new SimpleValue("3"));
@@ -483,7 +411,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testReplaceValue() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
@@ -496,7 +424,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testReplace() {
-        Map<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        Map<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -511,7 +439,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RCache<SimpleKey, SimpleValue> map = redisson.getCache("simple", new MsgPackJacksonCodec());
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
         Assert.assertNull(map.get(new SimpleKey("33")));
 
         map.put(new SimpleKey("33"), new SimpleValue("44"), 5, TimeUnit.SECONDS);
@@ -524,7 +452,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testPutGet() throws InterruptedException {
-        RCache<SimpleKey, SimpleValue> map = redisson.getCache("simple", new MsgPackJacksonCodec());
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
         Assert.assertNull(map.get(new SimpleKey("33")));
 
         map.put(new SimpleKey("33"), new SimpleValue("44"), 2, TimeUnit.SECONDS);
@@ -548,23 +476,29 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testPutIfAbsent() throws Exception {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         SimpleKey key = new SimpleKey("1");
         SimpleValue value = new SimpleValue("2");
         map.put(key, value);
-        Assert.assertEquals(value, map.putIfAbsent(key, new SimpleValue("3")));
+        Assert.assertEquals(value, map.putIfAbsent(key, new SimpleValue("3"), 1, TimeUnit.SECONDS));
         Assert.assertEquals(value, map.get(key));
+
+        map.putIfAbsent(new SimpleKey("4"), new SimpleValue("4"), 1, TimeUnit.SECONDS);
+        Assert.assertEquals(new SimpleValue("4"), map.get(new SimpleKey("4")));
+
+        Thread.sleep(1000);
+
+        Assert.assertNull(map.get(new SimpleKey("4")));
 
         SimpleKey key1 = new SimpleKey("2");
         SimpleValue value1 = new SimpleValue("4");
-        Assert.assertNull(map.putIfAbsent(key1, value1));
+        Assert.assertNull(map.putIfAbsent(key1, value1, 2, TimeUnit.SECONDS));
         Assert.assertEquals(value1, map.get(key1));
-
     }
 
     @Test
     public void testSize() {
-        Map<SimpleKey, SimpleValue> map = redisson.getCache("simple");
+        Map<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
 
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
@@ -588,7 +522,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testEmptyRemove() {
-        RCache<Integer, Integer> map = redisson.getCache("simple");
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         Assert.assertFalse(map.remove(1, 3));
         map.put(4, 5);
         Assert.assertTrue(map.remove(4, 5));
@@ -596,7 +530,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testPutAsync() throws InterruptedException, ExecutionException {
-        RCache<Integer, Integer> map = redisson.getCache("simple");
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         Future<Integer> future = map.putAsync(2, 3);
         Assert.assertNull(future.get());
 
@@ -610,7 +544,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testRemoveAsync() throws InterruptedException, ExecutionException {
-        RCache<Integer, Integer> map = redisson.getCache("simple");
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         map.put(1, 3);
         map.put(3, 5);
         map.put(7, 8);
@@ -623,7 +557,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testFastRemoveAsync() throws InterruptedException, ExecutionException {
-        RCache<Integer, Integer> map = redisson.getCache("simple");
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         map.put(1, 3);
         map.put(3, 5);
         map.put(4, 6);
@@ -676,7 +610,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testFastPut() throws Exception {
-        RCache<Integer, Integer> map = redisson.getCache("simple");
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         Assert.assertTrue(map.fastPut(1, 2));
         Assert.assertFalse(map.fastPut(1, 3));
         Assert.assertEquals(1, map.size());
@@ -684,7 +618,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testEquals() {
-        RCache<String, String> map = redisson.getCache("simple");
+        RMapCache<String, String> map = redisson.getMapCache("simple");
         map.put("1", "7");
         map.put("2", "4");
         map.put("3", "5");
@@ -700,7 +634,7 @@ public class RedissonCacheTest extends BaseTest {
 
     @Test
     public void testFastRemoveEmpty() throws Exception {
-        RCache<Integer, Integer> map = redisson.getCache("simple");
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         map.put(1, 3);
         Assert.assertEquals(0, map.fastRemove());
         Assert.assertEquals(1, map.size());
@@ -710,7 +644,7 @@ public class RedissonCacheTest extends BaseTest {
     public void testDeserializationErrorReturnsErrorImmediately() throws Exception {
         redisson.getConfig().setCodec(new JsonJacksonCodec());
 
-        RCache<String, SimpleObjectWithoutDefaultConstructor> map = redisson.getCache("deserializationFailure");
+        RMapCache<String, SimpleObjectWithoutDefaultConstructor> map = redisson.getMapCache("deserializationFailure");
         SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
 
         Assert.assertEquals("test-val", object.getTestField());

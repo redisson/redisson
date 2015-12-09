@@ -30,9 +30,12 @@ import org.redisson.connection.ConnectionManager;
  * @author Nikita Koksharov
  *
  */
-public interface CommandReactiveExecutor {
+public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
     ConnectionManager getConnectionManager();
+
+    <T, R> Publisher<R> evalReadReactive(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType,
+            String script, List<Object> keys, Object ... params);
 
     <T, R> Publisher<R> evalWriteAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
 

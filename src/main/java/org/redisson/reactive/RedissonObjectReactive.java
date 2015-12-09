@@ -49,16 +49,7 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
-    protected <V> Subscriber<V> toSubscriber(final Subscriber<V> promise) {
-        return new SubscriberBarrier<V, V>(promise) {
-            @Override
-            protected void doSubscribe(Subscription subscription) {
-                subscription.request(1);
-            }
-        };
-    }
-
-    protected <V> Stream<V> newSucceededObservable(V result) {
+    protected <V> Stream<V> newSucceeded(V result) {
         return Streams.just(result);
     }
 

@@ -24,6 +24,7 @@ import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
+import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RDequeReactive;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
@@ -54,6 +55,7 @@ import org.redisson.reactive.RedissonBatchReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
 import org.redisson.reactive.RedissonBlockingQueueReactive;
 import org.redisson.reactive.RedissonBucketReactive;
+import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonDequeReactive;
 import org.redisson.reactive.RedissonHyperLogLogReactive;
 import org.redisson.reactive.RedissonKeysReactive;
@@ -102,12 +104,17 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
 
-    /**
-     * Returns object holder by name
-     *
-     * @param name of object
-     * @return
-     */
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
+        return new RedissonMapCacheReactive<K, V>(codec, commandExecutor, name);
+    }
+
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
+        return new RedissonMapCacheReactive<K, V>(commandExecutor, name);
+    }
+
     @Override
     public <V> RBucketReactive<V> getBucket(String name) {
         return new RedissonBucketReactive<V>(commandExecutor, name);

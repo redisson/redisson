@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.List;
-import java.util.concurrent.locks.ReadWriteLock;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.core.ClusterNode;
@@ -27,7 +26,7 @@ import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
-import org.redisson.core.RCache;
+import org.redisson.core.RMapCache;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
@@ -54,25 +53,37 @@ import org.redisson.core.RTopic;
  */
 public interface RedissonClient {
 
+    /**
+     * Returns readWriteLock instance by name.
+     *
+     * @param name
+     * @return
+     */
     RReadWriteLock getReadWriteLock(String name);
 
     /**
-     * Returns map-based cache instance with eviction support by name
-     * using provided codec for both cache keys and values.
+     * Returns map-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for both cache keys and values.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
      *
      * @param name
      * @param codec
      * @return
      */
-    <K, V> RCache<K, V> getCache(String name, Codec codec);
+    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec);
 
     /**
-     * Returns map-based cache instance with eviction support by name.
+     * Returns map-based cache instance by name.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
      *
      * @param name
      * @return
      */
-    <K, V> RCache<K, V> getCache(String name);
+    <K, V> RMapCache<K, V> getMapCache(String name);
 
     /**
      * Returns object holder instance by name.

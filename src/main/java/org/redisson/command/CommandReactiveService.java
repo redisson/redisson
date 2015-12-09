@@ -99,6 +99,14 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
+    public <T, R> Publisher<R> evalReadReactive(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType,
+            String script, List<Object> keys, Object ... params) {
+        Future<R> f = evalReadAsync(client, key, codec, evalCommandType, script, keys, params);
+        return new NettyFuturePublisher<R>(f);
+    }
+
+
+    @Override
     public <T, R> Publisher<R> evalWriteReactive(String key, Codec codec, RedisCommand<T> evalCommandType,
             String script, List<Object> keys, Object... params) {
         Future<R> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
