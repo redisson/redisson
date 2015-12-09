@@ -24,7 +24,7 @@ import org.reactivestreams.Publisher;
  * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)}
  * And therefore has an complex lua-scripts inside.</p>
  *
- * <p>Redis doesn't support map entries eviction by design.
+ * <p>Current redis implementation doesnt have eviction functionality.
  * Thus entries are checked for TTL expiration during any key/value/entry read operation.
  * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
