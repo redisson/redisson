@@ -17,10 +17,13 @@ package org.redisson.client.protocol;
 
 import java.io.UnsupportedEncodingException;
 
-public class StringParamsEncoder implements Encoder {
+public class DefaultParamsEncoder implements Encoder {
 
     @Override
     public byte[] encode(Object in) {
+        if (in instanceof byte[]) {
+            return (byte[]) in;
+        }
         try {
             return in.toString().getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {

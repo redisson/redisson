@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.locks.ReadWriteLock;
 
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
@@ -40,7 +39,6 @@ import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
-import org.redisson.core.RMapCache;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
@@ -49,12 +47,14 @@ import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RList;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
+import org.redisson.core.RMapCache;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
 import org.redisson.core.RReadWriteLock;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSet;
+import org.redisson.core.RSetCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
@@ -144,11 +144,6 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public RReadWriteLock getReadWriteLock(String name) {
-        return new RedissonReadWriteLock(commandExecutor, name, id);
-    }
-
-    @Override
     public <V> RBucket<V> getBucket(String name) {
         return new RedissonBucket<V>(commandExecutor, name);
     }
@@ -197,6 +192,16 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RSetCache<V> getSetCache(String name) {
+        return new RedissonSetCache<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RSetCache<V> getSetCache(String name, Codec codec) {
+        return new RedissonSetCache<V>(codec, commandExecutor, name);
+    }
+
+    @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
         return new RedissonMapCache<K, V>(commandExecutor, name);
     }
@@ -214,6 +219,11 @@ public class Redisson implements RedissonClient {
     @Override
     public RLock getLock(String name) {
         return new RedissonLock(commandExecutor, name, id);
+    }
+
+    @Override
+    public RReadWriteLock getReadWriteLock(String name) {
+        return new RedissonReadWriteLock(commandExecutor, name, id);
     }
 
     @Override
@@ -327,6 +337,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RBatch createBatch() {
+        return new RedissonBatch(connectionManager);
+    }
+
+    @Override
     public void shutdown() {
         connectionManager.shutdown();
     }
@@ -355,11 +370,6 @@ public class Redisson implements RedissonClient {
     @Override
     public void flushall() {
         commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
-    }
-
-    @Override
-    public RBatch createBatch() {
-        return new RedissonBatch(connectionManager);
     }
 
 }

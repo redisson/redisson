@@ -38,7 +38,9 @@ import io.netty.util.internal.PlatformDependent;
  * @author Nikita Koksharov
  *
  */
-public class RedissonCacheEvictionScheduler {
+public class RedissonEvictionScheduler {
+
+    public static final RedissonEvictionScheduler INSTANCE = new RedissonEvictionScheduler();
 
     public static class RedissonCacheTask implements Runnable {
 
@@ -86,7 +88,7 @@ public class RedissonCacheEvictionScheduler {
                     if (sizeHistory.size() == 2) {
                         if (sizeHistory.peekFirst() > sizeHistory.peekLast()
                                 && sizeHistory.peekLast() > size) {
-                            delay = Math.min(maxDelay, delay*2);
+                            delay = Math.min(maxDelay, (int)(delay*1.5));
                         }
 
 //                        if (sizeHistory.peekFirst() < sizeHistory.peekLast()
@@ -97,10 +99,10 @@ public class RedissonCacheEvictionScheduler {
                         if (sizeHistory.peekFirst() == sizeHistory.peekLast()
                                 && sizeHistory.peekLast() == size) {
                             if (size == keysLimit) {
-                                delay = Math.max(minDelay, delay/2);
+                                delay = Math.max(minDelay, delay/4);
                             }
                             if (size == 0) {
-                                delay = Math.min(maxDelay, delay*2);
+                                delay = Math.min(maxDelay, (int)(delay*1.5));
                             }
                         }
 
@@ -113,6 +115,9 @@ public class RedissonCacheEvictionScheduler {
             });
         }
 
+    }
+
+    private RedissonEvictionScheduler() {
     }
 
     private final ConcurrentMap<String, RedissonCacheTask> tasks = PlatformDependent.newConcurrentHashMap();

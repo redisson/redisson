@@ -13,35 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.core;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
-
 /**
- * <p>Map-based cache with ability to set TTL for each entry via
- * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)} method.
- * And therefore has an complex lua-scripts inside.</p>
+ * <p>Set-based cache with ability to set TTL for each entry via
+ * {@link #put(Object, Object, long, TimeUnit)} method.
+ * And therefore has an complex lua-scripts inside.
+ * Uses map (value_hash, value) to tie with expiration sorted set under the hood.
+ * </p>
  *
- * <p>Current redis implementation doesnt have map entry eviction functionality.
- * Thus entries are checked for TTL expiration during any key/value/entry read operation.
- * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
+ * <p>Current Redis implementation doesn't have set entry eviction functionality.
+ * Thus values are checked for TTL expiration during any value read operation.
+ * If entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
  * In addition there is {@link org.redisson.RedissonEvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
- * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
+ * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonSet}.</p>
  *
  * @author Nikita Koksharov
  *
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCacheReactive<K, V> extends RMapReactive<K, V> {
+public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
 
-    Publisher<V> putIfAbsent(K key, V value, long ttl, TimeUnit unit);
-
-    Publisher<V> put(K key, V value, long ttl, TimeUnit unit);
+    boolean add(V value, long ttl, TimeUnit unit);
 
 }

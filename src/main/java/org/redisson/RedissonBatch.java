@@ -36,10 +36,17 @@ import org.redisson.core.RQueueAsync;
 import org.redisson.core.RScoredSortedSetAsync;
 import org.redisson.core.RScriptAsync;
 import org.redisson.core.RSetAsync;
+import org.redisson.core.RSetCacheAsync;
 import org.redisson.core.RTopicAsync;
 
 import io.netty.util.concurrent.Future;
 
+/**
+ *
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonBatch implements RBatch {
 
     private final CommandBatchService executorService;
@@ -184,6 +191,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public <V> RSetCacheAsync<V> getSetCache(String name) {
+        return new RedissonSetCache<V>(executorService, name);
+    }
+
+    @Override
+    public <V> RSetCacheAsync<V> getSetCache(String name, Codec codec) {
+        return new RedissonSetCache<V>(codec, executorService, name);
+    }
+
+    @Override
     public List<?> execute() {
         return executorService.execute();
     }
@@ -192,5 +209,6 @@ public class RedissonBatch implements RBatch {
     public Future<List<?>> executeAsync() {
         return executorService.executeAsync();
     }
+
 
 }

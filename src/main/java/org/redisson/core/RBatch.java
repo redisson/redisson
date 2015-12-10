@@ -25,9 +25,8 @@ import io.netty.util.concurrent.Future;
 /**
  * Interface for using pipeline feature.
  *
- * All methods invocations via async objects
- * which have gotten from this interface are batched
- * to separate queue and could be executed later
+ * All method invocations on objects
+ * from this interface are batched to separate queue and could be executed later
  * with <code>execute()</code> or <code>executeAsync()</code> methods.
  *
  *
@@ -35,6 +34,33 @@ import io.netty.util.concurrent.Future;
  *
  */
 public interface RBatch {
+
+    /**
+     * Returns set-based cache instance by <code>name</code>.
+     * Uses map (value_hash, value) under the hood for minimal memory consumption.
+     * Supports value eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <V> RSetCacheAsync<V> getSetCache(String name);
+
+    /**
+     * Returns set-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * Uses map (value_hash, value) under the hood for minimal memory consumption.
+     * Supports value eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <V> RSetCacheAsync<V> getSetCache(String name, Codec codec);
 
     /**
      * Returns map-based cache instance by <code>name</code>

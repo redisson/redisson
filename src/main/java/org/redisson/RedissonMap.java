@@ -291,7 +291,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Future<Long> fastRemoveAsync(K ... keys) {
         if (keys == null || keys.length == 0) {
-            return commandExecutor.getConnectionManager().getGroup().next().newSucceededFuture(0L);
+            return newSucceededFuture(0L);
         }
 
         List<Object> args = new ArrayList<Object>(keys.length + 1);

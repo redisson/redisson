@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-import org.redisson.RedissonCacheEvictionScheduler;
+import org.redisson.RedissonEvictionScheduler;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -51,14 +51,14 @@ import reactor.rx.action.support.DefaultSubscriber;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
- * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)}
+ * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)} method.
  * And therefore has an complex lua-scripts inside.</p>
  *
- * <p>Current redis implementation doesnt have eviction functionality.
+ * <p>Current redis implementation doesnt have map entry eviction functionality.
  * Thus entries are checked for TTL expiration during any key/value/entry read operation.
  * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.RedissonCacheEvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.RedissonEvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
@@ -80,16 +80,14 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
     private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
     private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
 
-    private static final RedissonCacheEvictionScheduler SCHEDULER = new RedissonCacheEvictionScheduler();
-
     public RedissonMapCacheReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        SCHEDULER.schedule(getName(), getTimeoutSetName(), commandExecutor);
+        RedissonEvictionScheduler.INSTANCE.schedule(getName(), getTimeoutSetName(), commandExecutor);
     }
 
     public RedissonMapCacheReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        SCHEDULER.schedule(getName(), getTimeoutSetName(), commandExecutor);
+        RedissonEvictionScheduler.INSTANCE.schedule(getName(), getTimeoutSetName(), commandExecutor);
     }
 
     @Override

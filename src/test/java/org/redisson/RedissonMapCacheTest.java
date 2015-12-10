@@ -22,6 +22,7 @@ import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMapCache;
+import org.redisson.core.RSetCache;
 import org.redisson.core.RMap;
 
 import io.netty.util.concurrent.Future;
@@ -168,27 +169,6 @@ public class RedissonMapCacheTest extends BaseTest {
         expectedMap.put("C", 300);
         Assert.assertEquals(expectedMap, filtered);
     }
-
-//    @Test
-//    public void testFilterKeys() {
-//        RCache<Integer, Integer> map = redisson.getCache("filterKeys");
-//        map.put(1, 100);
-//        map.put(2, 200);
-//        map.put(3, 300);
-//        map.put(4, 400);
-//
-//        Map<Integer, Integer> filtered = map.filterKeys(new Predicate<Integer>() {
-//            @Override
-//            public boolean apply(Integer input) {
-//                return input >= 2 && input <= 3;
-//            }
-//        });
-//
-//        Map<Integer, Integer> expectedMap = new HashMap<Integer, Integer>();
-//        expectedMap.put(2, 200);
-//        expectedMap.put(3, 300);
-//        Assert.assertEquals(expectedMap, filtered);
-//    }
 
     @Test
     public void testExpiredIterator() throws InterruptedException {
@@ -630,6 +610,23 @@ public class RedissonMapCacheTest extends BaseTest {
 
         Assert.assertEquals(testMap, map);
         Assert.assertEquals(testMap.hashCode(), map.hashCode());
+    }
+
+    @Test
+    public void testExpireOverwrite() throws InterruptedException, ExecutionException {
+        RMapCache<String, Integer> set = redisson.getMapCache("simple");
+        set.put("123", 3, 1, TimeUnit.SECONDS);
+
+        Thread.sleep(800);
+
+        set.put("123", 3, 1, TimeUnit.SECONDS);
+
+        Thread.sleep(800);
+        Assert.assertEquals(3, (int)set.get("123"));
+
+        Thread.sleep(200);
+
+        Assert.assertFalse(set.containsKey("123"));
     }
 
     @Test

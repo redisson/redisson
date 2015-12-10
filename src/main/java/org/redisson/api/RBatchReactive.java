@@ -23,10 +23,9 @@ import org.redisson.client.codec.Codec;
 /**
  * Interface for using pipeline feature.
  *
- * All methods invocations via Reactive objects
- * which have gotten from this interface are batched
- * to separate queue and could be executed later
- * with <code>execute()</code> or <code>executeReactive()</code> methods.
+ * All method invocations on objects
+ * from this interface are batched to separate queue and could be executed later
+ * with <code>execute()</code> method.
  *
  *
  * @author Nikita Koksharov
@@ -201,6 +200,6 @@ public interface RBatchReactive {
      *
      * @return List with result object for each command
      */
-    Publisher<List<?>> executeReactive();
+    Publisher<List<?>> execute();
 
 }

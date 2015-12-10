@@ -173,7 +173,7 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
-    public Publisher<List<?>> executeReactive() {
+    public Publisher<List<?>> execute() {
         return new NettyFuturePublisher<List<?>>(executorService.executeAsync());
     }
 

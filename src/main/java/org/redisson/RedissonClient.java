@@ -41,6 +41,7 @@ import org.redisson.core.RReadWriteLock;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSet;
+import org.redisson.core.RSetCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
@@ -54,12 +55,28 @@ import org.redisson.core.RTopic;
 public interface RedissonClient {
 
     /**
-     * Returns readWriteLock instance by name.
+     * Returns set-based cache instance by <code>name</code>.
+     * Supports value eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
      *
      * @param name
+     * @param codec
      * @return
      */
-    RReadWriteLock getReadWriteLock(String name);
+    <V> RSetCache<V> getSetCache(String name);
+
+    /**
+     * Returns set-based cache instance by <code>name</code>.
+     * Supports value eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <V> RSetCache<V> getSetCache(String name, Codec codec);
 
     /**
      * Returns map-based cache instance by <code>name</code>
@@ -169,6 +186,14 @@ public interface RedissonClient {
      * @return
      */
     RLock getLock(String name);
+
+    /**
+     * Returns readWriteLock instance by name.
+     *
+     * @param name
+     * @return
+     */
+    RReadWriteLock getReadWriteLock(String name);
 
     /**
      * Returns set instance by name.
