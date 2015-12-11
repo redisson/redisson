@@ -503,6 +503,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
                 "redis.call('pexpire', KEYS[2], ARGV[1]); "
                 + "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), timeUnit.toSeconds(timeToLive));
@@ -511,6 +512,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public Future<Boolean> expireAtAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
                 "redis.call('pexpireat', KEYS[2], ARGV[1]); "
                 + "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), timestamp);
@@ -519,6 +521,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public Future<Boolean> clearExpireAsync() {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('zrem', KEYS[2], 'redisson__expiretag'); " +
                 "redis.call('persist', KEYS[2]); "
                 + "return redis.call('persist', KEYS[1]); ",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()));

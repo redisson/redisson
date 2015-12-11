@@ -149,13 +149,13 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
 
         final Promise<Map<K, V>> result = Promises.prepare();
         Publisher<List<Object>> publisher = commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<List<Object>>("EVAL", new CacheGetAllDecoder(args), 6, ValueType.MAP_KEY, ValueType.MAP_VALUE),
-                        "local expireSize = redis.call('zcard', KEYS[2]); " +
+                        "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
                         "local maxDate = table.remove(ARGV, 1); " // index is the first parameter
-                        + "local minExpireDate = 92233720368547758;" +
-                        "if expireSize > 0 then "
+                      + "local minExpireDate = 92233720368547758;" +
+                        "if #expireHead == 2 and tonumber(expireHead[2]) <= tonumber(maxDate) then "
                         + "for i, key in pairs(ARGV) do "
                             + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                            + "if expireDate ~= false and expireDate <= maxDate then "
+                            + "if expireDate ~= false and tonumber(expireDate) <= tonumber(maxDate) then "
                                 + "minExpireDate = math.min(tonumber(expireDate), minExpireDate); "
                                 + "ARGV[i] = ARGV[i] .. '__redisson__skip' "
                             + "end;"
@@ -282,7 +282,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
         commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, EVAL_REMOVE_EXPIRED,
                 "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, 100); "
                         + "if #expiredKeys > 0 then "
-                            + "local s = redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
+                            + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
                             + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
                         + "end;",
                         Arrays.<Object>asList(getName(), getTimeoutSetName()), currentDate);
@@ -338,7 +338,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
                     + "if i % 2 == 0 then "
                         + "local key = res[2][i-1]; "
                         + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                        + "if (expireDate == false) or (expireDate ~= false and expireDate > ARGV[2]) then "
+                        + "if (expireDate == false) or (expireDate ~= false and tonumber(expireDate) > tonumber(ARGV[2])) then "
                             + "table.insert(result, key); "
                             + "table.insert(result, value); "
                         + "end; "
@@ -355,24 +355,27 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
     @Override
     public Publisher<Boolean> expire(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteReactive(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('pexpire', KEYS[2], ARGV[1]); "
-                + "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
+                "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
+                "redis.call('pexpire', KEYS[2], ARGV[1]); " +
+                "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), timeUnit.toSeconds(timeToLive));
     }
 
     @Override
     public Publisher<Boolean> expireAt(long timestamp) {
         return commandExecutor.evalWriteReactive(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('pexpireat', KEYS[2], ARGV[1]); "
-                + "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
+                "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
+                "redis.call('pexpireat', KEYS[2], ARGV[1]); " +
+                "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), timestamp);
     }
 
     @Override
     public Publisher<Boolean> clearExpire() {
         return commandExecutor.evalWriteReactive(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('persist', KEYS[2]); "
-                + "return redis.call('persist', KEYS[1]); ",
+                "redis.call('zrem', KEYS[2], 'redisson__expiretag'); " +
+                "redis.call('persist', KEYS[2]); " +
+                "return redis.call('persist', KEYS[1]); ",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()));
     }
 
