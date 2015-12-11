@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
@@ -50,7 +49,7 @@ import net.openhft.hashing.LongHashFunction;
  * <p>Set-based cache with ability to set TTL for each entry via
  * {@link #put(Object, Object, long, TimeUnit)} method.
  * And therefore has an complex lua-scripts inside.
- * Uses map (value_hash, value) to tie with expiration sorted set under the hood.
+ * Uses map(value_hash, value) to tie with sorted set which contains expiration record for every value with TTL.
  * </p>
  *
  * <p>Current Redis implementation doesn't have set entry eviction functionality.
@@ -69,8 +68,8 @@ import net.openhft.hashing.LongHashFunction;
  */
 public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V> {
 
+    private static final RedisCommand<Void> ADD_ALL = new RedisCommand<Void>("HMSET", new VoidReplayConvertor());
     private static final RedisCommand<Boolean> EVAL_ADD = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5);
-    private static final RedisCommand<Boolean> EVAL_ADD_TTL = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7);
     private static final RedisCommand<Boolean> EVAL_OBJECTS = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
     private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
@@ -112,16 +111,20 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
         try {
             byte[] objectState = codec.getValueEncoder().encode(o);
-            long h1 = LongHashFunction.farmUo().hashBytes(objectState);
-            long h2 = LongHashFunction.xx_r39().hashBytes(objectState);
-
-            return ByteBuffer.allocate((2 * Long.SIZE) / Byte.SIZE)
-                    .putLong(h1)
-                    .putLong(h2)
-                    .array();
+            return hash(objectState);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private byte[] hash(byte[] objectState) {
+        long h1 = LongHashFunction.farmUo().hashBytes(objectState);
+        long h2 = LongHashFunction.xx_r39().hashBytes(objectState);
+
+        return ByteBuffer.allocate((2 * Long.SIZE) / Byte.SIZE)
+                .putLong(h1)
+                .putLong(h2)
+                .array();
     }
 
     String getTimeoutSetName() {
@@ -339,18 +342,27 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             throw new NullPointerException("TimeUnit param can't be null");
         }
 
-        byte[] key = hash(value);
-        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
-        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_ADD_TTL,
-                "redis.call('zadd', KEYS[2], ARGV[1], KEYS[3]); " +
-                "if redis.call('hexists', KEYS[1], KEYS[3]) == 0 then " +
-                  "redis.call('hset', KEYS[1], KEYS[3], ARGV[2]); " +
-                  "return 1; " +
-                "end;" +
-                "return 0; ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), key), timeoutDate, value);
+        try {
+            byte[] objectState = encode(value);
+            byte[] key = hash(objectState);
+
+            long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                    "redis.call('zadd', KEYS[2], ARGV[1], KEYS[3]); " +
+                            "if redis.call('hexists', KEYS[1], KEYS[3]) == 0 then " +
+                            "redis.call('hset', KEYS[1], KEYS[3], ARGV[2]); " +
+                            "return 1; " +
+                            "end;" +
+                            "return 0; ",
+                            Arrays.<Object>asList(getName(), getTimeoutSetName(), key), timeoutDate, objectState);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
+    private byte[] encode(V value) throws IOException {
+        return codec.getValueEncoder().encode(value);
+    }
 
     @Override
     public Future<Boolean> addAsync(V e) {
@@ -406,18 +418,20 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             return newSucceededFuture(false);
         }
 
-        List<ValueType> inParamTypes = new ArrayList<ValueType>(c.size()*2);
         List<Object> params = new ArrayList<Object>(c.size()*2 + 1);
         params.add(getName());
-        for (V value : c) {
-            inParamTypes.add(ValueType.BINARY);
-            inParamTypes.add(ValueType.OBJECTS);
-            params.add(hash(value));
-            params.add(value);
+        try {
+            for (V value : c) {
+                byte[] objectState = encode(value);
+                byte[] key = hash(objectState);
+                params.add(key);
+                params.add(objectState);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
-        RedisCommand<Void> command = new RedisCommand<Void>("HMSET", new VoidReplayConvertor(), 2, inParamTypes);
-        return commandExecutor.writeAsync(getName(), codec, command, params.toArray());
+        return commandExecutor.writeAsync(getName(), codec, ADD_ALL, params.toArray());
     }
 
     @Override
@@ -427,9 +441,9 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        List<byte[]> hashes = new ArrayList<byte[]>(c.size());
+        List<byte[]> params = new ArrayList<byte[]>(c.size());
         for (Object object : c) {
-            hashes.add(hash(object));
+            params.add(hash(object));
         }
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                     "local keys = redis.call('hkeys', KEYS[1]); " +
@@ -440,6 +454,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         + "for j, argElement in pairs(ARGV) do "
                             + "if argElement == element then "
                                 + "changed = true;"
+                                + "print ('removed! ');"
                                 + "table.remove(keys, i); "
                                 + "table.remove(ARGV, j); "
                                 + "break; "
@@ -450,25 +465,25 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         "end " +
                     "end " +
                    "if #keys > 0 then "
-                       + "for i=1, table.getn(keys),5000 do "
-                           + "redis.call('hdel', KEYS[1], unpack(keys, i, math.min(i+4999, table.getn(keys)))); "
-                           + "redis.call('zrem', KEYS[2], unpack(keys, i, math.min(i+4999, table.getn(keys)))); "
+                       + "for i=1, #keys,5000 do "
+                           + "redis.call('hdel', KEYS[1], unpack(keys, i, math.min(i+4999, #keys))); "
+                           + "redis.call('zrem', KEYS[2], unpack(keys, i, math.min(i+4999, #keys))); "
                        + "end "
                        + "return 1;"
                    + "end; "
                    + "return 0; ",
-                   Arrays.<Object>asList(getName(), getTimeoutSetName()), hashes.toArray());
+                   Arrays.<Object>asList(getName(), getTimeoutSetName()), params.toArray());
     }
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        List<Object> hashes = new ArrayList<Object>(c.size()+1);
-        hashes.add(getName());
+        List<Object> params = new ArrayList<Object>(c.size()+1);
+        params.add(getName());
         for (Object object : c) {
-            hashes.add(hash(object));
+            params.add(hash(object));
         }
 
-        return commandExecutor.writeAsync(getName(), codec, HDEL, hashes.toArray());
+        return commandExecutor.writeAsync(getName(), codec, HDEL, params.toArray());
     }
 
     @Override

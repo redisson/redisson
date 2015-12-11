@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * <p>Set-based cache with ability to set TTL for each entry via
  * {@link #put(Object, Object, long, TimeUnit)} method.
  * And therefore has an complex lua-scripts inside.
- * Uses map (value_hash, value) to tie with expiration sorted set under the hood.
+ * Uses map(value_hash, value) to tie with sorted set which contains expiration record for every value with TTL.
  * </p>
  *
  * <p>Current Redis implementation doesn't have set entry eviction functionality.
@@ -42,5 +42,14 @@ import java.util.concurrent.TimeUnit;
 public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
 
     boolean add(V value, long ttl, TimeUnit unit);
+
+    /**
+     * Returns the number of elements in cache.
+     * This number can reflects expired elements too
+     * due to non realtime cleanup process.
+     *
+     */
+    @Override
+    int size();
 
 }

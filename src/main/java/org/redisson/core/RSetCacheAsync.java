@@ -30,4 +30,13 @@ public interface RSetCacheAsync<V> extends RCollectionAsync<V> {
 
     Future<Boolean> addAsync(V value, long ttl, TimeUnit unit);
 
+    /**
+     * Returns the number of elements in cache.
+     * This number can reflects expired elements too
+     * due to non realtime cleanup process.
+     *
+     */
+    @Override
+    Future<Integer> sizeAsync();
+
 }
