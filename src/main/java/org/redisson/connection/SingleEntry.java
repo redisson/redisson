@@ -60,6 +60,10 @@ public class SingleEntry extends MasterSlaveEntry {
             AtomicInteger counter = new AtomicInteger(2);
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
+                if (!future.isSuccess()) {
+                    res.setFailure(future.cause());
+                    return;
+                }
                 if (counter.decrementAndGet() == 0) {
                     res.setSuccess(null);
                 }
