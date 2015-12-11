@@ -244,7 +244,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContainsValue() throws InterruptedException {
-        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
+        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple31", new MsgPackJacksonCodec());
         Assert.assertFalse(sync(map.containsValue(new SimpleValue("34"))));
         sync(map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS));
 
@@ -302,7 +302,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testPutGet() throws InterruptedException {
-        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
+        RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple01", new MsgPackJacksonCodec());
         Assert.assertNull(sync(map.get(new SimpleKey("33"))));
 
         sync(map.put(new SimpleKey("33"), new SimpleValue("44"), 2, TimeUnit.SECONDS));

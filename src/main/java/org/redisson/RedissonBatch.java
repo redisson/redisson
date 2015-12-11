@@ -49,10 +49,12 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonBatch implements RBatch {
 
+    private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
 
-    public RedissonBatch(ConnectionManager connectionManager) {
+    public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.executorService = new CommandBatchService(connectionManager);
+        this.evictionScheduler = evictionScheduler;
     }
 
     @Override
@@ -172,12 +174,12 @@ public class RedissonBatch implements RBatch {
 
     @Override
     public <K, V> RMapCacheAsync<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCache<K, V>(codec, executorService, name);
+        return new RedissonMapCache<K, V>(codec, evictionScheduler, executorService, name);
     }
 
     @Override
     public <K, V> RMapCacheAsync<K, V> getMapCache(String name) {
-        return new RedissonMapCache<K, V>(executorService, name);
+        return new RedissonMapCache<K, V>(evictionScheduler, executorService, name);
     }
 
     @Override
@@ -192,12 +194,12 @@ public class RedissonBatch implements RBatch {
 
     @Override
     public <V> RSetCacheAsync<V> getSetCache(String name) {
-        return new RedissonSetCache<V>(executorService, name);
+        return new RedissonSetCache<V>(evictionScheduler, executorService, name);
     }
 
     @Override
     public <V> RSetCacheAsync<V> getSetCache(String name, Codec codec) {
-        return new RedissonSetCache<V>(codec, executorService, name);
+        return new RedissonSetCache<V>(codec, evictionScheduler, executorService, name);
     }
 
     @Override

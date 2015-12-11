@@ -18,12 +18,15 @@ package org.redisson;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -38,9 +41,9 @@ import io.netty.util.internal.PlatformDependent;
  * @author Nikita Koksharov
  *
  */
-public class RedissonEvictionScheduler {
+public class EvictionScheduler {
 
-    public static final RedissonEvictionScheduler INSTANCE = new RedissonEvictionScheduler();
+    private static final Logger log = LoggerFactory.getLogger(RedissonSetCache.class);
 
     public static class RedissonCacheTask implements Runnable {
 
@@ -117,17 +120,68 @@ public class RedissonEvictionScheduler {
 
     }
 
-    private RedissonEvictionScheduler() {
+    private final ConcurrentMap<String, RedissonCacheTask> tasks = PlatformDependent.newConcurrentHashMap();
+    private final CommandAsyncExecutor executor;
+
+    private final Map<String, Long> lastExpiredTime = PlatformDependent.newConcurrentHashMap();
+    private final int expireTaskExecutionDelay = 1000;
+    private final int valuesAmountToClean = 100;
+
+    public EvictionScheduler(CommandAsyncExecutor executor) {
+        this.executor = executor;
     }
 
-    private final ConcurrentMap<String, RedissonCacheTask> tasks = PlatformDependent.newConcurrentHashMap();
-
-    public void schedule(String name, String timeoutSetName, CommandAsyncExecutor executor) {
+    public void schedule(String name, String timeoutSetName) {
         RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, executor);
         RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();
         }
     }
+
+
+    public void runCleanTask(final String name, String timeoutSetName, long currentDate) {
+
+        final Long lastExpired = lastExpiredTime.get(name);
+        long now = System.currentTimeMillis();
+        if (lastExpired == null) {
+            if (lastExpiredTime.putIfAbsent(name, now) != null) {
+                return;
+            }
+        } else if (lastExpired + expireTaskExecutionDelay >= now) {
+            if (!lastExpiredTime.replace(name, lastExpired, now)) {
+                return;
+            }
+        } else {
+            return;
+        }
+
+        Future<Long> future = executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                    "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+                    + "if #expiredKeys > 0 then "
+                        + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
+                        + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
+                    + "end;"
+                    + "return #expiredKeys;",
+                        Arrays.<Object>asList(name, timeoutSetName), currentDate, valuesAmountToClean);
+
+        future.addListener(new FutureListener<Long>() {
+            @Override
+            public void operationComplete(Future<Long> future) throws Exception {
+                executor.getConnectionManager().getGroup().schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        lastExpiredTime.remove(name, lastExpired);
+                    }
+                }, expireTaskExecutionDelay*3, TimeUnit.SECONDS);
+
+                if (!future.isSuccess()) {
+                    log.warn("Can't execute clean task for expired values. RSetCache name: " + name, future.cause());
+                    return;
+                }
+            }
+        });
+    }
+
 
 }

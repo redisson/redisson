@@ -56,7 +56,7 @@ import net.openhft.hashing.LongHashFunction;
  * Thus values are checked for TTL expiration during any value read operation.
  * If entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.RedissonEvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonSet}.</p>
@@ -70,18 +70,21 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     private static final RedisCommand<Void> ADD_ALL = new RedisCommand<Void>("HMSET", new VoidReplayConvertor());
     private static final RedisCommand<Boolean> EVAL_ADD = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5);
-    private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     private static final RedisStrictCommand<Boolean> HDEL = new RedisStrictCommand<Boolean>("HDEL", new BooleanReplayConvertor());
 
-    protected RedissonSetCache(CommandAsyncExecutor commandExecutor, String name) {
+    private final EvictionScheduler evictionScheduler;
+
+    protected RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        RedissonEvictionScheduler.INSTANCE.schedule(getName(), getTimeoutSetName(), commandExecutor);
+        this.evictionScheduler = evictionScheduler;
+        evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
-    protected RedissonSetCache(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    protected RedissonSetCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        RedissonEvictionScheduler.INSTANCE.schedule(getName(), getTimeoutSetName(), commandExecutor);
+        this.evictionScheduler = evictionScheduler;
+        evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
     @Override
@@ -167,7 +170,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 long currentDate = System.currentTimeMillis();
                 if (expireDate <= currentDate) {
                     result.setSuccess(nullValue);
-                    expireMap(currentDate);
+                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
                     return;
                 }
 
@@ -178,16 +181,6 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 }
             }
         });
-    }
-
-    private void expireMap(long currentDate) {
-        commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, EVAL_REMOVE_EXPIRED,
-                "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, 100); "
-                        + "if #expiredKeys > 0 then "
-                            + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
-                            + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
-                        + "end;",
-                        Arrays.<Object>asList(getName(), getTimeoutSetName()), currentDate);
     }
 
     ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
@@ -303,7 +296,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Long expireDate = (Long) res.get(0);
                 long currentDate = System.currentTimeMillis();
                 if (expireDate <= currentDate) {
-                    expireMap(currentDate);
+                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
                 }
 
                 result.setSuccess((Collection<V>) res.get(1));

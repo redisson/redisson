@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
+import org.redisson.EvictionScheduler;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
@@ -41,9 +42,11 @@ import org.redisson.connection.ConnectionManager;
 
 public class RedissonBatchReactive implements RBatchReactive {
 
+    private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
 
-    public RedissonBatchReactive(ConnectionManager connectionManager) {
+    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+        this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandBatchService(connectionManager);
     }
 
@@ -85,6 +88,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
         return new RedissonMapReactive<K, V>(codec, executorService, name);
+    }
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
+        return new RedissonMapCacheReactive<K, V>(codec, evictionScheduler, executorService, name);
+    }
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, executorService, name);
     }
 
     @Override
@@ -175,16 +188,6 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public Publisher<List<?>> execute() {
         return new NettyFuturePublisher<List<?>>(executorService.executeAsync());
-    }
-
-    @Override
-    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(codec, executorService, name);
-    }
-
-    @Override
-    public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(executorService, name);
     }
 
 }

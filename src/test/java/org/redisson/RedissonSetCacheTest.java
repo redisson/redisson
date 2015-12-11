@@ -43,7 +43,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testAddExpire() throws InterruptedException, ExecutionException {
-        RSetCache<String> set = redisson.getSetCache("simple");
+        RSetCache<String> set = redisson.getSetCache("simple3");
         set.add("123", 1, TimeUnit.SECONDS);
         Assert.assertThat(set, Matchers.contains("123"));
 
@@ -54,6 +54,27 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(50);
 
         Assert.assertEquals(0, set.size());
+    }
+
+    @Test
+    public void testAddExpireTwise() throws InterruptedException, ExecutionException {
+        RSetCache<String> set = redisson.getSetCache("simple31");
+        set.add("123", 1, TimeUnit.SECONDS);
+        Thread.sleep(1000);
+
+        Assert.assertFalse(set.contains("123"));
+
+        Thread.sleep(50);
+
+        Assert.assertEquals(0, set.size());
+
+        set.add("4341", 1, TimeUnit.SECONDS);
+        Thread.sleep(1000);
+
+        Assert.assertFalse(set.contains("4341"));
+
+        // can't be evicted due to 1 sec delay
+        Assert.assertEquals(1, set.size());
     }
 
     @Test

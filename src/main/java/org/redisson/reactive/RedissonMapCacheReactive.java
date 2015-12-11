@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-import org.redisson.RedissonEvictionScheduler;
+import org.redisson.EvictionScheduler;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -58,7 +58,7 @@ import reactor.rx.action.support.DefaultSubscriber;
  * Thus entries are checked for TTL expiration during any key/value/entry read operation.
  * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.RedissonEvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
@@ -78,16 +78,19 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_KEY);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_VALUE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_VALUE);
     private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
-    private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
 
-    public RedissonMapCacheReactive(CommandReactiveExecutor commandExecutor, String name) {
+    private final EvictionScheduler evictionScheduler;
+
+    public RedissonMapCacheReactive(EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        RedissonEvictionScheduler.INSTANCE.schedule(getName(), getTimeoutSetName(), commandExecutor);
+        this.evictionScheduler = evictionScheduler;
+        evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
-    public RedissonMapCacheReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonMapCacheReactive(Codec codec, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        RedissonEvictionScheduler.INSTANCE.schedule(getName(), getTimeoutSetName(), commandExecutor);
+        this.evictionScheduler = evictionScheduler;
+        evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
     @Override
@@ -176,7 +179,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
                 Long expireDate = (Long) res.get(0);
                 long currentDate = System.currentTimeMillis();
                 if (expireDate <= currentDate) {
-                    expireMap(currentDate);
+                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
                 }
 
                 result.onNext((Map<K, V>) res.get(1));
@@ -257,7 +260,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
                 if (expireDate <= currentDate) {
                     result.onNext(nullValue);
                     result.onComplete();
-                    expireMap(currentDate);
+                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
                     return;
                 }
 
@@ -276,16 +279,6 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
 
         });
 
-    }
-
-    private void expireMap(long currentDate) {
-        commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, EVAL_REMOVE_EXPIRED,
-                "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, 100); "
-                        + "if #expiredKeys > 0 then "
-                            + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
-                            + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
-                        + "end;",
-                        Arrays.<Object>asList(getName(), getTimeoutSetName()), currentDate);
     }
 
     @Override

@@ -9,13 +9,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonMapCacheTest.SimpleKey;
+import org.redisson.RedissonMapCacheTest.SimpleValue;
 import org.redisson.api.RMapReactive;
+import org.redisson.codec.MsgPackJacksonCodec;
+import org.redisson.core.RMapCache;
 
 import reactor.rx.Streams;
 
@@ -511,24 +516,6 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         Assert.assertEquals(0, sync(map.fastRemove()).intValue());
         Assert.assertEquals(1, sync(map.size()).intValue());
     }
-
-//    @Test(timeout = 5000)
-//    public void testDeserializationErrorReturnsErrorImmediately() throws Exception {
-//        redisson.getConfig().setCodec(new JsonJacksonCodec());
-//
-//        RMap<String, SimpleObjectWithoutDefaultConstructor> map = redisson.getMap("deserializationFailure");
-//        SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
-//
-//        Assert.assertEquals("test-val", object.getTestField());
-//        map.put("test-key", object);
-//
-//        try {
-//            map.get("test-key");
-//            Assert.fail("Expected exception from map.get() call");
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
 
     public static class SimpleObjectWithoutDefaultConstructor {
 

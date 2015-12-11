@@ -55,7 +55,7 @@ import io.netty.util.concurrent.Promise;
  * Thus entries are checked for TTL expiration during any key/value/entry read operation.
  * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.RedissonEvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
@@ -75,16 +75,19 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_KEY);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_VALUE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_VALUE);
     private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
-    private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
 
-    protected RedissonMapCache(CommandAsyncExecutor commandExecutor, String name) {
+    private final EvictionScheduler evictionScheduler;
+
+    protected RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        RedissonEvictionScheduler.INSTANCE.schedule(getName(), getTimeoutSetName(), commandExecutor);
+        this.evictionScheduler = evictionScheduler;
+        evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
-    public RedissonMapCache(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        RedissonEvictionScheduler.INSTANCE.schedule(getName(), getTimeoutSetName(), commandExecutor);
+        this.evictionScheduler = evictionScheduler;
+        evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
     @Override
@@ -173,7 +176,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Long expireDate = (Long) res.get(0);
                 long currentDate = System.currentTimeMillis();
                 if (expireDate <= currentDate) {
-                    expireMap(currentDate);
+                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
                 }
 
                 result.setSuccess((Map<K, V>) res.get(1));
@@ -251,7 +254,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 long currentDate = System.currentTimeMillis();
                 if (expireDate <= currentDate) {
                     result.setSuccess(nullValue);
-                    expireMap(currentDate);
+                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
                     return;
                 }
 
@@ -262,16 +265,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 }
             }
         });
-    }
-
-    private void expireMap(long currentDate) {
-        commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, EVAL_REMOVE_EXPIRED,
-                "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, 100); "
-                        + "if #expiredKeys > 0 then "
-                            + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
-                            + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
-                        + "end;",
-                        Arrays.<Object>asList(getName(), getTimeoutSetName()), currentDate);
     }
 
     @Override

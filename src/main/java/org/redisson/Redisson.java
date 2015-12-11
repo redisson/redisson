@@ -69,6 +69,7 @@ import io.netty.util.concurrent.Future;
  */
 public class Redisson implements RedissonClient {
 
+    private final EvictionScheduler evictionScheduler;
     private final CommandExecutor commandExecutor;
     private final ConnectionManager connectionManager;
     private final Config config;
@@ -92,6 +93,7 @@ public class Redisson implements RedissonClient {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
         commandExecutor = new CommandSyncService(connectionManager);
+        evictionScheduler = new EvictionScheduler(commandExecutor);
     }
 
 
@@ -193,22 +195,22 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <V> RSetCache<V> getSetCache(String name) {
-        return new RedissonSetCache<V>(commandExecutor, name);
+        return new RedissonSetCache<V>(evictionScheduler, commandExecutor, name);
     }
 
     @Override
     public <V> RSetCache<V> getSetCache(String name, Codec codec) {
-        return new RedissonSetCache<V>(codec, commandExecutor, name);
+        return new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name);
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
-        return new RedissonMapCache<K, V>(commandExecutor, name);
+        return new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name);
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCache<K, V>(codec, commandExecutor, name);
+        return new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name);
     }
 
     @Override
@@ -338,7 +340,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RBatch createBatch() {
-        return new RedissonBatch(connectionManager);
+        return new RedissonBatch(evictionScheduler, connectionManager);
     }
 
     @Override

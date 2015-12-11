@@ -266,7 +266,7 @@ public class RedissonMapCacheTest extends BaseTest {
 
     @Test
     public void testKeySet() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple03");
         map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS);
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -285,7 +285,7 @@ public class RedissonMapCacheTest extends BaseTest {
 
     @Test
     public void testValues() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple05");
         map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS);
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -303,7 +303,7 @@ public class RedissonMapCacheTest extends BaseTest {
 
     @Test
     public void testContainsValue() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple01", new MsgPackJacksonCodec());
         Assert.assertFalse(map.containsValue(new SimpleValue("34")));
         map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS);
 
@@ -319,7 +319,7 @@ public class RedissonMapCacheTest extends BaseTest {
 
     @Test
     public void testContainsKey() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple30");
         map.put(new SimpleKey("33"), new SimpleValue("44"), 1, TimeUnit.SECONDS);
 
         Assert.assertTrue(map.containsKey(new SimpleKey("33")));
@@ -432,7 +432,7 @@ public class RedissonMapCacheTest extends BaseTest {
 
     @Test
     public void testPutGet() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple04", new MsgPackJacksonCodec());
         Assert.assertNull(map.get(new SimpleKey("33")));
 
         map.put(new SimpleKey("33"), new SimpleValue("44"), 2, TimeUnit.SECONDS);

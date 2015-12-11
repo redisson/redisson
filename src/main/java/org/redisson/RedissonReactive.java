@@ -80,6 +80,7 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonReactive implements RedissonReactiveClient {
 
+    private final EvictionScheduler evictionScheduler;
     private final CommandReactiveService commandExecutor;
     private final ConnectionManager connectionManager;
     private final Config config;
@@ -101,18 +102,18 @@ public class RedissonReactive implements RedissonReactiveClient {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
         commandExecutor = new CommandReactiveService(connectionManager);
+        evictionScheduler = new EvictionScheduler(commandExecutor);
     }
 
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(codec, commandExecutor, name);
+        return new RedissonMapCacheReactive<K, V>(codec, evictionScheduler, commandExecutor, name);
     }
-
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(commandExecutor, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, commandExecutor, name);
     }
 
     @Override
@@ -261,7 +262,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch() {
-        return new RedissonBatchReactive(connectionManager);
+        return new RedissonBatchReactive(evictionScheduler, connectionManager);
     }
 
     @Override
