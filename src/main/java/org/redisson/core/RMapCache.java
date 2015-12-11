@@ -42,4 +42,13 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
 
     V put(K key, V value, long ttl, TimeUnit unit);
 
+    /**
+     * Returns the number of entries in cache.
+     * This number can reflects expired entries too
+     * due to non realtime cleanup process.
+     *
+     */
+    @Override
+    int size();
+
 }

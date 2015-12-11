@@ -185,7 +185,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, EVAL_REMOVE_EXPIRED,
                 "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, 100); "
                         + "if #expiredKeys > 0 then "
-                            + "local s = redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
+                            + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
                             + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
                         + "end;",
                         Arrays.<Object>asList(getName(), getTimeoutSetName()), currentDate);
@@ -199,7 +199,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                     + "if i % 2 == 0 then "
                         + "local key = res[2][i-1]; "
                         + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                        + "if (expireDate == false) or (expireDate ~= false and expireDate > ARGV[2]) then "
+                        + "if (expireDate == false) or (expireDate ~= false and tonumber(expireDate) > tonumber(ARGV[2])) then "
                             + "table.insert(result, value); "
                         + "end; "
                     + "end; "
@@ -276,14 +276,14 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     private Future<Collection<V>> readAllAsync() {
         final Promise<Collection<V>> result = newPromise();
         Future<List<Object>> future = commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>()),
+                        "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
                         "local keys = redis.call('hkeys', KEYS[1]);" +
-                        "local expireSize = redis.call('zcard', KEYS[2]); " +
                         "local maxDate = ARGV[1]; " +
                         "local minExpireDate = 92233720368547758;" +
-                        "if expireSize > 0 then " +
+                        "if #expireHead == 2 and tonumber(expireHead[2]) <= tonumber(maxDate) then " +
                             "for i, key in pairs(keys) do " +
                                 "local expireDate = redis.call('zscore', KEYS[2], key); " +
-                                "if expireDate ~= false and expireDate <= maxDate then " +
+                                "if expireDate ~= false and tonumber(expireDate) <= tonumber(maxDate) then " +
                                     "minExpireDate = math.min(tonumber(expireDate), minExpireDate); " +
                                     "table.remove(keys, i); " +
                                 "end;" +
@@ -454,7 +454,6 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         + "for j, argElement in pairs(ARGV) do "
                             + "if argElement == element then "
                                 + "changed = true;"
-                                + "print ('removed! ');"
                                 + "table.remove(keys, i); "
                                 + "table.remove(ARGV, j); "
                                 + "break; "

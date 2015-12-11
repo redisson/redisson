@@ -419,7 +419,7 @@ public class RedissonMapCacheTest extends BaseTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", new MsgPackJacksonCodec());
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple3", new MsgPackJacksonCodec());
         Assert.assertNull(map.get(new SimpleKey("33")));
 
         map.put(new SimpleKey("33"), new SimpleValue("44"), 5, TimeUnit.SECONDS);

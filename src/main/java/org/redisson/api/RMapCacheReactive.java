@@ -44,4 +44,13 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V> {
 
     Publisher<V> put(K key, V value, long ttl, TimeUnit unit);
 
+    /**
+     * Returns the number of entries in cache.
+     * This number can reflects expired entries too
+     * due to non realtime cleanup process.
+     *
+     */
+    @Override
+    Publisher<Integer> size();
+
 }
