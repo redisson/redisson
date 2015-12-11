@@ -46,7 +46,7 @@ Features
 * Distributed implementation of `java.util.concurrent.BlockingQueue`  
 * Distributed implementation of `java.util.Deque`  
 * Distributed implementation of `java.util.Map` with TTL support for each entry 
-* Distributed implementation of `java.util.concurrent.ConcurrentMap`  
+* Distributed implementation of `java.util.concurrent.ConcurrentMap` with TTL support for each entry 
 * Distributed implementation of reentrant `java.util.concurrent.locks.Lock` with TTL support  
 * Distributed implementation of reentrant `java.util.concurrent.locks.ReadWriteLock` with TTL support  
 * Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
