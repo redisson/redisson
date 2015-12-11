@@ -13,6 +13,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RScoredSortedSet;
@@ -208,7 +210,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     public void testRetainAll() {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
         for (int i = 0; i < 20000; i++) {
-            set.add(i, i);
+            set.add(i*10, i);
         }
 
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
@@ -515,7 +517,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
         set.add(1, 100);
 
         Double res = set.addScore(100, 11);
@@ -523,7 +525,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Double score = set.getScore(100);
         Assert.assertEquals(12, (double)score, 0);
 
-        RScoredSortedSet<Integer> set2 = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set2 = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
         set2.add(100.2, 1);
 
         Double res2 = set2.addScore(1, new Double(12.1));

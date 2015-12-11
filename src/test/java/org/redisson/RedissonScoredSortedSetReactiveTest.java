@@ -12,6 +12,8 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RScoredSortedSetReactive;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
 
 public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
@@ -315,7 +317,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
         set.add(1, 100);
 
         Double res = sync(set.addScore(100, 11));
@@ -323,7 +325,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         Double score = sync(set.getScore(100));
         Assert.assertEquals(12, (double)score, 0);
 
-        RScoredSortedSetReactive<Integer> set2 = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set2 = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
         set2.add(100.2, 1);
 
         Double res2 = sync(set2.addScore(1, new Double(12.1)));

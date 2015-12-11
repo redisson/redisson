@@ -42,6 +42,7 @@ import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoder;
+import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanReplayDecoder;
 import org.redisson.client.protocol.decoder.StringDataDecoder;
 import org.redisson.client.protocol.decoder.StringListReplayDecoder;
@@ -65,6 +66,7 @@ public interface RedisCommands {
     RedisStrictCommand<Void> READONLY = new RedisStrictCommand<Void>("READONLY", new VoidReplayConvertor());
 
     RedisCommand<Boolean> ZADD_BOOL = new RedisCommand<Boolean>("ZADD", new BooleanAmountReplayConvertor(), 3);
+    RedisCommand<Boolean> ZADD_BOOL_RAW = new RedisCommand<Boolean>("ZADD", new BooleanAmountReplayConvertor());
     RedisCommand<Boolean> ZADD = new RedisCommand<Boolean>("ZADD", 3);
     RedisCommand<Boolean> ZREM = new RedisCommand<Boolean>("ZREM", new BooleanAmountReplayConvertor(), 2);
     RedisStrictCommand<Integer> ZCARD_INT = new RedisStrictCommand<Integer>("ZCARD", new IntegerReplayConvertor());
@@ -83,8 +85,8 @@ public interface RedisCommands {
     RedisCommand<List<Object>> ZRANGEBYSCORE = new RedisCommand<List<Object>>("ZRANGEBYSCORE", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<ScoredEntry<Object>>> ZRANGE_ENTRY = new RedisCommand<List<ScoredEntry<Object>>>("ZRANGE", new ScoredSortedSetReplayDecoder<Object>());
     RedisCommand<List<ScoredEntry<Object>>> ZRANGEBYSCORE_ENTRY = new RedisCommand<List<ScoredEntry<Object>>>("ZRANGEBYSCORE", new ScoredSortedSetReplayDecoder<Object>());
-    RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<ListScanResult<Object>>("ZSCAN", new NestedMultiDecoder(new ObjectListReplayDecoder<Object>(), new ScoredSortedSetScanReplayDecoder()), ValueType.OBJECT);
-    RedisStrictCommand<Double> ZINCRBY = new RedisStrictCommand<Double>("ZINCRBY", new DoubleReplayConvertor());
+    RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<ListScanResult<Object>>("ZSCAN", new NestedMultiDecoder(new ScoredSortedSetScanDecoder<Object>(), new ScoredSortedSetScanReplayDecoder()), ValueType.OBJECT);
+    RedisStrictCommand<Double> ZINCRBY = new RedisStrictCommand<Double>("ZINCRBY", new DoubleReplayConvertor(), 4);
 
     RedisCommand<ListScanResult<String>> SCAN = new RedisCommand<ListScanResult<String>>("SCAN", new NestedMultiDecoder(new ObjectListReplayDecoder<String>(), new ListScanResultReplayDecoder()), ValueType.OBJECT);
     RedisStrictCommand<String> RANDOM_KEY = new RedisStrictCommand<String>("RANDOMKEY", new StringDataDecoder());
