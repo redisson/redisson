@@ -40,14 +40,15 @@ Features
 * Lua scripting  
 * Distributed implementation of `java.util.BitSet`  
 * Distributed implementation of `java.util.List`  
-* Distributed implementation of `java.util.Set`  
+* Distributed implementation of `java.util.Set` with TTL support for each entry
 * Distributed implementation of `java.util.SortedSet`  
 * Distributed implementation of `java.util.Queue`  
 * Distributed implementation of `java.util.concurrent.BlockingQueue`  
 * Distributed implementation of `java.util.Deque`  
-* Distributed implementation of `java.util.Map`  
+* Distributed implementation of `java.util.Map` with TTL support for each entry 
 * Distributed implementation of `java.util.concurrent.ConcurrentMap`  
 * Distributed implementation of reentrant `java.util.concurrent.locks.Lock` with TTL support  
+* Distributed implementation of reentrant `java.util.concurrent.locks.ReadWriteLock` with TTL support  
 * Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
