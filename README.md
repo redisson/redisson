@@ -77,6 +77,15 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####11-Dec-2015 - version 2.2.1 released  
+Feature - __new object added__ `RReadWriteLock` with reentrant read/write locking  
+Feature - __new object added__ `RMapCache` map-based cache with TTL support for each entry  
+Feature - __new object added__ `RSetCache` set-based cache with TTL support for each value  
+Feature - `RBatchReactive.getKeys` method added  
+Feature - `RMap.values()`, `RMap.keySet()`, `RMap.entrySet()` reimplemented with live-view objects  
+Feature - `RObjectReactive.isExists`, `RObject.isExists` and `RObject.isExistsAsync` added  
+Fixed - `RLock.unlock` not thrown IllegalMonitorStateException  
+
 ####04-Dec-2015 - version 2.2.0 released  
 Since 2.2.0 version Redisson supports [Reactive Streams](http://www.reactive-streams.org). Use `Redisson.createReactive` method to access Reactive objects.
 
