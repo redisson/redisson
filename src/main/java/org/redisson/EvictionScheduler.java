@@ -123,7 +123,7 @@ public class EvictionScheduler {
     private final ConcurrentMap<String, RedissonCacheTask> tasks = PlatformDependent.newConcurrentHashMap();
     private final CommandAsyncExecutor executor;
 
-    private final Map<String, Long> lastExpiredTime = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<String, Long> lastExpiredTime = PlatformDependent.newConcurrentHashMap();
     private final int expireTaskExecutionDelay = 1000;
     private final int valuesAmountToClean = 100;
 
