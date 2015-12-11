@@ -30,11 +30,11 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.redisson.RedissonList;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
@@ -160,7 +160,7 @@ public class RedissonListReactive<V> extends RedissonCollectionReactive<V> imple
 
     @Override
     public Publisher<Boolean> containsAll(Collection<?> c) {
-        return commandExecutor.evalReadReactive(getName(), codec, RedissonList.EVAL_BOOLEAN_ARGS1,
+        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
                 "for i=1, #items do " +
                     "for j = 0, table.getn(ARGV), 1 do " +
@@ -221,7 +221,7 @@ public class RedissonListReactive<V> extends RedissonCollectionReactive<V> imple
         List<Object> args = new ArrayList<Object>(coll.size() + 1);
         args.add(index);
         args.addAll(coll);
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5, ValueType.OBJECTS),
                 "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                         "local size = redis.call('llen', KEYS[1]); " +
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
@@ -235,7 +235,7 @@ public class RedissonListReactive<V> extends RedissonCollectionReactive<V> imple
 
     @Override
     public Publisher<Boolean> removeAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, RedissonList.EVAL_BOOLEAN_ARGS1,
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                         "local v = 0 " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 "
@@ -247,7 +247,7 @@ public class RedissonListReactive<V> extends RedissonCollectionReactive<V> imple
 
     @Override
     public Publisher<Boolean> retainAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, RedissonList.EVAL_BOOLEAN_ARGS1,
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local changed = 0 " +
                 "local items = redis.call('lrange', KEYS[1], 0, -1) "
                    + "local i = 1 "

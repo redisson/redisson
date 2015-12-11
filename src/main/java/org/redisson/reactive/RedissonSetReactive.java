@@ -26,9 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RSetReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandReactiveExecutor;
 
@@ -45,8 +43,6 @@ import reactor.rx.Stream;
  * @param <V> value
  */
 public class RedissonSetReactive<V> extends RedissonCollectionReactive<V> implements RSetReactive<V> {
-
-    private static final RedisCommand<Boolean> EVAL_OBJECTS = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
 
     public RedissonSetReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -102,7 +98,7 @@ public class RedissonSetReactive<V> extends RedissonCollectionReactive<V> implem
 
     @Override
     public Publisher<Boolean> containsAll(Collection<?> c) {
-        return commandExecutor.evalReadReactive(getName(), codec, EVAL_OBJECTS,
+        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('smembers', KEYS[1]);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "
@@ -124,7 +120,7 @@ public class RedissonSetReactive<V> extends RedissonCollectionReactive<V> implem
 
     @Override
     public Publisher<Boolean> retainAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_OBJECTS,
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                     "local changed = 0 " +
                     "local s = redis.call('smembers', KEYS[1]) "
                        + "local i = 0 "
@@ -149,7 +145,7 @@ public class RedissonSetReactive<V> extends RedissonCollectionReactive<V> implem
 
     @Override
     public Publisher<Boolean> removeAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_OBJECTS,
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                         "local v = 0 " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "

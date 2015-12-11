@@ -187,7 +187,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
 
     @Override
     public Future<Boolean> addAsync(String e) {
-        return addAsync(0, e);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL_RAW, getName(), 0, e);
     }
 
     @Override
@@ -197,7 +197,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
             params.add(0);
             params.add(param);
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), params.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL_RAW, getName(), params.toArray());
     }
 
     @Override

@@ -70,7 +70,6 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     private static final RedisCommand<Void> ADD_ALL = new RedisCommand<Void>("HMSET", new VoidReplayConvertor());
     private static final RedisCommand<Boolean> EVAL_ADD = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5);
-    private static final RedisCommand<Boolean> EVAL_OBJECTS = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
     private static final RedisCommand<Long> EVAL_REMOVE_EXPIRED = new RedisCommand<Long>("EVAL", 5);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     private static final RedisStrictCommand<Boolean> HDEL = new RedisStrictCommand<Boolean>("HDEL", new BooleanReplayConvertor());
@@ -394,7 +393,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), codec, EVAL_OBJECTS,
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('hvals', KEYS[1]);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "

@@ -144,7 +144,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
 
     @Override
     public Publisher<Long> add(String e) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD, getName(), 0, e);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_RAW, getName(), 0, e);
     }
 
     @Override
@@ -154,7 +154,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
             params.add(0);
             params.add(param);
         }
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD, getName(), params.toArray());
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_RAW, getName(), params.toArray());
     }
 
 }
