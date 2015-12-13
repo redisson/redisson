@@ -40,14 +40,15 @@ Features
 * Lua scripting  
 * Distributed implementation of `java.util.BitSet`  
 * Distributed implementation of `java.util.List`  
-* Distributed implementation of `java.util.Set`  
+* Distributed implementation of `java.util.Set` with TTL support for each entry
 * Distributed implementation of `java.util.SortedSet`  
 * Distributed implementation of `java.util.Queue`  
 * Distributed implementation of `java.util.concurrent.BlockingQueue`  
 * Distributed implementation of `java.util.Deque`  
-* Distributed implementation of `java.util.Map`  
-* Distributed implementation of `java.util.concurrent.ConcurrentMap`  
+* Distributed implementation of `java.util.Map` with TTL support for each entry 
+* Distributed implementation of `java.util.concurrent.ConcurrentMap` with TTL support for each entry 
 * Distributed implementation of reentrant `java.util.concurrent.locks.Lock` with TTL support  
+* Distributed implementation of reentrant `java.util.concurrent.locks.ReadWriteLock` with TTL support  
 * Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
@@ -76,6 +77,15 @@ Ocous: [ocous](http://www.ocous.com/)
 Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
+
+####11-Dec-2015 - version 2.2.1 released  
+Feature - __new object added__ `RReadWriteLock` with reentrant read/write locking  
+Feature - __new object added__ `RMapCache` map-based cache with TTL support for each entry  
+Feature - __new object added__ `RSetCache` set-based cache with TTL support for each value  
+Feature - `RBatchReactive.getKeys` method added  
+Feature - `RMap.values()`, `RMap.keySet()`, `RMap.entrySet()` reimplemented with live-view objects  
+Feature - `RObjectReactive.isExists`, `RObject.isExists` and `RObject.isExistsAsync` added  
+Fixed - `RLock.unlock` not thrown IllegalMonitorStateException  
 
 ####04-Dec-2015 - version 2.2.0 released  
 Since 2.2.0 version Redisson supports [Reactive Streams](http://www.reactive-streams.org). Use `Redisson.createReactive` method to access Reactive objects.
@@ -335,12 +345,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.1.4</version>
+       <version>2.2.1</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.1.4'
+    compile 'org.redisson:redisson:2.2.1'
 
 ### Supported by
 
