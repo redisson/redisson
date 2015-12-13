@@ -18,7 +18,6 @@ package org.redisson;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -45,11 +44,10 @@ public class EvictionScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonSetCache.class);
 
-    public static class RedissonCacheTask implements Runnable {
+    public class RedissonCacheTask implements Runnable {
 
         final String name;
         final String timeoutSetName;
-        final CommandAsyncExecutor executor;
         final Deque<Integer> sizeHistory = new LinkedList<Integer>();
         int delay = 10;
 
@@ -57,10 +55,9 @@ public class EvictionScheduler {
         int maxDelay = 2*60*60;
         int keysLimit = 500;
 
-        public RedissonCacheTask(String name, String timeoutSetName, CommandAsyncExecutor executor) {
+        public RedissonCacheTask(String name, String timeoutSetName) {
             this.name = name;
             this.timeoutSetName = timeoutSetName;
-            this.executor = executor;
         }
 
         public void schedule() {
@@ -69,14 +66,7 @@ public class EvictionScheduler {
 
         @Override
         public void run() {
-            Future<Integer> future = executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
-                    "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
-                  + "if #expiredKeys > 0 then "
-                      + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
-                      + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
-                  + "end; "
-                  + "return #expiredKeys;",
-                  Arrays.<Object>asList(name, timeoutSetName), System.currentTimeMillis(), keysLimit);
+            Future<Integer> future = cleanupExpiredEntires(name, timeoutSetName, keysLimit);
 
             future.addListener(new FutureListener<Integer>() {
                 @Override
@@ -132,7 +122,7 @@ public class EvictionScheduler {
     }
 
     public void schedule(String name, String timeoutSetName) {
-        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, executor);
+        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName);
         RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();
@@ -156,18 +146,11 @@ public class EvictionScheduler {
             return;
         }
 
-        Future<Long> future = executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
-                    "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
-                    + "if #expiredKeys > 0 then "
-                        + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
-                        + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
-                    + "end;"
-                    + "return #expiredKeys;",
-                        Arrays.<Object>asList(name, timeoutSetName), currentDate, valuesAmountToClean);
+        Future<Integer> future = cleanupExpiredEntires(name, timeoutSetName, valuesAmountToClean);
 
-        future.addListener(new FutureListener<Long>() {
+        future.addListener(new FutureListener<Integer>() {
             @Override
-            public void operationComplete(Future<Long> future) throws Exception {
+            public void operationComplete(Future<Integer> future) throws Exception {
                 executor.getConnectionManager().getGroup().schedule(new Runnable() {
                     @Override
                     public void run() {
@@ -183,5 +166,15 @@ public class EvictionScheduler {
         });
     }
 
+    private Future<Integer> cleanupExpiredEntires(String name, String timeoutSetName, int keysLimit) {
+        return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+              + "if #expiredKeys > 0 then "
+                  + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
+                  + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
+              + "end; "
+              + "return #expiredKeys;",
+              Arrays.<Object>asList(name, timeoutSetName), System.currentTimeMillis(), keysLimit);
+    }
 
 }
