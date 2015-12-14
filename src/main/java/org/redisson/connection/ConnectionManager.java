@@ -45,6 +45,10 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
+    boolean isShutdown();
+
+    boolean isShuttingDown();
+
     Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener listener);
 
     ConnectionListener getConnectListener();

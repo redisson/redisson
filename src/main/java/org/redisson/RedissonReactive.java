@@ -305,6 +305,15 @@ public class RedissonReactive implements RedissonReactiveClient {
         connectionManager.shutdown();
     }
 
+    @Override
+    public boolean isShutdown() {
+        return connectionManager.isShutdown();
+    }
+
+    @Override
+    public boolean isShuttingDown() {
+        return connectionManager.isShuttingDown();
+    }
 
 }
 

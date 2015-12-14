@@ -649,6 +649,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         group.shutdownGracefully().syncUninterruptibly();
     }
 
+    @Override
+    public boolean isShuttingDown() {
+        return shutdownLatch.isClosed();
+    }
+
+    @Override
+    public boolean isShutdown() {
+        return group.isTerminated();
+    }
+
+    @Override
     public Collection<RedisClientEntry> getClients() {
         return Collections.unmodifiableCollection(clients);
     }
@@ -682,6 +693,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    @Override
     public InfinitySemaphoreLatch getShutdownLatch() {
         return shutdownLatch;
     }

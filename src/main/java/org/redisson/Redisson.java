@@ -374,5 +374,15 @@ public class Redisson implements RedissonClient {
         commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
     }
 
+    @Override
+    public boolean isShutdown() {
+        return connectionManager.isShutdown();
+    }
+
+    @Override
+    public boolean isShuttingDown() {
+        return connectionManager.isShuttingDown();
+    }
+
 }
 

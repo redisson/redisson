@@ -24,6 +24,7 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * Code parts from Manik Surtani (<a href="mailto:manik@jboss.org">manik@jboss.org</a>)
  * @author Nikita Koksharov
  */
+// TODO refactor to AbstractQueuedLongSynchronizer
 public class InfinitySemaphoreLatch extends AbstractQueuedSynchronizer {
 
     private static final long serialVersionUID = 1744280161777661090l;
@@ -76,6 +77,10 @@ public class InfinitySemaphoreLatch extends AbstractQueuedSynchronizer {
 
     public boolean isOpened() {
         return getState() == OPEN_STATE;
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 
     // waiting for an open state

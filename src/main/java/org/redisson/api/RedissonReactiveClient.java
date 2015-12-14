@@ -374,4 +374,19 @@ public interface RedissonReactiveClient {
      */
     NodesGroup<ClusterNode> getClusterNodesGroup();
 
+    /**
+     * Returns {@code true} if this Redisson instance has been shut down.
+     *
+     * @return
+     */
+    boolean isShutdown();
+
+    /**
+     * Returns {@code true} if this Redisson instance was started to be shutdown
+     * or was shutdown {@link #isShutdown()} already.
+     *
+     * @return
+     */
+    boolean isShuttingDown();
+
 }
