@@ -44,7 +44,7 @@ import io.netty.util.internal.PlatformDependent;
 public class RedissonLock extends RedissonExpirable implements RLock {
 
     public static final long LOCK_EXPIRATION_INTERVAL_SECONDS = 30;
-    private static final ConcurrentMap<String, Timeout> refreshTaskMap = PlatformDependent.newConcurrentHashMap();
+    private static final ConcurrentMap<String, Timeout> expirationRenewalMap = PlatformDependent.newConcurrentHashMap();
     protected long internalLockLeaseTime = TimeUnit.SECONDS.toMillis(LOCK_EXPIRATION_INTERVAL_SECONDS);
 
     final UUID id;
@@ -140,39 +140,35 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     private Long tryLockInner() {
-        Long ttlRemaining = tryLockInner(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        Long ttlRemaining = tryLockInner(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.MILLISECONDS);
         // lock acquired
         if (ttlRemaining == null) {
-            newRefreshTask();
+            scheduleExpirationRenewal();
         }
         return ttlRemaining;
     }
 
-    private void newRefreshTask() {
-        if (refreshTaskMap.containsKey(getName())) {
+    private void scheduleExpirationRenewal() {
+        if (expirationRenewalMap.containsKey(getName())) {
             return;
         }
 
         Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                expire(internalLockLeaseTime, TimeUnit.MILLISECONDS);
-                refreshTaskMap.remove(getName());
-                newRefreshTask(); // reschedule itself
+                expireAsync(internalLockLeaseTime, TimeUnit.MILLISECONDS);
+                expirationRenewalMap.remove(getName());
+                scheduleExpirationRenewal(); // reschedule itself
             }
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
 
-        if (refreshTaskMap.putIfAbsent(getName(), task) != null) {
+        if (expirationRenewalMap.putIfAbsent(getName(), task) != null) {
             task.cancel();
         }
     }
 
-    /**
-     * Stop refresh timer
-     * @return true if timer was stopped successfully
-     */
-    void stopRefreshTask() {
-        Timeout task = refreshTaskMap.remove(getName());
+    void cancelExpirationRenewal() {
+        Timeout task = expirationRenewalMap.remove(getName());
         if (task != null) {
             task.cancel();
         }
@@ -297,7 +293,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     + id + " thread-id: " + Thread.currentThread().getId());
         }
         if (opStatus) {
-            stopRefreshTask();
+            cancelExpirationRenewal();
         }
     }
 
@@ -313,7 +309,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     Future<Boolean> forceUnlockAsync() {
-        stopRefreshTask();
+        cancelExpirationRenewal();
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
                 + "redis.call('publish', KEYS[2], ARGV[1]); "
