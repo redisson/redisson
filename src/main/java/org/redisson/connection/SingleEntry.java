@@ -36,7 +36,7 @@ public class SingleEntry extends MasterSlaveEntry {
 
     final ConnectionPool<RedisPubSubConnection> pubSubConnectionHolder;
 
-    public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionListener connectListener) {
+    public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionInitializer connectListener) {
         super(slotRanges, connectionManager, config, connectListener);
         pubSubConnectionHolder = new PubSubConnectionPoll(config, connectionManager, this) {
             protected ClientConnectionsEntry getEntry() {

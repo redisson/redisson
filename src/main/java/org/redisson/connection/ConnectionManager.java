@@ -51,7 +51,7 @@ public interface ConnectionManager {
 
     Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener listener);
 
-    ConnectionListener getConnectListener();
+    ConnectionInitializer getConnectListener();
 
     IdleConnectionWatcher getConnectionWatcher();
 

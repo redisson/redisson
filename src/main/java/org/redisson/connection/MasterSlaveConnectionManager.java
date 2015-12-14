@@ -106,7 +106,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected EventLoopGroup group;
 
-    protected ConnectionListener connectListener = new DefaultConnectionListener();
+    protected ConnectionInitializer connectListener = new DefaultConnectionListener();
 
     protected Class<? extends SocketChannel> socketChannelClass;
 
@@ -169,7 +169,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         initEntry(config);
     }
 
-    public ConnectionListener getConnectListener() {
+    public ConnectionInitializer getConnectListener() {
         return connectListener;
     }
 

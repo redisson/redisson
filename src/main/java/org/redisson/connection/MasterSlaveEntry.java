@@ -52,7 +52,7 @@ public class MasterSlaveEntry {
     LoadBalancerManager slaveBalancer;
     ClientConnectionsEntry masterEntry;
 
-    final ConnectionListener connectListener;
+    final ConnectionInitializer connectListener;
 
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
@@ -62,7 +62,7 @@ public class MasterSlaveEntry {
 
     final AtomicBoolean active = new AtomicBoolean(true);
 
-    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionListener connectListener) {
+    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionInitializer connectListener) {
         this.slotRanges = slotRanges;
         this.connectionManager = connectionManager;
         this.config = config;

@@ -21,7 +21,7 @@ import org.redisson.connection.ClientConnectionsEntry.NodeType;
 
 import io.netty.util.concurrent.Promise;
 
-public interface ConnectionListener {
+public interface ConnectionInitializer {
 
     <T extends RedisConnection> void onConnect(Promise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config);
 

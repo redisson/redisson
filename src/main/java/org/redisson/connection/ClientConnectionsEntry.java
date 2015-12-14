@@ -51,12 +51,12 @@ public class ClientConnectionsEntry {
     public enum NodeType {SLAVE, MASTER}
 
     private final NodeType nodeType;
-    private final ConnectionListener connectionListener;
+    private final ConnectionInitializer connectionListener;
 
     private final AtomicInteger failedAttempts = new AtomicInteger();
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
-            ConnectionListener connectionListener, NodeType serverMode,
+            ConnectionInitializer connectionListener, NodeType serverMode,
             IdleConnectionWatcher watcher, MasterSlaveServersConfig config) {
         this.client = client;
         this.freeConnectionsCounter.set(poolMaxSize);
