@@ -43,7 +43,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getName(), timeUnit.toSeconds(timeToLive));
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getName(), timeUnit.toMillis(timeToLive));
     }
 
     @Override
