@@ -78,6 +78,12 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####14-Dec-2015 - version 2.2.2 released  
+Feature - `isShuttingDown` and `isShutdown` methods were added to RedissonClient and RedissonReactiveClient  
+Feature - __new object added__ `RSetCacheReactive`  
+Fixed - RLock expiration renewal task scheduling fixed (regression bug since 2.2.1)  
+Fixed - RExpirable.expireAsync timeUnit precision fixed (regression bug since 2.2.1)  
+
 ####11-Dec-2015 - version 2.2.1 released  
 Feature - __new object added__ `RReadWriteLock` with reentrant read/write locking  
 Feature - __new object added__ `RMapCache` map-based cache with TTL support for each entry  
