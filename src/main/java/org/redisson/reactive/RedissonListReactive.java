@@ -33,8 +33,8 @@ import org.reactivestreams.Subscription;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
@@ -54,7 +54,7 @@ import reactor.rx.subscription.ReactiveSubscription;
  *
  * @param <V> the type of elements held in this collection
  */
-public class RedissonListReactive<V> extends RedissonCollectionReactive<V> implements RListReactive<V> {
+public class RedissonListReactive<V> extends RedissonExpirableReactive implements RListReactive<V> {
 
     public RedissonListReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -175,17 +175,14 @@ public class RedissonListReactive<V> extends RedissonCollectionReactive<V> imple
 
     @Override
     public Publisher<Long> addAll(Publisher<? extends V> c) {
-        return addAll(c, new Function<V, Publisher<Long>>() {
+        return new PublisherAdder<V>(this) {
+
             @Override
-            public Publisher<Long> apply(V o) {
-                return add(o);
+            public Long sum(Long first, Long second) {
+                return second;
             }
-        }, new BiFunction<Long, Long, Long>() {
-            @Override
-            public Long apply(Long left, Long right) {
-                return right;
-            }
-        });
+
+        }.addAll(c);
     }
 
     @Override
@@ -274,10 +271,6 @@ public class RedissonListReactive<V> extends RedissonCollectionReactive<V> imple
     @Override
     public Publisher<V> get(long index) {
         return commandExecutor.readReactive(getName(), codec, LINDEX, getName(), index);
-    }
-
-    private boolean isPositionInRange(long index, long size) {
-        return index >= 0 && index <= size;
     }
 
     @Override

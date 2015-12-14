@@ -35,6 +35,7 @@ import org.redisson.api.RPatternTopicReactive;
 import org.redisson.api.RQueueReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
+import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -66,6 +67,7 @@ import org.redisson.reactive.RedissonPatternTopicReactive;
 import org.redisson.reactive.RedissonQueueReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
 import org.redisson.reactive.RedissonScriptReactive;
+import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.reactive.RedissonTopicReactive;
 
@@ -246,6 +248,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RSetCacheReactive<V> getSetCache(String name) {
+        return new RedissonSetCacheReactive<V>(evictionScheduler, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
+        return new RedissonSetCacheReactive<V>(codec, evictionScheduler, commandExecutor, name);
+    }
+
+    @Override
     public RAtomicLongReactive getAtomicLong(String name) {
         return new RedissonAtomicLongReactive(commandExecutor, name);
     }
@@ -292,6 +304,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public void shutdown() {
         connectionManager.shutdown();
     }
+
 
 }
 

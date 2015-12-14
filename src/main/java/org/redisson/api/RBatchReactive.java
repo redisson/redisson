@@ -34,6 +34,33 @@ import org.redisson.client.codec.Codec;
 public interface RBatchReactive {
 
     /**
+     * Returns set-based cache instance by <code>name</code>.
+     * Uses map (value_hash, value) under the hood for minimal memory consumption.
+     * Supports value eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <V> RSetCacheReactive<V> getSetCache(String name);
+
+    /**
+     * Returns set-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * Uses map (value_hash, value) under the hood for minimal memory consumption.
+     * Supports value eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <V> RSetCacheReactive<V> getSetCache(String name, Codec codec);
+
+    /**
      * Returns map-based cache instance by <code>name</code>
      * using provided <code>codec</code> for both cache keys and values.
      * Supports entry eviction with a given TTL value.
@@ -175,6 +202,12 @@ public interface RBatchReactive {
      */
     RLexSortedSetReactive getLexSortedSet(String name);
 
+    /**
+     * Returns bitSet instance by name.
+     *
+     * @param name of bitSet
+     * @return
+     */
     RBitSetReactive getBitSet(String name);
 
     /**

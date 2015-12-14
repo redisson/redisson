@@ -25,9 +25,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
-import reactor.fn.BiFunction;
-import reactor.fn.Function;
-
 public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactive<String> implements RLexSortedSetReactive {
 
     public RedissonLexSortedSetReactive(CommandReactiveExecutor commandExecutor, String name) {
@@ -36,17 +33,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
 
     @Override
     public Publisher<Long> addAll(Publisher<? extends String> c) {
-        return addAll(c, new Function<String, Publisher<Long>>() {
-            @Override
-            public Publisher<Long> apply(String o) {
-                return add(o);
-            }
-        }, new BiFunction<Long, Long, Long>() {
-            @Override
-            public Long apply(Long left, Long right) {
-                return left + right;
-            }
-        });
+        return new PublisherAdder<String>(this).addAll(c);
     }
 
     @Override

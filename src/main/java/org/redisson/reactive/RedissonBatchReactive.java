@@ -34,6 +34,7 @@ import org.redisson.api.RMapReactive;
 import org.redisson.api.RQueueReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
+import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.client.codec.Codec;
@@ -153,6 +154,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public RAtomicLongReactive getAtomicLongReactive(String name) {
         return new RedissonAtomicLongReactive(executorService, name);
+    }
+
+    @Override
+    public <V> RSetCacheReactive<V> getSetCache(String name) {
+        return new RedissonSetCacheReactive<V>(evictionScheduler, executorService, name);
+    }
+
+    @Override
+    public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
+        return new RedissonSetCacheReactive<V>(codec, evictionScheduler, executorService, name);
     }
 
     @Override

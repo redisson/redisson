@@ -278,7 +278,6 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
             }
 
         });
-
     }
 
     @Override
@@ -351,7 +350,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
                 "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
                 "redis.call('pexpire', KEYS[2], ARGV[1]); " +
                 "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), timeUnit.toSeconds(timeToLive));
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), timeUnit.toMillis(timeToLive));
     }
 
     @Override

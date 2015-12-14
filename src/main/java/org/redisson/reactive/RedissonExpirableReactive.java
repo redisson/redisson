@@ -38,7 +38,7 @@ abstract class RedissonExpirableReactive extends RedissonObjectReactive implemen
 
     @Override
     public Publisher<Boolean> expire(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getName(), timeUnit.toSeconds(timeToLive));
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getName(), timeUnit.toMillis(timeToLive));
     }
 
     @Override

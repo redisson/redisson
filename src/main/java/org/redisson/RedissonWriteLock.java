@@ -107,7 +107,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                     + id + " thread-id: " + Thread.currentThread().getId());
         }
         if (opStatus) {
-            stopRefreshTask();
+            cancelExpirationRenewal();
         }
     }
 
@@ -117,7 +117,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     }
 
     Future<Boolean> forceUnlockAsync() {
-        stopRefreshTask();
+        cancelExpirationRenewal();
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
               "if (redis.call('hdel', KEYS[1], KEYS[2]) == 1) then " +
                   "if (redis.call('hlen', KEYS[1]) == 1) then " +

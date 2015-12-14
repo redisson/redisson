@@ -22,18 +22,11 @@ import java.util.Collections;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.redisson.api.RSetReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandReactiveExecutor;
-
-import reactor.core.reactivestreams.SubscriberBarrier;
-import reactor.fn.BiFunction;
-import reactor.fn.Function;
-import reactor.rx.Stream;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -42,7 +35,7 @@ import reactor.rx.Stream;
  *
  * @param <V> value
  */
-public class RedissonSetReactive<V> extends RedissonCollectionReactive<V> implements RSetReactive<V> {
+public class RedissonSetReactive<V> extends RedissonExpirableReactive implements RSetReactive<V> {
 
     public RedissonSetReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -54,17 +47,7 @@ public class RedissonSetReactive<V> extends RedissonCollectionReactive<V> implem
 
     @Override
     public Publisher<Long> addAll(Publisher<? extends V> c) {
-        return addAll(c, new Function<V, Publisher<Long>>() {
-            @Override
-            public Publisher<Long> apply(V o) {
-                return add(o);
-            }
-        }, new BiFunction<Long, Long, Long>() {
-            @Override
-            public Long apply(Long left, Long right) {
-                return left + right;
-            }
-        });
+        return new PublisherAdder<V>(this).addAll(c);
     }
 
     @Override
@@ -157,107 +140,11 @@ public class RedissonSetReactive<V> extends RedissonCollectionReactive<V> implem
 
     @Override
     public Publisher<V> iterator() {
-        return new Stream<V>() {
-
+        return new SetReactiveIterator<V>() {
             @Override
-            public void subscribe(final Subscriber<? super V> t) {
-                t.onSubscribe(new SubscriberBarrier<V, V>(t) {
-
-                    private List<V> firstValues;
-                    private long nextIterPos;
-                    private InetSocketAddress client;
-
-                    private long currentIndex;
-                    private List<V> prevValues = new ArrayList<V>();
-
-                    @Override
-                    protected void doRequest(long n) {
-                        currentIndex = n;
-
-                        if (!prevValues.isEmpty()) {
-                            List<V> vals = new ArrayList<V>(prevValues);
-                            prevValues.clear();
-
-                            handle(vals);
-
-                            if (currentIndex == 0) {
-                                return;
-                            }
-                        }
-
-                        nextValues();
-                    }
-
-                    private void handle(List<V> vals) {
-                        for (V val : vals) {
-                            if (currentIndex > 0) {
-                                onNext(val);
-                            } else {
-                                prevValues.add(val);
-                            }
-                            currentIndex--;
-                            if (currentIndex == 0) {
-                                onComplete();
-                            }
-                        }
-                    }
-
-                    protected void nextValues() {
-                        final SubscriberBarrier<V, V> m = this;
-                        scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<V>>() {
-
-                            @Override
-                            public void onSubscribe(Subscription s) {
-                                s.request(Long.MAX_VALUE);
-                            }
-
-                            @Override
-                            public void onNext(ListScanResult<V> res) {
-                                client = res.getRedisClient();
-
-                                long prevIterPos = nextIterPos;
-                                if (nextIterPos == 0 && firstValues == null) {
-                                    firstValues = res.getValues();
-                                } else if (res.getValues().equals(firstValues)) {
-                                    m.onComplete();
-                                    currentIndex = 0;
-                                    return;
-                                }
-
-                                nextIterPos = res.getPos();
-                                if (prevIterPos == nextIterPos) {
-                                    nextIterPos = -1;
-                                }
-
-                                handle(res.getValues());
-
-                                if (currentIndex == 0) {
-                                    return;
-                                }
-
-                                if (nextIterPos == -1) {
-                                    m.onComplete();
-                                    currentIndex = 0;
-                                }
-                            }
-
-                            @Override
-                            public void onError(Throwable error) {
-                                m.onError(error);
-                            }
-
-                            @Override
-                            public void onComplete() {
-                                if (currentIndex == 0) {
-                                    return;
-                                }
-                                nextValues();
-                            }
-                        });
-                    }
-                });
+            protected Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
+                return RedissonSetReactive.this.scanIteratorReactive(client, nextIterPos);
             }
-
         };
     }
 

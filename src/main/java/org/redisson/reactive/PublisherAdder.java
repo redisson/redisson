@@ -17,27 +17,25 @@ package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandReactiveExecutor;
+import org.redisson.api.RCollectionReactive;
 
-import reactor.fn.BiFunction;
-import reactor.fn.Function;
 import reactor.rx.Promise;
 import reactor.rx.Promises;
 import reactor.rx.action.support.DefaultSubscriber;
 
+public class PublisherAdder<V> {
 
-abstract class RedissonCollectionReactive<V> extends RedissonExpirableReactive {
+    private final RCollectionReactive<V> destination;
 
-    RedissonCollectionReactive(CommandReactiveExecutor connectionManager, String name) {
-        super(connectionManager, name);
+    public PublisherAdder(RCollectionReactive<V> destination) {
+        this.destination = destination;
     }
 
-    RedissonCollectionReactive(Codec codec, CommandReactiveExecutor connectionManager, String name) {
-        super(codec, connectionManager, name);
+    public Long sum(Long first, Long second) {
+        return first + second;
     }
 
-    protected Publisher<Long> addAll(Publisher<? extends V> c, final Function<V, Publisher<Long>> function, final BiFunction<Long, Long, Long> sizeFunc) {
+    public Publisher<Long> addAll(Publisher<? extends V> c) {
         final Promise<Long> promise = Promises.prepare();
 
         c.subscribe(new DefaultSubscriber<V>() {
@@ -55,7 +53,7 @@ abstract class RedissonCollectionReactive<V> extends RedissonExpirableReactive {
             @Override
             public void onNext(V o) {
                 lastValue = o;
-                function.apply(o).subscribe(new DefaultSubscriber<Long>() {
+                destination.add(o).subscribe(new DefaultSubscriber<Long>() {
 
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -69,7 +67,7 @@ abstract class RedissonCollectionReactive<V> extends RedissonExpirableReactive {
 
                     @Override
                     public void onNext(Long o) {
-                        lastSize = sizeFunc.apply(lastSize, o);
+                        lastSize = sum(lastSize, o);
                     }
 
                     @Override
