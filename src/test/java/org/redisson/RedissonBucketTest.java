@@ -2,7 +2,9 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
@@ -10,6 +12,21 @@ import org.junit.Test;
 import org.redisson.core.RBucket;
 
 public class RedissonBucketTest extends BaseTest {
+
+    @Test
+    public void testLoadBucketValues() {
+        RBucket<String> bucket1 = redisson.getBucket("test1");
+        bucket1.set("someValue1");
+        RBucket<String> bucket3 = redisson.getBucket("test3");
+        bucket3.set("someValue3");
+
+        Map<String, String> result = redisson.loadBucketValues("test1", "test2", "test3", "test4");
+        Map<String, String> expected = new HashMap<String, String>();
+        expected.put("test1", "someValue1");
+        expected.put("test3", "someValue3");
+
+        Assert.assertEquals(expected, result);
+    }
 
     @Test
     public void testExpire() throws InterruptedException {

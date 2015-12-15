@@ -20,9 +20,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,6 +58,7 @@ import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.PlatformDependent;
 
 /**
  *
@@ -99,14 +101,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> Future<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params) {
         final Promise<Collection<R>> mainPromise = connectionManager.newPromise();
         Promise<R> promise = new DefaultPromise<R>() {
-            Queue<R> results = new ConcurrentLinkedQueue<R>();
+            List<R> results = new ArrayList<R>();
             AtomicInteger counter = new AtomicInteger(connectionManager.getEntries().keySet().size());
             @Override
             public Promise<R> setSuccess(R result) {
                 if (result instanceof Collection) {
-                    results.addAll((Collection)result);
+                    synchronized (results) {
+                        results.addAll((Collection)result);
+                    }
                 } else {
-                    results.add(result);
+                    synchronized (results) {
+                        results.add(result);
+                    }
                 }
 
                 if (counter.decrementAndGet() == 0

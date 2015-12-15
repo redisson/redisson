@@ -15,7 +15,9 @@
  */
 package org.redisson;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.core.ClusterNode;
@@ -136,6 +138,24 @@ public interface RedissonClient {
      * @return
      */
     <V> List<RBucket<V>> findBuckets(String pattern);
+
+    /**
+     * Returns RBucket value mapped by key. Result Map is not contains
+     * key-value entry for null values.
+     *
+     * @param keys
+     * @return
+     */
+    <V> Map<String, V> loadBucketValues(Collection<String> keys);
+
+    /**
+     * Returns RBucket value mapped by key. Result Map is not contains
+     * key-value entry for null values.
+     *
+     * @param keys
+     * @return
+     */
+    <V> Map<String, V> loadBucketValues(String ... keys);
 
     /**
      * Use {@link #findBuckets(String)}

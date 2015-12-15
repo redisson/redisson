@@ -17,7 +17,9 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.redisson.api.RedissonReactiveClient;
@@ -57,8 +59,6 @@ import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Main infrastructure class allows to get access
@@ -157,8 +157,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <V> List<RBucket<V>> findBuckets(String pattern) {
-        Future<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
-        Collection<String> keys = commandExecutor.get(r);
+        Collection<String> keys = commandExecutor.get(commandExecutor.<List<String>, String>readAllAsync(RedisCommands.KEYS, pattern));
         List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
         for (String key : keys) {
             if(key == null) {
@@ -167,6 +166,25 @@ public class Redisson implements RedissonClient {
             buckets.add(this.<V>getBucket(key));
         }
         return buckets;
+    }
+
+    public <V> Map<String, V> loadBucketValues(Collection<String> keys) {
+        return loadBucketValues(keys.toArray(new String[keys.size()]));
+    }
+
+    public <V> Map<String, V> loadBucketValues(String ... keys) {
+        Collection<Object> values = commandExecutor.get(commandExecutor.<List<Object>, Object>readAllAsync(RedisCommands.MGET, keys));
+        Map<String, V> result = new HashMap<String, V>(values.size());
+        int index = 0;
+        for (Object value : values) {
+            if(value == null) {
+                index++;
+                continue;
+            }
+            result.put(keys[index], (V)value);
+            index++;
+        }
+        return result;
     }
 
     @Override
