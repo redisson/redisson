@@ -170,13 +170,27 @@ public class RedissonLockTest extends BaseConcurrentTest {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 lock.lock();
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+                lock.unlock();
             };
         };
 
         t.start();
-        t.join();
+        t.join(400);
 
-        lock.unlock();
+        try {
+            lock.unlock();
+        } catch (IllegalMonitorStateException e) {
+            t.join();
+            throw e;
+        }
     }
 
 

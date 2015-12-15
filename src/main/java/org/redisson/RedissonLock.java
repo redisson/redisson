@@ -140,7 +140,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     private Long tryLockInner() {
-        Long ttlRemaining = tryLockInner(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.MILLISECONDS);
+        Long ttlRemaining = tryLockInner(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.SECONDS);
         // lock acquired
         if (ttlRemaining == null) {
             scheduleExpirationRenewal();
