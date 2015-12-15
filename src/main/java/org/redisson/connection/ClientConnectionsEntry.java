@@ -237,5 +237,15 @@ public class ClientConnectionsEntry {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return "[freeSubscribeConnectionsAmount=" + freeSubscribeConnections.size()
+                + ", freeSubscribeConnectionsCounter=" + freeSubscribeConnectionsCounter
+                + ", freeConnectionsAmount=" + freeConnections.size() + ", freeConnectionsCounter="
+                + freeConnectionsCounter + ", freezed=" + freezed + ", freezeReason=" + freezeReason
+                + ", client=" + client + ", nodeType=" + nodeType + ", failedAttempts=" + failedAttempts
+                + "]";
+    }
+
 }
 

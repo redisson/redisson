@@ -146,7 +146,7 @@ public class RedisClient {
 
     @Override
     public String toString() {
-        return "RedisClient [addr=" + addr + "]";
+        return "[addr=" + addr + "]";
     }
 
 }

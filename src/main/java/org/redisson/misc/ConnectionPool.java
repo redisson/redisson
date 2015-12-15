@@ -123,7 +123,7 @@ public class ConnectionPool<T extends RedisConnection> {
         }
 
         RedisConnectionException exception = new RedisConnectionException(
-                "Can't aquire connection from pool!");
+                "Can't aquire connection from pool! " + entries);
         return connectionManager.newFailedFuture(exception);
     }
 
