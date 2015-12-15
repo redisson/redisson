@@ -78,6 +78,11 @@ Recent Releases
 ================================
 ####Please Note: trunk is current development branch.
 
+####15-Dec-2015 - version 2.2.3 released  
+Feature - ability to set connection listener via `Config.connectionListener` setting  
+Fixed - `RLock` expiration bug fixed (regression bug since 2.2.2)  
+Fixed - NPE in `RedissonSortedSet` constructor  
+
 ####14-Dec-2015 - version 2.2.2 released  
 Feature - `isShuttingDown` and `isShutdown` methods were added to RedissonClient and RedissonReactiveClient  
 Feature - __new object added__ `RSetCacheReactive`  
