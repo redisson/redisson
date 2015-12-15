@@ -14,7 +14,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.codec.SerializationCodec;
-import org.redisson.connection.ServerListener;
+import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
@@ -50,7 +50,7 @@ public class RedissonTest {
 
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319").setFailedAttempts(1).setRetryAttempts(1);
-        config.setServerListener(new ServerListener() {
+        config.setConnectionListener(new ConnectionListener() {
 
             @Override
             public void onDisconnect(InetSocketAddress addr) {

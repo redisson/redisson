@@ -20,36 +20,36 @@ import java.util.concurrent.ConcurrentMap;
 
 import io.netty.util.internal.PlatformDependent;
 
-public class ServerEventsHub {
+public class ConnectionEventsHub {
 
     public enum Status {CONNECTED, DISCONNECTED};
 
-    private final ConcurrentMap<InetSocketAddress, Status> statusMap = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<InetSocketAddress, Status> maps = PlatformDependent.newConcurrentHashMap();
 
-    private final ServerListener serverListener;
+    private final ConnectionListener connectionListener;
 
-    public ServerEventsHub(ServerListener connectionListener) {
-        this.serverListener = connectionListener;
+    public ConnectionEventsHub(ConnectionListener connectionListener) {
+        this.connectionListener = connectionListener;
     }
 
     public void fireConnect(InetSocketAddress addr) {
-        if (serverListener == null || statusMap.get(addr) == Status.CONNECTED) {
+        if (connectionListener == null || maps.get(addr) == Status.CONNECTED) {
             return;
         }
 
-        if (statusMap.putIfAbsent(addr, Status.CONNECTED) == null
-                || statusMap.replace(addr, Status.DISCONNECTED, Status.CONNECTED)) {
-            serverListener.onConnect(addr);
+        if (maps.putIfAbsent(addr, Status.CONNECTED) == null
+                || maps.replace(addr, Status.DISCONNECTED, Status.CONNECTED)) {
+            connectionListener.onConnect(addr);
         }
     }
 
     public void fireDisconnect(InetSocketAddress addr) {
-        if (serverListener == null || statusMap.get(addr) == Status.DISCONNECTED) {
+        if (connectionListener == null || maps.get(addr) == Status.DISCONNECTED) {
             return;
         }
 
-        if (statusMap.replace(addr, Status.CONNECTED, Status.DISCONNECTED)) {
-            serverListener.onDisconnect(addr);
+        if (maps.replace(addr, Status.CONNECTED, Status.DISCONNECTED)) {
+            connectionListener.onDisconnect(addr);
         }
     }
 
