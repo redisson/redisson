@@ -122,7 +122,25 @@ public interface RedissonClient {
 
     /**
      * Returns a list of object holder instances by a key pattern.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *    h[^e]llo matches hallo, hbllo, ... but not hello
+     *    h[a-b]llo matches hallo and hbllo
+     *
+     *  Use \ to escape special characters if you want to match them verbatim.
+     *
+     * @param pattern
+     * @return
      */
+    <V> List<RBucket<V>> findBuckets(String pattern);
+
+    /**
+     * Use {@link #findBuckets(String)}
+     */
+    @Deprecated
     <V> List<RBucket<V>> getBuckets(String pattern);
 
     /**

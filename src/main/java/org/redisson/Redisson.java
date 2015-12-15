@@ -156,16 +156,22 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <V> List<RBucket<V>> getBuckets(String pattern) {
+    public <V> List<RBucket<V>> findBuckets(String pattern) {
         Future<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
         Collection<String> keys = commandExecutor.get(r);
         List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
-        for (Object key : keys) {
-            if(key != null) {
-                buckets.add(this.<V>getBucket(key.toString()));
+        for (String key : keys) {
+            if(key == null) {
+                continue;
             }
+            buckets.add(this.<V>getBucket(key));
         }
         return buckets;
+    }
+
+    @Override
+    public <V> List<RBucket<V>> getBuckets(String pattern) {
+        return findBuckets(pattern);
     }
 
     @Override
