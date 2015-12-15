@@ -28,8 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
@@ -37,10 +35,8 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RSortedSet;
 
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
@@ -111,6 +107,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     public RedissonSortedSet(Codec codec, CommandExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        this.commandExecutor = commandExecutor;
 
         loadComparator();
 
