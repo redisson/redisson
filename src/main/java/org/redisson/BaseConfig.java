@@ -252,7 +252,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Reconnection attempt timeout to Redis server then
+     * Reconnection attempt timeout to Redis server when
      * it has been excluded from internal list of available servers.
      *
      * On every such timeout event Redisson tries
