@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,15 +43,12 @@ import io.netty.util.concurrent.Future;
  * @author Nikita Koksharov
  *
  */
-//TODO ping support
 public class MasterSlaveEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
     LoadBalancerManager slaveBalancer;
     ClientConnectionsEntry masterEntry;
-
-    final ConnectionInitializer connectListener;
 
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
@@ -62,11 +58,10 @@ public class MasterSlaveEntry {
 
     final AtomicBoolean active = new AtomicBoolean(true);
 
-    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionInitializer connectListener) {
+    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.slotRanges = slotRanges;
         this.connectionManager = connectionManager;
         this.config = config;
-        this.connectListener = connectListener;
 
         slaveBalancer = new LoadBalancerManagerImpl(config, connectionManager, this);
         writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
@@ -88,7 +83,7 @@ public class MasterSlaveEntry {
     public Future<Void> setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(host, port);
         masterEntry = new ClientConnectionsEntry(client, config.getMasterConnectionMinimumIdleSize(), config.getMasterConnectionPoolSize(),
-                                                    0, 0, connectListener, NodeType.MASTER, connectionManager.getConnectionWatcher(), config);
+                                                    0, 0, connectionManager, NodeType.MASTER, config);
         return writeConnectionHolder.add(masterEntry);
     }
 
@@ -113,7 +108,7 @@ public class MasterSlaveEntry {
                 this.config.getSlaveConnectionMinimumIdleSize(),
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSlaveSubscriptionConnectionMinimumIdleSize(),
-                this.config.getSlaveSubscriptionConnectionPoolSize(), connectListener, mode, connectionManager.getConnectionWatcher(), config);
+                this.config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, mode, config);
         if (freezed) {
             entry.setFreezed(freezed);
             entry.setFreezeReason(FreezeReason.SYSTEM);

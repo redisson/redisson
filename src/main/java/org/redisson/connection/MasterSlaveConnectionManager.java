@@ -122,6 +122,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private IdleConnectionWatcher connectionWatcher;
 
+    private ConnectionEventsHub connectionEventsHub;
+
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         init(config);
         init(cfg);
@@ -176,7 +178,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void initEntry(MasterSlaveServersConfig config) {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
-        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config, connectListener);
+        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
         List<Future<Void>> fs = entry.initSlaveBalancer(config);
         Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         fs.add(f);
@@ -195,6 +197,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = NioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
+
+        connectionEventsHub = new ConnectionEventsHub(cfg.getConnectionListener());
     }
 
     @Override
@@ -696,6 +700,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public InfinitySemaphoreLatch getShutdownLatch() {
         return shutdownLatch;
+    }
+
+    @Override
+    public ConnectionEventsHub getConnectionEventsHub() {
+        return connectionEventsHub;
     }
 
 }

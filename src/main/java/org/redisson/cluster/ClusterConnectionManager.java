@@ -140,7 +140,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
 
-        final MasterSlaveEntry entry = new MasterSlaveEntry(partition.getSlotRanges(), this, config, connectListener);
+        final MasterSlaveEntry entry = new MasterSlaveEntry(partition.getSlotRanges(), this, config);
         List<Future<Void>> fs = entry.initSlaveBalancer(config);
         Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         f.addListener(new FutureListener<Void>() {

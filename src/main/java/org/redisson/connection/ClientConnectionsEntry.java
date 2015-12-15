@@ -51,23 +51,22 @@ public class ClientConnectionsEntry {
     public enum NodeType {SLAVE, MASTER}
 
     private final NodeType nodeType;
-    private final ConnectionInitializer connectionListener;
+    private ConnectionManager connectionManager;
 
     private final AtomicInteger failedAttempts = new AtomicInteger();
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
-            ConnectionInitializer connectionListener, NodeType serverMode,
-            IdleConnectionWatcher watcher, MasterSlaveServersConfig config) {
+            ConnectionManager connectionManager, NodeType serverMode, MasterSlaveServersConfig config) {
         this.client = client;
         this.freeConnectionsCounter.set(poolMaxSize);
-        this.connectionListener = connectionListener;
+        this.connectionManager = connectionManager;
         this.nodeType = serverMode;
         this.freeSubscribeConnectionsCounter.set(subscribePoolMaxSize);
 
         if (subscribePoolMaxSize > 0) {
-            watcher.add(subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter);
+            connectionManager.getConnectionWatcher().add(subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter);
         }
-        watcher.add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter);
+        connectionManager.getConnectionWatcher().add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter);
     }
 
     public NodeType getNodeType() {
@@ -152,19 +151,33 @@ public class ClientConnectionsEntry {
                 RedisConnection conn = future.getNow();
                 log.debug("new connection created: {}", conn);
 
-                connectionListener.onConnect(connectionFuture, conn, nodeType, config);
-                addReconnectListener(config, conn);
+                addReconnectListener(connectionFuture, config, conn);
             }
 
         });
         return connectionFuture;
     }
 
-    private void addReconnectListener(final MasterSlaveServersConfig config, RedisConnection conn) {
+    private <T extends RedisConnection> void addReconnectListener(Promise<T> connectionFuture, final MasterSlaveServersConfig config, T conn) {
+        connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, config);
+        addFireEventListener(connectionFuture);
+
         conn.setReconnectListener(new ReconnectListener() {
             @Override
             public void onReconnect(RedisConnection conn, Promise<RedisConnection> connectionFuture) {
-                connectionListener.onConnect(connectionFuture, conn, nodeType, config);
+                connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, config);
+                addFireEventListener(connectionFuture);
+            }
+        });
+    }
+
+    private <T extends RedisConnection> void addFireEventListener(Promise<T> connectionFuture) {
+        connectionFuture.addListener(new FutureListener<T>() {
+            @Override
+            public void operationComplete(Future<T> future) throws Exception {
+                if (future.isSuccess()) {
+                    connectionManager.getConnectionEventsHub().fireConnect(future.getNow().getRedisClient().getAddr());
+                }
             }
         });
     }
@@ -182,8 +195,7 @@ public class ClientConnectionsEntry {
                 RedisPubSubConnection conn = future.getNow();
                 log.debug("new pubsub connection created: {}", conn);
 
-                connectionListener.onConnect(connectionFuture, conn, nodeType, config);
-                addReconnectListener(config, conn);
+                addReconnectListener(connectionFuture, config, conn);
 
                 allSubscribeConnections.add(conn);
             }

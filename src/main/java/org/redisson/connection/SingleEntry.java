@@ -36,8 +36,8 @@ public class SingleEntry extends MasterSlaveEntry {
 
     final ConnectionPool<RedisPubSubConnection> pubSubConnectionHolder;
 
-    public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionInitializer connectListener) {
-        super(slotRanges, connectionManager, config, connectListener);
+    public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        super(slotRanges, connectionManager, config);
         pubSubConnectionHolder = new PubSubConnectionPoll(config, connectionManager, this) {
             protected ClientConnectionsEntry getEntry() {
                 return entries.get(0);
@@ -52,7 +52,7 @@ public class SingleEntry extends MasterSlaveEntry {
                 config.getMasterConnectionMinimumIdleSize(),
                 config.getMasterConnectionPoolSize(),
                 config.getSlaveConnectionMinimumIdleSize(),
-                config.getSlaveSubscriptionConnectionPoolSize(), connectListener, NodeType.MASTER, connectionManager.getConnectionWatcher(), config);
+                config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, NodeType.MASTER, config);
         final Promise<Void> res = connectionManager.newPromise();
         Future<Void> f = writeConnectionHolder.add(masterEntry);
         Future<Void> s = pubSubConnectionHolder.add(masterEntry);

@@ -196,35 +196,16 @@ public class ConnectionPool<T extends RedisConnection> {
 
     private void promiseFailure(ClientConnectionsEntry entry, Promise<T> promise, Throwable cause) {
         if (entry.incFailedAttempts() == config.getFailedAttempts()) {
-            if (entry.getNodeType() == NodeType.SLAVE) {
-                connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
-                        entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
-                scheduleCheck(entry);
-            } else {
-                freezeMaster(entry);
-            }
+            checkForReconnect(entry);
         }
 
         promise.tryFailure(cause);
     }
 
-    private void freezeMaster(ClientConnectionsEntry entry) {
-        if (entry.freezeMaster(FreezeReason.RECONNECT)) {
-            scheduleCheck(entry);
-        }
-    }
-
-
     private void promiseFailure(ClientConnectionsEntry entry, Promise<T> promise, T conn) {
         int attempts = entry.incFailedAttempts();
         if (attempts == config.getFailedAttempts()) {
-            if (entry.getNodeType() == NodeType.SLAVE) {
-                connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
-                        entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
-                scheduleCheck(entry);
-            } else {
-                freezeMaster(entry);
-            }
+            checkForReconnect(entry);
         } else if (attempts < config.getFailedAttempts()) {
             releaseConnection(entry, conn);
         }
@@ -235,7 +216,22 @@ public class ConnectionPool<T extends RedisConnection> {
         promise.tryFailure(cause);
     }
 
+    private void checkForReconnect(ClientConnectionsEntry entry) {
+        if (entry.getNodeType() == NodeType.SLAVE) {
+            connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
+                    entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
+            scheduleCheck(entry);
+        } else {
+            if (entry.freezeMaster(FreezeReason.RECONNECT)) {
+                scheduleCheck(entry);
+            }
+        }
+    }
+
     private void scheduleCheck(final ClientConnectionsEntry entry) {
+
+        connectionManager.getConnectionEventsHub().fireDisconnect(entry.getClient().getAddr());
+
         connectionManager.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
