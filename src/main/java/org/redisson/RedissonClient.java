@@ -123,16 +123,17 @@ public interface RedissonClient {
     <V> RBucket<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns a list of object holder instances by a key pattern.
+     * <p>Returns a list of object holder instances by a key pattern.
      *
-     *  Supported glob-style patterns:
+     * <pre>Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *    h[^e]llo matches hallo, hbllo, ... but not hello
-     *    h[a-b]llo matches hallo and hbllo
+     *    h[a-b]llo matches hallo and hbllo</pre>
+     * <p>Use \ to escape special characters if you want to match them verbatim.
      *
-     *  Use \ to escape special characters if you want to match them verbatim.
+     * <p>Uses <code>KEYS</code> Redis command.
      *
      * @param pattern
      * @return
@@ -140,8 +141,10 @@ public interface RedissonClient {
     <V> List<RBucket<V>> findBuckets(String pattern);
 
     /**
-     * Returns RBucket value mapped by key. Result Map is not contains
+     * <p>Returns RBucket value mapped by key. Result Map is not contains
      * key-value entry for null values.
+     *
+     * <p>Uses <code>MGET</code> Redis command.
      *
      * @param keys
      * @return
@@ -149,8 +152,10 @@ public interface RedissonClient {
     <V> Map<String, V> loadBucketValues(Collection<String> keys);
 
     /**
-     * Returns RBucket value mapped by key. Result Map is not contains
+     * <p>Returns RBucket value mapped by key. Result Map is not contains
      * key-value entry for null values.
+     *
+     * <p>Uses <code>MGET</code> Redis command.
      *
      * @param keys
      * @return
