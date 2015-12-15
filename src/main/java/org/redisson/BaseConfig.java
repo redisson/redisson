@@ -53,7 +53,8 @@ class BaseConfig<T extends BaseConfig<T>> {
     private int retryInterval = 1000;
 
     /**
-     * Redis server reconnection attempt timeout.
+     * Reconnection attempt timeout to Redis server then
+     * it has been excluded from internal list of available servers.
      *
      * On every such timeout event Redisson tries
      * to connect to disconnected Redis server.
@@ -64,7 +65,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     private int reconnectionTimeout = 3000;
 
     /**
-     * Redis server will be excluded from the list of available slave nodes
+     * Redis server will be excluded from the list of available nodes
      * when sequential unsuccessful execution attempts of any Redis command
      * reaches <code>failedAttempts</code>.
      */
@@ -251,7 +252,8 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Redis server reconnection attempt timeout.
+     * Reconnection attempt timeout to Redis server then
+     * it has been excluded from internal list of available servers.
      *
      * On every such timeout event Redisson tries
      * to connect to disconnected Redis server.
@@ -271,8 +273,9 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Redis 'slave' server will be excluded from the list of available slave nodes
-     * when sequential unsuccessful execution attempts of any Redis command on slave node reaches <code>slaveFailedAttempts</code>.
+     * Redis server will be excluded from the internal list of available nodes
+     * when sequential unsuccessful execution attempts of any Redis command
+     * on this server reaches <code>failedAttempts</code>.
      *
      * Default is 3
      *

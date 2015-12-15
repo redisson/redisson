@@ -71,6 +71,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setSlaveSubscriptionConnectionPoolSize(cfg.getSubscriptionConnectionPoolSize());
         newconfig.setConnectTimeout(cfg.getConnectTimeout());
         newconfig.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
+        newconfig.setFailedAttempts(cfg.getFailedAttempts());
+        newconfig.setReconnectionTimeout(cfg.getReconnectionTimeout());
 
         newconfig.setMasterConnectionMinimumIdleSize(cfg.getConnectionMinimumIdleSize());
         newconfig.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
@@ -81,7 +83,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     protected void initEntry(MasterSlaveServersConfig config) {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
-        SingleEntry entry = new SingleEntry(slots, this, config, connectListener);
+        SingleEntry entry = new SingleEntry(slots, this, config);
         Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         f.syncUninterruptibly();
         addEntry(singleSlotRange, entry);
