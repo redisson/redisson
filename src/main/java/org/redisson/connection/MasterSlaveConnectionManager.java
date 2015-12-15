@@ -122,7 +122,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private IdleConnectionWatcher connectionWatcher;
 
-    private ConnectionEventsHub connectionEventsHub;
+    private ServerEventsHub connectionEventsHub;
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         init(config);
@@ -198,7 +198,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         this.codec = cfg.getCodec();
 
-        connectionEventsHub = new ConnectionEventsHub(cfg.getConnectionListener());
+        connectionEventsHub = new ServerEventsHub(cfg.getServerListener());
     }
 
     @Override
@@ -703,7 +703,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public ConnectionEventsHub getConnectionEventsHub() {
+    public ServerEventsHub getConnectionEventsHub() {
         return connectionEventsHub;
     }
 

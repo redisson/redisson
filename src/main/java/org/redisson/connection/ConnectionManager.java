@@ -45,7 +45,7 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
-    ConnectionEventsHub getConnectionEventsHub();
+    ServerEventsHub getConnectionEventsHub();
 
     boolean isShutdown();
 

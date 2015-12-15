@@ -17,7 +17,7 @@ package org.redisson;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
-import org.redisson.connection.ConnectionListener;
+import org.redisson.connection.ServerListener;
 
 /**
  * Redisson configuration
@@ -49,7 +49,7 @@ public class Config {
 
     private boolean useLinuxNativeEpoll;
 
-    private ConnectionListener connectionListener;
+    private ServerListener serverListener;
 
     public Config() {
     }
@@ -62,7 +62,7 @@ public class Config {
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
-        setConnectionListener(oldConf.getConnectionListener());
+        setServerListener(oldConf.getServerListener());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
         if (oldConf.getSingleServerConfig() != null) {
@@ -337,18 +337,18 @@ public class Config {
         return useLinuxNativeEpoll;
     }
 
-    public ConnectionListener getConnectionListener() {
-        return connectionListener;
+    public ServerListener getServerListener() {
+        return serverListener;
     }
 
     /**
-     * Setup connect listener which will be triggered
-     * when Redisson has just been connected to or disconnected from redis server
+     * Setup server listener which methods will be triggered
+     * on some Redisson events.
      *
      * @param connectionListener
      */
-    public Config setConnectionListener(ConnectionListener connectionListener) {
-        this.connectionListener = connectionListener;
+    public Config setServerListener(ServerListener serverListener) {
+        this.serverListener = serverListener;
         return this;
     }
 

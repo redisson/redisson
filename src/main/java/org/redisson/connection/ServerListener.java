@@ -17,10 +17,23 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 
-public interface ConnectionListener {
+public interface ServerListener {
 
+    /**
+     * This method will be triggered when Redisson
+     * connects to Redis server.
+     *
+     * @param addr - Redis server network address
+     */
     void onConnect(InetSocketAddress addr);
 
+    /**
+     * This method will be triggered when Redisson
+     * discovers that Redis server connected before
+     * now in disconnected state.
+     *
+     * @param addr - Redis server network address
+     */
     void onDisconnect(InetSocketAddress addr);
 
 }
