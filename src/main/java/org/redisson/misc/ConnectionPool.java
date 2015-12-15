@@ -75,7 +75,9 @@ public class ConnectionPool<T extends RedisConnection> {
         final AtomicInteger initializedConnections = new AtomicInteger(minimumIdleSize);
         for (int i = 0; i < minimumIdleSize; i++) {
             if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
-                Throwable cause = new RedisConnectionException("Can't init enough connections amount! from " + entry.getClient().getAddr());
+                Throwable cause = new RedisConnectionException(
+                        "Can't init enough connections amount! " + initializedConnections.get() + " from " + minimumIdleSize + " was initialized. Server: "
+                                            + entry.getClient().getAddr());
                 initPromise.tryFailure(cause);
                 return;
             }
