@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
@@ -33,10 +31,10 @@ import org.redisson.core.RBlockingQueue;
 import io.netty.util.concurrent.Future;
 
 /**
- * Offers blocking queue facilities through an intermediary
- * {@link LinkedBlockingQueue} where items are added as soon as
- * <code>blpop</code> returns. All {@link BlockingQueue} methods are actually
- * delegated to this intermediary queue.
+ * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
+ *
+ * <p>Queue size limited by Redis server memory amount. This is why {@link #remainingCapacity()} always
+ * returns <code>Integer.MAX_VALUE</code>
  *
  * @author pdeschen@gmail.com
  * @author Nikita Koksharov

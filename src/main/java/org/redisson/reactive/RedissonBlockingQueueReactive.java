@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
@@ -32,11 +30,11 @@ import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 
 /**
- * Offers blocking queue facilities through an intermediary
- * {@link LinkedBlockingQueue} where items are added as soon as
- * <code>blpop</code> returns. All {@link BlockingQueue} methods are actually
- * delegated to this intermediary queue.
+ * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
  *
+ * <p>Queue size limited by Redis server memory amount.
+ *
+ * @author pdeschen@gmail.com
  * @author Nikita Koksharov
  */
 public class RedissonBlockingQueueReactive<V> extends RedissonQueueReactive<V> implements RBlockingQueueReactive<V> {
