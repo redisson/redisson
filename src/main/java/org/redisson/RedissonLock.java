@@ -111,7 +111,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         Future<RedissonLockEntry> future = subscribe();
-        future.syncUninterruptibly();
+        future.sync();
 
         try {
             while (true) {
