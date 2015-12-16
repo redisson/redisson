@@ -61,6 +61,8 @@ import org.redisson.core.RSetCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * Main infrastructure class allows to get access
  * to all Redisson objects on top of Redis server.
@@ -174,7 +176,11 @@ public class Redisson implements RedissonClient {
     }
 
     public <V> Map<String, V> loadBucketValues(String ... keys) {
-        Collection<Object> values = commandExecutor.get(commandExecutor.<List<Object>, Object>readAllAsync(RedisCommands.MGET, keys));
+        if (config.isClusterConfig()) {
+            throw new IllegalStateException("This method can't be used in cluster mode!");
+        }
+        Future<List<Object>> future = commandExecutor.readAsync(null, RedisCommands.MGET, keys);
+        List<Object> values = commandExecutor.get(future);
         Map<String, V> result = new HashMap<String, V>(values.size());
         int index = 0;
         for (Object value : values) {
