@@ -183,20 +183,18 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
         return commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
-                "local v = redis.call('get', KEYS[1]); " +
-                                "if (v == false) then " +
-                                "  redis.call('set', KEYS[1], cjson.encode({['o'] = ARGV[1], ['c'] = 1}), 'px', ARGV[2]); " +
-                                "  return nil; " +
-                                "else " +
-                                "  local o = cjson.decode(v); " +
-                                "  if (o['o'] == ARGV[1]) then " +
-                                "    o['c'] = o['c'] + 1; " +
-                                "    redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[2]); " +
-                                "    return nil; " +
-                                "  end;" +
-                                "  return redis.call('pttl', KEYS[1]); " +
-                                "end",
-                        Collections.<Object>singletonList(getName()), getLockName(), internalLockLeaseTime);
+                  "if (redis.call('exists', KEYS[1]) == 0) then " +
+                      "redis.call('hset', KEYS[1], ARGV[2], 1); " +
+                      "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                      "return nil; " +
+                  "end; " +
+                  "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                      "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
+                      "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                      "return nil; " +
+                  "end; " +
+                  "return redis.call('pttl', KEYS[1]);",
+                    Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName());
     }
 
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
@@ -272,26 +270,24 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     @Override
     public void unlock() {
         Boolean opStatus = commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local v = redis.call('get', KEYS[1]); " +
-                                "if (v == false) then " +
-                                "  redis.call('publish', KEYS[2], ARGV[2]); " +
-                                "  return 1; " +
-                                "else " +
-                                "  local o = cjson.decode(v); " +
-                                "  if (o['o'] == ARGV[1]) then " +
-                                "    o['c'] = o['c'] - 1; " +
-                                "    if (o['c'] > 0) then " +
-                                "      redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[3]); " +
-                                "      return 0;"+
-                                "    else " +
-                                "      redis.call('del', KEYS[1]);" +
-                                "      redis.call('publish', KEYS[2], ARGV[2]); " +
-                                "      return 1;"+
-                                "    end" +
-                                "  end;" +
-                                "  return nil; " +
-                                "end",
-                        Arrays.<Object>asList(getName(), getChannelName()), getLockName(), unlockMessage, internalLockLeaseTime);
+                        "if (redis.call('exists', KEYS[1]) == 0) then " +
+                            "redis.call('publish', KEYS[2], ARGV[1]); " +
+                            "return 1; " +
+                        "end;" +
+                        "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
+                            "return nil;" +
+                        "end; " +
+                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
+                        "if (counter > 0) then " +
+                            "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                            "return 0; " +
+                        "else " +
+                            "redis.call('del', KEYS[1]); " +
+                            "redis.call('publish', KEYS[2], ARGV[1]); " +
+                            "return 1; "+
+                        "end; " +
+                        "return nil;",
+                        Arrays.<Object>asList(getName(), getChannelName()), unlockMessage, internalLockLeaseTime, getLockName());
         if (opStatus == null) {
             throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
@@ -331,34 +327,16 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public boolean isHeldByCurrentThread() {
-        Boolean opStatus = commandExecutor.evalRead(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                            "local v = redis.call('get', KEYS[1]); " +
-                                "if (v == false) then " +
-                                "  return 0; " +
-                                "else " +
-                                "  local o = cjson.decode(v); " +
-                                "  if (o['o'] == ARGV[1]) then " +
-                                "    return 1; " +
-                                "  else" +
-                                "    return 0; " +
-                                "  end;" +
-                                "end",
-                        Collections.<Object>singletonList(getName()), getLockName());
-        return opStatus;
+        return commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName());
     }
 
     @Override
     public int getHoldCount() {
-        Long opStatus = commandExecutor.evalRead(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
-                "local v = redis.call('get', KEYS[1]); " +
-                                "if (v == false) then " +
-                                "  return 0; " +
-                                "else " +
-                                "  local o = cjson.decode(v); " +
-                                "  return o['c']; " +
-                                "end",
-                        Collections.<Object>singletonList(getName()));
-        return opStatus.intValue();
+        Long res = commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName());
+        if (res == null) {
+            return 0;
+        }
+        return res.intValue();
     }
 
     @Override
