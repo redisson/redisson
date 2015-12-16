@@ -179,7 +179,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
 
-    Long tryLockInner(final long leaseTime, final TimeUnit unit) {
+    Long tryLockInner(long leaseTime, TimeUnit unit) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
         return commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
