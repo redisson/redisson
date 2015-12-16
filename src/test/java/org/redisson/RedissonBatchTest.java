@@ -48,8 +48,8 @@ public class RedissonBatchTest extends BaseTest {
             batch.getMap("test").fastPutAsync("1", "2");
             batch.getMap("test").fastPutAsync("2", "3");
             batch.getMap("test").putAsync("2", "5");
-            batch.getAtomicLongAsync("counter").incrementAndGetAsync();
-            batch.getAtomicLongAsync("counter").incrementAndGetAsync();
+            batch.getAtomicLong("counter").incrementAndGetAsync();
+            batch.getAtomicLong("counter").incrementAndGetAsync();
         }
         List<?> res = batch.execute();
         Assert.assertEquals(210*5, res.size());
@@ -84,8 +84,8 @@ public class RedissonBatchTest extends BaseTest {
         batch.getMap("test").fastPutAsync("1", "2");
         batch.getMap("test").fastPutAsync("2", "3");
         batch.getMap("test").putAsync("2", "5");
-        batch.getAtomicLongAsync("counter").incrementAndGetAsync();
-        batch.getAtomicLongAsync("counter").incrementAndGetAsync();
+        batch.getAtomicLong("counter").incrementAndGetAsync();
+        batch.getAtomicLong("counter").incrementAndGetAsync();
 
         List<?> res = batch.execute();
         Assert.assertEquals(5, res.size());

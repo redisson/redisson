@@ -172,9 +172,19 @@ public interface RBatch {
      * @param name of deque
      * @return
      */
-    <V> RDequeAsync<V> getDequeAsync(String name);
+    <V> RDequeAsync<V> getDeque(String name);
 
-    <V> RDequeAsync<V> getDequeAsync(String name, Codec codec);
+    <V> RDequeAsync<V> getDeque(String name, Codec codec);
+
+    /**
+     * Returns blocking deque instance by name.
+     *
+     * @param name of queue
+     * @return
+     */
+    <V> RBlockingDequeAsync<V> getBlockingDeque(String name);
+
+    <V> RBlockingDequeAsync<V> getBlockingDeque(String name, Codec codec);
 
     /**
      * Returns "atomic long" instance by name.
@@ -182,7 +192,7 @@ public interface RBatch {
      * @param name of the "atomic long"
      * @return
      */
-    RAtomicLongAsync getAtomicLongAsync(String name);
+    RAtomicLongAsync getAtomicLong(String name);
 
     /**
      * Returns Redis Sorted Set instance by name

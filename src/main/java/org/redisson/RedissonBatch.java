@@ -23,6 +23,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.core.RAtomicLongAsync;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBitSetAsync;
+import org.redisson.core.RBlockingDequeAsync;
 import org.redisson.core.RBlockingQueueAsync;
 import org.redisson.core.RBucketAsync;
 import org.redisson.core.RMapCacheAsync;
@@ -138,17 +139,27 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
-    public <V> RDequeAsync<V> getDequeAsync(String name) {
+    public <V> RBlockingDequeAsync<V> getBlockingDeque(String name) {
+        return new RedissonBlockingDeque<V>(executorService, name);
+    }
+
+    @Override
+    public <V> RBlockingDequeAsync<V> getBlockingDeque(String name, Codec codec) {
+        return new RedissonBlockingDeque<V>(codec, executorService, name);
+    }
+
+    @Override
+    public <V> RDequeAsync<V> getDeque(String name) {
         return new RedissonDeque<V>(executorService, name);
     }
 
     @Override
-    public <V> RDequeAsync<V> getDequeAsync(String name, Codec codec) {
+    public <V> RDequeAsync<V> getDeque(String name, Codec codec) {
         return new RedissonDeque<V>(codec, executorService, name);
     }
 
     @Override
-    public RAtomicLongAsync getAtomicLongAsync(String name) {
+    public RAtomicLongAsync getAtomicLong(String name) {
         return new RedissonAtomicLong(executorService, name);
     }
 
