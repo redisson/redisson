@@ -56,6 +56,7 @@ import org.redisson.core.RQueue;
 import org.redisson.core.RReadWriteLock;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
+import org.redisson.core.RSemaphore;
 import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
 import org.redisson.core.RSortedSet;
@@ -423,6 +424,11 @@ public class Redisson implements RedissonClient {
     @Override
     public boolean isShuttingDown() {
         return connectionManager.isShuttingDown();
+    }
+
+    @Override
+    public RSemaphore getSemaphore(String name) {
+        return new RedissonSemaphore(commandExecutor, name, id);
     }
 
 }

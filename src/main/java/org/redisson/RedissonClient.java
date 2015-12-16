@@ -43,6 +43,7 @@ import org.redisson.core.RQueue;
 import org.redisson.core.RReadWriteLock;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
+import org.redisson.core.RSemaphore;
 import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
 import org.redisson.core.RSortedSet;
@@ -222,6 +223,8 @@ public interface RedissonClient {
      * @return
      */
     <K, V> RMap<K, V> getMap(String name, Codec codec);
+
+    RSemaphore getSemaphore(String name);
 
     /**
      * Returns lock instance by name.
