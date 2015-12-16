@@ -26,26 +26,25 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
-import org.redisson.core.RBlockingQueue;
+import org.redisson.core.RBlockingDeque;
 
 import io.netty.util.concurrent.Future;
 
 /**
- * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
+ * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingDeque}.
  *
  * <p>Queue size limited by Redis server memory amount. This is why {@link #remainingCapacity()} always
  * returns <code>Integer.MAX_VALUE</code>
  *
- * @author pdeschen@gmail.com
  * @author Nikita Koksharov
  */
-public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlockingQueue<V> {
+public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlockingDeque<V> {
 
-    protected RedissonBlockingQueue(CommandAsyncExecutor commandExecutor, String name) {
+    protected RedissonBlockingDeque(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    protected RedissonBlockingDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 
@@ -177,4 +176,109 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
                         "return vals",
                 Collections.<Object>singletonList(getName()), maxElements);
     }
+
+    @Override
+    public Future<Void> putFirstAsync(V e) {
+        return addFirstAsync(e);
+    }
+
+    @Override
+    public Future<Void> putLastAsync(V e) {
+        return addLastAsync(e);
+    }
+
+    @Override
+    public void putFirst(V e) throws InterruptedException {
+        addFirst(e);
+    }
+
+    @Override
+    public void putLast(V e) throws InterruptedException {
+        addLast(e);
+    }
+
+    @Override
+    public boolean offerFirst(V e, long timeout, TimeUnit unit) throws InterruptedException {
+        addFirst(e);
+        return true;
+    }
+
+    @Override
+    public boolean offerLast(V e, long timeout, TimeUnit unit) throws InterruptedException {
+        addLast(e);
+        return true;
+    }
+
+    @Override
+    public V takeFirst() throws InterruptedException {
+        Future<V> res = takeFirstAsync();
+        return res.await().getNow();
+    }
+
+    @Override
+    public Future<V> takeFirstAsync() {
+        return takeAsync();
+    }
+
+    @Override
+    public Future<V> takeLastAsync() {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, getName(), 0);
+    }
+
+    @Override
+    public V takeLast() throws InterruptedException {
+        Future<V> res = takeLastAsync();
+        return res.await().getNow();
+    }
+
+    @Override
+    public Future<V> pollFirstAsync(long timeout, TimeUnit unit) {
+        return pollAsync(timeout, unit);
+    }
+
+    @Override
+    public V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+        Future<V> res = pollFirstFromAnyAsync(timeout, unit, queueNames);
+        return res.await().getNow();
+    }
+
+    @Override
+    public Future<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+        return pollFromAnyAsync(timeout, unit, queueNames);
+    }
+
+    @Override
+    public V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+        Future<V> res = pollLastFromAnyAsync(timeout, unit, queueNames);
+        return res.await().getNow();
+    }
+
+    @Override
+    public Future<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+        params.add(getName());
+        for (Object name : queueNames) {
+            params.add(name);
+        }
+        params.add(unit.toSeconds(timeout));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, params.toArray());
+    }
+
+    @Override
+    public V pollFirst(long timeout, TimeUnit unit) throws InterruptedException {
+        Future<V> res = pollFirstAsync(timeout, unit);
+        return res.await().getNow();
+    }
+
+    @Override
+    public Future<V> pollLastAsync(long timeout, TimeUnit unit) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, getName(), unit.toSeconds(timeout));
+    }
+
+    @Override
+    public V pollLast(long timeout, TimeUnit unit) throws InterruptedException {
+        Future<V> res = pollLastAsync(timeout, unit);
+        return res.await().getNow();
+   }
+
 }

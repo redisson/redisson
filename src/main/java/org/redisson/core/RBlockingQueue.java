@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockingQueueAsync<V> {
 
     /**
-     * Retrieves and removes first available head of <b>any</b> queue, waiting up to the
-     * specified wait time if necessary for an element to become available
+     * Retrieves and removes first available head element of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
      *
      * @param timeout how long to wait before giving up, in units of
@@ -42,7 +42,5 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
     V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException;
 
     V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException;
-
-    V pollLastAndOfferFirstTo(RBlockingQueue<V> queue, long timeout, TimeUnit unit) throws InterruptedException;
 
 }

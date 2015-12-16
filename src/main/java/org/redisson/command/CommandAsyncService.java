@@ -20,10 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,7 +55,6 @@ import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  *
@@ -424,7 +420,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         } else {
                             timeoutRef.get().cancel();
                             int timeoutTime = connectionManager.getConfig().getTimeout();
-                            if (command.getName().equals(RedisCommands.BLPOP_VALUE.getName())) {
+                            if (command.getName().equals(RedisCommands.BLPOP_VALUE.getName())
+                                    || command.getName().equals(RedisCommands.BRPOP_VALUE.getName())) {
                                 Integer blPopTimeout = Integer.valueOf(params[params.length - 1].toString());
                                 if (blPopTimeout == 0) {
                                     return;

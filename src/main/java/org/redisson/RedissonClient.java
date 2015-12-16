@@ -26,6 +26,7 @@ import org.redisson.core.NodesGroup;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
+import org.redisson.core.RBlockingDeque;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
 import org.redisson.core.RMapCache;
@@ -405,6 +406,24 @@ public interface RedissonClient {
      * @return
      */
     <V> RDeque<V> getDeque(String name, Codec codec);
+
+    /**
+     * Returns blocking deque instance by name.
+     *
+     * @param name of deque
+     * @return
+     */
+    <V> RBlockingDeque<V> getBlockingDeque(String name);
+
+    /**
+     * Returns blocking deque instance by name
+     * using provided codec for deque objects.
+     *
+     * @param name of deque
+     * @param deque objects codec
+     * @return
+     */
+    <V> RBlockingDeque<V> getBlockingDeque(String name, Codec codec);
 
     /**
      * Returns atomicLong instance by name.

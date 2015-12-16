@@ -70,8 +70,6 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
         Assert.assertEquals(3, l);
         Assert.assertTrue(System.currentTimeMillis() - s > 9000);
-
-
     }
 
     @Test
@@ -92,18 +90,19 @@ public class RedissonBlockingQueueTest extends BaseTest {
         Assert.assertEquals((Integer)1, queue1.poll(10, TimeUnit.SECONDS));
     }
 
-    @Test    public void testPollLastAndOfferFirstTo() throws InterruptedException {
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
+    @Test
+    public void testPollLastAndOfferFirstTo() throws InterruptedException {
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("{queue}1");
         queue1.put(1);
         queue1.put(2);
         queue1.put(3);
 
-        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue2");
+        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("{queue}2");
         queue2.put(4);
         queue2.put(5);
         queue2.put(6);
 
-        queue1.pollLastAndOfferFirstTo(queue2, 10, TimeUnit.SECONDS);
+        queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
         MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
     }
 
@@ -129,7 +128,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.add(3);
         queue.offer(4);
 
-        //MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
+        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
         Assert.assertEquals((Integer) 1, queue.poll());
         MatcherAssert.assertThat(queue, Matchers.contains(2, 3, 4));
         Assert.assertEquals((Integer) 2, queue.element());

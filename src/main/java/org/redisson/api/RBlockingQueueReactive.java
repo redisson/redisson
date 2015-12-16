@@ -30,8 +30,8 @@ import org.reactivestreams.Publisher;
 public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
 
     /**
-     * Retrieves and removes first available head of <b>any</b> queue in  mode, waiting up to the
-     * specified wait time if necessary for an element to become available
+     * Retrieves and removes first available head element of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
      *
      * @param timeout how long to wait before giving up, in units of

@@ -39,6 +39,7 @@ import org.redisson.core.NodesGroup;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
+import org.redisson.core.RBlockingDeque;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
@@ -341,6 +342,16 @@ public class Redisson implements RedissonClient {
     public <V> RDeque<V> getDeque(String name, Codec codec) {
         return new RedissonDeque<V>(codec, commandExecutor, name);
     }
+
+    @Override
+    public <V> RBlockingDeque<V> getBlockingDeque(String name) {
+        return new RedissonBlockingDeque<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBlockingDeque<V> getBlockingDeque(String name, Codec codec) {
+        return new RedissonBlockingDeque<V>(codec, commandExecutor, name);
+    };
 
     @Override
     public RAtomicLong getAtomicLong(String name) {

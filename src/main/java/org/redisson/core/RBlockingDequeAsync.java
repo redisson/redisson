@@ -15,18 +15,18 @@
  */
 package org.redisson.core;
 
-import java.util.Collection;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 import io.netty.util.concurrent.Future;
 
 /**
- * {@link BlockingQueue} backed by Redis
+ * Async interface for {@link BlockingDeque} backed by Redis
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection
  */
-public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
+public interface RBlockingDequeAsync<V> extends RDequeAsync<V>, RBlockingQueueAsync<V> {
 
     /**
      * Retrieves and removes first available head element of <b>any</b> queue in async mode,
@@ -37,22 +37,36 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
      *        {@code timeout} parameter
-     * @return Future object with the head of this queue, or {@code null} if the
+     * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    Future<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    Future<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 
-    Future<Integer> drainToAsync(Collection<? super V> c, int maxElements);
+    /**
+     * Retrieves and removes first available tail element of <b>any</b> queue in async mode,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue own.
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     * @throws InterruptedException if interrupted while waiting
+     */
+    Future<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 
-    Future<Integer> drainToAsync(Collection<? super V> c);
+    Future<Void> putFirstAsync(V e);
 
-    Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit);
+    Future<Void> putLastAsync(V e);
 
-    Future<V> pollAsync(long timeout, TimeUnit unit);
+    Future<V> pollLastAsync(long timeout, TimeUnit unit);
 
-    Future<V> takeAsync();
+    Future<V> takeLastAsync();
 
-    Future<Boolean> putAsync(V e);
+    Future<V> pollFirstAsync(long timeout, TimeUnit unit);
 
+    Future<V> takeFirstAsync();
 }
