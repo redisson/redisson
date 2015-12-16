@@ -69,6 +69,10 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return "redisson_lock__channel__{" + getName() + "}";
     }
 
+    String getLockName() {
+        return id + ":" + Thread.currentThread().getId();
+    }
+
     @Override
     public void lock() {
         try {
@@ -192,7 +196,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  end;" +
                                 "  return redis.call('pttl', KEYS[1]); " +
                                 "end",
-                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId(), internalLockLeaseTime);
+                        Collections.<Object>singletonList(getName()), getLockName(), internalLockLeaseTime);
     }
 
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
@@ -287,7 +291,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "  end;" +
                                 "  return nil; " +
                                 "end",
-                        Arrays.<Object>asList(getName(), getChannelName()), id.toString() + "-" + Thread.currentThread().getId(), unlockMessage, internalLockLeaseTime);
+                        Arrays.<Object>asList(getName(), getChannelName()), getLockName(), unlockMessage, internalLockLeaseTime);
         if (opStatus == null) {
             throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
@@ -339,7 +343,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 "    return 0; " +
                                 "  end;" +
                                 "end",
-                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId());
+                        Collections.<Object>singletonList(getName()), getLockName());
         return opStatus;
     }
 

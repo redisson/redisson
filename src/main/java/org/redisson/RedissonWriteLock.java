@@ -43,10 +43,6 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
         this.commandExecutor = commandExecutor;
     }
 
-    private String getLockName() {
-        return id + ":" + Thread.currentThread().getId();
-    }
-
     String getChannelName() {
         return "redisson_rwlock__{" + getName() + "}";
     }
@@ -58,19 +54,19 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                             "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                             "if (mode == false) then " +
                                   "redis.call('hset', KEYS[1], 'mode', 'write'); " +
-                                  "redis.call('hset', KEYS[1], KEYS[2], 1); " +
+                                  "redis.call('hset', KEYS[1], ARGV[2], 1); " +
                                   "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                                   "return nil; " +
                               "end; " +
                               "if (mode == 'write') then " +
-                                  "if (redis.call('hexists', KEYS[1], KEYS[2]) == 1) then " +
-                                      "redis.call('hincrby', KEYS[1], KEYS[2], 1); " +
+                                  "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                                      "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
                                       "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                                       "return nil; " +
                                   "end; " +
                                 "end;" +
                                 "return redis.call('pttl', KEYS[1]);",
-                        Arrays.<Object>asList(getName(), getLockName()), internalLockLeaseTime);
+                        Arrays.<Object>asList(getName()), internalLockLeaseTime, getLockName());
     }
 
     @Override
@@ -78,30 +74,30 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
         Boolean opStatus = commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                                 "if (mode == false) then " +
-                                    "redis.call('publish', KEYS[3], ARGV[1]); " +
+                                    "redis.call('publish', KEYS[2], ARGV[1]); " +
                                     "return 1; " +
                                 "end;" +
                                 "if (mode == 'write') then " +
-                                    "local lockExists = redis.call('hexists', KEYS[1], KEYS[2]); " +
+                                    "local lockExists = redis.call('hexists', KEYS[1], ARGV[3]); " +
                                     "if (lockExists == 0) then " +
                                         "return nil;" +
                                     "else " +
-                                        "local counter = redis.call('hincrby', KEYS[1], KEYS[2], -1); " +
+                                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
                                         "if (counter > 0) then " +
                                             "redis.call('pexpire', KEYS[1], ARGV[2]); " +
                                             "return 0; " +
                                         "else " +
-                                            "redis.call('hdel', KEYS[1], KEYS[2]); " +
+                                            "redis.call('hdel', KEYS[1], ARGV[3]); " +
                                             "if (redis.call('hlen', KEYS[1]) == 1) then " +
                                                 "redis.call('del', KEYS[1]); " +
-                                                "redis.call('publish', KEYS[3], ARGV[1]); " +
+                                                "redis.call('publish', KEYS[2], ARGV[1]); " +
                                             "end; " +
                                             "return 1; "+
                                         "end; " +
                                     "end; " +
                                 "end; "
                                 + "return nil;",
-                        Arrays.<Object>asList(getName(), getLockName(), getChannelName()), RedissonReadWriteLock.unlockMessage, internalLockLeaseTime);
+                        Arrays.<Object>asList(getName(), getChannelName()), unlockMessage, internalLockLeaseTime, getLockName());
         if (opStatus == null) {
             throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
@@ -119,16 +115,16 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     Future<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal();
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-              "if (redis.call('hdel', KEYS[1], KEYS[2]) == 1) then " +
+              "if (redis.call('hdel', KEYS[1], ARGV[2]) == 1) then " +
                   "if (redis.call('hlen', KEYS[1]) == 1) then " +
                       "redis.call('del', KEYS[1]); " +
-                      "redis.call('publish', KEYS[3], ARGV[1]); " +
+                      "redis.call('publish', KEYS[2], ARGV[1]); " +
                   "end; " +
                   "return 1; " +
               "else " +
                   "return 0; " +
               "end;",
-              Arrays.<Object>asList(getName(), getLockName(), getChannelName()), RedissonReadWriteLock.unlockMessage);
+              Arrays.<Object>asList(getName(), getChannelName()), unlockMessage, getLockName());
     }
 
     @Override

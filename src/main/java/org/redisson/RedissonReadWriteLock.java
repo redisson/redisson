@@ -37,8 +37,6 @@ import org.redisson.core.RReadWriteLock;
  */
 public class RedissonReadWriteLock extends RedissonExpirable implements RReadWriteLock {
 
-    public static final Long unlockMessage = 0L;
-
     private final UUID id;
     private final CommandExecutor commandExecutor;
 
