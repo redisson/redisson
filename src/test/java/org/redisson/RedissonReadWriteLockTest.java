@@ -11,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RLock;
 import org.redisson.core.RReadWriteLock;
+import static org.assertj.core.api.Assertions.*;
 
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
@@ -119,14 +120,26 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
     @Test
     public void testForceUnlock() {
         RReadWriteLock lock = redisson.getReadWriteLock("lock");
+
         RLock readLock = lock.readLock();
         readLock.lock();
-        Assert.assertTrue(readLock.isLocked());
-        readLock.forceUnlock();
-        Assert.assertFalse(readLock.isLocked());
+        assertThat(readLock.isLocked()).isTrue();
+        lock.writeLock().forceUnlock();
+        assertThat(readLock.isLocked()).isTrue();
+        lock.readLock().forceUnlock();
+        assertThat(readLock.isLocked()).isFalse();
+
+        RLock writeLock = lock.writeLock();
+        writeLock.lock();
+        assertThat(writeLock.isLocked()).isTrue();
+        lock.readLock().forceUnlock();
+        assertThat(writeLock.isLocked()).isTrue();
+        lock.writeLock().forceUnlock();
+        assertThat(writeLock.isLocked()).isFalse();
 
         lock = redisson.getReadWriteLock("lock");
-        Assert.assertFalse(lock.readLock().isLocked());
+        assertThat(lock.readLock().isLocked()).isFalse();
+        assertThat(lock.writeLock().isLocked()).isFalse();
     }
 
     @Test

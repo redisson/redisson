@@ -27,6 +27,7 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.core.RLock;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * Lock will be removed automatically if client disconnects.
@@ -113,8 +114,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     }
 
     Future<Boolean> forceUnlockAsync() {
-        cancelExpirationRenewal();
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        Future<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
               "if (redis.call('hget', KEYS[1], 'mode') == 'write') then " +
                   "redis.call('del', KEYS[1]); " +
                   "redis.call('publish', KEYS[2], ARGV[1]); " +
@@ -123,6 +123,17 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                   "return 0; " +
               "end;",
               Arrays.<Object>asList(getName(), getChannelName()), unlockMessage);
+
+        result.addListener(new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(Future<Boolean> future) throws Exception {
+                if (future.isSuccess() && future.getNow()) {
+                    cancelExpirationRenewal();
+                }
+            }
+        });
+
+        return result;
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.core.RLock;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * Lock will be removed automatically if client disconnects.
@@ -111,18 +112,26 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     }
 
     Future<Boolean> forceUnlockAsync() {
-        cancelExpirationRenewal();
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-              "if (redis.call('hdel', KEYS[1], ARGV[2]) == 1) then " +
-                  "if (redis.call('hlen', KEYS[1]) == 1) then " +
-                      "redis.call('del', KEYS[1]); " +
-                      "redis.call('publish', KEYS[2], ARGV[1]); " +
-                  "end; " +
-                  "return 1; " +
-              "else " +
-                  "return 0; " +
-              "end;",
-              Arrays.<Object>asList(getName(), getChannelName()), unlockMessage, getLockName());
+        Future<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "if (redis.call('hget', KEYS[1], 'mode') == 'read') then " +
+                    "redis.call('del', KEYS[1]); " +
+                    "redis.call('publish', KEYS[2], ARGV[1]); " +
+                    "return 1; " +
+                "else " +
+                    "return 0; " +
+                "end;",
+                Arrays.<Object>asList(getName(), getChannelName()), unlockMessage);
+
+          result.addListener(new FutureListener<Boolean>() {
+              @Override
+              public void operationComplete(Future<Boolean> future) throws Exception {
+                  if (future.isSuccess() && future.getNow()) {
+                      cancelExpirationRenewal();
+                  }
+              }
+          });
+
+          return result;
     }
 
     @Override
