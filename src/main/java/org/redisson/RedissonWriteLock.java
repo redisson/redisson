@@ -26,6 +26,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.core.RLock;
 
+import io.netty.util.concurrent.Future;
+
 /**
  * Lock will be removed automatically if client disconnects.
  *
@@ -108,6 +110,19 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException();
+    }
+
+    Future<Boolean> forceUnlockAsync() {
+        cancelExpirationRenewal();
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+              "if (redis.call('hget', KEYS[1], 'mode') == 'write') then " +
+                  "redis.call('del', KEYS[1]); " +
+                  "redis.call('publish', KEYS[2], ARGV[1]); " +
+                  "return 1; " +
+              "else " +
+                  "return 0; " +
+              "end;",
+              Arrays.<Object>asList(getName(), getChannelName()), unlockMessage);
     }
 
     @Override
