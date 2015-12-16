@@ -123,9 +123,9 @@ public interface RCountDownLatch extends RObject {
 
     /**
      * Sets new count value only if previous count already has reached zero
-     * or not been setted at all.
+     * or is not set at all.
      *
-     * @param count the number of times {@link #countDown} must be invoked
+     * @param count - number of times {@link #countDown} must be invoked
      *        before threads can pass through {@link #await}
      * @return <code>true</code> if new count setted
      *         <code>false</code> if previous count has not reached zero
