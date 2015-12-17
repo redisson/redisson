@@ -328,9 +328,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (decoder == null) {
             if (data.getCommand().getOutParamType() == ValueType.MAP) {
                 if (parts.size() % 2 != 0) {
-                    decoder = data.getCodec().getMapKeyDecoder();
-                } else {
                     decoder = data.getCodec().getMapValueDecoder();
+                } else {
+                    decoder = data.getCodec().getMapKeyDecoder();
                 }
             } else if (data.getCommand().getOutParamType() == ValueType.MAP_KEY) {
                 decoder = data.getCodec().getMapKeyDecoder();
