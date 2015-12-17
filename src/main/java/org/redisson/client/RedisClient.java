@@ -49,7 +49,7 @@ public class RedisClient {
     private final long timeout;
 
     public RedisClient(String host, int port) {
-        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60*1000);
+        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60 * 1000);
     }
 
     public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int timeout) {
@@ -59,10 +59,10 @@ public class RedisClient {
             @Override
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels),
-                                        new CommandEncoder(),
-                                        new CommandsListEncoder(),
-                                        new CommandsQueue(),
-                                        new CommandDecoder());
+                    new CommandEncoder(),
+                    new CommandsListEncoder(),
+                    new CommandsQueue(),
+                    new CommandDecoder());
             }
         });
 
@@ -138,6 +138,7 @@ public class RedisClient {
 
     public void shutdown() {
         shutdownAsync().syncUninterruptibly();
+        bootstrap.group().shutdownGracefully();
     }
 
     public ChannelGroupFuture shutdownAsync() {
@@ -150,4 +151,3 @@ public class RedisClient {
     }
 
 }
-
