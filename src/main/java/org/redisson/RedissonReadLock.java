@@ -25,6 +25,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.core.RLock;
+import org.redisson.pubsub.LockPubSub;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -96,7 +97,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                     "end; " +
                                 "end; " +
                                 "return nil; ",
-                        Arrays.<Object>asList(getName(), getChannelName()), unlockMessage, internalLockLeaseTime, getLockName());
+                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName());
         if (opStatus == null) {
             throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
@@ -120,7 +121,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 "else " +
                     "return 0; " +
                 "end;",
-                Arrays.<Object>asList(getName(), getChannelName()), unlockMessage);
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage);
 
           result.addListener(new FutureListener<Boolean>() {
               @Override

@@ -49,8 +49,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     final UUID id;
 
-    public static final Long unlockMessage = 0L;
-
     private static final LockPubSub PUBSUB = new LockPubSub();
 
     final CommandExecutor commandExecutor;
@@ -287,7 +285,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                             "return 1; "+
                         "end; " +
                         "return nil;",
-                        Arrays.<Object>asList(getName(), getChannelName()), unlockMessage, internalLockLeaseTime, getLockName());
+                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName());
         if (opStatus == null) {
             throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
@@ -317,7 +315,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 + "else "
                 + "return 0 "
                 + "end",
-                Arrays.<Object>asList(getName(), getChannelName()), unlockMessage);
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage);
     }
 
     @Override

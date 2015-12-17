@@ -41,8 +41,6 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     final UUID id;
 
-    public static final Long unlockMessage = 0L;
-
     private static final LockPubSub PUBSUB = new LockPubSub();
 
     final CommandExecutor commandExecutor;
@@ -173,7 +171,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         commandExecutor.evalWrite(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_OBJECT,
             "redis.call('incrby', KEYS[1], ARGV[1]); " +
             "redis.call('publish', KEYS[2], ARGV[2]); ",
-            Arrays.<Object>asList(getName(), getChannelName()), permits, unlockMessage);
+            Arrays.<Object>asList(getName(), getChannelName()), permits, LockPubSub.unlockMessage);
     }
 
     @Override
@@ -206,7 +204,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                     + "redis.call('set', KEYS[1], ARGV[2]); "
                     + "redis.call('publish', KEYS[2], ARGV[1]); "
                 + "end;",
-                Arrays.<Object>asList(getName(), getChannelName()), unlockMessage, permits);
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, permits);
         get(f);
     }
 

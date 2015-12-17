@@ -15,12 +15,13 @@
  */
 package org.redisson.pubsub;
 
-import org.redisson.RedissonLock;
 import org.redisson.RedissonLockEntry;
 
 import io.netty.util.concurrent.Promise;
 
 public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
+
+    public static final Long unlockMessage = 0L;
 
     @Override
     protected RedissonLockEntry createEntry(Promise<RedissonLockEntry> newPromise) {
@@ -29,7 +30,7 @@ public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
 
     @Override
     protected void onMessage(RedissonLockEntry value, Long message) {
-        if (message.equals(RedissonLock.unlockMessage)) {
+        if (message.equals(unlockMessage)) {
             value.getLatch().release();
         }
     }
