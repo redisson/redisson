@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
  *
- * It has a advantage over {@link java.util.concurrent.CountDownLatch} --
- * count can be reset via {@link #trySetCount}.
+ * It has an advantage over {@link java.util.concurrent.CountDownLatch} --
+ * count can be set via {@link #trySetCount} method.
  *
  * @author Nikita Koksharov
  *
