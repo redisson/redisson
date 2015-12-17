@@ -44,14 +44,21 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     public void testBlockingNAcquire() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
         s.setPermits(5);
-        s.acquire(2);
+        s.acquire(3);
 
         Thread t = new Thread() {
             @Override
             public void run() {
                 RSemaphore s = redisson.getSemaphore("test");
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                s.release();
+                try {
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -60,7 +67,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
             }
         };
 
-        assertThat(s.availablePermits()).isEqualTo(3);
+        assertThat(s.availablePermits()).isEqualTo(2);
         t.start();
 
         s.acquire(4);
@@ -71,14 +78,21 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     public void testTryNAcquire() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
         s.setPermits(5);
-        assertThat(s.tryAcquire(2)).isTrue();
+        assertThat(s.tryAcquire(3)).isTrue();
 
         Thread t = new Thread() {
             @Override
             public void run() {
                 RSemaphore s = redisson.getSemaphore("test");
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                s.release();
+                try {
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
