@@ -326,7 +326,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         Assert.assertEquals(12, (double)score, 0);
 
         RScoredSortedSetReactive<Integer> set2 = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
-        set2.add(100.2, 1);
+        sync(set2.add(100.2, 1));
 
         Double res2 = sync(set2.addScore(1, new Double(12.1)));
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
