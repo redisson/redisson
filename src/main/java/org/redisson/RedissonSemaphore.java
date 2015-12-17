@@ -30,9 +30,9 @@ import org.redisson.pubsub.LockPubSub;
 import io.netty.util.concurrent.Future;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.locks.Lock}
- * Implements reentrant lock.<br>
- * Lock will be removed automatically if client disconnects.
+ * Distributed and concurrent implementation of {@link java.util.concurrent.Semaphore}.
+ * <p/>
+ * Works in non-fair mode. Therefore order of acquiring is unpredictable.
  *
  * @author Nikita Koksharov
  *
@@ -93,10 +93,14 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public boolean tryAcquire(int permits) {
+        if (permits < 0) {
+            throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+
         return commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local value = redis.call('get', KEYS[1]); " +
-                  "if (value ~= false and value >= ARGV[1]) then " +
-                      "redis.call('decrby', KEYS[1], ARGV[1]); " +
+                  "if (value ~= false and tonumber(value) >= tonumber(ARGV[1])) then " +
+                      "local val = redis.call('decrby', KEYS[1], ARGV[1]); " +
                       "return 1; " +
                   "end; " +
                   "return 0;",
@@ -162,10 +166,27 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public void release(int permits) {
+        if (permits < 0) {
+            throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+
         commandExecutor.evalWrite(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_OBJECT,
             "redis.call('incrby', KEYS[1], ARGV[1]); " +
             "redis.call('publish', KEYS[2], ARGV[2]); ",
             Arrays.<Object>asList(getName(), getChannelName()), permits, unlockMessage);
+    }
+
+    @Override
+    public int drainPermits() {
+        Long res = commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                "local value = redis.call('get', KEYS[1]); " +
+                "if (value == false or value == 0) then " +
+                    "return 0; " +
+                "end; " +
+                "redis.call('set', KEYS[1], 0); " +
+                "return value;",
+                Collections.<Object>singletonList(getName()));
+        return res.intValue();
     }
 
     @Override
@@ -175,6 +196,18 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             return 0;
         }
         return res.intValue();
+    }
+
+    @Override
+    public void setPermits(int permits) {
+        Future<Void> f = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "local value = redis.call('get', KEYS[1]); " +
+                "if (value == false or value == 0) then "
+                    + "redis.call('set', KEYS[1], ARGV[2]); "
+                    + "redis.call('publish', KEYS[2], ARGV[1]); "
+                + "end;",
+                Arrays.<Object>asList(getName(), getChannelName()), unlockMessage, permits);
+        get(f);
     }
 
 }

@@ -224,6 +224,12 @@ public interface RedissonClient {
      */
     <K, V> RMap<K, V> getMap(String name, Codec codec);
 
+    /**
+     * Returns semaphore instance by name
+     *
+     * @param name of semaphore
+     * @return
+     */
     RSemaphore getSemaphore(String name);
 
     /**
