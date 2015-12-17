@@ -86,7 +86,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
-                if (connection.isClosed()) {
+                if (connection.isClosed() || group.isShuttingDown()) {
                     return;
                 }
 
