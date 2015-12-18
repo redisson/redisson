@@ -23,6 +23,7 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.connection.FastSuccessFuture;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -44,6 +45,7 @@ public class RedisConnection implements RedisCommands {
     private ReconnectListener reconnectListener;
     private long lastUsageTime;
 
+    private final Future<?> acquireFuture = new FastSuccessFuture<Object>(this);
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
@@ -192,6 +194,10 @@ public class RedisConnection implements RedisCommands {
     @Override
     public String toString() {
         return getClass().getSimpleName() + " [redisClient=" + redisClient + ", channel=" + channel + "]";
+    }
+
+    public Future<?> getAcquireFuture() {
+        return acquireFuture;
     }
 
 }

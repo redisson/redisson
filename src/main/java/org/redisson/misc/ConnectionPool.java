@@ -193,7 +193,7 @@ public class ConnectionPool<T extends RedisConnection> {
 
     private Future<T> promiseSuccessful(ClientConnectionsEntry entry, T conn) {
         entry.resetFailedAttempts();
-        return connectionManager.newSucceededFuture(conn);
+        return (Future<T>) conn.getAcquireFuture();
     }
 
     private void promiseFailure(ClientConnectionsEntry entry, Promise<T> promise, Throwable cause) {

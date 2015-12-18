@@ -25,7 +25,7 @@ public class FastSuccessFuture<V> extends FastCompleteFuture<V> {
 
     private final V result;
 
-    protected FastSuccessFuture(V result) {
+    public FastSuccessFuture(V result) {
         this.result = result;
     }
 

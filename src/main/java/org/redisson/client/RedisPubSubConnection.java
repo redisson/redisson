@@ -33,8 +33,6 @@ import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
 public class RedisPubSubConnection extends RedisConnection {
