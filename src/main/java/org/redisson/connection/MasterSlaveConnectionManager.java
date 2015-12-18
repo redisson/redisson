@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
@@ -40,6 +39,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.command.AsyncDetails;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
@@ -220,7 +220,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public <T> FutureListener<T> createReleaseWriteListener(final NodeSource source,
-                                    final RedisConnection conn, final AtomicReference<Timeout> timeout) {
+                                    final RedisConnection conn, final AsyncDetails details) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -229,7 +229,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
 
                 shutdownLatch.release();
-                timeout.get().cancel();
+                details.getTimeout().cancel();
                 releaseWrite(source, conn);
             }
         };
@@ -237,7 +237,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public <T> FutureListener<T> createReleaseReadListener(final NodeSource source,
-                                    final RedisConnection conn, final AtomicReference<Timeout> timeout) {
+                                    final RedisConnection conn, final AsyncDetails details) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -246,7 +246,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
 
                 shutdownLatch.release();
-                timeout.get().cancel();
+                details.getTimeout().cancel();
                 releaseRead(source, conn);
             }
         };
@@ -264,7 +264,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public Future<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec) {
-        Promise<PubSubConnectionEntry> promise = group.next().newPromise();
+        Promise<PubSubConnectionEntry> promise = newPromise();
         psubscribe(channelName, codec, promise);
         return promise;
     }
@@ -484,6 +484,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entryCodec;
     }
 
+    @Override
     public MasterSlaveEntry getEntry(InetSocketAddress addr) {
         // TODO optimize
         for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : entries.entrySet()) {
@@ -673,13 +674,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return group.next().newPromise();
     }
 
+    @Override
     public <R> Future<R> newSucceededFuture(R value) {
-        return group.next().newSucceededFuture(value);
+        return new FastSuccessFuture<R>(value);
     }
 
     @Override
     public <R> Future<R> newFailedFuture(Throwable cause) {
-        return group.next().newFailedFuture(cause);
+        return new FastFailedFuture<R>(cause);
     }
 
     @Override

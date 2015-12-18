@@ -19,7 +19,6 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
@@ -28,6 +27,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.command.AsyncDetails;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
@@ -86,10 +86,10 @@ public interface ConnectionManager {
     Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
     <T> FutureListener<T> createReleaseReadListener(NodeSource source,
-            RedisConnection conn, AtomicReference<Timeout> timeout);
+            RedisConnection conn, AsyncDetails timeout);
 
     <T> FutureListener<T> createReleaseWriteListener(NodeSource source,
-            RedisConnection conn, AtomicReference<Timeout> timeout);
+            RedisConnection conn, AsyncDetails timeout);
 
     RedisClient createClient(String host, int port, int timeout);
 

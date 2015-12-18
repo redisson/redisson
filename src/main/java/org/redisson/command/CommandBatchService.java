@@ -22,11 +22,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisTimeoutException;
@@ -209,9 +207,10 @@ public class CommandBatchService extends CommandReactiveService {
 
         final Promise<Void> attemptPromise = connectionManager.newPromise();
 
-        final AtomicReference<ChannelFuture> writeFutureRef = new AtomicReference<ChannelFuture>();
-        final AtomicReference<RedisException> exceptionRef = new AtomicReference<RedisException>();
-        final AtomicReference<Timeout> timeoutRef = new AtomicReference<Timeout>();
+        final AsyncDetails details = new AsyncDetails();
+//        final AtomicReference<ChannelFuture> writeFutureRef = new AtomicReference<ChannelFuture>();
+//        final AtomicReference<RedisException> exceptionRef = new AtomicReference<RedisException>();
+//        final AtomicReference<Timeout> timeoutRef = new AtomicReference<Timeout>();
 
         final Future<RedisConnection> connectionFuture;
         if (entry.isReadOnlyMode()) {
@@ -231,7 +230,7 @@ public class CommandBatchService extends CommandReactiveService {
                     connectionManager.getShutdownLatch().release();
                 } else {
                     if (connectionFuture.isSuccess()) {
-                        ChannelFuture writeFuture = writeFutureRef.get();
+                        ChannelFuture writeFuture = details.getWriteFuture();
                         if (writeFuture != null && !writeFuture.cancel(false) && writeFuture.isSuccess()) {
                             return;
                         }
@@ -244,7 +243,10 @@ public class CommandBatchService extends CommandReactiveService {
                 }
 
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
-                    attemptPromise.tryFailure(exceptionRef.get());
+                    if (details.getException() == null) {
+                        details.setException(new RedisTimeoutException("Batch command execution timeout"));
+                    }
+                    attemptPromise.tryFailure(details.getException());
                     return;
                 }
                 if (!attemptPromise.cancel(false)) {
@@ -256,9 +258,8 @@ public class CommandBatchService extends CommandReactiveService {
             }
         };
 
-        exceptionRef.set(new RedisTimeoutException("Batch command execution timeout"));
         Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
-        timeoutRef.set(timeout);
+        details.setTimeout(timeout);
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
@@ -268,7 +269,7 @@ public class CommandBatchService extends CommandReactiveService {
                 }
 
                 if (!connFuture.isSuccess()) {
-                    exceptionRef.set(convertException(connFuture));
+                    details.setException(convertException(connFuture));
                     return;
                 }
 
@@ -282,7 +283,7 @@ public class CommandBatchService extends CommandReactiveService {
                         list.add(c.getCommand());
                     }
                     ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
-                    writeFutureRef.set(future);
+                    details.setWriteFuture(future);
                 } else {
                     List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size());
                     FutureListener<Object> listener = new FutureListener<Object>() {
@@ -299,10 +300,10 @@ public class CommandBatchService extends CommandReactiveService {
                         list.add(c.getCommand());
                     }
                     ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
-                    writeFutureRef.set(future);
+                    details.setWriteFuture(future);
                 }
 
-                writeFutureRef.get().addListener(new ChannelFutureListener() {
+                details.getWriteFuture().addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
                         if (attemptPromise.isDone() || future.isCancelled()) {
@@ -310,9 +311,9 @@ public class CommandBatchService extends CommandReactiveService {
                         }
 
                         if (!future.isSuccess()) {
-                            exceptionRef.set(new WriteRedisConnectionException("Can't write command batch to channel: " + future.channel(), future.cause()));
+                            details.setException(new WriteRedisConnectionException("Can't write command batch to channel: " + future.channel(), future.cause()));
                         } else {
-                            timeoutRef.get().cancel();
+                            details.getTimeout().cancel();
                             TimerTask timeoutTask = new TimerTask() {
                                 @Override
                                 public void run(Timeout timeout) throws Exception {
@@ -321,15 +322,15 @@ public class CommandBatchService extends CommandReactiveService {
                                 }
                             };
                             Timeout timeout = connectionManager.newTimeout(timeoutTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
-                            timeoutRef.set(timeout);
+                            details.setTimeout(timeout);
                         }
                     }
                 });
 
                 if (entry.isReadOnlyMode()) {
-                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, timeoutRef));
+                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, details));
                 } else {
-                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, timeoutRef));
+                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, details));
                 }
             }
         });
@@ -337,7 +338,7 @@ public class CommandBatchService extends CommandReactiveService {
         attemptPromise.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
-                timeoutRef.get().cancel();
+                details.getTimeout().cancel();
                 if (future.isCancelled() || mainPromise.isDone()) {
                     return;
                 }

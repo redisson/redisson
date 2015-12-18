@@ -148,7 +148,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
             return entries.get(entry);
         }
         RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr);
-        return connectionManager.getGroup().next().newFailedFuture(exception);
+        return connectionManager.newFailedFuture(exception);
     }
 
     public Future<RedisConnection> nextConnection() {
