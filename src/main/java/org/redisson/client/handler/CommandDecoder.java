@@ -118,7 +118,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             return;
         }
 
-        ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx);
+        ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());
 
         state(null);
     }
@@ -146,7 +146,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
             }
 
-            ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx);
+            ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());
 
             state(null);
         } else {

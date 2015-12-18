@@ -22,6 +22,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -42,10 +43,19 @@ public class CommandsQueue extends ChannelDuplexHandler {
 
     private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
 
-    public void sendNextCommand(ChannelHandlerContext ctx) {
-        ctx.channel().attr(CommandsQueue.REPLAY).remove();
+    private final ChannelFutureListener listener = new ChannelFutureListener() {
+        @Override
+        public void operationComplete(ChannelFuture future) throws Exception {
+            if (!future.isSuccess()) {
+                sendNextCommand(future.channel());
+            }
+        }
+    };
+
+    public void sendNextCommand(Channel channel) {
+        channel.attr(CommandsQueue.REPLAY).remove();
         queue.poll();
-        sendData(ctx);
+        sendData(channel);
     }
 
     @Override
@@ -57,14 +67,14 @@ public class CommandsQueue extends ChannelDuplexHandler {
                 super.write(ctx, msg, promise);
             } else {
                 queue.add(new QueueCommandHolder(data, promise));
-                sendData(ctx);
+                sendData(ctx.channel());
             }
         } else {
             super.write(ctx, msg, promise);
         }
     }
 
-    private void sendData(final ChannelHandlerContext ctx) {
+    private void sendData(final Channel ch) {
         QueueCommandHolder command = queue.peek();
         if (command != null && command.getSended().compareAndSet(false, true)) {
             QueueCommand data = command.getCommand();
@@ -72,21 +82,15 @@ public class CommandsQueue extends ChannelDuplexHandler {
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
                     for (Object channel : cd.getParams()) {
-                        ctx.pipeline().get(CommandDecoder.class).addChannel(channel.toString(), cd);
+                        ch.pipeline().get(CommandDecoder.class).addChannel(channel.toString(), cd);
                     }
                 }
             } else {
-                ctx.channel().attr(REPLAY).set(data);
+                ch.attr(REPLAY).set(data);
             }
-            command.getChannelPromise().addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        sendNextCommand(ctx);
-                    }
-                }
-            });
-            ctx.channel().writeAndFlush(data, command.getChannelPromise());
+
+            command.getChannelPromise().addListener(listener);
+            ch.writeAndFlush(data, command.getChannelPromise());
         }
     }
 
