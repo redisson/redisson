@@ -15,9 +15,14 @@
  */
 package org.redisson.client.protocol;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public interface QueueCommand {
+
+    Set<String> PUBSUB_COMMANDS = new HashSet<String>(Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE"));
 
     List<CommandData<Object, Object>> getPubSubOperations();
 
