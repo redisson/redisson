@@ -363,6 +363,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
 
                 if (attempt == connectionManager.getConfig().getRetryAttempts()) {
+                    if (exceptionRef.get() == null) {
+                        exceptionRef.set(new RedisTimeoutException("Command execution timeout for command: " + command + " with params: " + Arrays.toString(params)));
+                    }
                     attemptPromise.tryFailure(exceptionRef.get());
                     return;
                 }
@@ -375,7 +378,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         };
 
-        exceptionRef.set(new RedisTimeoutException("Command execution timeout for command: " + command + " with params: " + Arrays.toString(params)));
         Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
         timeoutRef.set(timeout);
 

@@ -673,8 +673,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return group.next().newPromise();
     }
 
-    public <R> Future<R> newSucceededFuture() {
-        return group.next().newSucceededFuture(null);
+    public <R> Future<R> newSucceededFuture(R value) {
+        return group.next().newSucceededFuture(value);
     }
 
     @Override

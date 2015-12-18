@@ -45,6 +45,8 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
+    <R> Future<R> newSucceededFuture(R value);
+
     ConnectionEventsHub getConnectionEventsHub();
 
     boolean isShutdown();
