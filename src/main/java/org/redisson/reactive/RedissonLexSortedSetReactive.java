@@ -101,14 +101,14 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
     public Publisher<Integer> lexCountTail(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
 
-        return commandExecutor.readReactive(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
     }
 
     @Override
     public Publisher<Integer> lexCountHead(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readReactive(getName(), RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readReactive(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
+        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
     }
 
     private String value(String fromElement, boolean fromInclusive) {
@@ -131,7 +131,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
 
     @Override
     public Publisher<Long> add(String e) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_RAW, getName(), 0, e);
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZADD_RAW, getName(), 0, e);
     }
 
     @Override
@@ -141,7 +141,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
             params.add(0);
             params.add(param);
         }
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_RAW, getName(), params.toArray());
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZADD_RAW, getName(), params.toArray());
     }
 
 }

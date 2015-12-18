@@ -147,7 +147,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     public Future<Integer> lexCountTailAsync(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
 
-        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
     }
 
     @Override
@@ -159,7 +159,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     public Future<Integer> lexCountHeadAsync(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
     }
 
     @Override
@@ -172,7 +172,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
-        return commandExecutor.readAsync(getName(), RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
     }
 
     private String value(String fromElement, boolean fromInclusive) {
@@ -187,7 +187,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
 
     @Override
     public Future<Boolean> addAsync(String e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL_RAW, getName(), 0, e);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZADD_BOOL_RAW, getName(), 0, e);
     }
 
     @Override
@@ -197,7 +197,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
             params.add(0);
             params.add(param);
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL_RAW, getName(), params.toArray());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZADD_BOOL_RAW, getName(), params.toArray());
     }
 
     @Override
