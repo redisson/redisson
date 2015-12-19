@@ -115,7 +115,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
                 break;
             } catch (RedisConnectionException e) {
-                log.warn("can't connect to sentinel", e);
+                log.warn("Can't connect to sentinel. {}", e.getMessage());
             } finally {
                 client.shutdownAsync();
             }

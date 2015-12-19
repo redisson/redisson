@@ -48,7 +48,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
             try {
                 this.currentMaster.set(InetAddress.getByName(cfg.getAddress().getHost()));
             } catch (UnknownHostException e) {
-                throw new RedisConnectionException("Unknown host", e);
+                throw new RedisConnectionException("Unknown host: " + cfg.getAddress().getHost(), e);
             }
             log.debug("DNS monitoring enabled; Current master set to {}", currentMaster.get());
             monitorDnsChange(cfg);

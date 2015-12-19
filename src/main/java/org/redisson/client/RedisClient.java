@@ -88,7 +88,7 @@ public class RedisClient {
             future.syncUninterruptibly();
             return new RedisConnection(this, future.channel());
         } catch (Exception e) {
-            throw new RedisConnectionException("Unable to connect to " + addr, e);
+            throw new RedisConnectionException("Unable to connect to: " + addr, e);
         }
     }
 
@@ -115,7 +115,7 @@ public class RedisClient {
             future.syncUninterruptibly();
             return new RedisPubSubConnection(this, future.channel());
         } catch (Exception e) {
-            throw new RedisConnectionException("Unable to connect to " + addr, e);
+            throw new RedisConnectionException("Unable to connect to: " + addr, e);
         }
     }
 
