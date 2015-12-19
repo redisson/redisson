@@ -75,7 +75,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        QueueCommand data = ctx.channel().attr(CommandsQueue.REPLAY).get();
+        QueueCommand data = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
 
         Decoder<Object> currentDecoder = null;
         if (data == null) {
@@ -143,6 +143,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (i == commands.getCommands().size()) {
             Promise<Void> promise = commands.getPromise();
             if (!promise.trySuccess(null) && promise.cause() instanceof RedisTimeoutException) {
+                // TODO try increase timeout
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
             }
 

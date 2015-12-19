@@ -85,11 +85,9 @@ public interface ConnectionManager {
 
     Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    <T> FutureListener<T> createReleaseReadListener(NodeSource source,
-            RedisConnection conn, AsyncDetails timeout);
+    <T> FutureListener<T> createReleaseReadListener(NodeSource source, RedisConnection conn);
 
-    <T> FutureListener<T> createReleaseWriteListener(NodeSource source,
-            RedisConnection conn, AsyncDetails timeout);
+    <T> FutureListener<T> createReleaseWriteListener(NodeSource source, RedisConnection conn);
 
     RedisClient createClient(String host, int port, int timeout);
 

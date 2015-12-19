@@ -39,7 +39,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.command.AsyncDetails;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
@@ -219,8 +218,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public <T> FutureListener<T> createReleaseWriteListener(final NodeSource source,
-                                    final RedisConnection conn, final AsyncDetails details) {
+    public <T> FutureListener<T> createReleaseWriteListener(final NodeSource source, final RedisConnection conn) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -229,15 +227,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
 
                 shutdownLatch.release();
-                details.getTimeout().cancel();
                 releaseWrite(source, conn);
             }
         };
     }
 
     @Override
-    public <T> FutureListener<T> createReleaseReadListener(final NodeSource source,
-                                    final RedisConnection conn, final AsyncDetails details) {
+    public <T> FutureListener<T> createReleaseReadListener(final NodeSource source, final RedisConnection conn) {
         return new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -246,7 +242,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
 
                 shutdownLatch.release();
-                details.getTimeout().cancel();
                 releaseRead(source, conn);
             }
         };

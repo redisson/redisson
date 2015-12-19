@@ -328,9 +328,9 @@ public class CommandBatchService extends CommandReactiveService {
                 });
 
                 if (entry.isReadOnlyMode()) {
-                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, details));
+                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection));
                 } else {
-                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, details));
+                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection));
                 }
             }
         });

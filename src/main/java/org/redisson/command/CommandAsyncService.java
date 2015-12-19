@@ -446,9 +446,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 });
 
                 if (readOnlyMode) {
-                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection, details));
+                    attemptPromise.addListener(connectionManager.createReleaseReadListener(source, connection));
                 } else {
-                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection, details));
+                    attemptPromise.addListener(connectionManager.createReleaseWriteListener(source, connection));
                 }
             }
         });

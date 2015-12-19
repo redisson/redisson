@@ -39,7 +39,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class CommandsQueue extends ChannelDuplexHandler {
 
-    public static final AttributeKey<QueueCommand> REPLAY = AttributeKey.valueOf("promise");
+    public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
     private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
 
@@ -53,7 +53,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
     };
 
     public void sendNextCommand(Channel channel) {
-        channel.attr(CommandsQueue.REPLAY).remove();
+        channel.attr(CommandsQueue.CURRENT_COMMAND).remove();
         queue.poll();
         sendData(channel);
     }
@@ -74,9 +74,9 @@ public class CommandsQueue extends ChannelDuplexHandler {
         }
     }
 
-    private void sendData(final Channel ch) {
+    private void sendData(Channel ch) {
         QueueCommandHolder command = queue.peek();
-        if (command != null && command.getSended().compareAndSet(false, true)) {
+        if (command != null && command.trySend()) {
             QueueCommand data = command.getCommand();
             List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
             if (!pubSubOps.isEmpty()) {
@@ -86,7 +86,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
                     }
                 }
             } else {
-                ch.attr(REPLAY).set(data);
+                ch.attr(CURRENT_COMMAND).set(data);
             }
 
             command.getChannelPromise().addListener(listener);
