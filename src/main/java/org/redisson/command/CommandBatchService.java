@@ -104,7 +104,7 @@ public class CommandBatchService extends CommandReactiveService {
     }
 
     @Override
-    protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource, MultiDecoder<Object> messageDecoder,
+    protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, int attempt) {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
@@ -121,7 +121,7 @@ public class CommandBatchService extends CommandReactiveService {
         if (!readOnlyMode) {
             entry.setReadOnlyMode(false);
         }
-        entry.getCommands().add(new CommandEntry(new CommandData<V, R>(mainPromise, messageDecoder, codec, command, params), index.incrementAndGet()));
+        entry.getCommands().add(new CommandEntry(new CommandData<V, R>(mainPromise, codec, command, params), index.incrementAndGet()));
     }
 
     public List<?> execute() {
@@ -222,7 +222,7 @@ public class CommandBatchService extends CommandReactiveService {
         final TimerTask retryTimerTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (attemptPromise.isDone() || mainPromise.isDone()) {
+                if (attemptPromise.isDone()) {
                     return;
                 }
 

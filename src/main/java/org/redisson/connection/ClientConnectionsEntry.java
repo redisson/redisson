@@ -172,6 +172,11 @@ public class ClientConnectionsEntry {
     }
 
     private <T extends RedisConnection> void addFireEventListener(Promise<T> connectionFuture) {
+        if (connectionFuture.isSuccess()) {
+            connectionManager.getConnectionEventsHub().fireConnect(connectionFuture.getNow().getRedisClient().getAddr());
+            return;
+        }
+
         connectionFuture.addListener(new FutureListener<T>() {
             @Override
             public void operationComplete(Future<T> future) throws Exception {

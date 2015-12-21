@@ -27,7 +27,6 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.command.AsyncDetails;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
@@ -85,8 +84,10 @@ public interface ConnectionManager {
 
     Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
+    @Deprecated
     <T> FutureListener<T> createReleaseReadListener(NodeSource source, RedisConnection conn);
 
+    @Deprecated
     <T> FutureListener<T> createReleaseWriteListener(NodeSource source, RedisConnection conn);
 
     RedisClient createClient(String host, int port, int timeout);
