@@ -124,10 +124,6 @@ public class AsyncDetails<V, R> {
         return source;
     }
 
-    public MultiDecoder<Object> getMessageDecoder() {
-        return messageDecoder;
-    }
-
     public Codec getCodec() {
         return codec;
     }
