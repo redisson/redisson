@@ -471,13 +471,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
             Promise<Void> promise = connectionManager.newPromise();
             list.add(new CommandData<Void, Void>(promise, details.getCodec(), RedisCommands.ASKING, new Object[] {}));
-            list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getMessageDecoder(), details.getCodec(), details.getCommand(), details.getParams()));
+            list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
             Promise<Void> main = connectionManager.newPromise();
             ChannelFuture future = connection.send(new CommandsData(main, list));
             details.setWriteFuture(future);
         } else {
             log.debug("aquired connection for command {} from slot {} using node {}", details.getCommand(), details.getSource(), connection.getRedisClient().getAddr());
-            ChannelFuture future = connection.send(new CommandData<V, R>(details.getAttemptPromise(), details.getMessageDecoder(), details.getCodec(), details.getCommand(), details.getParams()));
+            ChannelFuture future = connection.send(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
             details.setWriteFuture(future);
         }
 

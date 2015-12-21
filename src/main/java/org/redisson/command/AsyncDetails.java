@@ -39,7 +39,6 @@ public class AsyncDetails<V, R> {
     Promise<R> attemptPromise;
     boolean readOnlyMode;
     NodeSource source;
-    MultiDecoder<Object> messageDecoder;
     Codec codec;
     RedisCommand<V> command;
     Object[] params;
@@ -78,7 +77,6 @@ public class AsyncDetails<V, R> {
         this.attemptPromise = attemptPromise;
         this.readOnlyMode = readOnlyMode;
         this.source = source;
-        this.messageDecoder = messageDecoder;
         this.codec = codec;
         this.command = command;
         this.params = params;
