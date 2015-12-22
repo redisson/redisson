@@ -150,8 +150,22 @@ public class MasterSlaveEntry {
         connectionManager.shutdownAsync(oldMaster.getClient());
     }
 
+    public boolean isFreezed() {
+        return masterEntry.isFreezed();
+    }
+
+    public FreezeReason getFreezeReason() {
+        return masterEntry.getFreezeReason();
+    }
+
     public void freeze() {
         masterEntry.freezeMaster(FreezeReason.MANAGER);
+    }
+
+    public void unfreeze() {
+        masterEntry.resetFailedAttempts();
+        masterEntry.setFreezed(false);
+        masterEntry.setFreezeReason(null);
     }
 
     public void shutdownMasterAsync() {

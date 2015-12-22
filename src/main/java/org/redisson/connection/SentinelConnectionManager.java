@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -173,7 +174,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             onNodeDown(addr, msg);
                         }
                         if ("-sdown".equals(channel)) {
-                            onSlaveUp(addr, msg);
+                            onNodeUp(addr, msg);
                         }
                         if ("+switch-master".equals(channel)) {
                             onMasterChange(cfg, addr, msg);
@@ -253,11 +254,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String port = parts[3];
 
                 MasterSlaveEntry entry = getEntry(singleSlotRange);
-                entry.freeze();
-                String addr = ip + ":" + port;
-                log.info("master: {} has down", addr);
-            } else {
-                log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, sentinelAddr.getHost(), sentinelAddr.getPort());
+                if (entry.getFreezeReason() != FreezeReason.MANAGER) {
+                    entry.freeze();
+                    String addr = ip + ":" + port;
+                    log.info("master: {} has down", addr);
+                }
             }
         } else {
             log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, sentinelAddr.getHost(), sentinelAddr.getPort());
@@ -272,21 +273,33 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    protected void onSlaveUp(URI addr, String msg) {
+    private void onNodeUp(URI addr, String msg) {
         String[] parts = msg.split(" ");
 
-        if (parts.length > 4
-                 && "slave".equals(parts[0])) {
-            String ip = parts[2];
-            String port = parts[3];
+        if (parts.length > 3) {
+            if ("slave".equals(parts[0])) {
+                String ip = parts[2];
+                String port = parts[3];
 
-            String slaveAddr = ip + ":" + port;
-            if (freezeSlaves.remove(slaveAddr) != null) {
-                slaveUp(ip, Integer.valueOf(port));
-                log.info("slave: {} has up", slaveAddr);
+                String slaveAddr = ip + ":" + port;
+                if (freezeSlaves.remove(slaveAddr) != null) {
+                    slaveUp(ip, Integer.valueOf(port));
+                    log.info("slave: {} has up", slaveAddr);
+                }
+            } else if ("master".equals(parts[0])) {
+                String ip = parts[2];
+                String port = parts[3];
+
+                String masterAddr = ip + ":" + port;
+                MasterSlaveEntry entry = getEntry(singleSlotRange);
+                if (entry.isFreezed()
+                        && entry.getClient().getAddr().equals(new InetSocketAddress(ip, Integer.valueOf(port)))) {
+                    entry.unfreeze();
+                    log.info("master: {} has up", masterAddr);
+                }
+            } else {
+                log.warn("onSlaveUp. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
             }
-        } else {
-            log.warn("onSlaveUp. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
     }
 

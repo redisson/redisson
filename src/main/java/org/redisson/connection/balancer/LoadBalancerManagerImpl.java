@@ -90,6 +90,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
             if ((freezeReason == FreezeReason.RECONNECT
                     && entry.getFreezeReason() == FreezeReason.RECONNECT)
                         || freezeReason != FreezeReason.RECONNECT) {
+                entry.resetFailedAttempts();
                 entry.setFreezed(false);
                 entry.setFreezeReason(null);
                 return true;
