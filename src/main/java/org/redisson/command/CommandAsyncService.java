@@ -505,7 +505,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <V, R> void releaseConnection(NodeSource source, AsyncDetails<V, R> details, RedisConnection connection) {
-        if (details.getAttemptPromise().isCancelled()) {
+        if (!details.getConnectionFuture().isSuccess()) {
             return;
         }
 
