@@ -330,6 +330,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public Future<Boolean> addAsync(V value, long ttl, TimeUnit unit) {
+        if (ttl < 0) {
+            throw new IllegalArgumentException("TTL can't be negative");
+        }
+        if (ttl == 0) {
+            return addAsync(value);
+        }
+
         if (unit == null) {
             throw new NullPointerException("TimeUnit param can't be null");
         }

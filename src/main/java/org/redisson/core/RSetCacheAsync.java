@@ -28,6 +28,18 @@ import io.netty.util.concurrent.Future;
  */
 public interface RSetCacheAsync<V> extends RCollectionAsync<V> {
 
+    /**
+     * Stores value with specified time to live.
+     * Value expires after specified time to live.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit
+     * @return <code>true</code> if value has been added. <code>false</code>
+     *          if value already been in collection.
+     */
     Future<Boolean> addAsync(V value, long ttl, TimeUnit unit);
 
     /**

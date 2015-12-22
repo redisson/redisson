@@ -40,8 +40,37 @@ import io.netty.util.concurrent.Future;
  */
 public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
 
+    /**
+     * If the specified key is not already associated
+     * with a value, associate it with the given value.
+     * <p/>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit
+     * @return previous associated value
+     */
     Future<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit unit);
 
+    /**
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit
+     * @return previous associated value
+     */
     Future<V> putAsync(K key, V value, long ttl, TimeUnit unit);
 
     /**

@@ -194,6 +194,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public Future<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit unit) {
+        if (ttl < 0) {
+            throw new IllegalArgumentException("TTL can't be negative");
+        }
+        if (ttl == 0) {
+            return putIfAbsentAsync(key, value);
+        }
+
         if (unit == null) {
             throw new NullPointerException("TimeUnit param can't be null");
         }
@@ -274,6 +281,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public Future<V> putAsync(K key, V value, long ttl, TimeUnit unit) {
+        if (ttl < 0) {
+            throw new IllegalArgumentException("TTL can't be negative");
+        }
+        if (ttl == 0) {
+            return putAsync(key, value);
+        }
+
         if (unit == null) {
             throw new NullPointerException("TimeUnit param can't be null");
         }

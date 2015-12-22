@@ -38,8 +38,37 @@ import java.util.concurrent.TimeUnit;
  */
 public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
 
+    /**
+     * If the specified key is not already associated
+     * with a value, associate it with the given value.
+     * <p/>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit
+     * @return previous associated value
+     */
     V putIfAbsent(K key, V value, long ttl, TimeUnit unit);
 
+    /**
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit
+     * @return previous associated value
+     */
     V put(K key, V value, long ttl, TimeUnit unit);
 
     /**

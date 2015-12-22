@@ -41,6 +41,18 @@ import java.util.concurrent.TimeUnit;
  */
 public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
 
+    /**
+     * Stores value with specified time to live.
+     * Value expires after specified time to live.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit
+     * @return <code>true</code> if value has been added. <code>false</code>
+     *          if value already been in collection.
+     */
     boolean add(V value, long ttl, TimeUnit unit);
 
     /**
