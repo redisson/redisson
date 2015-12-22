@@ -17,15 +17,12 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.core.RBlockingDeque;
 
 import io.netty.util.concurrent.Future;
@@ -40,12 +37,16 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlockingDeque<V> {
 
+    private final RedissonBlockingQueue<V> blockingQueue;
+
     protected RedissonBlockingDeque(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        blockingQueue = new RedissonBlockingQueue<V>(commandExecutor, name);
     }
 
     protected RedissonBlockingDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        blockingQueue = new RedissonBlockingQueue<V>(codec, commandExecutor, name);
     }
 
     @Override
@@ -69,7 +70,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public Future<V> takeAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), 0);
+        return blockingQueue.takeAsync();
     }
 
     /*
@@ -78,13 +79,12 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
      */
     @Override
     public V take() throws InterruptedException {
-        Future<V> res = takeAsync();
-        return res.await().getNow();
+        return blockingQueue.take();
     }
 
     @Override
     public Future<V> pollAsync(long timeout, TimeUnit unit) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
+        return blockingQueue.pollAsync(timeout, unit);
     }
 
     /*
@@ -93,8 +93,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
      */
     @Override
     public V poll(long timeout, TimeUnit unit) throws InterruptedException {
-        Future<V> res = pollAsync(timeout, unit);
-        return res.await().getNow();
+        return blockingQueue.poll(timeout, unit);
     }
 
     /*
@@ -103,8 +102,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
      */
     @Override
     public V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
-        Future<V> res = pollFromAnyAsync(timeout, unit, queueNames);
-        return res.await().getNow();
+        return blockingQueue.pollFromAny(timeout, unit);
     }
 
     /*
@@ -113,24 +111,17 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
      */
     @Override
     public Future<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
-        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
-        params.add(getName());
-        for (Object name : queueNames) {
-            params.add(name);
-        }
-        params.add(unit.toSeconds(timeout));
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, params.toArray());
+        return blockingQueue.pollFromAnyAsync(timeout, unit);
     }
 
     @Override
     public Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
+        return blockingQueue.pollLastAndOfferFirstToAsync(queueName, timeout, unit);
     }
 
     @Override
     public V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException {
-        Future<V> res = pollLastAndOfferFirstToAsync(queueName, timeout, unit);
-        return res.await().getNow();
+        return blockingQueue.pollLastAndOfferFirstTo(queueName, timeout, unit);
     }
 
     @Override
@@ -140,41 +131,22 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public int drainTo(Collection<? super V> c) {
-        return get(drainToAsync(c));
+        return blockingQueue.drainTo(c);
     }
 
     @Override
     public Future<Integer> drainToAsync(Collection<? super V> c) {
-        if (c == null) {
-            throw new NullPointerException();
-        }
-
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
-              "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
-              "redis.call('ltrim', KEYS[1], -1, 0); " +
-              "return vals", Collections.<Object>singletonList(getName()));
+        return blockingQueue.drainToAsync(c);
     }
 
     @Override
     public int drainTo(Collection<? super V> c, int maxElements) {
-        if (maxElements <= 0) {
-            return 0;
-        }
-
-        return get(drainToAsync(c, maxElements));
+        return blockingQueue.drainTo(c, maxElements);
     }
 
     @Override
     public Future<Integer> drainToAsync(Collection<? super V> c, int maxElements) {
-        if (c == null) {
-            throw new NullPointerException();
-        }
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
-                "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
-                        "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
-                        "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
-                        "return vals",
-                Collections.<Object>singletonList(getName()), maxElements);
+        return blockingQueue.drainToAsync(c, maxElements);
     }
 
     @Override
