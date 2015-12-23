@@ -69,7 +69,6 @@ import net.openhft.hashing.LongHashFunction;
 public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V> {
 
     private static final RedisCommand<Void> ADD_ALL = new RedisCommand<Void>("HMSET", new VoidReplayConvertor());
-    private static final RedisCommand<Boolean> EVAL_ADD = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     private static final RedisStrictCommand<Boolean> HDEL = new RedisStrictCommand<Boolean>("HDEL", new BooleanReplayConvertor());
 
@@ -140,16 +139,16 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         byte[] key = hash(o);
 
         Future<List<Object>> future = commandExecutor.evalReadAsync(getName(), codec, EVAL_CONTAINS_KEY,
-                "local value = redis.call('hexists', KEYS[1], KEYS[3]); " +
+                "local value = redis.call('hexists', KEYS[1], ARGV[1]); " +
                 "local expireDate = 92233720368547758; " +
                 "if value == 1 then " +
-                    "local expireDateScore = redis.call('zscore', KEYS[2], KEYS[3]); "
+                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[1]); "
                     + "if expireDateScore ~= false then "
                         + "expireDate = tonumber(expireDateScore) "
                     + "end; " +
                 "end;" +
                 "return {expireDate, value}; ",
-               Arrays.<Object>asList(getName(), getTimeoutSetName(), key));
+               Arrays.<Object>asList(getName(), getTimeoutSetName()), key);
 
         addExpireListener(result, future, new BooleanReplayConvertor(), false);
 
@@ -347,13 +346,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
             long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
             return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "redis.call('zadd', KEYS[2], ARGV[1], KEYS[3]); " +
-                            "if redis.call('hexists', KEYS[1], KEYS[3]) == 0 then " +
-                            "redis.call('hset', KEYS[1], KEYS[3], ARGV[2]); " +
+                    "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); " +
+                            "if redis.call('hexists', KEYS[1], ARGV[3]) == 0 then " +
+                            "redis.call('hset', KEYS[1], ARGV[3], ARGV[2]); " +
                             "return 1; " +
                             "end;" +
                             "return 0; ",
-                            Arrays.<Object>asList(getName(), getTimeoutSetName(), key), timeoutDate, objectState);
+                            Arrays.<Object>asList(getName(), getTimeoutSetName()), timeoutDate, objectState, key);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -364,15 +363,20 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     @Override
-    public Future<Boolean> addAsync(V e) {
-        byte[] key = hash(e);
-        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_ADD,
-                  "if redis.call('hexists', KEYS[1], KEYS[2]) == 0 then " +
-                      "redis.call('hset', KEYS[1], KEYS[2], ARGV[1]); " +
-                      "return 1; " +
-                  "end; " +
-                  "return 0; ",
-                Arrays.<Object>asList(getName(), key), e);
+    public Future<Boolean> addAsync(V value) {
+        try {
+            byte[] objectState = encode(value);
+            byte[] key = hash(objectState);
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                    "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then " +
+                        "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                        "return 1; " +
+                    "end; " +
+                    "return 0; ",
+                Arrays.<Object>asList(getName()), key, objectState);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

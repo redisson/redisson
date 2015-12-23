@@ -199,6 +199,13 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
 
     @Override
     public Publisher<V> putIfAbsent(K key, V value, long ttl, TimeUnit unit) {
+        if (ttl < 0) {
+            throw new IllegalArgumentException("TTL can't be negative");
+        }
+        if (ttl == 0) {
+            return putIfAbsent(key, value);
+        }
+
         if (unit == null) {
             throw new NullPointerException("TimeUnit param can't be null");
         }
@@ -282,6 +289,13 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
 
     @Override
     public Publisher<V> put(K key, V value, long ttl, TimeUnit unit) {
+        if (ttl < 0) {
+            throw new IllegalArgumentException("TTL can't be negative");
+        }
+        if (ttl == 0) {
+            return put(key, value);
+        }
+
         if (unit == null) {
             throw new NullPointerException("TimeUnit param can't be null");
         }
