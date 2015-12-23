@@ -83,6 +83,11 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
                 this.config.addSlaveAddress(addr);
             }
         }
+
+        if (currentMaster.get() == null) {
+            throw new RedisConnectionException("Can't connect to servers!");
+        }
+
         init(this.config);
 
         monitorRoleChange(cfg);

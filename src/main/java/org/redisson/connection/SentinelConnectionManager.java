@@ -116,14 +116,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
                 break;
             } catch (RedisConnectionException e) {
-                log.warn("Can't connect to sentinel. {}", e.getMessage());
+                log.warn("Can't connect to sentinel server. {}", e.getMessage());
             } finally {
                 client.shutdownAsync();
             }
         }
 
         if (currentMaster.get() == null) {
-            throw new IllegalStateException("Can't connect to servers!");
+            throw new RedisConnectionException("Can't connect to servers!");
         }
         init(c);
 
