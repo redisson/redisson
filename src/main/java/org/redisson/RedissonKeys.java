@@ -69,17 +69,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public Iterable<String> getKeys() {
-        List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
-        for (final ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
-            Iterable<String> iterable = new Iterable<String>() {
-                @Override
-                public Iterator<String> iterator() {
-                    return createKeysIterator(slot.getStartSlot(), null);
-                }
-            };
-            iterables.add(iterable);
-        }
-        return new CompositeIterable<String>(iterables);
+        return getKeysByPattern(null);
     }
 
     private ListScanResult<String> scanIterator(int slot, long startPos, String pattern) {

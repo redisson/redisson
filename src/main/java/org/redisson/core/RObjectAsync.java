@@ -26,7 +26,7 @@ import io.netty.util.concurrent.Future;
 public interface RObjectAsync {
 
     /**
-     * Transfer a object from a source Redis instance to a destination Redis instance
+     * Transfer an object from source Redis instance to destination Redis instance
      * in async mode
      *
      * @param host - destination host

@@ -24,7 +24,7 @@ package org.redisson.core;
 public interface RObject extends RObjectAsync {
 
     /**
-     * Transfer a object from a source Redis instance to a destination Redis instance
+     * Transfer an object from source Redis instance to destination Redis instance
      *
      * @param host - destination host
      * @param port - destination port
