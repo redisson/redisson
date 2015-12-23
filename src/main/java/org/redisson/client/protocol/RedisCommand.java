@@ -91,6 +91,13 @@ public class RedisCommand<R> {
         this(name, null, null, null, inParamIndex);
     }
 
+    public RedisCommand(String name, Convertor<R> convertor, int inParamIndex, ValueType inParamType, ValueType outParamType) {
+        this(name, null, null, null, inParamIndex);
+        this.convertor = convertor;
+        this.inParamType = Arrays.asList(inParamType);
+        this.outParamType = outParamType;
+    }
+
     public RedisCommand(String name, int inParamIndex, ValueType inParamType, ValueType outParamType) {
         this(name, null, null, null, inParamIndex);
         this.inParamType = Arrays.asList(inParamType);

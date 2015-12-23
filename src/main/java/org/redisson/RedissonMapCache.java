@@ -71,6 +71,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     private static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5, ValueType.MAP);
     private static final RedisCommand<Object> EVAL_PUT_TTL = new RedisCommand<Object>("EVAL", 6, ValueType.MAP, ValueType.MAP_VALUE);
+    private static final RedisCommand<Boolean> EVAL_FAST_PUT_TTL = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 6, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<List<Object>> EVAL_GET_TTL = new RedisCommand<List<Object>>("EVAL", new TTLMapValueReplayDecoder<Object>(), 5, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_KEY);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_VALUE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_VALUE);
@@ -277,6 +278,31 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     public V put(K key, V value, long ttl, TimeUnit unit) {
         return get(putAsync(key, value, ttl, unit));
+    }
+
+    @Override
+    public boolean fastPut(K key, V value, long ttl, TimeUnit unit) {
+        return get(fastPutAsync(key, value, ttl, unit));
+    }
+
+    @Override
+    public Future<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit unit) {
+        if (ttl < 0) {
+            throw new IllegalArgumentException("TTL can't be negative");
+        }
+        if (ttl == 0) {
+            return fastPutAsync(key, value);
+        }
+
+        if (unit == null) {
+            throw new NullPointerException("TimeUnit param can't be null");
+        }
+
+        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
+        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_FAST_PUT_TTL,
+                "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); " +
+                "return redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); ",
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), timeoutDate, key, value);
     }
 
     @Override

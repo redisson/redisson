@@ -25,6 +25,7 @@ import org.redisson.core.RMapCache;
 import org.redisson.core.RSetCache;
 import org.redisson.core.RMap;
 
+import io.netty.util.Timeout;
 import io.netty.util.concurrent.Future;
 
 public class RedissonMapCacheTest extends BaseTest {
@@ -593,6 +594,14 @@ public class RedissonMapCacheTest extends BaseTest {
         RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         Assert.assertTrue(map.fastPut(1, 2));
         Assert.assertFalse(map.fastPut(1, 3));
+        Assert.assertEquals(1, map.size());
+    }
+
+    @Test
+    public void testFastPutWithTTL() throws Exception {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+        Assert.assertTrue(map.fastPut(1, 2, 2, TimeUnit.SECONDS));
+        Assert.assertFalse(map.fastPut(1, 2, 2, TimeUnit.SECONDS));
         Assert.assertEquals(1, map.size());
     }
 
