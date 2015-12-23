@@ -218,36 +218,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public <T> FutureListener<T> createReleaseWriteListener(final NodeSource source, final RedisConnection conn) {
-        return new FutureListener<T>() {
-            @Override
-            public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
-                if (future.isCancelled()) {
-                    return;
-                }
-
-                shutdownLatch.release();
-                releaseWrite(source, conn);
-            }
-        };
-    }
-
-    @Override
-    public <T> FutureListener<T> createReleaseReadListener(final NodeSource source, final RedisConnection conn) {
-        return new FutureListener<T>() {
-            @Override
-            public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
-                if (future.isCancelled()) {
-                    return;
-                }
-
-                shutdownLatch.release();
-                releaseRead(source, conn);
-            }
-        };
-    }
-
-    @Override
     public int calcSlot(String key) {
         return 0;
     }

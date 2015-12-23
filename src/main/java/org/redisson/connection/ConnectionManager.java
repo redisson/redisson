@@ -34,7 +34,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 /**
@@ -83,12 +82,6 @@ public interface ConnectionManager {
     Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
 
     Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
-
-    @Deprecated
-    <T> FutureListener<T> createReleaseReadListener(NodeSource source, RedisConnection conn);
-
-    @Deprecated
-    <T> FutureListener<T> createReleaseWriteListener(NodeSource source, RedisConnection conn);
 
     RedisClient createClient(String host, int port, int timeout);
 

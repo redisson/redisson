@@ -413,7 +413,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
             });
         }
-
     }
 
     private <V, R> void checkWriteFuture(final AsyncDetails<V, R> details, final RedisConnection connection) {
@@ -492,25 +491,31 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             });
         }
 
-        if (details.getAttemptPromise().isDone()) {
-            releaseConnection(source, details, connection);
+        releaseConnection(source, details.getConnectionFuture(), details.isReadOnlyMode(), details.getAttemptPromise());
+    }
+
+    protected <R> void releaseConnection(final NodeSource source, final Future<RedisConnection> connectionFuture,
+                            final boolean isReadOnly, Promise<R> attemptPromise) {
+        if (attemptPromise.isDone()) {
+            releaseConnection(isReadOnly, source, connectionFuture);
         } else {
-            details.getAttemptPromise().addListener(new FutureListener<R>() {
+            attemptPromise.addListener(new FutureListener<R>() {
                 @Override
                 public void operationComplete(io.netty.util.concurrent.Future<R> future) throws Exception {
-                    releaseConnection(source, details, connection);
+                    releaseConnection(isReadOnly, source, connectionFuture);
                 }
             });
         }
     }
 
-    private <V, R> void releaseConnection(NodeSource source, AsyncDetails<V, R> details, RedisConnection connection) {
-        if (!details.getConnectionFuture().isSuccess()) {
+    private <V, R> void releaseConnection(boolean isReadOnly, NodeSource source, Future<RedisConnection> connectionFuture) {
+        if (!connectionFuture.isSuccess()) {
             return;
         }
 
+        RedisConnection connection = connectionFuture.getNow();
         connectionManager.getShutdownLatch().release();
-        if (details.isReadOnlyMode()) {
+        if (isReadOnly) {
             connectionManager.releaseRead(source, connection);
         } else {
             connectionManager.releaseWrite(source, connection);
