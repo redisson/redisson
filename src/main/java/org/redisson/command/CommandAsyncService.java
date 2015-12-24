@@ -460,6 +460,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         if (!details.getConnectionFuture().isSuccess()) {
+            connectionManager.getShutdownLatch().release();
             details.setException(convertException(details.getConnectionFuture()));
             return;
         }

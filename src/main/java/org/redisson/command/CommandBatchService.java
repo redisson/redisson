@@ -333,6 +333,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
 
         if (!connFuture.isSuccess()) {
+            connectionManager.getShutdownLatch().release();
             details.setException(convertException(connFuture));
             return;
         }
