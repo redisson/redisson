@@ -92,6 +92,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 c.setMasterAddress(masterHost);
                 currentMaster.set(masterHost);
                 log.info("master: {} added", masterHost);
+                slaves.put(masterHost, true);
 
                 List<Map<String, String>> sentinelSlaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
                 for (Map<String, String> map : sentinelSlaves) {
