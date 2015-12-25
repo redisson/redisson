@@ -134,9 +134,11 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
             connection.closeAsync();
         }
 
-        List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
-        connectionEntry.getAllSubscribeConnections().clear();
-        return list;
+        synchronized (connectionEntry) {
+            List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
+            connectionEntry.getAllSubscribeConnections().clear();
+            return list;
+        }
     }
 
     public Future<RedisPubSubConnection> nextPubSubConnection() {

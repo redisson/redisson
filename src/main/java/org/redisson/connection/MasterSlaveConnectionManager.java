@@ -545,7 +545,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void slaveDown(ClusterSlotRange slotRange, String host, int port, FreezeReason freezeReason) {
         MasterSlaveEntry entry = getEntry(slotRange);
         slaveDown(entry, host, port, freezeReason);
-        log.info("slave: {}:{} has down", host, port);
     }
 
     protected void changeMaster(ClusterSlotRange slotRange, String host, int port) {

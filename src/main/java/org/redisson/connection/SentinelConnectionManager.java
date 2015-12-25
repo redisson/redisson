@@ -49,7 +49,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private final ConcurrentMap<String, RedisClient> sentinels = PlatformDependent.newConcurrentHashMap();
     private final AtomicReference<String> currentMaster = new AtomicReference<String>();
-    private final ConcurrentMap<String, Boolean> freezeSlaves = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<String, Boolean> slaves = PlatformDependent.newConcurrentHashMap();
 
 
@@ -222,8 +221,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null) {
-                addSlave(ip, Integer.valueOf(port));
+                getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
                 log.info("slave: {} added", slaveAddr);
+            } else {
+                slaveUp(ip, port);
             }
         } else {
             log.warn("onSlaveAdded. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
@@ -266,11 +267,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(String ip, String port) {
-        // to avoid freeze twice
-        String addr = ip + ":" + port;
-        if (freezeSlaves.putIfAbsent(addr, true) == null) {
-            slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
-        }
+        slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
+        log.info("slave: {}:{} has down", ip, port);
     }
 
     private void onNodeUp(URI addr, String msg) {
@@ -281,11 +279,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String ip = parts[2];
                 String port = parts[3];
 
-                String slaveAddr = ip + ":" + port;
-                if (freezeSlaves.remove(slaveAddr) != null) {
-                    slaveUp(ip, Integer.valueOf(port));
-                    log.info("slave: {} has up", slaveAddr);
-                }
+                slaveUp(ip, port);
             } else if ("master".equals(parts[0])) {
                 String ip = parts[2];
                 String port = parts[3];
@@ -300,6 +294,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             } else {
                 log.warn("onSlaveUp. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
             }
+        }
+    }
+
+    private void slaveUp(String ip, String port) {
+        if (getEntry(singleSlotRange).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+            String slaveAddr = ip + ":" + port;
+            log.info("slave: {} has up", slaveAddr);
         }
     }
 
@@ -322,14 +323,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         } else {
             log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
-    }
-
-    private void addSlave(String host, int port) {
-        getEntry(0).addSlave(host, port);
-    }
-
-    private void slaveUp(String host, int port) {
-        getEntry(0).slaveUp(host, port, FreezeReason.MANAGER);
     }
 
     @Override
