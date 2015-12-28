@@ -257,5 +257,25 @@ public class RedissonKeys implements RKeys {
         }, (Object[])keys);
     }
 
+    @Override
+    public Long сount() {
+        return commandExecutor.get(countAsync());
+    }
+
+    @Override
+    public Future<Long> countAsync() {
+        return commandExecutor.readAllAsync(RedisCommands.DBSIZE, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return results.get();
+            }
+        });
+    }
 
 }

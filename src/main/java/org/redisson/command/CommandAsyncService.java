@@ -176,6 +176,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return allAsync(false, command, callback, params);
     }
 
+    @Override
+    public <R, T> Future<R> readAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
+        return allAsync(true, command, callback, params);
+    }
+
     public <T, R> Future<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
         Promise<T> promise = new DefaultPromise<T>() {

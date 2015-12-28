@@ -187,6 +187,7 @@ public interface RedisCommands {
     RedisCommand<Long> HDEL = new RedisStrictCommand<Long>("HDEL", 2, ValueType.MAP_KEY);
 
     RedisStrictCommand<Long> DEL = new RedisStrictCommand<Long>("DEL");
+    RedisStrictCommand<Long> DBSIZE = new RedisStrictCommand<Long>("DBSIZE");
     RedisStrictCommand<Boolean> DEL_SINGLE = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
     RedisStrictCommand<Void> DEL_VOID = new RedisStrictCommand<Void>("DEL", new VoidReplayConvertor());
 

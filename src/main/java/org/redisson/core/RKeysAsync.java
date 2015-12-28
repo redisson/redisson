@@ -71,4 +71,10 @@ public interface RKeysAsync {
      */
     Future<Long> deleteAsync(String ... keys);
 
+    /**
+     * Returns the number of keys in the currently-selected database in async mode
+     *
+     * @return
+     */
+    Future<Long> countAsync();
 }

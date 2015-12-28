@@ -88,4 +88,11 @@ public interface RKeys extends RKeysAsync {
      */
     long delete(String ... keys);
 
+    /**
+     * Returns the number of keys in the currently-selected database
+     *
+     * @return
+     */
+    Long сount();
+
 }
