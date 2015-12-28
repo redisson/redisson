@@ -2,6 +2,23 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####25-Dec-2015 - version 2.2.4 released  
+Please update to this version ASAP due to connection leak discovered in previous versions since Redisson 2.1.4.
+
+Feature - __new object added__ `RBlockingDeque`  
+Feature - __new object added__ `RSemaphore`  
+Feature - `RMapCache.fastPut` method with TTL support added  
+Feature - `WeightedRoundRobinBalancer` slaves balancer added  
+Improvement - Memory consumption optimization  
+Improvement - storing value with ttl = 0 in `RSetCache` or `RMapCache` saves it infinitely  
+Fixed - reconnection handling when Sentinel servers are restarted  
+Fixed - RedisConnectionException should be throw if Redisson can't connect to servers at startup   
+Fixed - Connection leak (regression bug since 2.1.4)  
+Fixed - ConnectionWatchdog throws exception when eventloop in shutdown state  
+Fixed - `RReadWriteLock.forceUnlock` works only for current thread  
+Fixed - MapKeyDecoder and MapValueDecoder are called in wrong order  
+Fixed - `RReadWriteLock` doesn't work in cluster mode  
+
 ####15-Dec-2015 - version 2.2.3 released  
 Feature - ability to set connection listener via `Config.connectionListener` setting  
 Fixed - `RLock` expiration bug fixed (regression bug since 2.2.2)  
