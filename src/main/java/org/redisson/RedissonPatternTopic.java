@@ -69,7 +69,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
         synchronized (entry) {
             if (entry.isActive()) {
                 entry.addListener(name, pubSubListener);
-                return pubSubListener.hashCode();
+                return System.identityHashCode(pubSubListener);
             }
         }
         // entry is inactive trying add again
