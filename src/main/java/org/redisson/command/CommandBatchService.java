@@ -134,7 +134,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
 
         if (commands.isEmpty()) {
-            return connectionManager.getGroup().next().newSucceededFuture(null);
+            return connectionManager.newSucceededFuture(null);
         }
         executed = true;
 
@@ -159,7 +159,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
 
         if (commands.isEmpty()) {
-            return connectionManager.getGroup().next().newSucceededFuture(null);
+            return connectionManager.newSucceededFuture(null);
         }
         executed = true;
 

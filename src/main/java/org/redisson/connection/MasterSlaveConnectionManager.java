@@ -226,7 +226,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec) {
+    public Future<PubSubConnectionEntry> psubscribe(String channelName, Codec codec) {
         Promise<PubSubConnectionEntry> promise = newPromise();
         psubscribe(channelName, codec, promise);
         return promise;
