@@ -10,8 +10,23 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RBucket;
+import static org.assertj.core.api.Assertions.*;
 
 public class RedissonBucketTest extends BaseTest {
+
+    @Test
+    public void testSaveBuckets() {
+        Map<String, Integer> buckets = new HashMap<String, Integer>();
+        buckets.put("12", 1);
+        buckets.put("41", 2);
+        redisson.saveBuckets(buckets);
+
+        RBucket<Object> r1 = redisson.getBucket("12");
+        assertThat(r1.get()).isEqualTo(1);
+
+        RBucket<Object> r2 = redisson.getBucket("41");
+        assertThat(r2.get()).isEqualTo(2);
+    }
 
     @Test
     public void testLoadBucketValues() {

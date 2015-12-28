@@ -143,7 +143,7 @@ public interface RedissonClient {
     <V> List<RBucket<V>> findBuckets(String pattern);
 
     /**
-     * <p>Returns RBucket value mapped by key. Result Map is not contains
+     * <p>Returns Redis object mapped by key. Result Map is not contains
      * key-value entry for null values.
      *
      * <p>Uses <code>MGET</code> Redis command.
@@ -154,7 +154,7 @@ public interface RedissonClient {
     <V> Map<String, V> loadBucketValues(Collection<String> keys);
 
     /**
-     * <p>Returns RBucket value mapped by key. Result Map is not contains
+     * <p>Returns Redis object mapped by key. Result Map is not contains
      * key-value entry for null values.
      *
      * <p>Uses <code>MGET</code> Redis command.
@@ -163,6 +163,13 @@ public interface RedissonClient {
      * @return
      */
     <V> Map<String, V> loadBucketValues(String ... keys);
+
+    /**
+     * Saves Redis object mapped by key.
+     *
+     * @param buckets
+     */
+    void saveBuckets(Map<String, ?> buckets);
 
     /**
      * Use {@link #findBuckets(String)}

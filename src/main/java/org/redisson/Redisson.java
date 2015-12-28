@@ -15,11 +15,13 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.redisson.api.RedissonReactiveClient;
@@ -193,6 +195,25 @@ public class Redisson implements RedissonClient {
             index++;
         }
         return result;
+    }
+
+    public void saveBuckets(Map<String, ?> buckets) {
+        if (config.isClusterConfig()) {
+            throw new IllegalStateException("This method can't be used in cluster mode!");
+        }
+
+        List<Object> params = new ArrayList<Object>(buckets.size());
+        for (Entry<String, ?> entry : buckets.entrySet()) {
+            params.add(entry.getKey());
+            try {
+                params.add(config.getCodec().getValueEncoder().encode(entry.getValue()));
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        Future<Void> future = commandExecutor.writeAsync(null, RedisCommands.MSET, params.toArray());
+        commandExecutor.get(future);
     }
 
     @Override
