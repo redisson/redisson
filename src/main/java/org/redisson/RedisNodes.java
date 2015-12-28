@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.RedisClientEntry;
 import org.redisson.core.Node;
@@ -104,6 +105,16 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
         // true and no futures missed during client connection
         return res && result.size() == clients.size();
+    }
+
+    @Override
+    public int addConnectionListener(ConnectionListener connectionListener) {
+        return connectionManager.getConnectionEventsHub().addListener(connectionListener);
+    }
+
+    @Override
+    public void removeConnectionListener(int listenerId) {
+        connectionManager.getConnectionEventsHub().removeListener(listenerId);
     }
 
 }

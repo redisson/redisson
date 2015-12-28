@@ -121,7 +121,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private IdleConnectionWatcher connectionWatcher;
 
-    private ConnectionEventsHub connectionEventsHub;
+    private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         init(config);
@@ -196,8 +196,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = NioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
-
-        connectionEventsHub = new ConnectionEventsHub(cfg.getConnectionListener());
     }
 
     @Override

@@ -337,16 +337,18 @@ public class Config {
         return useLinuxNativeEpoll;
     }
 
+    @Deprecated
     public ConnectionListener getConnectionListener() {
         return connectionListener;
     }
 
     /**
-     * Setup connect listener which will be triggered
-     * when Redisson has just been connected to or disconnected from redis server
+     * Use {@code org.redisson.core.NodesGroup#addConnectionListener(ConnectionListener)}
      *
      * @param connectionListener
+     * @return
      */
+    @Deprecated
     public Config setConnectionListener(ConnectionListener connectionListener) {
         this.connectionListener = connectionListener;
         return this;

@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import io.netty.util.internal.PlatformDependent;
@@ -26,30 +27,40 @@ public class ConnectionEventsHub {
 
     private final ConcurrentMap<InetSocketAddress, Status> maps = PlatformDependent.newConcurrentHashMap();
 
-    private final ConnectionListener connectionListener;
+    private final Map<Integer, ConnectionListener> listenersMap = PlatformDependent.newConcurrentHashMap();
 
-    public ConnectionEventsHub(ConnectionListener connectionListener) {
-        this.connectionListener = connectionListener;
+    public int addListener(ConnectionListener listener) {
+        int id = System.identityHashCode(listener);
+        listenersMap.put(id, listener);
+        return id;
+    }
+
+    public void removeListener(int listenerId) {
+        listenersMap.remove(listenerId);
     }
 
     public void fireConnect(InetSocketAddress addr) {
-        if (connectionListener == null || maps.get(addr) == Status.CONNECTED) {
+        if (listenersMap.isEmpty() || maps.get(addr) == Status.CONNECTED) {
             return;
         }
 
         if (maps.putIfAbsent(addr, Status.CONNECTED) == null
                 || maps.replace(addr, Status.DISCONNECTED, Status.CONNECTED)) {
-            connectionListener.onConnect(addr);
+            for (ConnectionListener listener : listenersMap.values()) {
+                listener.onConnect(addr);
+            }
         }
     }
 
     public void fireDisconnect(InetSocketAddress addr) {
-        if (connectionListener == null || maps.get(addr) == Status.DISCONNECTED) {
+        if (listenersMap.isEmpty() || maps.get(addr) == Status.DISCONNECTED) {
             return;
         }
 
         if (maps.replace(addr, Status.CONNECTED, Status.DISCONNECTED)) {
-            connectionListener.onDisconnect(addr);
+            for (ConnectionListener listener : listenersMap.values()) {
+                listener.onDisconnect(addr);
+            }
         }
     }
 

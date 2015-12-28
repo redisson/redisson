@@ -50,8 +50,12 @@ public class RedissonTest {
         final Waiter onDisconnectWaiter = new Waiter();
 
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319").setFailedAttempts(1).setRetryAttempts(1);
-        config.setConnectionListener(new ConnectionListener() {
+        config.useSingleServer().setAddress("127.0.0.1:6319").setFailedAttempts(1).setRetryAttempts(1)
+        .setConnectionMinimumIdleSize(0);
+
+        RedissonClient r = Redisson.create(config);
+
+        int id = r.getNodesGroup().addConnectionListener(new ConnectionListener() {
 
             @Override
             public void onDisconnect(InetSocketAddress addr) {
@@ -66,9 +70,9 @@ public class RedissonTest {
             }
         });
 
-        RedissonClient r = Redisson.create(config);
-        r.getBucket("1").get();
+        assertThat(id).isNotZero();
 
+        r.getBucket("1").get();
         p.destroy();
         Assert.assertEquals(1, p.waitFor());
 
