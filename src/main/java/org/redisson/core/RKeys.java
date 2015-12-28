@@ -93,6 +93,6 @@ public interface RKeys extends RKeysAsync {
      *
      * @return
      */
-    Long сount();
+    Long count();
 
 }

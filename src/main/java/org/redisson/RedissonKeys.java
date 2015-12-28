@@ -258,7 +258,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Long сount() {
+    public Long count() {
         return commandExecutor.get(countAsync());
     }
 

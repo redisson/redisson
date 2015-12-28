@@ -18,6 +18,7 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+import static org.assertj.core.api.Assertions.*;
 
 import net.jodah.concurrentunit.Waiter;
 

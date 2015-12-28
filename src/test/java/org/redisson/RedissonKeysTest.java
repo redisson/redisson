@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -95,6 +97,15 @@ public class RedissonKeysTest extends BaseTest {
 
         Assert.assertEquals(2, redisson.getKeys().delete("test", "map2"));
         Assert.assertEquals(0, redisson.getKeys().delete("test", "map2"));
+    }
+
+    @Test
+    public void testCount() {
+        Long s = redisson.getKeys().count();
+        assertThat(s).isEqualTo(0);
+        redisson.getBucket("test1").set(23);
+        s = redisson.getKeys().count();
+        assertThat(s).isEqualTo(1);
     }
 
 }
