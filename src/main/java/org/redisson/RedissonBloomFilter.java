@@ -222,13 +222,6 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean tryInit(long expectedInsertions, double falseProbability) {
-        try {
-            readConfig();
-            return false;
-        } catch (IllegalStateException e) {
-            // skip
-        }
-
         size = optimalNumOfBits(expectedInsertions, falseProbability);
         if (size > MAX_SIZE) {
             throw new IllegalArgumentException("Bloom filter can't be greater than " + MAX_SIZE + ". But calculated size is " + size);
@@ -251,6 +244,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
             if (!e.getMessage().contains("Bloom filter config has been changed")) {
                 throw e;
             }
+            readConfig();
             return false;
         }
 
