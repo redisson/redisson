@@ -92,10 +92,18 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("{queue}1");
-        queue1.put(1);
-        queue1.put(2);
-        queue1.put(3);
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("{queue}1");
+        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    queue1.put(3);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }, 10, TimeUnit.SECONDS);
 
         RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("{queue}2");
         queue2.put(4);
