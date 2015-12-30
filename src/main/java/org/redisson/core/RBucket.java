@@ -28,6 +28,8 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
 
     V get();
 
+    boolean trySet(V value);
+
     void set(V value);
 
     void set(V value, long timeToLive, TimeUnit timeUnit);

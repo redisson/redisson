@@ -15,6 +15,14 @@ import static org.assertj.core.api.Assertions.*;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testTrySet() {
+        RBucket<String> r1 = redisson.getBucket("12");
+        assertThat(r1.trySet("3")).isTrue();
+        assertThat(r1.trySet("4")).isFalse();
+        assertThat(r1.get()).isEqualTo("3");
+    }
+
+    @Test
     public void testSaveBuckets() {
         Map<String, Integer> buckets = new HashMap<String, Integer>();
         buckets.put("12", 1);

@@ -84,4 +84,14 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return isExists();
     }
 
+    @Override
+    public Future<Boolean> trySetAsync(V value) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETNX, getName(), value);
+    }
+
+    @Override
+    public boolean trySet(V value) {
+        return get(trySetAsync(value));
+    }
+
 }
