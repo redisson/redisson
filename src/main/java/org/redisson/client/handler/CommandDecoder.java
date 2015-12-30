@@ -28,6 +28,7 @@ import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisTimeoutException;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
@@ -79,12 +80,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         Decoder<Object> currentDecoder = null;
         if (data == null) {
-            currentDecoder = new Decoder<Object>() {
-                @Override
-                public Object decode(ByteBuf buf, State state) {
-                    return buf.toString(CharsetUtil.UTF_8);
-                }
-            };
+            currentDecoder = StringCodec.INSTANCE.getValueDecoder();
         }
 
         if (log.isTraceEnabled()) {
@@ -127,6 +123,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             Decoder<Object> currentDecoder, CommandsData commands) {
         int i = state().getIndex();
 
+        RedisException error = null;
         while (in.writerIndex() > in.readerIndex()) {
             CommandData<Object, Object> cmd = null;
             try {
@@ -138,13 +135,22 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } catch (IOException e) {
                 cmd.getPromise().tryFailure(e);
             }
+            if (!cmd.getPromise().isSuccess()) {
+                error = (RedisException) cmd.getPromise().cause();
+            }
         }
 
         if (i == commands.getCommands().size()) {
             Promise<Void> promise = commands.getPromise();
-            if (!promise.trySuccess(null) && promise.cause() instanceof RedisTimeoutException) {
-                // TODO try increase timeout
-                log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+            if (error != null) {
+                if (!promise.tryFailure(error) && promise.cause() instanceof RedisTimeoutException) {
+                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+                }
+            } else {
+                if (!promise.trySuccess(null) && promise.cause() instanceof RedisTimeoutException) {
+                    // TODO try increase timeout
+                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+                }
             }
 
             ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());

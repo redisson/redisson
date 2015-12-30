@@ -351,17 +351,7 @@ public class CommandBatchService extends CommandReactiveService {
             details.setWriteFuture(future);
         } else {
             List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size());
-            FutureListener<Object> listener = new FutureListener<Object>() {
-                @Override
-                public void operationComplete(Future<Object> future) throws Exception {
-                    if (!future.isSuccess() && !mainPromise.isDone()) {
-                        mainPromise.setFailure(future.cause());
-                    }
-                }
-            };
-
             for (CommandEntry c : entry.getCommands()) {
-                c.getCommand().getPromise().addListener(listener);
                 list.add(c.getCommand());
             }
             ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
