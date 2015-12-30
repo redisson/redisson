@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
@@ -87,6 +88,21 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     @Override
     public Future<Boolean> trySetAsync(V value) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETNX, getName(), value);
+    }
+
+    @Override
+    public Future<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
+        try {
+            byte[] state = codec.getValueEncoder().encode(value);
+            return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETPXNX, getName(), state, "PX", timeUnit.toMillis(timeToLive), "NX");
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    @Override
+    public boolean trySet(V value, long timeToLive, TimeUnit timeUnit) {
+        return get(trySetAsync(value, timeToLive, timeUnit));
     }
 
     @Override

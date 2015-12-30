@@ -23,6 +23,18 @@ public class RedissonBucketTest extends BaseTest {
     }
 
     @Test
+    public void testTrySetTTL() throws InterruptedException {
+        RBucket<String> r1 = redisson.getBucket("12");
+        assertThat(r1.trySet("3", 500, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(r1.trySet("4", 500, TimeUnit.MILLISECONDS)).isFalse();
+        assertThat(r1.get()).isEqualTo("3");
+
+        Thread.sleep(500);
+
+        assertThat(r1.get()).isNull();
+    }
+
+    @Test
     public void testSaveBuckets() {
         Map<String, Integer> buckets = new HashMap<String, Integer>();
         buckets.put("12", 1);
