@@ -2,38 +2,47 @@ package org.redisson;
 
 import java.util.BitSet;
 
-import org.junit.Assert;
+import static org.assertj.core.api.Assertions.*;
 import org.junit.Test;
 import org.redisson.core.RBitSet;
 
 public class RedissonBitSetTest extends BaseTest {
 
     @Test
+    public void testIndexRange() {
+        RBitSet bs = redisson.getBitSet("testbitset");
+        long topIndex = Integer.MAX_VALUE*2L;
+        assertThat(bs.get(topIndex)).isFalse();
+        bs.set(topIndex);
+        assertThat(bs.get(topIndex)).isTrue();
+    }
+
+    @Test
     public void testLength() {
         RBitSet bs = redisson.getBitSet("testbitset");
         bs.set(0, 5);
         bs.clear(0, 1);
-        Assert.assertEquals(5, bs.length());
+        assertThat(bs.length()).isEqualTo(5);
 
         bs.clear();
         bs.set(28);
         bs.set(31);
-        Assert.assertEquals(32, bs.length());
+        assertThat(bs.length()).isEqualTo(32);
 
         bs.clear();
         bs.set(3);
         bs.set(7);
-        Assert.assertEquals(8, bs.length());
+        assertThat(bs.length()).isEqualTo(8);
 
         bs.clear();
         bs.set(3);
         bs.set(120);
         bs.set(121);
-        Assert.assertEquals(122, bs.length());
+        assertThat(bs.length()).isEqualTo(122);
 
         bs.clear();
         bs.set(0);
-        Assert.assertEquals(1, bs.length());
+        assertThat(bs.length()).isEqualTo(1);
     }
 
     @Test
@@ -41,7 +50,7 @@ public class RedissonBitSetTest extends BaseTest {
         RBitSet bs = redisson.getBitSet("testbitset");
         bs.set(0, 8);
         bs.clear(0, 3);
-        Assert.assertEquals("{3, 4, 5, 6, 7}", bs.toString());
+        assertThat(bs.toString()).isEqualTo("{3, 4, 5, 6, 7}");
     }
 
     @Test
@@ -50,7 +59,7 @@ public class RedissonBitSetTest extends BaseTest {
         bs.set(3);
         bs.set(5);
         bs.not();
-        Assert.assertEquals("{0, 1, 2, 4, 6, 7}", bs.toString());
+        assertThat(bs.toString()).isEqualTo("{0, 1, 2, 4, 6, 7}");
     }
 
     @Test
@@ -58,7 +67,7 @@ public class RedissonBitSetTest extends BaseTest {
         RBitSet bs = redisson.getBitSet("testbitset");
         bs.set(3);
         bs.set(5);
-        Assert.assertEquals("{3, 5}", bs.toString());
+        assertThat(bs.toString()).isEqualTo("{3, 5}");
 
         BitSet bs1 = new BitSet();
         bs1.set(1);
@@ -66,31 +75,30 @@ public class RedissonBitSetTest extends BaseTest {
         bs.set(bs1);
 
         bs = redisson.getBitSet("testbitset");
-
-        Assert.assertEquals("{1, 10}", bs.toString());
+        assertThat(bs.toString()).isEqualTo("{1, 10}");
     }
 
     @Test
     public void testSetGet() {
         RBitSet bitset = redisson.getBitSet("testbitset");
-        Assert.assertEquals(0, bitset.cardinality());
-        Assert.assertEquals(0, bitset.size());
+        assertThat(bitset.cardinality()).isZero();
+        assertThat(bitset.size()).isZero();
 
         bitset.set(10, true);
         bitset.set(31, true);
-        Assert.assertFalse(bitset.get(0));
-        Assert.assertTrue(bitset.get(31));
-        Assert.assertTrue(bitset.get(10));
-        Assert.assertEquals(2, bitset.cardinality());
-        Assert.assertEquals(32, bitset.size());
+        assertThat(bitset.get(0)).isFalse();
+        assertThat(bitset.get(31)).isTrue();
+        assertThat(bitset.get(10)).isTrue();
+        assertThat(bitset.cardinality()).isEqualTo(2);
+        assertThat(bitset.size()).isEqualTo(32);
     }
 
     @Test
     public void testSetRange() {
         RBitSet bs = redisson.getBitSet("testbitset");
         bs.set(3, 10);
-        Assert.assertEquals(7, bs.cardinality());
-        Assert.assertEquals(16, bs.size());
+        assertThat(bs.cardinality()).isEqualTo(7);
+        assertThat(bs.size()).isEqualTo(16);
     }
 
     @Test
@@ -98,32 +106,32 @@ public class RedissonBitSetTest extends BaseTest {
         RBitSet bs = redisson.getBitSet("testbitset");
         bs.set(3, true);
         bs.set(41, true);
-        Assert.assertEquals(48, bs.size());
+        assertThat(bs.size()).isEqualTo(48);
 
         BitSet bitset = bs.asBitSet();
-        Assert.assertTrue(bitset.get(3));
-        Assert.assertTrue(bitset.get(41));
-        Assert.assertEquals(2, bitset.cardinality());
+        assertThat(bitset.get(3)).isTrue();
+        assertThat(bitset.get(41)).isTrue();
+        assertThat(bs.cardinality()).isEqualTo(2);
     }
 
     @Test
     public void testAnd() {
         RBitSet bs1 = redisson.getBitSet("testbitset1");
         bs1.set(3, 5);
-        Assert.assertEquals(2, bs1.cardinality());
-        Assert.assertEquals(8, bs1.size());
+        assertThat(bs1.cardinality()).isEqualTo(2);
+        assertThat(bs1.size()).isEqualTo(8);
 
         RBitSet bs2 = redisson.getBitSet("testbitset2");
         bs2.set(4);
         bs2.set(10);
         bs1.and(bs2.getName());
-        Assert.assertFalse(bs1.get(3));
-        Assert.assertTrue(bs1.get(4));
-        Assert.assertFalse(bs1.get(5));
-        Assert.assertTrue(bs2.get(10));
+        assertThat(bs1.get(3)).isFalse();
+        assertThat(bs1.get(4)).isTrue();
+        assertThat(bs1.get(5)).isFalse();
+        assertThat(bs2.get(10)).isTrue();
 
-        Assert.assertEquals(1, bs1.cardinality());
-        Assert.assertEquals(16, bs1.size());
+        assertThat(bs1.cardinality()).isEqualTo(1);
+        assertThat(bs1.size()).isEqualTo(16);
     }
 
 

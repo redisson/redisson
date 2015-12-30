@@ -26,29 +26,29 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
 
     int length();
 
-    void set(int fromIndex, int toIndex, boolean value);
+    void set(long fromIndex, long toIndex, boolean value);
 
-    void clear(int fromIndex, int toIndex);
+    void clear(long fromIndex, long toIndex);
 
     void set(BitSet bs);
 
     void not();
 
-    void set(int fromIndex, int toIndex);
+    void set(long fromIndex, long toIndex);
 
     int size();
 
-    boolean get(int bitIndex);
+    boolean get(long bitIndex);
 
-    void set(int bitIndex);
+    void set(long bitIndex);
 
-    void set(int bitIndex, boolean value);
+    void set(long bitIndex, boolean value);
 
     byte[] toByteArray();
 
     int cardinality();
 
-    void clear(int bitIndex);
+    void clear(long bitIndex);
 
     void clear();
 

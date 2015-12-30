@@ -30,27 +30,27 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     Future<Integer> lengthAsync();
 
-    Future<Void> setAsync(int fromIndex, int toIndex, boolean value);
+    Future<Void> setAsync(long fromIndex, long toIndex, boolean value);
 
-    Future<Void> clearAsync(int fromIndex, int toIndex);
+    Future<Void> clearAsync(long fromIndex, long toIndex);
 
     Future<Void> setAsync(BitSet bs);
 
     Future<Void> notAsync();
 
-    Future<Void> setAsync(int fromIndex, int toIndex);
+    Future<Void> setAsync(long fromIndex, long toIndex);
 
     Future<Integer> sizeAsync();
 
-    Future<Boolean> getAsync(int bitIndex);
+    Future<Boolean> getAsync(long bitIndex);
 
-    Future<Void> setAsync(int bitIndex);
+    Future<Void> setAsync(long bitIndex);
 
-    Future<Void> setAsync(int bitIndex, boolean value);
+    Future<Void> setAsync(long bitIndex, boolean value);
 
     Future<Integer> cardinalityAsync();
 
-    Future<Void> clearAsync(int bitIndex);
+    Future<Void> clearAsync(long bitIndex);
 
     Future<Void> clearAsync();
 
