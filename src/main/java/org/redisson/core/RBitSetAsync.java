@@ -28,7 +28,7 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     Future<byte[]> toByteArrayAsync();
 
-    Future<Integer> lengthAsync();
+    Future<Long> lengthAsync();
 
     Future<Void> setAsync(long fromIndex, long toIndex, boolean value);
 
@@ -48,7 +48,7 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     Future<Void> setAsync(long bitIndex, boolean value);
 
-    Future<Integer> cardinalityAsync();
+    Future<Long> cardinalityAsync();
 
     Future<Void> clearAsync(long bitIndex);
 

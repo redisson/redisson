@@ -437,7 +437,7 @@ public class Redisson implements RedissonClient {
 
     public NodesGroup<ClusterNode> getClusterNodesGroup() {
         if (!config.isClusterConfig()) {
-            throw new IllegalStateException("Redisson not in cluster mode!");
+            throw new IllegalStateException("Redisson is not in cluster mode!");
         }
         return new RedisNodes<ClusterNode>(connectionManager);
     }

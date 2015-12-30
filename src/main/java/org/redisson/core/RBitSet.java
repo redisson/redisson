@@ -24,7 +24,7 @@ import java.util.BitSet;
  */
 public interface RBitSet extends RExpirable, RBitSetAsync {
 
-    int length();
+    long length();
 
     void set(long fromIndex, long toIndex, boolean value);
 
@@ -46,7 +46,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
 
     byte[] toByteArray();
 
-    int cardinality();
+    long cardinality();
 
     void clear(long bitIndex);
 

@@ -36,7 +36,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public int length() {
+    public long length() {
         return get(lengthAsync());
     }
 
@@ -91,7 +91,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public int cardinality() {
+    public long cardinality() {
         return get(cardinalityAsync());
     }
 
@@ -178,8 +178,8 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Integer> lengthAsync() {
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_INTEGER,
+    public Future<Long> lengthAsync() {
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LONG,
                 "local fromBit = redis.call('bitpos', KEYS[1], 1, -1);"
                 + "local toBit = 8*(fromBit/8 + 1) - fromBit % 8;"
                         + "for i = toBit, fromBit, -1 do "
@@ -238,7 +238,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Integer> cardinalityAsync() {
+    public Future<Long> cardinalityAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.BITCOUNT, getName());
     }
 
