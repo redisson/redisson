@@ -133,7 +133,7 @@ public class RedissonTopicTest {
         topic1 = redisson.getTopic("topic1");
         topic1.publish(new Message("123"));
 
-        messageRecieved.await();
+        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
 
         redisson.shutdown();
     }
