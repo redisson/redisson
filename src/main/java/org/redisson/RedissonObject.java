@@ -109,7 +109,7 @@ abstract class RedissonObject implements RObject {
 
     @Override
     public Future<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_SINGLE, getName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_BOOL, getName());
     }
 
     @Override

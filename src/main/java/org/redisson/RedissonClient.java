@@ -28,6 +28,7 @@ import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingDeque;
 import org.redisson.core.RBlockingQueue;
+import org.redisson.core.RBloomFilter;
 import org.redisson.core.RBucket;
 import org.redisson.core.RMapCache;
 import org.redisson.core.RCountDownLatch;
@@ -464,6 +465,10 @@ public interface RedissonClient {
      * @return
      */
     RBitSet getBitSet(String name);
+
+    <V> RBloomFilter<V> getBloomFilter(String name);
+
+    <V> RBloomFilter<V> getBloomFilter(String name, Codec codec);
 
     /**
      * Returns script operations object

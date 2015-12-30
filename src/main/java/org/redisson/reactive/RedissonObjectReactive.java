@@ -77,7 +77,7 @@ abstract class RedissonObjectReactive implements RObjectReactive {
 
     @Override
     public Publisher<Boolean> delete() {
-        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_SINGLE, getName());
+        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_BOOL, getName());
     }
 
     @Override

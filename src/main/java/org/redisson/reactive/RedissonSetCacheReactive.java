@@ -357,7 +357,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
 
     @Override
     public Publisher<Boolean> delete() {
-        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_SINGLE, getName(), getTimeoutSetName());
+        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_BOOL, getName(), getTimeoutSetName());
     }
 
     @Override

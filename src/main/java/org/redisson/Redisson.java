@@ -43,6 +43,7 @@ import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
 import org.redisson.core.RBlockingDeque;
 import org.redisson.core.RBlockingQueue;
+import org.redisson.core.RBloomFilter;
 import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
@@ -212,8 +213,7 @@ public class Redisson implements RedissonClient {
             }
         }
 
-        Future<Void> future = commandExecutor.writeAsync(null, RedisCommands.MSET, params.toArray());
-        commandExecutor.get(future);
+        commandExecutor.write(null, RedisCommands.MSET, params.toArray());
     }
 
     @Override
@@ -397,6 +397,21 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RSemaphore getSemaphore(String name) {
+        return new RedissonSemaphore(commandExecutor, name, id);
+    }
+
+    @Override
+    public <V> RBloomFilter<V> getBloomFilter(String name) {
+        return new RedissonBloomFilter<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBloomFilter<V> getBloomFilter(String name, Codec codec) {
+        return new RedissonBloomFilter<V>(codec, commandExecutor, name);
+    }
+
+    @Override
     public RKeys getKeys() {
         return new RedissonKeys(commandExecutor);
     }
@@ -445,11 +460,6 @@ public class Redisson implements RedissonClient {
     @Override
     public boolean isShuttingDown() {
         return connectionManager.isShuttingDown();
-    }
-
-    @Override
-    public RSemaphore getSemaphore(String name) {
-        return new RedissonSemaphore(commandExecutor, name, id);
     }
 
 }
