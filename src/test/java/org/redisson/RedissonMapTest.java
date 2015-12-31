@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
+import static org.assertj.core.api.Assertions.*;
 
 import io.netty.util.concurrent.Future;
 
@@ -141,6 +142,12 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
         res2 = map2.get(1);
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
+
+        RMap<String, Integer> mapStr = redisson.getMap("mapStr");
+        assertThat(mapStr.put("1", 100)).isNull();
+
+        assertThat(mapStr.addAndGet("1", 12)).isEqualTo(112);
+        assertThat(mapStr.get("1")).isEqualTo(112);
     }
 
     @Test

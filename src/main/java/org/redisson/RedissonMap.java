@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
@@ -378,9 +379,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Future<V> addAndGetAsync(K key, Number value) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE,
-                new RedisCommand<Object>("HINCRBYFLOAT", new NumberConvertor(value.getClass())),
-                   getName(), key, new BigDecimal(value.toString()).toPlainString());
+        try {
+            byte[] keyState = codec.getMapKeyEncoder().encode(key);
+            return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE,
+                    new RedisCommand<Object>("HINCRBYFLOAT", new NumberConvertor(value.getClass())),
+                    getName(), keyState, new BigDecimal(value.toString()).toPlainString());
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     @Override

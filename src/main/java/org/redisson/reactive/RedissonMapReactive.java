@@ -15,6 +15,7 @@
  */
 package org.redisson.reactive;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -238,9 +239,14 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     @Override
     public Publisher<V> addAndGet(K key, Number value) {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE,
-                new RedisCommand<Object>("HINCRBYFLOAT", new NumberConvertor(value.getClass())),
-                   getName(), key, new BigDecimal(value.toString()).toPlainString());
+        try {
+            byte[] keyState = codec.getMapKeyEncoder().encode(key);
+            return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE,
+                    new RedisCommand<Object>("HINCRBYFLOAT", new NumberConvertor(value.getClass())),
+                    getName(), keyState, new BigDecimal(value.toString()).toPlainString());
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     @Override

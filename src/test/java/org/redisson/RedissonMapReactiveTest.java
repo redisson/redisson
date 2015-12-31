@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +22,7 @@ import org.redisson.RedissonMapCacheTest.SimpleKey;
 import org.redisson.RedissonMapCacheTest.SimpleValue;
 import org.redisson.api.RMapReactive;
 import org.redisson.codec.MsgPackJacksonCodec;
+import org.redisson.core.RMap;
 import org.redisson.core.RMapCache;
 
 import reactor.rx.Streams;
@@ -145,6 +148,12 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
         res2 = sync(map2.get(1));
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
+
+        RMapReactive<String, Integer> mapStr = redisson.getMap("mapStr");
+        assertThat(sync(mapStr.put("1", 100))).isNull();
+
+        assertThat(sync(mapStr.addAndGet("1", 12))).isEqualTo(112);
+        assertThat(sync(mapStr.get("1"))).isEqualTo(112);
     }
 
     @Test
