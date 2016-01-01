@@ -37,11 +37,11 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
         super(connectionManager, name);
     }
 
-    public Publisher<Boolean> get(int bitIndex) {
+    public Publisher<Boolean> get(long bitIndex) {
         return commandExecutor.readReactive(getName(), codec, RedisCommands.GETBIT, getName(), bitIndex);
     }
 
-    public Publisher<Void> set(int bitIndex, boolean value) {
+    public Publisher<Void> set(long bitIndex, boolean value) {
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.SETBIT_VOID, getName(), bitIndex, value ? 1 : 0);
     }
 
@@ -75,8 +75,8 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Integer> length() {
-        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_INTEGER,
+    public Publisher<Long> length() {
+        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_LONG,
                 "local fromBit = redis.call('bitpos', KEYS[1], 1, -1);"
                 + "local toBit = 8*(fromBit/8 + 1) - fromBit % 8;"
                         + "for i = toBit, fromBit, -1 do "
@@ -89,7 +89,7 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Void> set(int fromIndex, int toIndex, boolean value) {
+    public Publisher<Void> set(long fromIndex, long toIndex, boolean value) {
         if (value) {
             return set(fromIndex, toIndex);
         }
@@ -97,9 +97,9 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Void> clear(int fromIndex, int toIndex) {
+    public Publisher<Void> clear(long fromIndex, long toIndex) {
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
-        for (int i = fromIndex; i < toIndex; i++) {
+        for (long i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), i, 0);
         }
         return new NettyFuturePublisher<Void>(executorService.executeAsyncVoid());
@@ -116,9 +116,9 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Void> set(int fromIndex, int toIndex) {
+    public Publisher<Void> set(long fromIndex, long toIndex) {
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
-        for (int i = fromIndex; i < toIndex; i++) {
+        for (long i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), i, 1);
         }
         return new NettyFuturePublisher<Void>(executorService.executeAsyncVoid());
@@ -130,17 +130,17 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Void> set(int bitIndex) {
+    public Publisher<Void> set(long bitIndex) {
         return set(bitIndex, true);
     }
 
     @Override
-    public Publisher<Integer> cardinality() {
+    public Publisher<Long> cardinality() {
         return commandExecutor.readReactive(getName(), codec, RedisCommands.BITCOUNT, getName());
     }
 
     @Override
-    public Publisher<Void> clear(int bitIndex) {
+    public Publisher<Void> clear(long bitIndex) {
         return set(bitIndex, false);
     }
 

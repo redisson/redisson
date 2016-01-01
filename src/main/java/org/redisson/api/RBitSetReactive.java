@@ -30,29 +30,29 @@ public interface RBitSetReactive extends RExpirableReactive {
 
     Publisher<byte[]> toByteArray();
 
-    Publisher<Integer> length();
+    Publisher<Long> length();
 
-    Publisher<Void> set(int fromIndex, int toIndex, boolean value);
+    Publisher<Void> set(long fromIndex, long toIndex, boolean value);
 
-    Publisher<Void> clear(int fromIndex, int toIndex);
+    Publisher<Void> clear(long fromIndex, long toIndex);
 
     Publisher<Void> set(BitSet bs);
 
     Publisher<Void> not();
 
-    Publisher<Void> set(int fromIndex, int toIndex);
+    Publisher<Void> set(long fromIndex, long toIndex);
 
     Publisher<Integer> size();
 
-    Publisher<Boolean> get(int bitIndex);
+    Publisher<Boolean> get(long bitIndex);
 
-    Publisher<Void> set(int bitIndex);
+    Publisher<Void> set(long bitIndex);
 
-    Publisher<Void> set(int bitIndex, boolean value);
+    Publisher<Void> set(long bitIndex, boolean value);
 
-    Publisher<Integer> cardinality();
+    Publisher<Long> cardinality();
 
-    Publisher<Void> clear(int bitIndex);
+    Publisher<Void> clear(long bitIndex);
 
     Publisher<Void> clear();
 
