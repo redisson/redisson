@@ -215,8 +215,21 @@
     <artifactId>zero-allocation-hashing</artifactId>
     <version>0.5</version>
   </dependency>
- </dependencies>
 
+  <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>[3.1,)</version>
+      <scope>provided</scope>
+  </dependency>
+  <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-support</artifactId>
+      <version>[3.1,)</version>
+      <scope>provided</scope>
+  </dependency>
+
+ </dependencies>
 
  <build>
   <plugins>
