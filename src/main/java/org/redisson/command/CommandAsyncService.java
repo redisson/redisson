@@ -63,7 +63,7 @@ import io.netty.util.concurrent.Promise;
  */
 public class CommandAsyncService implements CommandAsyncExecutor {
 
-    final Logger log = LoggerFactory.getLogger(getClass());
+    private static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
 

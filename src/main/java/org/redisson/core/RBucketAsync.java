@@ -34,6 +34,10 @@ public interface RBucketAsync<V> extends RExpirableAsync {
 
     Future<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
 
+    Future<Boolean> compareAndSetAsync(V expect, V update);
+
+    Future<V> getAndSetAsync(V newValue);
+
     Future<Void> setAsync(V value);
 
     Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);

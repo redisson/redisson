@@ -17,9 +17,16 @@ package org.redisson.client.protocol.convertor;
 
 public class BooleanNumberReplayConvertor extends SingleConvertor<Boolean> {
 
+    private long number;
+
+    public BooleanNumberReplayConvertor(long number) {
+        super();
+        this.number = number;
+    }
+
     @Override
     public Boolean convert(Object obj) {
-        return (Long)obj != -1;
+        return (Long)obj != number;
     }
 
 

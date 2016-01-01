@@ -309,7 +309,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Boolean> contains(Object o) {
-        return indexOf(o, new BooleanNumberReplayConvertor());
+        return indexOf(o, new BooleanNumberReplayConvertor(-1L));
     }
 
     private <R> Publisher<R> indexOf(Object o, Convertor<R> convertor) {

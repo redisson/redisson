@@ -358,7 +358,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> containsAsync(Object o) {
-        return indexOfAsync(o, new BooleanNumberReplayConvertor());
+        return indexOfAsync(o, new BooleanNumberReplayConvertor(-1L));
     }
 
     private <R> Future<R> indexOfAsync(Object o, Convertor<R> convertor) {

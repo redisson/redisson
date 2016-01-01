@@ -15,10 +15,11 @@
  */
 package org.redisson;
 
-import java.io.IOException;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RBucket;
@@ -27,12 +28,81 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
+    private static final RedisCommand<Object> EVAL_GETSET = new RedisCommand<Object>("EVAL", 4);
+
     protected RedissonBucket(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
     protected RedissonBucket(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
+    }
+
+    @Override
+    public boolean compareAndSet(V expect, V update) {
+        return get(compareAndSetAsync(expect, update));
+    }
+
+    @Override
+    public Future<Boolean> compareAndSetAsync(V expect, V update) {
+        if (expect == null && update == null) {
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                    "return redis.call('exists', KEYS[1]) == 0 then "
+                         + "return 1 "
+                       + "else "
+                         + "return 0 end",
+                    Collections.<Object>singletonList(getName()));
+        }
+
+        if (expect == null) {
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+                    "if redis.call('exists', KEYS[1]) == 0 then "
+                         + "redis.call('set', KEYS[1], ARGV[1]); "
+                         + "return 1 "
+                       + "else "
+                         + "return 0 end",
+                    Collections.<Object>singletonList(getName()), update);
+        }
+
+        if (update == null) {
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+                    "if redis.call('get', KEYS[1]) == ARGV[1] then "
+                            + "redis.call('del', KEYS[1]); "
+                            + "return 1 "
+                          + "else "
+                            + "return 0 end",
+                    Collections.<Object>singletonList(getName()), expect);
+        }
+
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+                "if redis.call('get', KEYS[1]) == ARGV[1] then "
+                     + "redis.call('set', KEYS[1], ARGV[2]); "
+                     + "return 1 "
+                   + "else "
+                     + "return 0 end",
+                Collections.<Object>singletonList(getName()), expect, update);
+    }
+
+    @Override
+    public V getAndSet(V newValue) {
+        return get(getAndSetAsync(newValue));
+    }
+
+    @Override
+    public Future<V> getAndSetAsync(V newValue) {
+        if (newValue == null) {
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
+                    "local v = redis.call('get', KEYS[1]); "
+                    + "redis.call('del', KEYS[1]); "
+                    + "return v",
+                    Collections.<Object>singletonList(getName()));
+        }
+
+        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_GETSET,
+                "local v = redis.call('get', KEYS[1]); "
+                + "redis.call('set', KEYS[1], ARGV[1]); "
+                + "return v",
+                Collections.<Object>singletonList(getName()), newValue);
     }
 
     @Override
@@ -52,6 +122,10 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Void> setAsync(V value) {
+        if (value == null) {
+            return commandExecutor.writeAsync(getName(), RedisCommands.DEL_VOID, getName());
+        }
+
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SET, getName(), value);
     }
 
@@ -62,6 +136,10 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
+        if (value == null) {
+            throw new IllegalArgumentException("Value can't be null");
+        }
+
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
     }
 
@@ -87,17 +165,19 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public Future<Boolean> trySetAsync(V value) {
+        if (value == null) {
+            return commandExecutor.readAsync(getName(), codec, RedisCommands.NOT_EXISTS, getName());
+        }
+
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETNX, getName(), value);
     }
 
     @Override
     public Future<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
-        try {
-            byte[] state = codec.getValueEncoder().encode(value);
-            return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETPXNX, getName(), state, "PX", timeUnit.toMillis(timeToLive), "NX");
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
+        if (value == null) {
+            throw new IllegalArgumentException("Value can't be null");
         }
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETPXNX, getName(), value, "PX", timeUnit.toMillis(timeToLive), "NX");
     }
 
     @Override
