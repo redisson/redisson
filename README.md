@@ -58,7 +58,7 @@ Features
 * Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
 * Asynchronous interface for each object  
 * Thread-safe implementation  
-* All commands are executed in an atomic way  
+* All commands executes in an atomic way  
 * Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
 * Supports Android platform  
