@@ -131,7 +131,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private Collection<Future<Void>> addMasterEntry(final ClusterPartition partition, ClusterServersConfig cfg, boolean skipLogging) {
         if (partition.isMasterFail()) {
-            log.warn("add master: {} for slot ranges: {} failed. Reason - server has FAIL flag", partition.getMasterAddress(), partition.getSlotRanges());
+            log.warn("Failed to add master: {} for slot ranges: {}. Reason - server has FAIL flag", partition.getMasterAddress(), partition.getSlotRanges());
             Future<Void> f = newSucceededFuture(null);
             return Collections.singletonList(f);
         }
@@ -143,7 +143,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
         Map<String, String> params = connection.sync(RedisCommands.CLUSTER_INFO);
         if ("fail".equals(params.get("cluster_state"))) {
-            log.warn("add master: {} for slot ranges: {} failed. Reason - cluster_state:fail", partition.getMasterAddress(), partition.getSlotRanges());
+            log.warn("Failed to add master: {} for slot ranges: {}. Reason - cluster_state:fail", partition.getMasterAddress(), partition.getSlotRanges());
             Future<Void> f = newSucceededFuture(null);
             return Collections.singletonList(f);
         }
