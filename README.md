@@ -46,17 +46,19 @@ Features
 * Distributed implementation of `java.util.Queue`  
 * Distributed implementation of `java.util.concurrent.BlockingQueue`  
 * Distributed implementation of `java.util.Deque`  
+* Distributed implementation of `java.util.concurrent.BlockingDeque`  
 * Distributed implementation of `java.util.Map` with TTL support for each entry 
 * Distributed implementation of `java.util.concurrent.ConcurrentMap` with TTL support for each entry 
 * Distributed implementation of reentrant `java.util.concurrent.locks.Lock` with TTL support  
 * Distributed implementation of reentrant `java.util.concurrent.locks.ReadWriteLock` with TTL support  
 * Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
 * Distributed alternative to the `java.util.concurrent.CountDownLatch`  
+* Distributed alternative to the `java.util.concurrent.Semaphore`  
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
 * Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
 * Asynchronous interface for each object  
 * Thread-safe implementation  
-* All commands are executed in an atomic way  
+* All commands executes in an atomic way  
 * Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
 * Supports Android platform  
