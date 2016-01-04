@@ -486,7 +486,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             ChannelFuture future = connection.send(new CommandsData(main, list));
             details.setWriteFuture(future);
         } else {
-            log.debug("aquired connection for command {} from slot {} using node {}", details.getCommand(), details.getSource(), connection.getRedisClient().getAddr());
+            if (log.isDebugEnabled()) {
+                log.debug("aquired connection for command {} and params {} from slot {} using node {}",
+                        details.getCommand(), Arrays.toString(details.getParams()), details.getSource(), connection.getRedisClient().getAddr());
+            }
             ChannelFuture future = connection.send(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
             details.setWriteFuture(future);
         }
@@ -502,24 +505,24 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             });
         }
 
-        releaseConnection(source, details.getConnectionFuture(), details.isReadOnlyMode(), details.getAttemptPromise());
+        releaseConnection(source, details.getConnectionFuture(), details.isReadOnlyMode(), details.getAttemptPromise(), details);
     }
 
-    protected <R> void releaseConnection(final NodeSource source, final Future<RedisConnection> connectionFuture,
-                            final boolean isReadOnly, Promise<R> attemptPromise) {
+    protected <V, R> void releaseConnection(final NodeSource source, final Future<RedisConnection> connectionFuture,
+                            final boolean isReadOnly, Promise<R> attemptPromise, final AsyncDetails<V, R> details) {
         if (attemptPromise.isDone()) {
-            releaseConnection(isReadOnly, source, connectionFuture);
+            releaseConnection(isReadOnly, source, connectionFuture, details);
         } else {
             attemptPromise.addListener(new FutureListener<R>() {
                 @Override
                 public void operationComplete(io.netty.util.concurrent.Future<R> future) throws Exception {
-                    releaseConnection(isReadOnly, source, connectionFuture);
+                    releaseConnection(isReadOnly, source, connectionFuture, details);
                 }
             });
         }
     }
 
-    private <V, R> void releaseConnection(boolean isReadOnly, NodeSource source, Future<RedisConnection> connectionFuture) {
+    private <V, R> void releaseConnection(boolean isReadOnly, NodeSource source, Future<RedisConnection> connectionFuture, AsyncDetails<V, R> details) {
         if (!connectionFuture.isSuccess()) {
             return;
         }
@@ -530,6 +533,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             connectionManager.releaseRead(source, connection);
         } else {
             connectionManager.releaseWrite(source, connection);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("connection released for command {} and params {} from slot {} using node {}",
+                    details.getCommand(), Arrays.toString(details.getParams()), details.getSource(), connection.getRedisClient().getAddr());
         }
     }
 

@@ -368,7 +368,7 @@ public class CommandBatchService extends CommandReactiveService {
             });
         }
 
-        releaseConnection(source, connFuture, entry.isReadOnlyMode(), attemptPromise);
+        releaseConnection(source, connFuture, entry.isReadOnlyMode(), attemptPromise, details);
     }
 
 }
