@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -13,7 +15,6 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.core.RLexSortedSet;
@@ -23,6 +24,15 @@ import org.redisson.core.RSortedSet;
 import io.netty.util.concurrent.Future;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
+
+    @Test
+    public void testTryAdd() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        assertThat(set.tryAdd(123.81, "1980")).isTrue();
+        assertThat(set.tryAdd(99, "1980")).isFalse();
+        assertThat(set.getScore("1980")).isEqualTo(123.81);
+    }
 
     @Test
     public void testPollLast() {

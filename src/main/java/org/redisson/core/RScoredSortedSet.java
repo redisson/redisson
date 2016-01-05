@@ -37,7 +37,25 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     Double getScore(V o);
 
+    /**
+     * Adds element to this set, overrides previous score if it has been already added.
+     *
+     * @param score
+     * @param object
+     * @return <code>true</code> if element has added and <code>false</code> if not.
+     */
     boolean add(double score, V object);
+
+    /**
+     * Adds element to this set only if has not been added before.
+     * <p/>
+     * Works only with <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param score
+     * @param object
+     * @return <code>true</code> if element has added and <code>false</code> if not.
+     */
+    boolean tryAdd(double score, V object);
 
     int size();
 

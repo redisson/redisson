@@ -83,6 +83,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public boolean tryAdd(double score, V object) {
+        return get(tryAddAsync(score, object));
+    }
+
+    @Override
     public V first() {
         return get(firstAsync());
     }
@@ -105,6 +110,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public Future<Boolean> addAsync(double score, V object) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), BigDecimal.valueOf(score).toPlainString(), object);
+    }
+
+    @Override
+    public Future<Boolean> tryAddAsync(double score, V object) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_NX_BOOL, getName(), "NX", BigDecimal.valueOf(score).toPlainString(), object);
     }
 
     @Override
@@ -183,7 +193,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Double> getScoreAsync(V o) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZSCORE, getName(), o);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZSCORE, getName(), o);
     }
 
     @Override
