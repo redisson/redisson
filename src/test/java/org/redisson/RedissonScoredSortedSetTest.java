@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -24,6 +26,19 @@ import org.redisson.core.RSortedSet;
 import io.netty.util.concurrent.Future;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
+
+    @Test
+    public void testAddAll() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        Map<String, Double> objects = new HashMap<String, Double>();
+        objects.put("1", 0.1);
+        objects.put("2", 0.2);
+        objects.put("3", 0.3);
+        assertThat(set.addAll(objects)).isEqualTo(3);
+        assertThat(set.entryRange(0, -1)).containsOnly(
+                new ScoredEntry<String>(0.1, "1"), new ScoredEntry<String>(0.2, "2"), new ScoredEntry<String>(0.3, "3"));
+    }
 
     @Test
     public void testTryAdd() {

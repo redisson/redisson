@@ -16,6 +16,7 @@
 package org.redisson.core;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.redisson.client.protocol.ScoredEntry;
 
@@ -28,6 +29,8 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     V first();
 
     V last();
+
+    Long addAll(Map<V, Double> objects);
 
     int removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 

@@ -16,6 +16,7 @@
 package org.redisson.core;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.redisson.client.protocol.ScoredEntry;
 
@@ -30,6 +31,8 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
     Future<V> firstAsync();
 
     Future<V> lastAsync();
+
+    Future<Long> addAllAsync(Map<V, Double> objects);
 
     Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 

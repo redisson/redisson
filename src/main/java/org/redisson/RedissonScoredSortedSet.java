@@ -15,12 +15,16 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.codec.Codec;
@@ -110,6 +114,27 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public Future<Boolean> addAsync(double score, V object) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), BigDecimal.valueOf(score).toPlainString(), object);
+    }
+
+    @Override
+    public Long addAll(Map<V, Double> objects) {
+        return get(addAllAsync(objects));
+    }
+
+    @Override
+    public Future<Long> addAllAsync(Map<V, Double> objects) {
+        List<Object> params = new ArrayList<Object>(objects.size()*2+1);
+        params.add(getName());
+        try {
+            for (Entry<V, Double> entry : objects.entrySet()) {
+                params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
+                params.add(codec.getValueEncoder().encode(entry.getKey()));
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD, params.toArray());
     }
 
     @Override
