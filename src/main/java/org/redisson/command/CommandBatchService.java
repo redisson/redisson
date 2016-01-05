@@ -254,7 +254,7 @@ public class CommandBatchService extends CommandReactiveService {
             }
         };
 
-        Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+        Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
         details.setTimeout(timeout);
 
         if (connectionFuture.isDone()) {
