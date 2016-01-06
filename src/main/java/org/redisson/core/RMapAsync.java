@@ -67,6 +67,8 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     Future<Boolean> fastPutAsync(K key, V value);
 
+    Future<Boolean> fastPutIfAbsentAsync(K key, V value);
+
     Future<V> getAsync(K key);
 
     Future<V> putAsync(K key, V value);

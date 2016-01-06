@@ -114,6 +114,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      */
     boolean fastPut(K key, V value);
 
+    boolean fastPutIfAbsent(K key, V value);
+
     /**
      * Use {@link #entrySet().iterator()}
      *

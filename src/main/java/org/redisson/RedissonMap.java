@@ -204,6 +204,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public boolean fastPutIfAbsent(K key, V value) {
+        return get(fastPutIfAbsentAsync(key, value));
+    }
+
+    @Override
+    public Future<Boolean> fastPutIfAbsentAsync(K key, V value) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.HSETNX, getName(), key, value);
+    }
+
+    @Override
     public boolean remove(Object key, Object value) {
         return get(removeAsync(key, value)) == 1;
     }

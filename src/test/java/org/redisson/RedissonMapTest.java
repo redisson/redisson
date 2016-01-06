@@ -447,7 +447,21 @@ public class RedissonMapTest extends BaseTest {
         SimpleValue value1 = new SimpleValue("4");
         Assert.assertNull(map.putIfAbsent(key1, value1));
         Assert.assertEquals(value1, map.get(key1));
+    }
 
+    @Test
+    public void testFastPutIfAbsent() throws Exception {
+        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        SimpleKey key = new SimpleKey("1");
+        SimpleValue value = new SimpleValue("2");
+        map.put(key, value);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("3"))).isFalse();
+        assertThat(map.get(key)).isEqualTo(value);
+
+        SimpleKey key1 = new SimpleKey("2");
+        SimpleValue value1 = new SimpleValue("4");
+        assertThat(map.fastPutIfAbsent(key1, value1)).isTrue();
+        assertThat(map.get(key1)).isEqualTo(value1);
     }
 
     @Test
