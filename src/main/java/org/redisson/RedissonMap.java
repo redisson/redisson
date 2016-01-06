@@ -30,7 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -39,11 +41,13 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
 
 /**
@@ -315,8 +319,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    MapScanResult<Object, V> scanIterator(InetSocketAddress client, long startPos) {
-        Future<MapScanResult<Object, V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
+    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
+        Future<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new ScanCodec(codec), RedisCommands.HSCAN, getName(), startPos);
         return get(f);
     }
 
@@ -329,8 +333,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public Iterator<V> valueIterator() {
         return new RedissonMapIterator<K, V, V>(this) {
             @Override
-            V getValue(java.util.Map.Entry<K, V> entry) {
-                return entry.getValue();
+            V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (V) entry.getValue().getObj();
             }
         };
     }
@@ -339,8 +343,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public Iterator<K> keyIterator() {
         return new RedissonMapIterator<K, V, K>(this) {
             @Override
-            K getValue(java.util.Map.Entry<K, V> entry) {
-                return entry.getKey();
+            K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (K) entry.getKey().getObj();
             }
         };
     }

@@ -16,22 +16,27 @@
 package org.redisson;
 
 import java.net.InetSocketAddress;
+import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
+
+import io.netty.buffer.ByteBuf;
 
 public class RedissonMapIterator<K, V, M> implements Iterator<M> {
 
-    private Map<K, V> firstValues;
-    private Iterator<Map.Entry<K, V>> iter;
+    private Map<ByteBuf, ByteBuf> firstValues;
+    private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> iter;
     private long iterPos = 0;
     private InetSocketAddress client;
 
     private boolean removeExecuted;
-    private Map.Entry<K, V> entry;
+    private Map.Entry<ScanObjectEntry, ScanObjectEntry> entry;
 
     private final RedissonMap<K, V> map;
 
@@ -42,17 +47,25 @@ public class RedissonMapIterator<K, V, M> implements Iterator<M> {
     @Override
     public boolean hasNext() {
         if (iter == null || !iter.hasNext()) {
-            MapScanResult<Object, V> res = map.scanIterator(client, iterPos);
+            MapScanResult<ScanObjectEntry, ScanObjectEntry> res = map.scanIterator(client, iterPos);
             client = res.getRedisClient();
             if (iterPos == 0 && firstValues == null) {
-                firstValues = (Map<K, V>) res.getMap();
-            } else if (res.getMap().equals(firstValues)) {
+                firstValues = convert(res.getMap());
+            } else if (convert(res.getMap()).equals(firstValues)) {
                 return false;
             }
-            iter = ((Map<K, V>)res.getMap()).entrySet().iterator();
+            iter = res.getMap().entrySet().iterator();
             iterPos = res.getPos();
         }
         return iter.hasNext();
+    }
+
+    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
+        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
+        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
+            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
+        }
+        return result;
     }
 
     @Override
@@ -66,8 +79,16 @@ public class RedissonMapIterator<K, V, M> implements Iterator<M> {
         return getValue(entry);
     }
 
-    M getValue(Entry<K, V> entry) {
-        return (M) entry;
+    @SuppressWarnings("unchecked")
+    M getValue(final Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey().getObj(), (V)entry.getValue().getObj()) {
+
+            @Override
+            public V setValue(V value) {
+                return map.put((K) entry.getKey().getObj(), value);
+            }
+
+        };
     }
 
     @Override
@@ -79,7 +100,7 @@ public class RedissonMapIterator<K, V, M> implements Iterator<M> {
         // lazy init iterator
         hasNext();
         iter.remove();
-        map.fastRemove(entry.getKey());
+        map.fastRemove((K)entry.getKey().getObj());
         removeExecuted = true;
     }
 
