@@ -29,6 +29,7 @@ import java.util.Set;
 import org.reactivestreams.Publisher;
 import org.redisson.api.RMapReactive;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -37,6 +38,7 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 
@@ -208,8 +210,8 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.HDEL, args.toArray());
     }
 
-    Publisher<MapScanResult<Object, V>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
+    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+        return commandExecutor.readReactive(client, getName(), new ScanCodec(codec), RedisCommands.HSCAN, getName(), startPos);
     }
 
     @Override
@@ -221,8 +223,8 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     public Publisher<V> valueIterator() {
         return new RedissonMapReactiveIterator<K, V, V>(this) {
             @Override
-            V getValue(java.util.Map.Entry<K, V> entry) {
-                return entry.getValue();
+            V getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (V) entry.getValue().getObj();
             }
         }.stream();
     }
@@ -231,8 +233,8 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     public Publisher<K> keyIterator() {
         return new RedissonMapReactiveIterator<K, V, K>(this) {
             @Override
-            K getValue(java.util.Map.Entry<K, V> entry) {
-                return entry.getKey();
+            K getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (K) entry.getKey().getObj();
             }
         }.stream();
     }

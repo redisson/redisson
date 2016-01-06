@@ -16,6 +16,8 @@
 package org.redisson.reactive;
 
 import java.net.InetSocketAddress;
+import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -23,7 +25,9 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
+import io.netty.buffer.ByteBuf;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -42,7 +46,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
             public void subscribe(final Subscriber<? super M> t) {
                 t.onSubscribe(new ReactiveSubscription<M>(this, t) {
 
-                    private Map<K, V> firstValues;
+                    private Map<ByteBuf, ByteBuf> firstValues;
                     private long iterPos = 0;
                     private InetSocketAddress client;
 
@@ -54,9 +58,17 @@ public class RedissonMapReactiveIterator<K, V, M> {
                         nextValues();
                     }
 
+                    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
+                        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
+                        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
+                            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
+                        }
+                        return result;
+                    }
+
                     protected void nextValues() {
                         final ReactiveSubscription<M> m = this;
-                        map.scanIteratorReactive(client, iterPos).subscribe(new Subscriber<MapScanResult<Object, V>>() {
+                        map.scanIteratorReactive(client, iterPos).subscribe(new Subscriber<MapScanResult<ScanObjectEntry, ScanObjectEntry>>() {
 
                             @Override
                             public void onSubscribe(Subscription s) {
@@ -64,18 +76,18 @@ public class RedissonMapReactiveIterator<K, V, M> {
                             }
 
                             @Override
-                            public void onNext(MapScanResult<Object, V> res) {
+                            public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
                                 client = res.getRedisClient();
                                 if (iterPos == 0 && firstValues == null) {
-                                    firstValues = (Map<K, V>) res.getMap();
-                                } else if (res.getMap().equals(firstValues)) {
+                                    firstValues = convert(res.getMap());
+                                } else if (convert(res.getMap()).equals(firstValues)) {
                                     m.onComplete();
                                     currentIndex = 0;
                                     return;
                                 }
 
                                 iterPos = res.getPos();
-                                for (Entry<K, V> entry : ((Map<K, V>)res.getMap()).entrySet()) {
+                                for (Entry<ScanObjectEntry, ScanObjectEntry> entry : res.getMap().entrySet()) {
                                     M val = getValue(entry);
                                     m.onNext(val);
                                     currentIndex--;
@@ -107,8 +119,16 @@ public class RedissonMapReactiveIterator<K, V, M> {
     }
 
 
-    M getValue(Entry<K, V> entry) {
-        return (M) entry;
+    M getValue(final Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey().getObj(), (V)entry.getValue().getObj()) {
+
+            @Override
+            public V setValue(V value) {
+                Publisher<V> publisher = map.put((K) entry.getKey().getObj(), value);
+                return ((Stream<V>)publisher).next().poll();
+            }
+
+        };
     }
 
 }
