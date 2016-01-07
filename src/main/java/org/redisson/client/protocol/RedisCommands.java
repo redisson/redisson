@@ -198,6 +198,7 @@ public interface RedisCommands {
     RedisStrictCommand<Void> DEL_VOID = new RedisStrictCommand<Void>("DEL", new VoidReplayConvertor());
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
+    RedisCommand<Object> GETSET = new RedisCommand<Object>("GETSET");
     RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor(), 2);
     RedisCommand<Boolean> SETPXNX = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor(), 2);
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor(), 2);

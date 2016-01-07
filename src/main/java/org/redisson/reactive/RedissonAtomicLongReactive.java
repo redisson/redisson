@@ -19,8 +19,11 @@ import java.util.Collections;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.RAtomicLongReactive;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.SingleConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.rx.Streams;
@@ -64,22 +67,19 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
     }
 
     @Override
-    public Publisher<Long> getAndAdd(long delta) {
-        return commandExecutor.evalWriteReactive(getName(),
-                StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
-                "local v = redis.call('get', KEYS[1]) or 0; "
-                + "redis.call('set', KEYS[1], v + ARGV[1]); "
-                + "return tonumber(v)",
-                Collections.<Object>singletonList(getName()), delta);
+    public Publisher<Long> getAndAdd(final long delta) {
+        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("INCRBY", new SingleConvertor<Long>() {
+            @Override
+            public Long convert(Object obj) {
+                return ((Long) obj) - delta;
+            }
+        }), getName(), delta);
     }
 
 
     @Override
     public Publisher<Long> getAndSet(long newValue) {
-        return commandExecutor.evalWriteReactive(getName(),
-                StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
-                "local v = redis.call('get', KEYS[1]) or 0; redis.call('set', KEYS[1], ARGV[1]); return tonumber(v)",
-                Collections.<Object>singletonList(getName()), newValue);
+        return commandExecutor.writeReactive(getName(), LongCodec.INSTANCE, RedisCommands.GETSET, getName(), newValue);
     }
 
     @Override
