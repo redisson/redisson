@@ -394,6 +394,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
 
                 int count = details.getAttempt() + 1;
+                if (log.isDebugEnabled()) {
+                    log.debug("attempt {} for command {} and params {}",
+                            count, details.getCommand(), Arrays.toString(details.getParams()));
+                }
                 async(details.isReadOnlyMode(), details.getSource(), details.getCodec(), details.getCommand(), details.getParams(), details.getMainPromise(), count);
                 AsyncDetails.release(details);
             }
