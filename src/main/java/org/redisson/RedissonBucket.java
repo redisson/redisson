@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RBucket;
@@ -27,8 +26,6 @@ import org.redisson.core.RBucket;
 import io.netty.util.concurrent.Future;
 
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
-
-    private static final RedisCommand<Object> EVAL_GETSET = new RedisCommand<Object>("EVAL", 4);
 
     protected RedissonBucket(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
@@ -46,22 +43,11 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     @Override
     public Future<Boolean> compareAndSetAsync(V expect, V update) {
         if (expect == null && update == null) {
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "return redis.call('exists', KEYS[1]) == 0 then "
-                         + "return 1 "
-                       + "else "
-                         + "return 0 end",
-                    Collections.<Object>singletonList(getName()));
+            return trySetAsync(null);
         }
 
         if (expect == null) {
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                    "if redis.call('exists', KEYS[1]) == 0 then "
-                         + "redis.call('set', KEYS[1], ARGV[1]); "
-                         + "return 1 "
-                       + "else "
-                         + "return 0 end",
-                    Collections.<Object>singletonList(getName()), update);
+            return trySetAsync(update);
         }
 
         if (update == null) {
@@ -98,11 +84,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
                     Collections.<Object>singletonList(getName()));
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_GETSET,
-                "local v = redis.call('get', KEYS[1]); "
-                + "redis.call('set', KEYS[1], ARGV[1]); "
-                + "return v",
-                Collections.<Object>singletonList(getName()), newValue);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GETSET, getName(), newValue);
     }
 
     @Override
