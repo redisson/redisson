@@ -187,12 +187,20 @@ public interface RBatch {
     <V> RBlockingDequeAsync<V> getBlockingDeque(String name, Codec codec);
 
     /**
-     * Returns "atomic long" instance by name.
+     * Returns atomicLong instance by name.
      *
-     * @param name of the "atomic long"
+     * @param name
      * @return
      */
     RAtomicLongAsync getAtomicLong(String name);
+
+    /**
+     * Returns atomicDouble instance by name.
+     *
+     * @param name
+     * @return
+     */
+    RAtomicDoubleAsync getAtomicDouble(String name);
 
     /**
      * Returns Redis Sorted Set instance by name

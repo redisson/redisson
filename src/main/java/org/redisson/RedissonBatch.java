@@ -20,6 +20,7 @@ import java.util.List;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.core.RAtomicDoubleAsync;
 import org.redisson.core.RAtomicLongAsync;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBitSetAsync;
@@ -161,6 +162,11 @@ public class RedissonBatch implements RBatch {
     @Override
     public RAtomicLongAsync getAtomicLong(String name) {
         return new RedissonAtomicLong(executorService, name);
+    }
+
+    @Override
+    public RAtomicDoubleAsync getAtomicDouble(String name) {
+        return new RedissonAtomicDouble(executorService, name);
     }
 
     @Override

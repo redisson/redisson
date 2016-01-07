@@ -13,28 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.codec;
+package org.redisson.core;
 
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
+import io.netty.util.concurrent.Future;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
+public interface RAtomicDoubleAsync extends RExpirableAsync {
 
-public class DoubleCodec extends StringCodec {
+    Future<Boolean> compareAndSetAsync(double expect, double update);
 
-    public static final DoubleCodec INSTANCE = new DoubleCodec();
+    Future<Double> addAndGetAsync(double delta);
 
-    public final Decoder<Object> decoder = new Decoder<Object>() {
-        @Override
-        public Object decode(ByteBuf buf, State state) {
-            return Double.valueOf(buf.toString(CharsetUtil.UTF_8));
-        }
-    };
+    Future<Double> decrementAndGetAsync();
 
-    @Override
-    public Decoder<Object> getValueDecoder() {
-        return decoder;
-    }
+    Future<Double> getAsync();
+
+    Future<Double> getAndAddAsync(double delta);
+
+    Future<Double> getAndSetAsync(double newValue);
+
+    Future<Double> incrementAndGetAsync();
+
+    Future<Double> getAndIncrementAsync();
+
+    Future<Double> getAndDecrementAsync();
+
+    Future<Void> setAsync(double newValue);
 
 }

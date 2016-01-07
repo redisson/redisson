@@ -23,6 +23,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+import org.redisson.core.RAtomicDouble;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
@@ -449,6 +450,14 @@ public interface RedissonClient {
      * @return
      */
     RAtomicLong getAtomicLong(String name);
+
+    /**
+     * Returns atomicDouble instance by name.
+     *
+     * @param name of atomicLong
+     * @return
+     */
+    RAtomicDouble getAtomicDouble(String name);
 
     /**
      * Returns countDownLatch instance by name.

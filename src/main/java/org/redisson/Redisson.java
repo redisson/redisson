@@ -38,6 +38,7 @@ import org.redisson.connection.SingleConnectionManager;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+import org.redisson.core.RAtomicDouble;
 import org.redisson.core.RAtomicLong;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBitSet;
@@ -384,6 +385,11 @@ public class Redisson implements RedissonClient {
     @Override
     public RAtomicLong getAtomicLong(String name) {
         return new RedissonAtomicLong(commandExecutor, name);
+    }
+
+    @Override
+    public RAtomicDouble getAtomicDouble(String name) {
+        return new RedissonAtomicDouble(commandExecutor, name);
     }
 
     @Override
