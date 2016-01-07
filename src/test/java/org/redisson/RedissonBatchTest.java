@@ -18,6 +18,17 @@ import io.netty.util.concurrent.Future;
 public class RedissonBatchTest extends BaseTest {
 
     @Test
+    public void testBatchNPE() {
+        RBatch batch = redisson.createBatch();
+        batch.getBucket("A1").setAsync("001");
+        batch.getBucket("A2").setAsync("001");
+        batch.getBucket("A3").setAsync("001");
+        batch.getKeys().deleteAsync("A1");
+        batch.getKeys().deleteAsync("A2");
+        List result = batch.execute();
+    }
+
+    @Test
     public void testDifferentCodecs() {
         RBatch b = redisson.createBatch();
         b.getMap("test1").putAsync("1", "2");
