@@ -1,4 +1,4 @@
-Redisson - distributed and scalable Java data structures on top of Redis server. Advanced Java Redis client
+Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
 ====
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/)
