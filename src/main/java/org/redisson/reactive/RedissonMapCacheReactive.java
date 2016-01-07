@@ -41,6 +41,7 @@ import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.client.protocol.decoder.TTLMapValueReplayDecoder;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.decoder.CacheGetAllDecoder;
@@ -336,7 +337,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
     }
 
     @Override
-    Publisher<MapScanResult<Object, V>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
         return commandExecutor.evalReadReactive(client, getName(), codec, EVAL_HSCAN,
                 "local result = {}; "
                 + "local res = redis.call('hscan', KEYS[1], ARGV[1]); "
