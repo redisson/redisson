@@ -51,7 +51,7 @@ public interface RBloomFilter<T> extends RExpirable {
     int getHashIterations();
 
     /**
-     * Calculates number of elements already added to Bloom filter.
+     * Calculates probabilistic number of elements already added to Bloom filter.
      *
      * @return
      */
