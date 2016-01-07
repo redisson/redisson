@@ -16,7 +16,7 @@
 package org.redisson.core;
 
 /**
- * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
+ * Distributed alternative to the AtomicDouble
  *
  * @author Nikita Koksharov
  *
