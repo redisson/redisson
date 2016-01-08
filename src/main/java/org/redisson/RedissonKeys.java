@@ -278,4 +278,24 @@ public class RedissonKeys implements RKeys {
         });
     }
 
+    @Override
+    public void flushdb() {
+        commandExecutor.get(flushdbAsync());
+    }
+
+    @Override
+    public Future<Void> flushdbAsync() {
+        return commandExecutor.writeAllAsync(RedisCommands.FLUSHDB);
+    }
+
+    @Override
+    public void flushall() {
+        commandExecutor.get(flushallAsync());
+    }
+
+    @Override
+    public Future<Void> flushallAsync() {
+        return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL);
+    }
+
 }

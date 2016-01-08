@@ -77,4 +77,15 @@ public interface RKeysAsync {
      * @return
      */
     Future<Long> countAsync();
+
+    /**
+     * Delete all keys of currently selected database
+     */
+    Future<Void> flushdbAsync();
+
+    /**
+     * Delete all keys of all existing databases
+     */
+    Future<Void> flushallAsync();
+
 }

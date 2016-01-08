@@ -95,4 +95,14 @@ public interface RKeys extends RKeysAsync {
      */
     Long count();
 
+    /**
+     * Delete all keys of currently selected database
+     */
+    void flushdb();
+
+    /**
+     * Delete all keys of all existing databases
+     */
+    void flushall();
+
 }

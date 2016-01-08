@@ -533,13 +533,15 @@ public interface RedissonClient {
     NodesGroup<ClusterNode> getClusterNodesGroup();
 
     /**
-     * Delete all the keys of the currently selected database
+     * Use {@link RKeys#flushdb()}
      */
+    @Deprecated
     void flushdb();
 
     /**
-     * Delete all the keys of all the existing databases
+     * Use {@link RKeys#flushall()}
      */
+    @Deprecated
     void flushall();
 
     /**
