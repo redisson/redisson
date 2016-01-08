@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -218,7 +219,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Double> getScoreAsync(V o) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZSCORE, getName(), o);
+        return commandExecutor.readAsync(getName(), new ScoredCodec(codec), RedisCommands.ZSCORE, getName(), o);
     }
 
     @Override

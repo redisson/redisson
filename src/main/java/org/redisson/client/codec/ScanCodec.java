@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 
 public class ScanCodec implements Codec {
 
-    public Codec delegate;
+    public final Codec delegate;
 
     public ScanCodec(Codec delegate) {
         super();
