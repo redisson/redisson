@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -238,10 +239,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         Future<List<Object>> future = commandExecutor.evalReadAsync(getName(), codec, EVAL_GET_TTL,
                  "local value = redis.call('hget', KEYS[1], ARGV[1]); " +
                  "local expireDate = redis.call('zscore', KEYS[2], ARGV[1]); "
-                 + "local s = string.gmatch(value, '[^:]+'); "
-                 + "print(s()) " +
-//                 "redis.call('zscore', KEYS[2], ARGV[1]); "
-                 "if expireDate == false then "
+                 + "if expireDate == false then "
                      + "expireDate = 92233720368547758; "
                  + "end; " +
                  "return {expireDate, value}; ",
@@ -326,7 +324,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_PUT_TTL,
                 "local v = redis.call('hget', KEYS[1], ARGV[2]); "
                 + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); "
-                + "redis.call('zadd', 'test_map', ARGV[1], ARGV[2]); "
                 + "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); "
                 + "return v",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), timeoutDate, key, value);
@@ -361,7 +358,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
-        Future<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_HSCAN,
+        Future<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), new ScanCodec(codec), EVAL_HSCAN,
                 "local result = {}; "
                 + "local res = redis.call('hscan', KEYS[1], ARGV[1]); "
                 + "for i, value in ipairs(res[2]) do "

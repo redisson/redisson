@@ -30,6 +30,7 @@ import org.redisson.EvictionScheduler;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -338,7 +339,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
 
     @Override
     Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.evalReadReactive(client, getName(), codec, EVAL_HSCAN,
+        return commandExecutor.evalReadReactive(client, getName(), new ScanCodec(codec), EVAL_HSCAN,
                 "local result = {}; "
                 + "local res = redis.call('hscan', KEYS[1], ARGV[1]); "
                 + "for i, value in ipairs(res[2]) do "
