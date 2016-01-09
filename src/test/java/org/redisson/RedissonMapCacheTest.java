@@ -1,11 +1,11 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -15,17 +15,10 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.RedissonMapCacheReactiveTest.SimpleKey;
-import org.redisson.RedissonMapCacheReactiveTest.SimpleValue;
-import org.redisson.api.RMapCacheReactive;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
-import org.redisson.core.Predicate;
 import org.redisson.core.RMapCache;
-import org.redisson.core.RSetCache;
-import org.redisson.core.RMap;
 
-import io.netty.util.Timeout;
 import io.netty.util.concurrent.Future;
 
 public class RedissonMapCacheTest extends BaseTest {
@@ -182,7 +175,7 @@ public class RedissonMapCacheTest extends BaseTest {
 
         Thread.sleep(1000);
 
-        MatcherAssert.assertThat(cache.keySet(), Matchers.contains("0", "2", "3"));
+        assertThat(cache.keySet()).containsOnly("0", "2", "3");
     }
 
     @Test

@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -172,7 +174,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
         Thread.sleep(1000);
 
-        MatcherAssert.assertThat(toIterable(cache.keyIterator()), Matchers.contains("0", "2", "3"));
+        assertThat(toIterator(cache.keyIterator())).containsOnly("0", "2", "3");
     }
 
     @Test
