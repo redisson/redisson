@@ -190,6 +190,16 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
+    public Future<Boolean> moveAsync(String destination, V member) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SMOVE, getName(), destination, member);
+    }
+
+    @Override
+    public boolean move(String destination, V member) {
+        return get(moveAsync(destination, member));
+    }
+
+    @Override
     public boolean containsAll(Collection<?> c) {
         return get(containsAllAsync(c));
     }

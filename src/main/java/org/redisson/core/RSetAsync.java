@@ -34,4 +34,14 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      */
     Future<V> removeRandomAsync();
 
+    /**
+     * Move a member from this set to the given destination set in async mode.
+     *
+     * @param destination the destination set
+     * @param member the member to move
+     * @return true if the element is moved, false if the element is not a
+     * member of this set or no operation was performed
+     */
+    Future<Boolean> moveAsync(String destination, V member);
+
 }
