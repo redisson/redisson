@@ -207,7 +207,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
 
     @Test
     public void testConcurrency_MultiInstance_1_permits() throws InterruptedException {
-        int iterations = 100;
+        int iterations = 30;
         final AtomicInteger lockedCounter = new AtomicInteger();
 
         RSemaphore s = redisson.getSemaphore("test");
