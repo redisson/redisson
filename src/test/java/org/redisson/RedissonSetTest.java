@@ -288,4 +288,34 @@ public class RedissonSetTest extends BaseTest {
         Assert.assertFalse(set.retainAll(Arrays.asList(1, 2))); // nothing changed
         Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
     }
+
+    @Test
+    public void testMove() throws Exception {
+        RSet<Integer> set = redisson.getSet("set");
+        RSet<Integer> otherSet = redisson.getSet("otherSet");
+
+        set.add(1);
+        set.add(2);
+
+        Assert.assertTrue(set.move("otherSet", 1));
+
+        Assert.assertEquals(1, set.size());
+        Assert.assertThat(set, Matchers.contains(2));
+
+        Assert.assertEquals(1, otherSet.size());
+        Assert.assertThat(otherSet, Matchers.contains(1));
+    }
+
+    @Test
+    public void testMoveNoMember() throws Exception {
+        RSet<Integer> set = redisson.getSet("set");
+        RSet<Integer> otherSet = redisson.getSet("otherSet");
+
+        set.add(1);
+
+        Assert.assertFalse(set.move("otherSet", 2));
+
+        Assert.assertEquals(1, set.size());
+        Assert.assertEquals(0, otherSet.size());
+    }
 }
