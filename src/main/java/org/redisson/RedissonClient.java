@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandExecutor;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
@@ -559,4 +560,10 @@ public interface RedissonClient {
      */
     boolean isShuttingDown();
 
+    /**
+     * Returns {@link CommandExecutor}
+     *
+     * @return
+     */
+    CommandExecutor getCommandExecutor();
 }
