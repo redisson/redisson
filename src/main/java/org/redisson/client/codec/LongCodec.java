@@ -15,11 +15,12 @@
  */
 package org.redisson.client.codec;
 
+import java.io.IOException;
+
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 public class LongCodec extends StringCodec {
 
@@ -27,8 +28,9 @@ public class LongCodec extends StringCodec {
 
     public final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
-        public Object decode(ByteBuf buf, State state) {
-            return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
+        public Object decode(ByteBuf buf, State state) throws IOException {
+            String str = (String) LongCodec.super.getValueDecoder().decode(buf, state);
+            return Long.valueOf(str);
         }
     };
 
