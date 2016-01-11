@@ -80,6 +80,11 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
+    public Publisher<Boolean> move(String destination, V member) {
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SMOVE, getName(), destination, member);
+    }
+
+    @Override
     public Publisher<Boolean> containsAll(Collection<?> c) {
         return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('smembers', KEYS[1]);" +

@@ -80,22 +80,24 @@ Invaluable: [invaluable.com](http://www.invaluable.com/)
 
 Latest version changelog
 =================================
-####25-Dec-2015 - version 2.2.4 released  
-Please update to this version ASAP due to connection leak discovered in previous versions since Redisson 2.1.4.
+####09-Jan-2015 - version 2.2.5 released  
 
-Feature - __new object added__ `RBlockingDeque`  
-Feature - __new object added__ `RSemaphore`  
-Feature - `RMapCache.fastPut` method with TTL support added  
-Feature - `WeightedRoundRobinBalancer` slaves balancer added  
-Improvement - Memory consumption optimization  
-Improvement - storing value with ttl = 0 in `RSetCache` or `RMapCache` saves it infinitely  
-Fixed - reconnection handling when Sentinel servers are restarted  
-Fixed - RedisConnectionException should be throw if Redisson can't connect to servers at startup   
-Fixed - Connection leak (regression bug since 2.1.4)  
-Fixed - ConnectionWatchdog throws exception when eventloop in shutdown state  
-Fixed - `RReadWriteLock.forceUnlock` works only for current thread  
-Fixed - MapKeyDecoder and MapValueDecoder are called in wrong order  
-Fixed - `RReadWriteLock` doesn't work in cluster mode  
+Feature - __new object added__ `RBloomFilter`  
+Feature - __new object added__ `RAtomicDouble`  
+Feature - `tryAdd`, `tryAddAsync`, `addAll` and `addAllAsync` methods added to `RScoredSortedSet`  
+Feature - `RKeys.count` and `RKeys.countAsync` methods added  
+Feature - `RedissonClient.saveBuckets` method added  
+Feature - `trySet`, `trySetAsync`, `compareAndSet` and `getAndSet` methods added to `RBucket`  
+Feature - `fastPutIfAbsent` and `fastPutIfAbsentAsync` methods added to `RMap`  
+Improvement - `RMap.putIfAbsent` optimization  
+Improvement - `RBitSet` index range extended to Integer.MAX_VALUE*2  
+Improvement - `RAtomicLong.getAndAdd` optimization  
+Fixed - infinity loop during `RMap` iteration  
+Fixed -  wrong timeout value used during `RBatch` execution  
+Fixed - connection handling when `isReadFromSlaves = false`  
+Fixed - `RMap.addAndGetAsync` key encoding  
+Fixed - `RBatch` errors handling  
+Fixed - `RBlockingQueue.pollLastAndOfferFirstToAsync` does not block properly  
 
 ### Maven 
 
@@ -104,12 +106,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.4</version>
+       <version>2.2.5</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.4'
+    compile 'org.redisson:redisson:2.2.5'
 
 ### Supported by
 

@@ -221,4 +221,35 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
         Assert.assertFalse(sync(set.retainAll(Arrays.asList(1, 2)))); // nothing changed
         Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2));
     }
+
+
+    @Test
+    public void testMove() throws Exception {
+        RSetReactive<Integer> set = redisson.getSet("set");
+        RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
+
+        sync(set.add(1));
+        sync(set.add(2));
+
+        Assert.assertTrue(sync(set.move("otherSet", 1)));
+
+        Assert.assertEquals(1, sync(set.size()).intValue());
+        Assert.assertThat(sync(set), Matchers.contains(2));
+
+        Assert.assertEquals(1, sync(otherSet.size()).intValue());
+        Assert.assertThat(sync(otherSet), Matchers.contains(1));
+    }
+
+    @Test
+    public void testMoveNoMember() throws Exception {
+        RSetReactive<Integer> set = redisson.getSet("set");
+        RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
+
+        set.add(1);
+
+        Assert.assertFalse(sync(set.move("otherSet", 2)));
+
+        Assert.assertEquals(1, sync(set.size()).intValue());
+        Assert.assertEquals(0, sync(otherSet.size()).intValue());
+    }
 }
