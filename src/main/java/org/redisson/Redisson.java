@@ -468,5 +468,10 @@ public class Redisson implements RedissonClient {
         return connectionManager.isShuttingDown();
     }
 
+    @Override
+    public CommandExecutor getCommandExecutor() {
+        return commandExecutor;
+    }
+    
 }
 
