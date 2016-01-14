@@ -48,16 +48,18 @@ public class EvictionScheduler {
 
         final String name;
         final String timeoutSetName;
+        final String maxIdleSetName;
         final Deque<Integer> sizeHistory = new LinkedList<Integer>();
         int delay = 10;
 
-        int minDelay = 5;
-        int maxDelay = 2*60*60;
-        int keysLimit = 500;
+        final int minDelay = 1;
+        final int maxDelay = 2*60*60;
+        final int keysLimit = 300;
 
-        public RedissonCacheTask(String name, String timeoutSetName) {
+        public RedissonCacheTask(String name, String timeoutSetName, String maxIdleSetName) {
             this.name = name;
             this.timeoutSetName = timeoutSetName;
+            this.maxIdleSetName = maxIdleSetName;
         }
 
         public void schedule() {
@@ -66,7 +68,7 @@ public class EvictionScheduler {
 
         @Override
         public void run() {
-            Future<Integer> future = cleanupExpiredEntires(name, timeoutSetName, keysLimit);
+            Future<Integer> future = cleanupExpiredEntires(name, timeoutSetName, maxIdleSetName, keysLimit);
 
             future.addListener(new FutureListener<Integer>() {
                 @Override
@@ -122,13 +124,20 @@ public class EvictionScheduler {
     }
 
     public void schedule(String name, String timeoutSetName) {
-        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName);
+        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, null);
         RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();
         }
     }
 
+    public void schedule(String name, String timeoutSetName, String maxIdleSetName) {
+        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, maxIdleSetName);
+        RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
+        if (prevTask == null) {
+            task.schedule();
+        }
+    }
 
     public void runCleanTask(final String name, String timeoutSetName, long currentDate) {
 
@@ -146,7 +155,7 @@ public class EvictionScheduler {
             return;
         }
 
-        Future<Integer> future = cleanupExpiredEntires(name, timeoutSetName, valuesAmountToClean);
+        Future<Integer> future = cleanupExpiredEntires(name, timeoutSetName, null, valuesAmountToClean);
 
         future.addListener(new FutureListener<Integer>() {
             @Override
@@ -166,7 +175,24 @@ public class EvictionScheduler {
         });
     }
 
-    private Future<Integer> cleanupExpiredEntires(String name, String timeoutSetName, int keysLimit) {
+    private Future<Integer> cleanupExpiredEntires(String name, String timeoutSetName, String maxIdleSetName, int keysLimit) {
+        if (maxIdleSetName != null) {
+            return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                    "local expiredKeys1 = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+                  + "if #expiredKeys1 > 0 then "
+                      + "redis.call('zrem', KEYS[3], unpack(expiredKeys1)); "
+                      + "redis.call('zrem', KEYS[2], unpack(expiredKeys1)); "
+                      + "redis.call('hdel', KEYS[1], unpack(expiredKeys1)); "
+                  + "end; "
+                  + "local expiredKeys2 = redis.call('zrangebyscore', KEYS[3], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+                  + "if #expiredKeys2 > 0 then "
+                      + "redis.call('zrem', KEYS[3], unpack(expiredKeys2)); "
+                      + "redis.call('zrem', KEYS[2], unpack(expiredKeys2)); "
+                      + "redis.call('hdel', KEYS[1], unpack(expiredKeys2)); "
+                  + "end; "
+                  + "return #expiredKeys1 + #expiredKeys2;",
+                  Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName), System.currentTimeMillis(), keysLimit);
+        }
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
               + "if #expiredKeys > 0 then "

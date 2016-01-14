@@ -144,8 +144,6 @@ public class RedissonMapCacheTest extends BaseTest {
 
         Map<Integer, Integer> filteredAgain = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3, 5)));
         Assert.assertTrue(filteredAgain.isEmpty());
-        Thread.sleep(100);
-        Assert.assertEquals(2, map.size());
     }
 
     @Test
@@ -273,8 +271,6 @@ public class RedissonMapCacheTest extends BaseTest {
         Assert.assertFalse(map.keySet().contains(new SimpleKey("33")));
         Assert.assertFalse(map.keySet().contains(new SimpleKey("44")));
         Assert.assertTrue(map.keySet().contains(new SimpleKey("1")));
-        Thread.sleep(50);
-        Assert.assertEquals(1, map.size());
     }
 
     @Test
@@ -292,7 +288,6 @@ public class RedissonMapCacheTest extends BaseTest {
         Assert.assertFalse(map.values().contains(new SimpleValue("44")));
         Assert.assertFalse(map.values().contains(new SimpleValue("33")));
         Assert.assertTrue(map.values().contains(new SimpleValue("2")));
-        Assert.assertEquals(1, map.size());
     }
 
     @Test
@@ -307,8 +302,6 @@ public class RedissonMapCacheTest extends BaseTest {
         Thread.sleep(1000);
 
         Assert.assertFalse(map.containsValue(new SimpleValue("44")));
-        Thread.sleep(50);
-        Assert.assertEquals(0, map.size());
     }
 
     @Test
@@ -322,8 +315,6 @@ public class RedissonMapCacheTest extends BaseTest {
         Thread.sleep(1000);
 
         Assert.assertFalse(map.containsKey(new SimpleKey("33")));
-        Thread.sleep(50);
-        Assert.assertEquals(0, map.size());
     }
 
     @Test
@@ -417,6 +408,10 @@ public class RedissonMapCacheTest extends BaseTest {
         Assert.assertNull(map.get(new SimpleKey("33")));
 
         map.put(new SimpleKey("33"), new SimpleValue("44"), 5, TimeUnit.SECONDS);
+        map.put(new SimpleKey("10"), new SimpleValue("32"), 5, TimeUnit.SECONDS, 2, TimeUnit.SECONDS);
+        map.put(new SimpleKey("01"), new SimpleValue("92"), 0, null, 2, TimeUnit.SECONDS);
+
+        Assert.assertEquals(3, map.size());
 
         Thread.sleep(11000);
 
@@ -444,8 +439,6 @@ public class RedissonMapCacheTest extends BaseTest {
         Thread.sleep(1000);
 
         Assert.assertNull(map.get(new SimpleKey("33")));
-        Thread.sleep(50);
-        Assert.assertEquals(0, map.size());
     }
 
     @Test
@@ -582,6 +575,22 @@ public class RedissonMapCacheTest extends BaseTest {
 //        Assert.assertEquals(0, values.size());
 //    }
 
+
+    @Test
+    public void testFastPutIfAbsent() throws Exception {
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+        SimpleKey key = new SimpleKey("1");
+        SimpleValue value = new SimpleValue("2");
+        map.put(key, value);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("3"))).isFalse();
+        assertThat(map.get(key)).isEqualTo(value);
+
+        SimpleKey key1 = new SimpleKey("2");
+        SimpleValue value1 = new SimpleValue("4");
+        assertThat(map.fastPutIfAbsent(key1, value1)).isTrue();
+        assertThat(map.get(key1)).isEqualTo(value1);
+    }
+
     @Test
     public void testFastPut() throws Exception {
         RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
@@ -591,10 +600,66 @@ public class RedissonMapCacheTest extends BaseTest {
     }
 
     @Test
+    public void testPutIdle() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+        map.put(1, 2, 0, null, 2, TimeUnit.SECONDS);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(2100);
+        assertThat(map.get(1)).isNull();
+    }
+
+    @Test
+    public void testPutIfAbsentIdle() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+        assertThat(map.putIfAbsent(1, 2, 0, null, 2, TimeUnit.SECONDS)).isNull();
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(2100);
+        assertThat(map.get(1)).isNull();
+    }
+
+    @Test
+    public void testFastPutIdle() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+        assertThat(map.fastPut(1, 2, 0, null, 2, TimeUnit.SECONDS)).isTrue();
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(1000);
+        assertThat(map.get(1)).isEqualTo(2);
+        Thread.sleep(2100);
+        assertThat(map.get(1)).isNull();
+    }
+
+    @Test
     public void testFastPutWithTTL() throws Exception {
         RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         Assert.assertTrue(map.fastPut(1, 2, 2, TimeUnit.SECONDS));
         Assert.assertFalse(map.fastPut(1, 2, 2, TimeUnit.SECONDS));
+        Assert.assertEquals(1, map.size());
+    }
+
+    @Test
+    public void testFastPutWithTTLandMaxIdle() throws Exception {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+        Assert.assertTrue(map.fastPut(1, 2, 200, TimeUnit.SECONDS, 100, TimeUnit.SECONDS));
+        Assert.assertFalse(map.fastPut(1, 2, 200, TimeUnit.SECONDS, 100, TimeUnit.SECONDS));
         Assert.assertEquals(1, map.size());
     }
 

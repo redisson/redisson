@@ -44,6 +44,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * <p/>
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
+     * <p/>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
@@ -51,14 +52,41 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param value
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
-     * @param unit
+     * @param ttlUnit
      * @return previous associated value
      */
-    V putIfAbsent(K key, V value, long ttl, TimeUnit unit);
+    V putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit);
+
+    /**
+     * If the specified key is not already associated
+     * with a value, associate it with the given value.
+     * <p/>
+     * Stores value mapped by key with specified time to live and max idle time.
+     * Entry expires when specified time to live or max idle time has expired.
+     * <p/>
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param ttlUnit
+     * @param maxIdleTime - max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * @param maxIdleUnit
+     * <p/>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return previous associated value
+     */
+    V putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
+     * <p/>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
@@ -71,7 +99,73 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      */
     V put(K key, V value, long ttl, TimeUnit unit);
 
-    boolean fastPut(K key, V value, long ttl, TimeUnit unit);
+    /**
+     * Stores value mapped by key with specified time to live and max idle time.
+     * Entry expires when specified time to live or max idle time has expired.
+     * <p/>
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param ttlUnit
+     * @param maxIdleTime - max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * @param maxIdleUnit
+     * <p/>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return previous associated value
+     */
+    V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+
+    /**
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * <p/>
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     * <p/>
+     * Works faster than usual {@link #put(Object, Object, long, TimeUnit)}
+     * as it not returns previous value.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit
+     * @return previous associated value
+     */
+    boolean fastPut(K key, V value, long ttl, TimeUnit ttlUnit);
+
+    /**
+     * Stores value mapped by key with specified time to live and max idle time.
+     * Entry expires when specified time to live or max idle time has expired.
+     * <p/>
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     * <p/>
+     * Works faster than usual {@link #put(Object, Object, long, TimeUnit, long, TimeUnit)}
+     * as it not returns previous value.
+     *
+     * @param key
+     * @param value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param ttlUnit
+     * @param maxIdleTime - max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * @param maxIdleUnit
+     * <p/>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+
+     * @return previous associated value
+     */
+    boolean fastPut(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Returns the number of entries in cache.

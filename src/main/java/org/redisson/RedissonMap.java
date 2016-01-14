@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
@@ -47,7 +46,6 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
 
 /**
@@ -61,11 +59,11 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
-    private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<Object> EVAL_REPLACE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
-    private static final RedisCommand<Boolean> EVAL_REPLACE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE, ValueType.MAP_VALUE));
-    private static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 4, ValueType.MAP);
-    private static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
+    static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
+    static final RedisCommand<Object> EVAL_REPLACE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
+    static final RedisCommand<Boolean> EVAL_REPLACE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE, ValueType.MAP_VALUE));
+    static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 4, ValueType.MAP);
+    static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
 
     protected RedissonMap(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
