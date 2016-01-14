@@ -47,9 +47,11 @@ public class RedisClient {
     private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     private final long timeout;
+    private boolean hasOwnGroup;
 
     public RedisClient(String host, int port) {
         this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60 * 1000);
+        hasOwnGroup = true;
     }
 
     public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int timeout) {
@@ -138,7 +140,9 @@ public class RedisClient {
 
     public void shutdown() {
         shutdownAsync().syncUninterruptibly();
-        bootstrap.group().shutdownGracefully();
+        if (hasOwnGroup) {
+            bootstrap.group().shutdownGracefully();
+        }
     }
 
     public ChannelGroupFuture shutdownAsync() {
