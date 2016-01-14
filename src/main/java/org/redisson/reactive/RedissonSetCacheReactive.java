@@ -65,20 +65,15 @@ import net.openhft.hashing.LongHashFunction;
 public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive implements RSetCacheReactive<V> {
 
     private static final RedisCommand<Void> ADD_ALL = new RedisCommand<Void>("HMSET", new VoidReplayConvertor());
-    private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     private static final RedisStrictCommand<Boolean> HDEL = new RedisStrictCommand<Boolean>("HDEL", new BooleanReplayConvertor());
-
-    private final EvictionScheduler evictionScheduler;
 
     public RedissonSetCacheReactive(EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.evictionScheduler = evictionScheduler;
         evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
     public RedissonSetCacheReactive(Codec codec, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        this.evictionScheduler = evictionScheduler;
         evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
