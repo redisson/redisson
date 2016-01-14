@@ -40,9 +40,6 @@ import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
-import org.redisson.client.protocol.decoder.ListIteratorReplayDecoder;
-import org.redisson.client.protocol.decoder.ListIteratorResult;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RList;
 
@@ -123,7 +120,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public boolean remove(Object o) {
-        return remove(o, 1);
+        return get(removeAsync(o));
     }
 
     @Override
@@ -202,9 +199,11 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
                         "local tail = redis.call('lrange', KEYS[1], ind, -1); " +
                         "redis.call('ltrim', KEYS[1], 0, ind - 1); " +
-                        "for i, v in ipairs(ARGV) do redis.call('rpush', KEYS[1], v) end;" +
-                        "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
-                        "return true",
+                        "redis.call('rpush', KEYS[1], unpack(ARGV));" +
+                        "if #tail > 0 then "
+                            + "redis.call('rpush', KEYS[1], unpack(tail));"
+                      + "end;" +
+                        "return 1;",
                 Collections.<Object>singletonList(getName()), args.toArray());
     }
 
@@ -272,15 +271,6 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return commandExecutor.readAsync(getName(), codec, LINDEX, getName(), index);
     }
 
-    ListIteratorResult<Object> getIteratorValue(int index) {
-        Future<ListIteratorResult<Object>> f = commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Object>("EVAL", (MultiDecoder)new ListIteratorReplayDecoder()),
-                "local len = redis.call('llen', KEYS[1]); " +
-                "local item = redis.call('lindex', KEYS[1], ARGV[1]); " +
-                "return {item, len}",
-                Collections.<Object>singletonList(getName()), index);
-        return get(f);
-    }
-
     @Override
     public V get(int index) {
         checkIndex(index);
@@ -318,7 +308,6 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public void fastSet(int index, V element) {
-        checkIndex(index);
         get(fastSetAsync(index, element));
     }
 
@@ -345,7 +334,9 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "local tail = redis.call('lrange', KEYS[1], ARGV[1]);" +
                         "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +
-                        "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
+                        "if #tail > 0 then " +
+                            "redis.call('rpush', KEYS[1], unpack(tail));" +
+                        "end;" +
                         "return v",
                 Collections.<Object>singletonList(getName()), index);
         return get(f);
@@ -391,7 +382,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
                 "local items = redis.call('lrange', key, 0, -1) " +
-                "for i = table.getn(items), 0, -1 do " +
+                "for i = #items, 0, -1 do " +
                     "if items[i] == obj then " +
                         "return i - 1 " +
                     "end " +
@@ -413,7 +404,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             private V nextCurrentValue;
             private V currentValueHasRead;
             private int currentIndex = ind - 1;
-            private boolean removeExecuted;
+            private boolean hasBeenModified = true;
 
             @Override
             public boolean hasNext() {
@@ -432,7 +423,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 currentIndex++;
                 currentValueHasRead = nextCurrentValue;
                 nextCurrentValue = null;
-                removeExecuted = false;
+                hasBeenModified = false;
                 return currentValueHasRead;
             }
 
@@ -441,12 +432,12 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 if (currentValueHasRead == null) {
                     throw new IllegalStateException("Neither next nor previous have been called");
                 }
-                if (removeExecuted) {
+                if (hasBeenModified) {
                     throw new IllegalStateException("Element been already deleted");
                 }
                 RedissonList.this.remove(currentValueHasRead);
                 currentIndex--;
-                removeExecuted = true;
+                hasBeenModified = true;
                 currentValueHasRead = null;
             }
 
@@ -468,7 +459,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                     throw new NoSuchElementException("No such element at index " + currentIndex);
                 }
                 currentIndex--;
-                removeExecuted = false;
+                hasBeenModified = false;
                 currentValueHasRead = prevCurrentValue;
                 prevCurrentValue = null;
                 return currentValueHasRead;
@@ -486,16 +477,18 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
             @Override
             public void set(V e) {
-                if (currentIndex >= size()-1) {
+                if (hasBeenModified) {
                     throw new IllegalStateException();
                 }
-                RedissonList.this.set(currentIndex, e);
+
+                RedissonList.this.fastSet(currentIndex, e);
             }
 
             @Override
             public void add(V e) {
                 RedissonList.this.add(currentIndex+1, e);
                 currentIndex++;
+                hasBeenModified = true;
             }
         };
     }

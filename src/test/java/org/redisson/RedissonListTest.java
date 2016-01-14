@@ -123,6 +123,29 @@ public class RedissonListTest extends BaseTest {
         iterator.set(3);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testListIteratorSetFail2() {
+        List<Integer> list = redisson.getList("simpleList");
+        list.add(1);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        iterator.hasNext();
+        iterator.set(3);
+    }
+
+    @Test
+    public void testListIteratorOK() {
+        List<Integer> list = redisson.getList("simpleList");
+        list.add(1);
+
+        ListIterator<Integer> iterator = list.listIterator();
+
+        iterator.next();
+        iterator.set(3);
+        iterator.set(4);
+    }
+
     @Test
     public void testListIteratorGetSetList() {
         List<Integer> list = new ArrayList<Integer>();
@@ -809,8 +832,6 @@ public class RedissonListTest extends BaseTest {
         list.add(new TestObject("2", "3"));
         list.add(new TestObject("3", "4"));
         list.add(new TestObject("5", "6"));
-
-        System.out.println(list);
 
         Assert.assertEquals(5, list.size());
     }
