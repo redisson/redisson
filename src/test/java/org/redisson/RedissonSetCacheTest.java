@@ -50,10 +50,6 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(1000);
 
         Assert.assertFalse(set.contains("123"));
-
-        Thread.sleep(50);
-
-        Assert.assertEquals(0, set.size());
     }
 
     @Test
@@ -64,17 +60,10 @@ public class RedissonSetCacheTest extends BaseTest {
 
         Assert.assertFalse(set.contains("123"));
 
-        Thread.sleep(50);
-
-        Assert.assertEquals(0, set.size());
-
         set.add("4341", 1, TimeUnit.SECONDS);
         Thread.sleep(1000);
 
         Assert.assertFalse(set.contains("4341"));
-
-        // can't be evicted due to 1 sec delay
-        Assert.assertEquals(1, set.size());
     }
 
     @Test
@@ -145,11 +134,6 @@ public class RedissonSetCacheTest extends BaseTest {
 
         Assert.assertFalse(set.contains("4"));
         Assert.assertFalse(set.contains("5"));
-
-        Thread.sleep(50);
-
-        Assert.assertEquals(0, set.size());
-        Assert.assertTrue(set.isEmpty());
     }
 
     @Test

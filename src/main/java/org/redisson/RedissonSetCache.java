@@ -33,16 +33,12 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RSetCache;
 
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 import net.openhft.hashing.LongHashFunction;
 
 /**
@@ -69,20 +65,15 @@ import net.openhft.hashing.LongHashFunction;
 public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V> {
 
     private static final RedisCommand<Void> ADD_ALL = new RedisCommand<Void>("HMSET", new VoidReplayConvertor());
-    private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     private static final RedisStrictCommand<Boolean> HDEL = new RedisStrictCommand<Boolean>("HDEL", new BooleanReplayConvertor());
-
-    private final EvictionScheduler evictionScheduler;
 
     protected RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.evictionScheduler = evictionScheduler;
         evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
     protected RedissonSetCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        this.evictionScheduler = evictionScheduler;
         evictionScheduler.schedule(getName(), getTimeoutSetName());
     }
 
@@ -114,7 +105,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             byte[] objectState = codec.getValueEncoder().encode(o);
             return hash(objectState);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -134,52 +125,17 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public Future<Boolean> containsAsync(Object o) {
-        Promise<Boolean> result = newPromise();
-
         byte[] key = hash(o);
-
-        Future<List<Object>> future = commandExecutor.evalReadAsync(getName(), codec, EVAL_CONTAINS_KEY,
-                "local value = redis.call('hexists', KEYS[1], ARGV[1]); " +
-                "local expireDate = 92233720368547758; " +
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local value = redis.call('hexists', KEYS[1], ARGV[2]); " +
                 "if value == 1 then " +
-                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[1]); "
-                    + "if expireDateScore ~= false then "
-                        + "expireDate = tonumber(expireDateScore) "
+                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                    + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then "
+                        + "return 0;"
                     + "end; " +
                 "end;" +
-                "return {expireDate, value}; ",
-               Arrays.<Object>asList(getName(), getTimeoutSetName()), key);
-
-        addExpireListener(result, future, new BooleanReplayConvertor(), false);
-
-        return result;
-    }
-
-    private <T> void addExpireListener(final Promise<T> result, Future<List<Object>> future, final Convertor<T> convertor, final T nullValue) {
-        future.addListener(new FutureListener<List<Object>>() {
-            @Override
-            public void operationComplete(Future<List<Object>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
-                    return;
-                }
-
-                List<Object> res = future.getNow();
-                Long expireDate = (Long) res.get(0);
-                long currentDate = System.currentTimeMillis();
-                if (expireDate <= currentDate) {
-                    result.setSuccess(nullValue);
-                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
-                    return;
-                }
-
-                if (convertor != null) {
-                    result.setSuccess((T) convertor.convert(res.get(1)));
-                } else {
-                    result.setSuccess((T) res.get(1));
-                }
-            }
-        });
+                "return value; ",
+               Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis(), key);
     }
 
     ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
@@ -265,14 +221,14 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     private Future<Collection<V>> readAllAsync() {
-        final Promise<Collection<V>> result = newPromise();
-        Future<List<Object>> future = commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>()),
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
                         "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
                         "local keys = redis.call('hkeys', KEYS[1]);" +
                         "local maxDate = ARGV[1]; " +
                         "local minExpireDate = 92233720368547758;" +
                         "if #expireHead == 2 and tonumber(expireHead[2]) <= tonumber(maxDate) then " +
-                            "for i, key in pairs(keys) do " +
+                            "for i = #keys, 1, -1 do " +
+                                "local key = keys[i]; " +
                                 "local expireDate = redis.call('zscore', KEYS[2], key); " +
                                 "if expireDate ~= false and tonumber(expireDate) <= tonumber(maxDate) then " +
                                     "minExpireDate = math.min(tonumber(expireDate), minExpireDate); " +
@@ -280,29 +236,8 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                                 "end;" +
                             "end;" +
                         "end; " +
-                        "return {minExpireDate, redis.call('hmget', KEYS[1], unpack(keys))};",
+                        "return redis.call('hmget', KEYS[1], unpack(keys));",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis());
-
-        future.addListener(new FutureListener<List<Object>>() {
-            @Override
-            public void operationComplete(Future<List<Object>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
-                    return;
-                }
-
-                List<Object> res = future.getNow();
-                Long expireDate = (Long) res.get(0);
-                long currentDate = System.currentTimeMillis();
-                if (expireDate <= currentDate) {
-                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
-                }
-
-                result.setSuccess((Collection<V>) res.get(1));
-            }
-        });
-
-        return result;
     }
 
     @Override

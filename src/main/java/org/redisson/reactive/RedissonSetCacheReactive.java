@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
 import org.redisson.EvictionScheduler;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.client.codec.Codec;
@@ -35,16 +34,12 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandReactiveExecutor;
 
 import net.openhft.hashing.LongHashFunction;
-import reactor.rx.Promise;
-import reactor.rx.Promises;
-import reactor.rx.action.support.DefaultSubscriber;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
@@ -100,7 +95,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
             byte[] objectState = codec.getValueEncoder().encode(o);
             return hash(objectState);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -120,60 +115,18 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
 
     @Override
     public Publisher<Boolean> contains(Object o) {
-        Promise<Boolean> result = Promises.prepare();
-
         byte[] key = hash(o);
 
-        Publisher<List<Object>> future = commandExecutor.evalReadReactive(getName(), codec, EVAL_CONTAINS_KEY,
-                "local value = redis.call('hexists', KEYS[1], ARGV[1]); " +
-                "local expireDate = 92233720368547758; " +
+        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local value = redis.call('hexists', KEYS[1], ARGV[2]); " +
                 "if value == 1 then " +
-                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[1]); "
-                    + "if expireDateScore ~= false then "
-                        + "expireDate = tonumber(expireDateScore) "
+                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                    + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then "
+                        + "return 0;"
                     + "end; " +
                 "end;" +
-                "return {expireDate, value}; ",
-               Arrays.<Object>asList(getName(), getTimeoutSetName()), key);
-
-        addExpireListener(result, future, new BooleanReplayConvertor(), false);
-
-        return result;
-    }
-
-    private <T> void addExpireListener(final Promise<T> result, Publisher<List<Object>> publisher, final Convertor<T> convertor, final T nullValue) {
-        publisher.subscribe(new DefaultSubscriber<List<Object>>() {
-
-            @Override
-            public void onSubscribe(Subscription s) {
-                s.request(1);
-            }
-
-            @Override
-            public void onNext(List<Object> res) {
-                Long expireDate = (Long) res.get(0);
-                long currentDate = System.currentTimeMillis();
-                if (expireDate <= currentDate) {
-                    result.onNext(nullValue);
-                    result.onComplete();
-                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
-                    return;
-                }
-
-                if (convertor != null) {
-                    result.onNext((T) convertor.convert(res.get(1)));
-                } else {
-                    result.onNext((T) res.get(1));
-                }
-                result.onComplete();
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                result.onError(t);
-            }
-
-        });
+                "return value; ",
+               Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis(), key);
     }
 
     Publisher<ListScanResult<V>> scanIterator(InetSocketAddress client, long startPos) {

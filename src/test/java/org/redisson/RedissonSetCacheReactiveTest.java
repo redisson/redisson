@@ -54,10 +54,6 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
         Thread.sleep(1000);
 
         Assert.assertFalse(sync(set.contains("123")));
-
-        Thread.sleep(50);
-
-        Assert.assertEquals(0, sync(set.size()).intValue());
     }
 
     @Test
@@ -68,17 +64,10 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
         Assert.assertFalse(sync(set.contains("123")));
 
-        Thread.sleep(50);
-
-        Assert.assertEquals(0, sync(set.size()).intValue());
-
         sync(set.add("4341", 1, TimeUnit.SECONDS));
         Thread.sleep(1000);
 
         Assert.assertFalse(sync(set.contains("4341")));
-
-        // can't be evicted due to 1 sec delay
-        Assert.assertEquals(1, sync(set.size()).intValue());
     }
 
     @Test
