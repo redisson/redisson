@@ -29,4 +29,6 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
 
     void fastSet(int index, V element);
 
+    RList<V> subList(int fromIndex, int toIndex);
+
 }
