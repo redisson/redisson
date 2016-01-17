@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public interface RCountDownLatch extends RObject {
+public interface RCountDownLatch extends RObject, RCountDownLatchAsync {
 
     /**
      * Causes the current thread to wait until the latch has counted down to

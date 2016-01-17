@@ -55,7 +55,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         try {
             promise.await();
 
-            while (getCountInner() > 0) {
+            while (getCount() > 0) {
                 // waiting for open state
                 RedissonCountDownLatchEntry entry = getEntry();
                 if (entry != null) {
@@ -76,7 +76,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             }
 
             time = unit.toMillis(time);
-            while (getCountInner() > 0) {
+            while (getCount() > 0) {
                 if (time <= 0) {
                     return false;
                 }
@@ -111,13 +111,16 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public void countDown() {
-        Future<Boolean> f = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local v = redis.call('decr', KEYS[1]);" +
+        get(countDownAsync());
+    }
+
+    @Override
+    public Future<Void> countDownAsync() {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
-                        "if v == 0 then redis.call('publish', KEYS[2], ARGV[1]) end;" +
-                        "return 1",
-                 Arrays.<Object>asList(getName(), getChannelName()), zeroCountMessage);
-        get(f);
+                        "if v == 0 then redis.call('publish', KEYS[2], ARGV[1]) end;",
+                    Arrays.<Object>asList(getName(), getChannelName()), zeroCountMessage);
     }
 
     private String getEntryName() {
@@ -130,21 +133,22 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public long getCount() {
-        return getCountInner();
+        return get(getCountAsync());
     }
 
-    private long getCountInner() {
-        Future<Long> f = commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET, getName());
-        Long val = get(f);
-        if (val == null) {
-            return 0;
-        }
-        return val;
+    @Override
+    public Future<Long> getCountAsync() {
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
     }
 
     @Override
     public boolean trySetCount(long count) {
-        Future<Boolean> f = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return get(trySetCountAsync(count));
+    }
+
+    @Override
+    public Future<Boolean> trySetCountAsync(long count) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[1]) == 0 then "
                     + "redis.call('set', KEYS[1], ARGV[2]); "
                     + "redis.call('publish', KEYS[2], ARGV[1]); "
@@ -153,7 +157,6 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                     + "return 0 "
                 + "end",
                 Arrays.<Object>asList(getName(), getChannelName()), newCountMessage, count);
-        return get(f);
     }
 
     @Override

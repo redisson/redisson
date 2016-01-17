@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RCountDownLatch;
+import static org.assertj.core.api.Assertions.*;
 
 public class RedissonCountDownLatchTest extends BaseTest {
 
@@ -143,7 +144,13 @@ public class RedissonCountDownLatchTest extends BaseTest {
     @Test
     public void testTrySetCount() throws Exception {
         RCountDownLatch latch = redisson.getCountDownLatch("latch");
-        Assert.assertTrue(latch.trySetCount(1));
-        Assert.assertFalse(latch.trySetCount(2));
+        assertThat(latch.trySetCount(1)).isTrue();
+        assertThat(latch.trySetCount(2)).isFalse();
+    }
+
+    @Test
+    public void testCount() {
+        RCountDownLatch latch = redisson.getCountDownLatch("latch");
+        assertThat(latch.getCount()).isEqualTo(0);
     }
 }
