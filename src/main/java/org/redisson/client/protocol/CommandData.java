@@ -72,8 +72,7 @@ public class CommandData<T, R> implements QueueCommand {
 
     @Override
     public List<CommandData<Object, Object>> getPubSubOperations() {
-        if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE")
-                .contains(getCommand().getName())) {
+        if (PUBSUB_COMMANDS.contains(getCommand().getName())) {
             return Collections.singletonList((CommandData<Object, Object>)this);
         }
         return Collections.emptyList();

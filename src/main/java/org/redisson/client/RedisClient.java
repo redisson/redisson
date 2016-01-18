@@ -47,9 +47,11 @@ public class RedisClient {
     private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     private final long timeout;
+    private boolean hasOwnGroup;
 
     public RedisClient(String host, int port) {
-        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60*1000);
+        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60 * 1000);
+        hasOwnGroup = true;
     }
 
     public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int timeout) {
@@ -59,10 +61,10 @@ public class RedisClient {
             @Override
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels),
-                                        new CommandEncoder(),
-                                        new CommandsListEncoder(),
-                                        new CommandsQueue(),
-                                        new CommandDecoder());
+                    new CommandEncoder(),
+                    new CommandsListEncoder(),
+                    new CommandsQueue(),
+                    new CommandDecoder());
             }
         });
 
@@ -88,7 +90,7 @@ public class RedisClient {
             future.syncUninterruptibly();
             return new RedisConnection(this, future.channel());
         } catch (Exception e) {
-            throw new RedisConnectionException("Unable to connect to " + addr, e);
+            throw new RedisConnectionException("Unable to connect to: " + addr, e);
         }
     }
 
@@ -115,7 +117,7 @@ public class RedisClient {
             future.syncUninterruptibly();
             return new RedisPubSubConnection(this, future.channel());
         } catch (Exception e) {
-            throw new RedisConnectionException("Unable to connect to " + addr, e);
+            throw new RedisConnectionException("Unable to connect to: " + addr, e);
         }
     }
 
@@ -138,6 +140,9 @@ public class RedisClient {
 
     public void shutdown() {
         shutdownAsync().syncUninterruptibly();
+        if (hasOwnGroup) {
+            bootstrap.group().shutdownGracefully();
+        }
     }
 
     public ChannelGroupFuture shutdownAsync() {
@@ -146,8 +151,7 @@ public class RedisClient {
 
     @Override
     public String toString() {
-        return "RedisClient [addr=" + addr + "]";
+        return "[addr=" + addr + "]";
     }
 
 }
-

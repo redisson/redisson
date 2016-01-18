@@ -23,6 +23,7 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.connection.FastSuccessFuture;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -34,20 +35,36 @@ import io.netty.util.concurrent.ScheduledFuture;
 
 public class RedisConnection implements RedisCommands {
 
-    public static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
+    private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
 
     final RedisClient redisClient;
 
     private volatile boolean closed;
     volatile Channel channel;
+
     private ReconnectListener reconnectListener;
-    private int failAttempts;
+    private long lastUsageTime;
+
+    private final Future<?> acquireFuture = new FastSuccessFuture<Object>(this);
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
         this.redisClient = redisClient;
 
         updateChannel(channel);
+        lastUsageTime = System.currentTimeMillis();
+    }
+
+    public static <C extends RedisConnection> C getFrom(Channel channel) {
+        return (C) channel.attr(RedisConnection.CONNECTION).get();
+    }
+
+    public long getLastUsageTime() {
+        return lastUsageTime;
+    }
+
+    public void setLastUsageTime(long lastUsageTime) {
+        this.lastUsageTime = lastUsageTime;
     }
 
     public void setReconnectListener(ReconnectListener reconnectListener) {
@@ -56,18 +73,6 @@ public class RedisConnection implements RedisCommands {
 
     public ReconnectListener getReconnectListener() {
         return reconnectListener;
-    }
-
-    public void resetFailAttempt() {
-        failAttempts = 0;
-    }
-
-    public void incFailAttempt() {
-        failAttempts++;
-    }
-
-    public int getFailAttempts() {
-        return failAttempts;
     }
 
     public boolean isOpen() {
@@ -86,7 +91,6 @@ public class RedisConnection implements RedisCommands {
     public void updateChannel(Channel channel) {
         this.channel = channel;
         channel.attr(CONNECTION).set(this);
-        resetFailAttempt();
     }
 
     public RedisClient getRedisClient() {
@@ -173,6 +177,15 @@ public class RedisConnection implements RedisCommands {
         channel.close();
     }
 
+    /**
+     * Access to Netty channel.
+     * This method is provided to use in debug info only.
+     *
+     */
+    public Channel getChannel() {
+        return channel;
+    }
+
     public ChannelFuture closeAsync() {
         setClosed(true);
         return channel.close();
@@ -181,6 +194,10 @@ public class RedisConnection implements RedisCommands {
     @Override
     public String toString() {
         return getClass().getSimpleName() + " [redisClient=" + redisClient + ", channel=" + channel + "]";
+    }
+
+    public Future<?> getAcquireFuture() {
+        return acquireFuture;
     }
 
 }

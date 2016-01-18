@@ -21,17 +21,18 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RExpirable;
 
 import io.netty.util.concurrent.Future;
 
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
-    RedissonExpirable(CommandExecutor connectionManager, String name) {
+    RedissonExpirable(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
-    RedissonExpirable(Codec codec, CommandExecutor connectionManager, String name) {
+    RedissonExpirable(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
     }
 
@@ -42,7 +43,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.EXPIRE, getName(), timeUnit.toSeconds(timeToLive));
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getName(), timeUnit.toMillis(timeToLive));
     }
 
     @Override
@@ -52,7 +53,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public Future<Boolean> expireAtAsync(long timestamp) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.EXPIREAT, getName(), timestamp);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIREAT, getName(), timestamp);
     }
 
     @Override
@@ -82,7 +83,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public Future<Long> remainTimeToLiveAsync() {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.TTL, getName());
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.PTTL, getName());
     }
 
 }

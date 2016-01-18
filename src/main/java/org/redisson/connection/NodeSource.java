@@ -19,6 +19,8 @@ import java.net.InetSocketAddress;
 
 public class NodeSource {
 
+    public static final NodeSource ZERO = new NodeSource(0);
+
     public enum Redirect {MOVED, ASK}
 
     private final Integer slot;

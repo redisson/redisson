@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
+import static org.assertj.core.api.Assertions.*;
 
 import io.netty.util.concurrent.Future;
 
@@ -141,6 +142,12 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
         res2 = map2.get(1);
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
+
+        RMap<String, Integer> mapStr = redisson.getMap("mapStr");
+        assertThat(mapStr.put("1", 100)).isNull();
+
+        assertThat(mapStr.addAndGet("1", 12)).isEqualTo(112);
+        assertThat(mapStr.get("1")).isEqualTo(112);
     }
 
     @Test
@@ -440,7 +447,21 @@ public class RedissonMapTest extends BaseTest {
         SimpleValue value1 = new SimpleValue("4");
         Assert.assertNull(map.putIfAbsent(key1, value1));
         Assert.assertEquals(value1, map.get(key1));
+    }
 
+    @Test
+    public void testFastPutIfAbsent() throws Exception {
+        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        SimpleKey key = new SimpleKey("1");
+        SimpleValue value = new SimpleValue("2");
+        map.put(key, value);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("3"))).isFalse();
+        assertThat(map.get(key)).isEqualTo(value);
+
+        SimpleKey key1 = new SimpleKey("2");
+        SimpleValue value1 = new SimpleValue("4");
+        assertThat(map.fastPutIfAbsent(key1, value1)).isTrue();
+        assertThat(map.get(key1)).isEqualTo(value1);
     }
 
     @Test
@@ -561,6 +582,22 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertTrue(map.fastPut(1, 2));
         Assert.assertFalse(map.fastPut(1, 3));
         Assert.assertEquals(1, map.size());
+    }
+
+    @Test
+    public void testEquals() {
+        RMap<String, String> map = redisson.getMap("simple");
+        map.put("1", "7");
+        map.put("2", "4");
+        map.put("3", "5");
+
+        Map<String, String> testMap = new HashMap<String, String>();
+        testMap.put("1", "7");
+        testMap.put("2", "4");
+        testMap.put("3", "5");
+
+        Assert.assertEquals(testMap, map);
+        Assert.assertEquals(testMap.hashCode(), map.hashCode());
     }
 
     @Test

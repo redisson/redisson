@@ -24,7 +24,7 @@ package org.redisson.core;
 public interface RObject extends RObjectAsync {
 
     /**
-     * Transfer a object from a source Redis instance to a destination Redis instance
+     * Transfer an object from source Redis instance to destination Redis instance
      *
      * @param host - destination host
      * @param port - destination port
@@ -68,5 +68,12 @@ public interface RObject extends RObjectAsync {
      * @return
      */
     boolean renamenx(String newName);
+
+    /**
+     * Check object existence
+     *
+     * @return <code>true</code> if object exists and <code>false</code> otherwise
+     */
+    boolean isExists();
 
 }

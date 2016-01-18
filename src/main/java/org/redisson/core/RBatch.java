@@ -17,6 +17,7 @@ package org.redisson.core;
 
 import java.util.List;
 
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 
 import io.netty.util.concurrent.Future;
@@ -24,9 +25,8 @@ import io.netty.util.concurrent.Future;
 /**
  * Interface for using pipeline feature.
  *
- * All methods invocations via async objects
- * which have gotten from this interface are batched
- * to separate queue and could be executed later
+ * All method invocations on objects
+ * from this interface are batched to separate queue and could be executed later
  * with <code>execute()</code> or <code>executeAsync()</code> methods.
  *
  *
@@ -36,7 +36,58 @@ import io.netty.util.concurrent.Future;
 public interface RBatch {
 
     /**
-     * Returns object holder by name
+     * Returns set-based cache instance by <code>name</code>.
+     * Uses map (value_hash, value) under the hood for minimal memory consumption.
+     * Supports value eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <V> RSetCacheAsync<V> getSetCache(String name);
+
+    /**
+     * Returns set-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * Uses map (value_hash, value) under the hood for minimal memory consumption.
+     * Supports value eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <V> RSetCacheAsync<V> getSetCache(String name, Codec codec);
+
+    /**
+     * Returns map-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for both cache keys and values.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <K, V> RMapCacheAsync<K, V> getMapCache(String name, Codec codec);
+
+    /**
+     * Returns map-based cache instance by <code>name</code>.
+     * Supports entry eviction with a given TTL value.
+     *
+     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     *
+     * @param name
+     * @return
+     */
+    <K, V> RMapCacheAsync<K, V> getMapCache(String name);
+
+    /**
+     * Returns object holder by <code>name</code>
      *
      * @param name of object
      * @return
@@ -121,17 +172,35 @@ public interface RBatch {
      * @param name of deque
      * @return
      */
-    <V> RDequeAsync<V> getDequeAsync(String name);
+    <V> RDequeAsync<V> getDeque(String name);
 
-    <V> RDequeAsync<V> getDequeAsync(String name, Codec codec);
+    <V> RDequeAsync<V> getDeque(String name, Codec codec);
 
     /**
-     * Returns "atomic long" instance by name.
+     * Returns blocking deque instance by name.
      *
-     * @param name of the "atomic long"
+     * @param name of queue
      * @return
      */
-    RAtomicLongAsync getAtomicLongAsync(String name);
+    <V> RBlockingDequeAsync<V> getBlockingDeque(String name);
+
+    <V> RBlockingDequeAsync<V> getBlockingDeque(String name, Codec codec);
+
+    /**
+     * Returns atomicLong instance by name.
+     *
+     * @param name
+     * @return
+     */
+    RAtomicLongAsync getAtomicLong(String name);
+
+    /**
+     * Returns atomicDouble instance by name.
+     *
+     * @param name
+     * @return
+     */
+    RAtomicDoubleAsync getAtomicDouble(String name);
 
     /**
      * Returns Redis Sorted Set instance by name
@@ -153,6 +222,8 @@ public interface RBatch {
      */
     RLexSortedSetAsync getLexSortedSet(String name);
 
+    RBitSetAsync getBitSet(String name);
+
     /**
      * Returns script operations object
      *
@@ -171,12 +242,14 @@ public interface RBatch {
     /**
      * Executes all operations accumulated during async methods invocations.
      *
-     * In cluster configurations operations grouped by slot ids
-     * so may be executed on different servers. Thus command execution order could be changed
+     * If cluster configuration used then operations are grouped by slot ids
+     * and may be executed on different servers. Thus command execution order could be changed
      *
-     * @return
+     * @return List with result object for each command
+     * @throws RedisException in case of any error
+     *
      */
-    List<?> execute();
+    List<?> execute() throws RedisException;
 
     /**
      * Executes all operations accumulated during async methods invocations asynchronously.
@@ -184,7 +257,7 @@ public interface RBatch {
      * In cluster configurations operations grouped by slot ids
      * so may be executed on different servers. Thus command execution order could be changed
      *
-     * @return
+     * @return List with result object for each command
      */
     Future<List<?>> executeAsync();
 

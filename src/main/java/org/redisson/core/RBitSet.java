@@ -17,35 +17,38 @@ package org.redisson.core;
 
 import java.util.BitSet;
 
-import io.netty.util.concurrent.Future;
-
 /**
- * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
  *
  * @author Nikita Koksharov
  *
  */
-public interface RBitSet extends RExpirable {
+public interface RBitSet extends RExpirable, RBitSetAsync {
 
-    void set(int fromIndex, int toIndex);
+    long length();
+
+    void set(long fromIndex, long toIndex, boolean value);
+
+    void clear(long fromIndex, long toIndex);
+
+    void set(BitSet bs);
+
+    void not();
+
+    void set(long fromIndex, long toIndex);
 
     int size();
 
-    boolean get(int bitIndex);
+    boolean get(long bitIndex);
 
-    Future<Boolean> getAsync(int bitIndex);
+    void set(long bitIndex);
 
-    void set(int bitIndex);
-
-    void set(int bitIndex, boolean value);
-
-    Future<Void> setAsync(int bitIndex, boolean value);
+    void set(long bitIndex, boolean value);
 
     byte[] toByteArray();
 
-    int cardinality();
+    long cardinality();
 
-    void clear(int bitIndex);
+    void clear(long bitIndex);
 
     void clear();
 

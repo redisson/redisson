@@ -32,7 +32,9 @@ public class StringMapDataDecoder implements Decoder<Map<String, String>> {
         Map<String, String> result = new HashMap<String, String>();
         for (String entry : value.split("\r\n|\n")) {
             String[] parts = entry.split(":");
-            result.put(parts[0], parts[1]);
+            if (parts.length == 2) {
+                result.put(parts[0], parts[1]);
+            }
         }
         return result;
     }

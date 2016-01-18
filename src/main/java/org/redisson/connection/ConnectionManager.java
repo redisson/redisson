@@ -27,15 +27,13 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ConnectionEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 /**
@@ -43,8 +41,21 @@ import io.netty.util.concurrent.Promise;
  * @author Nikita Koksharov
  *
  */
-//TODO ping support
 public interface ConnectionManager {
+
+    <R> Future<R> newSucceededFuture(R value);
+
+    ConnectionEventsHub getConnectionEventsHub();
+
+    boolean isShutdown();
+
+    boolean isShuttingDown();
+
+    Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener listener);
+
+    ConnectionInitializer getConnectListener();
+
+    IdleConnectionWatcher getConnectionWatcher();
 
     <R> Future<R> newFailedFuture(Throwable cause);
 
@@ -55,8 +66,6 @@ public interface ConnectionManager {
     void shutdownAsync(RedisClient client);
 
     int calcSlot(String key);
-
-    HashedWheelTimer getTimer();
 
     MasterSlaveServersConfig getConfig();
 
@@ -74,12 +83,6 @@ public interface ConnectionManager {
 
     Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    <T> FutureListener<T> createReleaseReadListener(NodeSource source,
-            RedisConnection conn, Timeout timeout);
-
-    <T> FutureListener<T> createReleaseWriteListener(NodeSource source,
-            RedisConnection conn, Timeout timeout);
-
     RedisClient createClient(String host, int port, int timeout);
 
     RedisClient createClient(String host, int port);
@@ -88,11 +91,7 @@ public interface ConnectionManager {
 
     PubSubConnectionEntry getPubSubEntry(String channelName);
 
-    Future<PubSubConnectionEntry> subscribe(String channelName, Codec codec);
-
     Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec);
-
-    <V> void subscribe(RedisPubSubListener<V> listener, String channelName);
 
     Codec unsubscribe(String channelName);
 

@@ -16,6 +16,7 @@
 package org.redisson.core;
 
 import java.util.List;
+import java.util.RandomAccess;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -24,8 +25,10 @@ import java.util.List;
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RList<V> extends List<V>, RExpirable, RListAsync<V> {
+public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAccess {
 
     void fastSet(int index, V element);
+
+    RList<V> subList(int fromIndex, int toIndex);
 
 }

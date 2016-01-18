@@ -16,20 +16,19 @@
 package org.redisson.misc;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ConnectionEntry.FreezeReason;
-import org.redisson.connection.ConnectionEntry.NodeType;
+import org.redisson.connection.ClientConnectionsEntry;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.LoadBalancer;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.SubscribesConnectionEntry;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
@@ -39,61 +38,100 @@ import io.netty.util.concurrent.Promise;
 
 public class ConnectionPool<T extends RedisConnection> {
 
-    final List<SubscribesConnectionEntry> entries = new CopyOnWriteArrayList<SubscribesConnectionEntry>();
-
-    final ConcurrentLinkedQueue<Promise<T>> promises = new ConcurrentLinkedQueue<Promise<T>>();
+    protected final List<ClientConnectionsEntry> entries = new CopyOnWriteArrayList<ClientConnectionsEntry>();
 
     final ConnectionManager connectionManager;
 
     final MasterSlaveServersConfig config;
 
-    final LoadBalancer loadBalancer;
-
     final MasterSlaveEntry masterSlaveEntry;
 
-    public ConnectionPool(MasterSlaveServersConfig config, LoadBalancer loadBalancer,
-            ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
+    public ConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
         this.config = config;
-        this.loadBalancer = loadBalancer;
         this.masterSlaveEntry = masterSlaveEntry;
         this.connectionManager = connectionManager;
     }
 
-    public void add(SubscribesConnectionEntry entry) {
-        entries.add(entry);
-        handleQueue(entry);
+    public Future<Void> add(final ClientConnectionsEntry entry) {
+        final Promise<Void> promise = connectionManager.newPromise();
+        promise.addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                entries.add(entry);
+            }
+        });
+        initConnections(entry, promise, true);
+        return promise;
     }
 
-    public void remove(SubscribesConnectionEntry entry) {
-        entries.remove(entry);
+    private void initConnections(final ClientConnectionsEntry entry, final Promise<Void> initPromise, boolean checkFreezed) {
+        final int minimumIdleSize = getMinimumIdleSize(entry);
+
+        if (minimumIdleSize == 0 || (checkFreezed && entry.isFreezed())) {
+            initPromise.setSuccess(null);
+            return;
+        }
+
+        final AtomicInteger initializedConnections = new AtomicInteger(minimumIdleSize);
+        for (int i = 0; i < minimumIdleSize; i++) {
+            if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
+                Throwable cause = new RedisConnectionException(
+                        "Can't init enough connections amount! Only " + initializedConnections.get() + " from " + minimumIdleSize + " were initialized. Server: "
+                                            + entry.getClient().getAddr());
+                initPromise.tryFailure(cause);
+                return;
+            }
+
+            Future<T> promise = connectTo(entry);
+            promise.addListener(new FutureListener<T>() {
+                @Override
+                public void operationComplete(Future<T> future) throws Exception {
+                    if (future.isSuccess()) {
+                        T conn = future.getNow();
+                        releaseConnection(entry, conn);
+                    }
+                    releaseConnection(entry);
+                    if (!future.isSuccess()) {
+                        Throwable cause = new RedisConnectionException(
+                                "Can't init enough connections amount! Only " + initializedConnections.get() + " from " + minimumIdleSize + " were initialized. Server: "
+                                                    + entry.getClient().getAddr(), future.cause());
+                        initPromise.tryFailure(cause);
+                        return;
+                    }
+
+                    if (initializedConnections.decrementAndGet() == 0) {
+                        initPromise.setSuccess(null);
+                    }
+                }
+            });
+        }
+    }
+
+    protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
+        return config.getSlaveConnectionMinimumIdleSize();
+    }
+
+    protected ClientConnectionsEntry getEntry() {
+        return config.getLoadBalancer().getEntry(entries);
     }
 
     public Future<T> get() {
         for (int j = entries.size() - 1; j >= 0; j--) {
-            SubscribesConnectionEntry entry;
-            if (ConnectionPool.this.loadBalancer != null) {
-                entry = ConnectionPool.this.loadBalancer.getEntry(entries);
-            } else {
-                entry = entries.get(0);
-            }
+            ClientConnectionsEntry entry = getEntry();
             if (!entry.isFreezed() && tryAcquireConnection(entry)) {
-                Promise<T> promise = connectionManager.newPromise();
-                connect(entry, promise);
-                return promise;
+                return connectTo(entry);
             }
         }
 
-        Promise<T> promise = connectionManager.newPromise();
-        promises.add(promise);
-        return promise;
+        RedisConnectionException exception = new RedisConnectionException(
+                "Can't aquire connection from pool! " + entries);
+        return connectionManager.newFailedFuture(exception);
     }
 
-    public Future<T> get(SubscribesConnectionEntry entry) {
-        if ((entry.getNodeType() == NodeType.MASTER || !entry.isFreezed())
+    public Future<T> get(ClientConnectionsEntry entry) {
+        if (((entry.getNodeType() == NodeType.MASTER && entry.getFreezeReason() == FreezeReason.SYSTEM) || !entry.isFreezed())
                 && tryAcquireConnection(entry)) {
-            Promise<T> promise = connectionManager.newPromise();
-            connect(entry, promise);
-            return promise;
+            return connectTo(entry);
         }
 
         RedisConnectionException exception = new RedisConnectionException(
@@ -101,34 +139,29 @@ public class ConnectionPool<T extends RedisConnection> {
         return connectionManager.newFailedFuture(exception);
     }
 
-    protected boolean tryAcquireConnection(SubscribesConnectionEntry entry) {
-        return entry.tryAcquireConnection();
+    protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
+        return entry.getFailedAttempts() < config.getFailedAttempts() && entry.tryAcquireConnection();
     }
 
-    protected T poll(SubscribesConnectionEntry entry) {
+    protected T poll(ClientConnectionsEntry entry) {
         return (T) entry.pollConnection();
     }
 
-    protected Future<T> connect(SubscribesConnectionEntry entry) {
+    protected Future<T> connect(ClientConnectionsEntry entry) {
         return (Future<T>) entry.connect(config);
     }
 
-    private void connect(final SubscribesConnectionEntry entry, final Promise<T> promise) {
+    private Future<T> connectTo(final ClientConnectionsEntry entry) {
         T conn = poll(entry);
         if (conn != null) {
             if (!conn.isActive()) {
-                releaseConnection(entry, conn);
-                releaseConnection(entry);
-
-                RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
-                promiseFailure(entry, promise, cause);
-                return;
+                return promiseFailure(entry, conn);
             }
 
-            promiseSuccessful(entry, promise, conn);
-            return;
+            return promiseSuccessful(entry, conn);
         }
 
+        final Promise<T> promise = connectionManager.newPromise();
         Future<T> connFuture = connect(entry);
         connFuture.addListener(new FutureListener<T>() {
             @Override
@@ -142,20 +175,17 @@ public class ConnectionPool<T extends RedisConnection> {
 
                 T conn = future.getNow();
                 if (!conn.isActive()) {
-                    releaseConnection(entry, conn);
-                    releaseConnection(entry);
-
-                    RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
-                    promiseFailure(entry, promise, cause);
+                    promiseFailure(entry, promise, conn);
                     return;
                 }
 
                 promiseSuccessful(entry, promise, conn);
             }
         });
+        return promise;
     }
 
-    private void promiseSuccessful(final SubscribesConnectionEntry entry, final Promise<T> promise, T conn) {
+    private void promiseSuccessful(ClientConnectionsEntry entry, Promise<T> promise, T conn) {
         entry.resetFailedAttempts();
         if (!promise.trySuccess(conn)) {
             releaseConnection(entry, conn);
@@ -163,21 +193,67 @@ public class ConnectionPool<T extends RedisConnection> {
         }
     }
 
-    private void promiseFailure(SubscribesConnectionEntry entry, Promise<T> promise, Throwable cause) {
-        if (entry.incFailedAttempts() == config.getSlaveFailedAttempts()
-                && entry.getNodeType() == NodeType.SLAVE) {
+    private Future<T> promiseSuccessful(ClientConnectionsEntry entry, T conn) {
+        entry.resetFailedAttempts();
+        return (Future<T>) conn.getAcquireFuture();
+    }
+
+    private void promiseFailure(ClientConnectionsEntry entry, Promise<T> promise, Throwable cause) {
+        if (entry.incFailedAttempts() == config.getFailedAttempts()) {
+            checkForReconnect(entry);
+        }
+
+        promise.tryFailure(cause);
+    }
+
+    private void promiseFailure(ClientConnectionsEntry entry, Promise<T> promise, T conn) {
+        int attempts = entry.incFailedAttempts();
+        if (attempts == config.getFailedAttempts()) {
+            checkForReconnect(entry);
+        } else if (attempts < config.getFailedAttempts()) {
+            releaseConnection(entry, conn);
+        }
+
+        releaseConnection(entry);
+
+        RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
+        promise.tryFailure(cause);
+    }
+
+    private Future<T> promiseFailure(ClientConnectionsEntry entry, T conn) {
+        int attempts = entry.incFailedAttempts();
+        if (attempts == config.getFailedAttempts()) {
+            checkForReconnect(entry);
+        } else if (attempts < config.getFailedAttempts()) {
+            releaseConnection(entry, conn);
+        }
+
+        releaseConnection(entry);
+
+        RedisConnectionException cause = new RedisConnectionException(conn + " is not active!");
+        return connectionManager.newFailedFuture(cause);
+    }
+
+    private void checkForReconnect(ClientConnectionsEntry entry) {
+        if (entry.getNodeType() == NodeType.SLAVE) {
             connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
                     entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
             scheduleCheck(entry);
+        } else {
+            if (entry.freezeMaster(FreezeReason.RECONNECT)) {
+                scheduleCheck(entry);
+            }
         }
-        promise.setFailure(cause);
     }
 
-    private void scheduleCheck(final SubscribesConnectionEntry entry) {
-        connectionManager.getTimer().newTimeout(new TimerTask() {
+    private void scheduleCheck(final ClientConnectionsEntry entry) {
+
+        connectionManager.getConnectionEventsHub().fireDisconnect(entry.getClient().getAddr());
+
+        connectionManager.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (entry.getFreezeReason() == FreezeReason.MANAGER
+                if (entry.getFreezeReason() != FreezeReason.RECONNECT
                         || !entry.isFreezed()) {
                     return;
                 }
@@ -186,7 +262,7 @@ public class ConnectionPool<T extends RedisConnection> {
                 connectionFuture.addListener(new FutureListener<RedisConnection>() {
                     @Override
                     public void operationComplete(Future<RedisConnection> future) throws Exception {
-                        if (entry.getFreezeReason() == FreezeReason.MANAGER
+                        if (entry.getFreezeReason() != FreezeReason.RECONNECT
                                 || !entry.isFreezed()) {
                             return;
                         }
@@ -196,68 +272,70 @@ public class ConnectionPool<T extends RedisConnection> {
                             return;
                         }
                         final RedisConnection c = future.getNow();
-                        if (c.isActive()) {
-                            Future<String> f = c.asyncWithTimeout(null, RedisCommands.PING);
-                            f.addListener(new FutureListener<String>() {
-                                @Override
-                                public void operationComplete(Future<String> future) throws Exception {
-                                    try {
-                                        if (entry.getFreezeReason() == FreezeReason.MANAGER
-                                                || !entry.isFreezed()) {
-                                            return;
-                                        }
-
-                                        if (future.isSuccess() && "PONG".equals(future.getNow())) {
-                                            entry.resetFailedAttempts();
-                                            masterSlaveEntry.slaveUp(entry.getClient().getAddr().getHostName(), entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
-                                        } else {
-                                            scheduleCheck(entry);
-                                        }
-                                    } finally {
-                                        c.closeAsync();
-                                    }
-                                }
-                            });
-                        } else {
+                        if (!c.isActive()) {
                             c.closeAsync();
                             scheduleCheck(entry);
+                            return;
                         }
+
+                        Future<String> f = c.asyncWithTimeout(null, RedisCommands.PING);
+                        f.addListener(new FutureListener<String>() {
+                            @Override
+                            public void operationComplete(Future<String> future) throws Exception {
+                                try {
+                                    if (entry.getFreezeReason() != FreezeReason.RECONNECT
+                                            || !entry.isFreezed()) {
+                                        return;
+                                    }
+
+                                    if (future.isSuccess() && "PONG".equals(future.getNow())) {
+                                        entry.resetFailedAttempts();
+                                        Promise<Void> promise = connectionManager.newPromise();
+                                        promise.addListener(new FutureListener<Void>() {
+                                            @Override
+                                            public void operationComplete(Future<Void> future)
+                                                    throws Exception {
+                                                if (entry.getNodeType() == NodeType.SLAVE) {
+                                                    masterSlaveEntry.slaveUp(entry.getClient().getAddr().getHostName(), entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
+                                                } else {
+                                                    synchronized (entry) {
+                                                        if (entry.getFreezeReason() == FreezeReason.RECONNECT) {
+                                                            entry.setFreezed(false);
+                                                            entry.setFreezeReason(null);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        });
+                                        initConnections(entry, promise, false);
+                                    } else {
+                                        scheduleCheck(entry);
+                                    }
+                                } finally {
+                                    c.closeAsync();
+                                }
+                            }
+                        });
                     }
                 });
             }
-        }, config.getSlaveReconnectionTimeout(), TimeUnit.MILLISECONDS);
+        }, config.getReconnectionTimeout(), TimeUnit.MILLISECONDS);
     }
 
-    public void returnConnection(SubscribesConnectionEntry entry, T connection) {
+    public void returnConnection(ClientConnectionsEntry entry, T connection) {
         if (entry.isFreezed()) {
             connection.closeAsync();
         } else {
-            if (connection.getFailAttempts() == config.getRefreshConnectionAfterFails()) {
-                connection.forceReconnect();
-            }
             releaseConnection(entry, connection);
         }
         releaseConnection(entry);
     }
 
-    protected void releaseConnection(SubscribesConnectionEntry entry) {
+    protected void releaseConnection(ClientConnectionsEntry entry) {
         entry.releaseConnection();
-
-        handleQueue(entry);
     }
 
-    private void handleQueue(SubscribesConnectionEntry entry) {
-        Promise<T> promise = promises.poll();
-        if (promise != null) {
-            if (!entry.isFreezed() && tryAcquireConnection(entry)) {
-                connect(entry, promise);
-            } else {
-                promises.add(promise);
-            }
-        }
-    }
-
-    protected void releaseConnection(SubscribesConnectionEntry entry, T conn) {
+    protected void releaseConnection(ClientConnectionsEntry entry, T conn) {
         entry.releaseConnection(conn);
     }
 

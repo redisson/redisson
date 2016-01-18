@@ -15,7 +15,6 @@
  */
 package org.redisson.core;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,13 +30,11 @@ import io.netty.util.concurrent.Future;
  */
 public interface RMapAsync<K, V> extends RExpirableAsync {
 
+    Future<Map<K, V>> getAllAsync(Set<K> keys);
+
     Future<Void> putAllAsync(Map<? extends K, ? extends V> map);
 
     Future<V> addAndGetAsync(K key, Number value);
-
-    Future<Collection<V>> valuesAsync();
-
-    Future<Set<K>> keySetAsync();
 
     Future<Boolean> containsValueAsync(Object value);
 
@@ -69,6 +66,8 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
     Future<Boolean> fastPutAsync(K key, V value);
+
+    Future<Boolean> fastPutIfAbsentAsync(K key, V value);
 
     Future<V> getAsync(K key);
 

@@ -32,6 +32,7 @@ import org.redisson.client.protocol.pubsub.PubSubPatternMessageDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.util.internal.PlatformDependent;
 
 public class RedisPubSubConnection extends RedisConnection {
@@ -102,8 +103,8 @@ public class RedisPubSubConnection extends RedisConnection {
         }
     }
 
-    private <T, R> void async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object ... params) {
-        channel.writeAndFlush(new CommandData<T, R>(null, messageDecoder, null, command, params));
+    private <T, R> ChannelFuture async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object ... params) {
+        return channel.writeAndFlush(new CommandData<T, R>(null, messageDecoder, null, command, params));
     }
 
     public Map<String, Codec> getChannels() {

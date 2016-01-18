@@ -22,6 +22,15 @@ import io.netty.util.concurrent.Future;
 public interface RKeysAsync {
 
     /**
+     * Get hash slot identifier for key in async mode.
+     * Available for cluster nodes only
+     *
+     * @param key
+     * @return
+     */
+    Future<Integer> getSlotAsync(String key);
+
+    /**
      * Get random key in async mode
      *
      * @return
@@ -61,5 +70,22 @@ public interface RKeysAsync {
      * @return
      */
     Future<Long> deleteAsync(String ... keys);
+
+    /**
+     * Returns the number of keys in the currently-selected database in async mode
+     *
+     * @return
+     */
+    Future<Long> countAsync();
+
+    /**
+     * Delete all keys of currently selected database
+     */
+    Future<Void> flushdbAsync();
+
+    /**
+     * Delete all keys of all existing databases
+     */
+    Future<Void> flushallAsync();
 
 }

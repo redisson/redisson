@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,11 +34,13 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.connection.ConnectionEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
 public class SentinelConnectionManager extends MasterSlaveConnectionManager {
@@ -46,7 +49,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private final ConcurrentMap<String, RedisClient> sentinels = PlatformDependent.newConcurrentHashMap();
     private final AtomicReference<String> currentMaster = new AtomicReference<String>();
-    private final ConcurrentMap<String, Boolean> freezeSlaves = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<String, Boolean> slaves = PlatformDependent.newConcurrentHashMap();
 
 
@@ -62,15 +64,22 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         c.setPassword(cfg.getPassword());
         c.setDatabase(cfg.getDatabase());
         c.setClientName(cfg.getClientName());
-        c.setRefreshConnectionAfterFails(cfg.getRefreshConnectionAfterFails());
         c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
         c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        c.setConnectTimeout(cfg.getConnectTimeout());
+        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
+
+        c.setFailedAttempts(cfg.getFailedAttempts());
+        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
+        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
+        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
+        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
 
         List<String> disconnectedSlaves = new ArrayList<String>();
         for (URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
+            RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getConnectTimeout());
             try {
                 RedisConnection connection = client.connect();
                 if (!connection.isActive()) {
@@ -83,6 +92,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 c.setMasterAddress(masterHost);
                 currentMaster.set(masterHost);
                 log.info("master: {} added", masterHost);
+                slaves.put(masterHost, true);
 
                 List<Map<String, String>> sentinelSlaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
                 for (Map<String, String> map : sentinelSlaves) {
@@ -106,14 +116,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
                 break;
             } catch (RedisConnectionException e) {
-                log.warn("can't connect to sentinel", e);
+                log.warn("Can't connect to sentinel server. {}", e.getMessage());
             } finally {
                 client.shutdownAsync();
             }
         }
 
         if (currentMaster.get() == null) {
-            throw new IllegalStateException("Can't connect to servers!");
+            throw new RedisConnectionException("Can't connect to servers!");
         }
         init(c);
 
@@ -122,55 +132,70 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             slaveDown(parts[0], parts[1]);
         }
 
+        List<Future<RedisPubSubConnection>> connectionFutures = new ArrayList<Future<RedisPubSubConnection>>(cfg.getSentinelAddresses().size());
         for (URI addr : cfg.getSentinelAddresses()) {
-            registerSentinel(cfg, addr, c);
+            Future<RedisPubSubConnection> future = registerSentinel(cfg, addr, c);
+            connectionFutures.add(future);
+        }
+
+        for (Future<RedisPubSubConnection> future : connectionFutures) {
+            future.syncUninterruptibly();
         }
     }
 
-    private void registerSentinel(final SentinelServersConfig cfg, final URI addr, final MasterSlaveServersConfig c) {
-        RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getTimeout());
+    private Future<RedisPubSubConnection> registerSentinel(final SentinelServersConfig cfg, final URI addr, final MasterSlaveServersConfig c) {
+        RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getConnectTimeout());
         RedisClient oldClient = sentinels.putIfAbsent(addr.getHost() + ":" + addr.getPort(), client);
         if (oldClient != null) {
-            return;
+            return newSucceededFuture(null);
         }
 
-        try {
-            RedisPubSubConnection pubsub = client.connectPubSub();
-            pubsub.addListener(new BaseRedisPubSubListener<String>() {
-
-                @Override
-                public void onMessage(String channel, String msg) {
-                    if ("+sentinel".equals(channel)) {
-                        onSentinelAdded(cfg, msg, c);
-                    }
-                    if ("+slave".equals(channel)) {
-                        onSlaveAdded(addr, msg);
-                    }
-                    if ("+sdown".equals(channel)) {
-                        onSlaveDown(addr, msg);
-                    }
-                    if ("-sdown".equals(channel)) {
-                        onSlaveUp(addr, msg);
-                    }
-                    if ("+switch-master".equals(channel)) {
-                        onMasterChange(cfg, addr, msg);
-                    }
+        Future<RedisPubSubConnection> pubsubFuture = client.connectPubSubAsync();
+        pubsubFuture.addListener(new FutureListener<RedisPubSubConnection>() {
+            @Override
+            public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    log.warn("Can't connect to sentinel: {}:{}", addr.getHost(), addr.getPort());
+                    return;
                 }
 
-                @Override
-                public boolean onStatus(PubSubType type, String channel) {
-                    if (type == PubSubType.SUBSCRIBE) {
-                        log.debug("subscribed to channel: {} from Sentinel {}:{}", channel, addr.getHost(), addr.getPort());
-                    }
-                    return true;
-                }
-            });
+                RedisPubSubConnection pubsub = future.getNow();
+                pubsub.addListener(new BaseRedisPubSubListener<String>() {
 
-            pubsub.subscribe(StringCodec.INSTANCE, "+switch-master", "+sdown", "-sdown", "+slave", "+sentinel");
-            log.info("sentinel: {}:{} added", addr.getHost(), addr.getPort());
-        } catch (RedisConnectionException e) {
-            log.warn("can't connect to sentinel: {}:{}", addr.getHost(), addr.getPort());
-        }
+                    @Override
+                    public void onMessage(String channel, String msg) {
+                        if ("+sentinel".equals(channel)) {
+                            onSentinelAdded(cfg, msg, c);
+                        }
+                        if ("+slave".equals(channel)) {
+                            onSlaveAdded(addr, msg);
+                        }
+                        if ("+sdown".equals(channel)) {
+                            onNodeDown(addr, msg);
+                        }
+                        if ("-sdown".equals(channel)) {
+                            onNodeUp(addr, msg);
+                        }
+                        if ("+switch-master".equals(channel)) {
+                            onMasterChange(cfg, addr, msg);
+                        }
+                    }
+
+                    @Override
+                    public boolean onStatus(PubSubType type, String channel) {
+                        if (type == PubSubType.SUBSCRIBE) {
+                            log.debug("subscribed to channel: {} from Sentinel {}:{}", channel, addr.getHost(), addr.getPort());
+                        }
+                        return true;
+                    }
+                });
+
+                pubsub.subscribe(StringCodec.INSTANCE, "+switch-master", "+sdown", "-sdown", "+slave", "+sentinel");
+                log.info("sentinel: {}:{} added", addr.getHost(), addr.getPort());
+            }
+        });
+
+        return pubsubFuture;
     }
 
     protected void onSentinelAdded(SentinelServersConfig cfg, String msg, MasterSlaveServersConfig c) {
@@ -197,15 +222,17 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null) {
-                addSlave(ip, Integer.valueOf(port));
+                getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
                 log.info("slave: {} added", slaveAddr);
+            } else {
+                slaveUp(ip, port);
             }
         } else {
             log.warn("onSlaveAdded. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
     }
 
-    private void onSlaveDown(URI sentinelAddr, String msg) {
+    private void onNodeDown(URI sentinelAddr, String msg) {
         String[] parts = msg.split(" ");
 
         if (parts.length > 3) {
@@ -225,9 +252,15 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     log.info("sentinel: {} has down", addr);
                 }
             } else if ("master".equals(parts[0])) {
-                // skip
-            } else {
-                log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, sentinelAddr.getHost(), sentinelAddr.getPort());
+                String ip = parts[2];
+                String port = parts[3];
+
+                MasterSlaveEntry entry = getEntry(singleSlotRange);
+                if (entry.getFreezeReason() != FreezeReason.MANAGER) {
+                    entry.freeze();
+                    String addr = ip + ":" + port;
+                    log.info("master: {} has down", addr);
+                }
             }
         } else {
             log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, sentinelAddr.getHost(), sentinelAddr.getPort());
@@ -235,28 +268,40 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(String ip, String port) {
-        // to avoid freeze twice
-        String addr = ip + ":" + port;
-        if (freezeSlaves.putIfAbsent(addr, true) == null) {
-            slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
+        slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
+        log.info("slave: {}:{} has down", ip, port);
+    }
+
+    private void onNodeUp(URI addr, String msg) {
+        String[] parts = msg.split(" ");
+
+        if (parts.length > 3) {
+            if ("slave".equals(parts[0])) {
+                String ip = parts[2];
+                String port = parts[3];
+
+                slaveUp(ip, port);
+            } else if ("master".equals(parts[0])) {
+                String ip = parts[2];
+                String port = parts[3];
+
+                String masterAddr = ip + ":" + port;
+                MasterSlaveEntry entry = getEntry(singleSlotRange);
+                if (entry.isFreezed()
+                        && entry.getClient().getAddr().equals(new InetSocketAddress(ip, Integer.valueOf(port)))) {
+                    entry.unfreeze();
+                    log.info("master: {} has up", masterAddr);
+                }
+            } else {
+                log.warn("onSlaveUp. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
+            }
         }
     }
 
-    protected void onSlaveUp(URI addr, String msg) {
-        String[] parts = msg.split(" ");
-
-        if (parts.length > 4
-                 && "slave".equals(parts[0])) {
-            String ip = parts[2];
-            String port = parts[3];
-
+    private void slaveUp(String ip, String port) {
+        if (getEntry(singleSlotRange).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
             String slaveAddr = ip + ":" + port;
-            if (freezeSlaves.remove(slaveAddr) != null) {
-                slaveUp(ip, Integer.valueOf(port));
-                log.info("slave: {} has up", slaveAddr);
-            }
-        } else {
-            log.warn("onSlaveUp. Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
+            log.info("slave: {} has up", slaveAddr);
         }
     }
 
@@ -279,14 +324,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         } else {
             log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
-    }
-
-    private void addSlave(String host, int port) {
-        getEntry(0).addSlave(host, port);
-    }
-
-    private void slaveUp(String host, int port) {
-        getEntry(0).slaveUp(host, port, FreezeReason.MANAGER);
     }
 
     @Override

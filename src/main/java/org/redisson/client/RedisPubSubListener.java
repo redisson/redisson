@@ -16,12 +16,11 @@
 package org.redisson.client;
 
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.core.MessageListener;
 
-public interface RedisPubSubListener<V> {
+public interface RedisPubSubListener<V> extends MessageListener<V> {
 
     boolean onStatus(PubSubType type, String channel);
-
-    void onMessage(String channel, V message);
 
     void onPatternMessage(String pattern, String channel, V message);
 

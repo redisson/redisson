@@ -15,6 +15,9 @@
  */
 package org.redisson.core;
 
+import java.util.Collection;
+import java.util.RandomAccess;
+
 import io.netty.util.concurrent.Future;
 
 /**
@@ -24,7 +27,9 @@ import io.netty.util.concurrent.Future;
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RListAsync<V> extends RCollectionAsync<V> {
+public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
+
+    Future<Boolean> addAllAsync(int index, Collection<? extends V> coll);
 
     Future<Integer> lastIndexOfAsync(Object o);
 

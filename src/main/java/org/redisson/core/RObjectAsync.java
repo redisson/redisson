@@ -26,7 +26,7 @@ import io.netty.util.concurrent.Future;
 public interface RObjectAsync {
 
     /**
-     * Transfer a object from a source Redis instance to a destination Redis instance
+     * Transfer an object from source Redis instance to destination Redis instance
      * in async mode
      *
      * @param host - destination host
@@ -40,10 +40,15 @@ public interface RObjectAsync {
      * Move object to another database in async mode
      *
      * @param database
-     * @return <code>true</code> if key was moved else <code>false</code>
+     * @return <code>true</code> if key was moved <code>false</code> if not
      */
     Future<Boolean> moveAsync(int database);
 
+    /**
+     * Delete object in async mode
+     *
+     * @return <code>true</code> if object was deleted <code>false</code> if not
+     */
     Future<Boolean> deleteAsync();
 
     /**
@@ -63,5 +68,12 @@ public interface RObjectAsync {
      * @return
      */
     Future<Boolean> renamenxAsync(String newName);
+
+    /**
+     * Check object existence in async mode.
+     *
+     * @return <code>true</code> if object exists and <code>false</code> otherwise
+     */
+    Future<Boolean> isExistsAsync();
 
 }

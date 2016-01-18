@@ -15,9 +15,12 @@
  */
 package org.redisson.client.handler;
 
+import java.util.List;
+
+import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.Encoder;
-import org.redisson.client.protocol.StringParamsEncoder;
+import org.redisson.client.protocol.DefaultParamsEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -39,11 +42,11 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final Encoder paramsEncoder = new StringParamsEncoder();
+    private final Encoder paramsEncoder = new DefaultParamsEncoder();
 
-    final char ARGS_PREFIX = '*';
-    final char BYTES_PREFIX = '$';
-    final byte[] CRLF = "\r\n".getBytes();
+    private static final char ARGS_PREFIX = '*';
+    private static final char BYTES_PREFIX = '$';
+    private static final byte[] CRLF = "\r\n".getBytes();
 
     @Override
     protected void encode(ChannelHandlerContext ctx, CommandData<Object, Object> msg, ByteBuf out) throws Exception {
@@ -66,12 +69,12 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
                 if (msg.getCommand().getInParamIndex() == i && msg.getCommand().getInParamType().get(0) == ValueType.OBJECT) {
                     encoder = msg.getCodec().getValueEncoder();
                 } else if (msg.getCommand().getInParamIndex() <= i && msg.getCommand().getInParamType().get(0) != ValueType.OBJECT) {
-                    encoder = encoder(msg, i - msg.getCommand().getInParamIndex());
+                    encoder = selectEncoder(msg, i - msg.getCommand().getInParamIndex());
                 }
             } else {
-                int paramNum = i - msg.getCommand().getInParamIndex();
                 if (msg.getCommand().getInParamIndex() <= i) {
-                    encoder = encoder(msg, paramNum);
+                    int paramNum = i - msg.getCommand().getInParamIndex();
+                    encoder = selectEncoder(msg, paramNum);
                 }
             }
 
@@ -85,26 +88,30 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         }
     }
 
-    private Encoder encoder(CommandData<Object, Object> msg, int param) {
+    private Encoder selectEncoder(CommandData<Object, Object> msg, int param) {
         int typeIndex = 0;
-        if (msg.getCommand().getInParamType().size() > 1) {
+        List<ValueType> inParamType = msg.getCommand().getInParamType();
+        if (inParamType.size() > 1) {
             typeIndex = param;
         }
-        if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.MAP) {
+        if (inParamType.get(typeIndex) == ValueType.MAP) {
             if (param % 2 != 0) {
                 return msg.getCodec().getMapValueEncoder();
             } else {
                 return msg.getCodec().getMapKeyEncoder();
             }
         }
-        if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.MAP_KEY) {
+        if (inParamType.get(typeIndex) == ValueType.MAP_KEY) {
             return msg.getCodec().getMapKeyEncoder();
         }
-        if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.MAP_VALUE) {
+        if (inParamType.get(typeIndex) == ValueType.MAP_VALUE) {
             return msg.getCodec().getMapValueEncoder();
         }
-        if (msg.getCommand().getInParamType().get(typeIndex) == ValueType.OBJECTS) {
+        if (inParamType.get(typeIndex) == ValueType.OBJECTS) {
             return msg.getCodec().getValueEncoder();
+        }
+        if (inParamType.get(typeIndex) == ValueType.BINARY) {
+            return ByteArrayCodec.INSTANCE.getValueEncoder();
         }
         throw new IllegalStateException();
     }

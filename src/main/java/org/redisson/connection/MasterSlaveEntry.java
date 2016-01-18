@@ -18,6 +18,8 @@ package org.redisson.connection;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,9 +28,11 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ConnectionEntry.FreezeReason;
-import org.redisson.connection.ConnectionEntry.NodeType;
-import org.redisson.misc.ConnectionPool;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.NodeType;
+import org.redisson.connection.balancer.LoadBalancerManager;
+import org.redisson.connection.balancer.LoadBalancerManagerImpl;
+import org.redisson.misc.MasterConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,46 +43,48 @@ import io.netty.util.concurrent.Future;
  * @author Nikita Koksharov
  *
  */
-//TODO ping support
-public class MasterSlaveEntry<E extends ConnectionEntry> {
+public class MasterSlaveEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
-    LoadBalancer slaveBalancer;
-    SubscribesConnectionEntry masterEntry;
-
-    final ConnectionListener connectListener;
+    LoadBalancerManager slaveBalancer;
+    ClientConnectionsEntry masterEntry;
 
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
-    final ConnectionPool<RedisConnection> writeConnectionHolder;
+    final MasterConnectionPool writeConnectionHolder;
     final Set<ClusterSlotRange> slotRanges;
 
     final AtomicBoolean active = new AtomicBoolean(true);
 
-    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionListener connectListener) {
+    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.slotRanges = slotRanges;
         this.connectionManager = connectionManager;
         this.config = config;
-        this.connectListener = connectListener;
 
-        slaveBalancer = config.getLoadBalancer();
-        slaveBalancer.init(config, connectionManager, this);
-
-        boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty();
-        addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
-        for (URI address : config.getSlaveAddresses()) {
-            addSlave(address.getHost(), address.getPort(), false, NodeType.SLAVE);
-        }
-
-        writeConnectionHolder = new ConnectionPool<RedisConnection>(config, null, connectionManager, this);
+        slaveBalancer = new LoadBalancerManagerImpl(config, connectionManager, this);
+        writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
     }
 
-    public void setupMasterEntry(String host, int port) {
+    public List<Future<Void>> initSlaveBalancer(MasterSlaveServersConfig config) {
+        boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty();
+
+        List<Future<Void>> result = new LinkedList<Future<Void>>();
+        Future<Void> f = addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
+        result.add(f);
+        for (URI address : config.getSlaveAddresses()) {
+            f = addSlave(address.getHost(), address.getPort(), false, NodeType.SLAVE);
+            result.add(f);
+        }
+        return result;
+    }
+
+    public Future<Void> setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(host, port);
-        masterEntry = new SubscribesConnectionEntry(client, config.getMasterConnectionPoolSize(), 0, connectListener, NodeType.MASTER);
-        writeConnectionHolder.add(masterEntry);
+        masterEntry = new ClientConnectionsEntry(client, config.getMasterConnectionMinimumIdleSize(), config.getMasterConnectionPoolSize(),
+                                                    0, 0, connectionManager, NodeType.MASTER, config);
+        return writeConnectionHolder.add(masterEntry);
     }
 
     public Collection<RedisPubSubConnection> slaveDown(String host, int port, FreezeReason freezeReason) {
@@ -86,38 +92,46 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
         // add master as slave if no more slaves available
         if (slaveBalancer.getAvailableClients() == 0) {
             InetSocketAddress addr = masterEntry.getClient().getAddr();
-            slaveUp(addr.getHostName(), addr.getPort(), FreezeReason.MANAGER);
-            log.info("master {}:{} used as slave", addr.getHostName(), addr.getPort());
+            if (slaveUp(addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM)) {
+                log.info("master {}:{} used as slave", addr.getHostName(), addr.getPort());
+            }
         }
         return conns;
     }
 
-    public void addSlave(String host, int port) {
-        addSlave(host, port, true, NodeType.SLAVE);
+    public Future<Void> addSlave(String host, int port) {
+        return addSlave(host, port, true, NodeType.SLAVE);
     }
 
-    private void addSlave(String host, int port, boolean freezed, NodeType mode) {
+    private Future<Void> addSlave(String host, int port, boolean freezed, NodeType mode) {
         RedisClient client = connectionManager.createClient(host, port);
-        SubscribesConnectionEntry entry = new SubscribesConnectionEntry(client,
+        ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
+                this.config.getSlaveConnectionMinimumIdleSize(),
                 this.config.getSlaveConnectionPoolSize(),
-                this.config.getSlaveSubscriptionConnectionPoolSize(), connectListener, mode);
-        entry.setFreezed(freezed);
-        slaveBalancer.add(entry);
+                this.config.getSlaveSubscriptionConnectionMinimumIdleSize(),
+                this.config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, mode, config);
+        if (freezed) {
+            entry.setFreezed(freezed);
+            entry.setFreezeReason(FreezeReason.SYSTEM);
+        }
+        return slaveBalancer.add(entry);
     }
 
     public RedisClient getClient() {
         return masterEntry.getClient();
     }
 
-    public void slaveUp(String host, int port, FreezeReason freezeReason) {
+    public boolean slaveUp(String host, int port, FreezeReason freezeReason) {
         if (!slaveBalancer.unfreeze(host, port, freezeReason)) {
-            return;
+            return false;
         }
+
         InetSocketAddress addr = masterEntry.getClient().getAddr();
+        // exclude master from slaves
         if (!addr.getHostName().equals(host) || port != addr.getPort()) {
-            connectionManager.slaveDown(this, addr.getHostName(), addr.getPort(), FreezeReason.MANAGER);
-            log.info("master {}:{} removed from slaves", addr.getHostName(), addr.getPort());
+            connectionManager.slaveDown(this, addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM);
         }
+        return true;
     }
 
     /**
@@ -127,14 +141,34 @@ public class MasterSlaveEntry<E extends ConnectionEntry> {
      *
      */
     public void changeMaster(String host, int port) {
-        SubscribesConnectionEntry oldMaster = masterEntry;
+        ClientConnectionsEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
         writeConnectionHolder.remove(oldMaster);
+        oldMaster.freezeMaster(FreezeReason.MANAGER);
+
         if (slaveBalancer.getAvailableClients() > 1) {
-            // more than one slave avaliable, so master could be removed from slaves
-            connectionManager.slaveDown(this, host, port, FreezeReason.MANAGER);
+            // more than one slave available, so master could be removed from slaves
+            connectionManager.slaveDown(this, host, port, FreezeReason.SYSTEM);
         }
         connectionManager.shutdownAsync(oldMaster.getClient());
+    }
+
+    public boolean isFreezed() {
+        return masterEntry.isFreezed();
+    }
+
+    public FreezeReason getFreezeReason() {
+        return masterEntry.getFreezeReason();
+    }
+
+    public void freeze() {
+        masterEntry.freezeMaster(FreezeReason.MANAGER);
+    }
+
+    public void unfreeze() {
+        masterEntry.resetFailedAttempts();
+        masterEntry.setFreezed(false);
+        masterEntry.setFreezeReason(null);
     }
 
     public void shutdownMasterAsync() {

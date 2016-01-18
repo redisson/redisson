@@ -21,6 +21,7 @@ import java.util.List;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
@@ -37,15 +38,15 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonTopic<M> implements RTopic<M> {
 
-    final CommandExecutor commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
     private final String name;
     private final Codec codec;
 
-    protected RedissonTopic(CommandExecutor commandExecutor, String name) {
+    protected RedissonTopic(CommandAsyncExecutor commandExecutor, String name) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
-    protected RedissonTopic(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.codec = codec;
@@ -77,17 +78,9 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
 
     private int addListener(RedisPubSubListener<M> pubSubListener) {
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(name, codec);
+        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
         future.syncUninterruptibly();
-        PubSubConnectionEntry entry = future.getNow();
-        synchronized (entry) {
-            if (entry.isActive()) {
-                entry.addListener(name, pubSubListener);
-                return pubSubListener.hashCode();
-            }
-        }
-        // entry is inactive trying add again
-        return addListener(pubSubListener);
+        return System.identityHashCode(pubSubListener);
     }
 
     @Override
@@ -106,7 +99,7 @@ public class RedissonTopic<M> implements RTopic<M> {
             }
         }
 
-        // entry is inactive trying add again
+        // listener has been re-attached
         removeListener(listenerId);
     }
 

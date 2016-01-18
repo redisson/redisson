@@ -39,16 +39,21 @@ import io.netty.buffer.ByteBufInputStream;
 
 /**
  *
+ * @see org.redisson.codec.CborJacksonCodec
+ * @see org.redisson.codec.MsgPackJacksonCodec
+ *
  * @author Nikita Koksharov
  *
  */
 public class JsonJacksonCodec implements Codec {
 
-	private final ObjectMapper mapObjectMapper = initObjectMapper();
+    public static final JsonJacksonCodec INSTANCE = new JsonJacksonCodec();
 
-	protected ObjectMapper initObjectMapper() {
-		return new ObjectMapper();
-	}
+    private final ObjectMapper mapObjectMapper = initObjectMapper();
+
+    protected ObjectMapper initObjectMapper() {
+        return new ObjectMapper();
+    }
 
     private final Encoder encoder = new Encoder() {
         @Override

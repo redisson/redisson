@@ -19,6 +19,7 @@ import java.util.NoSuchElementException;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RQueue;
 
 import io.netty.util.concurrent.Future;
@@ -32,11 +33,11 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
-    protected RedissonQueue(CommandExecutor commandExecutor, String name) {
+    protected RedissonQueue(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonQueue(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 

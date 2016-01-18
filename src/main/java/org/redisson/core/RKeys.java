@@ -20,6 +20,15 @@ import java.util.Collection;
 public interface RKeys extends RKeysAsync {
 
     /**
+     * Get hash slot identifier for key.
+     * Available for cluster nodes only
+     *
+     * @param key
+     * @return
+     */
+    int getSlot(String key);
+
+    /**
      * Get all keys by pattern using iterator. Keys traversing with SCAN operation
      *
      *  Supported glob-style patterns:
@@ -78,5 +87,22 @@ public interface RKeys extends RKeysAsync {
      * @return
      */
     long delete(String ... keys);
+
+    /**
+     * Returns the number of keys in the currently-selected database
+     *
+     * @return
+     */
+    Long count();
+
+    /**
+     * Delete all keys of currently selected database
+     */
+    void flushdb();
+
+    /**
+     * Delete all keys of all existing databases
+     */
+    void flushall();
 
 }

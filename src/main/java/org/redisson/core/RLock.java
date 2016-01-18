@@ -91,7 +91,7 @@ public interface RLock extends Lock, RExpirable {
     void forceUnlock();
 
     /**
-     * Checks if this lock locked by any thread in Redisson cluster
+     * Checks if this lock locked by any thread
      *
      * @return <code>true</code> if locked otherwise <code>false</code>
      */

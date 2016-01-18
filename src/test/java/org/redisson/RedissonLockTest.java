@@ -12,6 +12,15 @@ import org.redisson.core.RLock;
 public class RedissonLockTest extends BaseConcurrentTest {
 
     @Test
+    public void testDelete() {
+        RLock lock = redisson.getLock("lock");
+        Assert.assertFalse(lock.delete());
+
+        lock.lock();
+        Assert.assertTrue(lock.delete());
+    }
+
+    @Test
     public void testForceUnlock() {
         RLock lock = redisson.getLock("lock");
         lock.lock();
@@ -28,19 +37,18 @@ public class RedissonLockTest extends BaseConcurrentTest {
         lock.lock(2, TimeUnit.SECONDS);
 
         final long startTime = System.currentTimeMillis();
-        final CountDownLatch latch = new CountDownLatch(1);
-        new Thread() {
+        Thread t = new Thread() {
             public void run() {
                 RLock lock1 = redisson.getLock("lock");
                 lock1.lock();
                 long spendTime = System.currentTimeMillis() - startTime;
                 Assert.assertTrue(spendTime < 2020);
                 lock1.unlock();
-                latch.countDown();
             };
-        }.start();
+        };
 
-        latch.await();
+        t.start();
+        t.join();
 
         lock.unlock();
     }
@@ -50,7 +58,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         final CountDownLatch latch = new CountDownLatch(1);
         testSingleInstanceConcurrency(1, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 RLock lock = redisson.getLock("lock");
                 lock.lock();
                 latch.countDown();
@@ -86,28 +94,26 @@ public class RedissonLockTest extends BaseConcurrentTest {
         RLock lock = redisson.getLock("lock");
         lock.lock();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        new Thread() {
+        Thread t = new Thread() {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 Assert.assertFalse(lock.isHeldByCurrentThread());
-                latch.countDown();
             };
-        }.start();
+        };
 
-        latch.await();
+        t.start();
+        t.join();
         lock.unlock();
 
-        final CountDownLatch latch2 = new CountDownLatch(1);
-        new Thread() {
+        Thread t2 = new Thread() {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 Assert.assertFalse(lock.isHeldByCurrentThread());
-                latch2.countDown();
             };
-        }.start();
+        };
 
-        latch2.await();
+        t2.start();
+        t2.join();
     }
 
     @Test
@@ -125,28 +131,26 @@ public class RedissonLockTest extends BaseConcurrentTest {
         RLock lock = redisson.getLock("lock");
         lock.lock();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        new Thread() {
+        Thread t = new Thread() {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 Assert.assertTrue(lock.isLocked());
-                latch.countDown();
             };
-        }.start();
+        };
 
-        latch.await();
+        t.start();
+        t.join();
         lock.unlock();
 
-        final CountDownLatch latch2 = new CountDownLatch(1);
-        new Thread() {
+        Thread t2 = new Thread() {
             public void run() {
                 RLock lock = redisson.getLock("lock");
                 Assert.assertFalse(lock.isLocked());
-                latch2.countDown();
             };
-        }.start();
+        };
 
-        latch2.await();
+        t2.start();
+        t2.join();
     }
 
     @Test
@@ -159,13 +163,37 @@ public class RedissonLockTest extends BaseConcurrentTest {
         Assert.assertFalse(lock.isLocked());
     }
 
-//    @Test(expected = IllegalMonitorStateException.class)
-//    public void testUnlockFail() {
-//        Lock lock = redisson.getLock("lock1");
-//        lock.unlock();
-//    }
-//
-//
+    @Test(expected = IllegalMonitorStateException.class)
+    public void testUnlockFail() throws InterruptedException {
+        RLock lock = redisson.getLock("lock");
+        Thread t = new Thread() {
+            public void run() {
+                RLock lock = redisson.getLock("lock");
+                lock.lock();
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+                lock.unlock();
+            };
+        };
+
+        t.start();
+        t.join(400);
+
+        try {
+            lock.unlock();
+        } catch (IllegalMonitorStateException e) {
+            t.join();
+            throw e;
+        }
+    }
+
+
     @Test
     public void testLockUnlock() {
         Lock lock = redisson.getLock("lock1");
@@ -187,7 +215,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         Thread thread1 = new Thread() {
             @Override
             public void run() {
-                RLock lock1 = (RedissonLock) redisson.getLock("lock1");
+                RLock lock1 = redisson.getLock("lock1");
                 Assert.assertFalse(lock1.tryLock());
             }
         };
@@ -204,16 +232,11 @@ public class RedissonLockTest extends BaseConcurrentTest {
         int iterations = 15;
         testSingleInstanceConcurrency(iterations, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 Lock lock = redisson.getLock("testConcurrency_SingleInstance");
-                System.out.println("lock1 " + Thread.currentThread().getId());
                 lock.lock();
-                System.out.println("lock2 "+ Thread.currentThread().getId());
                 lockedCounter.incrementAndGet();
-                System.out.println("lockedCounter " + lockedCounter);
-                System.out.println("unlock1 "+ Thread.currentThread().getId());
                 lock.unlock();
-                System.out.println("unlock2 "+ Thread.currentThread().getId());
             }
         });
 
@@ -227,7 +250,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         testMultiInstanceConcurrency(16, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 for (int i = 0; i < iterations; i++) {
                     redisson.getLock("testConcurrency_MultiInstance1").lock();
                     try {
@@ -251,7 +274,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
         testMultiInstanceConcurrency(iterations, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 Lock lock = redisson.getLock("testConcurrency_MultiInstance2");
                 lock.lock();
                 lockedCounter.incrementAndGet();

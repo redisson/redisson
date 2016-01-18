@@ -6,13 +6,27 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.core.RScript;
 import org.redisson.core.RBatch;
 import org.redisson.core.RListAsync;
+import org.redisson.core.RScript.Mode;
 
 import io.netty.util.concurrent.Future;
 
 public class RedissonBatchTest extends BaseTest {
+
+    @Test
+    public void testBatchNPE() {
+        RBatch batch = redisson.createBatch();
+        batch.getBucket("A1").setAsync("001");
+        batch.getBucket("A2").setAsync("001");
+        batch.getBucket("A3").setAsync("001");
+        batch.getKeys().deleteAsync("A1");
+        batch.getKeys().deleteAsync("A2");
+        List result = batch.execute();
+    }
 
     @Test
     public void testDifferentCodecs() {
@@ -45,11 +59,19 @@ public class RedissonBatchTest extends BaseTest {
             batch.getMap("test").fastPutAsync("1", "2");
             batch.getMap("test").fastPutAsync("2", "3");
             batch.getMap("test").putAsync("2", "5");
-            batch.getAtomicLongAsync("counter").incrementAndGetAsync();
-            batch.getAtomicLongAsync("counter").incrementAndGetAsync();
+            batch.getAtomicLong("counter").incrementAndGetAsync();
+            batch.getAtomicLong("counter").incrementAndGetAsync();
         }
         List<?> res = batch.execute();
         Assert.assertEquals(210*5, res.size());
+    }
+
+    @Test(expected=RedisException.class)
+    public void testExceptionHandling() {
+        RBatch batch = redisson.createBatch();
+        batch.getMap("test").putAsync("1", "2");
+        batch.getScript().evalAsync(Mode.READ_WRITE, "wrong_code", RScript.ReturnType.VALUE);
+        batch.execute();
     }
 
     @Test(expected=IllegalStateException.class)
@@ -73,8 +95,8 @@ public class RedissonBatchTest extends BaseTest {
         batch.getMap("test").fastPutAsync("1", "2");
         batch.getMap("test").fastPutAsync("2", "3");
         batch.getMap("test").putAsync("2", "5");
-        batch.getAtomicLongAsync("counter").incrementAndGetAsync();
-        batch.getAtomicLongAsync("counter").incrementAndGetAsync();
+        batch.getAtomicLong("counter").incrementAndGetAsync();
+        batch.getAtomicLong("counter").incrementAndGetAsync();
 
         List<?> res = batch.execute();
         Assert.assertEquals(5, res.size());

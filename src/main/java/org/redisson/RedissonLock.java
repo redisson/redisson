@@ -15,22 +15,22 @@
  */
 package org.redisson;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
-import org.redisson.client.BaseRedisPubSubListener;
-import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.command.CommandExecutor;
 import org.redisson.core.RLock;
+import org.redisson.pubsub.LockPubSub;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -44,82 +44,31 @@ import io.netty.util.internal.PlatformDependent;
 public class RedissonLock extends RedissonExpirable implements RLock {
 
     public static final long LOCK_EXPIRATION_INTERVAL_SECONDS = 30;
-    private static final ConcurrentMap<String, Timeout> refreshTaskMap = PlatformDependent.newConcurrentHashMap();
+    private static final ConcurrentMap<String, Timeout> expirationRenewalMap = PlatformDependent.newConcurrentHashMap();
     protected long internalLockLeaseTime = TimeUnit.SECONDS.toMillis(LOCK_EXPIRATION_INTERVAL_SECONDS);
 
-    private final UUID id;
+    final UUID id;
 
-    private static final Integer unlockMessage = 0;
+    private static final LockPubSub PUBSUB = new LockPubSub();
 
-    private static final ConcurrentMap<String, RedissonLockEntry> ENTRIES = PlatformDependent.newConcurrentHashMap();
+    final CommandExecutor commandExecutor;
 
     protected RedissonLock(CommandExecutor commandExecutor, String name, UUID id) {
         super(commandExecutor, name);
+        this.commandExecutor = commandExecutor;
         this.id = id;
-    }
-
-    private void unsubscribe(RedissonLockEntry entry) {
-        synchronized (ENTRIES) {
-            if (entry.release() == 0) {
-                // just an assertion
-                boolean removed = ENTRIES.remove(getEntryName()) == entry;
-                if (removed) {
-                    commandExecutor.getConnectionManager().unsubscribe(getChannelName());
-                }
-            }
-        }
     }
 
     private String getEntryName() {
         return id + ":" + getName();
     }
 
-    private Future<RedissonLockEntry> subscribe() {
-        synchronized (ENTRIES) {
-            RedissonLockEntry entry = ENTRIES.get(getEntryName());
-            if (entry != null) {
-                entry.aquire();
-                return entry.getPromise();
-            }
-
-            Promise<RedissonLockEntry> newPromise = newPromise();
-            final RedissonLockEntry value = new RedissonLockEntry(newPromise);
-            value.aquire();
-
-            RedissonLockEntry oldValue = ENTRIES.putIfAbsent(getEntryName(), value);
-            if (oldValue != null) {
-                oldValue.aquire();
-                return oldValue.getPromise();
-            }
-
-            RedisPubSubListener<Integer> listener = new BaseRedisPubSubListener<Integer>() {
-
-                @Override
-                public void onMessage(String channel, Integer message) {
-                    if (message.equals(unlockMessage) && getChannelName().equals(channel)) {
-                        value.getLatch().release();
-                    }
-                }
-
-                @Override
-                public boolean onStatus(PubSubType type, String channel) {
-                    if (channel.equals(getChannelName())
-                            && type == PubSubType.SUBSCRIBE) {
-                        value.getPromise().trySuccess(value);
-                        return true;
-                    }
-                    return false;
-                }
-
-            };
-
-            commandExecutor.getConnectionManager().subscribe(listener, getChannelName());
-            return newPromise;
-        }
+    String getChannelName() {
+        return "redisson_lock__channel__{" + getName() + "}";
     }
 
-    private String getChannelName() {
-        return "redisson__lock__channel__{" + getName() + "}";
+    String getLockName() {
+        return id + ":" + Thread.currentThread().getId();
     }
 
     @Override
@@ -160,7 +109,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         Future<RedissonLockEntry> future = subscribe();
-        future.syncUninterruptibly();
+        future.sync();
 
         try {
             while (true) {
@@ -175,7 +124,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 }
 
                 // waiting for message
-                RedissonLockEntry entry = ENTRIES.get(getEntryName());
+                RedissonLockEntry entry = getEntry();
                 if (ttl >= 0) {
                     entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                 } else {
@@ -183,7 +132,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 }
             }
         } finally {
-            unsubscribe(future.getNow());
+            unsubscribe(future);
         }
     }
 
@@ -196,59 +145,54 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         Long ttlRemaining = tryLockInner(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.SECONDS);
         // lock acquired
         if (ttlRemaining == null) {
-            newRefreshTask();
+            scheduleExpirationRenewal();
         }
         return ttlRemaining;
     }
 
-    private void newRefreshTask() {
-        if (refreshTaskMap.containsKey(getName())) {
+    private void scheduleExpirationRenewal() {
+        if (expirationRenewalMap.containsKey(getName())) {
             return;
         }
 
         Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                expire(internalLockLeaseTime, TimeUnit.MILLISECONDS);
-                refreshTaskMap.remove(getName());
-                newRefreshTask(); // reschedule itself
+                expireAsync(internalLockLeaseTime, TimeUnit.MILLISECONDS);
+                expirationRenewalMap.remove(getName());
+                scheduleExpirationRenewal(); // reschedule itself
             }
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
 
-        if (refreshTaskMap.putIfAbsent(getName(), task) != null) {
+        if (expirationRenewalMap.putIfAbsent(getName(), task) != null) {
             task.cancel();
         }
     }
 
-    /**
-     * Stop refresh timer
-     * @return true if timer was stopped successfully
-     */
-    private void stopRefreshTask() {
-        Timeout task = refreshTaskMap.remove(getName());
+    void cancelExpirationRenewal() {
+        Timeout task = expirationRenewalMap.remove(getName());
         if (task != null) {
             task.cancel();
         }
     }
 
 
-    private Long tryLockInner(final long leaseTime, final TimeUnit unit) {
+    Long tryLockInner(long leaseTime, TimeUnit unit) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return commandExecutor.evalWrite(getName(), RedisCommands.EVAL_INTEGER,
-                "local v = redis.call('get', KEYS[1]); " +
-                                "if (v == false) then " +
-                                "  redis.call('set', KEYS[1], cjson.encode({['o'] = ARGV[1], ['c'] = 1}), 'px', ARGV[2]); " +
-                                "  return nil; " +
-                                "else " +
-                                "  local o = cjson.decode(v); " +
-                                "  if (o['o'] == ARGV[1]) then " +
-                                "    o['c'] = o['c'] + 1; redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[2]); " +
-                                "    return nil; " +
-                                "  end;" +
-                                "  return redis.call('pttl', KEYS[1]); " +
-                                "end",
-                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId(), internalLockLeaseTime);
+        return commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                  "if (redis.call('exists', KEYS[1]) == 0) then " +
+                      "redis.call('hset', KEYS[1], ARGV[2], 1); " +
+                      "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                      "return nil; " +
+                  "end; " +
+                  "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                      "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
+                      "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                      "return nil; " +
+                  "end; " +
+                  "return redis.call('pttl', KEYS[1]);",
+                    Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName());
     }
 
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
@@ -265,7 +209,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         Future<RedissonLockEntry> future = subscribe();
-        if (!future.awaitUninterruptibly(time, TimeUnit.MILLISECONDS)) {
+        if (!future.await(time, TimeUnit.MILLISECONDS)) {
             return false;
         }
 
@@ -287,7 +231,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
                 // waiting for message
                 long current = System.currentTimeMillis();
-                RedissonLockEntry entry = ENTRIES.get(getEntryName());
+                RedissonLockEntry entry = getEntry();
 
                 if (ttl >= 0 && ttl < time) {
                     entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
@@ -300,8 +244,20 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             }
             return true;
         } finally {
-            unsubscribe(future.getNow());
+            unsubscribe(future);
         }
+    }
+
+    private RedissonLockEntry getEntry() {
+        return PUBSUB.getEntry(getEntryName());
+    }
+
+    private Future<RedissonLockEntry> subscribe() {
+        return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
+    }
+
+    private void unsubscribe(Future<RedissonLockEntry> future) {
+        PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 
     @Override
@@ -311,33 +267,31 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void unlock() {
-        Boolean opStatus = commandExecutor.evalWrite(getName(), RedisCommands.EVAL_BOOLEAN_R2,
-                "local v = redis.call('get', KEYS[1]); " +
-                                "if (v == false) then " +
-                                "  redis.call('publish', ARGV[4], ARGV[2]); " +
-                                "  return true; " +
-                                "else " +
-                                "  local o = cjson.decode(v); " +
-                                "  if (o['o'] == ARGV[1]) then " +
-                                "    o['c'] = o['c'] - 1; " +
-                                "    if (o['c'] > 0) then " +
-                                "      redis.call('set', KEYS[1], cjson.encode(o), 'px', ARGV[3]); " +
-                                "      return false;"+
-                                "    else " +
-                                "      redis.call('del', KEYS[1]);" +
-                                "      redis.call('publish', ARGV[4], ARGV[2]); " +
-                                "      return true;"+
-                                "    end" +
-                                "  end;" +
-                                "  return nil; " +
-                                "end",
-                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId(), unlockMessage, internalLockLeaseTime, getChannelName());
+        Boolean opStatus = commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "if (redis.call('exists', KEYS[1]) == 0) then " +
+                            "redis.call('publish', KEYS[2], ARGV[1]); " +
+                            "return 1; " +
+                        "end;" +
+                        "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
+                            "return nil;" +
+                        "end; " +
+                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
+                        "if (counter > 0) then " +
+                            "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                            "return 0; " +
+                        "else " +
+                            "redis.call('del', KEYS[1]); " +
+                            "redis.call('publish', KEYS[2], ARGV[1]); " +
+                            "return 1; "+
+                        "end; " +
+                        "return nil;",
+                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName());
         if (opStatus == null) {
-            throw new IllegalStateException("Can't unlock lock Current id: "
+            throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
         }
         if (opStatus) {
-            stopRefreshTask();
+            cancelExpirationRenewal();
         }
     }
 
@@ -352,54 +306,35 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         get(forceUnlockAsync());
     }
 
-    private Future<Boolean> forceUnlockAsync() {
-        stopRefreshTask();
-        return commandExecutor.evalWriteAsync(getName(), RedisCommands.EVAL_BOOLEAN_R1,
-                "redis.call('del', KEYS[1]); redis.call('publish', ARGV[2], ARGV[1]); return true",
-                        Collections.<Object>singletonList(getName()), unlockMessage, getChannelName());
+    Future<Boolean> forceUnlockAsync() {
+        cancelExpirationRenewal();
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "if (redis.call('del', KEYS[1]) == 1) then "
+                + "redis.call('publish', KEYS[2], ARGV[1]); "
+                + "return 1 "
+                + "else "
+                + "return 0 "
+                + "end",
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage);
     }
 
     @Override
     public boolean isLocked() {
-        return commandExecutor.read(getName(), RedisCommands.EXISTS, getName());
+        return isExists();
     }
 
     @Override
     public boolean isHeldByCurrentThread() {
-        Boolean opStatus = commandExecutor.evalRead(getName(), RedisCommands.EVAL_BOOLEAN,
-                            "local v = redis.call('get', KEYS[1]); " +
-                                "if (v == false) then " +
-                                "  return false; " +
-                                "else " +
-                                "  local o = cjson.decode(v); " +
-                                "  if (o['o'] == ARGV[1]) then " +
-                                "    return true; " +
-                                "  else" +
-                                "    return false; " +
-                                "  end;" +
-                                "end",
-                        Collections.<Object>singletonList(getName()), id.toString() + "-" + Thread.currentThread().getId());
-        return opStatus;
+        return commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName());
     }
 
     @Override
     public int getHoldCount() {
-        Long opStatus = commandExecutor.evalRead(getName(), RedisCommands.EVAL_INTEGER,
-                "local v = redis.call('get', KEYS[1]); " +
-                                "if (v == false) then " +
-                                "  return 0; " +
-                                "else " +
-                                "  local o = cjson.decode(v); " +
-                                "  return o['c']; " +
-                                "end",
-                        Collections.<Object>singletonList(getName()));
-        return opStatus.intValue();
-    }
-
-    @Override
-    public boolean delete() {
-        forceUnlock();
-        return true;
+        Long res = commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName());
+        if (res == null) {
+            return 0;
+        }
+        return res.intValue();
     }
 
     @Override

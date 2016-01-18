@@ -16,6 +16,7 @@
 package org.redisson.core;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.redisson.client.protocol.ScoredEntry;
 
@@ -23,9 +24,17 @@ import io.netty.util.concurrent.Future;
 
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
+    Future<V> pollLastAsync();
+
+    Future<V> pollFirstAsync();
+
     Future<V> firstAsync();
 
     Future<V> lastAsync();
+
+    Future<Long> addAllAsync(Map<V, Double> objects);
+
+    Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
     Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 
@@ -33,7 +42,25 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
     Future<Double> getScoreAsync(V o);
 
+    /**
+     * Adds element to this set, overrides previous score if it has been already added.
+     *
+     * @param score
+     * @param object
+     * @return <code>true</code> if element has added and <code>false</code> if not.
+     */
     Future<Boolean> addAsync(double score, V object);
+
+    /**
+     * Adds element to this set only if has not been added before.
+     * <p/>
+     * Works only with <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param score
+     * @param object
+     * @return <code>true</code> if element has added and <code>false</code> if not.
+     */
+    Future<Boolean> tryAddAsync(double score, V object);
 
     Future<Boolean> removeAsync(V object);
 

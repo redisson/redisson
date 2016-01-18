@@ -38,7 +38,9 @@ public class StringCodec implements Codec {
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) {
-            return buf.toString(CharsetUtil.UTF_8);
+            String str = buf.toString(CharsetUtil.UTF_8);
+            buf.readerIndex(buf.readableBytes());
+            return str;
         }
     };
 

@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentMap;
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
  * and {@link java.util.Map}
  *
+ * This map doesn't allow to store <code>null</code> as key or value.
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key
@@ -112,25 +114,27 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      */
     boolean fastPut(K key, V value);
 
+    boolean fastPutIfAbsent(K key, V value);
+
     /**
-     * Map entry-iterator with small memory footprint
+     * Use {@link #entrySet().iterator()}
      *
-     * @return
      */
+    @Deprecated
     Iterator<Map.Entry<K, V>> entryIterator();
 
     /**
-     * Map key-iterator with small memory footprint
+     * Use {@link #keySet().iterator()}
      *
-     * @return
      */
+    @Deprecated
     Iterator<K> keyIterator();
 
     /**
-     * Map value-iterator with small memory footprint
+     * Use {@link #values().iterator()}
      *
-     * @return
      */
+    @Deprecated
     Iterator<V> valueIterator();
 
 }

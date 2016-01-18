@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.connection.ConnectionListener;
 
 /**
  * Redisson configuration
@@ -33,7 +34,7 @@ public class Config {
     private SingleServerConfig singleServerConfig;
 
     private ClusterServersConfig clusterServersConfig;
-    
+
     private ElasticacheServersConfig elasticacheServersConfig;
 
     /**
@@ -48,10 +49,12 @@ public class Config {
 
     private boolean useLinuxNativeEpoll;
 
+    private ConnectionListener connectionListener;
+
     public Config() {
     }
 
-    Config(Config oldConf) {
+    public Config(Config oldConf) {
         setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());
 
         if (oldConf.getCodec() == null) {
@@ -59,6 +62,7 @@ public class Config {
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
+        setConnectionListener(oldConf.getConnectionListener());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
         if (oldConf.getSingleServerConfig() != null) {
@@ -76,14 +80,13 @@ public class Config {
         if (oldConf.getElasticacheServersConfig() != null) {
             setElasticacheServersConfig(new ElasticacheServersConfig(oldConf.getElasticacheServersConfig()));
         }
-        
+
     }
 
     /**
-     * Redis key/value codec. Default is json
+     * Redis key/value codec. Default is json-codec
      *
-     * @see org.redisson.codec.JsonJacksonCodec
-     * @see org.redisson.codec.SerializationCodec
+     * @see org.redisson.client.codec.Codec
      */
     public Config setCodec(Codec codec) {
         this.codec = codec;
@@ -93,17 +96,32 @@ public class Config {
         return codec;
     }
 
+    /**
+     * Init cluster servers configuration
+     *
+     * @return
+     */
     public ClusterServersConfig useClusterServers() {
+        return useClusterServers(new ClusterServersConfig());
+    }
+
+    /**
+     * Init cluster servers configuration by config object.
+     *
+     * @return
+     */
+    public ClusterServersConfig useClusterServers(ClusterServersConfig config) {
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
         checkSingleServerConfig();
         checkElasticacheServersConfig();
 
         if (clusterServersConfig == null) {
-            clusterServersConfig = new ClusterServersConfig();
+            clusterServersConfig = config;
         }
         return clusterServersConfig;
     }
+
 
     ClusterServersConfig getClusterServersConfig() {
         return clusterServersConfig;
@@ -112,7 +130,21 @@ public class Config {
         this.clusterServersConfig = clusterServersConfig;
     }
 
+    /**
+     * Init AWS Elasticache servers configuration.
+     *
+     * @return
+     */
     public ElasticacheServersConfig useElasticacheServers() {
+        return useElasticacheServers(new ElasticacheServersConfig());
+    }
+
+    /**
+     * Init AWS Elasticache servers configuration by config object.
+     *
+     * @return
+     */
+    public ElasticacheServersConfig useElasticacheServers(ElasticacheServersConfig config) {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
@@ -131,18 +163,33 @@ public class Config {
         this.elasticacheServersConfig = elasticacheServersConfig;
     }
 
+    /**
+     * Init single server configuration.
+     *
+     * @return
+     */
     public SingleServerConfig useSingleServer() {
+        return useSingleServer(new SingleServerConfig());
+    }
+
+    /**
+     * Init single server configuration by config object.
+     *
+     * @return
+     */
+    public SingleServerConfig useSingleServer(SingleServerConfig config) {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
         checkElasticacheServersConfig();
 
         if (singleServerConfig == null) {
-            singleServerConfig = new SingleServerConfig();
+            singleServerConfig = config;
         }
         return singleServerConfig;
     }
-    
+
+
     SingleServerConfig getSingleServerConfig() {
         return singleServerConfig;
     }
@@ -150,16 +197,38 @@ public class Config {
         this.singleServerConfig = singleConnectionConfig;
     }
 
-    public SentinelServersConfig useSentinelConnection() {
+    /**
+     * Init sentinel servers configuration.
+     *
+     * @return
+     */
+    public SentinelServersConfig useSentinelServers() {
+        return useSentinelServers(new SentinelServersConfig());
+    }
+
+    /**
+     * Init sentinel servers configuration by config object.
+     *
+     * @return
+     */
+    public SentinelServersConfig useSentinelServers(SentinelServersConfig sentinelServersConfig) {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkMasterSlaveServersConfig();
         checkElasticacheServersConfig();
 
-        if (sentinelServersConfig == null) {
-            sentinelServersConfig = new SentinelServersConfig();
+        if (this.sentinelServersConfig == null) {
+            this.sentinelServersConfig = sentinelServersConfig;
         }
-        return sentinelServersConfig;
+        return this.sentinelServersConfig;
+    }
+
+    /**
+     * Deprecated. Use {@link #useSentinelServers()} instead
+     */
+    @Deprecated
+    public SentinelServersConfig useSentinelConnection() {
+        return useSentinelServers();
     }
 
     SentinelServersConfig getSentinelServersConfig() {
@@ -169,16 +238,38 @@ public class Config {
         this.sentinelServersConfig = sentinelConnectionConfig;
     }
 
-    public MasterSlaveServersConfig useMasterSlaveConnection() {
+    /**
+     * Init master/slave servers configuration.
+     *
+     * @return
+     */
+    public MasterSlaveServersConfig useMasterSlaveServers() {
+        return useMasterSlaveServers(new MasterSlaveServersConfig());
+    }
+
+    /**
+     * Init master/slave servers configuration by config object.
+     *
+     * @return
+     */
+    public MasterSlaveServersConfig useMasterSlaveServers(MasterSlaveServersConfig config) {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkSentinelServersConfig();
         checkElasticacheServersConfig();
 
         if (masterSlaveServersConfig == null) {
-            masterSlaveServersConfig = new MasterSlaveServersConfig();
+            masterSlaveServersConfig = config;
         }
         return masterSlaveServersConfig;
+    }
+
+    /**
+     * Deprecated. Use {@link #useMasterSlaveServers()} instead
+     */
+    @Deprecated
+    public MasterSlaveServersConfig useMasterSlaveConnection() {
+        return useMasterSlaveServers();
     }
     MasterSlaveServersConfig getMasterSlaveServersConfig() {
         return masterSlaveServersConfig;
@@ -223,7 +314,7 @@ public class Config {
             throw new IllegalStateException("single server config already used!");
         }
     }
-    
+
     private void checkElasticacheServersConfig() {
         if (elasticacheServersConfig != null) {
             throw new IllegalStateException("elasticache replication group servers config already used!");
@@ -246,5 +337,21 @@ public class Config {
         return useLinuxNativeEpoll;
     }
 
+    @Deprecated
+    public ConnectionListener getConnectionListener() {
+        return connectionListener;
+    }
+
+    /**
+     * Use {@code org.redisson.core.NodesGroup#addConnectionListener(ConnectionListener)}
+     *
+     * @param connectionListener
+     * @return
+     */
+    @Deprecated
+    public Config setConnectionListener(ConnectionListener connectionListener) {
+        this.connectionListener = connectionListener;
+        return this;
+    }
 
 }

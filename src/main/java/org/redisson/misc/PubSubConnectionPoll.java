@@ -18,41 +18,44 @@ package org.redisson.misc;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.LoadBalancer;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.SubscribesConnectionEntry;
+import org.redisson.connection.ClientConnectionsEntry;
 
 import io.netty.util.concurrent.Future;
 
 public class PubSubConnectionPoll extends ConnectionPool<RedisPubSubConnection> {
 
-    public PubSubConnectionPoll(MasterSlaveServersConfig config,
-            LoadBalancer loadBalancer, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
-        super(config, loadBalancer, connectionManager, masterSlaveEntry);
+    public PubSubConnectionPoll(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
+        super(config, connectionManager, masterSlaveEntry);
     }
 
     @Override
-    protected RedisPubSubConnection poll(SubscribesConnectionEntry entry) {
-        return entry.pollFreeSubscribeConnection();
+    protected RedisPubSubConnection poll(ClientConnectionsEntry entry) {
+        return entry.pollSubscribeConnection();
     }
 
     @Override
-    protected Future<RedisPubSubConnection> connect(SubscribesConnectionEntry entry) {
+    protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
+        return config.getSlaveSubscriptionConnectionMinimumIdleSize();
+    }
+
+    @Override
+    protected Future<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
         return entry.connectPubSub(config);
     }
 
     @Override
-    protected boolean tryAcquireConnection(SubscribesConnectionEntry entry) {
+    protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
         return entry.tryAcquireSubscribeConnection();
     }
 
     @Override
-    protected void releaseConnection(SubscribesConnectionEntry entry) {
+    protected void releaseConnection(ClientConnectionsEntry entry) {
         entry.releaseSubscribeConnection();
     }
 
     @Override
-    protected void releaseConnection(SubscribesConnectionEntry entry, RedisPubSubConnection conn) {
+    protected void releaseConnection(ClientConnectionsEntry entry, RedisPubSubConnection conn) {
         entry.releaseSubscribeConnection(conn);
     }
 

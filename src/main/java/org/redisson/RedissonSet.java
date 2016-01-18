@@ -24,10 +24,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RSet;
 
 import io.netty.util.concurrent.Future;
@@ -41,13 +40,11 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
-    private static final RedisCommand<Boolean> EVAL_OBJECTS = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
-
-    protected RedissonSet(CommandExecutor commandExecutor, String name) {
+    protected RedissonSet(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    public RedissonSet(Codec codec, CommandExecutor commandExecutor, String name) {
+    public RedissonSet(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 
@@ -58,7 +55,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Integer> sizeAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.SCARD, getName());
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SCARD_INT, getName());
     }
 
     @Override
@@ -77,7 +74,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        return commandExecutor.read(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
+        Future<ListScanResult<V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
+        return get(f);
     }
 
     @Override
@@ -87,23 +85,31 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
             private List<V> firstValues;
             private Iterator<V> iter;
             private InetSocketAddress client;
-            private long iterPos;
+            private long nextIterPos;
 
+            private boolean currentElementRemoved;
             private boolean removeExecuted;
             private V value;
 
             @Override
             public boolean hasNext() {
                 if (iter == null || !iter.hasNext()) {
-                    ListScanResult<V> res = scanIterator(client, iterPos);
+                    if (nextIterPos == -1) {
+                        return false;
+                    }
+                    long prevIterPos = nextIterPos;
+                    ListScanResult<V> res = scanIterator(client, nextIterPos);
                     client = res.getRedisClient();
-                    if (iterPos == 0 && firstValues == null) {
+                    if (nextIterPos == 0 && firstValues == null) {
                         firstValues = res.getValues();
                     } else if (res.getValues().equals(firstValues)) {
                         return false;
                     }
                     iter = res.getValues().iterator();
-                    iterPos = res.getPos();
+                    nextIterPos = res.getPos();
+                    if (prevIterPos == nextIterPos && !removeExecuted) {
+                        nextIterPos = -1;
+                    }
                 }
                 return iter.hasNext();
             }
@@ -115,13 +121,13 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                 }
 
                 value = iter.next();
-                removeExecuted = false;
+                currentElementRemoved = false;
                 return value;
             }
 
             @Override
             public void remove() {
-                if (removeExecuted) {
+                if (currentElementRemoved) {
                     throw new IllegalStateException("Element been already deleted");
                 }
                 if (iter == null) {
@@ -130,6 +136,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
                 iter.remove();
                 RedissonSet.this.remove(value);
+                currentElementRemoved = true;
                 removeExecuted = true;
             }
 
@@ -183,13 +190,23 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
+    public Future<Boolean> moveAsync(String destination, V member) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SMOVE, getName(), destination, member);
+    }
+
+    @Override
+    public boolean move(String destination, V member) {
+        return get(moveAsync(destination, member));
+    }
+
+    @Override
     public boolean containsAll(Collection<?> c) {
         return get(containsAllAsync(c));
     }
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), codec, EVAL_OBJECTS,
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('smembers', KEYS[1]);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "
@@ -197,7 +214,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                             + "then table.remove(ARGV, j) end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 0; ",
+                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -215,7 +232,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD, args.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD_BOOL, args.toArray());
     }
 
     @Override
@@ -225,8 +242,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_OBJECTS,
-                    "local changed = false " +
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+                    "local changed = 0 " +
                     "local s = redis.call('smembers', KEYS[1]) "
                        + "local i = 0 "
                        + "while i <= table.getn(s) do "
@@ -240,7 +257,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                             + "end "
                             + "if isInAgrs == false then "
                                 + "redis.call('SREM', KEYS[1], element) "
-                                + "changed = true "
+                                + "changed = 1 "
                             + "end "
                             + "i = i + 1 "
                        + "end "
@@ -250,11 +267,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_OBJECTS,
-                        "local v = false " +
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+                        "local v = 0 " +
                         "for i = 0, table.getn(ARGV), 1 do "
                             + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = true end "
+                            + "then v = 1 end "
                         +"end "
                        + "return v ",
                 Collections.<Object>singletonList(getName()), c.toArray());

@@ -19,24 +19,57 @@ package org.redisson;
 class BaseConfig<T extends BaseConfig<T>> {
 
     /**
-     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation
+     * If pooled connection not used for a <code>timeout</code> time
+     * and current connections amount bigger than minimum idle connections pool size,
+     * then it will closed and removed from pool.
+     * Value in milliseconds.
+     *
+     */
+    private int idleConnectionTimeout = 10000;
+
+    /**
+     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation.
+     * Value in milliseconds.
      *
      */
     private int pingTimeout = 1000;
 
     /**
-     * Redis operation execution timeout.
-     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
-     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     * Timeout during connecting to any Redis server.
+     * Value in milliseconds.
+     *
      */
-    private int timeout = 60000;
+    private int connectTimeout = 1000;
 
-    private int retryAttempts = 20;
+    /**
+     * Redis server response timeout. Starts to countdown when Redis command was succesfully sent.
+     * Value in milliseconds.
+     *
+     */
+    private int timeout = 1000;
+
+    private int retryAttempts = 3;
 
     private int retryInterval = 1000;
 
-    @Deprecated
-    private int closeConnectionAfterFailAttempts = -1;
+    /**
+     * Reconnection attempt timeout to Redis server then
+     * it has been excluded from internal list of available servers.
+     *
+     * On every such timeout event Redisson tries
+     * to connect to disconnected Redis server.
+     *
+     * @see #failedAttempts
+     *
+     */
+    private int reconnectionTimeout = 3000;
+
+    /**
+     * Redis server will be excluded from the list of available nodes
+     * when sequential unsuccessful execution attempts of any Redis command
+     * reaches <code>failedAttempts</code>.
+     */
+    private int failedAttempts = 3;
 
     /**
      * Database index used for Redis connection
@@ -70,7 +103,10 @@ class BaseConfig<T extends BaseConfig<T>> {
         setTimeout(config.getTimeout());
         setClientName(config.getClientName());
         setPingTimeout(config.getPingTimeout());
-        setRefreshConnectionAfterFails(config.getRefreshConnectionAfterFails());
+        setConnectTimeout(config.getConnectTimeout());
+        setIdleConnectionTimeout(config.getIdleConnectionTimeout());
+        setFailedAttempts(config.getFailedAttempts());
+        setReconnectionTimeout(config.getReconnectionTimeout());
     }
 
     /**
@@ -102,12 +138,10 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Reconnection attempts amount.
-     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
-     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     * Error will be thrown if Redis command can't be sended to Redis server after <code>retryAttempts</code>.
+     * But if it sent succesfully then <code>timeout</code> will be started.
      *
-     * Used then connection with redis server is down.
-     *
+     * @see #timeout
      * @param retryAttempts
      */
     public T setRetryAttempts(int retryAttempts) {
@@ -119,10 +153,9 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Time pause before next reconnection attempt.
+     * Time interval after which another one attempt to send Redis command will be executed.
      *
-     * Used then connection with redis server is down.
-     *
+     * @see retryAttempts
      * @param retryInterval - time in milliseconds
      */
     public T setRetryInterval(int retryInterval) {
@@ -148,9 +181,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Redis operation execution timeout.
-     * Then amount is reached exception will be thrown in case of <b>sync</b> operation usage
-     * or <code>Future</code> callback fails in case of <b>async</b> operation.
+     * Redis server response timeout.
      *
      * @param timeout in milliseconds
      */
@@ -191,18 +222,70 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Reconnect connection if it has <code>failAttemptsAmount</code>
-     * fails in a row during command sending. Turned off by default.
+     * Timeout during connecting to any Redis server.
      *
-     * @param failAttemptsAmount
+     * @param connectTimeout - timeout in milliseconds
+     * @return
      */
-    public T setRefreshConnectionAfterFails(int failAttemptsAmount) {
-        this.closeConnectionAfterFailAttempts = failAttemptsAmount;
+    public T setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
         return (T) this;
     }
-    public int getRefreshConnectionAfterFails() {
-        return closeConnectionAfterFailAttempts;
+    public int getConnectTimeout() {
+        return connectTimeout;
     }
 
+    /**
+     * If pooled connection not used for a <code>timeout</code> time
+     * and current connections amount bigger than minimum idle connections pool size,
+     * then it will closed and removed from pool.
+     *
+     * @param idleConnectionTimeout - timeout in milliseconds
+     * @return
+     */
+    public T setIdleConnectionTimeout(int idleConnectionTimeout) {
+        this.idleConnectionTimeout = idleConnectionTimeout;
+        return (T) this;
+    }
+    public int getIdleConnectionTimeout() {
+        return idleConnectionTimeout;
+    }
+
+    /**
+     * Reconnection attempt timeout to Redis server when
+     * it has been excluded from internal list of available servers.
+     *
+     * On every such timeout event Redisson tries
+     * to connect to disconnected Redis server.
+     *
+     * Default is 3000
+     *
+     * @see #failedAttempts
+     *
+     */
+
+    public T setReconnectionTimeout(int slaveRetryTimeout) {
+        this.reconnectionTimeout = slaveRetryTimeout;
+        return (T)this;
+    }
+    public int getReconnectionTimeout() {
+        return reconnectionTimeout;
+    }
+
+    /**
+     * Redis server will be excluded from the internal list of available nodes
+     * when sequential unsuccessful execution attempts of any Redis command
+     * on this server reaches <code>failedAttempts</code>.
+     *
+     * Default is 3
+     *
+     */
+    public T setFailedAttempts(int slaveFailedAttempts) {
+        this.failedAttempts = slaveFailedAttempts;
+        return (T)this;
+    }
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
 
 }

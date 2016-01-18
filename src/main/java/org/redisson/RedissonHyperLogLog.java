@@ -22,17 +22,18 @@ import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RHyperLogLog;
 
 import io.netty.util.concurrent.Future;
 
 public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
-    protected RedissonHyperLogLog(CommandExecutor commandExecutor, String name) {
+    protected RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonHyperLogLog(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonHyperLogLog(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 

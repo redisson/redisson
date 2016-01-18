@@ -17,8 +17,12 @@ package org.redisson;
 
 import java.util.Collections;
 
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.SingleConvertor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RAtomicLong;
 
 import io.netty.util.concurrent.Future;
@@ -31,7 +35,7 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong {
 
-    protected RedissonAtomicLong(CommandExecutor commandExecutor, String name) {
+    protected RedissonAtomicLong(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
@@ -55,9 +59,9 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('get', KEYS[1]) == ARGV[1] then "
                      + "redis.call('set', KEYS[1], ARGV[2]); "
-                     + "return true "
+                     + "return 1 "
                    + "else "
-                     + "return false end",
+                     + "return 0 end",
                 Collections.<Object>singletonList(getName()), expect, update);
     }
 
@@ -87,13 +91,13 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> getAndAddAsync(long delta) {
-        return commandExecutor.evalWriteAsync(getName(),
-                StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
-                "local v = redis.call('get', KEYS[1]) or 0; "
-                + "redis.call('set', KEYS[1], v + ARGV[1]); "
-                + "return tonumber(v)",
-                Collections.<Object>singletonList(getName()), delta);
+    public Future<Long> getAndAddAsync(final long delta) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("INCRBY", new SingleConvertor<Long>() {
+            @Override
+            public Long convert(Object obj) {
+                return ((Long) obj) - delta;
+            }
+        }), getName(), delta);
     }
 
 
@@ -104,10 +108,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public Future<Long> getAndSetAsync(long newValue) {
-        return commandExecutor.evalWriteAsync(getName(),
-                StringCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
-                "local v = redis.call('get', KEYS[1]) or 0; redis.call('set', KEYS[1], ARGV[1]); return tonumber(v)",
-                Collections.<Object>singletonList(getName()), newValue);
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GETSET, getName(), newValue);
     }
 
     @Override

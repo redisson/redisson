@@ -83,6 +83,11 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
                 this.config.addSlaveAddress(addr);
             }
         }
+
+        if (currentMaster.get() == null) {
+            throw new RedisConnectionException("Can't connect to servers!");
+        }
+
         init(this.config);
 
         monitorRoleChange(cfg);
@@ -93,7 +98,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         if (connection != null) {
             return connection;
         }
-        RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getTimeout());
+        RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getConnectTimeout());
         try {
             connection = client.connect();
             nodeConnections.put(addr, connection);
@@ -159,6 +164,15 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
         c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
         c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        c.setConnectTimeout(cfg.getConnectTimeout());
+        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
+
+        c.setFailedAttempts(cfg.getFailedAttempts());
+        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
+        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
+        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
+        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
+
         return c;
     }
 

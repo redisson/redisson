@@ -22,8 +22,8 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.TrueReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListFirstObjectDecoder;
 import org.redisson.core.RDeque;
 
@@ -38,17 +38,15 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
-    private static final RedisCommand<Void> LPUSH_VOID = new RedisCommand<Void>("LPUSH", new VoidReplayConvertor());
-    private static final RedisCommand<Boolean> LPUSH_BOOLEAN = new RedisCommand<Boolean>("LPUSH", new TrueReplayConvertor());
     private static final RedisCommand<Void> RPUSH_VOID = new RedisCommand<Void>("RPUSH", new VoidReplayConvertor(), 2, ValueType.OBJECTS);
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
 
-    protected RedissonDeque(CommandExecutor commandExecutor, String name) {
+    protected RedissonDeque(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    public RedissonDeque(Codec codec, CommandExecutor commandExecutor, String name) {
+    public RedissonDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 
@@ -59,7 +57,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<Void> addFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, LPUSH_VOID, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_VOID, getName(), e);
     }
 
     @Override
@@ -130,7 +128,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public Future<Boolean> offerFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, LPUSH_BOOLEAN, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_BOOLEAN, getName(), e);
     }
 
     @Override

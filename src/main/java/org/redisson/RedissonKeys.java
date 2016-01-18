@@ -27,6 +27,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RKeys;
 import org.redisson.misc.CompositeIterable;
 
@@ -34,11 +35,21 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonKeys implements RKeys {
 
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
 
-    public RedissonKeys(CommandExecutor commandExecutor) {
+    public RedissonKeys(CommandAsyncExecutor commandExecutor) {
         super();
         this.commandExecutor = commandExecutor;
+    }
+
+    @Override
+    public int getSlot(String key) {
+        return commandExecutor.get(getSlotAsync(key));
+    }
+
+    @Override
+    public Future<Integer> getSlotAsync(String key) {
+        return commandExecutor.readAsync(null, RedisCommands.KEYSLOT, key);
     }
 
     @Override
@@ -58,24 +69,16 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public Iterable<String> getKeys() {
-        List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
-        for (final ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
-            Iterable<String> iterable = new Iterable<String>() {
-                @Override
-                public Iterator<String> iterator() {
-                    return createKeysIterator(slot.getStartSlot(), null);
-                }
-            };
-            iterables.add(iterable);
-        }
-        return new CompositeIterable<String>(iterables);
+        return getKeysByPattern(null);
     }
 
     private ListScanResult<String> scanIterator(int slot, long startPos, String pattern) {
         if (pattern == null) {
-            return commandExecutor.write(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+            Future<ListScanResult<String>> f = commandExecutor.writeAsync(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+            return commandExecutor.get(f);
         }
-        return commandExecutor.write(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+        Future<ListScanResult<String>> f = commandExecutor.writeAsync(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+        return commandExecutor.get(f);
     }
 
     private Iterator<String> createKeysIterator(final int slot, final String pattern) {
@@ -202,7 +205,7 @@ public class RedissonKeys implements RKeys {
      */
     @Override
     public Future<Long> deleteByPatternAsync(String pattern) {
-        return commandExecutor.evalWriteAllAsync(RedisCommands.EVAL_INTEGER, new SlotCallback<Long, Long>() {
+        return commandExecutor.evalWriteAllAsync(RedisCommands.EVAL_LONG, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
             @Override
             public void onSlotResult(Long result) {
@@ -254,5 +257,45 @@ public class RedissonKeys implements RKeys {
         }, (Object[])keys);
     }
 
+    @Override
+    public Long count() {
+        return commandExecutor.get(countAsync());
+    }
+
+    @Override
+    public Future<Long> countAsync() {
+        return commandExecutor.readAllAsync(RedisCommands.DBSIZE, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return results.get();
+            }
+        });
+    }
+
+    @Override
+    public void flushdb() {
+        commandExecutor.get(flushdbAsync());
+    }
+
+    @Override
+    public Future<Void> flushdbAsync() {
+        return commandExecutor.writeAllAsync(RedisCommands.FLUSHDB);
+    }
+
+    @Override
+    public void flushall() {
+        commandExecutor.get(flushallAsync());
+    }
+
+    @Override
+    public Future<Void> flushallAsync() {
+        return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL);
+    }
 
 }

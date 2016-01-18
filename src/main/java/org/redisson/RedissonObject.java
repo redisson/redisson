@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RObject;
 
 import io.netty.util.concurrent.Future;
@@ -30,17 +31,17 @@ import io.netty.util.concurrent.Promise;
  */
 abstract class RedissonObject implements RObject {
 
-    final CommandExecutor commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
     private final String name;
     final Codec codec;
 
-    public RedissonObject(Codec codec, CommandExecutor commandExecutor, String name) {
+    public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.codec = codec;
         this.name = name;
         this.commandExecutor = commandExecutor;
     }
 
-    public RedissonObject(CommandExecutor commandExecutor, String name) {
+    public RedissonObject(CommandAsyncExecutor commandExecutor, String name) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
@@ -53,7 +54,7 @@ abstract class RedissonObject implements RObject {
     }
 
     protected <V> Future<V> newSucceededFuture(V result) {
-        return commandExecutor.getConnectionManager().getGroup().next().<V>newSucceededFuture(result);
+        return commandExecutor.getConnectionManager().<V>newSucceededFuture(result);
     }
 
     @Override
@@ -108,7 +109,17 @@ abstract class RedissonObject implements RObject {
 
     @Override
     public Future<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_SINGLE, getName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_BOOL, getName());
+    }
+
+    @Override
+    public boolean isExists() {
+        return get(isExistsAsync());
+    }
+
+    @Override
+    public Future<Boolean> isExistsAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.EXISTS, getName());
     }
 
 }

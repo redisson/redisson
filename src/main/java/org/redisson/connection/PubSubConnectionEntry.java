@@ -97,7 +97,7 @@ public class PubSubConnectionEntry {
     public void removeListener(String channelName, int listenerId) {
         Queue<RedisPubSubListener> listeners = channelListeners.get(channelName);
         for (RedisPubSubListener listener : listeners) {
-            if (listener.hashCode() == listenerId) {
+            if (System.identityHashCode(listener) == listenerId) {
                 removeListener(channelName, listener);
                 break;
             }

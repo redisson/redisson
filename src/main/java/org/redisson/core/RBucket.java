@@ -28,10 +28,24 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
 
     V get();
 
+    boolean trySet(V value);
+
+    boolean trySet(V value, long timeToLive, TimeUnit timeUnit);
+
+    boolean compareAndSet(V expect, V update);
+
+    V getAndSet(V newValue);
+
     void set(V value);
 
     void set(V value, long timeToLive, TimeUnit timeUnit);
 
+    /**
+     * Use {@link #isExists()}
+     *
+     * @return
+     */
+    @Deprecated
     boolean exists();
 
 }

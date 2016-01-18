@@ -17,12 +17,29 @@ package org.redisson.core;
 
 import java.util.Collection;
 
+import org.redisson.connection.ConnectionListener;
+
 /**
  *
  * @author Nikita Koksharov
  *
  */
 public interface NodesGroup<N extends Node> {
+
+    /**
+     * Adds connect listener which will be triggered
+     * when Redisson has just been connected to or disconnected from redis server
+     *
+     * @param connectionListener
+     */
+    int addConnectionListener(ConnectionListener connectionListener);
+
+    /**
+     * Removes connect listener by id
+     *
+     * @param listenerId
+     */
+    void removeConnectionListener(int listenerId);
 
     /**
      * All Redis nodes used by Redisson.
@@ -34,6 +51,8 @@ public interface NodesGroup<N extends Node> {
 
     /**
      * Ping all Redis nodes
+     *
+     * @return <code>true</code> if all nodes have replied "PONG", <code>false</code> in other case.
      */
     boolean pingAll();
 

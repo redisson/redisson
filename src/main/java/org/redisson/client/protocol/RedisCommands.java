@@ -20,12 +20,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.convertor.BitSetReplayConvertor;
+import org.redisson.client.protocol.convertor.BitsSizeReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanNotNullReplayConvertor;
+import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.KeyValueConvertor;
+import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.TrueReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.KeyValueObjectDecoder;
@@ -41,6 +45,7 @@ import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoder;
+import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanReplayDecoder;
 import org.redisson.client.protocol.decoder.StringDataDecoder;
 import org.redisson.client.protocol.decoder.StringListReplayDecoder;
@@ -50,22 +55,33 @@ import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 
 public interface RedisCommands {
 
+    RedisStrictCommand<Integer> KEYSLOT = new RedisStrictCommand<Integer>("CLUSTER", "KEYSLOT", new IntegerReplayConvertor());
+
     RedisStrictCommand<Boolean> GETBIT = new RedisStrictCommand<Boolean>("GETBIT", new BooleanReplayConvertor());
+    RedisStrictCommand<Integer> BITS_SIZE = new RedisStrictCommand<Integer>("STRLEN", new BitsSizeReplayConvertor());
     RedisStrictCommand<Integer> STRLEN = new RedisStrictCommand<Integer>("STRLEN", new IntegerReplayConvertor());
-    RedisStrictCommand<Integer> BITCOUNT = new RedisStrictCommand<Integer>("BITCOUNT", new IntegerReplayConvertor());
-    RedisStrictCommand<Void> SETBIT = new RedisStrictCommand<Void>("SETBIT", new VoidReplayConvertor());
+    RedisStrictCommand<Long> BITCOUNT = new RedisStrictCommand<Long>("BITCOUNT");
+    RedisStrictCommand<Integer> BITPOS = new RedisStrictCommand<Integer>("BITPOS", new IntegerReplayConvertor());
+    RedisStrictCommand<Void> SETBIT_VOID = new RedisStrictCommand<Void>("SETBIT", new VoidReplayConvertor());
+    RedisStrictCommand<Boolean> SETBIT = new RedisStrictCommand<Boolean>("SETBIT", new BitSetReplayConvertor());
     RedisStrictCommand<Void> BITOP = new RedisStrictCommand<Void>("BITOP", new VoidReplayConvertor());
 
     RedisStrictCommand<Void> ASKING = new RedisStrictCommand<Void>("ASKING", new VoidReplayConvertor());
     RedisStrictCommand<Void> READONLY = new RedisStrictCommand<Void>("READONLY", new VoidReplayConvertor());
 
-    RedisCommand<Boolean> ZADD = new RedisCommand<Boolean>("ZADD", new BooleanAmountReplayConvertor(), 3);
+    RedisCommand<Boolean> ZADD_BOOL = new RedisCommand<Boolean>("ZADD", new BooleanAmountReplayConvertor(), 3);
+    RedisCommand<Boolean> ZADD_NX_BOOL = new RedisCommand<Boolean>("ZADD", new BooleanAmountReplayConvertor(), 4);
+    RedisCommand<Boolean> ZADD_BOOL_RAW = new RedisCommand<Boolean>("ZADD", new BooleanAmountReplayConvertor());
+    RedisCommand<Boolean> ZADD_RAW = new RedisCommand<Boolean>("ZADD");
+    RedisCommand<Long> ZADD = new RedisCommand<Long>("ZADD");
     RedisCommand<Boolean> ZREM = new RedisCommand<Boolean>("ZREM", new BooleanAmountReplayConvertor(), 2);
-    RedisStrictCommand<Integer> ZCARD = new RedisStrictCommand<Integer>("ZCARD", new IntegerReplayConvertor());
+    RedisStrictCommand<Integer> ZCARD_INT = new RedisStrictCommand<Integer>("ZCARD", new IntegerReplayConvertor());
+    RedisStrictCommand<Long> ZCARD = new RedisStrictCommand<Long>("ZCARD");
     RedisStrictCommand<Integer> ZLEXCOUNT = new RedisStrictCommand<Integer>("ZLEXCOUNT", new IntegerReplayConvertor());
     RedisCommand<Boolean> ZSCORE_CONTAINS = new RedisCommand<Boolean>("ZSCORE", new BooleanNotNullReplayConvertor(), 2);
-    RedisStrictCommand<Double> ZSCORE = new RedisStrictCommand<Double>("ZSCORE", new DoubleReplayConvertor());
-    RedisCommand<Integer> ZRANK = new RedisCommand<Integer>("ZRANK", new IntegerReplayConvertor(), 2);
+    RedisStrictCommand<Double> ZSCORE = new RedisStrictCommand<Double>("ZSCORE", new DoubleReplayConvertor(), 2);
+    RedisCommand<Integer> ZRANK_INT = new RedisCommand<Integer>("ZRANK", new IntegerReplayConvertor(), 2);
+    RedisStrictCommand<Long> ZRANK = new RedisStrictCommand<Long>("ZRANK", 2);
     RedisCommand<Object> ZRANGE_SINGLE = new RedisCommand<Object>("ZRANGE", new ObjectFirstResultReplayDecoder<Object>());
     RedisCommand<List<Object>> ZRANGE = new RedisCommand<List<Object>>("ZRANGE", new ObjectListReplayDecoder<Object>());
     RedisStrictCommand<Integer> ZREMRANGEBYRANK = new RedisStrictCommand<Integer>("ZREMRANGEBYRANK", new IntegerReplayConvertor());
@@ -75,8 +91,8 @@ public interface RedisCommands {
     RedisCommand<List<Object>> ZRANGEBYSCORE = new RedisCommand<List<Object>>("ZRANGEBYSCORE", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<ScoredEntry<Object>>> ZRANGE_ENTRY = new RedisCommand<List<ScoredEntry<Object>>>("ZRANGE", new ScoredSortedSetReplayDecoder<Object>());
     RedisCommand<List<ScoredEntry<Object>>> ZRANGEBYSCORE_ENTRY = new RedisCommand<List<ScoredEntry<Object>>>("ZRANGEBYSCORE", new ScoredSortedSetReplayDecoder<Object>());
-    RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<ListScanResult<Object>>("ZSCAN", new NestedMultiDecoder(new ObjectListReplayDecoder<Object>(), new ScoredSortedSetScanReplayDecoder()), ValueType.OBJECT);
-    RedisStrictCommand<Double> ZINCRBY = new RedisStrictCommand<Double>("ZINCRBY", new DoubleReplayConvertor());
+    RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<ListScanResult<Object>>("ZSCAN", new NestedMultiDecoder(new ScoredSortedSetScanDecoder<Object>(), new ScoredSortedSetScanReplayDecoder()), ValueType.OBJECT);
+    RedisStrictCommand<Double> ZINCRBY = new RedisStrictCommand<Double>("ZINCRBY", new DoubleReplayConvertor(), 4);
 
     RedisCommand<ListScanResult<String>> SCAN = new RedisCommand<ListScanResult<String>>("SCAN", new NestedMultiDecoder(new ObjectListReplayDecoder<String>(), new ListScanResultReplayDecoder()), ValueType.OBJECT);
     RedisStrictCommand<String> RANDOM_KEY = new RedisStrictCommand<String>("RANDOMKEY", new StringDataDecoder());
@@ -88,40 +104,47 @@ public interface RedisCommands {
     RedisCommand<List<Object>> EXEC = new RedisCommand<List<Object>>("EXEC", new ObjectListReplayDecoder<Object>());
 
     RedisCommand<Long> SREM = new RedisCommand<Long>("SREM", 2, ValueType.OBJECTS);
-    RedisCommand<Boolean> SADD = new RedisCommand<Boolean>("SADD", new BooleanAmountReplayConvertor(), 2, ValueType.OBJECTS);
+    RedisCommand<Boolean> SADD_BOOL = new RedisCommand<Boolean>("SADD", new BooleanAmountReplayConvertor(), 2, ValueType.OBJECTS);
+    RedisStrictCommand<Long> SADD = new RedisStrictCommand<Long>("SADD", 2, ValueType.OBJECTS);
     RedisCommand<Object> SPOP_SINGLE = new RedisCommand<Object>("SPOP");
     RedisCommand<Boolean> SADD_SINGLE = new RedisCommand<Boolean>("SADD", new BooleanReplayConvertor(), 2);
     RedisCommand<Boolean> SREM_SINGLE = new RedisCommand<Boolean>("SREM", new BooleanReplayConvertor(), 2);
+    RedisCommand<Boolean> SMOVE = new RedisCommand<Boolean>("SMOVE", new BooleanReplayConvertor(), 3);
     RedisCommand<List<Object>> SMEMBERS = new RedisCommand<List<Object>>("SMEMBERS", new ObjectListReplayDecoder<Object>());
     RedisCommand<ListScanResult<Object>> SSCAN = new RedisCommand<ListScanResult<Object>>("SSCAN", new NestedMultiDecoder(new ObjectListReplayDecoder<Object>(), new ListScanResultReplayDecoder()), ValueType.OBJECT);
+    RedisCommand<ListScanResult<Object>> EVAL_SSCAN = new RedisCommand<ListScanResult<Object>>("EVAL", new NestedMultiDecoder(new ObjectListReplayDecoder<Object>(), new ListScanResultReplayDecoder()), ValueType.OBJECT);
     RedisCommand<Boolean> SISMEMBER = new RedisCommand<Boolean>("SISMEMBER", new BooleanReplayConvertor(), 2);
-    RedisStrictCommand<Integer> SCARD = new RedisStrictCommand<Integer>("SCARD", new IntegerReplayConvertor());
+    RedisStrictCommand<Integer> SCARD_INT = new RedisStrictCommand<Integer>("SCARD", new IntegerReplayConvertor());
+    RedisStrictCommand<Long> SCARD = new RedisStrictCommand<Long>("SCARD");
 
     RedisCommand<Void> LSET = new RedisCommand<Void>("LSET", new VoidReplayConvertor(), 3);
     RedisCommand<Object> LPOP = new RedisCommand<Object>("LPOP");
     RedisCommand<Boolean> LREM_SINGLE = new RedisCommand<Boolean>("LREM", new BooleanReplayConvertor(), 3);
-    RedisCommand<Long> LREM = new RedisCommand<Long>("LREM", 3);
+    RedisStrictCommand<Long> LREM = new RedisStrictCommand<Long>("LREM", 3);
     RedisCommand<Object> LINDEX = new RedisCommand<Object>("LINDEX");
     RedisCommand<Object> LINSERT = new RedisCommand<Object>("LINSERT", 3, ValueType.OBJECTS);
-    RedisStrictCommand<Integer> LLEN = new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor());
+    RedisStrictCommand<Integer> LLEN_INT = new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor());
+    RedisStrictCommand<Long> LLEN = new RedisStrictCommand<Long>("LLEN");
     RedisStrictCommand<Boolean> LTRIM = new RedisStrictCommand<Boolean>("LTRIM", new BooleanReplayConvertor());
 
-    RedisStrictCommand<Boolean> EXPIRE = new RedisStrictCommand<Boolean>("EXPIRE", new BooleanReplayConvertor());
-    RedisStrictCommand<Boolean> EXPIREAT = new RedisStrictCommand<Boolean>("EXPIREAT", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> PEXPIRE = new RedisStrictCommand<Boolean>("PEXPIRE", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> PEXPIREAT = new RedisStrictCommand<Boolean>("PEXPIREAT", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> PERSIST = new RedisStrictCommand<Boolean>("PERSIST", new BooleanReplayConvertor());
-    RedisStrictCommand<Long> TTL = new RedisStrictCommand<Long>("TTL");
+    RedisStrictCommand<Long> PTTL = new RedisStrictCommand<Long>("PTTL");
 
     RedisCommand<Object> RPOPLPUSH = new RedisCommand<Object>("RPOPLPUSH");
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
-    RedisCommand<Object> BLPOP = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder());
     RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder(), new KeyValueConvertor());
+    RedisCommand<Object> BRPOP_VALUE = new RedisCommand<Object>("BRPOP", new KeyValueObjectDecoder(), new KeyValueConvertor());
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor(), 2);
-    RedisCommand<Long> PFCOUNT = new RedisCommand<Long>("PFCOUNT");
+    RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");
     RedisStrictCommand<Void> PFMERGE = new RedisStrictCommand<Void>("PFMERGE", new VoidReplayConvertor());
 
-    RedisCommand<Long> RPOP = new RedisCommand<Long>("RPOP");
-    RedisCommand<Long> LPUSH = new RedisCommand<Long>("LPUSH", 2);
+    RedisStrictCommand<Long> RPOP = new RedisStrictCommand<Long>("RPOP");
+    RedisStrictCommand<Long> LPUSH = new RedisStrictCommand<Long>("LPUSH", 2, ValueType.OBJECTS);
+    RedisCommand<Boolean> LPUSH_BOOLEAN = new RedisCommand<Boolean>("LPUSH", new TrueReplayConvertor(), 2, ValueType.OBJECTS);
+    RedisStrictCommand<Void> LPUSH_VOID = new RedisStrictCommand<Void>("LPUSH", new VoidReplayConvertor(), 2);
     RedisCommand<List<Object>> LRANGE = new RedisCommand<List<Object>>("LRANGE", new ObjectListReplayDecoder<Object>());
     RedisCommand<Long> RPUSH = new RedisCommand<Long>("RPUSH", 2, ValueType.OBJECTS);
     RedisCommand<Boolean> RPUSH_BOOLEAN = new RedisCommand<Boolean>("RPUSH", new TrueReplayConvertor(), 2, ValueType.OBJECTS);
@@ -132,10 +155,11 @@ public interface RedisCommands {
     RedisStrictCommand<List<Boolean>> SCRIPT_EXISTS = new RedisStrictCommand<List<Boolean>>("SCRIPT", "EXISTS", new ObjectListReplayDecoder<Boolean>(), new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> EVAL_BOOLEAN = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor());
-    RedisStrictCommand<Boolean> EVAL_BOOLEAN_R1 = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4);
-    RedisStrictCommand<Boolean> EVAL_BOOLEAN_R2 = new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5);
+    RedisCommand<Boolean> EVAL_BOOLEAN_WITH_VALUES = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS);
     RedisStrictCommand<String> EVAL_STRING = new RedisStrictCommand<String>("EVAL", new StringReplayDecoder());
-    RedisStrictCommand<Long> EVAL_INTEGER = new RedisStrictCommand<Long>("EVAL");
+    RedisStrictCommand<Integer> EVAL_INTEGER = new RedisStrictCommand<Integer>("EVAL", new IntegerReplayConvertor());
+    RedisStrictCommand<Long> EVAL_LONG = new RedisStrictCommand<Long>("EVAL");
+    RedisStrictCommand<Void> EVAL_VOID = new RedisStrictCommand<Void>("EVAL", new VoidReplayConvertor());
     RedisCommand<List<Object>> EVAL_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     RedisCommand<Object> EVAL_OBJECT = new RedisCommand<Object>("EVAL");
     RedisCommand<Object> EVAL_MAP_VALUE = new RedisCommand<Object>("EVAL", ValueType.MAP_VALUE);
@@ -143,6 +167,7 @@ public interface RedisCommands {
 
     RedisStrictCommand<Long> INCR = new RedisStrictCommand<Long>("INCR");
     RedisStrictCommand<Long> INCRBY = new RedisStrictCommand<Long>("INCRBY");
+    RedisStrictCommand<Double> INCRBYFLOAT = new RedisStrictCommand<Double>("INCRBYFLOAT", new DoubleReplayConvertor());
     RedisStrictCommand<Long> DECR = new RedisStrictCommand<Long>("DECR");
 
     RedisStrictCommand<Void> AUTH = new RedisStrictCommand<Void>("AUTH", new VoidReplayConvertor());
@@ -153,35 +178,44 @@ public interface RedisCommands {
     RedisStrictCommand<Void> FLUSHALL = new RedisStrictCommand<Void>("FLUSHALL", new VoidReplayConvertor());
 
     RedisStrictCommand<List<String>> KEYS = new RedisStrictCommand<List<String>>("KEYS", new StringListReplayDecoder());
+    RedisCommand<List<Object>> MGET = new RedisCommand<List<Object>>("MGET", new ObjectListReplayDecoder<Object>());
+    RedisStrictCommand<Void> MSET = new RedisStrictCommand<Void>("MSET", new VoidReplayConvertor());
 
+    RedisCommand<Boolean> HSETNX = new RedisCommand<Boolean>("HSETNX", new BooleanReplayConvertor(), 2, ValueType.MAP);
     RedisCommand<Boolean> HSET = new RedisCommand<Boolean>("HSET", new BooleanReplayConvertor(), 2, ValueType.MAP);
-    RedisStrictCommand<String> HINCRBYFLOAT = new RedisStrictCommand<String>("HINCRBYFLOAT");
     RedisCommand<MapScanResult<Object, Object>> HSCAN = new RedisCommand<MapScanResult<Object, Object>>("HSCAN", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
     RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder(), ValueType.MAP);
     RedisCommand<List<Object>> HVALS = new RedisCommand<List<Object>>("HVALS", new ObjectListReplayDecoder<Object>(), ValueType.MAP_VALUE);
     RedisCommand<Boolean> HEXISTS = new RedisCommand<Boolean>("HEXISTS", new BooleanReplayConvertor(), 2, ValueType.MAP_KEY);
     RedisStrictCommand<Integer> HLEN = new RedisStrictCommand<Integer>("HLEN", new IntegerReplayConvertor());
+    RedisStrictCommand<Long> HLEN_LONG = new RedisStrictCommand<Long>("HLEN");
     RedisCommand<Set<Object>> HKEYS = new RedisCommand<Set<Object>>("HKEYS", new ObjectSetReplayDecoder(), ValueType.MAP_KEY);
-    RedisCommand<String> HMSET = new RedisCommand<String>("HMSET", new StringReplayDecoder(), 2, ValueType.MAP);
+    RedisCommand<Void> HMSET = new RedisCommand<Void>("HMSET", new VoidReplayConvertor(), 2, ValueType.MAP);
     RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new ObjectListReplayDecoder<Object>(), 2, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     RedisCommand<Object> HGET = new RedisCommand<Object>("HGET", 2, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     RedisCommand<Long> HDEL = new RedisStrictCommand<Long>("HDEL", 2, ValueType.MAP_KEY);
 
     RedisStrictCommand<Long> DEL = new RedisStrictCommand<Long>("DEL");
-    RedisStrictCommand<Boolean> DEL_SINGLE = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
+    RedisStrictCommand<Long> DBSIZE = new RedisStrictCommand<Long>("DBSIZE");
+    RedisStrictCommand<Boolean> DEL_BOOL = new RedisStrictCommand<Boolean>("DEL", new BooleanReplayConvertor());
+    RedisStrictCommand<Void> DEL_VOID = new RedisStrictCommand<Void>("DEL", new VoidReplayConvertor());
 
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
+    RedisStrictCommand<Long> GET_LONG = new RedisStrictCommand<Long>("GET", new LongReplayConvertor());
+    RedisCommand<Object> GETSET = new RedisCommand<Object>("GETSET", 2);
     RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor(), 2);
+    RedisCommand<Boolean> SETPXNX = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor(), 2);
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor(), 2);
     RedisCommand<Void> SETEX = new RedisCommand<Void>("SETEX", new VoidReplayConvertor(), 3);
     RedisStrictCommand<Boolean> EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> NOT_EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanNumberReplayConvertor(1L));
 
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
     RedisStrictCommand<Void> RENAME = new RedisStrictCommand<Void>("RENAME", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> MOVE = new RedisStrictCommand<Boolean>("MOVE", new BooleanReplayConvertor());
     RedisStrictCommand<Void> MIGRATE = new RedisStrictCommand<Void>("MIGRATE", new VoidReplayConvertor());
 
-    RedisCommand<Long> PUBLISH = new RedisCommand<Long>("PUBLISH", 2);
+    RedisStrictCommand<Long> PUBLISH = new RedisStrictCommand<Long>("PUBLISH", 2);
 
     RedisCommand<Object> SUBSCRIBE = new RedisCommand<Object>("SUBSCRIBE", new PubSubStatusDecoder());
     RedisCommand<Object> UNSUBSCRIBE = new RedisCommand<Object>("UNSUBSCRIBE", new PubSubStatusDecoder());
@@ -197,4 +231,5 @@ public interface RedisCommands {
             );
 
     RedisStrictCommand<String> INFO_REPLICATION = new RedisStrictCommand<String>("INFO", "replication", new StringDataDecoder());
+    RedisStrictCommand<Map<String, String>> INFO_PERSISTENCE = new RedisStrictCommand<Map<String, String>>("INFO", "persistence", new StringMapDataDecoder());
 }

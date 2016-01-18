@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,6 +29,7 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -42,6 +42,20 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     private ScheduledFuture<?> monitorFuture;
 
     public SingleConnectionManager(SingleServerConfig cfg, Config config) {
+        super(create(cfg), config);
+
+        if (cfg.isDnsMonitoring()) {
+            try {
+                this.currentMaster.set(InetAddress.getByName(cfg.getAddress().getHost()));
+            } catch (UnknownHostException e) {
+                throw new RedisConnectionException("Unknown host: " + cfg.getAddress().getHost(), e);
+            }
+            log.debug("DNS monitoring enabled; Current master set to {}", currentMaster.get());
+            monitorDnsChange(cfg);
+        }
+    }
+
+    private static MasterSlaveServersConfig create(SingleServerConfig cfg) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
@@ -51,31 +65,27 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setPassword(cfg.getPassword());
         newconfig.setDatabase(cfg.getDatabase());
         newconfig.setClientName(cfg.getClientName());
-        newconfig.setRefreshConnectionAfterFails(cfg.getRefreshConnectionAfterFails());
         newconfig.setMasterAddress(addr);
         newconfig.setMasterConnectionPoolSize(cfg.getConnectionPoolSize());
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         newconfig.setSlaveSubscriptionConnectionPoolSize(cfg.getSubscriptionConnectionPoolSize());
+        newconfig.setConnectTimeout(cfg.getConnectTimeout());
+        newconfig.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
+        newconfig.setFailedAttempts(cfg.getFailedAttempts());
+        newconfig.setReconnectionTimeout(cfg.getReconnectionTimeout());
 
-        init(newconfig, config);
-
-        if (cfg.isDnsMonitoring()) {
-            try {
-                this.currentMaster.set(InetAddress.getByName(cfg.getAddress().getHost()));
-            } catch (UnknownHostException e) {
-                throw new RedisConnectionException("Unknown host", e);
-            }
-            log.debug("DNS monitoring enabled; Current master set to {}", currentMaster.get());
-            monitorDnsChange(cfg);
-        }
+        newconfig.setMasterConnectionMinimumIdleSize(cfg.getConnectionMinimumIdleSize());
+        newconfig.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
+        return newconfig;
     }
 
     @Override
     protected void initEntry(MasterSlaveServersConfig config) {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
-        SingleEntry entry = new SingleEntry(slots, this, config, connectListener);
-        entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        SingleEntry entry = new SingleEntry(slots, this, config);
+        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        f.syncUninterruptibly();
         addEntry(singleSlotRange, entry);
     }
 

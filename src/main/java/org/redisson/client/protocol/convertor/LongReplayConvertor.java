@@ -19,6 +19,9 @@ public class LongReplayConvertor extends SingleConvertor<Long> {
 
     @Override
     public Long convert(Object obj) {
+        if (obj == null) {
+            return 0L;
+        }
         return Long.valueOf(obj.toString());
     }
 

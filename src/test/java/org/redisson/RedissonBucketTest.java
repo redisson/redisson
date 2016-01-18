@@ -1,8 +1,12 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
@@ -10,6 +14,84 @@ import org.junit.Test;
 import org.redisson.core.RBucket;
 
 public class RedissonBucketTest extends BaseTest {
+
+    @Test
+    public void testCompareAndSet() {
+        RBucket<List<String>> r1 = redisson.getBucket("testCompareAndSet");
+        assertThat(r1.compareAndSet(null, Arrays.asList("81"))).isTrue();
+        assertThat(r1.compareAndSet(null, Arrays.asList("12"))).isFalse();
+
+        assertThat(r1.compareAndSet(Arrays.asList("81"), Arrays.asList("0"))).isTrue();
+        assertThat(r1.get()).isEqualTo(Arrays.asList("0"));
+
+        assertThat(r1.compareAndSet(Arrays.asList("1"), Arrays.asList("2"))).isFalse();
+        assertThat(r1.get()).isEqualTo(Arrays.asList("0"));
+
+        assertThat(r1.compareAndSet(Arrays.asList("0"), null)).isTrue();
+        assertThat(r1.get()).isNull();
+        assertThat(r1.isExists()).isFalse();
+    }
+
+    @Test
+    public void testGetAndSet() {
+        RBucket<List<String>> r1 = redisson.getBucket("testGetAndSet");
+        assertThat(r1.getAndSet(Arrays.asList("81"))).isNull();
+        assertThat(r1.getAndSet(Arrays.asList("1"))).isEqualTo(Arrays.asList("81"));
+        assertThat(r1.get()).isEqualTo(Arrays.asList("1"));
+
+        assertThat(r1.getAndSet(null)).isEqualTo(Arrays.asList("1"));
+        assertThat(r1.get()).isNull();
+        assertThat(r1.isExists()).isFalse();
+    }
+
+    @Test
+    public void testTrySet() {
+        RBucket<String> r1 = redisson.getBucket("testTrySet");
+        assertThat(r1.trySet("3")).isTrue();
+        assertThat(r1.trySet("4")).isFalse();
+        assertThat(r1.get()).isEqualTo("3");
+    }
+
+    @Test
+    public void testTrySetTTL() throws InterruptedException {
+        RBucket<String> r1 = redisson.getBucket("testTrySetTTL");
+        assertThat(r1.trySet("3", 500, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(r1.trySet("4", 500, TimeUnit.MILLISECONDS)).isFalse();
+        assertThat(r1.get()).isEqualTo("3");
+
+        Thread.sleep(500);
+
+        assertThat(r1.get()).isNull();
+    }
+
+    @Test
+    public void testSaveBuckets() {
+        Map<String, Integer> buckets = new HashMap<String, Integer>();
+        buckets.put("12", 1);
+        buckets.put("41", 2);
+        redisson.saveBuckets(buckets);
+
+        RBucket<Object> r1 = redisson.getBucket("12");
+        assertThat(r1.get()).isEqualTo(1);
+
+        RBucket<Object> r2 = redisson.getBucket("41");
+        assertThat(r2.get()).isEqualTo(2);
+    }
+
+    @Test
+    public void testLoadBucketValues() {
+        RBucket<String> bucket1 = redisson.getBucket("test1");
+        bucket1.set("someValue1");
+        RBucket<String> bucket3 = redisson.getBucket("test3");
+        bucket3.set("someValue3");
+
+        Map<String, String> result = redisson.loadBucketValues("test1", "test2", "test3", "test4");
+        Map<String, String> expected = new HashMap<String, String>();
+        expected.put("test1", "someValue1");
+        expected.put("test3", "someValue3");
+
+        Assert.assertEquals(expected, result);
+    }
 
     @Test
     public void testExpire() throws InterruptedException {

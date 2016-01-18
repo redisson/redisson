@@ -19,6 +19,9 @@ public class BooleanReplayConvertor extends SingleConvertor<Boolean> {
 
     @Override
     public Boolean convert(Object obj) {
+        if (obj == null) {
+            return null;
+        }
         return Long.valueOf(1).equals(obj) || "OK".equals(obj);
     }
 

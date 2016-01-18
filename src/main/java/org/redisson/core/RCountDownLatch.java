@@ -20,13 +20,13 @@ import java.util.concurrent.TimeUnit;
 /**
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
  *
- * It has a advantage over {@link java.util.concurrent.CountDownLatch} --
- * count can be reset via {@link #trySetCount}.
+ * It has an advantage over {@link java.util.concurrent.CountDownLatch} --
+ * count can be set via {@link #trySetCount} method.
  *
  * @author Nikita Koksharov
  *
  */
-public interface RCountDownLatch extends RObject {
+public interface RCountDownLatch extends RObject, RCountDownLatchAsync {
 
     /**
      * Causes the current thread to wait until the latch has counted down to
@@ -123,9 +123,9 @@ public interface RCountDownLatch extends RObject {
 
     /**
      * Sets new count value only if previous count already has reached zero
-     * or not been setted at all.
+     * or is not set at all.
      *
-     * @param count the number of times {@link #countDown} must be invoked
+     * @param count - number of times {@link #countDown} must be invoked
      *        before threads can pass through {@link #await}
      * @return <code>true</code> if new count setted
      *         <code>false</code> if previous count has not reached zero

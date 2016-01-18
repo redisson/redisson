@@ -31,7 +31,7 @@ import io.netty.buffer.ByteBufInputStream;
 
 /**
  * Efficient and speedy serialization codec fully
- * compatible with JDK codec.
+ * compatible with JDK Serialization codec.
  *
  * https://github.com/RuedigerMoeller/fast-serialization
  *

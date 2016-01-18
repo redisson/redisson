@@ -39,8 +39,8 @@ public class QueueCommandHolder {
         return channelPromise;
     }
 
-    public AtomicBoolean getSended() {
-        return sended;
+    public boolean trySend() {
+        return sended.compareAndSet(false, true);
     }
 
 }

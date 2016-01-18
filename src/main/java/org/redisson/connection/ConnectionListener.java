@@ -15,12 +15,25 @@
  */
 package org.redisson.connection;
 
-import org.redisson.MasterSlaveServersConfig;
-import org.redisson.client.RedisException;
-import org.redisson.connection.ConnectionEntry.NodeType;
+import java.net.InetSocketAddress;
 
 public interface ConnectionListener {
 
-    void onConnect(MasterSlaveServersConfig config, NodeType serverMode, FutureConnectionListener connectionListener) throws RedisException;
+    /**
+     * This method will be triggered when Redisson
+     * connects to Redis server.
+     *
+     * @param addr - Redis server network address
+     */
+    void onConnect(InetSocketAddress addr);
+
+    /**
+     * This method will be triggered when Redisson
+     * discovers that Redis server connected before
+     * now in disconnected state.
+     *
+     * @param addr - Redis server network address
+     */
+    void onDisconnect(InetSocketAddress addr);
 
 }

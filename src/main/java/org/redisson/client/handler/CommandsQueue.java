@@ -22,6 +22,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -38,14 +39,23 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class CommandsQueue extends ChannelDuplexHandler {
 
-    public static final AttributeKey<QueueCommand> REPLAY = AttributeKey.valueOf("promise");
+    public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
     private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
 
-    public void sendNextCommand(ChannelHandlerContext ctx) throws Exception {
-        ctx.channel().attr(CommandsQueue.REPLAY).remove();
+    private final ChannelFutureListener listener = new ChannelFutureListener() {
+        @Override
+        public void operationComplete(ChannelFuture future) throws Exception {
+            if (!future.isSuccess()) {
+                sendNextCommand(future.channel());
+            }
+        }
+    };
+
+    public void sendNextCommand(Channel channel) {
+        channel.attr(CommandsQueue.CURRENT_COMMAND).remove();
         queue.poll();
-        sendData(ctx);
+        sendData(channel);
     }
 
     @Override
@@ -57,36 +67,30 @@ public class CommandsQueue extends ChannelDuplexHandler {
                 super.write(ctx, msg, promise);
             } else {
                 queue.add(new QueueCommandHolder(data, promise));
-                sendData(ctx);
+                sendData(ctx.channel());
             }
         } else {
             super.write(ctx, msg, promise);
         }
     }
 
-    private void sendData(final ChannelHandlerContext ctx) throws Exception {
+    private void sendData(Channel ch) {
         QueueCommandHolder command = queue.peek();
-        if (command != null && command.getSended().compareAndSet(false, true)) {
+        if (command != null && command.trySend()) {
             QueueCommand data = command.getCommand();
             List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
                     for (Object channel : cd.getParams()) {
-                        ctx.pipeline().get(CommandDecoder.class).addChannel(channel.toString(), cd);
+                        ch.pipeline().get(CommandDecoder.class).addChannel(channel.toString(), cd);
                     }
                 }
             } else {
-                ctx.channel().attr(REPLAY).set(data);
+                ch.attr(CURRENT_COMMAND).set(data);
             }
-            command.getChannelPromise().addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        sendNextCommand(ctx);
-                    }
-                }
-            });
-            ctx.channel().writeAndFlush(data, command.getChannelPromise());
+
+            command.getChannelPromise().addListener(listener);
+            ch.writeAndFlush(data, command.getChannelPromise());
         }
     }
 

@@ -15,36 +15,37 @@
  */
 package org.redisson;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.core.RBlockingQueue;
 
 import io.netty.util.concurrent.Future;
 
 /**
- * Offers blocking queue facilities through an intermediary
- * {@link LinkedBlockingQueue} where items are added as soon as
- * <code>blpop</code> returns. All {@link BlockingQueue} methods are actually
- * delegated to this intermediary queue.
+ * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
+ *
+ * <p>Queue size limited by Redis server memory amount. This is why {@link #remainingCapacity()} always
+ * returns <code>Integer.MAX_VALUE</code>
  *
  * @author pdeschen@gmail.com
  * @author Nikita Koksharov
  */
 public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlockingQueue<V> {
 
-    protected RedissonBlockingQueue(CommandExecutor commandExecutor, String name) {
+    protected RedissonBlockingQueue(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonBlockingQueue(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 
@@ -53,6 +54,10 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         return offerAsync(e);
     }
 
+    /*
+     * (non-Javadoc)
+     * @see java.util.concurrent.BlockingQueue#put(java.lang.Object)
+     */
     @Override
     public void put(V e) throws InterruptedException {
         offer(e);
@@ -68,6 +73,10 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), 0);
     }
 
+    /*
+     * (non-Javadoc)
+     * @see java.util.concurrent.BlockingQueue#take()
+     */
     @Override
     public V take() throws InterruptedException {
         Future<V> res = takeAsync();
@@ -79,16 +88,39 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
     }
 
+    /*
+     * (non-Javadoc)
+     * @see java.util.concurrent.BlockingQueue#poll(long, java.util.concurrent.TimeUnit)
+     */
     @Override
     public V poll(long timeout, TimeUnit unit) throws InterruptedException {
         Future<V> res = pollAsync(timeout, unit);
         return res.await().getNow();
     }
 
+    /*
+     * (non-Javadoc)
+     * @see org.redisson.core.RBlockingQueue#pollFromAny(long, java.util.concurrent.TimeUnit, java.lang.String[])
+     */
     @Override
-    public V pollLastAndOfferFirstTo(RBlockingQueue<V> queue, long timeout, TimeUnit unit)
-            throws InterruptedException {
-        return pollLastAndOfferFirstTo(queue.getName(), timeout, unit);
+    public V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+        Future<V> res = pollFromAnyAsync(timeout, unit, queueNames);
+        return res.await().getNow();
+    }
+
+    /*
+     * (non-Javadoc)
+     * @see org.redisson.core.RBlockingQueueAsync#pollFromAnyAsync(long, java.util.concurrent.TimeUnit, java.lang.String[])
+     */
+    @Override
+    public Future<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+        params.add(getName());
+        for (Object name : queueNames) {
+            params.add(name);
+        }
+        params.add(unit.toSeconds(timeout));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, params.toArray());
     }
 
     @Override

@@ -5,22 +5,82 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hamcrest.*;
-import org.junit.*;
-import org.redisson.core.*;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
+import org.redisson.core.RBlockingQueue;
 
 public class RedissonBlockingQueueTest extends BaseTest {
+
+    @Test
+    public void testPollFromAny() throws InterruptedException {
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
+            @Override
+            public void run() {
+                RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
+                RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+                try {
+                    queue3.put(2);
+                    queue1.put(1);
+                    queue2.put(3);
+                } catch (InterruptedException e) {
+                    Assert.fail();
+                }
+            }
+        }, 3, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        int l = queue1.pollFromAny(4, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
+
+        Assert.assertEquals(2, l);
+        Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+    }
+
+    @Test
+    public void testTake() throws InterruptedException {
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:take");
+        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
+            @Override
+            public void run() {
+                RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue:take");
+                try {
+                    queue.put(3);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }, 10, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        int l = queue1.take();
+
+        Assert.assertEquals(3, l);
+        Assert.assertTrue(System.currentTimeMillis() - s > 9000);
+    }
 
     @Test
     public void testPoll() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
         queue1.put(1);
         Assert.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
-        Assert.assertNull(queue1.poll(2, TimeUnit.SECONDS));
+
+        long s = System.currentTimeMillis();
+        Assert.assertNull(queue1.poll(5, TimeUnit.SECONDS));
+        Assert.assertTrue(System.currentTimeMillis() - s > 5000);
     }
     @Test
     public void testAwait() throws InterruptedException {
@@ -30,18 +90,27 @@ public class RedissonBlockingQueueTest extends BaseTest {
         Assert.assertEquals((Integer)1, queue1.poll(10, TimeUnit.SECONDS));
     }
 
-    @Test    public void testPollLastAndOfferFirstTo() throws InterruptedException {
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
-        queue1.put(1);
-        queue1.put(2);
-        queue1.put(3);
+    @Test
+    public void testPollLastAndOfferFirstTo() throws InterruptedException {
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("{queue}1");
+        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    queue1.put(3);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }, 10, TimeUnit.SECONDS);
 
-        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue2");
+        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("{queue}2");
         queue2.put(4);
         queue2.put(5);
         queue2.put(6);
 
-        queue1.pollLastAndOfferFirstTo(queue2, 10, TimeUnit.SECONDS);
+        queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
         MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
     }
 
@@ -67,7 +136,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.add(3);
         queue.offer(4);
 
-        //MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
+        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
         Assert.assertEquals((Integer) 1, queue.poll());
         MatcherAssert.assertThat(queue, Matchers.contains(2, 3, 4));
         Assert.assertEquals((Integer) 2, queue.element());

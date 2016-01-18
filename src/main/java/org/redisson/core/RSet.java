@@ -33,4 +33,14 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
      */
     V removeRandom();
 
+    /**
+     * Move a member from this set to the given destination set in.
+     *
+     * @param destination the destination set
+     * @param member the member to move
+     * @return true if the element is moved, false if the element is not a
+     * member of this set or no operation was performed
+     */
+    boolean move(String destination, V member);
+
 }

@@ -17,34 +17,61 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ConnectionEntry.NodeType;
+import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.misc.ConnectionPool;
 import org.redisson.misc.PubSubConnectionPoll;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
-public class SingleEntry extends MasterSlaveEntry<SubscribesConnectionEntry> {
+public class SingleEntry extends MasterSlaveEntry {
 
     final ConnectionPool<RedisPubSubConnection> pubSubConnectionHolder;
 
-    public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config, ConnectionListener connectListener) {
-        super(slotRanges, connectionManager, config, connectListener);
-        pubSubConnectionHolder = new PubSubConnectionPoll(config, null, connectionManager, this);
+    public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+        super(slotRanges, connectionManager, config);
+        pubSubConnectionHolder = new PubSubConnectionPoll(config, connectionManager, this) {
+            protected ClientConnectionsEntry getEntry() {
+                return entries.get(0);
+            }
+        };
     }
 
     @Override
-    public void setupMasterEntry(String host, int port) {
+    public Future<Void> setupMasterEntry(String host, int port) {
         RedisClient masterClient = connectionManager.createClient(host, port);
-        masterEntry = new SubscribesConnectionEntry(masterClient,
-                config.getMasterConnectionPoolSize(), config.getSlaveSubscriptionConnectionPoolSize(), connectListener, NodeType.MASTER);
-        writeConnectionHolder.add(masterEntry);
-        pubSubConnectionHolder.add(masterEntry);
+        masterEntry = new ClientConnectionsEntry(masterClient,
+                config.getMasterConnectionMinimumIdleSize(),
+                config.getMasterConnectionPoolSize(),
+                config.getSlaveConnectionMinimumIdleSize(),
+                config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, NodeType.MASTER, config);
+        final Promise<Void> res = connectionManager.newPromise();
+        Future<Void> f = writeConnectionHolder.add(masterEntry);
+        Future<Void> s = pubSubConnectionHolder.add(masterEntry);
+        FutureListener<Void> listener = new FutureListener<Void>() {
+            AtomicInteger counter = new AtomicInteger(2);
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (!future.isSuccess()) {
+                    res.setFailure(future.cause());
+                    return;
+                }
+                if (counter.decrementAndGet() == 0) {
+                    res.setSuccess(null);
+                }
+            }
+        };
+        f.addListener(listener);
+        s.addListener(listener);
+        return res;
     }
 
     @Override

@@ -18,7 +18,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
 
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.replace("1", "122", "32");
                 map.replace("1", "0", "31");
@@ -39,7 +39,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         map.putIfAbsent("1", "0");
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.remove("1", "0");
             }
@@ -57,7 +57,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
 
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.replace("1", "3");
             }
@@ -73,7 +73,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
     public void test_Multi_Replace_MultiInstance() throws InterruptedException {
         final String name = "test_Multi_Replace_MultiInstance";
 
-        Redisson redisson = BaseTest.createInstance();
+        RedissonClient redisson = BaseTest.createInstance();
         ConcurrentMap<Integer, Integer> map = redisson.getMap(name);
         for (int i = 0; i < 5; i++) {
             map.put(i, 1);
@@ -82,7 +82,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         final SecureRandom secureRandom = new SecureRandom();
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<Integer, Integer> map = redisson.getMap(name);
                 Assert.assertNotNull(map.replace(secureRandom.nextInt(5), 2));
             }
@@ -110,7 +110,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         final SecureRandom secureRandom = new SecureRandom();
         testMultiInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.remove(secureRandom.nextInt(10), 1);
             }
@@ -127,7 +127,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         map.putIfAbsent("1", "0");
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.putIfAbsent("1", "1");
             }
@@ -144,7 +144,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         final String name = "testMultiPutIfAbsent_SingleInstance";
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.putIfAbsent("" + Math.random(), "1");
             }
@@ -158,7 +158,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         final String name = "testMultiPutIfAbsent_MultiInstance";
         testMultiInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.putIfAbsent("" + Math.random(), "1");
             }
@@ -178,7 +178,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         final String name = "testMultiPut_SingleInstance";
         testSingleInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 Map<String, String> map = redisson.getMap(name);
                 map.put("" + Math.random(), "1");
             }
@@ -193,7 +193,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         final String name = "testMultiPut_MultiInstance";
         testMultiInstanceConcurrency(100, new RedissonRunnable() {
             @Override
-            public void run(Redisson redisson) {
+            public void run(RedissonClient redisson) {
                 ConcurrentMap<String, String> map = redisson.getMap(name);
                 map.putIfAbsent("" + Math.random(), "1");
             }
