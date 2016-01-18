@@ -475,8 +475,21 @@ public interface RedissonClient {
      */
     RBitSet getBitSet(String name);
 
+    /**
+     * Returns bloom filter instance by name.
+     *
+     * @param name of bloom filter
+     * @return
+     */
     <V> RBloomFilter<V> getBloomFilter(String name);
 
+    /**
+     * Returns bloom filter instance by name
+     * using provided codec for objects.
+     *
+     * @param name of bloom filter
+     * @return
+     */
     <V> RBloomFilter<V> getBloomFilter(String name, Codec codec);
 
     /**
