@@ -15,7 +15,11 @@
  */
 package org.redisson;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.net.URL;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
@@ -335,9 +339,64 @@ public class Config {
         return useLinuxNativeEpoll;
     }
 
+    /**
+     * Read config object stored in JSON format from <code>String</code>
+     *
+     * @param content
+     * @return
+     * @throws IOException
+     */
     public static Config fromJSON(String content) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(content);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>InputStream</code>
+     *
+     * @param inputStream
+     * @return
+     * @throws IOException
+     */
+    public static Config fromJSON(InputStream inputStream) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(inputStream);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>File</code>
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static Config fromJSON(File file) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(file);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>URL</code>
+     *
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public static Config fromJSON(URL url) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(url);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>Reader</code>
+     *
+     * @param reader
+     * @return
+     * @throws IOException
+     */
+    public static Config fromJSON(Reader reader) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(reader);
     }
 
     public String toJSON() throws IOException {

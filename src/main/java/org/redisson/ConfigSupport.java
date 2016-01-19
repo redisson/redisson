@@ -15,8 +15,12 @@
  */
 package org.redisson;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.net.URI;
+import java.net.URL;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
@@ -97,6 +101,22 @@ public class ConfigSupport {
 
     public Config fromJSON(String content) throws IOException {
         return mapper.readValue(content, Config.class);
+    }
+
+    public Config fromJSON(File file) throws IOException {
+        return mapper.readValue(file, Config.class);
+    }
+
+    public Config fromJSON(URL url) throws IOException {
+        return mapper.readValue(url, Config.class);
+    }
+
+    public Config fromJSON(Reader reader) throws IOException {
+        return mapper.readValue(reader, Config.class);
+    }
+
+    public Config fromJSON(InputStream inputStream) throws IOException {
+        return mapper.readValue(inputStream, Config.class);
     }
 
     public String toJSON(Config config) throws IOException {

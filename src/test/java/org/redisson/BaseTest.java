@@ -3,6 +3,8 @@ package org.redisson;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.MsgPackJacksonCodec;
 
 public abstract class BaseTest {
 
@@ -24,6 +26,7 @@ public abstract class BaseTest {
             redisAddress = "127.0.0.1:6379";
         }
         Config config = new Config();
+        config.setCodec(new MsgPackJacksonCodec());
 //        config.useSentinelConnection().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26379", "127.0.0.1:26389");
 //        config.useClusterServers().addNodeAddress("127.0.0.1:7004", "127.0.0.1:7001", "127.0.0.1:7000");
         config.useSingleServer().setAddress(redisAddress);
