@@ -399,6 +399,12 @@ public class Config {
         return support.fromJSON(reader);
     }
 
+    /**
+     * Convert current configuration to JSON format
+     *
+     * @return
+     * @throws IOException
+     */
     public String toJSON() throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.toJSON(this);
