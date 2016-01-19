@@ -4,20 +4,43 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.client.WriteRedisConnectionException;
+import org.redisson.client.codec.Codec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.connection.ConnectionListener;
+import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+import org.redisson.misc.URIBuilder;
+
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.SerializableString;
+import com.fasterxml.jackson.core.io.CharacterEscapes;
+import com.fasterxml.jackson.core.io.SerializedString;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+
 import static org.assertj.core.api.Assertions.*;
 
 import net.jodah.concurrentunit.Waiter;
@@ -139,6 +162,36 @@ public class RedissonTest {
         }
 
         Assert.assertTrue(nodes.pingAll());
+    }
+
+    @Test
+    public void testClusterConfig() throws IOException {
+        Config originalConfig = new Config();
+        originalConfig.useClusterServers().addNodeAddress("123.123.1.23:1902", "9.3.1.0:1902");
+        String t = originalConfig.toJSON();
+        Config c = Config.fromJSON(t);
+        System.out.println(t);
+        assertThat(c.toJSON()).isEqualTo(t);
+    }
+
+    @Test
+    public void testSingleConfig() throws IOException {
+        RedissonClient r = Redisson.create();
+        String t = r.getConfig().toJSON();
+        Config c = Config.fromJSON(t);
+        System.out.println(t);
+        assertThat(c.toJSON()).isEqualTo(t);
+    }
+
+    @Test
+    public void testMasterSlaveConfig() throws IOException {
+        Config c2 = new Config();
+        c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
+
+        String t = c2.toJSON();
+        Config c = Config.fromJSON(t);
+        System.out.println(t);
+        assertThat(c.toJSON()).isEqualTo(t);
     }
 
     @Test

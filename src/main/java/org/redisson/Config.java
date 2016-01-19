@@ -15,9 +15,10 @@
  */
 package org.redisson;
 
+import java.io.IOException;
+
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
-import org.redisson.connection.ConnectionListener;
 
 /**
  * Redisson configuration
@@ -49,8 +50,6 @@ public class Config {
 
     private boolean useLinuxNativeEpoll;
 
-    private ConnectionListener connectionListener;
-
     public Config() {
     }
 
@@ -62,7 +61,6 @@ public class Config {
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
-        setConnectionListener(oldConf.getConnectionListener());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
         if (oldConf.getSingleServerConfig() != null) {
@@ -337,21 +335,15 @@ public class Config {
         return useLinuxNativeEpoll;
     }
 
-    @Deprecated
-    public ConnectionListener getConnectionListener() {
-        return connectionListener;
+    public static Config fromJSON(String content) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(content);
     }
 
-    /**
-     * Use {@code org.redisson.core.NodesGroup#addConnectionListener(ConnectionListener)}
-     *
-     * @param connectionListener
-     * @return
-     */
-    @Deprecated
-    public Config setConnectionListener(ConnectionListener connectionListener) {
-        this.connectionListener = connectionListener;
-        return this;
+    public String toJSON() throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.toJSON(this);
     }
+
 
 }
