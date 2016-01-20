@@ -18,6 +18,7 @@ package org.redisson;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -181,10 +182,11 @@ public class Redisson implements RedissonClient {
     }
 
     public <V> Map<String, V> loadBucketValues(String ... keys) {
-        if (config.isClusterConfig()) {
-            throw new IllegalStateException("This method can't be used in cluster mode!");
+        if (keys.length == 0) {
+            return Collections.emptyMap();
         }
-        Future<List<Object>> future = commandExecutor.readAsync(null, RedisCommands.MGET, keys);
+
+        Future<List<Object>> future = commandExecutor.readAsync(keys[0], RedisCommands.MGET, keys);
         List<Object> values = commandExecutor.get(future);
         Map<String, V> result = new HashMap<String, V>(values.size());
         int index = 0;
@@ -200,8 +202,8 @@ public class Redisson implements RedissonClient {
     }
 
     public void saveBuckets(Map<String, ?> buckets) {
-        if (config.isClusterConfig()) {
-            throw new IllegalStateException("This method can't be used in cluster mode!");
+        if (buckets.isEmpty()) {
+            return;
         }
 
         List<Object> params = new ArrayList<Object>(buckets.size());
@@ -214,7 +216,7 @@ public class Redisson implements RedissonClient {
             }
         }
 
-        commandExecutor.write(null, RedisCommands.MSET, params.toArray());
+        commandExecutor.write(params.get(0).toString(), RedisCommands.MSET, params.toArray());
     }
 
     @Override
