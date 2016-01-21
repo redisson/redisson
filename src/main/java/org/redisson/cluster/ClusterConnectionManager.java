@@ -125,7 +125,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 RedisConnection connection = future.getNow();
                 Promise<RedisConnection> promise = newPromise();
-                connectListener.onConnect(promise, connection, NodeType.MASTER, config);
+                connectListener.onConnect(promise, connection, null, config);
                 promise.addListener(new FutureListener<RedisConnection>() {
                     @Override
                     public void operationComplete(Future<RedisConnection> future) throws Exception {

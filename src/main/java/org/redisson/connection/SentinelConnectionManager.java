@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 public class SentinelConnectionManager extends MasterSlaveConnectionManager {
@@ -85,6 +86,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 if (!connection.isActive()) {
                     continue;
                 }
+                Promise<RedisConnection> f = newPromise();
+                connectListener.onConnect(f, connection, null, c);
+                f.syncUninterruptibly();
 
                 // TODO async
                 List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
