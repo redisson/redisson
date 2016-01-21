@@ -1,53 +1,26 @@
 package org.redisson;
 
-import java.io.File;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URL;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.client.RedisConnectionException;
 import org.redisson.client.WriteRedisConnectionException;
-import org.redisson.client.codec.Codec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.connection.ConnectionListener;
-import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
-import org.redisson.misc.URIBuilder;
-
-import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.SerializableString;
-import com.fasterxml.jackson.core.io.CharacterEscapes;
-import com.fasterxml.jackson.core.io.SerializedString;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-
-import static org.assertj.core.api.Assertions.*;
 
 import net.jodah.concurrentunit.Waiter;
 
 public class RedissonTest {
-
-    private String redisFolder = "C:\\Devel\\projects\\redis\\Redis-x64-3.0.500\\";
 
     RedissonClient redisson;
 
@@ -67,7 +40,7 @@ public class RedissonTest {
     @Test
     public void testConnectionListener() throws IOException, InterruptedException, TimeoutException {
 
-        Process p = runRedis();
+        Process p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
 
         final Waiter onConnectWaiter = new Waiter();
         final Waiter onDisconnectWaiter = new Waiter();
@@ -104,7 +77,7 @@ public class RedissonTest {
         } catch (Exception e) {
         }
 
-        p = runRedis();
+        p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
 
         r.getBucket("1").get();
 
@@ -115,16 +88,6 @@ public class RedissonTest {
 
         onConnectWaiter.await(1, TimeUnit.SECONDS, 2);
         onDisconnectWaiter.await();
-    }
-
-    private Process runRedis() throws IOException, InterruptedException {
-        URL resource = getClass().getResource("/redis_connectionListener_test.conf");
-
-        ProcessBuilder master = new ProcessBuilder(redisFolder + "redis-server.exe", resource.getFile().substring(1));
-        master.directory(new File(redisFolder));
-        Process p = master.start();
-        Thread.sleep(1000);
-        return p;
     }
 
     @Test

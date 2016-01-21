@@ -40,12 +40,14 @@ import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.SingleEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
 
 public class ClusterConnectionManager extends MasterSlaveConnectionManager {
@@ -61,9 +63,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private final boolean isReadFromSlaves;
 
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
+        super(config);
         isReadFromSlaves = cfg.isReadFromSlaves();
         connectListener = new ClusterConnectionListener(cfg.isReadFromSlaves());
-        init(config);
 
         this.config = create(cfg);
         init(this.config);

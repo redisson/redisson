@@ -124,11 +124,29 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
-        init(config);
+        this(config);
         init(cfg);
     }
 
-    protected MasterSlaveConnectionManager() {
+    public MasterSlaveConnectionManager(Config cfg) {
+        if (cfg.isUseLinuxNativeEpoll()) {
+            if (cfg.getEventLoopGroup() == null) {
+                this.group = new EpollEventLoopGroup(cfg.getThreads());
+            } else {
+                this.group = cfg.getEventLoopGroup();
+            }
+
+            this.socketChannelClass = EpollSocketChannel.class;
+        } else {
+            if (cfg.getEventLoopGroup() == null) {
+                this.group = new NioEventLoopGroup(cfg.getThreads());
+            } else {
+                this.group = cfg.getEventLoopGroup();
+            }
+
+            this.socketChannelClass = NioSocketChannel.class;
+        }
+        this.codec = cfg.getCodec();
     }
 
     public IdleConnectionWatcher getConnectionWatcher() {
@@ -185,17 +203,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             future.syncUninterruptibly();
         }
         addEntry(singleSlotRange, entry);
-    }
-
-    protected void init(Config cfg) {
-        if (cfg.isUseLinuxNativeEpoll()) {
-            this.group = new EpollEventLoopGroup(cfg.getThreads());
-            this.socketChannelClass = EpollSocketChannel.class;
-        } else {
-            this.group = new NioEventLoopGroup(cfg.getThreads());
-            this.socketChannelClass = NioSocketChannel.class;
-        }
-        this.codec = cfg.getCodec();
     }
 
     @Override

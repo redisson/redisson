@@ -60,7 +60,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
     }
 
     public ElasticacheConnectionManager(ElasticacheServersConfig cfg, Config config) {
-        init(config);
+        super(config);
 
         this.config = create(cfg);
 

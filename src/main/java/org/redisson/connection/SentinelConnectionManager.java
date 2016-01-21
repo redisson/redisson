@@ -53,7 +53,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config) {
-        init(config);
+        super(config);
 
         final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
         c.setRetryInterval(cfg.getRetryInterval());

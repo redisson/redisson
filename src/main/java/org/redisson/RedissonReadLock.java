@@ -49,10 +49,10 @@ public class RedissonReadLock extends RedissonLock implements RLock {
         return "redisson_rwlock__{" + getName() + "}";
     }
 
-    Long tryLockInner(final long leaseTime, final TimeUnit unit) {
+    Future<Long> tryLockInnerAsync(final long leaseTime, final TimeUnit unit, long threadId) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                                 "if (mode == false) then " +
                                   "redis.call('hset', KEYS[1], 'mode', 'read'); " +
@@ -66,7 +66,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                   "return nil; " +
                                 "end;" +
                                 "return redis.call('pttl', KEYS[1]);",
-                        Arrays.<Object>asList(getName()), internalLockLeaseTime, getLockName());
+                        Arrays.<Object>asList(getName()), internalLockLeaseTime, getLockName(threadId));
     }
 
     @Override
@@ -97,7 +97,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                     "end; " +
                                 "end; " +
                                 "return nil; ",
-                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName());
+                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(Thread.currentThread().getId()));
         if (opStatus == null) {
             throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
@@ -143,12 +143,12 @@ public class RedissonReadLock extends RedissonLock implements RLock {
 
     @Override
     public boolean isHeldByCurrentThread() {
-        return commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName());
+        return commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(Thread.currentThread().getId()));
     }
 
     @Override
     public int getHoldCount() {
-        Long res = commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName());
+        Long res = commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName(Thread.currentThread().getId()));
         if (res == null) {
             return 0;
         }

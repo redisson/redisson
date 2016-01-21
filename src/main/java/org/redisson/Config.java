@@ -24,6 +24,8 @@ import java.net.URL;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
 
+import io.netty.channel.EventLoopGroup;
+
 /**
  * Redisson configuration
  *
@@ -54,11 +56,14 @@ public class Config {
 
     private boolean useLinuxNativeEpoll;
 
+    private EventLoopGroup eventLoopGroup;
+
     public Config() {
     }
 
     public Config(Config oldConf) {
         setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());
+        setEventLoopGroup(oldConf.getEventLoopGroup());
 
         if (oldConf.getCodec() == null) {
             // use it by default
@@ -67,6 +72,7 @@ public class Config {
 
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
+        setEventLoopGroup(oldConf.getEventLoopGroup());
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
         }
@@ -337,6 +343,24 @@ public class Config {
     }
     public boolean isUseLinuxNativeEpoll() {
         return useLinuxNativeEpoll;
+    }
+
+    /**
+     * Use defined eventLoopGroup instance.
+     * Thus several Redisson instances can use one eventLoopGroup instance.
+     * <p/>
+     * Only {@link io.netty.channel.epoll.EpollEventLoopGroup} or
+     * {@link io.netty.channel.nio.NioEventLoopGroup} can be used.
+     *
+     * @param eventLoopGroup
+     * @return
+     */
+    public Config setEventLoopGroup(EventLoopGroup eventLoopGroup) {
+        this.eventLoopGroup = eventLoopGroup;
+        return this;
+    }
+    public EventLoopGroup getEventLoopGroup() {
+        return eventLoopGroup;
     }
 
     /**
