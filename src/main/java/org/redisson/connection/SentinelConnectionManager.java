@@ -56,27 +56,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config) {
         super(config);
 
-        final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
-        c.setRetryInterval(cfg.getRetryInterval());
-        c.setRetryAttempts(cfg.getRetryAttempts());
-        c.setTimeout(cfg.getTimeout());
-        c.setPingTimeout(cfg.getPingTimeout());
-        c.setLoadBalancer(cfg.getLoadBalancer());
-        c.setPassword(cfg.getPassword());
-        c.setDatabase(cfg.getDatabase());
-        c.setClientName(cfg.getClientName());
-        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
-        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
-        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
-        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
-        c.setConnectTimeout(cfg.getConnectTimeout());
-        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
-
-        c.setFailedAttempts(cfg.getFailedAttempts());
-        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
-        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
-        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
-        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
+        final MasterSlaveServersConfig c = create(cfg);
 
         List<String> disconnectedSlaves = new ArrayList<String>();
         for (URI addr : cfg.getSentinelAddresses()) {

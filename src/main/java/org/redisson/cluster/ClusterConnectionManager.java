@@ -18,7 +18,6 @@ package org.redisson.cluster;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,7 +38,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.SingleEntry;
@@ -511,32 +509,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
         return partitions.values();
-    }
-
-    private MasterSlaveServersConfig create(ClusterServersConfig cfg) {
-        MasterSlaveServersConfig c = new MasterSlaveServersConfig();
-        c.setRetryInterval(cfg.getRetryInterval());
-        c.setRetryAttempts(cfg.getRetryAttempts());
-        c.setTimeout(cfg.getTimeout());
-        c.setPingTimeout(cfg.getPingTimeout());
-        c.setLoadBalancer(cfg.getLoadBalancer());
-        c.setPassword(cfg.getPassword());
-        c.setDatabase(cfg.getDatabase());
-        c.setClientName(cfg.getClientName());
-        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
-        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
-        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
-        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
-        c.setConnectTimeout(cfg.getConnectTimeout());
-        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
-
-        c.setFailedAttempts(cfg.getFailedAttempts());
-        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
-        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
-        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
-        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
-
-        return c;
     }
 
     private List<ClusterNodeInfo> parse(String nodesResponse) {

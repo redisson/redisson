@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.BaseMasterSlaveServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.BaseRedisPubSubListener;
@@ -203,6 +204,32 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             future.syncUninterruptibly();
         }
         addEntry(singleSlotRange, entry);
+    }
+
+    protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
+        MasterSlaveServersConfig c = new MasterSlaveServersConfig();
+        c.setRetryInterval(cfg.getRetryInterval());
+        c.setRetryAttempts(cfg.getRetryAttempts());
+        c.setTimeout(cfg.getTimeout());
+        c.setPingTimeout(cfg.getPingTimeout());
+        c.setLoadBalancer(cfg.getLoadBalancer());
+        c.setPassword(cfg.getPassword());
+        c.setDatabase(cfg.getDatabase());
+        c.setClientName(cfg.getClientName());
+        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
+        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
+        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
+        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        c.setConnectTimeout(cfg.getConnectTimeout());
+        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
+
+        c.setFailedAttempts(cfg.getFailedAttempts());
+        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
+        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
+        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
+        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
+
+        return c;
     }
 
     @Override
