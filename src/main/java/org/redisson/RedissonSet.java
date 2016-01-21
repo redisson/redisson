@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -143,19 +144,25 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         };
     }
 
-    private Future<Collection<V>> readAllAsync() {
+    @Override
+    public Future<Set<V>> readAllAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.SMEMBERS, getName());
     }
 
     @Override
+    public Set<V> readAll() {
+        return get(readAllAsync());
+    }
+
+    @Override
     public Object[] toArray() {
-        List<Object> res = (List<Object>) get(readAllAsync());
+        Set<Object> res = (Set<Object>) get(readAllAsync());
         return res.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<Object> res = (List<Object>) get(readAllAsync());
+        Set<Object> res = (Set<Object>) get(readAllAsync());
         return res.toArray(a);
     }
 
