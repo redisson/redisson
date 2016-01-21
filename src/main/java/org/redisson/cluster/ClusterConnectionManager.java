@@ -173,12 +173,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 final RedisConnection connection = future.getNow();
-                if (connection == null) {
-                    Collection<Future<Void>> f = Collections.<Future<Void>>emptyList();
-                    result.setSuccess(f);
-                    return;
-                }
-
                 Future<Map<String, String>> clusterFuture = connection.async(RedisCommands.CLUSTER_INFO);
                 clusterFuture.addListener(new FutureListener<Map<String, String>>() {
 
