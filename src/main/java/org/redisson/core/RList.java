@@ -31,4 +31,11 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
 
     RList<V> subList(int fromIndex, int toIndex);
 
+    /**
+     * Read all elements at once
+     *
+     * @return
+     */
+    List<V> readAll();
+
 }

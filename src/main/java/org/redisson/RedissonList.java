@@ -94,11 +94,13 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return list.toArray();
     }
 
-    private List<V> readAll() {
-        return (List<V>) get(readAllAsync());
+    @Override
+    public List<V> readAll() {
+        return get(readAllAsync());
     }
 
-    private Future<Collection<V>> readAllAsync() {
+    @Override
+    public Future<List<V>> readAllAsync() {
         return commandExecutor.readAsync(getName(), codec, LRANGE, getName(), 0, -1);
     }
 
