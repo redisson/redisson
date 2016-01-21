@@ -38,4 +38,14 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
      */
     List<V> readAll();
 
+    /**
+     * Trim list and remains elements only in specified range
+     * <tt>fromIndex</tt>, inclusive, and <tt>toIndex</tt>, inclusive.
+     *
+     * @param fromIndex
+     * @param toIndex
+     * @return
+     */
+    void trim(int fromIndex, int toIndex);
+
 }

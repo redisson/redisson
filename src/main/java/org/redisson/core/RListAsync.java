@@ -49,4 +49,14 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      */
     Future<List<V>> readAllAsync();
 
+    /**
+     * Trim list and remains elements only in specified range
+     * <tt>fromIndex</tt>, inclusive, and <tt>toIndex</tt>, inclusive.
+     *
+     * @param fromIndex
+     * @param toIndex
+     * @return
+     */
+    Future<Void> trimAsync(int fromIndex, int toIndex);
+
 }
