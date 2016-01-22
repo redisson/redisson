@@ -154,4 +154,69 @@ public class CacheConfig {
         return new CacheConfigSupport().toJSON(configs);
     }
 
+    /**
+     * Read config objects stored in YAML format from <code>String</code>
+     *
+     * @param content
+     * @return
+     * @throws IOException
+     */
+    public static Map<String, CacheConfig> fromYAML(String content) throws IOException {
+        return new CacheConfigSupport().fromYAML(content);
+    }
+
+    /**
+     * Read config objects stored in YAML format from <code>InputStream</code>
+     *
+     * @param inputStream
+     * @return
+     * @throws IOException
+     */
+    public static Map<String, CacheConfig> fromYAML(InputStream inputStream) throws IOException {
+        return new CacheConfigSupport().fromYAML(inputStream);
+    }
+
+    /**
+     * Read config objects stored in YAML format from <code>File</code>
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static Map<String, CacheConfig> fromYAML(File file) throws IOException {
+        return new CacheConfigSupport().fromYAML(file);
+    }
+
+    /**
+     * Read config objects stored in YAML format from <code>URL</code>
+     *
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public static Map<String, CacheConfig> fromYAML(URL url) throws IOException {
+        return new CacheConfigSupport().fromYAML(url);
+    }
+
+    /**
+     * Read config objects stored in YAML format from <code>Reader</code>
+     *
+     * @param reader
+     * @return
+     * @throws IOException
+     */
+    public static Map<String, CacheConfig> fromYAML(Reader reader) throws IOException {
+        return new CacheConfigSupport().fromYAML(reader);
+    }
+
+    /**
+     * Convert current configuration to YAML format
+     *
+     * @return
+     * @throws IOException
+     */
+    public static String toYAML(Map<String, CacheConfig> configs) throws IOException {
+        return new CacheConfigSupport().toYAML(configs);
+    }
+
 }
