@@ -32,10 +32,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class ConfigSupport {
 
@@ -97,34 +99,60 @@ public class ConfigSupport {
 
     }
 
-    ObjectMapper mapper = createMapper();
+    private final ObjectMapper jsonMapper = createMapper(null);
+    private final ObjectMapper yamlMapper = createMapper(new YAMLFactory());
 
     public Config fromJSON(String content) throws IOException {
-        return mapper.readValue(content, Config.class);
+        return jsonMapper.readValue(content, Config.class);
     }
 
     public Config fromJSON(File file) throws IOException {
-        return mapper.readValue(file, Config.class);
+        return jsonMapper.readValue(file, Config.class);
     }
 
     public Config fromJSON(URL url) throws IOException {
-        return mapper.readValue(url, Config.class);
+        return jsonMapper.readValue(url, Config.class);
     }
 
     public Config fromJSON(Reader reader) throws IOException {
-        return mapper.readValue(reader, Config.class);
+        return jsonMapper.readValue(reader, Config.class);
     }
 
     public Config fromJSON(InputStream inputStream) throws IOException {
-        return mapper.readValue(inputStream, Config.class);
+        return jsonMapper.readValue(inputStream, Config.class);
     }
 
     public String toJSON(Config config) throws IOException {
-        return mapper.writeValueAsString(config);
+        return jsonMapper.writeValueAsString(config);
     }
 
-    private ObjectMapper createMapper() {
-        ObjectMapper mapper = new ObjectMapper();
+    public Config fromYAML(String content) throws IOException {
+        return yamlMapper.readValue(content, Config.class);
+    }
+
+    public Config fromYAML(File file) throws IOException {
+        return yamlMapper.readValue(file, Config.class);
+    }
+
+    public Config fromYAML(URL url) throws IOException {
+        return yamlMapper.readValue(url, Config.class);
+    }
+
+    public Config fromYAML(Reader reader) throws IOException {
+        return yamlMapper.readValue(reader, Config.class);
+    }
+
+    public Config fromYAML(InputStream inputStream) throws IOException {
+        return yamlMapper.readValue(inputStream, Config.class);
+    }
+
+    public String toYAML(Config config) throws IOException {
+        return yamlMapper.writeValueAsString(config);
+    }
+
+
+    private ObjectMapper createMapper(JsonFactory mapping) {
+        ObjectMapper mapper = new ObjectMapper(mapping);
         mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
         mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);

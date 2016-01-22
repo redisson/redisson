@@ -434,5 +434,75 @@ public class Config {
         return support.toJSON(this);
     }
 
+    /**
+     * Read config object stored in YAML format from <code>String</code>
+     *
+     * @param content
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(String content) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(content);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>InputStream</code>
+     *
+     * @param inputStream
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(InputStream inputStream) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(inputStream);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>File</code>
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(File file) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(file);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>URL</code>
+     *
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(URL url) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(url);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>Reader</code>
+     *
+     * @param reader
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(Reader reader) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(reader);
+    }
+
+    /**
+     * Convert current configuration to YAML format
+     *
+     * @return
+     * @throws IOException
+     */
+    public String toYAML() throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.toYAML(this);
+    }
 
 }
