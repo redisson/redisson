@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Cache config object used for Spring cache configuration.
@@ -33,11 +32,7 @@ public class CacheConfig {
 
     private long ttl;
 
-    private TimeUnit ttlUnit;
-
     private long maxIdleTime;
-
-    private TimeUnit maxIdleUnit;
 
     /**
      * Creates config object with
@@ -50,22 +45,20 @@ public class CacheConfig {
     /**
      * Creates config object.
      *
-     * @param ttl - time to live for key\value entry.
+     * @param ttl - time to live for key\value entry in milliseconds.
      *              If <code>0</code> then time to live doesn't affect entry expiration.
      * @param ttlUnit
-     * @param maxIdleTime - max idle time for key\value entry.
+     * @param maxIdleTime - max idle time for key\value entry in milliseconds.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
      * @param maxIdleUnit
      * <p/>
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
      */
-    public CacheConfig(long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+    public CacheConfig(long ttl, long maxIdleTime) {
         super();
         this.ttl = ttl;
-        this.ttlUnit = ttlUnit;
         this.maxIdleTime = maxIdleTime;
-        this.maxIdleUnit = maxIdleUnit;
     }
 
     public long getTTL() {
@@ -73,21 +66,13 @@ public class CacheConfig {
     }
 
     /**
-     * Set time to live for key\value entry.
+     * Set time to live for key\value entry in milliseconds.
      *
-     * @param ttl - time to live for key\value entry.
+     * @param ttl - time to live for key\value entry in milliseconds.
      *              If <code>0</code> then time to live doesn't affect entry expiration.
      */
     public void setTTL(long ttl) {
         this.ttl = ttl;
-    }
-
-    public TimeUnit getTTLUnit() {
-        return ttlUnit;
-    }
-
-    public void setTTLUnit(TimeUnit ttlUnit) {
-        this.ttlUnit = ttlUnit;
     }
 
     public long getMaxIdleTime() {
@@ -95,20 +80,13 @@ public class CacheConfig {
     }
 
     /**
-     * Set max idle time for key\value entry.
+     * Set max idle time for key\value entry in milliseconds.
      *
-     * @param maxIdleTime - max idle time for key\value entry.
+     * @param maxIdleTime - max idle time for key\value entry in milliseconds.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
      */
     public void setMaxIdleTime(long maxIdleTime) {
         this.maxIdleTime = maxIdleTime;
-    }
-
-    public TimeUnit getMaxIdleUnit() {
-        return maxIdleUnit;
-    }
-    public void setMaxIdleUnit(TimeUnit maxIdleUnit) {
-        this.maxIdleUnit = maxIdleUnit;
     }
 
     /**

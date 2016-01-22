@@ -2,6 +2,7 @@ package org.redisson.spring.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -88,9 +89,9 @@ public class RedissonSpringCacheTest {
         }
 
         @Bean
-        CacheManager cacheManager(RedissonClient redissonClient) {
+        CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
             Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
-            config.put("testMap", new CacheConfig(24, TimeUnit.HOURS, 12, TimeUnit.SECONDS));
+            config.put("testMap", new CacheConfig(24*60*1000, 12*60*1000));
             return new RedissonCacheManager(redissonClient, config);
         }
 

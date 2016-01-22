@@ -15,6 +15,8 @@
  */
 package org.redisson.spring.cache;
 
+import java.util.concurrent.TimeUnit;
+
 import org.redisson.core.RMap;
 import org.redisson.core.RMapCache;
 import org.springframework.cache.Cache;
@@ -75,7 +77,7 @@ public class RedissonCache implements Cache {
     @Override
     public void put(Object key, Object value) {
         if (mapCache != null) {
-            mapCache.fastPut(key, value, config.getTTL(), config.getTTLUnit(), config.getMaxIdleTime(), config.getMaxIdleUnit());
+            mapCache.fastPut(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
         } else {
             map.fastPut(key, value);
         }
@@ -84,7 +86,7 @@ public class RedissonCache implements Cache {
     public ValueWrapper putIfAbsent(Object key, Object value) {
         Object prevValue;
         if (mapCache != null) {
-            prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), config.getTTLUnit(), config.getMaxIdleTime(), config.getMaxIdleUnit());
+            prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
         } else {
             prevValue = map.putIfAbsent(key, value);
         }
