@@ -1,6 +1,6 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,8 +18,7 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
-
-import net.jodah.concurrentunit.Waiter;
+import static com.jayway.awaitility.Awaitility.*;
 
 public class RedissonTest {
 
@@ -42,8 +42,8 @@ public class RedissonTest {
 
         Process p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
 
-        final Waiter onConnectWaiter = new Waiter();
-        final Waiter onDisconnectWaiter = new Waiter();
+        final AtomicInteger connectCounter = new AtomicInteger();
+        final AtomicInteger disconnectCounter = new AtomicInteger();
 
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319").setFailedAttempts(1).setRetryAttempts(1)
@@ -55,14 +55,14 @@ public class RedissonTest {
 
             @Override
             public void onDisconnect(InetSocketAddress addr) {
-                onDisconnectWaiter.assertEquals(new InetSocketAddress("127.0.0.1", 6319), addr);
-                onDisconnectWaiter.resume();
+                assertThat(addr).isEqualTo(new InetSocketAddress("127.0.0.1", 6319));
+                disconnectCounter.incrementAndGet();
             }
 
             @Override
             public void onConnect(InetSocketAddress addr) {
-                onConnectWaiter.assertEquals(new InetSocketAddress("127.0.0.1", 6319), addr);
-                onConnectWaiter.resume();
+                assertThat(addr).isEqualTo(new InetSocketAddress("127.0.0.1", 6319));
+                connectCounter.incrementAndGet();
             }
         });
 
@@ -86,8 +86,8 @@ public class RedissonTest {
         p.destroy();
         Assert.assertEquals(1, p.waitFor());
 
-        onConnectWaiter.await(1, TimeUnit.SECONDS, 2);
-        onDisconnectWaiter.await();
+        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(2));
+        await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
     }
 
     @Test
