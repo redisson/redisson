@@ -16,6 +16,7 @@
 package org.redisson.spring.cache;
 
 import org.redisson.core.RMap;
+import org.redisson.core.RMapCache;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -26,7 +27,17 @@ import org.springframework.cache.support.SimpleValueWrapper;
  */
 public class RedissonCache implements Cache {
 
-    private final RMap<Object, Object> map;
+    private RMapCache<Object, Object> mapCache;
+
+    private RMap<Object, Object> map;
+
+    private CacheConfig config;
+
+    public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config) {
+        this.mapCache = mapCache;
+        this.map = mapCache;
+        this.config = config;
+    }
 
     public RedissonCache(RMap<Object, Object> map) {
         this.map = map;
@@ -63,11 +74,20 @@ public class RedissonCache implements Cache {
 
     @Override
     public void put(Object key, Object value) {
-        map.fastPut(key, value);
+        if (mapCache != null) {
+            mapCache.fastPut(key, value, config.getTTL(), config.getTTLUnit(), config.getMaxIdleTime(), config.getMaxIdleUnit());
+        } else {
+            map.fastPut(key, value);
+        }
     }
 
     public ValueWrapper putIfAbsent(Object key, Object value) {
-        Object prevValue = map.putIfAbsent(key, value);
+        Object prevValue;
+        if (mapCache != null) {
+            prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), config.getTTLUnit(), config.getMaxIdleTime(), config.getMaxIdleUnit());
+        } else {
+            prevValue = map.putIfAbsent(key, value);
+        }
         return toValueWrapper(prevValue);
     }
 
