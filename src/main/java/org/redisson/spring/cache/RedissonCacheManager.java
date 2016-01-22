@@ -43,10 +43,20 @@ public class RedissonCacheManager implements CacheManager {
         this.configMap = config;
     }
 
+    /**
+     * Set cache config mapped by cache name
+     *
+     * @param config
+     */
     public void setConfig(Map<String, CacheConfig> config) {
         this.configMap = config;
     }
 
+    /**
+     * Set Redisson instance
+     *
+     * @param config
+     */
     public void setRedisson(RedissonClient redisson) {
         this.redisson = redisson;
     }
