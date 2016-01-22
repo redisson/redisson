@@ -38,6 +38,10 @@ public class RedissonCacheManager implements CacheManager {
     public RedissonCacheManager() {
     }
 
+    public RedissonCacheManager(RedissonClient redisson) {
+        this.redisson = redisson;
+    }
+
     public RedissonCacheManager(RedissonClient redisson, Map<String, CacheConfig> config) {
         this.redisson = redisson;
         this.configMap = config;
