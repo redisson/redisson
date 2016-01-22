@@ -23,9 +23,6 @@ import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
  * Cache config object used for Spring cache configuration.
  *
@@ -122,7 +119,7 @@ public class CacheConfig {
      * @throws IOException
      */
     public static Map<String, CacheConfig> fromJSON(String content) throws IOException {
-        return new ObjectMapper().readValue(content, new TypeReference<Map<String, CacheConfig>>() {});
+        return new CacheConfigSupport().fromJSON(content);
     }
 
     /**
