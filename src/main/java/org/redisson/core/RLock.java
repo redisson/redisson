@@ -122,7 +122,7 @@ public interface RLock extends Lock, RExpirable {
 
     Future<Void> lockAsync(long leaseTime, TimeUnit unit);
 
-    Future<Boolean> tryLockAsync(long time, TimeUnit unit);
+    Future<Boolean> tryLockAsync(long waitTime, TimeUnit unit);
 
     Future<Boolean> tryLockAsync(final long waitTime, final long leaseTime, final TimeUnit unit);
 
