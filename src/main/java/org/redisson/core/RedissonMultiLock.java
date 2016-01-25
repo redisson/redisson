@@ -52,6 +52,38 @@ public class RedissonMultiLock implements Lock {
         }
     }
 
+    public void lock(long leaseTime, TimeUnit unit) {
+        try {
+            lockInterruptibly(leaseTime, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<Object> result = new AtomicReference<Object>();
+        Promise<Void> promise = new DefaultPromise<Void>() {
+            public Promise<Void> setSuccess(Void result) {
+                latch.countDown();
+                return this;
+            };
+
+            public Promise<Void> setFailure(Throwable cause) {
+                result.set(cause);
+                latch.countDown();
+                return this;
+            };
+        };
+
+        lock(promise, 0, leaseTime, unit);
+
+        latch.await();
+        if (result.get() instanceof Throwable) {
+            PlatformDependent.throwException((Throwable)result.get());
+        }
+    }
+
     @Override
     public void lockInterruptibly() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
@@ -69,7 +101,7 @@ public class RedissonMultiLock implements Lock {
             };
         };
 
-        lock(promise);
+        lock(promise, 0, -1, null);
 
         latch.await();
         if (result.get() instanceof Throwable) {
@@ -77,7 +109,7 @@ public class RedissonMultiLock implements Lock {
         }
     }
 
-    private void lock(final Promise<Void> promise) throws InterruptedException {
+    private void lock(final Promise<Void> promise, long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         final AtomicInteger tryLockRequestsAmount = new AtomicInteger();
         final Map<Future<Boolean>, RLock> tryLockFutures = new HashMap<Future<Boolean>, RLock>(locks.size());
 
@@ -115,7 +147,7 @@ public class RedissonMultiLock implements Lock {
                                 return;
                             }
 
-                            lock(promise);
+                            lock(promise, waitTime, leaseTime, unit);
                         }
                     });
                 }
@@ -131,7 +163,11 @@ public class RedissonMultiLock implements Lock {
             }
 
             tryLockRequestsAmount.incrementAndGet();
-            tryLockFutures.put(lock.tryLockAsync(), lock);
+            if (waitTime > 0 || leaseTime > 0) {
+                tryLockFutures.put(lock.tryLockAsync(waitTime, leaseTime, unit), lock);
+            } else {
+                tryLockFutures.put(lock.tryLockAsync(), lock);
+            }
         }
 
         for (Future<Boolean> future : tryLockFutures.keySet()) {
@@ -141,7 +177,7 @@ public class RedissonMultiLock implements Lock {
 
     @Override
     public boolean tryLock() {
-        final List<Future<Boolean>> tryLockFutures = new ArrayList<Future<Boolean>>(locks.size());
+        List<Future<Boolean>> tryLockFutures = new ArrayList<Future<Boolean>>(locks.size());
         for (RLock lock : locks) {
             tryLockFutures.add(lock.tryLockAsync());
         }
@@ -173,10 +209,14 @@ public class RedissonMultiLock implements Lock {
     }
 
     @Override
-    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-        final List<Future<Boolean>> tryLockFutures = new ArrayList<Future<Boolean>>(locks.size());
+    public boolean tryLock(long waitTime, TimeUnit unit) throws InterruptedException {
+        return tryLock(waitTime, -1, unit);
+    }
+
+    public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
+        List<Future<Boolean>> tryLockFutures = new ArrayList<Future<Boolean>>(locks.size());
         for (RLock lock : locks) {
-            tryLockFutures.add(lock.tryLockAsync(time, unit));
+            tryLockFutures.add(lock.tryLockAsync(waitTime, leaseTime, unit));
         }
 
         for (Future<Boolean> future : tryLockFutures) {
@@ -193,6 +233,7 @@ public class RedissonMultiLock implements Lock {
 
         return true;
     }
+
 
     @Override
     public void unlock() {

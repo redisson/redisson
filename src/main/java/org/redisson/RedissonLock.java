@@ -590,7 +590,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                                 result.trySuccess(false);
                             }
                         }
-                    }, ttl, TimeUnit.MILLISECONDS);
+                    }, time.get(), TimeUnit.MILLISECONDS);
                     futureRef.set(scheduledFuture);
                 }
             }
