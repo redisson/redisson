@@ -303,11 +303,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private void checkSlaveNodesChange(Collection<ClusterPartition> newPartitions) {
         for (ClusterPartition newPart : newPartitions) {
-            for (ClusterPartition currentPart : lastPartitions.values()) {
+            for (final ClusterPartition currentPart : lastPartitions.values()) {
                 if (!newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
                     continue;
                 }
-                MasterSlaveEntry entry = getEntry(currentPart.getMasterAddr());
+                final MasterSlaveEntry entry = getEntry(currentPart.getMasterAddr());
 
                 Set<URI> removedSlaves = new HashSet<URI>(currentPart.getSlaveAddresses());
                 removedSlaves.removeAll(newPart.getSlaveAddresses());
@@ -321,7 +321,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 Set<URI> addedSlaves = new HashSet<URI>(newPart.getSlaveAddresses());
                 addedSlaves.removeAll(currentPart.getSlaveAddresses());
-                for (URI uri : addedSlaves) {
+                for (final URI uri : addedSlaves) {
                     Future<Void> future = entry.addSlave(uri.getHost(), uri.getPort());
                     future.addListener(new FutureListener<Void>() {
                         @Override

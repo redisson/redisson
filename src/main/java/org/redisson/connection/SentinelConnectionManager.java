@@ -203,7 +203,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String ip = parts[2];
             String port = parts[3];
 
-            String slaveAddr = ip + ":" + port;
+            final String slaveAddr = ip + ":" + port;
 
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() == ReadMode.SLAVE) {
