@@ -195,20 +195,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void initEntry(MasterSlaveServersConfig config) {
-        if (config.getReadMode() == ReadMode.MASTER) {
-            HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
-            slots.add(singleSlotRange);
+        HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
+        slots.add(singleSlotRange);
 
+        if (config.getReadMode() == ReadMode.MASTER) {
             SingleEntry entry = new SingleEntry(slots, this, config);
             Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
             f.syncUninterruptibly();
             addEntry(singleSlotRange, entry);
         } else {
-            HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
-            slots.add(singleSlotRange);
-
             MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-            List<Future<Void>> fs = entry.initSlaveBalancer(config);
+            List<Future<Void>> fs = entry.initSlaveBalancer();
             Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
             fs.add(f);
             for (Future<Void> future : fs) {

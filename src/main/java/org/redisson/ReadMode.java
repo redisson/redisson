@@ -25,6 +25,11 @@ public enum ReadMode {
     /**
      * Read from master node
      */
-    MASTER
+    MASTER,
+
+    /**
+     * Read from master and slave nodes
+     */
+    MASTER_SLAVE,
 
 }

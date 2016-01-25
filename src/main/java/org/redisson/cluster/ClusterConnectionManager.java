@@ -200,7 +200,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             config.setSlaveAddresses(partition.getSlaveAddresses());
 
                             e = new MasterSlaveEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
-                            List<Future<Void>> fs = e.initSlaveBalancer(config);
+                            List<Future<Void>> fs = e.initSlaveBalancer();
                             futures.addAll(fs);
 
                             if (!partition.getSlaveAddresses().isEmpty()) {
