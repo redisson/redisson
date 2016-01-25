@@ -197,8 +197,8 @@ public class MasterSlaveEntry {
         return slaveBalancer.nextPubSubConnection();
     }
 
-    public void returnSubscribeConnection(PubSubConnectionEntry entry) {
-        slaveBalancer.returnSubscribeConnection(entry.getConnection());
+    public void returnPubSubConnection(PubSubConnectionEntry entry) {
+        slaveBalancer.returnPubSubConnection(entry.getConnection());
     }
 
     public void releaseWrite(RedisConnection connection) {

@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.ReadMode;
 import org.redisson.SentinelServersConfig;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
@@ -206,7 +207,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null) {
-                getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
+                if (config.getReadMode() == ReadMode.SLAVE) {
+                    getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
+                }
                 log.info("slave: {} added", slaveAddr);
             } else {
                 slaveUp(ip, port);
@@ -252,7 +255,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(String ip, String port) {
-        slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
+        if (config.getReadMode() == ReadMode.SLAVE) {
+            slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
+        }
+
         log.info("slave: {}:{} has down", ip, port);
     }
 
@@ -283,6 +289,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveUp(String ip, String port) {
+        if (config.getReadMode() == ReadMode.MASTER) {
+            String slaveAddr = ip + ":" + port;
+            log.info("slave: {} has up", slaveAddr);
+            return;
+        }
+
         if (getEntry(singleSlotRange).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
             String slaveAddr = ip + ":" + port;
             log.info("slave: {} has up", slaveAddr);

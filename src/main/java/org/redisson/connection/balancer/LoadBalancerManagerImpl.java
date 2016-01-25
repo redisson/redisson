@@ -158,7 +158,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         return entries.get();
     }
 
-    public void returnSubscribeConnection(RedisPubSubConnection connection) {
+    public void returnPubSubConnection(RedisPubSubConnection connection) {
         ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
         pubSubEntries.returnConnection(entry, connection);
     }

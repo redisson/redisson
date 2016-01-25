@@ -80,7 +80,7 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public void returnSubscribeConnection(PubSubConnectionEntry entry) {
+    public void returnPubSubConnection(PubSubConnectionEntry entry) {
         pubSubConnectionHolder.returnConnection(masterEntry, entry.getConnection());
     }
 

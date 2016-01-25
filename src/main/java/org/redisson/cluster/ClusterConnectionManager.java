@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.ClusterServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.ReadMode;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
@@ -60,12 +61,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private ScheduledFuture<?> monitorFuture;
 
-    private final boolean isReadFromSlaves;
-
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         super(config);
-        isReadFromSlaves = cfg.isReadFromSlaves();
-        connectListener = new ClusterConnectionListener(cfg.isReadFromSlaves());
+        connectListener = new ClusterConnectionListener(cfg.getReadMode() == ReadMode.SLAVE);
 
         this.config = create(cfg);
         init(this.config);
@@ -196,7 +194,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                         final MasterSlaveEntry e;
                         List<Future<Void>> futures = new ArrayList<Future<Void>>();
-                        if (isReadFromSlaves) {
+                        if (config.getReadMode() == ReadMode.MASTER) {
+                            e = new SingleEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
+                        } else {
                             config.setSlaveAddresses(partition.getSlaveAddresses());
 
                             e = new MasterSlaveEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
@@ -204,8 +204,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             futures.addAll(fs);
 
                             log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
-                        } else {
-                            e = new SingleEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
                         }
 
                         Future<Void> f = e.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());

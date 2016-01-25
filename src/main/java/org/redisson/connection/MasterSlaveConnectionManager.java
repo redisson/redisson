@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.BaseMasterSlaveServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.ReadMode;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -194,16 +195,27 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void initEntry(MasterSlaveServersConfig config) {
-        HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
-        slots.add(singleSlotRange);
-        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<Future<Void>> fs = entry.initSlaveBalancer(config);
-        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        fs.add(f);
-        for (Future<Void> future : fs) {
-            future.syncUninterruptibly();
+        if (config.getReadMode() == ReadMode.MASTER) {
+            HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
+            slots.add(singleSlotRange);
+
+            SingleEntry entry = new SingleEntry(slots, this, config);
+            Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+            f.syncUninterruptibly();
+            addEntry(singleSlotRange, entry);
+        } else {
+            HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
+            slots.add(singleSlotRange);
+
+            MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
+            List<Future<Void>> fs = entry.initSlaveBalancer(config);
+            Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+            fs.add(f);
+            for (Future<Void> future : fs) {
+                future.syncUninterruptibly();
+            }
+            addEntry(singleSlotRange, entry);
         }
-        addEntry(singleSlotRange, entry);
     }
 
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
@@ -228,6 +240,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
         c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
         c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
+        c.setReadMode(cfg.getReadMode());
 
         return c;
     }
@@ -627,7 +640,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry entry) {
-        this.getEntry(slot).returnSubscribeConnection(entry);
+        this.getEntry(slot).returnPubSubConnection(entry);
     }
 
     @Override

@@ -47,6 +47,6 @@ public interface LoadBalancerManager {
 
     void returnConnection(RedisConnection connection);
 
-    void returnSubscribeConnection(RedisPubSubConnection connection);
+    void returnPubSubConnection(RedisPubSubConnection connection);
 
 }
