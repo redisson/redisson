@@ -206,11 +206,20 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String slaveAddr = ip + ":" + port;
 
             // to avoid addition twice
-            if (slaves.putIfAbsent(slaveAddr, true) == null) {
-                if (config.getReadMode() == ReadMode.SLAVE) {
-                    getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
-                }
-                log.info("slave: {} added", slaveAddr);
+            if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() == ReadMode.SLAVE) {
+                Future<Void> future = getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
+                future.addListener(new FutureListener<Void>() {
+                    @Override
+                    public void operationComplete(Future<Void> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            slaves.remove(slaveAddr);
+                            log.error("Can't add slave: " + slaveAddr, future.cause());
+                            return;
+                        }
+
+                        log.info("slave: {} added", slaveAddr);
+                    }
+                });
             } else {
                 slaveUp(ip, port);
             }
