@@ -109,7 +109,7 @@ public class RedissonMultiLock implements Lock {
         }
     }
 
-    private void lock(final Promise<Void> promise, long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
+    private void lock(final Promise<Void> promise, final long waitTime, final long leaseTime, final TimeUnit unit) throws InterruptedException {
         final AtomicInteger tryLockRequestsAmount = new AtomicInteger();
         final Map<Future<Boolean>, RLock> tryLockFutures = new HashMap<Future<Boolean>, RLock>(locks.size());
 
