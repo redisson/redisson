@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.redisson.SlotCallback;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
@@ -34,6 +35,8 @@ import io.netty.util.concurrent.Future;
 public interface CommandAsyncExecutor {
 
     ConnectionManager getConnectionManager();
+
+    <V> RedisException convertException(Future<V> future);
 
     <V> V get(Future<V> future);
 

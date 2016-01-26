@@ -33,11 +33,6 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      */
     private int scanInterval = 1000;
 
-    /**
-     * Whether to use cluster slave nodes for read-operations
-     */
-    private boolean readFromSlaves = true;
-
     public ClusterServersConfig() {
     }
 
@@ -45,7 +40,6 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         super(config);
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
-        setReadFromSlaves(config.isReadFromSlaves());
     }
 
     /**
@@ -81,17 +75,19 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         return this;
     }
 
-    public boolean isReadFromSlaves() {
-        return readFromSlaves;
-    }
     /**
-     * Use cluster slave nodes for read-operations
+     * Use {@link #setReadMode(org.redisson.BaseMasterSlaveServersConfig.ReadMode)}
      *
      * @param readFromSlaves
      * @return
      */
+    @Deprecated
     public ClusterServersConfig setReadFromSlaves(boolean readFromSlaves) {
-        this.readFromSlaves = readFromSlaves;
+        ReadMode readMode = ReadMode.MASTER;
+        if (readFromSlaves) {
+            readMode = ReadMode.SLAVE;
+        }
+        setReadMode(readMode);
         return this;
     }
 

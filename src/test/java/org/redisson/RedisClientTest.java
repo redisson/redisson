@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -10,7 +12,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -38,7 +39,7 @@ public class RedisClientTest {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
                 RedisConnection conn = future.get();
-                Assert.assertEquals("PONG", conn.sync(RedisCommands.PING));
+                assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
                 l.countDown();
             }
         });
@@ -54,8 +55,8 @@ public class RedisClientTest {
 
             @Override
             public boolean onStatus(PubSubType type, String channel) {
-                Assert.assertEquals(PubSubType.SUBSCRIBE, type);
-                Assert.assertTrue(Arrays.asList("test1", "test2").contains(channel));
+                assertThat(type).isEqualTo(PubSubType.SUBSCRIBE);
+                assertThat(Arrays.asList("test1", "test2").contains(channel)).isTrue();
                 latch.countDown();
                 return true;
             }
@@ -90,9 +91,10 @@ public class RedisClientTest {
         }
 
         pool.shutdown();
-        Assert.assertTrue(pool.awaitTermination(1, TimeUnit.HOURS));
 
-        Assert.assertEquals(100000L, conn.sync(LongCodec.INSTANCE, RedisCommands.GET, "test"));
+        assertThat(pool.awaitTermination(1, TimeUnit.HOURS)).isTrue();
+
+        assertThat((Long)conn.sync(LongCodec.INSTANCE, RedisCommands.GET, "test")).isEqualTo(100000);
 
         conn.sync(RedisCommands.FLUSHDB);
     }
@@ -117,10 +119,10 @@ public class RedisClientTest {
         Promise<Void> p = c.getBootstrap().group().next().newPromise();
         conn.send(new CommandsData(p, commands));
 
-        Assert.assertEquals("PONG", cmd1.getPromise().get());
-        Assert.assertEquals(1, (long)cmd2.getPromise().get());
-        Assert.assertEquals(2, (long)cmd3.getPromise().get());
-        Assert.assertEquals("PONG", cmd4.getPromise().get());
+        assertThat(cmd1.getPromise().get()).isEqualTo("PONG");
+        assertThat(cmd2.getPromise().get()).isEqualTo(1);
+        assertThat(cmd3.getPromise().get()).isEqualTo(2);
+        assertThat(cmd4.getPromise().get()).isEqualTo("PONG");
 
         conn.sync(RedisCommands.FLUSHDB);
     }
@@ -135,7 +137,7 @@ public class RedisClientTest {
         }
 
         Map<Object, Object> res = conn.sync(StringCodec.INSTANCE, RedisCommands.HGETALL, "testmap");
-        Assert.assertEquals(50, res.size());
+        assertThat(res.size()).isEqualTo(50);
 
         conn.sync(RedisCommands.FLUSHDB);
     }

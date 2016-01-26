@@ -15,9 +15,16 @@
  */
 package org.redisson;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.net.URL;
+
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
-import org.redisson.connection.ConnectionListener;
+
+import io.netty.channel.EventLoopGroup;
 
 /**
  * Redisson configuration
@@ -49,22 +56,23 @@ public class Config {
 
     private boolean useLinuxNativeEpoll;
 
-    private ConnectionListener connectionListener;
+    private EventLoopGroup eventLoopGroup;
 
     public Config() {
     }
 
     public Config(Config oldConf) {
         setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());
+        setEventLoopGroup(oldConf.getEventLoopGroup());
 
         if (oldConf.getCodec() == null) {
             // use it by default
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
-        setConnectionListener(oldConf.getConnectionListener());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
+        setEventLoopGroup(oldConf.getEventLoopGroup());
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
         }
@@ -337,21 +345,164 @@ public class Config {
         return useLinuxNativeEpoll;
     }
 
-    @Deprecated
-    public ConnectionListener getConnectionListener() {
-        return connectionListener;
+    /**
+     * Use defined eventLoopGroup instance.
+     * Thus several Redisson instances can use one eventLoopGroup instance.
+     * <p/>
+     * Only {@link io.netty.channel.epoll.EpollEventLoopGroup} or
+     * {@link io.netty.channel.nio.NioEventLoopGroup} can be used.
+     *
+     * @param eventLoopGroup
+     * @return
+     */
+    public Config setEventLoopGroup(EventLoopGroup eventLoopGroup) {
+        this.eventLoopGroup = eventLoopGroup;
+        return this;
+    }
+    public EventLoopGroup getEventLoopGroup() {
+        return eventLoopGroup;
     }
 
     /**
-     * Use {@code org.redisson.core.NodesGroup#addConnectionListener(ConnectionListener)}
+     * Read config object stored in JSON format from <code>String</code>
      *
-     * @param connectionListener
+     * @param content
      * @return
+     * @throws IOException
      */
-    @Deprecated
-    public Config setConnectionListener(ConnectionListener connectionListener) {
-        this.connectionListener = connectionListener;
-        return this;
+    public static Config fromJSON(String content) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(content);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>InputStream</code>
+     *
+     * @param inputStream
+     * @return
+     * @throws IOException
+     */
+    public static Config fromJSON(InputStream inputStream) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(inputStream);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>File</code>
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static Config fromJSON(File file) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(file);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>URL</code>
+     *
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public static Config fromJSON(URL url) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(url);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>Reader</code>
+     *
+     * @param reader
+     * @return
+     * @throws IOException
+     */
+    public static Config fromJSON(Reader reader) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(reader);
+    }
+
+    /**
+     * Convert current configuration to JSON format
+     *
+     * @return
+     * @throws IOException
+     */
+    public String toJSON() throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.toJSON(this);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>String</code>
+     *
+     * @param content
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(String content) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(content);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>InputStream</code>
+     *
+     * @param inputStream
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(InputStream inputStream) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(inputStream);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>File</code>
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(File file) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(file);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>URL</code>
+     *
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(URL url) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(url);
+    }
+
+    /**
+     * Read config object stored in YAML format from <code>Reader</code>
+     *
+     * @param reader
+     * @return
+     * @throws IOException
+     */
+    public static Config fromYAML(Reader reader) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromYAML(reader);
+    }
+
+    /**
+     * Convert current configuration to YAML format
+     *
+     * @return
+     * @throws IOException
+     */
+    public String toYAML() throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.toYAML(this);
     }
 
 }

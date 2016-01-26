@@ -55,6 +55,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     private int masterConnectionPoolSize = 100;
 
+    private ReadMode readMode = ReadMode.SLAVE;
+
     public BaseMasterSlaveServersConfig() {
     }
 
@@ -67,6 +69,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setMasterConnectionMinimumIdleSize(config.getMasterConnectionMinimumIdleSize());
         setSlaveConnectionMinimumIdleSize(config.getSlaveConnectionMinimumIdleSize());
         setSlaveSubscriptionConnectionMinimumIdleSize(config.getSlaveSubscriptionConnectionMinimumIdleSize());
+        setReadMode(config.getReadMode());
     }
 
     /**
@@ -170,6 +173,20 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public int getSlaveSubscriptionConnectionMinimumIdleSize() {
         return slaveSubscriptionConnectionMinimumIdleSize;
+    }
+
+    /**
+     * Set node type used for read operation.
+     *
+     * @param readMode
+     * @return
+     */
+    public T setReadMode(ReadMode readMode) {
+        this.readMode = readMode;
+        return (T) this;
+    }
+    public ReadMode getReadMode() {
+        return readMode;
     }
 
 }

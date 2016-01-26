@@ -16,7 +16,9 @@
 package org.redisson;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.redisson.misc.URIBuilder;
@@ -31,7 +33,7 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     /**
      * Redis master server address
      */
-    private URI masterAddress;
+    private List<URI> masterAddress;
 
     public MasterSlaveServersConfig() {
     }
@@ -49,14 +51,21 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      * @param masterAddress
      */
     public MasterSlaveServersConfig setMasterAddress(String masterAddress) {
-        this.masterAddress = URIBuilder.create(masterAddress);
+        if (masterAddress != null) {
+            this.masterAddress = Collections.singletonList(URIBuilder.create(masterAddress));
+        }
         return this;
     }
     public URI getMasterAddress() {
-        return masterAddress;
+        if (masterAddress != null) {
+            return masterAddress.get(0);
+        }
+        return null;
     }
     public void setMasterAddress(URI masterAddress) {
-        this.masterAddress = masterAddress;
+        if (masterAddress != null) {
+            this.masterAddress = Collections.singletonList(masterAddress);
+        }
     }
 
     /**

@@ -1,14 +1,14 @@
 package org.redisson;
 
-import java.io.File;
+import static org.assertj.core.api.Assertions.*;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,13 +18,9 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
-import static org.assertj.core.api.Assertions.*;
-
-import net.jodah.concurrentunit.Waiter;
+import static com.jayway.awaitility.Awaitility.*;
 
 public class RedissonTest {
-
-    private String redisFolder = "C:\\Devel\\projects\\redis\\Redis-x64-3.0.500\\";
 
     RedissonClient redisson;
 
@@ -44,10 +40,10 @@ public class RedissonTest {
     @Test
     public void testConnectionListener() throws IOException, InterruptedException, TimeoutException {
 
-        Process p = runRedis();
+        Process p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
 
-        final Waiter onConnectWaiter = new Waiter();
-        final Waiter onDisconnectWaiter = new Waiter();
+        final AtomicInteger connectCounter = new AtomicInteger();
+        final AtomicInteger disconnectCounter = new AtomicInteger();
 
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319").setFailedAttempts(1).setRetryAttempts(1)
@@ -59,14 +55,14 @@ public class RedissonTest {
 
             @Override
             public void onDisconnect(InetSocketAddress addr) {
-                onDisconnectWaiter.assertEquals(new InetSocketAddress("127.0.0.1", 6319), addr);
-                onDisconnectWaiter.resume();
+                assertThat(addr).isEqualTo(new InetSocketAddress("127.0.0.1", 6319));
+                disconnectCounter.incrementAndGet();
             }
 
             @Override
             public void onConnect(InetSocketAddress addr) {
-                onConnectWaiter.assertEquals(new InetSocketAddress("127.0.0.1", 6319), addr);
-                onConnectWaiter.resume();
+                assertThat(addr).isEqualTo(new InetSocketAddress("127.0.0.1", 6319));
+                connectCounter.incrementAndGet();
             }
         });
 
@@ -81,7 +77,7 @@ public class RedissonTest {
         } catch (Exception e) {
         }
 
-        p = runRedis();
+        p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
 
         r.getBucket("1").get();
 
@@ -90,18 +86,8 @@ public class RedissonTest {
         p.destroy();
         Assert.assertEquals(1, p.waitFor());
 
-        onConnectWaiter.await(1, TimeUnit.SECONDS, 2);
-        onDisconnectWaiter.await();
-    }
-
-    private Process runRedis() throws IOException, InterruptedException {
-        URL resource = getClass().getResource("/redis_connectionListener_test.conf");
-
-        ProcessBuilder master = new ProcessBuilder(redisFolder + "redis-server.exe", resource.getFile().substring(1));
-        master.directory(new File(redisFolder));
-        Process p = master.start();
-        Thread.sleep(1000);
-        return p;
+        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(2));
+        await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
     }
 
     @Test
@@ -139,6 +125,36 @@ public class RedissonTest {
         }
 
         Assert.assertTrue(nodes.pingAll());
+    }
+
+    @Test
+    public void testClusterConfig() throws IOException {
+        Config originalConfig = new Config();
+        originalConfig.useClusterServers().addNodeAddress("123.123.1.23:1902", "9.3.1.0:1902");
+        String t = originalConfig.toJSON();
+        Config c = Config.fromJSON(t);
+        System.out.println(t);
+        assertThat(c.toJSON()).isEqualTo(t);
+    }
+
+    @Test
+    public void testSingleConfig() throws IOException {
+        RedissonClient r = Redisson.create();
+        String t = r.getConfig().toJSON();
+        Config c = Config.fromJSON(t);
+        System.out.println(t);
+        assertThat(c.toJSON()).isEqualTo(t);
+    }
+
+    @Test
+    public void testMasterSlaveConfig() throws IOException {
+        Config c2 = new Config();
+        c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
+
+        String t = c2.toJSON();
+        Config c = Config.fromJSON(t);
+        System.out.println(t);
+        assertThat(c.toJSON()).isEqualTo(t);
     }
 
     @Test

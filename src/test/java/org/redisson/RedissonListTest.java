@@ -22,6 +22,20 @@ import static org.assertj.core.api.Assertions.*;
 public class RedissonListTest extends BaseTest {
 
     @Test
+    public void testTrim() {
+        RList<String> list = redisson.getList("list1");
+        list.add("1");
+        list.add("2");
+        list.add("3");
+        list.add("4");
+        list.add("5");
+        list.add("6");
+
+        list.trim(0, 3);
+        assertThat(list).containsExactly("1", "2", "3", "4");
+    }
+
+    @Test
     public void testAddAllBigList() {
         RList<String> list = redisson.getList("list1");
         List<String> newList = new ArrayList<String>();

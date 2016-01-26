@@ -94,11 +94,13 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return list.toArray();
     }
 
-    private List<V> readAll() {
-        return (List<V>) get(readAllAsync());
+    @Override
+    public List<V> readAll() {
+        return get(readAllAsync());
     }
 
-    private Future<Collection<V>> readAllAsync() {
+    @Override
+    public Future<List<V>> readAllAsync() {
         return commandExecutor.readAsync(getName(), codec, LRANGE, getName(), 0, -1);
     }
 
@@ -212,7 +214,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public boolean addAll(final int index, final Collection<? extends V> coll) {
+    public boolean addAll(int index, Collection<? extends V> coll) {
         return get(addAllAsync(index, coll));
     }
 
@@ -395,6 +397,16 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 "end " +
                 "return -1",
                 Collections.<Object>singletonList(getName()), o);
+    }
+
+    @Override
+    public void trim(int fromIndex, int toIndex) {
+        get(trimAsync(fromIndex, toIndex));
+    }
+
+    @Override
+    public Future<Void> trimAsync(int fromIndex, int toIndex) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LTRIM, getName(), fromIndex, toIndex);
     }
 
     @Override

@@ -35,7 +35,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
@@ -51,7 +50,7 @@ import io.netty.util.concurrent.Future;
  *
  * @param <V> the type of elements held in this collection
  */
-public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
+public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     public static final RedisCommand<Boolean> EVAL_BOOLEAN_ARGS2 = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS);
 
@@ -63,11 +62,6 @@ public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
         super(codec, commandExecutor, name);
         this.fromIndex = fromIndex;
         this.toIndex.set(toIndex);
-    }
-
-    @Override
-    public int size() {
-        return get(sizeAsync());
     }
 
     public Future<Integer> sizeAsync() {
@@ -85,53 +79,13 @@ public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public boolean isEmpty() {
-        return size() == 0;
-    }
-
-    @Override
-    public boolean contains(Object o) {
-        return get(containsAsync(o));
-    }
-
-    @Override
-    public Iterator<V> iterator() {
-        return listIterator();
-    }
-
-    @Override
-    public Object[] toArray() {
-        List<V> list = readAll();
-        return list.toArray();
-    }
-
-    private List<V> readAll() {
-        return (List<V>) get(readAllAsync());
-    }
-
-    private Future<Collection<V>> readAllAsync() {
+    public Future<List<V>> readAllAsync() {
         return commandExecutor.readAsync(getName(), codec, LRANGE, getName(), fromIndex, toIndex.get()-1);
-    }
-
-    @Override
-    public <T> T[] toArray(T[] a) {
-        List<V> list = readAll();
-        return list.toArray(a);
-    }
-
-    @Override
-    public boolean add(V e) {
-        return get(addAsync(e));
     }
 
     @Override
     public Future<Boolean> addAsync(V e) {
         return addAllAsync(toIndex.get() - fromIndex, Collections.singleton(e));
-    }
-
-    @Override
-    public boolean remove(Object o) {
-        return get(removeAsync(o));
     }
 
     @Override
@@ -158,16 +112,6 @@ public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
                 "end " +
                 "return table.getn(ARGV) == 0 and 1 or 0",
                 Collections.<Object>singletonList(getName()), params.toArray());
-    }
-
-    @Override
-    public boolean containsAll(Collection<?> c) {
-        return get(containsAllAsync(c));
-    }
-
-    @Override
-    public boolean addAll(Collection<? extends V> c) {
-        return get(addAllAsync(c));
     }
 
     @Override
@@ -216,11 +160,6 @@ public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public boolean addAll(int index, Collection<? extends V> coll) {
-        return get(addAllAsync(index, coll));
-    }
-
-    @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return removeAllAsync(c, 0);
     }
@@ -249,16 +188,6 @@ public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
                 "end; " +
                 "return v; ",
                 Collections.<Object>singletonList(getName()), params.toArray());
-    }
-
-    @Override
-    public boolean removeAll(Collection<?> c) {
-        return get(removeAllAsync(c));
-    }
-
-    @Override
-    public boolean retainAll(Collection<?> c) {
-        return get(retainAllAsync(c));
     }
 
     @Override
@@ -396,16 +325,6 @@ public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
         return get(f);
     }
 
-    @Override
-    public int indexOf(Object o) {
-        return get(indexOfAsync(o));
-    }
-
-    @Override
-    public Future<Boolean> containsAsync(Object o) {
-        return indexOfAsync(o, new BooleanNumberReplayConvertor(-1L));
-    }
-
     private <R> Future<R> indexOfAsync(Object o, Convertor<R> convertor) {
         return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<R>("EVAL", convertor, 4),
                 "local items = redis.call('lrange', KEYS[1], tonumber(ARGV[2]), tonumber(ARGV[3])) " +
@@ -416,16 +335,6 @@ public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
                 "end; " +
                 "return -1; ",
                 Collections.<Object>singletonList(getName()), o, fromIndex, toIndex.get()-1);
-    }
-
-    @Override
-    public Future<Integer> indexOfAsync(Object o) {
-        return indexOfAsync(o, new IntegerReplayConvertor());
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        return get(lastIndexOfAsync(o));
     }
 
     @Override
@@ -560,6 +469,23 @@ public class RedissonSubList<V> extends RedissonExpirable implements RList<V> {
         }
 
         return new RedissonSubList<V>(codec, commandExecutor, getName(), fromIndex, toIndex);
+    }
+
+    @Override
+    public Future<Void> trimAsync(int fromIndex, int toIndex) {
+        if (fromIndex < this.fromIndex || toIndex >= this.toIndex.get()) {
+            throw new IndexOutOfBoundsException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
+        }
+        if (fromIndex > toIndex) {
+            throw new IllegalArgumentException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
+        }
+
+        return super.trimAsync(fromIndex, toIndex);
+    }
+
+    @Override
+    public void trim(int fromIndex, int toIndex) {
+        get(trimAsync(fromIndex, toIndex));
     }
 
     public String toString() {

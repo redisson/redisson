@@ -32,6 +32,17 @@ public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
     protected void onMessage(RedissonLockEntry value, Long message) {
         if (message.equals(unlockMessage)) {
             value.getLatch().release();
+
+            synchronized (value) {
+                Runnable runnable = value.getListeners().poll();
+                if (runnable != null) {
+                    if (value.getLatch().tryAcquire()) {
+                        runnable.run();
+                    } else {
+                        value.getListeners().add(runnable);
+                    }
+                }
+            }
         }
     }
 

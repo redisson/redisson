@@ -43,4 +43,11 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
      */
     boolean move(String destination, V member);
 
+    /**
+     * Read all elements at once
+     *
+     * @return
+     */
+    Set<V> readAll();
+
 }

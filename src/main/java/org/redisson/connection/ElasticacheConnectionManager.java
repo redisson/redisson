@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
 import org.redisson.ElasticacheServersConfig;
-import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
@@ -33,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
 
 /**
@@ -60,7 +60,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
     }
 
     public ElasticacheConnectionManager(ElasticacheServersConfig cfg, Config config) {
-        init(config);
+        super(config);
 
         this.config = create(cfg);
 
@@ -101,6 +101,9 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getConnectTimeout());
         try {
             connection = client.connect();
+            Promise<RedisConnection> future = newPromise();
+            connectListener.onConnect(future, connection, null, config);
+            future.syncUninterruptibly();
             nodeConnections.put(addr, connection);
         } catch (RedisConnectionException e) {
             log.warn(e.getMessage(), e);
@@ -148,32 +151,6 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
             }
         }
         throw new RedisException("Cannot determine node role from provided 'INFO replication' data");
-    }
-
-    private MasterSlaveServersConfig create(ElasticacheServersConfig cfg) {
-        MasterSlaveServersConfig c = new MasterSlaveServersConfig();
-        c.setRetryInterval(cfg.getRetryInterval());
-        c.setRetryAttempts(cfg.getRetryAttempts());
-        c.setTimeout(cfg.getTimeout());
-        c.setPingTimeout(cfg.getPingTimeout());
-        c.setLoadBalancer(cfg.getLoadBalancer());
-        c.setPassword(cfg.getPassword());
-        c.setDatabase(cfg.getDatabase());
-        c.setClientName(cfg.getClientName());
-        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
-        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
-        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
-        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
-        c.setConnectTimeout(cfg.getConnectTimeout());
-        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
-
-        c.setFailedAttempts(cfg.getFailedAttempts());
-        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
-        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
-        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
-        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
-
-        return c;
     }
 
     @Override

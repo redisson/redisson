@@ -17,8 +17,8 @@ package org.redisson.spring.cache;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.redisson.RedissonClient;
 import org.springframework.cache.Cache;
@@ -31,9 +31,9 @@ import org.springframework.cache.CacheManager;
  */
 public class RedissonCacheManager implements CacheManager {
 
-    private final Set<String> cacheNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-
     private RedissonClient redisson;
+
+    private Map<String, CacheConfig> configMap = new HashMap<String, CacheConfig>();
 
     public RedissonCacheManager() {
     }
@@ -42,19 +42,46 @@ public class RedissonCacheManager implements CacheManager {
         this.redisson = redisson;
     }
 
+    public RedissonCacheManager(RedissonClient redisson, Map<String, CacheConfig> config) {
+        this.redisson = redisson;
+        this.configMap = config;
+    }
+
+    /**
+     * Set cache config mapped by cache name
+     *
+     * @param config
+     */
+    public void setConfig(Map<String, CacheConfig> config) {
+        this.configMap = config;
+    }
+
+    /**
+     * Set Redisson instance
+     *
+     * @param config
+     */
     public void setRedisson(RedissonClient redisson) {
         this.redisson = redisson;
     }
 
     @Override
     public Cache getCache(String name) {
-        cacheNames.add(name);
-        return new RedissonCache(redisson.getMap(name));
+        CacheConfig config = configMap.get(name);
+        if (config == null) {
+            config = new CacheConfig();
+            configMap.put(name, config);
+            return new RedissonCache(redisson.getMap(name));
+        }
+        if (config.getMaxIdleTime() == 0 && config.getTTL() == 0) {
+            return new RedissonCache(redisson.getMap(name));
+        }
+        return new RedissonCache(redisson.getMapCache(name), config);
     }
 
     @Override
     public Collection<String> getCacheNames() {
-        return Collections.unmodifiableSet(cacheNames);
+        return Collections.unmodifiableSet(configMap.keySet());
     }
 
 }

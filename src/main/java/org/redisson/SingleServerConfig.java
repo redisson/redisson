@@ -16,6 +16,8 @@
 package org.redisson;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 
 import org.redisson.misc.URIBuilder;
 
@@ -25,7 +27,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * Redis server address
      *
      */
-    private URI address;
+    private List<URI> address;
 
     /**
      * Minimum idle subscription connection amount
@@ -112,14 +114,21 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * @param address
      */
     public SingleServerConfig setAddress(String address) {
-        this.address = URIBuilder.create(address);
+        if (address != null) {
+            this.address = Collections.singletonList(URIBuilder.create(address));
+        }
         return this;
     }
     public URI getAddress() {
-        return address;
+        if (address != null) {
+            return address.get(0);
+        }
+        return null;
     }
     void setAddress(URI address) {
-        this.address = address;
+        if (address != null) {
+            this.address = Collections.singletonList(address);
+        }
     }
 
     /**

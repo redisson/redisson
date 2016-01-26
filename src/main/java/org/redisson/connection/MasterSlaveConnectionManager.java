@@ -27,8 +27,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.BaseMasterSlaveServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.ReadMode;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -124,11 +126,29 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
-        init(config);
+        this(config);
         init(cfg);
     }
 
-    protected MasterSlaveConnectionManager() {
+    public MasterSlaveConnectionManager(Config cfg) {
+        if (cfg.isUseLinuxNativeEpoll()) {
+            if (cfg.getEventLoopGroup() == null) {
+                this.group = new EpollEventLoopGroup(cfg.getThreads());
+            } else {
+                this.group = cfg.getEventLoopGroup();
+            }
+
+            this.socketChannelClass = EpollSocketChannel.class;
+        } else {
+            if (cfg.getEventLoopGroup() == null) {
+                this.group = new NioEventLoopGroup(cfg.getThreads());
+            } else {
+                this.group = cfg.getEventLoopGroup();
+            }
+
+            this.socketChannelClass = NioSocketChannel.class;
+        }
+        this.codec = cfg.getCodec();
     }
 
     public IdleConnectionWatcher getConnectionWatcher() {
@@ -177,25 +197,49 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void initEntry(MasterSlaveServersConfig config) {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
-        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<Future<Void>> fs = entry.initSlaveBalancer(config);
-        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        fs.add(f);
-        for (Future<Void> future : fs) {
-            future.syncUninterruptibly();
+
+        if (config.getReadMode() == ReadMode.MASTER) {
+            SingleEntry entry = new SingleEntry(slots, this, config);
+            Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+            f.syncUninterruptibly();
+            addEntry(singleSlotRange, entry);
+        } else {
+            MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
+            List<Future<Void>> fs = entry.initSlaveBalancer();
+            Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+            fs.add(f);
+            for (Future<Void> future : fs) {
+                future.syncUninterruptibly();
+            }
+            addEntry(singleSlotRange, entry);
         }
-        addEntry(singleSlotRange, entry);
     }
 
-    protected void init(Config cfg) {
-        if (cfg.isUseLinuxNativeEpoll()) {
-            this.group = new EpollEventLoopGroup(cfg.getThreads());
-            this.socketChannelClass = EpollSocketChannel.class;
-        } else {
-            this.group = new NioEventLoopGroup(cfg.getThreads());
-            this.socketChannelClass = NioSocketChannel.class;
-        }
-        this.codec = cfg.getCodec();
+    protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
+        MasterSlaveServersConfig c = new MasterSlaveServersConfig();
+        c.setRetryInterval(cfg.getRetryInterval());
+        c.setRetryAttempts(cfg.getRetryAttempts());
+        c.setTimeout(cfg.getTimeout());
+        c.setPingTimeout(cfg.getPingTimeout());
+        c.setLoadBalancer(cfg.getLoadBalancer());
+        c.setPassword(cfg.getPassword());
+        c.setDatabase(cfg.getDatabase());
+        c.setClientName(cfg.getClientName());
+        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
+        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
+        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
+        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
+        c.setConnectTimeout(cfg.getConnectTimeout());
+        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
+
+        c.setFailedAttempts(cfg.getFailedAttempts());
+        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
+        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
+        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
+        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
+        c.setReadMode(cfg.getReadMode());
+
+        return c;
     }
 
     @Override
@@ -593,7 +637,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry entry) {
-        this.getEntry(slot).returnSubscribeConnection(entry);
+        this.getEntry(slot).returnPubSubConnection(entry);
     }
 
     @Override

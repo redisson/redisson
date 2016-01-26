@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import java.util.Set;
+
 import io.netty.util.concurrent.Future;
 
 /**
@@ -43,5 +45,12 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * member of this set or no operation was performed
      */
     Future<Boolean> moveAsync(String destination, V member);
+
+    /**
+     * Read all elements at once
+     *
+     * @return
+     */
+    Future<Set<V>> readAllAsync();
 
 }

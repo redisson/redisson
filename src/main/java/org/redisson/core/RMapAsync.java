@@ -45,7 +45,7 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     /**
      * Removes <code>keys</code> from map by one operation in async manner
      *
-     * Works faster than <code>RMap.removeAsync</code> but not returning
+     * Works faster than <code>RMap.removeAsync</code> but doesn't return
      * the value associated with <code>key</code>
      *
      * @param keys

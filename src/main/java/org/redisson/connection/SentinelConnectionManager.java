@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.ReadMode;
 import org.redisson.SentinelServersConfig;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 public class SentinelConnectionManager extends MasterSlaveConnectionManager {
@@ -53,29 +55,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config) {
-        init(config);
+        super(config);
 
-        final MasterSlaveServersConfig c = new MasterSlaveServersConfig();
-        c.setRetryInterval(cfg.getRetryInterval());
-        c.setRetryAttempts(cfg.getRetryAttempts());
-        c.setTimeout(cfg.getTimeout());
-        c.setPingTimeout(cfg.getPingTimeout());
-        c.setLoadBalancer(cfg.getLoadBalancer());
-        c.setPassword(cfg.getPassword());
-        c.setDatabase(cfg.getDatabase());
-        c.setClientName(cfg.getClientName());
-        c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
-        c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
-        c.setSlaveSubscriptionConnectionPoolSize(cfg.getSlaveSubscriptionConnectionPoolSize());
-        c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
-        c.setConnectTimeout(cfg.getConnectTimeout());
-        c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
-
-        c.setFailedAttempts(cfg.getFailedAttempts());
-        c.setReconnectionTimeout(cfg.getReconnectionTimeout());
-        c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
-        c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
-        c.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSlaveSubscriptionConnectionMinimumIdleSize());
+        final MasterSlaveServersConfig c = create(cfg);
 
         List<String> disconnectedSlaves = new ArrayList<String>();
         for (URI addr : cfg.getSentinelAddresses()) {
@@ -85,6 +67,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 if (!connection.isActive()) {
                     continue;
                 }
+                Promise<RedisConnection> f = newPromise();
+                connectListener.onConnect(f, connection, null, c);
+                f.syncUninterruptibly();
 
                 // TODO async
                 List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
@@ -218,12 +203,23 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String ip = parts[2];
             String port = parts[3];
 
-            String slaveAddr = ip + ":" + port;
+            final String slaveAddr = ip + ":" + port;
 
             // to avoid addition twice
-            if (slaves.putIfAbsent(slaveAddr, true) == null) {
-                getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
-                log.info("slave: {} added", slaveAddr);
+            if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() == ReadMode.SLAVE) {
+                Future<Void> future = getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
+                future.addListener(new FutureListener<Void>() {
+                    @Override
+                    public void operationComplete(Future<Void> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            slaves.remove(slaveAddr);
+                            log.error("Can't add slave: " + slaveAddr, future.cause());
+                            return;
+                        }
+
+                        log.info("slave: {} added", slaveAddr);
+                    }
+                });
             } else {
                 slaveUp(ip, port);
             }
@@ -268,7 +264,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(String ip, String port) {
-        slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
+        if (config.getReadMode() == ReadMode.SLAVE) {
+            slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
+        }
+
         log.info("slave: {}:{} has down", ip, port);
     }
 
@@ -299,6 +298,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveUp(String ip, String port) {
+        if (config.getReadMode() == ReadMode.MASTER) {
+            String slaveAddr = ip + ":" + port;
+            log.info("slave: {} has up", slaveAddr);
+            return;
+        }
+
         if (getEntry(singleSlotRange).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
             String slaveAddr = ip + ":" + port;
             log.info("slave: {} has up", slaveAddr);

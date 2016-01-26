@@ -1,10 +1,14 @@
 package org.redisson.spring.cache;
 
-import org.assertj.core.api.Assertions;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.Redisson;
 import org.redisson.RedissonClient;
@@ -18,7 +22,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
-import static org.assertj.core.api.Assertions.*;
 
 public class RedissonSpringCacheTest {
 
@@ -86,8 +89,10 @@ public class RedissonSpringCacheTest {
         }
 
         @Bean
-        CacheManager cacheManager(RedissonClient redissonClient) {
-            return new RedissonCacheManager(redissonClient);
+        CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
+            Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
+            config.put("testMap", new CacheConfig(24*60*1000, 12*60*1000));
+            return new RedissonCacheManager(redissonClient, config);
         }
 
     }

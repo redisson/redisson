@@ -17,19 +17,17 @@ package org.redisson.connection;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.ReadMode;
 import org.redisson.SingleServerConfig;
 import org.redisson.client.RedisConnectionException;
-import org.redisson.cluster.ClusterSlotRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -76,17 +74,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
         newconfig.setMasterConnectionMinimumIdleSize(cfg.getConnectionMinimumIdleSize());
         newconfig.setSlaveSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
+        newconfig.setReadMode(ReadMode.MASTER);
         return newconfig;
-    }
-
-    @Override
-    protected void initEntry(MasterSlaveServersConfig config) {
-        HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
-        slots.add(singleSlotRange);
-        SingleEntry entry = new SingleEntry(slots, this, config);
-        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-        f.syncUninterruptibly();
-        addEntry(singleSlotRange, entry);
     }
 
     private void monitorDnsChange(final SingleServerConfig cfg) {

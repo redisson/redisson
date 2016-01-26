@@ -17,6 +17,7 @@ package org.redisson;
 
 import io.netty.util.concurrent.Promise;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
@@ -25,6 +26,7 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
 
     private final Semaphore latch;
     private final Promise<RedissonLockEntry> promise;
+    private final ConcurrentLinkedQueue<Runnable> listeners = new ConcurrentLinkedQueue<Runnable>();
 
     public RedissonLockEntry(Promise<RedissonLockEntry> promise) {
         super();
@@ -42,6 +44,18 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
 
     public Promise<RedissonLockEntry> getPromise() {
         return promise;
+    }
+
+    public void addListener(Runnable listener) {
+        listeners.add(listener);
+    }
+
+    public boolean removeListener(Runnable listener) {
+        return listeners.remove(listener);
+    }
+
+    public ConcurrentLinkedQueue<Runnable> getListeners() {
+        return listeners;
     }
 
     public Semaphore getLatch() {

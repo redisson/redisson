@@ -16,6 +16,7 @@
 package org.redisson.core;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.RandomAccess;
 
 import io.netty.util.concurrent.Future;
@@ -40,5 +41,22 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
     Future<V> setAsync(int index, V element);
 
     Future<V> getAsync(int index);
+
+    /**
+     * Read all elements at once
+     *
+     * @return
+     */
+    Future<List<V>> readAllAsync();
+
+    /**
+     * Trim list and remains elements only in specified range
+     * <tt>fromIndex</tt>, inclusive, and <tt>toIndex</tt>, inclusive.
+     *
+     * @param fromIndex
+     * @param toIndex
+     * @return
+     */
+    Future<Void> trimAsync(int fromIndex, int toIndex);
 
 }
