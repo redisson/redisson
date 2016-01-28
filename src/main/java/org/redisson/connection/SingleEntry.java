@@ -61,7 +61,7 @@ public class SingleEntry extends MasterSlaveEntry {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 if (!future.isSuccess()) {
-                    res.setFailure(future.cause());
+                    res.tryFailure(future.cause());
                     return;
                 }
                 if (counter.decrementAndGet() == 0) {

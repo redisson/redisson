@@ -12,12 +12,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.client.WriteRedisConnectionException;
+import org.redisson.client.handler.CommandDecoder;
+import org.redisson.client.handler.CommandEncoder;
+import org.redisson.client.handler.CommandsListEncoder;
+import org.redisson.client.handler.CommandsQueue;
+import org.redisson.client.handler.ConnectionWatchdog;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.GenericFutureListener;
+
 import static com.jayway.awaitility.Awaitility.*;
 
 public class RedissonTest {
@@ -142,7 +160,6 @@ public class RedissonTest {
         RedissonClient r = Redisson.create();
         String t = r.getConfig().toJSON();
         Config c = Config.fromJSON(t);
-        System.out.println(t);
         assertThat(c.toJSON()).isEqualTo(t);
     }
 
@@ -153,7 +170,6 @@ public class RedissonTest {
 
         String t = c2.toJSON();
         Config c = Config.fromJSON(t);
-        System.out.println(t);
         assertThat(c.toJSON()).isEqualTo(t);
     }
 
@@ -170,5 +186,51 @@ public class RedissonTest {
 
         Assert.assertTrue(nodes.pingAll());
     }
+
+    @Test(expected = RedisConnectionException.class)
+    public void testSingleConnectionFail() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:1111");
+        Redisson.create(config);
+
+        Thread.sleep(1500);
+    }
+
+    @Test(expected = RedisConnectionException.class)
+    public void testClusterConnectionFail() throws InterruptedException {
+        Config config = new Config();
+        config.useClusterServers().addNodeAddress("127.0.0.1:1111");
+        Redisson.create(config);
+
+        Thread.sleep(1500);
+    }
+
+    @Test(expected = RedisConnectionException.class)
+    public void testElasticacheConnectionFail() throws InterruptedException {
+        Config config = new Config();
+        config.useElasticacheServers().addNodeAddress("127.0.0.1:1111");
+        Redisson.create(config);
+
+        Thread.sleep(1500);
+    }
+
+    @Test(expected = RedisConnectionException.class)
+    public void testMasterSlaveConnectionFail() throws InterruptedException {
+        Config config = new Config();
+        config.useMasterSlaveServers().setMasterAddress("127.0.0.1:1111");
+        Redisson.create(config);
+
+        Thread.sleep(1500);
+    }
+
+    @Test(expected = RedisConnectionException.class)
+    public void testSentinelConnectionFail() throws InterruptedException {
+        Config config = new Config();
+        config.useSentinelServers().addSentinelAddress("127.0.0.1:1111");
+        Redisson.create(config);
+
+        Thread.sleep(1500);
+    }
+
 
 }
