@@ -203,19 +203,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             SingleEntry entry = new SingleEntry(slots, this, config);
             Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
             if (!f.awaitUninterruptibly(config.getConnectTimeout(), TimeUnit.MILLISECONDS)) {
-                throw new RedisConnectionException("Can't connect to server " + config.getMasterAddress());
+                throw new RedisConnectionException("Can't connect to server " + config.getMasterAddress() + " due to connection timeout (" + config.getConnectTimeout() + " ms) has reached!", f.cause());
             }
             addEntry(singleSlotRange, entry);
         } else {
             MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
             List<Future<Void>> fs = entry.initSlaveBalancer();
+            for (Future<Void> future : fs) {
+                if (!future.awaitUninterruptibly(config.getConnectTimeout(), TimeUnit.MILLISECONDS)) {
+                    throw new RedisConnectionException("Can't connect to slave server due to connection timeout (" + config.getConnectTimeout() + " ms) has reached!", future.cause());
+                }
+            }
             Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
             if (!f.awaitUninterruptibly(config.getConnectTimeout(), TimeUnit.MILLISECONDS)) {
-                throw new RedisConnectionException("Can't connect to server " + config.getMasterAddress());
-            }
-            fs.add(f);
-            for (Future<Void> future : fs) {
-                future.syncUninterruptibly();
+                throw new RedisConnectionException("Can't connect to server " + config.getMasterAddress() + " due to connection timeout (" + config.getConnectTimeout() + " ms) has reached!", f.cause());
             }
             addEntry(singleSlotRange, entry);
         }
