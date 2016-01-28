@@ -34,12 +34,27 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ * Guarantees multiple locks operation handling (lock, tryLock...)
+ * in atomic way without deadlocks.
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonMultiLock implements Lock {
 
     final List<RLock> locks = new ArrayList<RLock>();
 
+    /**
+     * Creates instance with multiple {@link RLock} objects.
+     * Each RLock object could be created by own Redisson instance.
+     *
+     * @param locks
+     */
     public RedissonMultiLock(RLock... locks) {
-        super();
+        if (locks.length == 0) {
+            throw new IllegalArgumentException("Lock objects are not defined");
+        }
         this.locks.addAll(Arrays.asList(locks));
     }
 
