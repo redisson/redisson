@@ -2,6 +2,25 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####09-Jan-2015 - version 2.2.5 released  
+
+Feature - __new object added__ `RBloomFilter`  
+Feature - __new object added__ `RAtomicDouble`  
+Feature - `tryAdd`, `tryAddAsync`, `addAll` and `addAllAsync` methods added to `RScoredSortedSet`  
+Feature - `RKeys.count` and `RKeys.countAsync` methods added  
+Feature - `RedissonClient.saveBuckets` method added  
+Feature - `trySet`, `trySetAsync`, `compareAndSet` and `getAndSet` methods added to `RBucket`  
+Feature - `fastPutIfAbsent` and `fastPutIfAbsentAsync` methods added to `RMap`  
+Improvement - `RMap.putIfAbsent` optimization  
+Improvement - `RBitSet` index range extended to Integer.MAX_VALUE*2  
+Improvement - `RAtomicLong.getAndAdd` optimization  
+Fixed - infinity loop during `RMap` iteration  
+Fixed -  wrong timeout value used during `RBatch` execution  
+Fixed - connection handling when `isReadFromSlaves = false`  
+Fixed - `RMap.addAndGetAsync` key encoding  
+Fixed - `RBatch` errors handling  
+Fixed - `RBlockingQueue.pollLastAndOfferFirstToAsync` does not block properly  
+
 ####25-Dec-2015 - version 2.2.4 released  
 Please update to this version ASAP due to connection leak discovered in previous versions since Redisson 2.1.4.
 
