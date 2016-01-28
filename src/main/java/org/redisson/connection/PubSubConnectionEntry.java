@@ -29,14 +29,10 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PubSubConnectionEntry {
 
     public enum Status {ACTIVE, INACTIVE}
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private volatile Status status = Status.ACTIVE;
     private final Semaphore subscribedChannelsAmount;
