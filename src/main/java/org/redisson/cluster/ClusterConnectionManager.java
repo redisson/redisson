@@ -267,7 +267,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             public void operationComplete(Future<RedisConnection> future) throws Exception {
                 if (!future.isSuccess()) {
                     lastException.set(future.cause());
-                    System.out.println("Can't connect!!!!!");
                     checkClusterState(cfg, iterator, lastException);
                     return;
                 }
