@@ -35,6 +35,11 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      */
     private List<URI> masterAddress;
 
+    /**
+     * Database index used for Redis connection
+     */
+    private int database = 0;
+
     public MasterSlaveServersConfig() {
     }
 
@@ -43,6 +48,7 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
         setLoadBalancer(config.getLoadBalancer());
         setMasterAddress(config.getMasterAddress());
         setSlaveAddresses(config.getSlaveAddresses());
+        setDatabase(config.getDatabase());
     }
 
     /**
@@ -89,6 +95,20 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     }
     public void setSlaveAddresses(Set<URI> readAddresses) {
         this.slaveAddresses = readAddresses;
+    }
+
+    /**
+     * Database index used for Redis connection
+     * Default is <code>0</code>
+     *
+     * @param database
+     */
+    public MasterSlaveServersConfig setDatabase(int database) {
+        this.database = database;
+        return this;
+    }
+    public int getDatabase() {
+        return database;
     }
 
 }

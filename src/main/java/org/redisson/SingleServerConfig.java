@@ -50,6 +50,10 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      */
     private int connectionPoolSize = 100;
 
+    /**
+     * Database index used for Redis connection
+     */
+    private int database = 0;
 
     /**
      * Should the server address be monitored for changes in DNS? Useful for
@@ -77,6 +81,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
         setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
         setConnectionMinimumIdleSize(config.getConnectionMinimumIdleSize());
+        setDatabase(config.getDatabase());
     }
 
     /**
@@ -189,6 +194,20 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
     public int getConnectionMinimumIdleSize() {
         return connectionMinimumIdleSize;
+    }
+
+    /**
+     * Database index used for Redis connection
+     * Default is <code>0</code>
+     *
+     * @param database
+     */
+    public SingleServerConfig setDatabase(int database) {
+        this.database = database;
+        return this;
+    }
+    public int getDatabase() {
+        return database;
     }
 
 }

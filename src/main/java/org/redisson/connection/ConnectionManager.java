@@ -51,7 +51,7 @@ public interface ConnectionManager {
 
     boolean isShuttingDown();
 
-    Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener listener);
+    Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener);
 
     ConnectionInitializer getConnectListener();
 

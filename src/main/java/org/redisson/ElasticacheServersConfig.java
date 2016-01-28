@@ -39,6 +39,11 @@ public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<Elast
      */
     private int scanInterval = 1000;
 
+    /**
+     * Database index used for Redis connection
+     */
+    private int database = 0;
+
     public ElasticacheServersConfig() {
     }
 
@@ -46,6 +51,7 @@ public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<Elast
         super(config);
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
+        setDatabase(config.getDatabase());
     }
 
     /**
@@ -81,6 +87,18 @@ public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<Elast
         return this;
     }
 
-
+    /**
+     * Database index used for Redis connection
+     * Default is <code>0</code>
+     *
+     * @param database
+     */
+    public ElasticacheServersConfig setDatabase(int database) {
+        this.database = database;
+        return this;
+    }
+    public int getDatabase() {
+        return database;
+    }
 
 }

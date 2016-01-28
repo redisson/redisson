@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.BaseMasterSlaveServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.ReadMode;
@@ -329,6 +330,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         } else {
             log.warn("Invalid message: {} from Sentinel {}:{}", msg, addr.getHost(), addr.getPort());
         }
+    }
+
+    @Override
+    protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
+        MasterSlaveServersConfig res = super.create(cfg);
+        res.setDatabase(((SentinelServersConfig)cfg).getDatabase());
+        return res;
     }
 
     @Override

@@ -118,6 +118,7 @@ public class Config {
      *
      * @return
      */
+    @Deprecated
     public ClusterServersConfig useClusterServers(ClusterServersConfig config) {
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
@@ -152,6 +153,7 @@ public class Config {
      *
      * @return
      */
+    @Deprecated
     public ElasticacheServersConfig useElasticacheServers(ElasticacheServersConfig config) {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
@@ -185,6 +187,7 @@ public class Config {
      *
      * @return
      */
+    @Deprecated
     public SingleServerConfig useSingleServer(SingleServerConfig config) {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
