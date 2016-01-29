@@ -15,7 +15,9 @@
  */
 package org.redisson.core;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import io.netty.util.concurrent.Future;
@@ -68,6 +70,27 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     Future<Boolean> fastPutAsync(K key, V value);
 
     Future<Boolean> fastPutIfAbsentAsync(K key, V value);
+
+    /**
+     * Read all keys at once
+     *
+     * @return
+     */
+    Future<Set<K>> readAllKeySetAsync();
+
+    /**
+     * Read all values at once
+     *
+     * @return
+     */
+    Future<Collection<V>> readAllValuesAsync();
+
+    /**
+     * Read all map entries at once
+     *
+     * @return
+     */
+    Future<Set<Entry<K, V>>> readAllEntrySetAsync();
 
     Future<V> getAsync(K key);
 

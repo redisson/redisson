@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
+import org.assertj.core.data.MapEntry;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -255,10 +256,21 @@ public class RedissonMapTest extends BaseTest {
         map.put(2, "33");
         map.put(3, "43");
 
-        Assert.assertEquals(3, map.entrySet().size());
-        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(1), Matchers.equalTo("12")));
-        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(2), Matchers.equalTo("33")));
-        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(3), Matchers.equalTo("43")));
+        assertThat(map.entrySet().size()).isEqualTo(3);
+        Map<Integer, String> testMap = new HashMap<Integer, String>(map);
+        assertThat(map.entrySet()).containsOnlyElementsOf(testMap.entrySet());
+    }
+
+    @Test
+    public void testReadAllEntrySet() {
+        RMap<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        assertThat(map.readAllEntrySet().size()).isEqualTo(3);
+        Map<Integer, String> testMap = new HashMap<Integer, String>(map);
+        assertThat(map.readAllEntrySet()).containsOnlyElementsOf(testMap.entrySet());
     }
 
     @Test
@@ -310,6 +322,30 @@ public class RedissonMapTest extends BaseTest {
 
         Assert.assertTrue(map.keySet().contains(new SimpleKey("33")));
         Assert.assertFalse(map.keySet().contains(new SimpleKey("44")));
+    }
+
+    @Test
+    public void testReadAllKeySet() {
+        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+        map.put(new SimpleKey("33"), new SimpleValue("44"));
+        map.put(new SimpleKey("5"), new SimpleValue("6"));
+
+        assertThat(map.readAllKeySet().size()).isEqualTo(3);
+        Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
+        assertThat(map.readAllKeySet()).containsOnlyElementsOf(testMap.keySet());
+    }
+
+    @Test
+    public void testReadAllValues() {
+        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+        map.put(new SimpleKey("33"), new SimpleValue("44"));
+        map.put(new SimpleKey("5"), new SimpleValue("6"));
+
+        assertThat(map.readAllValues().size()).isEqualTo(3);
+        Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
+        assertThat(map.readAllValues()).containsOnlyElementsOf(testMap.values());
     }
 
     @Test

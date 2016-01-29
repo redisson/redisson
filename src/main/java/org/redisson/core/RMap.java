@@ -15,6 +15,7 @@
  */
 package org.redisson.core;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -115,6 +116,27 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     boolean fastPut(K key, V value);
 
     boolean fastPutIfAbsent(K key, V value);
+
+    /**
+     * Read all keys at once
+     *
+     * @return
+     */
+    Set<K> readAllKeySet();
+
+    /**
+     * Read all values at once
+     *
+     * @return
+     */
+    Collection<V> readAllValues();
+
+    /**
+     * Read all map entries at once
+     *
+     * @return
+     */
+    Set<Entry<K, V>> readAllEntrySet();
 
     /**
      * Use {@link #entrySet().iterator()}
