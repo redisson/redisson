@@ -37,6 +37,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +70,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
                 Promise<RedisConnection> f = newPromise();
-                connectListener.onConnect(f, connection, null, c);
+                connectListener.onConnect(f, connection, NodeType.SENTINEL, c);
                 f.syncUninterruptibly();
 
                 // TODO async

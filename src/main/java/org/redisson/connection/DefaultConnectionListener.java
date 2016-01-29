@@ -36,7 +36,7 @@ public class DefaultConnectionListener implements ConnectionInitializer {
         if (config.getPassword() != null) {
             connectionListener.addCommand(RedisCommands.AUTH, config.getPassword());
         }
-        if (config.getDatabase() != 0) {
+        if (config.getDatabase() != 0 && serverMode != NodeType.SENTINEL) {
             connectionListener.addCommand(RedisCommands.SELECT, config.getDatabase());
         }
         if (config.getClientName() != null) {
