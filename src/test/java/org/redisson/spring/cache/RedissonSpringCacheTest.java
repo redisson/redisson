@@ -2,27 +2,37 @@ package org.redisson.spring.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.redisson.Redisson;
 import org.redisson.RedissonClient;
+import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.SerializationCodec;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
 
+@RunWith(Parameterized.class)
 public class RedissonSpringCacheTest {
 
     public static class SampleObject {
@@ -92,21 +102,43 @@ public class RedissonSpringCacheTest {
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
             Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
             config.put("testMap", new CacheConfig(24*60*1000, 12*60*1000));
-            return new RedissonCacheManager(redissonClient, config);
+            return new RedissonSpringCacheManager(redissonClient, config);
         }
 
     }
 
-    private AnnotationConfigApplicationContext context;
+    @Configuration
+    @ComponentScan
+    @EnableCaching
+    public static class JsonConfigApplication {
 
-    @Before
-    public void before() {
-        context = new AnnotationConfigApplicationContext(Application.class);
+        @Bean(destroyMethod="shutdown")
+        RedissonClient redisson() {
+            return Redisson.create();
+        }
+
+        @Bean
+        CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
+            return new RedissonSpringCacheManager(redissonClient, "classpath:/org/redisson/spring/cache/cache-config.json");
+        }
+
     }
 
-    @After
-    public void after() {
-        context.destroy();
+
+    @Parameterized.Parameters(name= "{index} - {0}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[][] {
+            {new AnnotationConfigApplicationContext(Application.class)},
+            {new AnnotationConfigApplicationContext(JsonConfigApplication.class)}
+        });
+    }
+
+    @Parameterized.Parameter(0)
+    public AnnotationConfigApplicationContext context;
+
+    @AfterClass
+    public static void after() {
+        RedissonSpringCacheTest.data().forEach(e -> ((ConfigurableApplicationContext)e[0]).close());
     }
 
     @Test

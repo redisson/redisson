@@ -31,7 +31,7 @@ public class RedissonCache implements Cache {
 
     private RMapCache<Object, Object> mapCache;
 
-    private RMap<Object, Object> map;
+    private final RMap<Object, Object> map;
 
     private CacheConfig config;
 
