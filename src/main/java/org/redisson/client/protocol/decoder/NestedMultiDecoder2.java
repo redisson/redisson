@@ -16,6 +16,8 @@
 package org.redisson.client.protocol.decoder;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.redisson.client.handler.State;
@@ -60,6 +62,11 @@ public class NestedMultiDecoder2<T> implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
+        // handle empty result
+        if (parts.isEmpty() && state.getDecoderState() == null) {
+            return secondDecoder.decode(parts, state);
+        }
+
         int counter = getCounter(state);
         if (counter == 2) {
             counter = 0;
