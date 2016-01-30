@@ -217,8 +217,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         if (parts.length > 4
                  && "slave".equals(parts[0])) {
-            String ip = parts[2];
-            String port = parts[3];
+            final String ip = parts[2];
+            final String port = parts[3];
 
             final String slaveAddr = ip + ":" + port;
 
