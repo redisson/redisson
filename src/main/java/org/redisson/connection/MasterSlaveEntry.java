@@ -33,7 +33,7 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.balancer.LoadBalancerManagerImpl;
-import org.redisson.misc.MasterConnectionPool;
+import org.redisson.connection.pool.MasterConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

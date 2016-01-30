@@ -27,11 +27,11 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.connection.ClientConnectionsEntry;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.misc.ConnectionPool;
-import org.redisson.misc.PubSubConnectionPoll;
+import org.redisson.connection.pool.PubSubConnectionPool;
+import org.redisson.connection.pool.SlaveConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,13 +45,13 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
 
     private final ConnectionManager connectionManager;
     private final Map<InetSocketAddress, ClientConnectionsEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
-    private final PubSubConnectionPoll pubSubEntries;
-    private final ConnectionPool<RedisConnection> entries;
+    private final PubSubConnectionPool pubSubEntries;
+    private final SlaveConnectionPool entries;
 
     public LoadBalancerManagerImpl(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry entry) {
         this.connectionManager = connectionManager;
-        entries = new ConnectionPool<RedisConnection>(config, connectionManager, entry);
-        pubSubEntries = new PubSubConnectionPoll(config, connectionManager, entry);
+        entries = new SlaveConnectionPool(config, connectionManager, entry);
+        pubSubEntries = new PubSubConnectionPool(config, connectionManager, entry);
     }
 
     public Future<Void> add(final ClientConnectionsEntry entry) {
