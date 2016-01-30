@@ -68,14 +68,16 @@ public class MasterSlaveEntry {
         writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
     }
 
-    public List<Future<Void>> initSlaveBalancer() {
-        boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty() && config.getReadMode() == ReadMode.SLAVE;
+    public List<Future<Void>> initSlaveBalancer(Collection<URI> disconnectedNodes) {
+        boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
+                    && config.getReadMode() == ReadMode.SLAVE
+                        && disconnectedNodes.size() < config.getSlaveAddresses().size();
 
         List<Future<Void>> result = new LinkedList<Future<Void>>();
         Future<Void> f = addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
         result.add(f);
         for (URI address : config.getSlaveAddresses()) {
-            f = addSlave(address.getHost(), address.getPort(), false, NodeType.SLAVE);
+            f = addSlave(address.getHost(), address.getPort(), disconnectedNodes.contains(address), NodeType.SLAVE);
             result.add(f);
         }
         return result;

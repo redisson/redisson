@@ -199,21 +199,27 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
 
+        MasterSlaveEntry entry;
         if (config.getReadMode() == ReadMode.MASTER) {
-            SingleEntry entry = new SingleEntry(slots, this, config);
+            entry = new SingleEntry(slots, this, config);
             Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
             f.syncUninterruptibly();
-            addEntry(singleSlotRange, entry);
         } else {
-            MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-            List<Future<Void>> fs = entry.initSlaveBalancer();
-            for (Future<Void> future : fs) {
-                future.syncUninterruptibly();
-            }
-            Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-            f.syncUninterruptibly();
-            addEntry(singleSlotRange, entry);
+            entry = createMasterSlaveEntry(config, slots);
         }
+        addEntry(singleSlotRange, entry);
+    }
+
+    protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
+            HashSet<ClusterSlotRange> slots) {
+        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
+        List<Future<Void>> fs = entry.initSlaveBalancer(java.util.Collections.emptyList());
+        for (Future<Void> future : fs) {
+            future.syncUninterruptibly();
+        }
+        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        f.syncUninterruptibly();
+        return entry;
     }
 
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
