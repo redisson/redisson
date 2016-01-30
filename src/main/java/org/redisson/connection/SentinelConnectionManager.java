@@ -99,13 +99,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     c.addSlaveAddress(host);
                     slaves.put(host, true);
                     log.debug("slave {} state: {}", host, map);
+                    log.info("slave: {} added", host);
 
                     if (flags.contains("s_down") || flags.contains("disconnected")) {
                         URI url = URIBuilder.create(host);
                         disconnectedSlaves.add(url);
-                        log.info("slave: {} down", host);
-                    } else {
-                        log.info("slave: {} added", host);
+                        log.warn("slave: {} is down", host);
                     }
                 }
                 break;
@@ -265,7 +264,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 RedisClient sentinel = sentinels.remove(addr);
                 if (sentinel != null) {
                     sentinel.shutdownAsync();
-                    log.info("sentinel: {} has down", addr);
+                    log.warn("sentinel: {} has down", addr);
                 }
             } else if ("master".equals(parts[0])) {
                 String ip = parts[2];
@@ -275,7 +274,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 if (entry.getFreezeReason() != FreezeReason.MANAGER) {
                     entry.freeze();
                     String addr = ip + ":" + port;
-                    log.info("master: {} has down", addr);
+                    log.warn("master: {} has down", addr);
                 }
             }
         } else {
@@ -288,7 +287,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
         }
 
-        log.info("slave: {}:{} has down", ip, port);
+        log.warn("slave: {}:{} has down", ip, port);
     }
 
     private void onNodeUp(URI addr, String msg) {
