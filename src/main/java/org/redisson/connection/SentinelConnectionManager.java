@@ -127,7 +127,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         for (Future<RedisPubSubConnection> future : connectionFutures) {
-            future.syncUninterruptibly();
+            future.awaitUninterruptibly();
         }
     }
 
