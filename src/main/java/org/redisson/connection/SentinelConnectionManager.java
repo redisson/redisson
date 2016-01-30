@@ -234,7 +234,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             return;
                         }
 
-                        log.info("slave: {} added", slaveAddr);
+                        if (getEntry(singleSlotRange).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+                            String slaveAddr = ip + ":" + port;
+                            log.info("slave: {} added", slaveAddr);
+                        }
                     }
                 });
             } else {
