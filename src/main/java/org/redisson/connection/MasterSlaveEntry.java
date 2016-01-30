@@ -135,6 +135,7 @@ public class MasterSlaveEntry {
         if (config.getReadMode() == ReadMode.SLAVE
                 && (!addr.getHostName().equals(host) || port != addr.getPort())) {
             connectionManager.slaveDown(this, addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM);
+            log.info("master {}:{} excluded from slaves", addr.getHostName(), addr.getPort());
         }
         return true;
     }

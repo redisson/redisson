@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -213,7 +214,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<Future<Void>> fs = entry.initSlaveBalancer(java.util.Collections.emptyList());
+        List<Future<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
         for (Future<Void> future : fs) {
             future.syncUninterruptibly();
         }
