@@ -54,7 +54,11 @@ public interface CommandAsyncExecutor {
 
     <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
+    <T, R> Future<R> evalReadAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
     <T, R> Future<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
+
+    <T, R> Future<R> evalWriteAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
     <T, R> Future<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
@@ -67,6 +71,8 @@ public interface CommandAsyncExecutor {
     <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params);
 
     <T, R> Future<R> readAsync(String key, RedisCommand<T> command, Object ... params);
+
+    <T, R> Future<R> readAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Object ... params);
 

@@ -66,12 +66,25 @@ public class RedissonKeysTest extends BaseTest {
 
     @Test
     public void testDeleteByPattern() {
-        RBucket<String> bucket = redisson.getBucket("test1");
-        bucket.set("someValue");
+        RBucket<String> bucket = redisson.getBucket("test0");
+        bucket.set("someValue3");
+        assertThat(bucket.isExists()).isTrue();
+
+        RBucket<String> bucket2 = redisson.getBucket("test9");
+        bucket2.set("someValue4");
+        assertThat(bucket.isExists()).isTrue();
+
         RMap<String, String> map = redisson.getMap("test2");
         map.fastPut("1", "2");
+        assertThat(map.isExists()).isTrue();
 
-        Assert.assertEquals(2, redisson.getKeys().deleteByPattern("test?"));
+        RMap<String, String> map2 = redisson.getMap("test3");
+        map2.fastPut("1", "5");
+        assertThat(map2.isExists()).isTrue();
+
+
+        Assert.assertEquals(4, redisson.getKeys().deleteByPattern("test?"));
+        Assert.assertEquals(0, redisson.getKeys().deleteByPattern("test?"));
     }
 
     @Test
@@ -90,13 +103,24 @@ public class RedissonKeysTest extends BaseTest {
 
     @Test
     public void testMassDelete() {
-        RBucket<String> bucket = redisson.getBucket("test");
-        bucket.set("someValue");
+        RBucket<String> bucket0 = redisson.getBucket("test0");
+        bucket0.set("someValue");
+        RBucket<String> bucket1 = redisson.getBucket("test1");
+        bucket1.set("someValue");
+        RBucket<String> bucket2 = redisson.getBucket("test2");
+        bucket2.set("someValue");
+        RBucket<String> bucket3 = redisson.getBucket("test3");
+        bucket3.set("someValue");
+        RBucket<String> bucket10 = redisson.getBucket("test10");
+        bucket10.set("someValue");
+
+        RBucket<String> bucket12 = redisson.getBucket("test12");
+        bucket12.set("someValue");
         RMap<String, String> map = redisson.getMap("map2");
         map.fastPut("1", "2");
 
-        Assert.assertEquals(2, redisson.getKeys().delete("test", "map2"));
-        Assert.assertEquals(0, redisson.getKeys().delete("test", "map2"));
+        Assert.assertEquals(7, redisson.getKeys().delete("test0", "test1", "test2", "test3", "test10", "test12", "map2"));
+        Assert.assertEquals(0, redisson.getKeys().delete("test0", "test1", "test2", "test3", "test10", "test12", "map2"));
     }
 
     @Test

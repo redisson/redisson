@@ -240,6 +240,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
+    public <T, R> Future<R> readAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
+        Promise<R> mainPromise = connectionManager.newPromise();
+        async(true, new NodeSource(slot), codec, command, params, mainPromise, 0);
+        return mainPromise;
+    }
+
     @Override
     public <T, R> Future<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
@@ -259,6 +265,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <T, R> Future<R> evalReadAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalAsync(new NodeSource(slot), true, codec, evalCommandType, script, keys, params);
+    }
+
+    @Override
     public <T, R> Future<R> evalReadAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         int slot = connectionManager.calcSlot(key);
         return evalAsync(new NodeSource(slot, client), true, codec, evalCommandType, script, keys, params);
@@ -269,6 +280,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         NodeSource source = getNodeSource(key);
         return evalAsync(source, false, codec, evalCommandType, script, keys, params);
     }
+
+    public <T, R> Future<R> evalWriteAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalAsync(new NodeSource(slot), false, codec, evalCommandType, script, keys, params);
+    }
+
 
     @Override
     public <T, R> Future<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {

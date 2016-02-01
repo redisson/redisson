@@ -51,23 +51,25 @@ public interface RKeysAsync {
     Future<Collection<String>> findKeysByPatternAsync(String pattern);
 
     /**
-     * Delete multiple objects by a key pattern in async mode
-     *
+     * Delete multiple objects by a key pattern.
+     * <p/>
+     * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
+     * <p/>
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
      * @param pattern
-     * @return
+     * @return number of removed keys
      */
     Future<Long> deleteByPatternAsync(String pattern);
 
     /**
-     * Delete multiple objects by name in async mode
+     * Delete multiple objects by name
      *
      * @param keys - object names
-     * @return
+     * @return number of removed keys
      */
     Future<Long> deleteAsync(String ... keys);
 

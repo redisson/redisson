@@ -152,103 +152,81 @@ public class RedissonKeys implements RKeys {
         return commandExecutor.readRandomAsync(RedisCommands.RANDOM_KEY);
     }
 
-    /**
-     * Find keys by key search pattern
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
     @Override
     public Collection<String> findKeysByPattern(String pattern) {
         return commandExecutor.get(findKeysByPatternAsync(pattern));
     }
 
-    /**
-     * Find keys by key search pattern in async mode
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
     @Override
     public Future<Collection<String>> findKeysByPatternAsync(String pattern) {
         return commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
     }
 
-    /**
-     * Delete multiple objects by a key pattern
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
     @Override
     public long deleteByPattern(String pattern) {
         return commandExecutor.get(deleteByPatternAsync(pattern));
     }
 
-    /**
-     * Delete multiple objects by a key pattern in async mode
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern
-     * @return
-     */
     @Override
     public Future<Long> deleteByPatternAsync(String pattern) {
-        return commandExecutor.evalWriteAllAsync(RedisCommands.EVAL_LONG, new SlotCallback<Long, Long>() {
-            AtomicLong results = new AtomicLong();
-            @Override
-            public void onSlotResult(Long result) {
-                results.addAndGet(result);
-            }
+        if (!commandExecutor.getConnectionManager().isClusterMode()) {
+            return commandExecutor.evalWriteAsync((String)null, null, RedisCommands.EVAL_LONG, "local keys = redis.call('keys', ARGV[1]) "
+                              + "local n = 0 "
+                              + "redis.log(redis.LOG_WARNING, 'keys number ' .. #keys); "
+                              + "for i=1, #keys,5000 do "
+                                  + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
+                              + "end "
+                          + "return n;",Collections.emptyList(), pattern);
+        }
 
+        final Promise<Long> result = commandExecutor.getConnectionManager().newPromise();
+        final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
+        final AtomicLong count = new AtomicLong();
+        final AtomicLong executed = new AtomicLong(commandExecutor.getConnectionManager().getEntries().size());
+        final FutureListener<Long> listener = new FutureListener<Long>() {
             @Override
-            public Long onFinish() {
-                return results.get();
+            public void operationComplete(Future<Long> future) throws Exception {
+                if (future.isSuccess()) {
+                    count.addAndGet(future.getNow());
+                } else {
+                    failed.set(future.cause());
+                }
+
+                checkExecution(result, failed, count, executed);
             }
-        }, "local keys = redis.call('keys', ARGV[1]) "
-                + "local n = 0 "
-                + "for i=1, table.getn(keys),5000 do "
-                    + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
-                + "end "
-            + "return n;",Collections.emptyList(), pattern);
+        };
+
+        for (ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
+            Future<Collection<String>> findFuture = commandExecutor.readAsync(slot.getStartSlot(), null, RedisCommands.KEYS, pattern);
+            findFuture.addListener(new FutureListener<Collection<String>>() {
+                @Override
+                public void operationComplete(Future<Collection<String>> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        failed.set(future.cause());
+                        checkExecution(result, failed, count, executed);
+                        return;
+                    }
+
+                    Collection<String> keys = future.getNow();
+                    if (keys.isEmpty()) {
+                        checkExecution(result, failed, count, executed);
+                        return;
+                    }
+
+                    Future<Long> deleteFuture = deleteAsync(keys.toArray(new String[keys.size()]));
+                    deleteFuture.addListener(listener);
+                }
+            });
+        }
+
+        return result;
     }
 
-    /**
-     * Delete multiple objects by name
-     *
-     * @param keys - object names
-     * @return number of removed keys
-     */
     @Override
     public long delete(String ... keys) {
         return commandExecutor.get(deleteAsync(keys));
     }
 
-    /**
-     * Delete multiple objects by name in async mode
-     *
-     * @param keys - object names
-     * @return number of removed keys
-     */
     @Override
     public Future<Long> deleteAsync(String ... keys) {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {
@@ -286,18 +264,7 @@ public class RedissonKeys implements RKeys {
                     failed.set(future.cause());
                 }
 
-                if (executed.decrementAndGet() == 0) {
-                    if (failed.get() != null) {
-                        if (count.get() > 0) {
-                            RedisException ex = new RedisException("" + count.get() + " keys has been deleted. But one or more nodes has an error", failed.get());
-                            result.setFailure(ex);
-                        } else {
-                            result.setFailure(failed.get());
-                        }
-                    } else {
-                        result.setSuccess(count.get());
-                    }
-                }
+                checkExecution(result, failed, count, executed);
             }
         };
 
@@ -354,6 +321,22 @@ public class RedissonKeys implements RKeys {
     @Override
     public Future<Void> flushallAsync() {
         return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL);
+    }
+
+    private void checkExecution(final Promise<Long> result, final AtomicReference<Throwable> failed,
+            final AtomicLong count, final AtomicLong executed) {
+        if (executed.decrementAndGet() == 0) {
+            if (failed.get() != null) {
+                if (count.get() > 0) {
+                    RedisException ex = new RedisException("" + count.get() + " keys has been deleted. But one or more nodes has an error", failed.get());
+                    result.setFailure(ex);
+                } else {
+                    result.setFailure(failed.get());
+                }
+            } else {
+                result.setSuccess(count.get());
+            }
+        }
     }
 
 }
