@@ -32,6 +32,7 @@ import org.redisson.BaseMasterSlaveServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.ReadMode;
+import org.redisson.Version;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -134,6 +135,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     public MasterSlaveConnectionManager(Config cfg) {
+        Version.logVersion();
+
         if (cfg.isUseLinuxNativeEpoll()) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new EpollEventLoopGroup(cfg.getThreads());
