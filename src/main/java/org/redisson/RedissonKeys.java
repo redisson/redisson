@@ -251,6 +251,10 @@ public class RedissonKeys implements RKeys {
      */
     @Override
     public Future<Long> deleteAsync(String ... keys) {
+        if (!commandExecutor.getConnectionManager().isClusterMode()) {
+            return commandExecutor.writeAsync(null, RedisCommands.DEL, keys);
+        }
+
         Map<ClusterSlotRange, List<String>> range2key = new HashMap<ClusterSlotRange, List<String>>();
         for (String key : keys) {
             int slot = commandExecutor.getConnectionManager().calcSlot(key);

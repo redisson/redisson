@@ -43,6 +43,8 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
+    boolean isClusterMode();
+
     <R> Future<R> newSucceededFuture(R value);
 
     ConnectionEventsHub getConnectionEventsHub();

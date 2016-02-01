@@ -116,6 +116,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected MasterSlaveServersConfig config;
 
+    protected boolean isClusterMode;
+
     protected final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
@@ -150,6 +152,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = NioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
+        this.isClusterMode = cfg.isClusterConfig();
+    }
+
+    public boolean isClusterMode() {
+        return isClusterMode;
     }
 
     public IdleConnectionWatcher getConnectionWatcher() {

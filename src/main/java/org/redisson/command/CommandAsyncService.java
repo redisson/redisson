@@ -226,11 +226,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private NodeSource getNodeSource(String key) {
         int slot = connectionManager.calcSlot(key);
-        NodeSource source = NodeSource.ZERO;
         if (slot != 0) {
-            source = new NodeSource(slot);
+            return new NodeSource(slot);
         }
-        return source;
+        return NodeSource.ZERO;
     }
 
     @Override
