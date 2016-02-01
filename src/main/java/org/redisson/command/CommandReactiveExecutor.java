@@ -25,12 +25,16 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 
+import io.netty.util.concurrent.Future;
+
 /**
  *
  * @author Nikita Koksharov
  *
  */
 public interface CommandReactiveExecutor extends CommandAsyncExecutor {
+
+    <R> Publisher<R> reactive(Future<R> future);
 
     ConnectionManager getConnectionManager();
 
