@@ -67,6 +67,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @param predicate
      * @return
      */
+    @Deprecated
     Map<K, V> filterEntries(Predicate<Map.Entry<K, V>> predicate);
 
     /**
@@ -78,6 +79,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @param predicate
      * @return
      */
+    @Deprecated
     Map<K, V> filterValues(Predicate<V> predicate);
 
     /**
@@ -89,6 +91,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @param predicate
      * @return
      */
+    @Deprecated
     Map<K, V> filterKeys(Predicate<K> predicate);
 
     /**
