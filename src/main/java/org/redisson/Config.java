@@ -282,6 +282,16 @@ public class Config {
         return threads;
     }
 
+    /**
+     * Threads amount shared between all redis node clients.
+     * <p/>
+     * Default is <code>0</code>.
+     * <p/>
+     * <code>0</code> means <code>current_processors_amount * 2</code>
+     *
+     * @param threads
+     * @return
+     */
     public Config setThreads(int threads) {
         this.threads = threads;
         return this;

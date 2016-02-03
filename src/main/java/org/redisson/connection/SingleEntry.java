@@ -26,6 +26,7 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.connection.pool.PubSubConnectionPool;
+import org.redisson.connection.pool.SinglePubSubConnectionPool;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -37,11 +38,7 @@ public class SingleEntry extends MasterSlaveEntry {
 
     public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         super(slotRanges, connectionManager, config);
-        pubSubConnectionHolder = new PubSubConnectionPool(config, connectionManager, this) {
-            protected ClientConnectionsEntry getEntry() {
-                return entries.get(0);
-            }
-        };
+        pubSubConnectionHolder = new SinglePubSubConnectionPool(config, connectionManager, this);
     }
 
     @Override
