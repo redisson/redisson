@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.WriteRedisConnectionException;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
 import org.redisson.client.handler.CommandsListEncoder;
@@ -25,6 +26,7 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+import org.redisson.core.RMap;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -230,6 +232,17 @@ public class RedissonTest {
         Redisson.create(config);
 
         Thread.sleep(1500);
+    }
+
+    @Test
+    public void testManyConnections() {
+        Config redisConfig = new Config();
+        redisConfig.useSingleServer()
+        .setConnectionMinimumIdleSize(10000)
+        .setConnectionPoolSize(10000)
+        .setAddress("localhost:6379");
+        RedissonClient r = Redisson.create(redisConfig);
+        r.shutdown();
     }
 
 
