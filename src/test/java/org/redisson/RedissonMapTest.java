@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.Serializable;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,10 +14,12 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
+import org.assertj.core.data.MapEntry;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
@@ -203,6 +206,25 @@ public class RedissonMapTest extends BaseTest {
         expectedMap.put(2, 200);
         expectedMap.put(3, 300);
         assertThat(filtered).isEqualTo(expectedMap);
+    }
+
+    @Test
+    public void testStringCodec() {
+        Config config = createConfig();
+        config.setCodec(StringCodec.INSTANCE);
+        RedissonClient redisson = Redisson.create(config);
+
+        RMap<String, String> rmap = redisson.getMap("TestRMap01");
+        rmap.put("A", "1");
+        rmap.put("B", "2");
+
+        Iterator<Map.Entry<String, String>> iterator = rmap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, String> next = iterator.next();
+            assertThat(next).isIn(new AbstractMap.SimpleEntry("A", "1"), new AbstractMap.SimpleEntry("B", "2"));
+        }
+
+        redisson.shutdown();
     }
 
     @Test
