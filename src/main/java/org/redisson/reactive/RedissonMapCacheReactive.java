@@ -332,8 +332,12 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
         }
 
         return commandExecutor.evalWriteReactive(getName(), codec, EVAL_FAST_REMOVE,
-                "redis.call('zrem', KEYS[2], unpack(ARGV)); "
-                + "return redis.call('hdel', KEYS[1], unpack(ARGV)); ",
+                "local r = 0;"
+                + "for i=1, #ARGV,5000 do "
+                        + "r += redis.call('hdel', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
+                        + "redis.call('zrem', KEYS[2], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
+                + "end "
+                + "return r;",
                 Arrays.<Object>asList(getName(), getTimeoutSetName()), keys);
     }
 
