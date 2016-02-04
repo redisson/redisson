@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.Assertions.*;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -267,6 +268,17 @@ public class RedissonSetCacheTest extends BaseTest {
         Assert.assertEquals(5, set.size());
     }
 
+    @Test
+    public void testReadAll() {
+        RSetCache<Integer> set = redisson.getSetCache("set");
+        set.add(1, 2, TimeUnit.MINUTES);
+        set.add(2);
+        set.add(3);
+        set.add(4);
+        set.add(5);
+
+        assertThat(set.readAll()).containsOnly(1, 2, 3, 4, 5);
+    }
 
     @Test
     public void testRetainAllEmpty() {

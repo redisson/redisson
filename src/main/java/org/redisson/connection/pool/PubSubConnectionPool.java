@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
+package org.redisson.connection.pool;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisPubSubConnection;
@@ -23,9 +23,9 @@ import org.redisson.connection.ClientConnectionsEntry;
 
 import io.netty.util.concurrent.Future;
 
-public class PubSubConnectionPoll extends ConnectionPool<RedisPubSubConnection> {
+public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> {
 
-    public PubSubConnectionPoll(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
+    public PubSubConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
         super(config, connectionManager, masterSlaveEntry);
     }
 

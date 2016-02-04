@@ -48,7 +48,7 @@ public class ClientConnectionsEntry {
     private FreezeReason freezeReason;
     final RedisClient client;
 
-    public enum NodeType {SLAVE, MASTER}
+    public enum NodeType {SLAVE, MASTER, SENTINEL}
 
     private final NodeType nodeType;
     private ConnectionManager connectionManager;

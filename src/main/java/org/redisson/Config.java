@@ -118,6 +118,7 @@ public class Config {
      *
      * @return
      */
+    @Deprecated
     public ClusterServersConfig useClusterServers(ClusterServersConfig config) {
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
@@ -152,6 +153,7 @@ public class Config {
      *
      * @return
      */
+    @Deprecated
     public ElasticacheServersConfig useElasticacheServers(ElasticacheServersConfig config) {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
@@ -185,6 +187,7 @@ public class Config {
      *
      * @return
      */
+    @Deprecated
     public SingleServerConfig useSingleServer(SingleServerConfig config) {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
@@ -231,14 +234,6 @@ public class Config {
         return this.sentinelServersConfig;
     }
 
-    /**
-     * Deprecated. Use {@link #useSentinelServers()} instead
-     */
-    @Deprecated
-    public SentinelServersConfig useSentinelConnection() {
-        return useSentinelServers();
-    }
-
     SentinelServersConfig getSentinelServersConfig() {
         return sentinelServersConfig;
     }
@@ -272,13 +267,6 @@ public class Config {
         return masterSlaveServersConfig;
     }
 
-    /**
-     * Deprecated. Use {@link #useMasterSlaveServers()} instead
-     */
-    @Deprecated
-    public MasterSlaveServersConfig useMasterSlaveConnection() {
-        return useMasterSlaveServers();
-    }
     MasterSlaveServersConfig getMasterSlaveServersConfig() {
         return masterSlaveServersConfig;
     }
@@ -294,6 +282,16 @@ public class Config {
         return threads;
     }
 
+    /**
+     * Threads amount shared between all redis node clients.
+     * <p/>
+     * Default is <code>0</code>.
+     * <p/>
+     * <code>0</code> means <code>current_processors_amount * 2</code>
+     *
+     * @param threads
+     * @return
+     */
     public Config setThreads(int threads) {
         this.threads = threads;
         return this;
@@ -346,8 +344,11 @@ public class Config {
     }
 
     /**
-     * Use defined eventLoopGroup instance.
-     * Thus several Redisson instances can use one eventLoopGroup instance.
+     * Use external EventLoopGroup. EventLoopGroup processes all
+     * Netty connection tied with Redis servers. Each EventLoopGroup creates
+     * own threads and each Redisson client creates own EventLoopGroup by default.
+     * So if there are multiple Redisson instances in same JVM
+     * it would be useful to share one EventLoopGroup among them.
      * <p/>
      * Only {@link io.netty.channel.epoll.EpollEventLoopGroup} or
      * {@link io.netty.channel.nio.NioEventLoopGroup} can be used.

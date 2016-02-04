@@ -190,6 +190,36 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public Set<K> readAllKeySet() {
+        return get(readAllKeySetAsync());
+    }
+
+    @Override
+    public Future<Set<K>> readAllKeySetAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HKEYS, getName());
+    }
+
+    @Override
+    public Collection<V> readAllValues() {
+        return get(readAllValuesAsync());
+    }
+
+    @Override
+    public Future<Collection<V>> readAllValuesAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HVALS, getName());
+    }
+
+    @Override
+    public Set<Entry<K, V>> readAllEntrySet() {
+        return get(readAllEntrySetAsync());
+    }
+
+    @Override
+    public Future<Set<Entry<K, V>>> readAllEntrySetAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HGETALL_ENTRY, getName());
+    }
+
+    @Override
     public V putIfAbsent(K key, V value) {
         return get(putIfAbsentAsync(key, value));
     }

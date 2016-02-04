@@ -25,8 +25,8 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ClientConnectionsEntry.NodeType;
-import org.redisson.misc.ConnectionPool;
-import org.redisson.misc.PubSubConnectionPoll;
+import org.redisson.connection.pool.PubSubConnectionPool;
+import org.redisson.connection.pool.SinglePubSubConnectionPool;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -34,15 +34,11 @@ import io.netty.util.concurrent.Promise;
 
 public class SingleEntry extends MasterSlaveEntry {
 
-    final ConnectionPool<RedisPubSubConnection> pubSubConnectionHolder;
+    final PubSubConnectionPool pubSubConnectionHolder;
 
     public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         super(slotRanges, connectionManager, config);
-        pubSubConnectionHolder = new PubSubConnectionPoll(config, connectionManager, this) {
-            protected ClientConnectionsEntry getEntry() {
-                return entries.get(0);
-            }
-        };
+        pubSubConnectionHolder = new SinglePubSubConnectionPool(config, connectionManager, this);
     }
 
     @Override
@@ -61,7 +57,7 @@ public class SingleEntry extends MasterSlaveEntry {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 if (!future.isSuccess()) {
-                    res.setFailure(future.cause());
+                    res.tryFailure(future.cause());
                     return;
                 }
                 if (counter.decrementAndGet() == 0) {

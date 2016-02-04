@@ -68,15 +68,17 @@ public interface RKeys extends RKeysAsync {
     Collection<String> findKeysByPattern(String pattern);
 
     /**
-     * Delete multiple objects by a key pattern
-     *
+     * Delete multiple objects by a key pattern.
+     * <p/>
+     * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
+     * <p/>
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
      * @param pattern
-     * @return
+     * @return number of removed keys
      */
     long deleteByPattern(String pattern);
 
@@ -84,7 +86,7 @@ public interface RKeys extends RKeysAsync {
      * Delete multiple objects by name
      *
      * @param keys - object names
-     * @return
+     * @return number of removed keys
      */
     long delete(String ... keys);
 

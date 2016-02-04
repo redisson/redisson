@@ -21,8 +21,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.BaseMasterSlaveServersConfig;
 import org.redisson.Config;
 import org.redisson.ElasticacheServersConfig;
+import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
@@ -91,6 +93,13 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         init(this.config);
 
         monitorRoleChange(cfg);
+    }
+
+    @Override
+    protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
+        MasterSlaveServersConfig res = super.create(cfg);
+        res.setDatabase(((ElasticacheServersConfig)cfg).getDatabase());
+        return res;
     }
 
     private RedisConnection connect(ElasticacheServersConfig cfg, URI addr) {

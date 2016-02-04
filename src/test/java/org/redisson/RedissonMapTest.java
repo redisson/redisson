@@ -1,23 +1,28 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
+import org.assertj.core.data.MapEntry;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
-import static org.assertj.core.api.Assertions.*;
 
 import io.netty.util.concurrent.Future;
 
@@ -131,17 +136,17 @@ public class RedissonMapTest extends BaseTest {
         map.put(1, 100);
 
         Integer res = map.addAndGet(1, 12);
-        Assert.assertEquals(112, (int)res);
+        assertThat(res).isEqualTo(112);
         res = map.get(1);
-        Assert.assertEquals(112, (int)res);
+        assertThat(res).isEqualTo(112);
 
         RMap<Integer, Double> map2 = redisson.getMap("getAll2");
         map2.put(1, new Double(100.2));
 
         Double res2 = map2.addAndGet(1, new Double(12.1));
-        Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
+        assertThat(res2).isEqualTo(112.3);
         res2 = map2.get(1);
-        Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
+        assertThat(res2).isEqualTo(112.3);
 
         RMap<String, Integer> mapStr = redisson.getMap("mapStr");
         assertThat(mapStr.put("1", 100)).isNull();
@@ -163,7 +168,7 @@ public class RedissonMapTest extends BaseTest {
         Map<Integer, Integer> expectedMap = new HashMap<Integer, Integer>();
         expectedMap.put(2, 200);
         expectedMap.put(3, 300);
-        Assert.assertEquals(expectedMap, filtered);
+        assertThat(filtered).isEqualTo(expectedMap);
     }
 
     @Test
@@ -179,7 +184,7 @@ public class RedissonMapTest extends BaseTest {
         Map<String, Integer> expectedMap = new HashMap<String, Integer>();
         expectedMap.put("B", 200);
         expectedMap.put("C", 300);
-        Assert.assertEquals(expectedMap, filtered);
+        assertThat(filtered).isEqualTo(expectedMap);
     }
 
     @Test
@@ -200,7 +205,26 @@ public class RedissonMapTest extends BaseTest {
         Map<Integer, Integer> expectedMap = new HashMap<Integer, Integer>();
         expectedMap.put(2, 200);
         expectedMap.put(3, 300);
-        Assert.assertEquals(expectedMap, filtered);
+        assertThat(filtered).isEqualTo(expectedMap);
+    }
+
+    @Test
+    public void testStringCodec() {
+        Config config = createConfig();
+        config.setCodec(StringCodec.INSTANCE);
+        RedissonClient redisson = Redisson.create(config);
+
+        RMap<String, String> rmap = redisson.getMap("TestRMap01");
+        rmap.put("A", "1");
+        rmap.put("B", "2");
+
+        Iterator<Map.Entry<String, String>> iterator = rmap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, String> next = iterator.next();
+            assertThat(next).isIn(new AbstractMap.SimpleEntry("A", "1"), new AbstractMap.SimpleEntry("B", "2"));
+        }
+
+        redisson.shutdown();
     }
 
     @Test
@@ -209,12 +233,13 @@ public class RedissonMapTest extends BaseTest {
         map.put(1, 2);
         map.put(3, 4);
 
-        Assert.assertEquals(2, map.size());
+        assertThat(map.size()).isEqualTo(2);
 
         Integer val = map.get(1);
-        Assert.assertEquals(2, val.intValue());
+        assertThat(val).isEqualTo(2);
+
         Integer val2 = map.get(3);
-        Assert.assertEquals(4, val2.intValue());
+        assertThat(val2).isEqualTo(4);
     }
 
     @Test
@@ -223,13 +248,41 @@ public class RedissonMapTest extends BaseTest {
         map.put(1L, 2L);
         map.put(3L, 4L);
 
-        Assert.assertEquals(2, map.size());
+        assertThat(map.size()).isEqualTo(2);
 
         Long val = map.get(1L);
-        Assert.assertEquals(2L, val.longValue());
+        assertThat(val).isEqualTo(2);
+
         Long val2 = map.get(3L);
-        Assert.assertEquals(4L, val2.longValue());
+        assertThat(val2).isEqualTo(4);
     }
+
+    @Test
+    public void testIterator() {
+        RMap<Integer, Integer> rMap = redisson.getMap("123");
+
+        int size = 1000;
+        for (int i = 0; i < size; i++) {
+            rMap.put(i,i);
+        }
+        assertThat(rMap.size()).isEqualTo(1000);
+
+        int counter = 0;
+        for (Integer key : rMap.keySet()) {
+            counter++;
+        }
+        assertThat(counter).isEqualTo(size);
+        counter = 0;
+        for (Integer value : rMap.values()) {
+            counter++;
+        }
+        assertThat(counter).isEqualTo(size);
+        counter = 0;
+        for (Entry<Integer, Integer> entry : rMap.entrySet()) {
+            counter++;
+        }
+        assertThat(counter).isEqualTo(size);
+   }
 
     @Test
     public void testNull() {
@@ -238,14 +291,14 @@ public class RedissonMapTest extends BaseTest {
         map.put(2, null);
         map.put(3, "43");
 
-        Assert.assertEquals(3, map.size());
+        assertThat(map.size()).isEqualTo(3);
 
         String val = map.get(2);
-        Assert.assertNull(val);
+        assertThat(val).isNull();
         String val2 = map.get(1);
-        Assert.assertNull(val2);
+        assertThat(val2).isNull();
         String val3 = map.get(3);
-        Assert.assertEquals("43", val3);
+        assertThat(val3).isEqualTo("43");
     }
 
     @Test
@@ -255,10 +308,21 @@ public class RedissonMapTest extends BaseTest {
         map.put(2, "33");
         map.put(3, "43");
 
-        Assert.assertEquals(3, map.entrySet().size());
-        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(1), Matchers.equalTo("12")));
-        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(2), Matchers.equalTo("33")));
-        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(3), Matchers.equalTo("43")));
+        assertThat(map.entrySet().size()).isEqualTo(3);
+        Map<Integer, String> testMap = new HashMap<Integer, String>(map);
+        assertThat(map.entrySet()).containsOnlyElementsOf(testMap.entrySet());
+    }
+
+    @Test
+    public void testReadAllEntrySet() {
+        RMap<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        assertThat(map.readAllEntrySet().size()).isEqualTo(3);
+        Map<Integer, String> testMap = new HashMap<Integer, String>(map);
+        assertThat(map.readAllEntrySet()).containsOnlyElementsOf(testMap.entrySet());
     }
 
     @Test
@@ -269,7 +333,7 @@ public class RedissonMapTest extends BaseTest {
         map.put(3, "43");
 
         String val = map.get(2);
-        Assert.assertEquals("33", val);
+        assertThat(val).isEqualTo("33");
     }
 
     @Test
@@ -282,7 +346,7 @@ public class RedissonMapTest extends BaseTest {
         map.remove(new SimpleKey("33"));
         map.remove(new SimpleKey("5"));
 
-        Assert.assertEquals(1, map.size());
+        assertThat(map.size()).isEqualTo(1);
     }
 
     @Test
@@ -298,7 +362,7 @@ public class RedissonMapTest extends BaseTest {
         joinMap.put(6, "6");
         map.putAll(joinMap);
 
-        MatcherAssert.assertThat(map.keySet(), Matchers.containsInAnyOrder(1, 2, 3, 4, 5, 6));
+        assertThat(map.keySet()).containsOnly(1, 2, 3, 4, 5, 6);
     }
 
     @Test
@@ -310,6 +374,30 @@ public class RedissonMapTest extends BaseTest {
 
         Assert.assertTrue(map.keySet().contains(new SimpleKey("33")));
         Assert.assertFalse(map.keySet().contains(new SimpleKey("44")));
+    }
+
+    @Test
+    public void testReadAllKeySet() {
+        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+        map.put(new SimpleKey("33"), new SimpleValue("44"));
+        map.put(new SimpleKey("5"), new SimpleValue("6"));
+
+        assertThat(map.readAllKeySet().size()).isEqualTo(3);
+        Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
+        assertThat(map.readAllKeySet()).containsOnlyElementsOf(testMap.keySet());
+    }
+
+    @Test
+    public void testReadAllValues() {
+        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"));
+        map.put(new SimpleKey("33"), new SimpleValue("44"));
+        map.put(new SimpleKey("5"), new SimpleValue("6"));
+
+        assertThat(map.readAllValues().size()).isEqualTo(3);
+        Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
+        assertThat(map.readAllValues()).containsOnlyElementsOf(testMap.values());
     }
 
     @Test
@@ -517,10 +605,10 @@ public class RedissonMapTest extends BaseTest {
         map.put(3, 5);
         map.put(7, 8);
 
-        Assert.assertEquals((Integer) 3, map.removeAsync(1).get());
-        Assert.assertEquals((Integer) 5, map.removeAsync(3).get());
-        Assert.assertNull(map.removeAsync(10).get());
-        Assert.assertEquals((Integer) 8, map.removeAsync(7).get());
+        assertThat(map.removeAsync(1).get()).isEqualTo(3);
+        assertThat(map.removeAsync(3).get()).isEqualTo(5);
+        assertThat(map.removeAsync(10).get()).isNull();
+        assertThat(map.removeAsync(7).get()).isEqualTo(8);
     }
 
     @Test
@@ -531,9 +619,9 @@ public class RedissonMapTest extends BaseTest {
         map.put(4, 6);
         map.put(7, 8);
 
-        Assert.assertEquals((Long) 3L, map.fastRemoveAsync(1, 3, 7).get());
+        assertThat(map.fastRemoveAsync(1, 3, 7).get()).isEqualTo(3);
         Thread.sleep(1);
-        Assert.assertEquals(1, map.size());
+        assertThat(map.size()).isEqualTo(1);
     }
 
     @Test
@@ -553,7 +641,7 @@ public class RedissonMapTest extends BaseTest {
             }
         }
 
-        Assert.assertEquals(0, keys.size());
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -573,7 +661,7 @@ public class RedissonMapTest extends BaseTest {
             }
         }
 
-        Assert.assertEquals(0, values.size());
+        assertThat(values.size()).isEqualTo(0);
     }
 
     @Test
@@ -596,16 +684,17 @@ public class RedissonMapTest extends BaseTest {
         testMap.put("2", "4");
         testMap.put("3", "5");
 
-        Assert.assertEquals(testMap, map);
-        Assert.assertEquals(testMap.hashCode(), map.hashCode());
+        assertThat(map).isEqualTo(testMap);
+        assertThat(testMap.hashCode()).isEqualTo(map.hashCode());
     }
 
     @Test
     public void testFastRemoveEmpty() throws Exception {
         RMap<Integer, Integer> map = redisson.getMap("simple");
         map.put(1, 3);
-        Assert.assertEquals(0, map.fastRemove());
-        Assert.assertEquals(1, map.size());
+
+        assertThat(map.fastRemove()).isZero();
+        assertThat(map.size()).isEqualTo(1);
     }
 
     @Test(timeout = 5000)

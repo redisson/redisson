@@ -153,8 +153,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private Future<Collection<Future<Void>>> addMasterEntry(final ClusterPartition partition, final ClusterServersConfig cfg) {
         if (partition.isMasterFail()) {
             RedisException e = new RedisException("Failed to add master: " +
-                        partition.getMasterAddress() + " for slot ranges: " +
-                        partition.getSlotRanges() + ". Reason - server has FAIL flag");
+                    partition.getMasterAddress() + " for slot ranges: " +
+                    partition.getSlotRanges() + ". Reason - server has FAIL flag");
+
+            if (partition.getSlotRanges().isEmpty()) {
+                e = new RedisException("Failed to add master: " +
+                        partition.getMasterAddress() + ". Reason - server has FAIL flag");
+            }
             return newFailedFuture(e);
         }
 
@@ -200,11 +205,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             config.setSlaveAddresses(partition.getSlaveAddresses());
 
                             e = new MasterSlaveEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
-                            List<Future<Void>> fs = e.initSlaveBalancer();
-                            futures.addAll(fs);
 
                             if (!partition.getSlaveAddresses().isEmpty()) {
+                                List<Future<Void>> fs = e.initSlaveBalancer(partition.getFailedSlaveAddresses());
+                                futures.addAll(fs);
                                 log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
+                                if (!partition.getFailedSlaveAddresses().isEmpty()) {
+                                    log.warn("slaves: {} is down for slot ranges: {}", partition.getFailedSlaveAddresses(), partition.getSlotRanges());
+                                }
                             }
                         }
 
@@ -242,8 +250,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 List<URI> slaves = new ArrayList<URI>();
                 AtomicReference<Throwable> lastException = new AtomicReference<Throwable>();
                 for (ClusterPartition partition : lastPartitions.values()) {
-                    nodes.add(partition.getMasterAddress());
-                    slaves.addAll(partition.getSlaveAddresses());
+                    if (!partition.isMasterFail()) {
+                        nodes.add(partition.getMasterAddress());
+                    }
+
+                    Set<URI> partitionSlaves = new HashSet<URI>(partition.getSlaveAddresses());
+                    partitionSlaves.removeAll(partition.getFailedSlaveAddresses());
+                    slaves.addAll(partitionSlaves);
                 }
                 // master nodes first
                 nodes.addAll(slaves);
@@ -267,7 +280,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             public void operationComplete(Future<RedisConnection> future) throws Exception {
                 if (!future.isSuccess()) {
                     lastException.set(future.cause());
-                    System.out.println("Can't connect!!!!!");
                     checkClusterState(cfg, iterator, lastException);
                     return;
                 }
@@ -303,43 +315,69 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private void checkSlaveNodesChange(Collection<ClusterPartition> newPartitions) {
         for (ClusterPartition newPart : newPartitions) {
-            for (final ClusterPartition currentPart : lastPartitions.values()) {
+            for (ClusterPartition currentPart : lastPartitions.values()) {
                 if (!newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
                     continue;
                 }
-                final MasterSlaveEntry entry = getEntry(currentPart.getMasterAddr());
 
-                Set<URI> removedSlaves = new HashSet<URI>(currentPart.getSlaveAddresses());
-                removedSlaves.removeAll(newPart.getSlaveAddresses());
-
-                for (URI uri : removedSlaves) {
-                    currentPart.removeSlaveAddress(uri);
-
-                    slaveDown(entry, uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
-                    log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
-                }
-
-                Set<URI> addedSlaves = new HashSet<URI>(newPart.getSlaveAddresses());
-                addedSlaves.removeAll(currentPart.getSlaveAddresses());
-                for (final URI uri : addedSlaves) {
-                    Future<Void> future = entry.addSlave(uri.getHost(), uri.getPort());
-                    future.addListener(new FutureListener<Void>() {
-                        @Override
-                        public void operationComplete(Future<Void> future) throws Exception {
-                            if (!future.isSuccess()) {
-                                log.error("Can't add slave: " + uri, future.cause());
-                                return;
-                            }
-
-                            currentPart.addSlaveAddress(uri);
-                            entry.slaveUp(uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
-                            log.info("slave {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
-                        }
-                    });
-                }
+                MasterSlaveEntry entry = getEntry(currentPart.getMasterAddr());
+                // should be invoked first in order to removed stale failedSlaveAddresses
+                addRemoveSlaves(entry, currentPart, newPart);
+                // Does some slaves change failed state to alive?
+                upDownSlaves(entry, currentPart, newPart);
 
                 break;
             }
+        }
+    }
+
+    private void upDownSlaves(final MasterSlaveEntry entry, final ClusterPartition currentPart, final ClusterPartition newPart) {
+        Set<URI> aliveSlaves = new HashSet<URI>(currentPart.getFailedSlaveAddresses());
+        aliveSlaves.removeAll(newPart.getFailedSlaveAddresses());
+        for (URI uri : aliveSlaves) {
+            currentPart.removeFailedSlaveAddress(uri);
+            if (entry.slaveUp(uri.getHost(), uri.getPort(), FreezeReason.MANAGER)) {
+                log.info("slave: {} has up for slot ranges: {}", uri, currentPart.getSlotRanges());
+            }
+        }
+
+        Set<URI> failedSlaves = new HashSet<URI>(newPart.getFailedSlaveAddresses());
+        failedSlaves.removeAll(currentPart.getFailedSlaveAddresses());
+        for (URI uri : failedSlaves) {
+            currentPart.addFailedSlaveAddress(uri);
+            slaveDown(entry, uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
+            log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
+        }
+    }
+
+    private void addRemoveSlaves(final MasterSlaveEntry entry, final ClusterPartition currentPart, final ClusterPartition newPart) {
+        Set<URI> removedSlaves = new HashSet<URI>(currentPart.getSlaveAddresses());
+        removedSlaves.removeAll(newPart.getSlaveAddresses());
+
+        for (URI uri : removedSlaves) {
+            currentPart.removeSlaveAddress(uri);
+
+            slaveDown(entry, uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
+            log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
+        }
+
+        Set<URI> addedSlaves = new HashSet<URI>(newPart.getSlaveAddresses());
+        addedSlaves.removeAll(currentPart.getSlaveAddresses());
+        for (final URI uri : addedSlaves) {
+            Future<Void> future = entry.addSlave(uri.getHost(), uri.getPort());
+            future.addListener(new FutureListener<Void>() {
+                @Override
+                public void operationComplete(Future<Void> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        log.error("Can't add slave: " + uri, future.cause());
+                        return;
+                    }
+
+                    currentPart.addSlaveAddress(uri);
+                    entry.slaveUp(uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
+                    log.info("slave {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
+                }
+            });
         }
     }
 
@@ -512,7 +550,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
 
             if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
-                partition.setMasterFail(true);
+                if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
+                    partition.addFailedSlaveAddress(clusterNodeInfo.getAddress());
+                } else {
+                    partition.setMasterFail(true);
+                }
             }
 
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {

@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import org.redisson.BaseMasterSlaveServersConfig;
 import org.redisson.Config;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.ReadMode;
+import org.redisson.Version;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -115,6 +117,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected MasterSlaveServersConfig config;
 
+    protected boolean isClusterMode;
+
     protected final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
@@ -131,6 +135,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     public MasterSlaveConnectionManager(Config cfg) {
+        Version.logVersion();
+
         if (cfg.isUseLinuxNativeEpoll()) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new EpollEventLoopGroup(cfg.getThreads());
@@ -149,6 +155,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = NioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
+        this.isClusterMode = cfg.isClusterConfig();
+    }
+
+    public boolean isClusterMode() {
+        return isClusterMode;
     }
 
     public IdleConnectionWatcher getConnectionWatcher() {
@@ -198,21 +209,27 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
 
+        MasterSlaveEntry entry;
         if (config.getReadMode() == ReadMode.MASTER) {
-            SingleEntry entry = new SingleEntry(slots, this, config);
+            entry = new SingleEntry(slots, this, config);
             Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
             f.syncUninterruptibly();
-            addEntry(singleSlotRange, entry);
         } else {
-            MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-            List<Future<Void>> fs = entry.initSlaveBalancer();
-            Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
-            fs.add(f);
-            for (Future<Void> future : fs) {
-                future.syncUninterruptibly();
-            }
-            addEntry(singleSlotRange, entry);
+            entry = createMasterSlaveEntry(config, slots);
         }
+        addEntry(singleSlotRange, entry);
+    }
+
+    protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
+            HashSet<ClusterSlotRange> slots) {
+        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
+        List<Future<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
+        for (Future<Void> future : fs) {
+            future.syncUninterruptibly();
+        }
+        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        f.syncUninterruptibly();
+        return entry;
     }
 
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
@@ -223,7 +240,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setPingTimeout(cfg.getPingTimeout());
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
-        c.setDatabase(cfg.getDatabase());
         c.setClientName(cfg.getClientName());
         c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
@@ -341,13 +357,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
     }
 
-    public Promise<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener listener) {
+    public Promise<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener) {
         Promise<PubSubConnectionEntry> promise = newPromise();
         subscribe(codec, channelName, listener, promise);
         return promise;
     }
 
-    private void subscribe(final Codec codec, final String channelName, final RedisPubSubListener listener, final Promise<PubSubConnectionEntry> promise) {
+    private void subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener, final Promise<PubSubConnectionEntry> promise) {
         PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
             synchronized (сonnEntry) {
@@ -393,7 +409,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         connect(codec, channelName, listener, promise);
     }
 
-    private void connect(final Codec codec, final String channelName, final RedisPubSubListener listener,
+    private void connect(final Codec codec, final String channelName, final RedisPubSubListener<?> listener,
             final Promise<PubSubConnectionEntry> promise) {
         final int slot = 0;
         Future<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);

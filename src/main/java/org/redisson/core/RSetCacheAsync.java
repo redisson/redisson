@@ -15,6 +15,7 @@
  */
 package org.redisson.core;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.util.concurrent.Future;
@@ -50,5 +51,12 @@ public interface RSetCacheAsync<V> extends RCollectionAsync<V> {
      */
     @Override
     Future<Integer> sizeAsync();
+
+    /**
+     * Read all elements at once
+     *
+     * @return
+     */
+    Future<Set<V>> readAllAsync();
 
 }

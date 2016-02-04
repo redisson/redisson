@@ -72,11 +72,6 @@ class BaseConfig<T extends BaseConfig<T>> {
     private int failedAttempts = 3;
 
     /**
-     * Database index used for Redis connection
-     */
-    private int database = 0;
-
-    /**
      * Password for Redis authentication. Should be null if not needed
      */
     private String password;
@@ -99,7 +94,6 @@ class BaseConfig<T extends BaseConfig<T>> {
         setSubscriptionsPerConnection(config.getSubscriptionsPerConnection());
         setRetryAttempts(config.getRetryAttempts());
         setRetryInterval(config.getRetryInterval());
-        setDatabase(config.getDatabase());
         setTimeout(config.getTimeout());
         setClientName(config.getClientName());
         setPingTimeout(config.getPingTimeout());
@@ -164,20 +158,6 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
     public int getRetryInterval() {
         return retryInterval;
-    }
-
-    /**
-     * Database index used for Redis connection
-     * Default is <code>0</code>
-     *
-     * @param database
-     */
-    public T setDatabase(int database) {
-        this.database = database;
-        return (T) this;
-    }
-    public int getDatabase() {
-        return database;
     }
 
     /**

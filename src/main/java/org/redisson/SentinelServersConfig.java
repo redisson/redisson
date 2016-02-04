@@ -27,6 +27,11 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     private String masterName;
 
+    /**
+     * Database index used for Redis connection
+     */
+    private int database = 0;
+
     public SentinelServersConfig() {
     }
 
@@ -34,8 +39,15 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         super(config);
         setSentinelAddresses(config.getSentinelAddresses());
         setMasterName(config.getMasterName());
+        setDatabase(config.getDatabase());
     }
 
+    /**
+     * Master server name used by Redis Sentinel servers and master change monitoring task.
+     *
+     * @param masterName
+     * @return
+     */
     public SentinelServersConfig setMasterName(String masterName) {
         this.masterName = masterName;
         return this;
@@ -44,6 +56,12 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         return masterName;
     }
 
+    /**
+     * Add Redis Sentinel node address in host:port format. Multiple nodes at once could be added.
+     *
+     * @param addresses
+     * @return
+     */
     public SentinelServersConfig addSentinelAddress(String ... addresses) {
         for (String address : addresses) {
             sentinelAddresses.add(URIBuilder.create(address));
@@ -55,6 +73,20 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
     void setSentinelAddresses(List<URI> sentinelAddresses) {
         this.sentinelAddresses = sentinelAddresses;
+    }
+
+    /**
+     * Database index used for Redis connection
+     * Default is <code>0</code>
+     *
+     * @param database
+     */
+    public SentinelServersConfig setDatabase(int database) {
+        this.database = database;
+        return this;
+    }
+    public int getDatabase() {
+        return database;
     }
 
 }

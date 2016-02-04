@@ -57,8 +57,10 @@ Features
 * Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
 * Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
 * Asynchronous interface for each object  
+* Asynchronous connection pool  
 * Thread-safe implementation  
 * All commands executes in an atomic way  
+* [Spring cache](http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html) integration  
 * Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
 * Supports Android platform  
@@ -66,7 +68,7 @@ Features
 * Supports failed to send command auto-retry  
 * Supports OSGi  
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
-* With over 250 unit tests  
+* With over 500 unit tests  
 
 Projects using Redisson
 ================================
@@ -80,24 +82,20 @@ Invaluable: [invaluable.com](http://www.invaluable.com/)
 
 Latest version changelog
 =================================
-####09-Jan-2015 - version 2.2.5 released  
+####03-Feb-2016 - version 2.2.7 released  
 
-Feature - __new object added__ `RBloomFilter`  
-Feature - __new object added__ `RAtomicDouble`  
-Feature - `tryAdd`, `tryAddAsync`, `addAll` and `addAllAsync` methods added to `RScoredSortedSet`  
-Feature - `RKeys.count` and `RKeys.countAsync` methods added  
-Feature - `RedissonClient.saveBuckets` method added  
-Feature - `trySet`, `trySetAsync`, `compareAndSet` and `getAndSet` methods added to `RBucket`  
-Feature - `fastPutIfAbsent` and `fastPutIfAbsentAsync` methods added to `RMap`  
-Improvement - `RMap.putIfAbsent` optimization  
-Improvement - `RBitSet` index range extended to Integer.MAX_VALUE*2  
-Improvement - `RAtomicLong.getAndAdd` optimization  
-Fixed - infinity loop during `RMap` iteration  
-Fixed -  wrong timeout value used during `RBatch` execution  
-Fixed - connection handling when `isReadFromSlaves = false`  
-Fixed - `RMap.addAndGetAsync` key encoding  
-Fixed - `RBatch` errors handling  
-Fixed - `RBlockingQueue.pollLastAndOfferFirstToAsync` does not block properly  
+Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  
+Improvement - `RKeys.delete` optimization in Cluster mode  
+Fixed - minimal connections amount initialization  
+Fixed - `RKeys.deleteByPattern` throws an error in cluster mode  
+Fixed - `RKeys.deleteAsync` throws error in Cluster mode  
+Fixed - Redisson failed to start when one of sentinel servers is down  
+Fixed - Redisson failed to start when there are no slaves in Sentinel mode  
+Fixed - slave nodes up/down state discovery in Cluster mode  
+Fixed - slave can stay freezed when it has been just added in Sentinel mode  
+Fixed - offline slaves handling during Redisson start in Sentinel mode  
+Fixed - `SELECT` command can't be executed in Sentinel mode  
+Fixed - `database` setting removed from cluster config  
 
 ### Maven 
 
@@ -106,12 +104,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.5</version>
+       <version>2.2.7</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.5'
+    compile 'org.redisson:redisson:2.2.7'
 
 ### Supported by
 

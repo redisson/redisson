@@ -43,6 +43,8 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
+    boolean isClusterMode();
+
     <R> Future<R> newSucceededFuture(R value);
 
     ConnectionEventsHub getConnectionEventsHub();
@@ -51,7 +53,7 @@ public interface ConnectionManager {
 
     boolean isShuttingDown();
 
-    Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener listener);
+    Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener);
 
     ConnectionInitializer getConnectListener();
 

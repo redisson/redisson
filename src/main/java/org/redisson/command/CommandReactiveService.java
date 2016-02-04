@@ -45,6 +45,10 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         return new NettyFuturePublisher<R>(f);
     }
 
+    public <R> Publisher<R> reactive(Future<R> future) {
+        return new NettyFuturePublisher<R>(future);
+    }
+
     @Override
     public <T, R> Publisher<Collection<R>> readAllReactive(RedisCommand<T> command, Object ... params) {
         Future<Collection<R>> f = readAllAsync(command, params);

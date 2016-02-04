@@ -31,7 +31,7 @@ public class DefaultConnectionListener implements ConnectionInitializer {
         listener.executeCommands();
     }
 
-    protected void doConnect(MasterSlaveServersConfig config, NodeType serverMode, FutureConnectionListener<? extends RedisConnection> connectionListener)
+    protected void doConnect(MasterSlaveServersConfig config, NodeType nodeType, FutureConnectionListener<? extends RedisConnection> connectionListener)
             throws RedisException {
         if (config.getPassword() != null) {
             connectionListener.addCommand(RedisCommands.AUTH, config.getPassword());

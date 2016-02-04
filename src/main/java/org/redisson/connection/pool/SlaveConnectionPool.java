@@ -13,33 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
+package org.redisson.connection.pool;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.ClientConnectionsEntry;
 
-public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
+public class SlaveConnectionPool extends ConnectionPool<RedisConnection> {
 
-    public MasterConnectionPool(MasterSlaveServersConfig config,
-            ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
+    public SlaveConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager,
+            MasterSlaveEntry masterSlaveEntry) {
         super(config, connectionManager, masterSlaveEntry);
     }
 
-    @Override
-    protected ClientConnectionsEntry getEntry() {
-        return entries.get(0);
-    }
-
-    public void remove(ClientConnectionsEntry entry) {
-        entries.remove(entry);
-    }
-
-    @Override
     protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
-        return config.getMasterConnectionMinimumIdleSize();
+        return config.getSlaveConnectionMinimumIdleSize();
     }
 
 }

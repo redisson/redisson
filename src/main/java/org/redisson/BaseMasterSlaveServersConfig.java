@@ -74,8 +74,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'slave' servers connection pool size for <b>each</b> slave node.
-     *
-     * Default is 100
+     * <p/>
+     * Default is <code>100</code>
+     * <p/>
+     * @see #setSlaveConnectionMinimumIdleSize(int)
      *
      * @param slaveConnectionPoolSize
      * @return
@@ -90,8 +92,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'master' server connection pool size.
+     * <p/>
+     * Default is <code>100</code>
      *
-     * Default is 100
+     * @see #setMasterConnectionMinimumIdleSize(int)
      *
      */
     public T setMasterConnectionPoolSize(int masterConnectionPoolSize) {
@@ -122,8 +126,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
-     *
-     * Default is 25
+     * <p/>
+     * Default is <code>25</code>
+     * <p/>
+     * @see #setSlaveSubscriptionConnectionMinimumIdleSize(int)
      *
      */
     public T setSlaveSubscriptionConnectionPoolSize(int slaveSubscriptionConnectionPoolSize) {
@@ -136,8 +142,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
-     *
-     * Default is 5
+     * <p/>
+     * Default is <code>5</code>
+     * <p/>
+     * @see #setSlaveConnectionPoolSize(int)
      *
      */
     public T setSlaveConnectionMinimumIdleSize(int slaveConnectionMinimumIdleSize) {
@@ -150,8 +158,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
-     *
-     * Default is 5
+     * <p/>
+     * Default is <code>5</code>
+     * <p/>
+     * @see #setMasterConnectionPoolSize(int)
      *
      */
     public T setMasterConnectionMinimumIdleSize(int masterConnectionMinimumIdleSize) {
@@ -163,8 +173,11 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node
-     * Default is 1
+     * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node.
+     * <p/>
+     * Default is <code>1</code>
+     * <p/>
+     * @see #setSlaveSubscriptionConnectionPoolSize(int)
      *
      */
     public T setSlaveSubscriptionConnectionMinimumIdleSize(int slaveSubscriptionConnectionMinimumIdleSize) {
@@ -177,6 +190,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Set node type used for read operation.
+     * <p/>
+     * Default is <code>SLAVE</code>
      *
      * @param readMode
      * @return

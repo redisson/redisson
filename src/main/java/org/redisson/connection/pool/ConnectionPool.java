@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
+package org.redisson.connection.pool;
 
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +31,8 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
@@ -36,7 +40,9 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
-public class ConnectionPool<T extends RedisConnection> {
+abstract class ConnectionPool<T extends RedisConnection> {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     protected final List<ClientConnectionsEntry> entries = new CopyOnWriteArrayList<ClientConnectionsEntry>();
 
@@ -73,43 +79,57 @@ public class ConnectionPool<T extends RedisConnection> {
         }
 
         final AtomicInteger initializedConnections = new AtomicInteger(minimumIdleSize);
-        for (int i = 0; i < minimumIdleSize; i++) {
-            if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
-                Throwable cause = new RedisConnectionException(
-                        "Can't init enough connections amount! Only " + (minimumIdleSize - initializedConnections.get()) + " from " + minimumIdleSize + " were initialized. Server: "
-                                            + entry.getClient().getAddr());
-                initPromise.tryFailure(cause);
-                return;
-            }
-
-            Future<T> promise = connectTo(entry);
-            promise.addListener(new FutureListener<T>() {
-                @Override
-                public void operationComplete(Future<T> future) throws Exception {
-                    if (future.isSuccess()) {
-                        T conn = future.getNow();
-                        releaseConnection(entry, conn);
-                    }
-                    releaseConnection(entry);
-                    if (!future.isSuccess()) {
-                        Throwable cause = new RedisConnectionException(
-                                "Can't init enough connections amount! Only " + (minimumIdleSize - initializedConnections.get()) + " from " + minimumIdleSize + " were initialized. Server: "
-                                                    + entry.getClient().getAddr(), future.cause());
-                        initPromise.tryFailure(cause);
-                        return;
-                    }
-
-                    if (initializedConnections.decrementAndGet() == 0) {
-                        initPromise.setSuccess(null);
-                    }
-                }
-            });
+        int startAmount = Math.min(50, minimumIdleSize);
+        final AtomicInteger requests = new AtomicInteger(startAmount);
+        for (int i = 0; i < startAmount; i++) {
+            createConnection(checkFreezed, requests, entry, initPromise, minimumIdleSize, initializedConnections);
         }
     }
 
-    protected int getMinimumIdleSize(ClientConnectionsEntry entry) {
-        return config.getSlaveConnectionMinimumIdleSize();
+    private void createConnection(final boolean checkFreezed, final AtomicInteger requests, final ClientConnectionsEntry entry, final Promise<Void> initPromise,
+            final int minimumIdleSize, final AtomicInteger initializedConnections) {
+
+        if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
+            Throwable cause = new RedisConnectionException(
+                    "Can't init enough connections amount! Only " + (minimumIdleSize - initializedConnections.get()) + " from " + minimumIdleSize + " were initialized. Server: "
+                                        + entry.getClient().getAddr());
+            initPromise.tryFailure(cause);
+            return;
+        }
+
+        Future<T> promise = createConnection(entry);
+        promise.addListener(new FutureListener<T>() {
+            @Override
+            public void operationComplete(Future<T> future) throws Exception {
+                if (future.isSuccess()) {
+                    T conn = future.getNow();
+                    releaseConnection(entry, conn);
+                }
+
+                releaseConnection(entry);
+
+                if (!future.isSuccess()) {
+                    Throwable cause = new RedisConnectionException(
+                            "Can't init enough connections amount! Only " + (minimumIdleSize - initializedConnections.get()) + " from " + minimumIdleSize + " were initialized. Server: "
+                                                + entry.getClient().getAddr(), future.cause());
+                    initPromise.tryFailure(cause);
+                    return;
+                }
+
+                int value = initializedConnections.decrementAndGet();
+                if (value == 0) {
+                    log.info("{} connections initialized for {}", minimumIdleSize, entry.getClient().getAddr());
+                    initPromise.setSuccess(null);
+                } else if (value > 0 && !initPromise.isDone()) {
+                    if (requests.incrementAndGet() <= minimumIdleSize) {
+                        createConnection(checkFreezed, requests, entry, initPromise, minimumIdleSize, initializedConnections);
+                    }
+                }
+            }
+        });
     }
+
+    protected abstract int getMinimumIdleSize(ClientConnectionsEntry entry);
 
     protected ClientConnectionsEntry getEntry() {
         return config.getLoadBalancer().getEntry(entries);
@@ -123,8 +143,25 @@ public class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        RedisConnectionException exception = new RedisConnectionException(
-                "Can't aquire connection from pool! " + entries);
+        List<InetSocketAddress> zeroConnectionsAmount = new LinkedList<InetSocketAddress>();
+        List<InetSocketAddress> freezed = new LinkedList<InetSocketAddress>();
+        for (ClientConnectionsEntry entry : entries) {
+            if (entry.isFreezed()) {
+                freezed.add(entry.getClient().getAddr());
+            } else {
+                zeroConnectionsAmount.add(entry.getClient().getAddr());
+            }
+        }
+
+        StringBuilder errorMsg = new StringBuilder("Connection pool exhausted! All connections are busy. Try to increase connection pool size.");
+//        if (!freezed.isEmpty()) {
+//            errorMsg.append(" Disconnected hosts: " + freezed);
+//        }
+        if (!zeroConnectionsAmount.isEmpty()) {
+            errorMsg.append(" Hosts with fully busy connections: " + zeroConnectionsAmount);
+        }
+
+        RedisConnectionException exception = new RedisConnectionException(errorMsg.toString());
         return connectionManager.newFailedFuture(exception);
     }
 
@@ -161,6 +198,10 @@ public class ConnectionPool<T extends RedisConnection> {
             return promiseSuccessful(entry, conn);
         }
 
+        return createConnection(entry);
+    }
+
+    private Future<T> createConnection(final ClientConnectionsEntry entry) {
         final Promise<T> promise = connectionManager.newPromise();
         Future<T> connFuture = connect(entry);
         connFuture.addListener(new FutureListener<T>() {
@@ -238,9 +279,11 @@ public class ConnectionPool<T extends RedisConnection> {
         if (entry.getNodeType() == NodeType.SLAVE) {
             connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
                     entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
+            log.warn("slave {} disconnected due to failedAttempts={} limit reached", entry.getClient().getAddr(), config.getFailedAttempts());
             scheduleCheck(entry);
         } else {
             if (entry.freezeMaster(FreezeReason.RECONNECT)) {
+                log.warn("host {} disconnected due to failedAttempts={} limit reached", entry.getClient().getAddr(), config.getFailedAttempts());
                 scheduleCheck(entry);
             }
         }
@@ -297,11 +340,13 @@ public class ConnectionPool<T extends RedisConnection> {
                                                     throws Exception {
                                                 if (entry.getNodeType() == NodeType.SLAVE) {
                                                     masterSlaveEntry.slaveUp(entry.getClient().getAddr().getHostName(), entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
+                                                    log.info("slave {} successfully reconnected", entry.getClient().getAddr());
                                                 } else {
                                                     synchronized (entry) {
                                                         if (entry.getFreezeReason() == FreezeReason.RECONNECT) {
                                                             entry.setFreezed(false);
                                                             entry.setFreezeReason(null);
+                                                            log.info("host {} successfully reconnected", entry.getClient().getAddr());
                                                         }
                                                     }
                                                 }
