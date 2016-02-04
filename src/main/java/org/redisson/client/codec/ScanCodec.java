@@ -23,6 +23,8 @@ import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
 
 public class ScanCodec implements Codec {
 
@@ -48,8 +50,9 @@ public class ScanCodec implements Codec {
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
+                ByteBuf b = Unpooled.copiedBuffer(buf);
                 Object val = delegate.getMapValueDecoder().decode(buf, state);
-                return new ScanObjectEntry(buf, val);
+                return new ScanObjectEntry(b, val);
             }
         };
     }
@@ -64,8 +67,9 @@ public class ScanCodec implements Codec {
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
+                ByteBuf b = Unpooled.copiedBuffer(buf);
                 Object val = delegate.getMapKeyDecoder().decode(buf, state);
-                return new ScanObjectEntry(buf, val);
+                return new ScanObjectEntry(b, val);
             }
         };
     }

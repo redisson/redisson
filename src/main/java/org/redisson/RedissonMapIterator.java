@@ -27,6 +27,7 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.CharsetUtil;
 
 public class RedissonMapIterator<K, V, M> implements Iterator<M> {
 
@@ -35,6 +36,7 @@ public class RedissonMapIterator<K, V, M> implements Iterator<M> {
     private long iterPos = 0;
     private InetSocketAddress client;
 
+    private boolean finished;
     private boolean removeExecuted;
     private Map.Entry<ScanObjectEntry, ScanObjectEntry> entry;
 
@@ -46,18 +48,36 @@ public class RedissonMapIterator<K, V, M> implements Iterator<M> {
 
     @Override
     public boolean hasNext() {
+        if (finished) {
+            return false;
+        }
         if (iter == null || !iter.hasNext()) {
             MapScanResult<ScanObjectEntry, ScanObjectEntry> res = map.scanIterator(client, iterPos);
             client = res.getRedisClient();
             if (iterPos == 0 && firstValues == null) {
                 firstValues = convert(res.getMap());
-            } else if (convert(res.getMap()).equals(firstValues)) {
-                return false;
+            } else {
+                Map<ByteBuf, ByteBuf> newValues = convert(res.getMap());
+                if (newValues.equals(firstValues)) {
+                    finished = true;
+                    free(firstValues);
+                    free(newValues);
+                    firstValues = null;
+                    return false;
+                }
+                free(newValues);
             }
             iter = res.getMap().entrySet().iterator();
             iterPos = res.getPos();
         }
         return iter.hasNext();
+    }
+
+    private void free(Map<ByteBuf, ByteBuf> map) {
+        for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
+            entry.getKey().release();
+            entry.getValue().release();
+        }
     }
 
     private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
