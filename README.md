@@ -82,25 +82,20 @@ Invaluable: [invaluable.com](http://www.invaluable.com/)
 
 Latest version changelog
 =================================
-####28-Jan-2016 - version 2.2.6 released  
+####03-Feb-2016 - version 2.2.7 released  
 
-Feature - __new object added__ `RedissonMultiLock`  
-Feature - `move` method added to `RSet`, `RSetReactive` objects (thanks to thrau)  
-Feature - `put` methods with `maxIdleTime` param added to `RMapCache` object  
-Feature - `RList.subList` returns `live` view object  
-Feature - `readAll` method added to `RList` and `RSet` objects  
-Feature - `trim` method added to `RList` object  
-Feature - ability to read/write Redisson config object from/to `JSON` or `YAML` format  
-Feature - [Spring cache](http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html) integration  
-Feature - `readMode` setting added  
-Improvement - `RSetCache` object entry eviction optimization  
-Improvement - `RList` object optimization  
-Improvement - `RedissonCountDownLatchAsync` interface added  
-Improvement - cluster restrictions removed from `loadBucketValues` and `saveBuckets` methods  
-Fixed - wrong ByteBuf read position in all codecs based on `StringCodec`  
-Fixed - can't connect with password to Sentinel and Elasticache servers  
-Fixed - Cluster slave discovery (regression since 2.1.5)  
-Fixed - Sentinel slave discovery (regression since 2.1.5)  
+Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  
+Improvement - `RKeys.delete` optimization in Cluster mode  
+Fixed - minimal connections amount initialization  
+Fixed - `RKeys.deleteByPattern` throws an error in cluster mode  
+Fixed - `RKeys.deleteAsync` throws error in Cluster mode  
+Fixed - Redisson failed to start when one of sentinel servers is down  
+Fixed - Redisson failed to start when there are no slaves in Sentinel mode  
+Fixed - slave nodes up/down state discovery in Cluster mode  
+Fixed - slave can stay freezed when it has been just added in Sentinel mode  
+Fixed - offline slaves handling during Redisson start in Sentinel mode  
+Fixed - `SELECT` command can't be executed in Sentinel mode  
+Fixed - `database` setting removed from cluster config  
 
 ### Maven 
 
