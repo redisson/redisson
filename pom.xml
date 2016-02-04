@@ -86,6 +86,12 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>unit-test</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+            </properties>
+        </profile>
     </profiles>
 
     <dependencies>
