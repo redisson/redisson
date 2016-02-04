@@ -172,7 +172,6 @@ public class RedissonKeys implements RKeys {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {
             return commandExecutor.evalWriteAsync((String)null, null, RedisCommands.EVAL_LONG, "local keys = redis.call('keys', ARGV[1]) "
                               + "local n = 0 "
-                              + "redis.log(redis.LOG_WARNING, 'keys number ' .. #keys); "
                               + "for i=1, #keys,5000 do "
                                   + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
                               + "end "
