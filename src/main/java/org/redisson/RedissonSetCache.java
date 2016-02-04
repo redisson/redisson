@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
@@ -220,7 +221,33 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         };
     }
 
-    private Future<Collection<V>> readAllAsync() {
+    @Override
+    public Set<V> readAll() {
+        return get(readAllAsync());
+    }
+
+    @Override
+    public Future<Set<V>> readAllAsync() {
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_SET,
+                        "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
+                        "local keys = redis.call('hkeys', KEYS[1]);" +
+                        "local maxDate = ARGV[1]; " +
+                        "local minExpireDate = 92233720368547758;" +
+                        "if #expireHead == 2 and tonumber(expireHead[2]) <= tonumber(maxDate) then " +
+                            "for i = #keys, 1, -1 do " +
+                                "local key = keys[i]; " +
+                                "local expireDate = redis.call('zscore', KEYS[2], key); " +
+                                "if expireDate ~= false and tonumber(expireDate) <= tonumber(maxDate) then " +
+                                    "minExpireDate = math.min(tonumber(expireDate), minExpireDate); " +
+                                    "table.remove(keys, i); " +
+                                "end;" +
+                            "end;" +
+                        "end; " +
+                        "return redis.call('hmget', KEYS[1], unpack(keys));",
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis());
+    }
+
+    private Future<List<Object>> readAllasListAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
                         "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
                         "local keys = redis.call('hkeys', KEYS[1]);" +
@@ -242,13 +269,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public Object[] toArray() {
-        List<Object> res = (List<Object>) get(readAllAsync());
+        List<Object> res = get(readAllasListAsync());
         return res.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<Object> res = (List<Object>) get(readAllAsync());
+        List<Object> res = get(readAllasListAsync());
         return res.toArray(a);
     }
 

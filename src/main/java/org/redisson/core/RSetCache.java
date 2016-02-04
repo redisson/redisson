@@ -64,4 +64,11 @@ public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
     @Override
     int size();
 
+    /**
+     * Read all elements at once
+     *
+     * @return
+     */
+    Set<V> readAll();
+
 }
