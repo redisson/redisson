@@ -2,6 +2,26 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####28-Jan-2016 - version 2.2.6 released  
+
+Feature - __new object added__ `RedissonMultiLock`  
+Feature - `move` method added to `RSet`, `RSetReactive` objects (thanks to thrau)  
+Feature - `put` methods with `maxIdleTime` param added to `RMapCache` object  
+Feature - `RList.subList` returns `live` view object  
+Feature - `readAll` method added to `RList` and `RSet` objects  
+Feature - `trim` method added to `RList` object  
+Feature - ability to read/write Redisson config object from/to `JSON` or `YAML` format  
+Feature - [Spring cache](http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html) integration  
+Feature - `readMode` setting added  
+Improvement - `RSetCache` object entry eviction optimization  
+Improvement - `RList` object optimization  
+Improvement - `RedissonCountDownLatchAsync` interface added  
+Improvement - cluster restrictions removed from `loadBucketValues` and `saveBuckets` methods  
+Fixed - wrong ByteBuf read position in all codecs based on `StringCodec`  
+Fixed - can't connect with password to Sentinel and Elasticache servers  
+Fixed - Cluster slave discovery (regression since 2.1.5)  
+Fixed - Sentinel slave discovery (regression since 2.1.5)  
+
 ####09-Jan-2015 - version 2.2.5 released  
 
 Feature - __new object added__ `RBloomFilter`  
