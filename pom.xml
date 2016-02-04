@@ -308,6 +308,22 @@
                     <optimize>true</optimize>
                     <showDeprecations>true</showDeprecations>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <fork>true</fork>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                            <optimize>true</optimize>
+                            <showDeprecations>true</showDeprecations>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
