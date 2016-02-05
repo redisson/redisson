@@ -24,10 +24,12 @@ import io.netty.util.concurrent.Future;
 
 /**
  * Interface for using pipeline feature.
- *
+ * <p/>
  * All method invocations on objects
  * from this interface are batched to separate queue and could be executed later
  * with <code>execute()</code> or <code>executeAsync()</code> methods.
+ * <p/>
+ * Please be ware, atomicity <b>is not</b> guaranteed.
  *
  *
  * @author Nikita Koksharov
