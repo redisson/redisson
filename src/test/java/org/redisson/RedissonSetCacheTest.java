@@ -33,6 +33,12 @@ public class RedissonSetCacheTest extends BaseTest {
     }
 
     @Test
+    public void testEmptyReadAll() {
+        RSetCache<Integer> set = redisson.getSetCache("set");
+        assertThat(set.readAll()).isEmpty();
+    }
+
+    @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
