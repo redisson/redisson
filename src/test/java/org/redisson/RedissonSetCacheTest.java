@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,9 +11,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.*;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.codec.MsgPackJacksonCodec;
@@ -34,6 +33,12 @@ public class RedissonSetCacheTest extends BaseTest {
     }
 
     @Test
+    public void testEmptyReadAll() {
+        RSetCache<Integer> set = redisson.getSetCache("set");
+        assertThat(set.readAll()).isEmpty();
+    }
+
+    @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
@@ -46,11 +51,11 @@ public class RedissonSetCacheTest extends BaseTest {
     public void testAddExpire() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple3");
         set.add("123", 1, TimeUnit.SECONDS);
-        Assert.assertThat(set, Matchers.contains("123"));
+        assertThat(set).contains("123");
 
         Thread.sleep(1000);
 
-        Assert.assertFalse(set.contains("123"));
+        assertThat(set).doesNotContain("123");
     }
 
     @Test
@@ -93,14 +98,14 @@ public class RedissonSetCacheTest extends BaseTest {
 
         Assert.assertTrue(set.remove(1));
         Assert.assertFalse(set.contains(1));
-        Assert.assertThat(set, Matchers.containsInAnyOrder(3, 7));
+        assertThat(set).containsOnly(3, 7);
 
         Assert.assertFalse(set.remove(1));
-        Assert.assertThat(set, Matchers.containsInAnyOrder(3, 7));
+        assertThat(set).containsOnly(3, 7);
 
         Assert.assertTrue(set.remove(3));
         Assert.assertFalse(set.contains(3));
-        Assert.assertThat(set, Matchers.contains(7));
+        assertThat(set).containsOnly(7);
         Assert.assertEquals(1, set.size());
     }
 
@@ -122,7 +127,7 @@ public class RedissonSetCacheTest extends BaseTest {
             }
         }
 
-        Assert.assertThat(set, Matchers.containsInAnyOrder("1", "3"));
+        assertThat(set).contains("1", "3");
 
         int iteration = 0;
         for (Iterator<String> iterator = set.iterator(); iterator.hasNext();) {
@@ -172,7 +177,7 @@ public class RedissonSetCacheTest extends BaseTest {
         }
 
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
-        Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
+        assertThat(set).containsOnly(1, 2);
         Assert.assertEquals(2, set.size());
     }
 
@@ -218,10 +223,10 @@ public class RedissonSetCacheTest extends BaseTest {
 
         Thread.sleep(1000);
 
-        MatcherAssert.assertThat(Arrays.asList(set.toArray()), Matchers.<Object>containsInAnyOrder("1", "4", "5", "3"));
+        assertThat(set.toArray()).containsOnly("1", "4", "5", "3");
 
         String[] strs = set.toArray(new String[0]);
-        MatcherAssert.assertThat(Arrays.asList(strs), Matchers.containsInAnyOrder("1", "4", "5", "3"));
+        assertThat(strs).containsOnly("1", "4", "5", "3");
     }
 
     @Test
@@ -300,7 +305,7 @@ public class RedissonSetCacheTest extends BaseTest {
         set.add(2);
 
         Assert.assertFalse(set.retainAll(Arrays.asList(1, 2))); // nothing changed
-        Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
+        assertThat(set).containsOnly(1, 2);
     }
 
     @Test
@@ -314,7 +319,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
         Thread.sleep(1000);
 
-        MatcherAssert.assertThat(cache, Matchers.contains("0", "2", "3"));
+        assertThat(cache).contains("0", "2", "3");
     }
 
     @Test

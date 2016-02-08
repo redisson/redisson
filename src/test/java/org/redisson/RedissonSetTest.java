@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,8 +10,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RSet;
@@ -39,10 +39,10 @@ public class RedissonSetTest extends BaseTest {
         set.add(2);
         set.add(3);
 
-        MatcherAssert.assertThat(set.removeRandom(), Matchers.isOneOf(1, 2, 3));
-        MatcherAssert.assertThat(set.removeRandom(), Matchers.isOneOf(1, 2, 3));
-        MatcherAssert.assertThat(set.removeRandom(), Matchers.isOneOf(1, 2, 3));
-        Assert.assertNull(set.removeRandom());
+        assertThat(set.removeRandom()).isIn(1, 2, 3);
+        assertThat(set.removeRandom()).isIn(1, 2, 3);
+        assertThat(set.removeRandom()).isIn(1, 2, 3);
+        assertThat(set.removeRandom()).isNull();
     }
 
     @Test
@@ -90,14 +90,14 @@ public class RedissonSetTest extends BaseTest {
 
         Assert.assertTrue(set.removeAsync(1).get());
         Assert.assertFalse(set.contains(1));
-        Assert.assertThat(set, Matchers.containsInAnyOrder(3, 7));
+        assertThat(set).containsOnly(3, 7);
 
         Assert.assertFalse(set.removeAsync(1).get());
-        Assert.assertThat(set, Matchers.containsInAnyOrder(3, 7));
+        assertThat(set).containsOnly(3, 7);
 
         set.removeAsync(3).get();
         Assert.assertFalse(set.contains(3));
-        Assert.assertThat(set, Matchers.contains(7));
+        assertThat(set).contains(7);
     }
 
     @Test
@@ -116,7 +116,7 @@ public class RedissonSetTest extends BaseTest {
             }
         }
 
-        Assert.assertThat(list, Matchers.containsInAnyOrder("1", "4", "5", "3"));
+        assertThat(list).containsOnly("1", "4", "5", "3");
 
         int iteration = 0;
         for (Iterator<String> iterator = list.iterator(); iterator.hasNext();) {
@@ -163,7 +163,7 @@ public class RedissonSetTest extends BaseTest {
         set.add(1L);
         set.add(2L);
 
-        Assert.assertThat(set, Matchers.containsInAnyOrder(1L, 2L));
+        assertThat(set).containsOnly(1L, 2L);
     }
 
     @Test
@@ -174,7 +174,7 @@ public class RedissonSetTest extends BaseTest {
         }
 
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
-        Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
+        assertThat(set).containsOnly(1, 2);
         Assert.assertEquals(2, set.size());
     }
 
@@ -217,10 +217,10 @@ public class RedissonSetTest extends BaseTest {
         set.add("5");
         set.add("3");
 
-        MatcherAssert.assertThat(Arrays.asList(set.toArray()), Matchers.<Object>containsInAnyOrder("1", "2", "4", "5", "3"));
+        assertThat(set.toArray()).containsOnly("1", "2", "4", "5", "3");
 
         String[] strs = set.toArray(new String[0]);
-        MatcherAssert.assertThat(Arrays.asList(strs), Matchers.containsInAnyOrder("1", "4", "2", "5", "3"));
+        assertThat(strs).containsOnly("1", "2", "4", "5", "3");
     }
 
     @Test
@@ -286,7 +286,7 @@ public class RedissonSetTest extends BaseTest {
         set.add(2);
 
         Assert.assertFalse(set.retainAll(Arrays.asList(1, 2))); // nothing changed
-        Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
+        assertThat(set).containsOnly(1, 2);
     }
 
     @Test
@@ -300,10 +300,10 @@ public class RedissonSetTest extends BaseTest {
         Assert.assertTrue(set.move("otherSet", 1));
 
         Assert.assertEquals(1, set.size());
-        Assert.assertThat(set, Matchers.contains(2));
+        assertThat(set).contains(2);
 
         Assert.assertEquals(1, otherSet.size());
-        Assert.assertThat(otherSet, Matchers.contains(1));
+        assertThat(otherSet).contains(1);
     }
 
     @Test

@@ -230,7 +230,10 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public Future<Set<V>> readAllAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_SET,
                         "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
-                        "local keys = redis.call('hkeys', KEYS[1]);" +
+                        "local keys = redis.call('hkeys', KEYS[1]); "
+                      + "if #keys == 0 then "
+                            + "return {}; "
+                      + "end; " +
                         "local maxDate = ARGV[1]; " +
                         "local minExpireDate = 92233720368547758;" +
                         "if #expireHead == 2 and tonumber(expireHead[2]) <= tonumber(maxDate) then " +
@@ -250,7 +253,10 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     private Future<List<Object>> readAllasListAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
                         "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
-                        "local keys = redis.call('hkeys', KEYS[1]);" +
+                        "local keys = redis.call('hkeys', KEYS[1]); " +
+                        "if #keys == 0 then "
+                          + "return {}; " +
+                        "end; " +
                         "local maxDate = ARGV[1]; " +
                         "local minExpireDate = 92233720368547758;" +
                         "if #expireHead == 2 and tonumber(expireHead[2]) <= tonumber(maxDate) then " +
@@ -310,8 +316,8 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                     "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); " +
                             "if redis.call('hexists', KEYS[1], ARGV[3]) == 0 then " +
-                            "redis.call('hset', KEYS[1], ARGV[3], ARGV[2]); " +
-                            "return 1; " +
+                                "redis.call('hset', KEYS[1], ARGV[3], ARGV[2]); " +
+                                "return 1; " +
                             "end;" +
                             "return 0; ",
                             Arrays.<Object>asList(getName(), getTimeoutSetName()), timeoutDate, objectState, key);
