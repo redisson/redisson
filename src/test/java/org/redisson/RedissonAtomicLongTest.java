@@ -6,56 +6,56 @@ import org.redisson.core.RAtomicLong;
 
 public class RedissonAtomicLongTest extends BaseTest {
 
-    @Test
-    public void testCompareAndSet() {
-        RAtomicLong al = redisson.getAtomicLong("test");
-        Assert.assertFalse(al.compareAndSet(-1, 2));
-        Assert.assertEquals(0, al.get());
-        Assert.assertTrue(al.compareAndSet(0, 2));
-        Assert.assertEquals(2, al.get());
-    }
+  @Test
+  public void testCompareAndSet() {
+    RAtomicLong al = redisson.getAtomicLong("test");
+    Assert.assertFalse(al.compareAndSet(-1, 2));
+    Assert.assertEquals(0, al.get());
+    Assert.assertTrue(al.compareAndSet(0, 2));
+    Assert.assertEquals(2, al.get());
+  }
 
-    @Test
-    public void testSetThenIncrement() {
-        RAtomicLong al = redisson.getAtomicLong("test");
-        al.set(2);
-        Assert.assertEquals(2, al.getAndIncrement());
-        Assert.assertEquals(3, al.get());
-    }
+  @Test
+  public void testSetThenIncrement() {
+    RAtomicLong al = redisson.getAtomicLong("test");
+    al.set(2);
+    Assert.assertEquals(2, al.getAndIncrement());
+    Assert.assertEquals(3, al.get());
+  }
 
-    @Test
-    public void testIncrementAndGet() {
-        RAtomicLong al = redisson.getAtomicLong("test");
-        Assert.assertEquals(1, al.incrementAndGet());
-        Assert.assertEquals(1, al.get());
-    }
+  @Test
+  public void testIncrementAndGet() {
+    RAtomicLong al = redisson.getAtomicLong("test");
+    Assert.assertEquals(1, al.incrementAndGet());
+    Assert.assertEquals(1, al.get());
+  }
 
-    @Test
-    public void testGetAndIncrement() {
-        RAtomicLong al = redisson.getAtomicLong("test");
-        Assert.assertEquals(0, al.getAndIncrement());
-        Assert.assertEquals(1, al.get());
-    }
+  @Test
+  public void testGetAndIncrement() {
+    RAtomicLong al = redisson.getAtomicLong("test");
+    Assert.assertEquals(0, al.getAndIncrement());
+    Assert.assertEquals(1, al.get());
+  }
 
-    @Test
-    public void test() {
-        RAtomicLong al = redisson.getAtomicLong("test");
-        Assert.assertEquals(0, al.get());
-        Assert.assertEquals(0, al.getAndIncrement());
-        Assert.assertEquals(1, al.get());
-        Assert.assertEquals(1, al.getAndDecrement());
-        Assert.assertEquals(0, al.get());
-        Assert.assertEquals(0, al.getAndIncrement());
-        Assert.assertEquals(1, al.getAndSet(12));
-        Assert.assertEquals(12, al.get());
-        al.set(1);
+  @Test
+  public void test() {
+    RAtomicLong al = redisson.getAtomicLong("test");
+    Assert.assertEquals(0, al.get());
+    Assert.assertEquals(0, al.getAndIncrement());
+    Assert.assertEquals(1, al.get());
+    Assert.assertEquals(1, al.getAndDecrement());
+    Assert.assertEquals(0, al.get());
+    Assert.assertEquals(0, al.getAndIncrement());
+    Assert.assertEquals(1, al.getAndSet(12));
+    Assert.assertEquals(12, al.get());
+    al.set(1);
 
-        long state = redisson.getAtomicLong("test").get();
-        Assert.assertEquals(1, state);
-        al.set(Long.MAX_VALUE - 1000);
+    long state = redisson.getAtomicLong("test").get();
+    Assert.assertEquals(1, state);
+    al.set(Long.MAX_VALUE - 1000);
 
-        long newState = redisson.getAtomicLong("test").get();
-        Assert.assertEquals(Long.MAX_VALUE - 1000, newState);
-    }
+    long newState = redisson.getAtomicLong("test").get();
+    Assert.assertEquals(Long.MAX_VALUE - 1000, newState);
+  }
 
 }

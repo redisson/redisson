@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson.pubsub;
 
@@ -30,79 +28,81 @@ import io.netty.util.internal.PlatformDependent;
 
 abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
-    private final ConcurrentMap<String, E> entries = PlatformDependent.newConcurrentHashMap();
+  private final ConcurrentMap<String, E> entries = PlatformDependent.newConcurrentHashMap();
 
-    public void unsubscribe(E entry, String entryName, String channelName, ConnectionManager connectionManager) {
-        synchronized (this) {
-            if (entry.release() == 0) {
-                // just an assertion
-                boolean removed = entries.remove(entryName) == entry;
-                if (removed) {
-                    connectionManager.unsubscribe(channelName);
-                }
-            }
+  public void unsubscribe(E entry, String entryName, String channelName,
+      ConnectionManager connectionManager) {
+    synchronized (this) {
+      if (entry.release() == 0) {
+        // just an assertion
+        boolean removed = entries.remove(entryName) == entry;
+        if (removed) {
+          connectionManager.unsubscribe(channelName);
         }
+      }
     }
+  }
 
-    public E getEntry(String entryName) {
-        return entries.get(entryName);
+  public E getEntry(String entryName) {
+    return entries.get(entryName);
+  }
+
+  public Future<E> subscribe(String entryName, String channelName,
+      ConnectionManager connectionManager) {
+    synchronized (this) {
+      E entry = entries.get(entryName);
+      if (entry != null) {
+        entry.aquire();
+        return entry.getPromise();
+      }
+
+      Promise<E> newPromise = connectionManager.newPromise();
+      E value = createEntry(newPromise);
+      value.aquire();
+
+      E oldValue = entries.putIfAbsent(entryName, value);
+      if (oldValue != null) {
+        oldValue.aquire();
+        return oldValue.getPromise();
+      }
+
+      RedisPubSubListener<Long> listener = createListener(channelName, value);
+      connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener);
+      return newPromise;
     }
+  }
 
-    public Future<E> subscribe(String entryName, String channelName, ConnectionManager connectionManager) {
-        synchronized (this) {
-            E entry = entries.get(entryName);
-            if (entry != null) {
-                entry.aquire();
-                return entry.getPromise();
-            }
+  protected abstract E createEntry(Promise<E> newPromise);
 
-            Promise<E> newPromise = connectionManager.newPromise();
-            E value = createEntry(newPromise);
-            value.aquire();
+  protected abstract void onMessage(E value, Long message);
 
-            E oldValue = entries.putIfAbsent(entryName, value);
-            if (oldValue != null) {
-                oldValue.aquire();
-                return oldValue.getPromise();
-            }
+  private RedisPubSubListener<Long> createListener(final String channelName, final E value) {
+    RedisPubSubListener<Long> listener = new BaseRedisPubSubListener<Long>() {
 
-            RedisPubSubListener<Long> listener = createListener(channelName, value);
-            connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener);
-            return newPromise;
+      @Override
+      public void onMessage(String channel, Long message) {
+        if (!channelName.equals(channel)) {
+          return;
         }
-    }
 
-    protected abstract E createEntry(Promise<E> newPromise);
+        PublishSubscribe.this.onMessage(value, message);
+      }
 
-    protected abstract void onMessage(E value, Long message);
+      @Override
+      public boolean onStatus(PubSubType type, String channel) {
+        if (!channelName.equals(channel)) {
+          return false;
+        }
 
-    private RedisPubSubListener<Long> createListener(final String channelName, final E value) {
-        RedisPubSubListener<Long> listener = new BaseRedisPubSubListener<Long>() {
+        if (type == PubSubType.SUBSCRIBE) {
+          value.getPromise().trySuccess(value);
+          return true;
+        }
+        return false;
+      }
 
-            @Override
-            public void onMessage(String channel, Long message) {
-                if (!channelName.equals(channel)) {
-                    return;
-                }
-
-                PublishSubscribe.this.onMessage(value, message);
-            }
-
-            @Override
-            public boolean onStatus(PubSubType type, String channel) {
-                if (!channelName.equals(channel)) {
-                    return false;
-                }
-
-                if (type == PubSubType.SUBSCRIBE) {
-                    value.getPromise().trySuccess(value);
-                    return true;
-                }
-                return false;
-            }
-
-        };
-        return listener;
-    }
+    };
+    return listener;
+  }
 
 }

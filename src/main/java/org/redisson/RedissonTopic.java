@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson;
 
@@ -30,7 +28,8 @@ import org.redisson.core.StatusListener;
 import io.netty.util.concurrent.Future;
 
 /**
- * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
+ * Distributed topic implementation. Messages are delivered to all message listeners across Redis
+ * cluster.
  *
  * @author Nikita Koksharov
  *
@@ -38,69 +37,70 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonTopic<M> implements RTopic<M> {
 
-    final CommandAsyncExecutor commandExecutor;
-    private final String name;
-    private final Codec codec;
+  final CommandAsyncExecutor commandExecutor;
+  private final String name;
+  private final Codec codec;
 
-    protected RedissonTopic(CommandAsyncExecutor commandExecutor, String name) {
-        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+  protected RedissonTopic(CommandAsyncExecutor commandExecutor, String name) {
+    this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+  }
+
+  protected RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    this.commandExecutor = commandExecutor;
+    this.name = name;
+    this.codec = codec;
+  }
+
+  public List<String> getChannelNames() {
+    return Collections.singletonList(name);
+  }
+
+  @Override
+  public long publish(M message) {
+    return commandExecutor.get(publishAsync(message));
+  }
+
+  @Override
+  public Future<Long> publishAsync(M message) {
+    return commandExecutor.writeAsync(name, codec, RedisCommands.PUBLISH, name, message);
+  }
+
+  @Override
+  public int addListener(StatusListener listener) {
+    return addListener(new PubSubStatusListener(listener, name));
+  };
+
+  @Override
+  public int addListener(MessageListener<M> listener) {
+    PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
+    return addListener(pubSubListener);
+  }
+
+  private int addListener(RedisPubSubListener<M> pubSubListener) {
+    Future<PubSubConnectionEntry> future =
+        commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
+    future.syncUninterruptibly();
+    return System.identityHashCode(pubSubListener);
+  }
+
+  @Override
+  public void removeListener(int listenerId) {
+    PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+    if (entry == null) {
+      return;
     }
-
-    protected RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
-        this.commandExecutor = commandExecutor;
-        this.name = name;
-        this.codec = codec;
-    }
-
-    public List<String> getChannelNames() {
-        return Collections.singletonList(name);
-    }
-
-    @Override
-    public long publish(M message) {
-        return commandExecutor.get(publishAsync(message));
-    }
-
-    @Override
-    public Future<Long> publishAsync(M message) {
-        return commandExecutor.writeAsync(name, codec, RedisCommands.PUBLISH, name, message);
-    }
-
-    @Override
-    public int addListener(StatusListener listener) {
-        return addListener(new PubSubStatusListener(listener, name));
-    };
-
-    @Override
-    public int addListener(MessageListener<M> listener) {
-        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
-        return addListener(pubSubListener);
-    }
-
-    private int addListener(RedisPubSubListener<M> pubSubListener) {
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
-        future.syncUninterruptibly();
-        return System.identityHashCode(pubSubListener);
-    }
-
-    @Override
-    public void removeListener(int listenerId) {
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
-        if (entry == null) {
-            return;
+    synchronized (entry) {
+      if (entry.isActive()) {
+        entry.removeListener(name, listenerId);
+        if (!entry.hasListeners(name)) {
+          commandExecutor.getConnectionManager().unsubscribe(name);
         }
-        synchronized (entry) {
-            if (entry.isActive()) {
-                entry.removeListener(name, listenerId);
-                if (!entry.hasListeners(name)) {
-                    commandExecutor.getConnectionManager().unsubscribe(name);
-                }
-                return;
-            }
-        }
-
-        // listener has been re-attached
-        removeListener(listenerId);
+        return;
+      }
     }
+
+    // listener has been re-attached
+    removeListener(listenerId);
+  }
 
 }

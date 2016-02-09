@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson.api;
 
@@ -26,36 +24,36 @@ import org.reactivestreams.Publisher;
  */
 public interface RDequeReactive<V> extends RQueueReactive<V> {
 
-    Publisher<V> descendingIterator();
+  Publisher<V> descendingIterator();
 
-    Publisher<Boolean> removeLastOccurrence(Object o);
+  Publisher<Boolean> removeLastOccurrence(Object o);
 
-    Publisher<V> removeLast();
+  Publisher<V> removeLast();
 
-    Publisher<V> removeFirst();
+  Publisher<V> removeFirst();
 
-    Publisher<Boolean> removeFirstOccurrence(Object o);
+  Publisher<Boolean> removeFirstOccurrence(Object o);
 
-    Publisher<Void> push(V e);
+  Publisher<Void> push(V e);
 
-    Publisher<V> pop();
+  Publisher<V> pop();
 
-    Publisher<V> pollLast();
+  Publisher<V> pollLast();
 
-    Publisher<V> pollFirst();
+  Publisher<V> pollFirst();
 
-    Publisher<V> peekLast();
+  Publisher<V> peekLast();
 
-    Publisher<V> peekFirst();
+  Publisher<V> peekFirst();
 
-    Publisher<Long> offerLast(V e);
+  Publisher<Long> offerLast(V e);
 
-    Publisher<V> getLast();
+  Publisher<V> getLast();
 
-    Publisher<Void> addLast(V e);
+  Publisher<Void> addLast(V e);
 
-    Publisher<Void> addFirst(V e);
+  Publisher<Void> addFirst(V e);
 
-    Publisher<Boolean> offerFirst(V e);
+  Publisher<Boolean> offerFirst(V e);
 
 }

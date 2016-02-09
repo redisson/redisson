@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson;
 
@@ -29,7 +27,8 @@ import org.redisson.core.RPatternTopic;
 import io.netty.util.concurrent.Future;
 
 /**
- * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
+ * Distributed topic implementation. Messages are delivered to all message listeners across Redis
+ * cluster.
  *
  * @author Nikita Koksharov
  *
@@ -37,68 +36,70 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
-    final CommandExecutor commandExecutor;
-    private final String name;
-    private final Codec codec;
+  final CommandExecutor commandExecutor;
+  private final String name;
+  private final Codec codec;
 
-    protected RedissonPatternTopic(CommandExecutor commandExecutor, String name) {
-        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+  protected RedissonPatternTopic(CommandExecutor commandExecutor, String name) {
+    this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+  }
+
+  protected RedissonPatternTopic(Codec codec, CommandExecutor commandExecutor, String name) {
+    this.commandExecutor = commandExecutor;
+    this.name = name;
+    this.codec = codec;
+  }
+
+  @Override
+  public int addListener(PatternStatusListener listener) {
+    return addListener(new PubSubPatternStatusListener(listener, name));
+  };
+
+  @Override
+  public int addListener(PatternMessageListener<M> listener) {
+    PubSubPatternMessageListener<M> pubSubListener =
+        new PubSubPatternMessageListener<M>(listener, name);
+    return addListener(pubSubListener);
+  }
+
+  private int addListener(RedisPubSubListener<M> pubSubListener) {
+    Future<PubSubConnectionEntry> future =
+        commandExecutor.getConnectionManager().psubscribe(name, codec);
+    future.syncUninterruptibly();
+    PubSubConnectionEntry entry = future.getNow();
+    synchronized (entry) {
+      if (entry.isActive()) {
+        entry.addListener(name, pubSubListener);
+        return System.identityHashCode(pubSubListener);
+      }
     }
+    // entry is inactive trying add again
+    return addListener(pubSubListener);
+  }
 
-    protected RedissonPatternTopic(Codec codec, CommandExecutor commandExecutor, String name) {
-        this.commandExecutor = commandExecutor;
-        this.name = name;
-        this.codec = codec;
+  @Override
+  public void removeListener(int listenerId) {
+    PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+    if (entry == null) {
+      return;
     }
-
-    @Override
-    public int addListener(PatternStatusListener listener) {
-        return addListener(new PubSubPatternStatusListener(listener, name));
-    };
-
-    @Override
-    public int addListener(PatternMessageListener<M> listener) {
-        PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
-        return addListener(pubSubListener);
-    }
-
-    private int addListener(RedisPubSubListener<M> pubSubListener) {
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().psubscribe(name, codec);
-        future.syncUninterruptibly();
-        PubSubConnectionEntry entry = future.getNow();
-        synchronized (entry) {
-            if (entry.isActive()) {
-                entry.addListener(name, pubSubListener);
-                return System.identityHashCode(pubSubListener);
-            }
+    synchronized (entry) {
+      if (entry.isActive()) {
+        entry.removeListener(name, listenerId);
+        if (entry.getListeners(name).isEmpty()) {
+          commandExecutor.getConnectionManager().punsubscribe(name);
         }
-        // entry is inactive trying add again
-        return addListener(pubSubListener);
+        return;
+      }
     }
 
-    @Override
-    public void removeListener(int listenerId) {
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
-        if (entry == null) {
-            return;
-        }
-        synchronized (entry) {
-            if (entry.isActive()) {
-                entry.removeListener(name, listenerId);
-                if (entry.getListeners(name).isEmpty()) {
-                    commandExecutor.getConnectionManager().punsubscribe(name);
-                }
-                return;
-            }
-        }
+    // entry is inactive trying add again
+    removeListener(listenerId);
+  }
 
-        // entry is inactive trying add again
-        removeListener(listenerId);
-    }
-
-    @Override
-    public List<String> getPatternNames() {
-        return Collections.singletonList(name);
-    }
+  @Override
+  public List<String> getPatternNames() {
+    return Collections.singletonList(name);
+  }
 
 }

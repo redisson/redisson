@@ -16,240 +16,240 @@ import org.redisson.api.RSetReactive;
 
 public class RedissonSetReactiveTest extends BaseReactiveTest {
 
-    public static class SimpleBean implements Serializable {
+  public static class SimpleBean implements Serializable {
 
-        private Long lng;
+    private Long lng;
 
-        public Long getLng() {
-            return lng;
-        }
-
-        public void setLng(Long lng) {
-            this.lng = lng;
-        }
-
+    public Long getLng() {
+      return lng;
     }
 
-    @Test
-    public void testAddAllReactive() {
-        RSetReactive<Integer> list = redisson.getSet("set");
-        sync(list.add(1));
-        sync(list.add(2));
-        sync(list.add(3));
-        sync(list.add(4));
-        sync(list.add(5));
-
-        RSetReactive<Integer> list2 = redisson.getSet("set2");
-        Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
-        Assert.assertEquals(5, sync(list2.size()).intValue());
+    public void setLng(Long lng) {
+      this.lng = lng;
     }
 
-    @Test
-    public void testRemoveRandom() {
-        RSetReactive<Integer> set = redisson.getSet("simple");
-        sync(set.add(1));
-        sync(set.add(2));
-        sync(set.add(3));
+  }
 
-        MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
-        MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
-        MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
-        Assert.assertNull(sync(set.removeRandom()));
+  @Test
+  public void testAddAllReactive() {
+    RSetReactive<Integer> list = redisson.getSet("set");
+    sync(list.add(1));
+    sync(list.add(2));
+    sync(list.add(3));
+    sync(list.add(4));
+    sync(list.add(5));
+
+    RSetReactive<Integer> list2 = redisson.getSet("set2");
+    Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
+    Assert.assertEquals(5, sync(list2.size()).intValue());
+  }
+
+  @Test
+  public void testRemoveRandom() {
+    RSetReactive<Integer> set = redisson.getSet("simple");
+    sync(set.add(1));
+    sync(set.add(2));
+    sync(set.add(3));
+
+    MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
+    MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
+    MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
+    Assert.assertNull(sync(set.removeRandom()));
+  }
+
+  @Test
+  public void testAddBean() throws InterruptedException, ExecutionException {
+    SimpleBean sb = new SimpleBean();
+    sb.setLng(1L);
+    RSetReactive<SimpleBean> set = redisson.getSet("simple");
+    sync(set.add(sb));
+    Assert.assertEquals(sb.getLng(), toIterator(set.iterator()).next().getLng());
+  }
+
+  @Test
+  public void testAddLong() throws InterruptedException, ExecutionException {
+    Long sb = 1l;
+
+    RSetReactive<Long> set = redisson.getSet("simple_longs");
+    sync(set.add(sb));
+
+    for (Long l : sync(set)) {
+      Assert.assertEquals(sb.getClass(), l.getClass());
+    }
+  }
+
+  @Test
+  public void testRemove() throws InterruptedException, ExecutionException {
+    RSetReactive<Integer> set = redisson.getSet("simple");
+    sync(set.add(1));
+    sync(set.add(3));
+    sync(set.add(7));
+
+    Assert.assertTrue(sync(set.remove(1)));
+    Assert.assertFalse(sync(set.contains(1)));
+    Assert.assertThat(sync(set), Matchers.containsInAnyOrder(3, 7));
+
+    Assert.assertFalse(sync(set.remove(1)));
+    Assert.assertThat(sync(set), Matchers.containsInAnyOrder(3, 7));
+
+    sync(set.remove(3));
+    Assert.assertFalse(sync(set.contains(3)));
+    Assert.assertThat(sync(set), Matchers.contains(7));
+  }
+
+  @Test
+  public void testIteratorSequence() {
+    RSetReactive<Long> set = redisson.getSet("set");
+    for (int i = 0; i < 1000; i++) {
+      sync(set.add(Long.valueOf(i)));
     }
 
-    @Test
-    public void testAddBean() throws InterruptedException, ExecutionException {
-        SimpleBean sb = new SimpleBean();
-        sb.setLng(1L);
-        RSetReactive<SimpleBean> set = redisson.getSet("simple");
-        sync(set.add(sb));
-        Assert.assertEquals(sb.getLng(), toIterator(set.iterator()).next().getLng());
+    Set<Long> setCopy = new HashSet<Long>();
+    for (int i = 0; i < 1000; i++) {
+      setCopy.add(Long.valueOf(i));
     }
 
-    @Test
-    public void testAddLong() throws InterruptedException, ExecutionException {
-        Long sb = 1l;
+    checkIterator(set, setCopy);
+  }
 
-        RSetReactive<Long> set = redisson.getSet("simple_longs");
-        sync(set.add(sb));
-
-        for (Long l : sync(set)) {
-            Assert.assertEquals(sb.getClass(), l.getClass());
-        }
+  private void checkIterator(RSetReactive<Long> set, Set<Long> setCopy) {
+    for (Iterator<Long> iterator = toIterator(set.iterator()); iterator.hasNext();) {
+      Long value = iterator.next();
+      if (!setCopy.remove(value)) {
+        Assert.fail();
+      }
     }
 
-    @Test
-    public void testRemove() throws InterruptedException, ExecutionException {
-        RSetReactive<Integer> set = redisson.getSet("simple");
-        sync(set.add(1));
-        sync(set.add(3));
-        sync(set.add(7));
+    Assert.assertEquals(0, setCopy.size());
+  }
 
-        Assert.assertTrue(sync(set.remove(1)));
-        Assert.assertFalse(sync(set.contains(1)));
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(3, 7));
+  @Test
+  public void testLong() {
+    RSetReactive<Long> set = redisson.getSet("set");
+    sync(set.add(1L));
+    sync(set.add(2L));
 
-        Assert.assertFalse(sync(set.remove(1)));
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(3, 7));
+    Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1L, 2L));
+  }
 
-        sync(set.remove(3));
-        Assert.assertFalse(sync(set.contains(3)));
-        Assert.assertThat(sync(set), Matchers.contains(7));
+  @Test
+  public void testRetainAll() {
+    RSetReactive<Integer> set = redisson.getSet("set");
+    for (int i = 0; i < 20000; i++) {
+      sync(set.add(i));
     }
 
-    @Test
-    public void testIteratorSequence() {
-        RSetReactive<Long> set = redisson.getSet("set");
-        for (int i = 0; i < 1000; i++) {
-            sync(set.add(Long.valueOf(i)));
-        }
+    Assert.assertTrue(sync(set.retainAll(Arrays.asList(1, 2))));
+    Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2));
+    Assert.assertEquals(2, sync(set.size()).intValue());
+  }
 
-        Set<Long> setCopy = new HashSet<Long>();
-        for (int i = 0; i < 1000; i++) {
-            setCopy.add(Long.valueOf(i));
-        }
-
-        checkIterator(set, setCopy);
+  @Test
+  public void testContainsAll() {
+    RSetReactive<Integer> set = redisson.getSet("set");
+    for (int i = 0; i < 200; i++) {
+      sync(set.add(i));
     }
 
-    private void checkIterator(RSetReactive<Long> set, Set<Long> setCopy) {
-        for (Iterator<Long> iterator = toIterator(set.iterator()); iterator.hasNext();) {
-            Long value = iterator.next();
-            if (!setCopy.remove(value)) {
-                Assert.fail();
-            }
-        }
+    Assert.assertTrue(sync(set.containsAll(Collections.emptyList())));
+    Assert.assertTrue(sync(set.containsAll(Arrays.asList(30, 11))));
+    Assert.assertFalse(sync(set.containsAll(Arrays.asList(30, 711, 11))));
+  }
 
-        Assert.assertEquals(0, setCopy.size());
-    }
+  @Test
+  public void testContains() {
+    RSetReactive<TestObject> set = redisson.getSet("set");
 
-    @Test
-    public void testLong() {
-        RSetReactive<Long> set = redisson.getSet("set");
-        sync(set.add(1L));
-        sync(set.add(2L));
+    sync(set.add(new TestObject("1", "2")));
+    sync(set.add(new TestObject("1", "2")));
+    sync(set.add(new TestObject("2", "3")));
+    sync(set.add(new TestObject("3", "4")));
+    sync(set.add(new TestObject("5", "6")));
 
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1L, 2L));
-    }
+    Assert.assertTrue(sync(set.contains(new TestObject("2", "3"))));
+    Assert.assertTrue(sync(set.contains(new TestObject("1", "2"))));
+    Assert.assertFalse(sync(set.contains(new TestObject("1", "9"))));
+  }
 
-    @Test
-    public void testRetainAll() {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        for (int i = 0; i < 20000; i++) {
-            sync(set.add(i));
-        }
+  @Test
+  public void testDuplicates() {
+    RSetReactive<TestObject> set = redisson.getSet("set");
 
-        Assert.assertTrue(sync(set.retainAll(Arrays.asList(1, 2))));
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2));
-        Assert.assertEquals(2, sync(set.size()).intValue());
-    }
+    sync(set.add(new TestObject("1", "2")));
+    sync(set.add(new TestObject("1", "2")));
+    sync(set.add(new TestObject("2", "3")));
+    sync(set.add(new TestObject("3", "4")));
+    sync(set.add(new TestObject("5", "6")));
 
-    @Test
-    public void testContainsAll() {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        for (int i = 0; i < 200; i++) {
-            sync(set.add(i));
-        }
+    Assert.assertEquals(4, sync(set.size()).intValue());
+  }
 
-        Assert.assertTrue(sync(set.containsAll(Collections.emptyList())));
-        Assert.assertTrue(sync(set.containsAll(Arrays.asList(30, 11))));
-        Assert.assertFalse(sync(set.containsAll(Arrays.asList(30, 711, 11))));
-    }
+  @Test
+  public void testSize() {
+    RSetReactive<Integer> set = redisson.getSet("set");
+    sync(set.add(1));
+    sync(set.add(2));
+    sync(set.add(3));
+    sync(set.add(3));
+    sync(set.add(4));
+    sync(set.add(5));
+    sync(set.add(5));
 
-    @Test
-    public void testContains() {
-        RSetReactive<TestObject> set = redisson.getSet("set");
-
-        sync(set.add(new TestObject("1", "2")));
-        sync(set.add(new TestObject("1", "2")));
-        sync(set.add(new TestObject("2", "3")));
-        sync(set.add(new TestObject("3", "4")));
-        sync(set.add(new TestObject("5", "6")));
-
-        Assert.assertTrue(sync(set.contains(new TestObject("2", "3"))));
-        Assert.assertTrue(sync(set.contains(new TestObject("1", "2"))));
-        Assert.assertFalse(sync(set.contains(new TestObject("1", "9"))));
-    }
-
-    @Test
-    public void testDuplicates() {
-        RSetReactive<TestObject> set = redisson.getSet("set");
-
-        sync(set.add(new TestObject("1", "2")));
-        sync(set.add(new TestObject("1", "2")));
-        sync(set.add(new TestObject("2", "3")));
-        sync(set.add(new TestObject("3", "4")));
-        sync(set.add(new TestObject("5", "6")));
-
-        Assert.assertEquals(4, sync(set.size()).intValue());
-    }
-
-    @Test
-    public void testSize() {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        sync(set.add(1));
-        sync(set.add(2));
-        sync(set.add(3));
-        sync(set.add(3));
-        sync(set.add(4));
-        sync(set.add(5));
-        sync(set.add(5));
-
-        Assert.assertEquals(5, sync(set.size()).intValue());
-    }
+    Assert.assertEquals(5, sync(set.size()).intValue());
+  }
 
 
-    @Test
-    public void testRetainAllEmpty() {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        sync(set.add(1));
-        sync(set.add(2));
-        sync(set.add(3));
-        sync(set.add(4));
-        sync(set.add(5));
+  @Test
+  public void testRetainAllEmpty() {
+    RSetReactive<Integer> set = redisson.getSet("set");
+    sync(set.add(1));
+    sync(set.add(2));
+    sync(set.add(3));
+    sync(set.add(4));
+    sync(set.add(5));
 
-        Assert.assertTrue(sync(set.retainAll(Collections.<Integer>emptyList())));
-        Assert.assertEquals(0, sync(set.size()).intValue());
-    }
+    Assert.assertTrue(sync(set.retainAll(Collections.<Integer>emptyList())));
+    Assert.assertEquals(0, sync(set.size()).intValue());
+  }
 
-    @Test
-    public void testRetainAllNoModify() {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        sync(set.add(1));
-        sync(set.add(2));
+  @Test
+  public void testRetainAllNoModify() {
+    RSetReactive<Integer> set = redisson.getSet("set");
+    sync(set.add(1));
+    sync(set.add(2));
 
-        Assert.assertFalse(sync(set.retainAll(Arrays.asList(1, 2)))); // nothing changed
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2));
-    }
+    Assert.assertFalse(sync(set.retainAll(Arrays.asList(1, 2)))); // nothing changed
+    Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2));
+  }
 
 
-    @Test
-    public void testMove() throws Exception {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
+  @Test
+  public void testMove() throws Exception {
+    RSetReactive<Integer> set = redisson.getSet("set");
+    RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
 
-        sync(set.add(1));
-        sync(set.add(2));
+    sync(set.add(1));
+    sync(set.add(2));
 
-        Assert.assertTrue(sync(set.move("otherSet", 1)));
+    Assert.assertTrue(sync(set.move("otherSet", 1)));
 
-        Assert.assertEquals(1, sync(set.size()).intValue());
-        Assert.assertThat(sync(set), Matchers.contains(2));
+    Assert.assertEquals(1, sync(set.size()).intValue());
+    Assert.assertThat(sync(set), Matchers.contains(2));
 
-        Assert.assertEquals(1, sync(otherSet.size()).intValue());
-        Assert.assertThat(sync(otherSet), Matchers.contains(1));
-    }
+    Assert.assertEquals(1, sync(otherSet.size()).intValue());
+    Assert.assertThat(sync(otherSet), Matchers.contains(1));
+  }
 
-    @Test
-    public void testMoveNoMember() throws Exception {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
+  @Test
+  public void testMoveNoMember() throws Exception {
+    RSetReactive<Integer> set = redisson.getSet("set");
+    RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
 
-        set.add(1);
+    set.add(1);
 
-        Assert.assertFalse(sync(set.move("otherSet", 2)));
+    Assert.assertFalse(sync(set.move("otherSet", 2)));
 
-        Assert.assertEquals(1, sync(set.size()).intValue());
-        Assert.assertEquals(0, sync(otherSet.size()).intValue());
-    }
+    Assert.assertEquals(1, sync(set.size()).intValue());
+    Assert.assertEquals(0, sync(otherSet.size()).intValue());
+  }
 }

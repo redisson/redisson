@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson.connection;
 
@@ -43,68 +41,69 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
-    boolean isClusterMode();
+  boolean isClusterMode();
 
-    <R> Future<R> newSucceededFuture(R value);
+  <R> Future<R> newSucceededFuture(R value);
 
-    ConnectionEventsHub getConnectionEventsHub();
+  ConnectionEventsHub getConnectionEventsHub();
 
-    boolean isShutdown();
+  boolean isShutdown();
 
-    boolean isShuttingDown();
+  boolean isShuttingDown();
 
-    Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener);
+  Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName,
+      RedisPubSubListener<?> listener);
 
-    ConnectionInitializer getConnectListener();
+  ConnectionInitializer getConnectListener();
 
-    IdleConnectionWatcher getConnectionWatcher();
+  IdleConnectionWatcher getConnectionWatcher();
 
-    <R> Future<R> newFailedFuture(Throwable cause);
+  <R> Future<R> newFailedFuture(Throwable cause);
 
-    void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason);
+  void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason);
 
-    Collection<RedisClientEntry> getClients();
+  Collection<RedisClientEntry> getClients();
 
-    void shutdownAsync(RedisClient client);
+  void shutdownAsync(RedisClient client);
 
-    int calcSlot(String key);
+  int calcSlot(String key);
 
-    MasterSlaveServersConfig getConfig();
+  MasterSlaveServersConfig getConfig();
 
-    Codec getCodec();
+  Codec getCodec();
 
-    Map<ClusterSlotRange, MasterSlaveEntry> getEntries();
+  Map<ClusterSlotRange, MasterSlaveEntry> getEntries();
 
-    <R> Promise<R> newPromise();
+  <R> Promise<R> newPromise();
 
-    void releaseRead(NodeSource source, RedisConnection connection);
+  void releaseRead(NodeSource source, RedisConnection connection);
 
-    void releaseWrite(NodeSource source, RedisConnection connection);
+  void releaseWrite(NodeSource source, RedisConnection connection);
 
-    Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
+  Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
 
-    Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
+  Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    RedisClient createClient(String host, int port, int timeout);
+  RedisClient createClient(String host, int port, int timeout);
 
-    RedisClient createClient(String host, int port);
+  RedisClient createClient(String host, int port);
 
-    MasterSlaveEntry getEntry(InetSocketAddress addr);
+  MasterSlaveEntry getEntry(InetSocketAddress addr);
 
-    PubSubConnectionEntry getPubSubEntry(String channelName);
+  PubSubConnectionEntry getPubSubEntry(String channelName);
 
-    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec);
+  Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec);
 
-    Codec unsubscribe(String channelName);
+  Codec unsubscribe(String channelName);
 
-    Codec punsubscribe(String channelName);
+  Codec punsubscribe(String channelName);
 
-    void shutdown();
+  void shutdown();
 
-    EventLoopGroup getGroup();
+  EventLoopGroup getGroup();
 
-    Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);
+  Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);
 
-    InfinitySemaphoreLatch getShutdownLatch();
+  InfinitySemaphoreLatch getShutdownLatch();
 
 }

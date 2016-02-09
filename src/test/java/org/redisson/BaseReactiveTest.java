@@ -17,67 +17,67 @@ import reactor.rx.Streams;
 
 public abstract class BaseReactiveTest {
 
-    protected static RedissonReactiveClient redisson;
+  protected static RedissonReactiveClient redisson;
 
-    @BeforeClass
-    public static void beforeClass() {
-        redisson = createInstance();
+  @BeforeClass
+  public static void beforeClass() {
+    redisson = createInstance();
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    redisson.shutdown();
+  }
+
+  public <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
+    return Streams.create(list.iterator()).toList().poll();
+  }
+
+  public <V> Iterable<V> sync(RCollectionReactive<V> list) {
+    return Streams.create(list.iterator()).toList().poll();
+  }
+
+  public <V> Iterator<V> toIterator(Publisher<V> pub) {
+    return Streams.create(pub).toList().poll().iterator();
+  }
+
+  public <V> Iterable<V> toIterable(Publisher<V> pub) {
+    return Streams.create(pub).toList().poll();
+  }
+
+  public <V> V sync(Publisher<V> ob) {
+    Promise<V> promise;
+    if (Promise.class.isAssignableFrom(ob.getClass())) {
+      promise = (Promise<V>) ob;
+    } else {
+      promise = Streams.wrap(ob).next();
     }
 
-    @AfterClass
-    public static void afterClass() {
-        redisson.shutdown();
+    V val = promise.poll();
+    if (promise.isError()) {
+      throw new RuntimeException(promise.reason());
     }
+    return val;
+  }
 
-    public <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
-        return Streams.create(list.iterator()).toList().poll();
+  public static Config createConfig() {
+    String redisAddress = System.getProperty("redisAddress");
+    if (redisAddress == null) {
+      redisAddress = "127.0.0.1:6379";
     }
+    Config config = new Config();
+    config.useSingleServer().setAddress(redisAddress);
+    return config;
+  }
 
-    public <V> Iterable<V> sync(RCollectionReactive<V> list) {
-        return Streams.create(list.iterator()).toList().poll();
-    }
+  public static RedissonReactiveClient createInstance() {
+    Config config = createConfig();
+    return Redisson.createReactive(config);
+  }
 
-    public <V> Iterator<V> toIterator(Publisher<V> pub) {
-        return Streams.create(pub).toList().poll().iterator();
-    }
-
-    public <V> Iterable<V> toIterable(Publisher<V> pub) {
-        return Streams.create(pub).toList().poll();
-    }
-
-    public <V> V sync(Publisher<V> ob) {
-        Promise<V> promise;
-        if (Promise.class.isAssignableFrom(ob.getClass())) {
-            promise = (Promise<V>) ob;
-        } else {
-            promise = Streams.wrap(ob).next();
-        }
-
-        V val = promise.poll();
-        if (promise.isError()) {
-            throw new RuntimeException(promise.reason());
-        }
-        return val;
-    }
-
-    public static Config createConfig() {
-        String redisAddress = System.getProperty("redisAddress");
-        if (redisAddress == null) {
-            redisAddress = "127.0.0.1:6379";
-        }
-        Config config = new Config();
-        config.useSingleServer().setAddress(redisAddress);
-        return config;
-    }
-
-    public static RedissonReactiveClient createInstance() {
-        Config config = createConfig();
-        return Redisson.createReactive(config);
-    }
-
-    @After
-    public void after() {
-        sync(redisson.getKeys().flushdb());
-    }
+  @After
+  public void after() {
+    sync(redisson.getKeys().flushdb());
+  }
 
 }

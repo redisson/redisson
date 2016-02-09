@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson;
 
@@ -21,31 +19,31 @@ import io.netty.util.concurrent.Promise;
 
 public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDownLatchEntry> {
 
-    private int counter;
+  private int counter;
 
-    private final ReclosableLatch latch;
-    private final Promise<RedissonCountDownLatchEntry> promise;
+  private final ReclosableLatch latch;
+  private final Promise<RedissonCountDownLatchEntry> promise;
 
-    public RedissonCountDownLatchEntry(Promise<RedissonCountDownLatchEntry> promise) {
-        super();
-        this.latch = new ReclosableLatch();
-        this.promise = promise;
-    }
+  public RedissonCountDownLatchEntry(Promise<RedissonCountDownLatchEntry> promise) {
+    super();
+    this.latch = new ReclosableLatch();
+    this.promise = promise;
+  }
 
-    public void aquire() {
-        counter++;
-    }
+  public void aquire() {
+    counter++;
+  }
 
-    public int release() {
-        return --counter;
-    }
+  public int release() {
+    return --counter;
+  }
 
-    public Promise<RedissonCountDownLatchEntry> getPromise() {
-        return promise;
-    }
+  public Promise<RedissonCountDownLatchEntry> getPromise() {
+    return promise;
+  }
 
-    public ReclosableLatch getLatch() {
-        return latch;
-    }
+  public ReclosableLatch getLatch() {
+    return latch;
+  }
 
 }

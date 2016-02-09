@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson.client.protocol.decoder;
 
@@ -22,30 +20,30 @@ import org.redisson.RedisClientResult;
 
 public class ListScanResult<V> implements RedisClientResult {
 
-    private final Long pos;
-    private final List<V> values;
-    private InetSocketAddress addr;
+  private final Long pos;
+  private final List<V> values;
+  private InetSocketAddress addr;
 
-    public ListScanResult(Long pos, List<V> values) {
-        this.pos = pos;
-        this.values = values;
-    }
+  public ListScanResult(Long pos, List<V> values) {
+    this.pos = pos;
+    this.values = values;
+  }
 
-    public Long getPos() {
-        return pos;
-    }
+  public Long getPos() {
+    return pos;
+  }
 
-    public List<V> getValues() {
-        return values;
-    }
+  public List<V> getValues() {
+    return values;
+  }
 
-    @Override
-    public void setRedisClient(InetSocketAddress addr) {
-        this.addr = addr;
-    }
+  @Override
+  public void setRedisClient(InetSocketAddress addr) {
+    this.addr = addr;
+  }
 
-    public InetSocketAddress getRedisClient() {
-        return addr;
-    }
+  public InetSocketAddress getRedisClient() {
+    return addr;
+  }
 
 }

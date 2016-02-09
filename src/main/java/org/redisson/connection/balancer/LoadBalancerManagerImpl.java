@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson.connection.balancer;
 
@@ -41,143 +39,146 @@ import io.netty.util.internal.PlatformDependent;
 
 public class LoadBalancerManagerImpl implements LoadBalancerManager {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+  private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ConnectionManager connectionManager;
-    private final Map<InetSocketAddress, ClientConnectionsEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
-    private final PubSubConnectionPool pubSubEntries;
-    private final SlaveConnectionPool entries;
+  private final ConnectionManager connectionManager;
+  private final Map<InetSocketAddress, ClientConnectionsEntry> addr2Entry = PlatformDependent
+      .newConcurrentHashMap();
+  private final PubSubConnectionPool pubSubEntries;
+  private final SlaveConnectionPool entries;
 
-    public LoadBalancerManagerImpl(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry entry) {
-        this.connectionManager = connectionManager;
-        entries = new SlaveConnectionPool(config, connectionManager, entry);
-        pubSubEntries = new PubSubConnectionPool(config, connectionManager, entry);
+  public LoadBalancerManagerImpl(MasterSlaveServersConfig config,
+      ConnectionManager connectionManager, MasterSlaveEntry entry) {
+    this.connectionManager = connectionManager;
+    entries = new SlaveConnectionPool(config, connectionManager, entry);
+    pubSubEntries = new PubSubConnectionPool(config, connectionManager, entry);
+  }
+
+  public Future<Void> add(final ClientConnectionsEntry entry) {
+    Future<Void> f = entries.add(entry);
+    f.addListener(new FutureListener<Void>() {
+      @Override
+      public void operationComplete(Future<Void> future) throws Exception {
+        addr2Entry.put(entry.getClient().getAddr(), entry);
+        pubSubEntries.add(entry);
+      }
+    });
+    return f;
+  }
+
+  public int getAvailableClients() {
+    int count = 0;
+    for (ClientConnectionsEntry connectionEntry : addr2Entry.values()) {
+      if (!connectionEntry.isFreezed()) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  public boolean unfreeze(String host, int port, FreezeReason freezeReason) {
+    InetSocketAddress addr = new InetSocketAddress(host, port);
+    ClientConnectionsEntry entry = addr2Entry.get(addr);
+    if (entry == null) {
+      throw new IllegalStateException("Can't find " + addr + " in slaves!");
     }
 
-    public Future<Void> add(final ClientConnectionsEntry entry) {
-        Future<Void> f = entries.add(entry);
-        f.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                addr2Entry.put(entry.getClient().getAddr(), entry);
-                pubSubEntries.add(entry);
-            }
-        });
-        return f;
-    }
-
-    public int getAvailableClients() {
-        int count = 0;
-        for (ClientConnectionsEntry connectionEntry : addr2Entry.values()) {
-            if (!connectionEntry.isFreezed()) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    public boolean unfreeze(String host, int port, FreezeReason freezeReason) {
-        InetSocketAddress addr = new InetSocketAddress(host, port);
-        ClientConnectionsEntry entry = addr2Entry.get(addr);
-        if (entry == null) {
-            throw new IllegalStateException("Can't find " + addr + " in slaves!");
-        }
-
-        synchronized (entry) {
-            if (!entry.isFreezed()) {
-                return false;
-            }
-            if ((freezeReason == FreezeReason.RECONNECT
-                    && entry.getFreezeReason() == FreezeReason.RECONNECT)
-                        || freezeReason != FreezeReason.RECONNECT) {
-                entry.resetFailedAttempts();
-                entry.setFreezed(false);
-                entry.setFreezeReason(null);
-                return true;
-            }
-        }
+    synchronized (entry) {
+      if (!entry.isFreezed()) {
         return false;
+      }
+      if ((freezeReason == FreezeReason.RECONNECT && entry.getFreezeReason() == FreezeReason.RECONNECT)
+          || freezeReason != FreezeReason.RECONNECT) {
+        entry.resetFailedAttempts();
+        entry.setFreezed(false);
+        entry.setFreezeReason(null);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
+    InetSocketAddress addr = new InetSocketAddress(host, port);
+    ClientConnectionsEntry connectionEntry = addr2Entry.get(addr);
+    if (connectionEntry == null) {
+      return Collections.emptyList();
     }
 
-    public Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
-        InetSocketAddress addr = new InetSocketAddress(host, port);
-        ClientConnectionsEntry connectionEntry = addr2Entry.get(addr);
-        if (connectionEntry == null) {
-            return Collections.emptyList();
-        }
-
-        synchronized (connectionEntry) {
-            log.debug("{} freezed", addr);
-            connectionEntry.setFreezed(true);
-            // only RECONNECT freeze reason could be replaced
-            if (connectionEntry.getFreezeReason() == null
-                    || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
-                connectionEntry.setFreezeReason(freezeReason);
-            }
-        }
-
-        // close all connections
-        while (true) {
-            RedisConnection connection = connectionEntry.pollConnection();
-            if (connection == null) {
-                break;
-            }
-            connection.closeAsync();
-        }
-
-        // close all pub/sub connections
-        while (true) {
-            RedisPubSubConnection connection = connectionEntry.pollSubscribeConnection();
-            if (connection == null) {
-                break;
-            }
-            connection.closeAsync();
-        }
-
-        synchronized (connectionEntry) {
-            List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
-            connectionEntry.getAllSubscribeConnections().clear();
-            return list;
-        }
+    synchronized (connectionEntry) {
+      log.debug("{} freezed", addr);
+      connectionEntry.setFreezed(true);
+      // only RECONNECT freeze reason could be replaced
+      if (connectionEntry.getFreezeReason() == null
+          || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
+        connectionEntry.setFreezeReason(freezeReason);
+      }
     }
 
-    public Future<RedisPubSubConnection> nextPubSubConnection() {
-        return pubSubEntries.get();
+    // close all connections
+    while (true) {
+      RedisConnection connection = connectionEntry.pollConnection();
+      if (connection == null) {
+        break;
+      }
+      connection.closeAsync();
     }
 
-    public Future<RedisConnection> getConnection(InetSocketAddress addr) {
-        ClientConnectionsEntry entry = addr2Entry.get(addr);
-        if (entry != null) {
-            return entries.get(entry);
-        }
-        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr);
-        return connectionManager.newFailedFuture(exception);
+    // close all pub/sub connections
+    while (true) {
+      RedisPubSubConnection connection = connectionEntry.pollSubscribeConnection();
+      if (connection == null) {
+        break;
+      }
+      connection.closeAsync();
     }
 
-    public Future<RedisConnection> nextConnection() {
-        return entries.get();
+    synchronized (connectionEntry) {
+      List<RedisPubSubConnection> list =
+          new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
+      connectionEntry.getAllSubscribeConnections().clear();
+      return list;
     }
+  }
 
-    public void returnPubSubConnection(RedisPubSubConnection connection) {
-        ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
-        pubSubEntries.returnConnection(entry, connection);
-    }
+  public Future<RedisPubSubConnection> nextPubSubConnection() {
+    return pubSubEntries.get();
+  }
 
-    public void returnConnection(RedisConnection connection) {
-        ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
-        entries.returnConnection(entry, connection);
+  public Future<RedisConnection> getConnection(InetSocketAddress addr) {
+    ClientConnectionsEntry entry = addr2Entry.get(addr);
+    if (entry != null) {
+      return entries.get(entry);
     }
+    RedisConnectionException exception =
+        new RedisConnectionException("Can't find entry for " + addr);
+    return connectionManager.newFailedFuture(exception);
+  }
 
-    public void shutdown() {
-        for (ClientConnectionsEntry entry : addr2Entry.values()) {
-            entry.getClient().shutdown();
-        }
-    }
+  public Future<RedisConnection> nextConnection() {
+    return entries.get();
+  }
 
-    public void shutdownAsync() {
-        for (ClientConnectionsEntry entry : addr2Entry.values()) {
-            connectionManager.shutdownAsync(entry.getClient());
-        }
+  public void returnPubSubConnection(RedisPubSubConnection connection) {
+    ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
+    pubSubEntries.returnConnection(entry, connection);
+  }
+
+  public void returnConnection(RedisConnection connection) {
+    ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
+    entries.returnConnection(entry, connection);
+  }
+
+  public void shutdown() {
+    for (ClientConnectionsEntry entry : addr2Entry.values()) {
+      entry.getClient().shutdown();
     }
+  }
+
+  public void shutdownAsync() {
+    for (ClientConnectionsEntry entry : addr2Entry.values()) {
+      connectionManager.shutdownAsync(entry.getClient());
+    }
+  }
 
 }
