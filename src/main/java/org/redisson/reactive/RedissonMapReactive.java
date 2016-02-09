@@ -50,12 +50,12 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
 
     public RedissonMapReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        instance = new RedissonMap<>(codec, commandExecutor, name);
+        instance = new RedissonMap<K, V>(codec, commandExecutor, name);
     }
 
     public RedissonMapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        instance = new RedissonMap<>(codec, commandExecutor, name);
+        instance = new RedissonMap<K, V>(codec, commandExecutor, name);
     }
 
     @Override
