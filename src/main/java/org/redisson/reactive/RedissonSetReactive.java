@@ -17,11 +17,13 @@ package org.redisson.reactive;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonSet;
 import org.redisson.api.RSetReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -37,12 +39,16 @@ import org.redisson.command.CommandReactiveExecutor;
  */
 public class RedissonSetReactive<V> extends RedissonExpirableReactive implements RSetReactive<V> {
 
+    private final RedissonSet<V> instance;
+
     public RedissonSetReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        instance = new RedissonSet<V>(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
     public RedissonSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        instance = new RedissonSet<V>(codec, commandExecutor, name);
     }
 
     @Override
@@ -57,7 +63,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Boolean> contains(Object o) {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.SISMEMBER, getName(), o);
+        return reactive(instance.containsAsync(o));
     }
 
     private Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long startPos) {
@@ -71,31 +77,22 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<V> removeRandom() {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SPOP_SINGLE, getName());
+        return reactive(instance.removeRandomAsync());
     }
 
     @Override
     public Publisher<Boolean> remove(Object o) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SREM_SINGLE, getName(), o);
+        return reactive(instance.removeAsync(o));
     }
 
     @Override
     public Publisher<Boolean> move(String destination, V member) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SMOVE, getName(), destination, member);
+        return reactive(instance.moveAsync(destination, member));
     }
 
     @Override
     public Publisher<Boolean> containsAll(Collection<?> c) {
-        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                "local s = redis.call('smembers', KEYS[1]);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
-                            + "if ARGV[j] == s[i] "
-                            + "then table.remove(ARGV, j) end "
-                        + "end; "
-                       + "end;"
-                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        return reactive(instance.containsAllAsync(c));
     }
 
     @Override
@@ -108,39 +105,25 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Boolean> retainAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                    "local changed = 0 " +
-                    "local s = redis.call('smembers', KEYS[1]) "
-                       + "local i = 0 "
-                       + "while i <= table.getn(s) do "
-                            + "local element = s[i] "
-                            + "local isInAgrs = false "
-                            + "for j = 0, table.getn(ARGV), 1 do "
-                                + "if ARGV[j] == element then "
-                                    + "isInAgrs = true "
-                                    + "break "
-                                + "end "
-                            + "end "
-                            + "if isInAgrs == false then "
-                                + "redis.call('SREM', KEYS[1], element) "
-                                + "changed = 1 "
-                            + "end "
-                            + "i = i + 1 "
-                       + "end "
-                       + "return changed ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        return reactive(instance.retainAllAsync(c));
     }
 
     @Override
     public Publisher<Boolean> removeAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                        "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
-                            + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = 1 end "
-                        +"end "
-                       + "return v ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        return reactive(instance.removeAllAsync(c));
+    }
+
+    @Override
+    public Publisher<Long> union(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SUNIONSTORE, args.toArray());
+    }
+
+    @Override
+    public Publisher<Set<V>> readUnion(String... names) {
+        return reactive(instance.readUnionAsync(names));
     }
 
     @Override

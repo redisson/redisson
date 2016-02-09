@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -287,6 +288,32 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     @Override
     public boolean removeAll(Collection<?> c) {
         return get(removeAllAsync(c));
+    }
+
+    @Override
+    public int union(String... names) {
+        return get(unionAsync(names));
+    }
+
+    @Override
+    public Future<Integer> unionAsync(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SUNIONSTORE_INT, args.toArray());
+    }
+
+    @Override
+    public Set<V> readUnion(String... names) {
+        return get(readUnionAsync(names));
+    }
+
+    @Override
+    public Future<Set<V>> readUnionAsync(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SUNION, args.toArray());
     }
 
     @Override

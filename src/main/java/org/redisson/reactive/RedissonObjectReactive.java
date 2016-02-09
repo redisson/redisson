@@ -21,6 +21,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
+import io.netty.util.concurrent.Future;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 
@@ -40,6 +41,10 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         this.codec = codec;
         this.name = name;
         this.commandExecutor = commandExecutor;
+    }
+
+    public <R> Publisher<R> reactive(Future<R> future) {
+        return commandExecutor.reactive(future);
     }
 
     public RedissonObjectReactive(CommandReactiveExecutor commandExecutor, String name) {

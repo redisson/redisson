@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.util.Set;
+
 import org.reactivestreams.Publisher;
 
 /**
@@ -43,4 +45,22 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * member of this set or no operation was performed
      */
     Publisher<Boolean> move(String destination, V member);
+
+    /**
+     * Union sets specified by name and write to current set.
+     * If current set already exists, it is overwritten.
+     *
+     * @param names
+     * @return
+     */
+    Publisher<Long> union(String... names);
+
+    /**
+     * Union sets specified by name with current set.
+     * Without current set state change.
+     *
+     * @param names
+     * @return
+     */
+    Publisher<Set<V>> readUnion(String... names);
 }
