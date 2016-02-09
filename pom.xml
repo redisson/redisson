@@ -57,8 +57,6 @@
         <maven.test.skip>true</maven.test.skip>
         <source.version>1.6</source.version>
         <test.source.version>1.8</test.source.version>
-        <redis.single.host>true</redis.single.host>
-        <redis.single.port>true</redis.single.port>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -355,9 +353,6 @@
                 <version>2.16</version>
                 <configuration>
                     <argLine>-Dfile.encoding=utf-8</argLine>
-                    <systemPropertyVariables>
-                        <redisAddress>${redis.single.host}:${redis.single.port}</redisAddress>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 
