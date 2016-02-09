@@ -50,4 +50,22 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
      */
     Set<V> readAll();
 
+    /**
+     * Union sets specified by name and write to current set.
+     * If current set already exists, it is overwritten.
+     *
+     * @param names
+     * @return
+     */
+    int union(String... names);
+
+    /**
+     * Union sets specified by name with current set.
+     * Without current set state change.
+     *
+     * @param names
+     * @return
+     */
+    Set<V> readUnion(String... names);
+
 }

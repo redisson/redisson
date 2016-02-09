@@ -290,6 +290,39 @@ public class RedissonSetTest extends BaseTest {
     }
 
     @Test
+    public void testUnion() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(5);
+        set.add(6);
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(1);
+        set1.add(2);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(3);
+        set2.add(4);
+
+        assertThat(set.union("set1", "set2")).isEqualTo(4);
+        assertThat(set).containsOnly(1, 2, 3, 4);
+    }
+
+    @Test
+    public void testReadUnion() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(5);
+        set.add(6);
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(1);
+        set1.add(2);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(3);
+        set2.add(4);
+
+        assertThat(set.readUnion("set1", "set2")).containsOnly(1, 2, 3, 4, 5, 6);
+        assertThat(set).containsOnly(5, 6);
+    }
+
+
+    @Test
     public void testMove() throws Exception {
         RSet<Integer> set = redisson.getSet("set");
         RSet<Integer> otherSet = redisson.getSet("otherSet");
@@ -297,12 +330,12 @@ public class RedissonSetTest extends BaseTest {
         set.add(1);
         set.add(2);
 
-        Assert.assertTrue(set.move("otherSet", 1));
+        assertThat(set.move("otherSet", 1)).isTrue();
 
-        Assert.assertEquals(1, set.size());
+        assertThat(set.size()).isEqualTo(1);
         assertThat(set).contains(2);
 
-        Assert.assertEquals(1, otherSet.size());
+        assertThat(otherSet.size()).isEqualTo(1);
         assertThat(otherSet).contains(1);
     }
 
