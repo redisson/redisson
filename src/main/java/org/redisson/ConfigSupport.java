@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson;
 
@@ -41,128 +39,129 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class ConfigSupport {
 
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
-    @JsonFilter("classFilter")
-    public static class ClassMixIn {
+  @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
+  @JsonFilter("classFilter")
+  public static class ClassMixIn {
 
-    }
+  }
 
-    public abstract static class SingleSeverConfigMixIn {
+  public abstract static class SingleSeverConfigMixIn {
 
-        @JsonProperty
-        List<URI> address;
+    @JsonProperty
+    List<URI> address;
 
-        @JsonIgnore
-        abstract SingleServerConfig setAddress(String address);
+    @JsonIgnore
+    abstract SingleServerConfig setAddress(String address);
 
-        @JsonIgnore
-        abstract URI getAddress();
+    @JsonIgnore
+    abstract URI getAddress();
 
-        @JsonIgnore
-        abstract void setAddress(URI address);
+    @JsonIgnore
+    abstract void setAddress(URI address);
 
-    }
+  }
 
-    public abstract static class MasterSlaveServersConfigMixIn {
+  public abstract static class MasterSlaveServersConfigMixIn {
 
-        @JsonProperty
-        List<URI> masterAddress;
+    @JsonProperty
+    List<URI> masterAddress;
 
-        @JsonIgnore
-        abstract MasterSlaveServersConfig setMasterAddress(String masterAddress);
+    @JsonIgnore
+    abstract MasterSlaveServersConfig setMasterAddress(String masterAddress);
 
-        @JsonIgnore
-        abstract URI getMasterAddress();
+    @JsonIgnore
+    abstract URI getMasterAddress();
 
-        @JsonIgnore
-        abstract void setMasterAddress(URI masterAddress);
+    @JsonIgnore
+    abstract void setMasterAddress(URI masterAddress);
 
-    }
+  }
 
-    @JsonIgnoreProperties("clusterConfig")
-    public static class ConfigMixIn {
+  @JsonIgnoreProperties("clusterConfig")
+  public static class ConfigMixIn {
 
-        @JsonProperty
-        SentinelServersConfig sentinelServersConfig;
+    @JsonProperty
+    SentinelServersConfig sentinelServersConfig;
 
-        @JsonProperty
-        MasterSlaveServersConfig masterSlaveServersConfig;
+    @JsonProperty
+    MasterSlaveServersConfig masterSlaveServersConfig;
 
-        @JsonProperty
-        SingleServerConfig singleServerConfig;
+    @JsonProperty
+    SingleServerConfig singleServerConfig;
 
-        @JsonProperty
-        ClusterServersConfig clusterServersConfig;
+    @JsonProperty
+    ClusterServersConfig clusterServersConfig;
 
-        @JsonProperty
-        ElasticacheServersConfig elasticacheServersConfig;
+    @JsonProperty
+    ElasticacheServersConfig elasticacheServersConfig;
 
-    }
+  }
 
-    private final ObjectMapper jsonMapper = createMapper(null);
-    private final ObjectMapper yamlMapper = createMapper(new YAMLFactory());
+  private final ObjectMapper jsonMapper = createMapper(null);
+  private final ObjectMapper yamlMapper = createMapper(new YAMLFactory());
 
-    public Config fromJSON(String content) throws IOException {
-        return jsonMapper.readValue(content, Config.class);
-    }
+  public Config fromJSON(String content) throws IOException {
+    return jsonMapper.readValue(content, Config.class);
+  }
 
-    public Config fromJSON(File file) throws IOException {
-        return jsonMapper.readValue(file, Config.class);
-    }
+  public Config fromJSON(File file) throws IOException {
+    return jsonMapper.readValue(file, Config.class);
+  }
 
-    public Config fromJSON(URL url) throws IOException {
-        return jsonMapper.readValue(url, Config.class);
-    }
+  public Config fromJSON(URL url) throws IOException {
+    return jsonMapper.readValue(url, Config.class);
+  }
 
-    public Config fromJSON(Reader reader) throws IOException {
-        return jsonMapper.readValue(reader, Config.class);
-    }
+  public Config fromJSON(Reader reader) throws IOException {
+    return jsonMapper.readValue(reader, Config.class);
+  }
 
-    public Config fromJSON(InputStream inputStream) throws IOException {
-        return jsonMapper.readValue(inputStream, Config.class);
-    }
+  public Config fromJSON(InputStream inputStream) throws IOException {
+    return jsonMapper.readValue(inputStream, Config.class);
+  }
 
-    public String toJSON(Config config) throws IOException {
-        return jsonMapper.writeValueAsString(config);
-    }
+  public String toJSON(Config config) throws IOException {
+    return jsonMapper.writeValueAsString(config);
+  }
 
-    public Config fromYAML(String content) throws IOException {
-        return yamlMapper.readValue(content, Config.class);
-    }
+  public Config fromYAML(String content) throws IOException {
+    return yamlMapper.readValue(content, Config.class);
+  }
 
-    public Config fromYAML(File file) throws IOException {
-        return yamlMapper.readValue(file, Config.class);
-    }
+  public Config fromYAML(File file) throws IOException {
+    return yamlMapper.readValue(file, Config.class);
+  }
 
-    public Config fromYAML(URL url) throws IOException {
-        return yamlMapper.readValue(url, Config.class);
-    }
+  public Config fromYAML(URL url) throws IOException {
+    return yamlMapper.readValue(url, Config.class);
+  }
 
-    public Config fromYAML(Reader reader) throws IOException {
-        return yamlMapper.readValue(reader, Config.class);
-    }
+  public Config fromYAML(Reader reader) throws IOException {
+    return yamlMapper.readValue(reader, Config.class);
+  }
 
-    public Config fromYAML(InputStream inputStream) throws IOException {
-        return yamlMapper.readValue(inputStream, Config.class);
-    }
+  public Config fromYAML(InputStream inputStream) throws IOException {
+    return yamlMapper.readValue(inputStream, Config.class);
+  }
 
-    public String toYAML(Config config) throws IOException {
-        return yamlMapper.writeValueAsString(config);
-    }
+  public String toYAML(Config config) throws IOException {
+    return yamlMapper.writeValueAsString(config);
+  }
 
 
-    private ObjectMapper createMapper(JsonFactory mapping) {
-        ObjectMapper mapper = new ObjectMapper(mapping);
-        mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
-        mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
-        mapper.addMixIn(Config.class, ConfigMixIn.class);
-        mapper.addMixIn(Codec.class, ClassMixIn.class);
-        mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);
-        FilterProvider filterProvider = new SimpleFilterProvider()
-                .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
-        mapper.setFilterProvider(filterProvider);
-        mapper.setSerializationInclusion(Include.NON_NULL);
-        return mapper;
-    }
+  private ObjectMapper createMapper(JsonFactory mapping) {
+    ObjectMapper mapper = new ObjectMapper(mapping);
+    mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
+    mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
+    mapper.addMixIn(Config.class, ConfigMixIn.class);
+    mapper.addMixIn(Codec.class, ClassMixIn.class);
+    mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);
+    FilterProvider filterProvider =
+        new SimpleFilterProvider().addFilter("classFilter",
+            SimpleBeanPropertyFilter.filterOutAllExcept());
+    mapper.setFilterProvider(filterProvider);
+    mapper.setSerializationInclusion(Include.NON_NULL);
+    return mapper;
+  }
 
 }

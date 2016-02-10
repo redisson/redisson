@@ -13,71 +13,71 @@ import org.redisson.core.RSortedSet;
 
 public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 
-    @Test
-    public void testAdd_SingleInstance() throws InterruptedException {
-        final String name = "testAdd_SingleInstance";
+  @Test
+  public void testAdd_SingleInstance() throws InterruptedException {
+    final String name = "testAdd_SingleInstance";
 
-        RedissonClient r = BaseTest.createInstance();
-        RSortedSet<Integer> map = r.getSortedSet(name);
-        map.clear();
+    RedissonClient r = BaseTest.createInstance();
+    RSortedSet<Integer> map = r.getSortedSet(name);
+    map.clear();
 
-        int length = 5000;
-        final List<Integer> elements = new ArrayList<Integer>();
-        for (int i = 1; i < length+1; i++) {
-            elements.add(i);
-        }
-        Collections.shuffle(elements);
-        final AtomicInteger counter = new AtomicInteger(-1);
-        testSingleInstanceConcurrency(length, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RSortedSet<Integer> set = redisson.getSortedSet(name);
-                int c = counter.incrementAndGet();
-                Integer element = elements.get(c);
-                Assert.assertTrue(set.add(element));
-            }
-        });
-
-//        for (Integer integer : map) {
-//            System.out.println("int: " + integer);
-//        }
-
-        Collections.sort(elements);
-        Integer[] p = elements.toArray(new Integer[elements.size()]);
-        MatcherAssert.assertThat(map, Matchers.contains(p));
-
-        map.clear();
-        r.shutdown();
+    int length = 5000;
+    final List<Integer> elements = new ArrayList<Integer>();
+    for (int i = 1; i < length + 1; i++) {
+      elements.add(i);
     }
+    Collections.shuffle(elements);
+    final AtomicInteger counter = new AtomicInteger(-1);
+    testSingleInstanceConcurrency(length, new RedissonRunnable() {
+      @Override
+      public void run(RedissonClient redisson) {
+        RSortedSet<Integer> set = redisson.getSortedSet(name);
+        int c = counter.incrementAndGet();
+        Integer element = elements.get(c);
+        Assert.assertTrue(set.add(element));
+      }
+    });
 
-    @Test
-    public void testAddNegative_SingleInstance() throws InterruptedException {
-        final String name = "testAddNegative_SingleInstance";
+    // for (Integer integer : map) {
+    // System.out.println("int: " + integer);
+    // }
 
-        RedissonClient r = BaseTest.createInstance();
-        RSortedSet<Integer> map = r.getSortedSet(name);
-        map.clear();
+    Collections.sort(elements);
+    Integer[] p = elements.toArray(new Integer[elements.size()]);
+    MatcherAssert.assertThat(map, Matchers.contains(p));
 
-        int length = 1000;
-        final AtomicInteger counter = new AtomicInteger();
-        testSingleInstanceConcurrency(length, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RSortedSet<Integer> set = redisson.getSortedSet(name);
-                int c = counter.decrementAndGet();
-                Assert.assertTrue(set.add(c));
-            }
-        });
+    map.clear();
+    r.shutdown();
+  }
 
-        List<Integer> elements = new ArrayList<Integer>();
-        for (int i = -length; i < 0; i++) {
-            elements.add(i);
-        }
-        Integer[] p = elements.toArray(new Integer[elements.size()]);
-        MatcherAssert.assertThat(map, Matchers.contains(p));
+  @Test
+  public void testAddNegative_SingleInstance() throws InterruptedException {
+    final String name = "testAddNegative_SingleInstance";
 
-        map.clear();
-        r.shutdown();
+    RedissonClient r = BaseTest.createInstance();
+    RSortedSet<Integer> map = r.getSortedSet(name);
+    map.clear();
+
+    int length = 1000;
+    final AtomicInteger counter = new AtomicInteger();
+    testSingleInstanceConcurrency(length, new RedissonRunnable() {
+      @Override
+      public void run(RedissonClient redisson) {
+        RSortedSet<Integer> set = redisson.getSortedSet(name);
+        int c = counter.decrementAndGet();
+        Assert.assertTrue(set.add(c));
+      }
+    });
+
+    List<Integer> elements = new ArrayList<Integer>();
+    for (int i = -length; i < 0; i++) {
+      elements.add(i);
     }
+    Integer[] p = elements.toArray(new Integer[elements.size()]);
+    MatcherAssert.assertThat(map, Matchers.contains(p));
+
+    map.clear();
+    r.shutdown();
+  }
 
 }

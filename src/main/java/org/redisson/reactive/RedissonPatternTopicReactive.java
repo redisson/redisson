@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson.reactive;
 
@@ -34,7 +32,8 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 /**
- * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
+ * Distributed topic implementation. Messages are delivered to all message listeners across Redis
+ * cluster.
  *
  * @author Nikita Koksharov
  *
@@ -42,81 +41,85 @@ import io.netty.util.concurrent.Promise;
  */
 public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M> {
 
-    final CommandReactiveExecutor commandExecutor;
-    private final String name;
-    private final Codec codec;
+  final CommandReactiveExecutor commandExecutor;
+  private final String name;
+  private final Codec codec;
 
-    public RedissonPatternTopicReactive(CommandReactiveExecutor commandExecutor, String name) {
-        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
-    }
+  public RedissonPatternTopicReactive(CommandReactiveExecutor commandExecutor, String name) {
+    this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+  }
 
-    public RedissonPatternTopicReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        this.commandExecutor = commandExecutor;
-        this.name = name;
-        this.codec = codec;
-    }
+  public RedissonPatternTopicReactive(Codec codec, CommandReactiveExecutor commandExecutor,
+      String name) {
+    this.commandExecutor = commandExecutor;
+    this.name = name;
+    this.codec = codec;
+  }
 
-    @Override
-    public Publisher<Integer> addListener(PatternStatusListener listener) {
-        Promise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
-        addListener(new PubSubPatternStatusListener(listener, name), promise);
-        return new NettyFuturePublisher<Integer>(promise);
-    };
+  @Override
+  public Publisher<Integer> addListener(PatternStatusListener listener) {
+    Promise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+    addListener(new PubSubPatternStatusListener(listener, name), promise);
+    return new NettyFuturePublisher<Integer>(promise);
+  };
 
-    @Override
-    public Publisher<Integer> addListener(PatternMessageListener<M> listener) {
-        Promise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
-        PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
-        addListener(pubSubListener, promise);
-        return new NettyFuturePublisher<Integer>(promise);
-    }
+  @Override
+  public Publisher<Integer> addListener(PatternMessageListener<M> listener) {
+    Promise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+    PubSubPatternMessageListener<M> pubSubListener =
+        new PubSubPatternMessageListener<M>(listener, name);
+    addListener(pubSubListener, promise);
+    return new NettyFuturePublisher<Integer>(promise);
+  }
 
-    private void addListener(final RedisPubSubListener<M> pubSubListener, final Promise<Integer> promise) {
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().psubscribe(name, codec);
-        future.addListener(new FutureListener<PubSubConnectionEntry>() {
-            @Override
-            public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
-                    return;
-                }
-
-                PubSubConnectionEntry entry = future.getNow();
-                synchronized (entry) {
-                    if (entry.isActive()) {
-                        entry.addListener(name, pubSubListener);
-                        promise.setSuccess(pubSubListener.hashCode());
-                        return;
-                    }
-                }
-                addListener(pubSubListener, promise);
-            }
-        });
-    }
-
-    @Override
-    public void removeListener(int listenerId) {
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
-        if (entry == null) {
-            return;
+  private void addListener(final RedisPubSubListener<M> pubSubListener,
+      final Promise<Integer> promise) {
+    Future<PubSubConnectionEntry> future =
+        commandExecutor.getConnectionManager().psubscribe(name, codec);
+    future.addListener(new FutureListener<PubSubConnectionEntry>() {
+      @Override
+      public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
+        if (!future.isSuccess()) {
+          promise.setFailure(future.cause());
+          return;
         }
+
+        PubSubConnectionEntry entry = future.getNow();
         synchronized (entry) {
-            if (entry.isActive()) {
-                entry.removeListener(name, listenerId);
-                if (entry.getListeners(name).isEmpty()) {
-                    commandExecutor.getConnectionManager().punsubscribe(name);
-                }
-                return;
-            }
+          if (entry.isActive()) {
+            entry.addListener(name, pubSubListener);
+            promise.setSuccess(pubSubListener.hashCode());
+            return;
+          }
         }
+        addListener(pubSubListener, promise);
+      }
+    });
+  }
 
-        // entry is inactive trying add again
-        removeListener(listenerId);
+  @Override
+  public void removeListener(int listenerId) {
+    PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+    if (entry == null) {
+      return;
+    }
+    synchronized (entry) {
+      if (entry.isActive()) {
+        entry.removeListener(name, listenerId);
+        if (entry.getListeners(name).isEmpty()) {
+          commandExecutor.getConnectionManager().punsubscribe(name);
+        }
+        return;
+      }
     }
 
-    @Override
-    public List<String> getPatternNames() {
-        return Collections.singletonList(name);
-    }
+    // entry is inactive trying add again
+    removeListener(listenerId);
+  }
+
+  @Override
+  public List<String> getPatternNames() {
+    return Collections.singletonList(name);
+  }
 
 }

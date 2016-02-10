@@ -1,17 +1,15 @@
 /**
  * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.redisson.misc;
 
@@ -21,66 +19,66 @@ import java.util.List;
 
 public class CompositeIterable<T> implements Iterable<T>, Iterator<T> {
 
-    private List<Iterable<T>> iterablesList;
-    private Iterable<T>[] iterables;
+  private List<Iterable<T>> iterablesList;
+  private Iterable<T>[] iterables;
 
-    private Iterator<Iterator<T>> listIterator;
-    private Iterator<T> currentIterator;
+  private Iterator<Iterator<T>> listIterator;
+  private Iterator<T> currentIterator;
 
-    public CompositeIterable(List<Iterable<T>> iterables) {
-        this.iterablesList = iterables;
+  public CompositeIterable(List<Iterable<T>> iterables) {
+    this.iterablesList = iterables;
+  }
+
+  public CompositeIterable(Iterable<T>... iterables) {
+    this.iterables = iterables;
+  }
+
+  public CompositeIterable(CompositeIterable<T> iterable) {
+    this.iterables = iterable.iterables;
+    this.iterablesList = iterable.iterablesList;
+  }
+
+  @Override
+  public Iterator<T> iterator() {
+    List<Iterator<T>> iterators = new ArrayList<Iterator<T>>();
+    if (iterables != null) {
+      for (Iterable<T> iterable : iterables) {
+        iterators.add(iterable.iterator());
+      }
+    } else {
+      for (Iterable<T> iterable : iterablesList) {
+        iterators.add(iterable.iterator());
+      }
     }
+    listIterator = iterators.iterator();
+    currentIterator = null;
+    return this;
+  }
 
-    public CompositeIterable(Iterable<T> ... iterables) {
-        this.iterables = iterables;
-    }
-
-    public CompositeIterable(CompositeIterable<T> iterable) {
-        this.iterables = iterable.iterables;
-        this.iterablesList = iterable.iterablesList;
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-        List<Iterator<T>> iterators = new ArrayList<Iterator<T>>();
-        if (iterables != null) {
-            for (Iterable<T> iterable : iterables) {
-                iterators.add(iterable.iterator());
-            }
-        } else {
-            for (Iterable<T> iterable : iterablesList) {
-                iterators.add(iterable.iterator());
-            }
+  @Override
+  public boolean hasNext() {
+    if (currentIterator == null || !currentIterator.hasNext()) {
+      while (listIterator.hasNext()) {
+        Iterator<T> iterator = listIterator.next();
+        if (iterator.hasNext()) {
+          currentIterator = iterator;
+          return true;
         }
-        listIterator = iterators.iterator();
-        currentIterator = null;
-        return this;
+      }
+      return false;
     }
+    return currentIterator.hasNext();
+  }
 
-    @Override
-    public boolean hasNext() {
-        if (currentIterator == null || !currentIterator.hasNext()) {
-            while (listIterator.hasNext()) {
-                Iterator<T> iterator = listIterator.next();
-                if (iterator.hasNext()) {
-                    currentIterator = iterator;
-                    return true;
-                }
-            }
-            return false;
-        }
-        return currentIterator.hasNext();
-    }
+  @Override
+  public T next() {
+    hasNext();
+    return currentIterator.next();
+  }
 
-    @Override
-    public T next() {
-        hasNext();
-        return currentIterator.next();
-    }
-
-    @Override
-    public void remove() {
-        currentIterator.remove();
-    }
+  @Override
+  public void remove() {
+    currentIterator.remove();
+  }
 
 }

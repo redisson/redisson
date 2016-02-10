@@ -2,6 +2,6 @@ package org.redisson;
 
 public interface RedissonRunnable {
 
-    void run(RedissonClient redisson);
+  void run(RedissonClient redisson);
 
 }

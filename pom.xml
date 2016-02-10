@@ -369,6 +369,49 @@
             </plugin>
 
             <plugin>
+                <groupId>net.revelc.code</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+                <version>0.5.2</version>
+                <configuration>
+                    <overrideConfigCompilerVersion>true</overrideConfigCompilerVersion>
+                    <!--from https://github.com/google/styleguide -->
+                    <configFile>https://cdn.rawgit.com/google/styleguide/gh-pages/eclipse-java-google-style.xml</configFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>format-source</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                        <configuration>
+                            <compilerSource>${source.version}</compilerSource>
+                            <compilerCompliance>${source.version}</compilerCompliance>
+                            <compilerTargetPlatform>${source.version}</compilerTargetPlatform>
+                            <directories>
+                                <directory>${project.build.sourceDirectory}</directory>
+                            </directories>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>format-test-source</id>
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                        <configuration>
+                            <compilerSource>${test.source.version}</compilerSource>
+                            <compilerCompliance>${test.source.version}</compilerCompliance>
+                            <compilerTargetPlatform>${test.source.version}</compilerTargetPlatform>
+                            <directories>
+                                <directory>${project.build.testSourceDirectory}</directory>
+                            </directories>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <version>2.11</version>
