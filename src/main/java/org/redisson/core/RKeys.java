@@ -95,7 +95,7 @@ public interface RKeys extends RKeysAsync {
      *
      * @return
      */
-    Long count();
+    long count();
 
     /**
      * Delete all keys of currently selected database

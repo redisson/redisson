@@ -39,7 +39,7 @@ public class RedissonKeysReactive implements RKeysReactive {
 
     private final CommandReactiveService commandExecutor;
 
-    RedissonKeys instance;
+    private final RedissonKeys instance;
 
     public RedissonKeysReactive(CommandReactiveService commandExecutor) {
         super();
