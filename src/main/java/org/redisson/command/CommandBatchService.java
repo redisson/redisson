@@ -233,6 +233,10 @@ public class CommandBatchService extends CommandReactiveService {
                     }
                 }
 
+                if (connectionManager.isShuttingDown()) {
+                    return;
+                }
+
                 if (mainPromise.isCancelled()) {
                     attemptPromise.cancel(false);
                     return;
