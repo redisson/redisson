@@ -390,10 +390,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     }
                 }
 
-                if (connectionManager.isShuttingDown()) {
-                    return;
-                }
-
                 if (details.getMainPromise().isCancelled()) {
                     if (details.getAttemptPromise().cancel(false)) {
                         AsyncDetails.release(details);
