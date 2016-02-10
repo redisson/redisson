@@ -56,11 +56,11 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     public static final RedisCommand<Boolean> EVAL_BOOLEAN_ARGS2 = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS);
 
-    protected RedissonList(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonList(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonList(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonList(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 

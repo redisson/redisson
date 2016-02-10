@@ -30,14 +30,13 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.redisson.RedissonList;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
-import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
@@ -56,12 +55,16 @@ import reactor.rx.subscription.ReactiveSubscription;
  */
 public class RedissonListReactive<V> extends RedissonExpirableReactive implements RListReactive<V> {
 
+    private final RedissonList<V> instance;
+
     public RedissonListReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        instance = new RedissonList<V>(commandExecutor, name);
     }
 
     public RedissonListReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        instance = new RedissonList<V>(codec, commandExecutor, name);
     }
 
     @Override
@@ -151,7 +154,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Boolean> remove(Object o) {
-        return remove(o, 1);
+        return reactive(instance.removeAsync(o));
     }
 
     protected Publisher<Boolean> remove(Object o, int count) {
@@ -160,17 +163,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Boolean> containsAll(Collection<?> c) {
-        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                "local items = redis.call('lrange', KEYS[1], 0, -1) " +
-                "for i=1, #items do " +
-                    "for j = 0, table.getn(ARGV), 1 do " +
-                        "if items[i] == ARGV[j] then " +
-                            "table.remove(ARGV, j) " +
-                        "end " +
-                    "end " +
-                "end " +
-                "return table.getn(ARGV) == 0 and 1 or 0",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        return reactive(instance.containsAllAsync(c));
     }
 
     @Override
@@ -232,40 +225,12 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Boolean> removeAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                        "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
-                            + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 "
-                            + "then v = 1 end "
-                        +"end "
-                       + "return v ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        return reactive(instance.removeAllAsync(c));
     }
 
     @Override
     public Publisher<Boolean> retainAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                "local changed = 0 " +
-                "local items = redis.call('lrange', KEYS[1], 0, -1) "
-                   + "local i = 1 "
-                   + "local s = table.getn(items) "
-                   + "while i <= s do "
-                        + "local element = items[i] "
-                        + "local isInAgrs = false "
-                        + "for j = 0, table.getn(ARGV), 1 do "
-                            + "if ARGV[j] == element then "
-                                + "isInAgrs = true "
-                                + "break "
-                            + "end "
-                        + "end "
-                        + "if isInAgrs == false then "
-                            + "redis.call('LREM', KEYS[1], 0, element) "
-                            + "changed = 1 "
-                        + "end "
-                        + "i = i + 1 "
-                   + "end "
-                   + "return changed ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        return reactive(instance.retainAllAsync(c));
     }
 
     @Override
@@ -293,7 +258,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<V> remove(int index) {
+    public Publisher<V> remove(long index) {
         if (index == 0) {
             return commandExecutor.writeReactive(getName(), codec, LPOP, getName());
         }
@@ -309,7 +274,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Boolean> contains(Object o) {
-        return indexOf(o, new BooleanNumberReplayConvertor(-1L));
+        return reactive(instance.containsAsync(o));
     }
 
     private <R> Publisher<R> indexOf(Object o, Convertor<R> convertor) {
@@ -327,13 +292,13 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Integer> indexOf(Object o) {
-        return indexOf(o, new IntegerReplayConvertor());
+    public Publisher<Long> indexOf(Object o) {
+        return indexOf(o, new LongReplayConvertor());
     }
 
     @Override
-    public Publisher<Integer> lastIndexOf(Object o) {
-        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 4),
+    public Publisher<Long> lastIndexOf(Object o) {
+        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Integer>("EVAL", 4),
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
                 "local items = redis.call('lrange', key, 0, -1) " +
