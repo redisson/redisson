@@ -79,10 +79,10 @@ public class Config {
         if (oldConf.getMasterSlaveServersConfig() != null) {
             setMasterSlaveServersConfig(new MasterSlaveServersConfig(oldConf.getMasterSlaveServersConfig()));
         }
-        if (oldConf.getSentinelServersConfig() != null ) {
+        if (oldConf.getSentinelServersConfig() != null) {
             setSentinelServersConfig(new SentinelServersConfig(oldConf.getSentinelServersConfig()));
         }
-        if (oldConf.getClusterServersConfig() != null ) {
+        if (oldConf.getClusterServersConfig() != null) {
             setClusterServersConfig(new ClusterServersConfig(oldConf.getClusterServersConfig()));
         }
         if (oldConf.getElasticacheServersConfig() != null) {
@@ -100,6 +100,7 @@ public class Config {
         this.codec = codec;
         return this;
     }
+
     public Codec getCodec() {
         return codec;
     }
@@ -131,10 +132,10 @@ public class Config {
         return clusterServersConfig;
     }
 
-
     ClusterServersConfig getClusterServersConfig() {
         return clusterServersConfig;
     }
+
     void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
         this.clusterServersConfig = clusterServersConfig;
     }
@@ -169,6 +170,7 @@ public class Config {
     ElasticacheServersConfig getElasticacheServersConfig() {
         return elasticacheServersConfig;
     }
+
     void setElasticacheServersConfig(ElasticacheServersConfig elasticacheServersConfig) {
         this.elasticacheServersConfig = elasticacheServersConfig;
     }
@@ -200,10 +202,10 @@ public class Config {
         return singleServerConfig;
     }
 
-
     SingleServerConfig getSingleServerConfig() {
         return singleServerConfig;
     }
+
     void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
         this.singleServerConfig = singleConnectionConfig;
     }
@@ -237,6 +239,7 @@ public class Config {
     SentinelServersConfig getSentinelServersConfig() {
         return sentinelServersConfig;
     }
+
     void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
         this.sentinelServersConfig = sentinelConnectionConfig;
     }
@@ -270,6 +273,7 @@ public class Config {
     MasterSlaveServersConfig getMasterSlaveServersConfig() {
         return masterSlaveServersConfig;
     }
+
     void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
         this.masterSlaveServersConfig = masterSlaveConnectionConfig;
     }
@@ -339,6 +343,7 @@ public class Config {
         this.useLinuxNativeEpoll = useLinuxNativeEpoll;
         return this;
     }
+
     public boolean isUseLinuxNativeEpoll() {
         return useLinuxNativeEpoll;
     }
@@ -360,6 +365,7 @@ public class Config {
         this.eventLoopGroup = eventLoopGroup;
         return this;
     }
+
     public EventLoopGroup getEventLoopGroup() {
         return eventLoopGroup;
     }

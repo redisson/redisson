@@ -66,9 +66,11 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         for (Object param : msg.getParams()) {
             Encoder encoder = paramsEncoder;
             if (msg.getCommand().getInParamType().size() == 1) {
-                if (msg.getCommand().getInParamIndex() == i && msg.getCommand().getInParamType().get(0) == ValueType.OBJECT) {
+                if (msg.getCommand().getInParamIndex() == i
+                        && msg.getCommand().getInParamType().get(0) == ValueType.OBJECT) {
                     encoder = msg.getCodec().getValueEncoder();
-                } else if (msg.getCommand().getInParamIndex() <= i && msg.getCommand().getInParamType().get(0) != ValueType.OBJECT) {
+                } else if (msg.getCommand().getInParamIndex() <= i
+                        && msg.getCommand().getInParamType().get(0) != ValueType.OBJECT) {
                     encoder = selectEncoder(msg, i - msg.getCommand().getInParamIndex());
                 }
             } else {
@@ -124,31 +126,27 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         out.writeBytes(CRLF);
     }
 
-    final static char[] DigitTens = {'0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '1', '1',
-            '1', '1', '1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3', '3',
-            '3', '3', '3', '3', '3', '3', '3', '4', '4', '4', '4', '4', '4', '4', '4', '4', '4', '5', '5',
-            '5', '5', '5', '5', '5', '5', '5', '5', '6', '6', '6', '6', '6', '6', '6', '6', '6', '6', '7',
-            '7', '7', '7', '7', '7', '7', '7', '7', '7', '8', '8', '8', '8', '8', '8', '8', '8', '8', '8',
-            '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',};
+    static final char[] DIGITTENS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '1', '1', '1', '1',
+            '1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3', '3', '3', '3', '3', '3',
+            '3', '3', '3', '4', '4', '4', '4', '4', '4', '4', '4', '4', '4', '5', '5', '5', '5', '5', '5', '5', '5',
+            '5', '5', '6', '6', '6', '6', '6', '6', '6', '6', '6', '6', '7', '7', '7', '7', '7', '7', '7', '7', '7',
+            '7', '8', '8', '8', '8', '8', '8', '8', '8', '8', '8', '9', '9', '9', '9', '9', '9', '9', '9', '9', '9', };
 
-    final static char[] DigitOnes = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3',
-            '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2',
-            '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1',
-            '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',};
+    static final char[] DIGITONES = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5',
+            '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6',
+            '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7',
+            '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8',
+            '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', };
 
-    final static char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e',
-            'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
-            'y', 'z'};
+    static final char[] DIGITS = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+            'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
 
-    final static int[] sizeTable = {9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999,
-            Integer.MAX_VALUE};
+    static final int[] SIZETABLE = { 9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, Integer.MAX_VALUE };
 
     // Requires positive x
     static int stringSize(long x) {
         for (int i = 0;; i++)
-            if (x <= sizeTable[i])
+            if (x <= SIZETABLE[i])
                 return i + 1;
     }
 
@@ -168,8 +166,8 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
             // really: r = i - (q * 100);
             r = i - ((q << 6) + (q << 5) + (q << 2));
             i = q;
-            buf[--charPos] = (byte) DigitOnes[(int)r];
-            buf[--charPos] = (byte) DigitTens[(int)r];
+            buf[--charPos] = (byte) DIGITONES[(int) r];
+            buf[--charPos] = (byte) DIGITTENS[(int) r];
         }
 
         // Fall thru to fast mode for smaller numbers
@@ -177,7 +175,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         for (;;) {
             q = (i * 52429) >>> (16 + 3);
             r = i - ((q << 3) + (q << 1)); // r = i-(q*10) ...
-            buf[--charPos] = (byte) digits[(int)r];
+            buf[--charPos] = (byte) DIGITS[(int) r];
             i = q;
             if (i == 0)
                 break;
@@ -193,6 +191,5 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         getChars(i, size, buf);
         return buf;
     }
-
 
 }

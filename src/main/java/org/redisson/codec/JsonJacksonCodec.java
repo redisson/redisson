@@ -73,8 +73,7 @@ public class JsonJacksonCodec implements Codec {
         init(mapObjectMapper);
         // type info inclusion
         TypeResolverBuilder<?> mapTyper = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
-            public boolean useForType(JavaType t)
-            {
+            public boolean useForType(JavaType t) {
                 switch (_appliesFor) {
                 case NON_CONCRETE_AND_ARRAYS:
                     while (t.isArrayType()) {
@@ -93,7 +92,7 @@ public class JsonJacksonCodec implements Codec {
                     }
                     return !t.isFinal(); // includes Object.class
                 default:
-                //case JAVA_LANG_OBJECT:
+                    // case JAVA_LANG_OBJECT:
                     return (t.getRawClass() == Object.class);
                 }
             }
@@ -106,10 +105,9 @@ public class JsonJacksonCodec implements Codec {
     protected void init(ObjectMapper objectMapper) {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
-                                            .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                                            .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                                            .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                                            .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+                .withFieldVisibility(JsonAutoDetect.Visibility.ANY).withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN, true);
         objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
