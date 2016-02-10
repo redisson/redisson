@@ -35,8 +35,7 @@ import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Guarantees multiple locks operation handling (lock, tryLock...)
- * in atomic way without deadlocks.
+ * Groups multiple independent locks and handles them as one lock.
  *
  * @author Nikita Koksharov
  *

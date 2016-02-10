@@ -35,9 +35,9 @@ public interface RListReactive<V> extends RCollectionReactive<V> {
 
     Publisher<V> iterator(int startIndex);
 
-    Publisher<Integer> lastIndexOf(Object o);
+    Publisher<Long> lastIndexOf(Object o);
 
-    Publisher<Integer> indexOf(Object o);
+    Publisher<Long> indexOf(Object o);
 
     Publisher<Long> add(long index, V element);
 
@@ -49,6 +49,6 @@ public interface RListReactive<V> extends RCollectionReactive<V> {
 
     Publisher<V> get(long index);
 
-    Publisher<V> remove(int index);
+    Publisher<V> remove(long index);
 
 }

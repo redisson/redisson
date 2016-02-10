@@ -229,7 +229,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(0));
         sync(list.add(10));
 
-        int index = sync(list.lastIndexOf(3));
+        long index = sync(list.lastIndexOf(3));
         Assert.assertEquals(2, index);
     }
 
@@ -247,7 +247,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(0));
         sync(list.add(10));
 
-        int index = sync(list.lastIndexOf(3));
+        long index = sync(list.lastIndexOf(3));
         Assert.assertEquals(5, index);
     }
 
@@ -265,7 +265,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
         sync(list.add(3));
         sync(list.add(10));
 
-        int index = sync(list.lastIndexOf(3));
+        long index = sync(list.lastIndexOf(3));
         Assert.assertEquals(8, index);
     }
 

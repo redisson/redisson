@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-
 class BaseConfig<T extends BaseConfig<T>> {
 
     /**
@@ -113,6 +112,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.subscriptionsPerConnection = subscriptionsPerConnection;
         return (T) this;
     }
+
     public int getSubscriptionsPerConnection() {
         return subscriptionsPerConnection;
     }
@@ -127,6 +127,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.password = password;
         return (T) this;
     }
+
     public String getPassword() {
         return password;
     }
@@ -142,6 +143,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.retryAttempts = retryAttempts;
         return (T) this;
     }
+
     public int getRetryAttempts() {
         return retryAttempts;
     }
@@ -156,6 +158,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.retryInterval = retryInterval;
         return (T) this;
     }
+
     public int getRetryInterval() {
         return retryInterval;
     }
@@ -169,6 +172,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.timeout = timeout;
         return (T) this;
     }
+
     public int getTimeout() {
         return timeout;
     }
@@ -183,10 +187,10 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.clientName = clientName;
         return (T) this;
     }
+
     public String getClientName() {
         return clientName;
     }
-
 
     /**
      * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation
@@ -197,13 +201,14 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.pingTimeout = pingTimeout;
         return (T) this;
     }
+
     public int getPingTimeout() {
         return pingTimeout;
     }
 
     /**
      * Timeout during connecting to any Redis server.
-     *
+     * <p/>
      * @param connectTimeout - timeout in milliseconds
      * @return
      */
@@ -211,6 +216,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.connectTimeout = connectTimeout;
         return (T) this;
     }
+
     public int getConnectTimeout() {
         return connectTimeout;
     }
@@ -227,6 +233,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         this.idleConnectionTimeout = idleConnectionTimeout;
         return (T) this;
     }
+
     public int getIdleConnectionTimeout() {
         return idleConnectionTimeout;
     }
@@ -234,10 +241,10 @@ class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Reconnection attempt timeout to Redis server when
      * it has been excluded from internal list of available servers.
-     *
+     * <p/>
      * On every such timeout event Redisson tries
      * to connect to disconnected Redis server.
-     *
+     * <p/>
      * Default is 3000
      *
      * @see #failedAttempts
@@ -246,8 +253,9 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     public T setReconnectionTimeout(int slaveRetryTimeout) {
         this.reconnectionTimeout = slaveRetryTimeout;
-        return (T)this;
+        return (T) this;
     }
+
     public int getReconnectionTimeout() {
         return reconnectionTimeout;
     }
@@ -256,14 +264,15 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Redis server will be excluded from the internal list of available nodes
      * when sequential unsuccessful execution attempts of any Redis command
      * on this server reaches <code>failedAttempts</code>.
-     *
+     * <p/>
      * Default is 3
      *
      */
     public T setFailedAttempts(int slaveFailedAttempts) {
         this.failedAttempts = slaveFailedAttempts;
-        return (T)this;
+        return (T) this;
     }
+
     public int getFailedAttempts() {
         return failedAttempts;
     }
