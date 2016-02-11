@@ -9,7 +9,7 @@ Based on high-performance async and lock-free Java Redis client and [Netty 4](ht
 Redis 2.8+ and JDK 1.6+ compatible.
 
 
-Please read [documentation](https://github.com/mrniko/redisson/wiki) before using.  
+Please read [documentation](https://github.com/mrniko/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
 
 
