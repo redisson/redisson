@@ -1,7 +1,7 @@
 Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
 ====
 
-[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/)
+[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
@@ -9,8 +9,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty 4](ht
 Redis 2.8+ and JDK 1.6+ compatible.
 
 
-Read [wiki](https://github.com/mrniko/redisson/wiki) for more Redisson usage details.  
-[Redisson releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
+Please read [documentation](https://github.com/mrniko/redisson/wiki) for more details.  
+Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
 
 
 Licensed under the Apache License 2.0.
