@@ -2,6 +2,21 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####03-Feb-2016 - version 2.2.7 released  
+
+Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  
+Improvement - `RKeys.delete` optimization in Cluster mode  
+Fixed - minimal connections amount initialization  
+Fixed - `RKeys.deleteByPattern` throws an error in cluster mode  
+Fixed - `RKeys.deleteAsync` throws error in Cluster mode  
+Fixed - Redisson failed to start when one of sentinel servers is down  
+Fixed - Redisson failed to start when there are no slaves in Sentinel mode  
+Fixed - slave nodes up/down state discovery in Cluster mode  
+Fixed - slave can stay freezed when it has been just added in Sentinel mode  
+Fixed - offline slaves handling during Redisson start in Sentinel mode  
+Fixed - `SELECT` command can't be executed in Sentinel mode  
+Fixed - `database` setting removed from cluster config  
+
 ####28-Jan-2016 - version 2.2.6 released  
 
 Feature - __new object added__ `RedissonMultiLock`  
