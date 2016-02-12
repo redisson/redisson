@@ -1,7 +1,9 @@
 Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
 ====
 
-[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
+[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
+
+##Please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
@@ -82,20 +84,14 @@ Invaluable: [invaluable.com](http://www.invaluable.com/)
 
 Latest version changelog
 =================================
-####03-Feb-2016 - version 2.2.7 released  
+####12-Feb-2016 - version 2.2.8 released  
 
-Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  
+Feature - `union`, `unionAsync`, `readUnion` and `readUnionAsync` methods were added to `RSet` object  
+Feature - `readAll` and `readAllAsync` methods were added to `RSetCache` object  
 Improvement - `RKeys.delete` optimization in Cluster mode  
-Fixed - minimal connections amount initialization  
-Fixed - `RKeys.deleteByPattern` throws an error in cluster mode  
-Fixed - `RKeys.deleteAsync` throws error in Cluster mode  
-Fixed - Redisson failed to start when one of sentinel servers is down  
-Fixed - Redisson failed to start when there are no slaves in Sentinel mode  
-Fixed - slave nodes up/down state discovery in Cluster mode  
-Fixed - slave can stay freezed when it has been just added in Sentinel mode  
-Fixed - offline slaves handling during Redisson start in Sentinel mode  
-Fixed - `SELECT` command can't be executed in Sentinel mode  
-Fixed - `database` setting removed from cluster config  
+Fixed - Script error during `RSetCache.toArray` and `RSetCache.readAll` methods invocation  
+Fixed - Sentinel doesn't support AUTH command  
+Fixed - RMap iterator  
 
 ### Maven 
 
