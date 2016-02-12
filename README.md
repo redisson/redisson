@@ -82,17 +82,6 @@ Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
 Ocous: [ocous.com](http://www.ocous.com/)  
 Invaluable: [invaluable.com](http://www.invaluable.com/)
 
-Latest version changelog
-=================================
-####12-Feb-2016 - version 2.2.8 released  
-
-Feature - `union`, `unionAsync`, `readUnion` and `readUnionAsync` methods were added to `RSet` object  
-Feature - `readAll` and `readAllAsync` methods were added to `RSetCache` object  
-Improvement - `RKeys.delete` optimization in Cluster mode  
-Fixed - Script error during `RSetCache.toArray` and `RSetCache.readAll` methods invocation  
-Fixed - Sentinel doesn't support AUTH command  
-Fixed - RMap iterator  
-
 ### Maven 
 
 Include the following to your dependency list:
@@ -100,12 +89,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.7</version>
+       <version>2.2.8</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.7'
+    compile 'org.redisson:redisson:2.2.8'
 
 ### Supported by
 
