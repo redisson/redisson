@@ -412,6 +412,21 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore,
+            boolean endScoreInclusive) {
+        return get(valueRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
+    }
+
+    @Override
+    public Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore,
+            boolean endScoreInclusive) {
+        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
+        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE, getName(), endValue, startValue);
+    }
+
+
+    @Override
     public Collection<ScoredEntry<V>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         return get(entryRangeAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
     }
@@ -433,6 +448,18 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue, "LIMIT", offset, count);
+    }
+
+    @Override
+    public Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        return get(valueRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count));
+    }
+
+    @Override
+    public Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
+        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE, getName(), endValue, startValue, "LIMIT", offset, count);
     }
 
     @Override
