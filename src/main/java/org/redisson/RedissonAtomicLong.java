@@ -57,11 +57,14 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     @Override
     public Future<Boolean> compareAndSetAsync(long expect, long update) {
         return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "if redis.call('get', KEYS[1]) == ARGV[1] then "
+                  "local currValue = redis.call('get', KEYS[1]); "
+                  + "if currValue == ARGV[1] "
+                          + "or (tonumber(ARGV[1]) == 0 and currValue == false) then "
                      + "redis.call('set', KEYS[1], ARGV[2]); "
                      + "return 1 "
                    + "else "
-                     + "return 0 end",
+                     + "return 0 "
+                   + "end",
                 Collections.<Object>singletonList(getName()), expect, update);
     }
 
