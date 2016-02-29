@@ -1,7 +1,9 @@
 Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
 ====
 
-[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
+[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
+
+##Please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
@@ -80,23 +82,6 @@ Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)
 Ocous: [ocous.com](http://www.ocous.com/)  
 Invaluable: [invaluable.com](http://www.invaluable.com/)
 
-Latest version changelog
-=================================
-####03-Feb-2016 - version 2.2.7 released  
-
-Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  
-Improvement - `RKeys.delete` optimization in Cluster mode  
-Fixed - minimal connections amount initialization  
-Fixed - `RKeys.deleteByPattern` throws an error in cluster mode  
-Fixed - `RKeys.deleteAsync` throws error in Cluster mode  
-Fixed - Redisson failed to start when one of sentinel servers is down  
-Fixed - Redisson failed to start when there are no slaves in Sentinel mode  
-Fixed - slave nodes up/down state discovery in Cluster mode  
-Fixed - slave can stay freezed when it has been just added in Sentinel mode  
-Fixed - offline slaves handling during Redisson start in Sentinel mode  
-Fixed - `SELECT` command can't be executed in Sentinel mode  
-Fixed - `database` setting removed from cluster config  
-
 ### Maven 
 
 Include the following to your dependency list:
@@ -104,12 +89,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.7</version>
+       <version>2.2.8</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.7'
+    compile 'org.redisson:redisson:2.2.8'
 
 ### Supported by
 

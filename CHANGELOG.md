@@ -2,6 +2,15 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####12-Feb-2016 - version 2.2.8 released  
+
+Feature - `union`, `unionAsync`, `readUnion` and `readUnionAsync` methods were added to `RSet` object  
+Feature - `readAll` and `readAllAsync` methods were added to `RSetCache` object  
+Improvement - `RKeys.delete` optimization in Cluster mode  
+Fixed - Script error during `RSetCache.toArray` and `RSetCache.readAll` methods invocation  
+Fixed - Sentinel doesn't support AUTH command  
+Fixed - RMap iterator  
+
 ####03-Feb-2016 - version 2.2.7 released  
 
 Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  
