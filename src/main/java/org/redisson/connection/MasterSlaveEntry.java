@@ -30,10 +30,10 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.balancer.LoadBalancerManagerImpl;
 import org.redisson.connection.pool.MasterConnectionPool;
+import org.redisson.core.NodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +84,7 @@ public class MasterSlaveEntry {
     }
 
     public Future<Void> setupMasterEntry(String host, int port) {
-        RedisClient client = connectionManager.createClient(host, port);
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, host, port);
         masterEntry = new ClientConnectionsEntry(client, config.getMasterConnectionMinimumIdleSize(), config.getMasterConnectionPoolSize(),
                                                     0, 0, connectionManager, NodeType.MASTER, config);
         return writeConnectionHolder.add(masterEntry);
@@ -108,7 +108,7 @@ public class MasterSlaveEntry {
     }
 
     private Future<Void> addSlave(String host, int port, boolean freezed, NodeType mode) {
-        RedisClient client = connectionManager.createClient(host, port);
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, host, port);
         ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                 this.config.getSlaveConnectionMinimumIdleSize(),
                 this.config.getSlaveConnectionPoolSize(),

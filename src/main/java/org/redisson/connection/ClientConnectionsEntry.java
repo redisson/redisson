@@ -24,6 +24,7 @@ import org.redisson.client.ReconnectListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.core.NodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +48,6 @@ public class ClientConnectionsEntry {
     private volatile boolean freezed;
     private FreezeReason freezeReason;
     final RedisClient client;
-
-    public enum NodeType {SLAVE, MASTER, SENTINEL}
 
     private final NodeType nodeType;
     private ConnectionManager connectionManager;

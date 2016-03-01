@@ -44,6 +44,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.core.NodeType;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -259,14 +260,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RedisClient createClient(String host, int port) {
+    public RedisClient createClient(NodeType type, String host, int port) {
         RedisClient client = createClient(host, port, config.getConnectTimeout());
-        clients.add(new RedisClientEntry(client, this));
+        clients.add(new RedisClientEntry(client, this, type));
         return client;
     }
 
     public void shutdownAsync(RedisClient client) {
-        clients.remove(new RedisClientEntry(client, this));
+        clients.remove(new RedisClientEntry(client, this, null));
         client.shutdownAsync();
     }
 

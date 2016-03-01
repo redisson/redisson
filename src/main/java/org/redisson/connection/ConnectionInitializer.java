@@ -17,7 +17,7 @@ package org.redisson.connection;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
-import org.redisson.connection.ClientConnectionsEntry.NodeType;
+import org.redisson.core.NodeType;
 
 import io.netty.util.concurrent.Promise;
 
