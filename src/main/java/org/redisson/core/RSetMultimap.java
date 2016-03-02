@@ -26,14 +26,14 @@ import java.util.Set;
  * @param <K> key
  * @param <V> value
  */
-public interface RSetMultiMap<K, V> extends RMultiMap<K, V> {
+public interface RSetMultimap<K, V> extends RMultimap<K, V> {
 
     /**
      * {@inheritDoc}
      *
      * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
      * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultiMap} interface.
+     * specified in the {@link RMultimap} interface.
      */
     @Override
     Set<V> get(K key);
@@ -45,7 +45,7 @@ public interface RSetMultiMap<K, V> extends RMultiMap<K, V> {
      *
      * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
      * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultiMap} interface.
+     * specified in the {@link RMultimap} interface.
      */
     @Override
     Set<V> removeAll(Object key);
@@ -55,7 +55,7 @@ public interface RSetMultiMap<K, V> extends RMultiMap<K, V> {
      *
      * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
      * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultiMap} interface.
+     * specified in the {@link RMultimap} interface.
      *
      * <p>Any duplicates in {@code values} will be stored in the multimap once.
      */
@@ -67,7 +67,7 @@ public interface RSetMultiMap<K, V> extends RMultiMap<K, V> {
      *
      * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
      * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultiMap} interface.
+     * specified in the {@link RMultimap} interface.
      */
     @Override
     Set<Map.Entry<K, V>> entries();

@@ -48,7 +48,7 @@ import org.redisson.core.RScript;
 import org.redisson.core.RSemaphore;
 import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
-import org.redisson.core.RSetMultiMap;
+import org.redisson.core.RSetMultimap;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
@@ -240,7 +240,7 @@ public interface RedissonClient {
      * @param name
      * @return
      */
-    <K, V> RSetMultiMap<K, V> getSetMultiMap(String name);
+    <K, V> RSetMultimap<K, V> getSetMultimap(String name);
 
     /**
      * Returns Set based MultiMap instance by name
@@ -250,7 +250,7 @@ public interface RedissonClient {
      * @param codec
      * @return
      */
-    <K, V> RSetMultiMap<K, V> getSetMultiMap(String name, Codec codec);
+    <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec);
 
     /**
      * Returns semaphore instance by name

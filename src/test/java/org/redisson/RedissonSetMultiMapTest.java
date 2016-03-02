@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
-import org.redisson.core.RSetMultiMap;
+import org.redisson.core.RSetMultimap;
 import static org.assertj.core.api.Assertions.*;
 
 public class RedissonSetMultiMapTest extends BaseTest {
@@ -117,7 +117,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testSize() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
 
@@ -132,7 +132,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testPut() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
@@ -151,7 +151,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testRemoveAll() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
@@ -166,7 +166,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testFastRemove() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("1"))).isTrue();
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("2"))).isTrue();
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("2"))).isFalse();
@@ -179,7 +179,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testContainsKey() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         assertThat(map.containsKey(new SimpleKey("0"))).isTrue();
         assertThat(map.containsKey(new SimpleKey("1"))).isFalse();
@@ -187,7 +187,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testContainsValue() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
 
         assertThat(map.containsValue(new SimpleValue("1"))).isTrue();
@@ -196,7 +196,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testContainsEntry() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
 
         assertThat(map.containsEntry(new SimpleKey("0"), new SimpleValue("1"))).isTrue();
@@ -205,7 +205,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
@@ -218,7 +218,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testPutAll() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         List<SimpleValue> values = Arrays.asList(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"));
         assertThat(map.putAll(new SimpleKey("0"), values)).isTrue();
         assertThat(map.putAll(new SimpleKey("0"), Arrays.asList(new SimpleValue("1")))).isFalse();
@@ -228,7 +228,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testKeySet() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
@@ -238,7 +238,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testValues() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
@@ -247,7 +247,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testEntrySet() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
@@ -260,7 +260,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testReplaceValues() {
-        RSetMultiMap<SimpleKey, SimpleValue> map = redisson.getSetMultiMap("test1");
+        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 

@@ -16,43 +16,50 @@
 package org.redisson.core;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
-import io.netty.util.concurrent.Future;
 /**
- * Base asynchronous MultiMap interface. A collection that maps multiple values per one key.
+ * Base MultiMap interface. A collection that maps multiple values per one key.
  *
  * @author Nikita Koksharov
  *
  * @param <K> key
  * @param <V> value
  */
-
-public interface RMultiMapAsync<K, V> extends RExpirableAsync {
+public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
 
     /**
      * Returns the number of key-value pairs in this multimap.
      *
      * @return
      */
-    Future<Integer> sizeAsync();
+    int size();
+
+    /**
+     * Check is map empty
+     *
+     * @return
+     */
+    boolean isEmpty();
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the key {@code key}.
      */
-    Future<Boolean> containsKeyAsync(Object key);
+    boolean containsKey(Object key);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the value {@code value}.
      */
-    Future<Boolean> containsValueAsync(Object value);
+    boolean containsValue(Object value);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the key {@code key} and the value {@code value}.
      */
-    Future<Boolean> containsEntryAsync(Object key, Object value);
+    boolean containsEntry(Object key, Object value);
 
     /**
      * Stores a key-value pair in this multimap.
@@ -66,7 +73,7 @@ public interface RMultiMapAsync<K, V> extends RExpirableAsync {
      *     {@code false} if the multimap already contained the key-value pair and
      *     doesn't allow duplicates
      */
-    Future<Boolean> putAsync(K key, V value);
+    boolean put(K key, V value);
 
     /**
      * Removes a single key-value pair with the key {@code key} and the value
@@ -76,9 +83,7 @@ public interface RMultiMapAsync<K, V> extends RExpirableAsync {
      *
      * @return {@code true} if the multimap changed
      */
-    Future<Boolean> removeAsync(Object key, Object value);
-
-    // Bulk Operations
+    boolean remove(Object key, Object value);
 
     /**
      * Stores a key-value pair in this multimap for each of {@code values}, all
@@ -93,7 +98,7 @@ public interface RMultiMapAsync<K, V> extends RExpirableAsync {
      *
      * @return {@code true} if the multimap changed
      */
-    Future<Boolean> putAllAsync(K key, Iterable<? extends V> values);
+    boolean putAll(K key, Iterable<? extends V> values);
 
     /**
      * Stores a collection of values with the same key, replacing any existing
@@ -107,7 +112,7 @@ public interface RMultiMapAsync<K, V> extends RExpirableAsync {
      *     <i>may</i> be modifiable, but updating it will have no effect on the
      *     multimap.
      */
-    Future<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values);
+    Collection<V> replaceValues(K key, Iterable<? extends V> values);
 
     /**
      * Removes all values associated with the key {@code key}.
@@ -120,20 +125,74 @@ public interface RMultiMapAsync<K, V> extends RExpirableAsync {
      *     collection <i>may</i> be modifiable, but updating it will have no
      *     effect on the multimap.
      */
-    Future<Collection<V>> removeAllAsync(Object key);
+    Collection<V> removeAll(Object key);
 
-    Future<Collection<V>> getAllAsync(K key);
+    /**
+     * Removes all key-value pairs from the multimap, leaving it {@linkplain
+     * #isEmpty empty}.
+     */
+    void clear();
+
+    /**
+     * Returns a view collection of the values associated with {@code key} in this
+     * multimap, if any. Note that when {@code containsKey(key)} is false, this
+     * returns an empty collection, not {@code null}.
+     *
+     * <p>Changes to the returned collection will update the underlying multimap,
+     * and vice versa.
+     */
+    Collection<V> get(K key);
+
+    /**
+     * Returns all elements at once. Result collection is <b>NOT</b> backed by map,
+     * so changes are not reflected in map.
+     *
+     * @param key
+     * @return
+     */
+    Collection<V> getAll(K key);
+
+    /**
+     * Returns a view collection of all <i>distinct</i> keys contained in this
+     * multimap. Note that the key set contains a key if and only if this multimap
+     * maps that key to at least one value.
+     *
+     * <p>Changes to the returned set will update the underlying multimap, and
+     * vice versa. However, <i>adding</i> to the returned set is not possible.
+     */
+    Set<K> keySet();
+
+    /**
+     * Returns a view collection containing the <i>value</i> from each key-value
+     * pair contained in this multimap, without collapsing duplicates (so {@code
+     * values().size() == size()}).
+     *
+     * <p>Changes to the returned collection will update the underlying multimap,
+     * and vice versa. However, <i>adding</i> to the returned collection is not
+     * possible.
+     */
+    Collection<V> values();
+
+    /**
+     * Returns a view collection of all key-value pairs contained in this
+     * multimap, as {@link Map.Entry} instances.
+     *
+     * <p>Changes to the returned collection or the entries it contains will
+     * update the underlying multimap, and vice versa. However, <i>adding</i> to
+     * the returned collection is not possible.
+     */
+    Collection<Map.Entry<K, V>> entries();
 
     /**
      * Removes <code>keys</code> from map by one operation
      *
-     * Works faster than <code>removeAll</code> but not returning
+     * Works faster than <code>RMap.remove</code> but not returning
      * the value associated with <code>key</code>
      *
      * @param keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Future<Long> fastRemoveAsync(K ... keys);
+    long fastRemove(K ... keys);
 
 
 }

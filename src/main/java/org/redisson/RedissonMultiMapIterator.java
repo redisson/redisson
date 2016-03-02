@@ -27,7 +27,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.RedissonSetMultiMap;
+import org.redisson.RedissonSetMultimap;
 
 import io.netty.buffer.ByteBuf;
 
@@ -47,13 +47,13 @@ public class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
     private boolean removeExecuted;
     protected V entry;
 
-    private final RedissonSetMultiMap<K, V> map;
+    private final RedissonSetMultimap<K, V> map;
 
     final CommandAsyncExecutor commandExecutor;
     final Codec codec;
 
 
-    public RedissonMultiMapIterator(RedissonSetMultiMap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec) {
+    public RedissonMultiMapIterator(RedissonSetMultimap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec) {
         this.map = map;
         this.commandExecutor = commandExecutor;
         this.codec = codec;

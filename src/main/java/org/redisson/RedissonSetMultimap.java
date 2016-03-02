@@ -40,7 +40,7 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RSetMultiMap;
+import org.redisson.core.RSetMultimap;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -55,16 +55,16 @@ import net.openhft.hashing.LongHashFunction;
  * @param <K> key
  * @param <V> value
  */
-public class RedissonSetMultiMap<K, V> extends RedissonExpirable implements RSetMultiMap<K, V> {
+public class RedissonSetMultimap<K, V> extends RedissonExpirable implements RSetMultimap<K, V> {
 
     private static final RedisStrictCommand<Boolean> SCARD_VALUE = new RedisStrictCommand<Boolean>("SCARD", new BooleanAmountReplayConvertor());
     private static final RedisCommand<Boolean> SISMEMBER_VALUE = new RedisCommand<Boolean>("SISMEMBER", new BooleanReplayConvertor());
 
-    RedissonSetMultiMap(CommandAsyncExecutor connectionManager, String name) {
+    RedissonSetMultimap(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
-    RedissonSetMultiMap(Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    RedissonSetMultimap(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
     }
 
@@ -388,7 +388,7 @@ public class RedissonSetMultiMap<K, V> extends RedissonExpirable implements RSet
 
         @Override
         public Iterator<K> iterator() {
-            return new RedissonMultiMapKeysIterator<K, V, K>(RedissonSetMultiMap.this) {
+            return new RedissonMultiMapKeysIterator<K, V, K>(RedissonSetMultimap.this) {
                 @Override
                 K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                     return (K) entry.getKey().getObj();
@@ -398,22 +398,22 @@ public class RedissonSetMultiMap<K, V> extends RedissonExpirable implements RSet
 
         @Override
         public boolean contains(Object o) {
-            return RedissonSetMultiMap.this.containsKey(o);
+            return RedissonSetMultimap.this.containsKey(o);
         }
 
         @Override
         public boolean remove(Object o) {
-            return RedissonSetMultiMap.this.fastRemove((K)o) == 1;
+            return RedissonSetMultimap.this.fastRemove((K)o) == 1;
         }
 
         @Override
         public int size() {
-            return RedissonSetMultiMap.this.size();
+            return RedissonSetMultimap.this.size();
         }
 
         @Override
         public void clear() {
-            RedissonSetMultiMap.this.clear();
+            RedissonSetMultimap.this.clear();
         }
 
     }
@@ -422,7 +422,7 @@ public class RedissonSetMultiMap<K, V> extends RedissonExpirable implements RSet
 
         @Override
         public Iterator<V> iterator() {
-            return new RedissonMultiMapIterator<K, V, V>(RedissonSetMultiMap.this, commandExecutor, codec) {
+            return new RedissonMultiMapIterator<K, V, V>(RedissonSetMultimap.this, commandExecutor, codec) {
                 @Override
                 V getValue(V entry) {
                     return (V) entry;
@@ -432,17 +432,17 @@ public class RedissonSetMultiMap<K, V> extends RedissonExpirable implements RSet
 
         @Override
         public boolean contains(Object o) {
-            return RedissonSetMultiMap.this.containsValue(o);
+            return RedissonSetMultimap.this.containsValue(o);
         }
 
         @Override
         public int size() {
-            return RedissonSetMultiMap.this.size();
+            return RedissonSetMultimap.this.size();
         }
 
         @Override
         public void clear() {
-            RedissonSetMultiMap.this.clear();
+            RedissonSetMultimap.this.clear();
         }
 
     }
@@ -450,7 +450,7 @@ public class RedissonSetMultiMap<K, V> extends RedissonExpirable implements RSet
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
 
         public final Iterator<Map.Entry<K,V>> iterator() {
-            return new RedissonMultiMapIterator<K, V, Map.Entry<K, V>>(RedissonSetMultiMap.this, commandExecutor, codec);
+            return new RedissonMultiMapIterator<K, V, Map.Entry<K, V>>(RedissonSetMultimap.this, commandExecutor, codec);
         }
 
         public final boolean contains(Object o) {
@@ -465,17 +465,17 @@ public class RedissonSetMultiMap<K, V> extends RedissonExpirable implements RSet
                 Map.Entry<?,?> e = (Map.Entry<?,?>) o;
                 Object key = e.getKey();
                 Object value = e.getValue();
-                return RedissonSetMultiMap.this.remove(key, value);
+                return RedissonSetMultimap.this.remove(key, value);
             }
             return false;
         }
 
         public final int size() {
-            return RedissonSetMultiMap.this.size();
+            return RedissonSetMultimap.this.size();
         }
 
         public final void clear() {
-            RedissonSetMultiMap.this.clear();
+            RedissonSetMultimap.this.clear();
         }
 
     }
