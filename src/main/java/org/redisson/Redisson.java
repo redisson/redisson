@@ -64,6 +64,7 @@ import org.redisson.core.RScript;
 import org.redisson.core.RSemaphore;
 import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
+import org.redisson.core.RSetMultiMap;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
@@ -247,6 +248,16 @@ public class Redisson implements RedissonClient {
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
         return new RedissonMap<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RSetMultiMap<K, V> getSetMultiMap(String name) {
+        return new RedissonSetMultiMap<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RSetMultiMap<K, V> getSetMultiMap(String name, Codec codec) {
+        return new RedissonSetMultiMap<K, V>(codec, commandExecutor, name);
     }
 
     @Override

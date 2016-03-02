@@ -24,15 +24,19 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
 
 public class ScanCodec implements Codec {
 
-    public final Codec delegate;
+    private final Codec delegate;
+    private final Codec mapValueCodec;
 
     public ScanCodec(Codec delegate) {
-        super();
+        this(delegate, null);
+    }
+
+    public ScanCodec(Codec delegate, Codec mapValueCodec) {
         this.delegate = delegate;
+        this.mapValueCodec = mapValueCodec;
     }
 
     @Override
@@ -51,7 +55,11 @@ public class ScanCodec implements Codec {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
                 ByteBuf b = Unpooled.copiedBuffer(buf);
-                Object val = delegate.getMapValueDecoder().decode(buf, state);
+                Codec c = delegate;
+                if (mapValueCodec != null) {
+                    c = mapValueCodec;
+                }
+                Object val = c.getMapValueDecoder().decode(buf, state);
                 return new ScanObjectEntry(b, val);
             }
         };
@@ -59,7 +67,12 @@ public class ScanCodec implements Codec {
 
     @Override
     public Encoder getMapValueEncoder() {
-        return delegate.getMapValueEncoder();
+        Codec c = delegate;
+        if (mapValueCodec != null) {
+            c = mapValueCodec;
+        }
+
+        return c.getMapValueEncoder();
     }
 
     @Override
