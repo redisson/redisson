@@ -25,10 +25,11 @@ Features
     1. automatic new master server discovery
     2. automatic new slave servers discovery
 * Cluster servers mode:
-    1. automatic master and slave discovery
+    1. automatic master and slave servers discovery
     2. automatic new master server discovery
     3. automatic new slave servers discovery
-    4. automatic slots change discovery
+    4. automatic slave servers offline/online discovery
+    5. automatic slots change discovery
 * Sentinel servers mode: 
     1. automatic master and slave servers discovery
     2. automatic new master server discovery
