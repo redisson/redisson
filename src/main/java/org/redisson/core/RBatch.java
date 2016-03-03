@@ -38,6 +38,24 @@ import io.netty.util.concurrent.Future;
 public interface RBatch {
 
     /**
+     * Returns Set based MultiMap instance by name.
+     *
+     * @param name
+     * @return
+     */
+    <K, V> RSetMultimap<K, V> getSetMultimap(String name);
+
+    /**
+     * Returns Set based MultiMap instance by name
+     * using provided codec for both map keys and values.
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec);
+    
+    /**
      * Returns set-based cache instance by <code>name</code>.
      * Uses map (value_hash, value) under the hood for minimal memory consumption.
      * Supports value eviction with a given TTL value.
@@ -118,6 +136,24 @@ public interface RBatch {
 
     <V> RListAsync<V> getList(String name, Codec codec);
 
+    /**
+     * Returns List based MultiMap instance by name.
+     *
+     * @param name
+     * @return
+     */
+    <K, V> RListMultimap<K, V> getListMultimap(String name);
+
+    /**
+     * Returns List based MultiMap instance by name
+     * using provided codec for both map keys and values.
+     *
+     * @param name
+     * @param codec
+     * @return
+     */
+    <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec);
+    
     /**
      * Returns map instance by name.
      *

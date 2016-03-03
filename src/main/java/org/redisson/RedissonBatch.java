@@ -33,12 +33,14 @@ import org.redisson.core.RHyperLogLogAsync;
 import org.redisson.core.RKeysAsync;
 import org.redisson.core.RLexSortedSetAsync;
 import org.redisson.core.RListAsync;
+import org.redisson.core.RListMultimap;
 import org.redisson.core.RMapAsync;
 import org.redisson.core.RQueueAsync;
 import org.redisson.core.RScoredSortedSetAsync;
 import org.redisson.core.RScriptAsync;
 import org.redisson.core.RSetAsync;
 import org.redisson.core.RSetCacheAsync;
+import org.redisson.core.RSetMultimap;
 import org.redisson.core.RTopicAsync;
 
 import io.netty.util.concurrent.Future;
@@ -227,6 +229,26 @@ public class RedissonBatch implements RBatch {
     @Override
     public Future<List<?>> executeAsync() {
         return executorService.executeAsync();
+    }
+
+    @Override
+    public <K, V> RSetMultimap<K, V> getSetMultimap(String name) {
+        return new RedissonSetMultimap<K, V>(executorService, name);
+    }
+
+    @Override
+    public <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec) {
+        return new RedissonSetMultimap<K, V>(codec, executorService, name);
+    }
+
+    @Override
+    public <K, V> RListMultimap<K, V> getListMultimap(String name) {
+        return new RedissonListMultimap<K, V>(executorService, name);
+    }
+
+    @Override
+    public <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec) {
+        return new RedissonListMultimap<K, V>(codec, executorService, name);
     }
 
 
