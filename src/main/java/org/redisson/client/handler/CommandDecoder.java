@@ -26,6 +26,7 @@ import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
+import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.StringCodec;
@@ -185,6 +186,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 data.getPromise().tryFailure(new RedisAskException(slot, addr));
             } else if (error.startsWith("LOADING")) {
                 data.getPromise().tryFailure(new RedisLoadingException(error
+                        + ". channel: " + channel + " data: " + data));
+            } else if (error.startsWith("OOM")) {
+                data.getPromise().tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
+                        + ". channel: " + channel + " data: " + data));
+            } else if (error.contains("-OOM ")) {
+                data.getPromise().tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
                         + ". channel: " + channel + " data: " + data));
             } else {
                 data.getPromise().tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
