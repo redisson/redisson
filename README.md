@@ -24,20 +24,17 @@ Features
 * [AWS ElastiCache](https://aws.amazon.com/elasticache/) servers mode:
     1. automatic new master server discovery
     2. automatic new slave servers discovery
-    3. read data using slave servers, write data using master server
 * Cluster servers mode:
     1. automatic master and slave discovery
     2. automatic new master server discovery
     3. automatic new slave servers discovery
     4. automatic slots change discovery
-    5. read data using slave servers, write data using master server
 * Sentinel servers mode: 
     1. automatic master and slave servers discovery
     2. automatic new master server discovery
     3. automatic new slave servers discovery
     4. automatic slave servers offline/online discovery  
     5. automatic sentinel servers discovery  
-    6. read data using slave servers, write data using master server
 * Master with Slave servers mode: read data using slave servers, write data using master server
 * Single server mode: read and write data using single server
 * Lua scripting  
