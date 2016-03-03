@@ -22,9 +22,9 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 public class RedissonMultiMapKeysIterator<K, V, M> extends RedissonBaseMapIterator<K, V, M> {
 
-    private final RedissonSetMultimap<K, V> map;
+    private final RedissonMultimap<K, V> map;
 
-    public RedissonMultiMapKeysIterator(RedissonSetMultimap<K, V> map) {
+    public RedissonMultiMapKeysIterator(RedissonMultimap<K, V> map) {
         this.map = map;
     }
 

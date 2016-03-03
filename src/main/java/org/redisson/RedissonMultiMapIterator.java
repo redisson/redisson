@@ -27,11 +27,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.RedissonSetMultimap;
 
 import io.netty.buffer.ByteBuf;
 
-public class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
+abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
     private Map<ByteBuf, ByteBuf> firstKeys;
     private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> keysIter;
@@ -47,13 +46,13 @@ public class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
     private boolean removeExecuted;
     protected V entry;
 
-    private final RedissonSetMultimap<K, V> map;
+    final RedissonMultimap<K, V> map;
 
     final CommandAsyncExecutor commandExecutor;
     final Codec codec;
 
 
-    public RedissonMultiMapIterator(RedissonSetMultimap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec) {
+    public RedissonMultiMapIterator(RedissonMultimap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec) {
         this.map = map;
         this.commandExecutor = commandExecutor;
         this.codec = codec;
@@ -95,8 +94,7 @@ public class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
                 Entry<ScanObjectEntry, ScanObjectEntry> e = keysIter.next();
                 currentKey = (K) e.getKey().getObj();
                 String name = e.getValue().getObj().toString();
-                RedissonSet<V> set = new RedissonSet<V>(codec, commandExecutor, map.getSetName(name));
-                valuesIter = set.iterator();
+                valuesIter = getIterator(name);
                 if (valuesIter.hasNext()) {
                     return true;
                 }
@@ -105,6 +103,8 @@ public class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
             }
         }
     }
+
+    protected abstract Iterator<V> getIterator(String name);
 
     private void free(Map<ByteBuf, ByteBuf> map) {
         for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {

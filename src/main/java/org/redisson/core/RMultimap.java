@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Base MultiMap interface. A collection that maps multiple values per one key.
+ * Base Multimap interface. Allows to map multiple values per key.
  *
  * @author Nikita Koksharov
  *

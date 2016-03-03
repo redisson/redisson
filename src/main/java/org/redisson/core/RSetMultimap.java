@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Set based MultiMap. Doesn't allow duplications among values collection mapped to key.
+ * Set based Multimap. Doesn't allow duplications for values mapped to key.
  *
  * @author Nikita Koksharov
  *
@@ -38,6 +38,13 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
     @Override
     Set<V> get(K key);
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
+     * method returns a {@link Set}, instead of the {@link java.util.Collection}
+     * specified in the {@link RMultimap} interface.
+     */
     Set<V> getAll(K key);
 
     /**

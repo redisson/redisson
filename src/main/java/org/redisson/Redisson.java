@@ -53,6 +53,7 @@ import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RKeys;
 import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RList;
+import org.redisson.core.RListMultimap;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapCache;
@@ -243,6 +244,16 @@ public class Redisson implements RedissonClient {
     @Override
     public <V> RList<V> getList(String name, Codec codec) {
         return new RedissonList<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RListMultimap<K, V> getListMultimap(String name) {
+        return new RedissonListMultimap<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec) {
+        return new RedissonListMultimap<K, V>(codec, commandExecutor, name);
     }
 
     @Override

@@ -1,17 +1,18 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Test;
-import org.redisson.core.RSetMultimap;
-import static org.assertj.core.api.Assertions.*;
+import org.redisson.core.RListMultimap;
 
-public class RedissonSetMultiMapTest extends BaseTest {
+public class RedissonListMultimapTest extends BaseTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -117,59 +118,63 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testSize() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
+        map.put(new SimpleKey("1"), new SimpleValue("4"));
 
-        assertThat(map.size()).isEqualTo(2);
+        assertThat(map.size()).isEqualTo(3);
 
-        map.fastRemove(new SimpleKey("0"));
+        assertThat(map.fastRemove(new SimpleKey("0"))).isEqualTo(1);
 
-        Set<SimpleValue> s = map.get(new SimpleKey("0"));
+        List<SimpleValue> s = map.get(new SimpleKey("0"));
         assertThat(s).isEmpty();
-        assertThat(map.size()).isEqualTo(0);
+        assertThat(map.size()).isEqualTo(1);
     }
 
     @Test
     public void testPut() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
+        map.put(new SimpleKey("0"), new SimpleValue("3"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
-        assertThat(map.size()).isEqualTo(4);
+        assertThat(map.size()).isEqualTo(5);
 
-        Set<SimpleValue> s1 = map.get(new SimpleKey("0"));
-        assertThat(s1).containsOnly(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"));
-        Set<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
-        assertThat(allValues).containsOnly(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"));
+        List<SimpleValue> s1 = map.get(new SimpleKey("0"));
+        assertThat(s1).containsExactly(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"), new SimpleValue("3"));
 
-        Set<SimpleValue> s2 = map.get(new SimpleKey("3"));
-        assertThat(s2).containsOnly(new SimpleValue("4"));
+        List<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
+        assertThat(allValues).containsExactly(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"), new SimpleValue("3"));
+
+        List<SimpleValue> s2 = map.get(new SimpleKey("3"));
+        assertThat(s2).containsExactly(new SimpleValue("4"));
     }
 
     @Test
     public void testRemoveAll() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
 
-        Set<SimpleValue> values = map.removeAll(new SimpleKey("0"));
-        assertThat(values).containsOnly(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"));
+        List<SimpleValue> values = map.removeAll(new SimpleKey("0"));
+        assertThat(values).containsExactly(new SimpleValue("1"), new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"));
         assertThat(map.size()).isZero();
 
-        Set<SimpleValue> values2 = map.removeAll(new SimpleKey("0"));
+        List<SimpleValue> values2 = map.removeAll(new SimpleKey("0"));
         assertThat(values2).isEmpty();
     }
 
     @Test
     public void testFastRemove() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("1"))).isTrue();
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("2"))).isTrue();
-        assertThat(map.put(new SimpleKey("0"), new SimpleValue("2"))).isFalse();
+        assertThat(map.put(new SimpleKey("0"), new SimpleValue("2"))).isTrue();
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("3"))).isTrue();
 
         long removed = map.fastRemove(new SimpleKey("0"), new SimpleKey("1"));
@@ -179,7 +184,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testContainsKey() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         assertThat(map.containsKey(new SimpleKey("0"))).isTrue();
         assertThat(map.containsKey(new SimpleKey("1"))).isFalse();
@@ -187,7 +192,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testContainsValue() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
 
         assertThat(map.containsValue(new SimpleValue("1"))).isTrue();
@@ -196,7 +201,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testContainsEntry() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
 
         assertThat(map.containsEntry(new SimpleKey("0"), new SimpleValue("1"))).isTrue();
@@ -205,7 +210,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
@@ -218,17 +223,18 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testPutAll() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
-        List<SimpleValue> values = Arrays.asList(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"));
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        List<SimpleValue> values = Arrays.asList(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"), new SimpleValue("3"));
         assertThat(map.putAll(new SimpleKey("0"), values)).isTrue();
-        assertThat(map.putAll(new SimpleKey("0"), Arrays.asList(new SimpleValue("1")))).isFalse();
+        assertThat(map.putAll(new SimpleKey("0"), Arrays.asList(new SimpleValue("1")))).isTrue();
 
-        assertThat(map.get(new SimpleKey("0"))).containsOnlyElementsOf(values);
+        List<SimpleValue> testValues = Arrays.asList(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"), new SimpleValue("3"), new SimpleValue("1"));
+        assertThat(map.get(new SimpleKey("0"))).containsExactlyElementsOf(testValues);
     }
 
     @Test
     public void testKeySet() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
@@ -238,7 +244,7 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testValues() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
@@ -247,29 +253,31 @@ public class RedissonSetMultiMapTest extends BaseTest {
 
     @Test
     public void testEntrySet() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
-        assertThat(map.entries().size()).isEqualTo(2);
-        Map<SimpleKey, SimpleValue> testMap = new HashMap<SimpleKey, SimpleValue>();
-        testMap.put(new SimpleKey("0"), new SimpleValue("1"));
-        testMap.put(new SimpleKey("3"), new SimpleValue("4"));
-        assertThat(map.entries()).containsOnlyElementsOf(testMap.entrySet());
+        assertThat(map.entries().size()).isEqualTo(3);
+        List<Map.Entry<SimpleKey, SimpleValue>> testMap = new ArrayList<Map.Entry<SimpleKey, SimpleValue>>();
+        testMap.add(new AbstractMap.SimpleEntry(new SimpleKey("0"), new SimpleValue("1")));
+        testMap.add(new AbstractMap.SimpleEntry(new SimpleKey("0"), new SimpleValue("1")));
+        testMap.add(new AbstractMap.SimpleEntry(new SimpleKey("3"), new SimpleValue("4")));
+        assertThat(map.entries()).containsOnlyElementsOf(testMap);
     }
 
     @Test
     public void testReplaceValues() {
-        RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
-        List<SimpleValue> values = Arrays.asList(new SimpleValue("11"), new SimpleValue("12"));
-        Set<SimpleValue> oldValues = map.replaceValues(new SimpleKey("0"), values);
-        assertThat(oldValues).containsOnly(new SimpleValue("1"));
+        List<SimpleValue> values = Arrays.asList(new SimpleValue("11"), new SimpleValue("12"), new SimpleValue("12"));
+        List<SimpleValue> oldValues = map.replaceValues(new SimpleKey("0"), values);
+        assertThat(oldValues).containsExactly(new SimpleValue("1"));
 
-        Set<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
-        assertThat(allValues).containsOnlyElementsOf(values);
+        List<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
+        assertThat(allValues).containsExactlyElementsOf(values);
     }
 
 
