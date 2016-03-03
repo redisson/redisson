@@ -125,26 +125,6 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
     }
 
-    /**
-     * Use {@link #isExistsAsync()}
-     *
-     * @return
-     */
-    @Deprecated
-    public Future<Boolean> existsAsync() {
-        return isExistsAsync();
-    }
-
-    /**
-     * Use {@link #isExists()}
-     *
-     * @return
-     */
-    @Deprecated
-    public boolean exists() {
-        return isExists();
-    }
-
     @Override
     public Future<Boolean> trySetAsync(V value) {
         if (value == null) {
