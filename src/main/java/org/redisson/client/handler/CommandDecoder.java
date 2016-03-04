@@ -194,7 +194,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 data.getPromise().tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
                         + ". channel: " + channel + " data: " + data));
             } else {
-                data.getPromise().tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
+                if (data != null) {
+                    data.getPromise().tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
+                } else {
+                    log.error("Error: {} channel: {} data: {}", error, channel, data);
+                }
             }
         } else if (code == ':') {
             String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
