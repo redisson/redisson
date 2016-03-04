@@ -246,9 +246,13 @@ public class RedissonListMultimapTest extends BaseTest {
     public void testValues() {
         RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
+        map.put(new SimpleKey("0"), new SimpleValue("1"));
+        map.put(new SimpleKey("0"), new SimpleValue("3"));
+        map.put(new SimpleKey("2"), new SimpleValue("5"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
-        assertThat(map.values()).containsOnly(new SimpleValue("1"), new SimpleValue("4"));
+        assertThat(map.values().size()).isEqualTo(5);
+        assertThat(map.values()).containsOnly(new SimpleValue("1"), new SimpleValue("1"), new SimpleValue("3"), new SimpleValue("5"), new SimpleValue("4"));
     }
 
     @Test
