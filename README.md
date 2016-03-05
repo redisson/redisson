@@ -1,11 +1,11 @@
-![](http://i.imgur.com/BvR0tkS.png)
-
 Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
 ====
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
 
 ##Please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
+
+![](http://i.imgur.com/6rgqcY3.png)
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
