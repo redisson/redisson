@@ -1,4 +1,4 @@
-![](http://i.imgur.com/6rgqcY3.png)
+![](http://i.imgur.com/s2PVOxI.png)
 
 Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
 ====
