@@ -199,7 +199,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         connectionWatcher = new IdleConnectionWatcher(this, config);
 
-        initEntry(config);
+        try {
+            initEntry(config);
+        } catch (Exception e) {
+            try {
+                group.shutdownGracefully().await();
+            } catch (Exception e1) {
+                // skip
+            }
+            throw e;
+        }
     }
 
     public ConnectionInitializer getConnectListener() {
