@@ -1,4 +1,4 @@
-![](http://i.imgur.com/BvR0tkS.png)
+![](http://i.imgur.com/s2PVOxI.png)
 
 Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
 ====
@@ -74,13 +74,7 @@ Features
 
 Projects using Redisson
 ================================
-Setronica: [setronica.com](http://setronica.com/)  
-Monits: [monits.com](http://monits.com/)  
-Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
-Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)  
-武林Q传: [nbrpg.com](http://www.nbrpg.com/)  
-Ocous: [ocous.com](http://www.ocous.com/)  
-Invaluable: [invaluable.com](http://www.invaluable.com/)
+[Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/)
 
 ### Maven 
 
