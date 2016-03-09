@@ -201,7 +201,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         try {
             initEntry(config);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             try {
                 group.shutdownGracefully().await();
             } catch (Exception e1) {
