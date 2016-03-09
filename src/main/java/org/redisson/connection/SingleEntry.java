@@ -48,7 +48,7 @@ public class SingleEntry extends MasterSlaveEntry {
                 config.getMasterConnectionMinimumIdleSize(),
                 config.getMasterConnectionPoolSize(),
                 config.getSlaveConnectionMinimumIdleSize(),
-                config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, NodeType.MASTER, config);
+                config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, NodeType.MASTER);
         final Promise<Void> res = connectionManager.newPromise();
         Future<Void> f = writeConnectionHolder.add(masterEntry);
         Future<Void> s = pubSubConnectionHolder.add(masterEntry);

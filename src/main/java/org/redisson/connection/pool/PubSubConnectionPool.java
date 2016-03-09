@@ -41,7 +41,7 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
 
     @Override
     protected Future<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
-        return entry.connectPubSub(config);
+        return entry.connectPubSub();
     }
 
     @Override

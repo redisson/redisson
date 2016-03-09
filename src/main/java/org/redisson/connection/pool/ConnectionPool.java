@@ -185,10 +185,10 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     protected Future<T> connect(ClientConnectionsEntry entry) {
-        return (Future<T>) entry.connect(config);
+        return (Future<T>) entry.connect();
     }
 
-    private Future<T> connectTo(final ClientConnectionsEntry entry) {
+    private Future<T> connectTo(ClientConnectionsEntry entry) {
         T conn = poll(entry);
         if (conn != null) {
             if (!conn.isActive()) {
