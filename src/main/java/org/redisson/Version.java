@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.jar.Attributes;
@@ -43,7 +42,7 @@ public class Version {
                         break;
                     }
             }
-        } catch (IOException E) {
+        } catch (Exception E) {
             // skip it
         }
     }
