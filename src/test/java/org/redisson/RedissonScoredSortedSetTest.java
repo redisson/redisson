@@ -104,6 +104,36 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testRemoveRangeByScoreNegativeInf() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+        set.add(0.5, "e");
+        set.add(0.6, "f");
+        set.add(0.7, "g");
+
+        Assert.assertEquals(3, set.removeRangeByScore(Double.NEGATIVE_INFINITY, false, 0.3, true));
+        MatcherAssert.assertThat(set, Matchers.contains("d", "e", "f", "g"));
+    }
+    
+    @Test
+    public void testRemoveRangeByScorePositiveInf() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+        set.add(0.5, "e");
+        set.add(0.6, "f");
+        set.add(0.7, "g");
+
+        Assert.assertEquals(3, set.removeRangeByScore(0.4, false, Double.POSITIVE_INFINITY, true));
+        MatcherAssert.assertThat(set, Matchers.contains("a", "b", "c", "d"));
+    }
+
+    @Test
     public void testRemoveRangeByRank() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(0.1, "a");
@@ -521,6 +551,36 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         String[] a = r.toArray(new String[0]);
         Assert.assertArrayEquals(new String[]{"c", "d"}, a);
     }
+    
+    @Test
+    public void testScoredSortedSetValueRangeNegativeInf() {
+        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<String> r = set.valueRange(Double.NEGATIVE_INFINITY, true, 4, false, 1, 2);
+        String[] a = r.toArray(new String[0]);
+        Assert.assertArrayEquals(new String[]{"b", "c"}, a);
+    }
+    
+    @Test
+    public void testScoredSortedSetValueRangePositiveInf() {
+        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<String> r = set.valueRange(1, true, Double.POSITIVE_INFINITY, false, 1, 2);
+        String[] a = r.toArray(new String[0]);
+        Assert.assertArrayEquals(new String[]{"c", "d"}, a);
+    }
 
     @Test
     public void testScoredSortedSetEntryRange() {
@@ -533,6 +593,42 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(4, "e");
 
         Collection<ScoredEntry<String>> r = set.entryRange(1, true, 4, false, 1, 2);
+        ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
+        Assert.assertEquals(2d, a[0].getScore(), 0);
+        Assert.assertEquals(3d, a[1].getScore(), 0);
+        Assert.assertEquals("c", a[0].getValue());
+        Assert.assertEquals("d", a[1].getValue());
+    }
+    
+    @Test
+    public void testScoredSortedSetEntryRangeNegativeInf() {
+        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<ScoredEntry<String>> r = set.entryRange(Double.NEGATIVE_INFINITY, true, 4, false, 1, 2);
+        ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
+        Assert.assertEquals(1d, a[0].getScore(), 0);
+        Assert.assertEquals(2d, a[1].getScore(), 0);
+        Assert.assertEquals("b", a[0].getValue());
+        Assert.assertEquals("c", a[1].getValue());
+    }
+    
+    @Test
+    public void testScoredSortedSetEntryRangePositiveInf() {
+        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<ScoredEntry<String>> r = set.entryRange(1, true, Double.POSITIVE_INFINITY, false, 1, 2);
         ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
         Assert.assertEquals(2d, a[0].getScore(), 0);
         Assert.assertEquals(3d, a[1].getScore(), 0);
