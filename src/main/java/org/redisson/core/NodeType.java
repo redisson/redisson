@@ -15,31 +15,8 @@
  */
 package org.redisson.core;
 
-import io.netty.util.concurrent.Future;
+public enum NodeType {
 
-import java.util.concurrent.TimeUnit;
-
-/**
- * Async object functions
- *
- * @author Nikita Koksharov
- *
- * @param <V> - the type of object
- */
-public interface RBucketAsync<V> extends RExpirableAsync {
-
-    Future<V> getAsync();
-
-    Future<Boolean> trySetAsync(V value);
-
-    Future<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
-
-    Future<Boolean> compareAndSetAsync(V expect, V update);
-
-    Future<V> getAndSetAsync(V newValue);
-
-    Future<Void> setAsync(V value);
-
-    Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
+    MASTER, SLAVE
 
 }

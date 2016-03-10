@@ -26,6 +26,15 @@ import java.net.InetSocketAddress;
 public interface Node {
 
     /**
+     * Returns node type
+     *
+     * @see {@link NodeType}
+     *
+     * @return
+     */
+    NodeType getType();
+
+    /**
      * Get Redis node address
      *
      * @return

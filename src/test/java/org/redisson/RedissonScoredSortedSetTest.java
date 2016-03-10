@@ -538,8 +538,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
-    public void testScoredSortedSetValueRange() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+    public void testScoredSortedSetValueRangeLimit() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -548,8 +548,49 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(4, "e");
 
         Collection<String> r = set.valueRange(1, true, 4, false, 1, 2);
-        String[] a = r.toArray(new String[0]);
-        Assert.assertArrayEquals(new String[]{"c", "d"}, a);
+        assertThat(r).containsExactly("c", "d");
+    }
+
+    @Test
+    public void testScoredSortedSetValueRange() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<String> r = set.valueRange(1, true, 4, false);
+        assertThat(r).containsExactly("b", "c", "d");
+    }
+
+    @Test
+    public void testScoredSortedSetValueRangeReversedLimit() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<String> r = set.valueRangeReversed(1, true, 4, false, 1, 2);
+        assertThat(r).containsExactly("c", "b");
+    }
+
+    @Test
+    public void testScoredSortedSetValueRangeReversed() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<String> r = set.valueRangeReversed(1, true, 4, false);
+        assertThat(r).containsExactly("d", "c", "b");
     }
     
     @Test
@@ -584,7 +625,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testScoredSortedSetEntryRange() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");

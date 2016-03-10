@@ -19,7 +19,7 @@ import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.connection.ClientConnectionsEntry.NodeType;
+import org.redisson.core.NodeType;
 
 import io.netty.util.concurrent.Promise;
 

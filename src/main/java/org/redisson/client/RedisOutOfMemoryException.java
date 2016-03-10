@@ -13,33 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.core;
-
-import io.netty.util.concurrent.Future;
-
-import java.util.concurrent.TimeUnit;
+package org.redisson.client;
 
 /**
- * Async object functions
- *
+ * This error occurs in case then Redis server free memory has been exhausted. 
+ * 
  * @author Nikita Koksharov
  *
- * @param <V> - the type of object
  */
-public interface RBucketAsync<V> extends RExpirableAsync {
+public class RedisOutOfMemoryException extends RedisException {
 
-    Future<V> getAsync();
+    private static final long serialVersionUID = -2565335188503354660L;
 
-    Future<Boolean> trySetAsync(V value);
-
-    Future<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
-
-    Future<Boolean> compareAndSetAsync(V expect, V update);
-
-    Future<V> getAndSetAsync(V newValue);
-
-    Future<Void> setAsync(V value);
-
-    Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
+    public RedisOutOfMemoryException(String message) {
+        super(message);
+    }
 
 }

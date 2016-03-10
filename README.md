@@ -1,7 +1,11 @@
+![](http://redisson.org/logo.png)
+
 Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
 ====
 
-[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
+[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
+
+##Please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
@@ -22,20 +26,18 @@ Features
 * [AWS ElastiCache](https://aws.amazon.com/elasticache/) servers mode:
     1. automatic new master server discovery
     2. automatic new slave servers discovery
-    3. read data using slave servers, write data using master server
 * Cluster servers mode:
-    1. automatic master and slave discovery
+    1. automatic master and slave servers discovery
     2. automatic new master server discovery
     3. automatic new slave servers discovery
-    4. automatic slots change discovery
-    5. read data using slave servers, write data using master server
+    4. automatic slave servers offline/online discovery
+    5. automatic slots change discovery
 * Sentinel servers mode: 
     1. automatic master and slave servers discovery
     2. automatic new master server discovery
     3. automatic new slave servers discovery
     4. automatic slave servers offline/online discovery  
     5. automatic sentinel servers discovery  
-    6. read data using slave servers, write data using master server
 * Master with Slave servers mode: read data using slave servers, write data using master server
 * Single server mode: read and write data using single server
 * Lua scripting  
@@ -72,30 +74,7 @@ Features
 
 Projects using Redisson
 ================================
-Setronica: [setronica.com](http://setronica.com/)  
-Monits: [monits.com](http://monits.com/)  
-Brookhaven National Laboratory: [bnl.gov](http://bnl.gov/)  
-Netflix Dyno client: [dyno] (https://github.com/Netflix/dyno)  
-武林Q传: [nbrpg.com](http://www.nbrpg.com/)  
-Ocous: [ocous.com](http://www.ocous.com/)  
-Invaluable: [invaluable.com](http://www.invaluable.com/)
-
-Latest version changelog
-=================================
-####03-Feb-2016 - version 2.2.7 released  
-
-Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  
-Improvement - `RKeys.delete` optimization in Cluster mode  
-Fixed - minimal connections amount initialization  
-Fixed - `RKeys.deleteByPattern` throws an error in cluster mode  
-Fixed - `RKeys.deleteAsync` throws error in Cluster mode  
-Fixed - Redisson failed to start when one of sentinel servers is down  
-Fixed - Redisson failed to start when there are no slaves in Sentinel mode  
-Fixed - slave nodes up/down state discovery in Cluster mode  
-Fixed - slave can stay freezed when it has been just added in Sentinel mode  
-Fixed - offline slaves handling during Redisson start in Sentinel mode  
-Fixed - `SELECT` command can't be executed in Sentinel mode  
-Fixed - `database` setting removed from cluster config  
+[Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/)
 
 ### Maven 
 
@@ -104,12 +83,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.7</version>
+       <version>2.2.9</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.7'
+    compile 'org.redisson:redisson:2.2.9'
 
 ### Supported by
 

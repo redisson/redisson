@@ -15,153 +15,110 @@
  */
 package org.redisson.reactive;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collections;
-import java.util.List;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonBitSet;
 import org.redisson.api.RBitSetReactive;
 import org.redisson.client.codec.BitSetCodec;
-import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandBatchService;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.rx.Streams;
 
 public class RedissonBitSetReactive extends RedissonExpirableReactive implements RBitSetReactive {
 
+    private final RedissonBitSet instance;
+    
     public RedissonBitSetReactive(CommandReactiveExecutor connectionManager, String name) {
         super(connectionManager, name);
+        this.instance = new RedissonBitSet(connectionManager, name);
     }
 
     public Publisher<Boolean> get(long bitIndex) {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.GETBIT, getName(), bitIndex);
+        return reactive(instance.getAsync(bitIndex));
     }
 
     public Publisher<Void> set(long bitIndex, boolean value) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SETBIT_VOID, getName(), bitIndex, value ? 1 : 0);
+        return reactive(instance.setAsync(bitIndex, value));
     }
 
     public Publisher<byte[]> toByteArray() {
-        return commandExecutor.readReactive(getName(), ByteArrayCodec.INSTANCE, RedisCommands.GET, getName());
-    }
-
-    private Publisher<Void> op(String op, String... bitSetNames) {
-        List<Object> params = new ArrayList<Object>(bitSetNames.length + 3);
-        params.add(op);
-        params.add(getName());
-        params.add(getName());
-        params.addAll(Arrays.asList(bitSetNames));
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BITOP, params.toArray());
+        return reactive(instance.toByteArrayAsync());
     }
 
     public Publisher<BitSet> asBitSet() {
         return commandExecutor.readReactive(getName(), BitSetCodec.INSTANCE, RedisCommands.GET, getName());
     }
 
-    //Copied from: https://github.com/xetorthio/jedis/issues/301
-    private static byte[] toByteArrayReverse(BitSet bits) {
-        byte[] bytes = new byte[bits.length() / 8 + 1];
-        for (int i = 0; i < bits.length(); i++) {
-            if (bits.get(i)) {
-                final int value = bytes[i / 8] | (1 << (7 - (i % 8)));
-                bytes[i / 8] = (byte) value;
-            }
-        }
-        return bytes;
-    }
-
     @Override
     public Publisher<Long> length() {
-        return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_LONG,
-                "local fromBit = redis.call('bitpos', KEYS[1], 1, -1);"
-                + "local toBit = 8*(fromBit/8 + 1) - fromBit % 8;"
-                        + "for i = toBit, fromBit, -1 do "
-                            + "if redis.call('getbit', KEYS[1], i) == 1 then "
-                                + "return i+1;"
-                            + "end;"
-                       + "end;" +
-                     "return fromBit+1",
-                Collections.<Object>singletonList(getName()));
+        return reactive(instance.lengthAsync());
     }
 
     @Override
     public Publisher<Void> set(long fromIndex, long toIndex, boolean value) {
-        if (value) {
-            return set(fromIndex, toIndex);
-        }
-        return clear(fromIndex, toIndex);
+        return reactive(instance.setAsync(fromIndex, toIndex, value));
     }
 
     @Override
     public Publisher<Void> clear(long fromIndex, long toIndex) {
-        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
-        for (long i = fromIndex; i < toIndex; i++) {
-            executorService.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), i, 0);
-        }
-        return new NettyFuturePublisher<Void>(executorService.executeAsyncVoid());
+        return reactive(instance.clearAsync(fromIndex, toIndex));
     }
 
     @Override
     public Publisher<Void> set(BitSet bs) {
-        return commandExecutor.writeReactive(getName(), ByteArrayCodec.INSTANCE, RedisCommands.SET, getName(), toByteArrayReverse(bs));
+        return reactive(instance.setAsync(bs));
     }
 
     @Override
     public Publisher<Void> not() {
-        return op("NOT");
+        return reactive(instance.notAsync());
     }
 
     @Override
     public Publisher<Void> set(long fromIndex, long toIndex) {
-        CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
-        for (long i = fromIndex; i < toIndex; i++) {
-            executorService.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), i, 1);
-        }
-        return new NettyFuturePublisher<Void>(executorService.executeAsyncVoid());
+        return reactive(instance.setAsync(fromIndex, toIndex));
     }
 
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.BITS_SIZE, getName());
+        return reactive(instance.sizeAsync());
     }
 
     @Override
     public Publisher<Void> set(long bitIndex) {
-        return set(bitIndex, true);
+        return reactive(instance.setAsync(bitIndex));
     }
 
     @Override
     public Publisher<Long> cardinality() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.BITCOUNT, getName());
+        return reactive(instance.cardinalityAsync());
     }
 
     @Override
     public Publisher<Void> clear(long bitIndex) {
-        return set(bitIndex, false);
+        return reactive(instance.clearAsync(bitIndex));
     }
 
     @Override
     public Publisher<Void> clear() {
-        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_VOID, getName());
+        return reactive(instance.clearAsync());
     }
 
     @Override
     public Publisher<Void> or(String... bitSetNames) {
-        return op("OR", bitSetNames);
+        return reactive(instance.orAsync(bitSetNames));
     }
 
     @Override
     public Publisher<Void> and(String... bitSetNames) {
-        return op("AND", bitSetNames);
+        return reactive(instance.andAsync(bitSetNames));
     }
 
     @Override
     public Publisher<Void> xor(String... bitSetNames) {
-        return op("XOR", bitSetNames);
+        return reactive(instance.xorAsync(bitSetNames));
     }
 
     @Override

@@ -13,16 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson;
 
-import org.redisson.MasterSlaveServersConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.core.NodeType;
+import java.util.Iterator;
 
-import io.netty.util.concurrent.Promise;
+import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandAsyncExecutor;
 
-public interface ConnectionInitializer {
+public class RedissonListMultimapIterator<K, V, M> extends RedissonMultiMapIterator<K, V, M> {
 
-    <T extends RedisConnection> void onConnect(Promise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config);
+    public RedissonListMultimapIterator(RedissonMultimap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec) {
+        super(map, commandExecutor, codec);
+    }
+
+    @Override
+    protected Iterator<V> getIterator(String name) {
+        RedissonList<V> set = new RedissonList<V>(codec, commandExecutor, map.getValuesName(name));
+        return set.iterator();
+    }
 
 }

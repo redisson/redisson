@@ -30,6 +30,7 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.RedisClientEntry;
 import org.redisson.core.Node;
+import org.redisson.core.NodeType;
 import org.redisson.core.NodesGroup;
 
 import io.netty.util.concurrent.Future;
@@ -43,6 +44,19 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     public RedisNodes(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
+
+    @Override
+    public Collection<N> getNodes(NodeType type) {
+        Collection<N> clients = (Collection<N>) connectionManager.getClients();
+        List<N> result = new ArrayList<N>();
+        for (N node : clients) {
+            if (node.getType().equals(type)) {
+                result.add(node);
+            }
+        }
+        return result;
+    }
+
 
     @Override
     public Collection<N> getNodes() {
