@@ -165,12 +165,18 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
     }
 
-    private String value(String element, boolean inclusive) {
+    private String value(double score, boolean inclusive) {
+        String element;
+        if (Double.isInfinite(score)) {
+            element = (score > 0 ? "+" : "-") + "inf";
+        } else {
+            element = BigDecimal.valueOf(score).toPlainString();
+        }
         if (!inclusive) {
             element = "(" + element;
         }
@@ -406,8 +412,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue);
     }
 
@@ -433,8 +439,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES");
     }
 
@@ -445,8 +451,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue, "LIMIT", offset, count);
     }
 
@@ -469,8 +475,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
