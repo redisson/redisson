@@ -426,8 +426,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore,
             boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE, getName(), endValue, startValue);
     }
 
@@ -463,8 +463,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE, getName(), endValue, startValue, "LIMIT", offset, count);
     }
 
