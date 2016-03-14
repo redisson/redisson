@@ -16,6 +16,7 @@
 package org.redisson.client.codec;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -28,21 +29,35 @@ public class StringCodec implements Codec {
 
     public static final StringCodec INSTANCE = new StringCodec();
 
+    private final Charset charset;
+
     private final Encoder encoder = new Encoder() {
         @Override
         public byte[] encode(Object in) throws IOException {
-            return in.toString().getBytes("UTF-8");
+            return in.toString().getBytes(charset);
         }
     };
 
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) {
-            String str = buf.toString(CharsetUtil.UTF_8);
+            String str = buf.toString(charset);
             buf.readerIndex(buf.readableBytes());
             return str;
         }
     };
+
+    public StringCodec() {
+        this(CharsetUtil.UTF_8);
+    }
+
+    public StringCodec(String charsetName) {
+	this(Charset.forName(charsetName));
+    }
+
+    public StringCodec(Charset charset) {
+        this.charset = charset;
+    }
 
     @Override
     public Decoder<Object> getValueDecoder() {

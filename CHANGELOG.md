@@ -2,6 +2,26 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####04-Mar-2016 - version 2.2.9 released  
+
+Feature - __new object added__ `RSetMultimap`  
+Feature - __new object added__ `RListMultimap`  
+Feature - `valueRangeReversed` and `valueRangeReversedAsync` methods were added to `RScoredSortedSet` object  
+Improvement - Throw `RedisOutOfMemoryException` when OOM error from Redis server has occured  
+Improvement - Node type added to optimization in Cluster mode  
+Improvement - Add DynamicImport-Package to OSGi headers  
+Fixed - `RedissonSpringCacheManager` Sentinel compatibility  
+Fixed - `RAtomicLong.compareAndSet` doesn't work when expected value is 0 and it wasn't initialized  
+
+####12-Feb-2016 - version 2.2.8 released  
+
+Feature - `union`, `unionAsync`, `readUnion` and `readUnionAsync` methods were added to `RSet` object  
+Feature - `readAll` and `readAllAsync` methods were added to `RSetCache` object  
+Improvement - `RKeys.delete` optimization in Cluster mode  
+Fixed - Script error during `RSetCache.toArray` and `RSetCache.readAll` methods invocation  
+Fixed - Sentinel doesn't support AUTH command  
+Fixed - RMap iterator  
+
 ####03-Feb-2016 - version 2.2.7 released  
 
 Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  

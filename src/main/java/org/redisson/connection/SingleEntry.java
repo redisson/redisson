@@ -24,9 +24,9 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SinglePubSubConnectionPool;
+import org.redisson.core.NodeType;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -43,12 +43,12 @@ public class SingleEntry extends MasterSlaveEntry {
 
     @Override
     public Future<Void> setupMasterEntry(String host, int port) {
-        RedisClient masterClient = connectionManager.createClient(host, port);
+        RedisClient masterClient = connectionManager.createClient(NodeType.MASTER, host, port);
         masterEntry = new ClientConnectionsEntry(masterClient,
                 config.getMasterConnectionMinimumIdleSize(),
                 config.getMasterConnectionPoolSize(),
                 config.getSlaveConnectionMinimumIdleSize(),
-                config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, NodeType.MASTER, config);
+                config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, NodeType.MASTER);
         final Promise<Void> res = connectionManager.newPromise();
         Future<Void> f = writeConnectionHolder.add(masterEntry);
         Future<Void> s = pubSubConnectionHolder.add(masterEntry);

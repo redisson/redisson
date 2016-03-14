@@ -28,9 +28,9 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.connection.ClientConnectionsEntry.NodeType;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.core.NodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,10 +185,10 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     protected Future<T> connect(ClientConnectionsEntry entry) {
-        return (Future<T>) entry.connect(config);
+        return (Future<T>) entry.connect();
     }
 
-    private Future<T> connectTo(final ClientConnectionsEntry entry) {
+    private Future<T> connectTo(ClientConnectionsEntry entry) {
         T conn = poll(entry);
         if (conn != null) {
             if (!conn.isActive()) {

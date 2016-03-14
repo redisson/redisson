@@ -20,6 +20,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.core.ClusterNode;
+import org.redisson.core.NodeType;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -28,11 +29,18 @@ public class RedisClientEntry implements ClusterNode {
 
     private final RedisClient client;
     private final ConnectionManager manager;
+    private final NodeType type;
 
-    public RedisClientEntry(RedisClient client, ConnectionManager manager) {
+    public RedisClientEntry(RedisClient client, ConnectionManager manager, NodeType type) {
         super();
         this.client = client;
         this.manager = manager;
+        this.type = type;
+    }
+
+    @Override
+    public NodeType getType() {
+        return type;
     }
 
     public RedisClient getClient() {

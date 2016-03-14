@@ -14,6 +14,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.CommandDecoder;
@@ -26,6 +27,7 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+import org.redisson.core.RBatch;
 import org.redisson.core.RMap;
 
 import io.netty.bootstrap.Bootstrap;
@@ -56,7 +58,42 @@ public class RedissonTest {
         RedissonClient r = Redisson.create(config);
         r.getMap("test").put("1", new Dummy());
     }
+    
+    @Test(expected = RedisOutOfMemoryException.class)
+    public void testMemoryScript() throws IOException, InterruptedException {
+        Process p = RedisRunner.runRedis("/redis_oom_test.conf");
 
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319").setTimeout(100000);
+
+        try {
+            RedissonClient r = Redisson.create(config);
+            for (int i = 0; i < 10000; i++) {
+                r.getMap("test").put("" + i, "" + i);
+            }
+        } finally {
+            p.destroy();
+        }
+    }
+
+    @Test(expected = RedisOutOfMemoryException.class)
+    public void testMemoryCommand() throws IOException, InterruptedException {
+        Process p = RedisRunner.runRedis("/redis_oom_test.conf");
+
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319").setTimeout(100000);
+
+        try {
+            RedissonClient r = Redisson.create(config);
+            for (int i = 0; i < 10000; i++) {
+                r.getMap("test").fastPut("" + i, "" + i);
+            }
+        } finally {
+            p.destroy();
+        }
+    }
+
+    
     @Test
     public void testConnectionListener() throws IOException, InterruptedException, TimeoutException {
 

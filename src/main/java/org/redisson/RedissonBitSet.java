@@ -31,7 +31,7 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
-    protected RedissonBitSet(CommandAsyncExecutor connectionManager, String name) {
+    public RedissonBitSet(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 

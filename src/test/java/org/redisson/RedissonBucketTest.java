@@ -157,7 +157,7 @@ public class RedissonBucketTest extends BaseTest {
         bucket.set(value);
         Assert.assertEquals(value, bucket.get());
 
-        Assert.assertTrue(bucket.exists());
+        Assert.assertTrue(bucket.isExists());
     }
 
     @Test
@@ -168,11 +168,11 @@ public class RedissonBucketTest extends BaseTest {
         bucket.set(value);
         Assert.assertEquals(value, bucket.get());
 
-        Assert.assertTrue(bucket.exists());
+        Assert.assertTrue(bucket.isExists());
 
         bucket.delete();
 
-        Assert.assertFalse(bucket.exists());
+        Assert.assertFalse(bucket.isExists());
     }
 
     @Test

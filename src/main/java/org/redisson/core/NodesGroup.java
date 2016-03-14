@@ -42,6 +42,16 @@ public interface NodesGroup<N extends Node> {
     void removeConnectionListener(int listenerId);
 
     /**
+     * Get all nodes by type
+     *
+     * @see {@link NodeType}
+     *
+     * @param type
+     * @return
+     */
+    Collection<N> getNodes(NodeType type);
+
+    /**
      * All Redis nodes used by Redisson.
      * This collection may change during master change, cluster topology update and etc.
      *

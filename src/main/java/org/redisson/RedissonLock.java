@@ -577,7 +577,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                             return;
                         }
 
-                        futureRef.get().cancel(false);
+                        if (futureRef.get() != null) {
+                            futureRef.get().cancel(false);
+                        }
 
                         tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
                     }

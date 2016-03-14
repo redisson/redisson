@@ -53,6 +53,7 @@ import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RKeys;
 import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RList;
+import org.redisson.core.RListMultimap;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapCache;
@@ -64,6 +65,7 @@ import org.redisson.core.RScript;
 import org.redisson.core.RSemaphore;
 import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
+import org.redisson.core.RSetMultimap;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
@@ -245,8 +247,28 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public <K, V> RListMultimap<K, V> getListMultimap(String name) {
+        return new RedissonListMultimap<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec) {
+        return new RedissonListMultimap<K, V>(codec, commandExecutor, name);
+    }
+
+    @Override
     public <K, V> RMap<K, V> getMap(String name) {
         return new RedissonMap<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RSetMultimap<K, V> getSetMultimap(String name) {
+        return new RedissonSetMultimap<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec) {
+        return new RedissonSetMultimap<K, V>(codec, commandExecutor, name);
     }
 
     @Override

@@ -165,16 +165,22 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
     }
 
-    private String value(String element, boolean inclusive) {
+    private String value(double score, boolean inclusive) {
+        StringBuilder element = new StringBuilder();
         if (!inclusive) {
-            element = "(" + element;
+            element.append("(");
         }
-        return element;
+        if (Double.isInfinite(score)) {
+            element.append(score > 0 ? "+inf" : "-inf");
+        } else {
+            element.append(BigDecimal.valueOf(score).toPlainString());
+        }
+        return element.toString();
     }
 
     @Override
@@ -406,10 +412,25 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue);
     }
+
+    @Override
+    public Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore,
+            boolean endScoreInclusive) {
+        return get(valueRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
+    }
+
+    @Override
+    public Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore,
+            boolean endScoreInclusive) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE, getName(), endValue, startValue);
+    }
+
 
     @Override
     public Collection<ScoredEntry<V>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
@@ -418,8 +439,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES");
     }
 
@@ -430,9 +451,21 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue, "LIMIT", offset, count);
+    }
+
+    @Override
+    public Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        return get(valueRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count));
+    }
+
+    @Override
+    public Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE, getName(), endValue, startValue, "LIMIT", offset, count);
     }
 
     @Override
@@ -442,8 +475,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
