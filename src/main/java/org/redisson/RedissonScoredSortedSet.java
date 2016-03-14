@@ -171,16 +171,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     private String value(double score, boolean inclusive) {
-        String element;
-        if (Double.isInfinite(score)) {
-            element = (score > 0 ? "+" : "-") + "inf";
-        } else {
-            element = BigDecimal.valueOf(score).toPlainString();
-        }
+        StringBuilder element = new StringBuilder();
         if (!inclusive) {
-            element = "(" + element;
+            element.append("(");
         }
-        return element;
+        if (Double.isInfinite(score)) {
+            element.append(score > 0 ? "+inf" : "-inf");
+        } else {
+            element.append(BigDecimal.valueOf(score).toPlainString());
+        }
+        return element.toString();
     }
 
     @Override
