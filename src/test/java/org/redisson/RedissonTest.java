@@ -61,7 +61,7 @@ public class RedissonTest {
     
     @Test(expected = RedisOutOfMemoryException.class)
     public void testMemoryScript() throws IOException, InterruptedException {
-        Process p = RedisRunner.runRedis("/redis_oom_test.conf");
+        Process p = RedisRunner.runRedisWithConfigFile("/redis_oom_test.conf");
 
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319").setTimeout(100000);
@@ -78,7 +78,7 @@ public class RedissonTest {
 
     @Test(expected = RedisOutOfMemoryException.class)
     public void testMemoryCommand() throws IOException, InterruptedException {
-        Process p = RedisRunner.runRedis("/redis_oom_test.conf");
+        Process p = RedisRunner.runRedisWithConfigFile("/redis_oom_test.conf");
 
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319").setTimeout(100000);
@@ -97,7 +97,7 @@ public class RedissonTest {
     @Test
     public void testConnectionListener() throws IOException, InterruptedException, TimeoutException {
 
-        Process p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
+        Process p = RedisRunner.runRedisWithConfigFile("/redis_connectionListener_test.conf");
 
         final AtomicInteger connectCounter = new AtomicInteger();
         final AtomicInteger disconnectCounter = new AtomicInteger();
@@ -134,7 +134,7 @@ public class RedissonTest {
         } catch (Exception e) {
         }
 
-        p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
+        p = RedisRunner.runRedisWithConfigFile("/redis_connectionListener_test.conf");
 
         r.getBucket("1").get();
 

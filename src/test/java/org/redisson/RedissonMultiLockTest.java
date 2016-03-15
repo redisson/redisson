@@ -17,9 +17,9 @@ public class RedissonMultiLockTest {
 
     @Test
     public void test() throws IOException, InterruptedException {
-        Process redis1 = RedisRunner.runRedis("/redis_multiLock_test_instance1.conf");
-        Process redis2 = RedisRunner.runRedis("/redis_multiLock_test_instance2.conf");
-        Process redis3 = RedisRunner.runRedis("/redis_multiLock_test_instance3.conf");
+        Process redis1 = RedisRunner.runRedisWithConfigFile("/redis_multiLock_test_instance1.conf");
+        Process redis2 = RedisRunner.runRedisWithConfigFile("/redis_multiLock_test_instance2.conf");
+        Process redis3 = RedisRunner.runRedisWithConfigFile("/redis_multiLock_test_instance3.conf");
 
         NioEventLoopGroup group = new NioEventLoopGroup();
         Config config1 = new Config();
