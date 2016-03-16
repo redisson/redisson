@@ -127,7 +127,7 @@ public class RedissonTest {
 
         r.getBucket("1").get();
         p.destroy();
-        Assert.assertEquals(1, p.waitFor());
+        Assert.assertEquals(RedisRunner.REDIS_EXIT_CODE, p.waitFor());
 
         try {
             r.getBucket("1").get();
@@ -141,7 +141,7 @@ public class RedissonTest {
         r.shutdown();
 
         p.destroy();
-        Assert.assertEquals(1, p.waitFor());
+        Assert.assertEquals(RedisRunner.REDIS_EXIT_CODE, p.waitFor());
 
         await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(2));
         await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));

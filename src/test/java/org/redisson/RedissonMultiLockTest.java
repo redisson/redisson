@@ -66,13 +66,13 @@ public class RedissonMultiLockTest {
         lock.unlock();
 
         redis1.destroy();
-        assertThat(redis1.waitFor()).isEqualTo(1);
+        assertThat(redis1.waitFor()).isEqualTo(RedisRunner.REDIS_EXIT_CODE);
 
         redis2.destroy();
-        assertThat(redis2.waitFor()).isEqualTo(1);
+        assertThat(redis2.waitFor()).isEqualTo(RedisRunner.REDIS_EXIT_CODE);
 
         redis3.destroy();
-        assertThat(redis3.waitFor()).isEqualTo(1);
+        assertThat(redis3.waitFor()).isEqualTo(RedisRunner.REDIS_EXIT_CODE);
     }
 
 }
