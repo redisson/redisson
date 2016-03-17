@@ -10,13 +10,14 @@ import java.util.stream.Collectors;
 
 public class RedisRunner {
 
-    enum OPTIONS {
+    public enum OPTIONS {
+
         BINARY_PATH,
         DAEMONIZE,
         PIDFILE,
         PORT,
         TCP_BACKLOG,
-        BIND,
+        BIND(true),
         UNIXSOCKET,
         UNIXSOCKETPERM,
         TIMEOUT,
@@ -27,7 +28,7 @@ public class RedisRunner {
         SYSLOG_IDENT,
         SYSLOG_FACILITY,
         DATABASES,
-        SAVE,
+        SAVE(true),
         STOP_WRITES_ON_BGSAVE_ERROR,
         RDBCOMPRESSION,
         RDBCHECKSUM,
@@ -48,7 +49,7 @@ public class RedisRunner {
         MIN_SLAVES_TO_WRITE,
         MIN_SLAVES_MAX_LAG,
         REQUREPASS,
-        RENAME_COMMAND,
+        RENAME_COMMAND(true),
         MAXCLIENTS,
         MAXMEMORY,
         MAXMEMORY_POLICY,
@@ -80,19 +81,37 @@ public class RedisRunner {
         ZSET_MAX_ZIPLIST_VALUE,
         HLL_SPARSE_MAX_BYTES,
         ACTIVEREHASHING,
-        CLIENT_OUTPUT_BUFFER_LIMIT,//MULTI
+        CLIENT_OUTPUT_BUFFER_LIMIT$NORMAL,
+        CLIENT_OUTPUT_BUFFER_LIMIT$SLAVE,
+        CLIENT_OUTPUT_BUFFER_LIMIT$PUBSUB,
         HZ,
-        AOF_REWRITE_INCREMENTAL_FSYNC
+        AOF_REWRITE_INCREMENTAL_FSYNC;
+
+        private final boolean allowMutiple;
+
+        private OPTIONS() {
+            this.allowMutiple = false;
+        }
+
+        private OPTIONS(boolean allowMutiple) {
+            this.allowMutiple = allowMutiple;
+        }
+
+        public boolean isAllowMultiple() {
+            return allowMutiple;
+        }
     }
-    
-    enum LOGLEVEL_OPTIONS {
+
+    public enum LOGLEVEL_OPTIONS {
+
         DEBUG,
         VERBOSE,
         NOTICE,
         WARNING
     }
-    
-    enum SYSLOG_FACILITY_OPTIONS {
+
+    public enum SYSLOG_FACILITY_OPTIONS {
+
         USER,
         LOCAL0,
         LOCAL1,
@@ -103,8 +122,9 @@ public class RedisRunner {
         LOCAL6,
         LOCAL7
     }
-    
-    enum MAX_MEMORY_POLICY_OPTIONS {
+
+    public enum MAX_MEMORY_POLICY_OPTIONS {
+
         VOLATILE_LRU,
         ALLKEYS_LRU,
         VOLATILE_RANDOM,
@@ -112,14 +132,16 @@ public class RedisRunner {
         VOLATILE_TTL,
         NOEVICTION
     }
-    
-    enum APPEND_FSYNC_MODE_OPTIONS {
+
+    public enum APPEND_FSYNC_MODE_OPTIONS {
+
         ALWAYS,
         EVERYSEC,
         NO
     }
-    
-    enum KEYSPACE_EVENTS_OPTIONS {
+
+    public enum KEYSPACE_EVENTS_OPTIONS {
+
         K,
         E,
         g,
@@ -132,21 +154,18 @@ public class RedisRunner {
         e,
         A
     }
-    
-    enum CLIENT_CLASS_OPTIONS {
-        NORMAL,
-        SLAVE,
-        PUBSUB
-    }
+
     private static final String redisFolder = "C:\\Devel\\projects\\redis\\Redis-x64-3.0.500\\";
     private static final String redisBinary = redisFolder + "redis-server.exe";
-    
+
     private final LinkedHashMap<OPTIONS, String> options = new LinkedHashMap<>();
 
     {
-        options.put(OPTIONS.BINARY_PATH, Optional.ofNullable(System.getProperty("redisBinary")).orElse(redisBinary));
+        options.put(OPTIONS.BINARY_PATH,
+                Optional.ofNullable(System.getProperty("redisBinary"))
+                .orElse(redisBinary));
     }
-    
+
     /**
      * To change the <b>redisBinary</b> system property for running the test,
      * use <i>argLine</i> option from surefire plugin:
@@ -166,7 +185,8 @@ public class RedisRunner {
         URL resource = RedisRunner.class.getResource(configPath);
 
         ProcessBuilder master = new ProcessBuilder(
-                Optional.ofNullable(System.getProperty("redisBinary")).orElse(redisBinary),
+                Optional.ofNullable(System.getProperty("redisBinary"))
+                .orElse(redisBinary),
                 resource.getFile().substring(1));
         master.directory(new File(redisFolder));
         Process p = master.start();
@@ -175,39 +195,73 @@ public class RedisRunner {
     }
 
     private void addConfigOption(OPTIONS option, String... args) {
-        StringBuilder sb = new StringBuilder("--");
-        sb.append(option.toString().replaceAll("_", "-").toLowerCase());
-        sb.append(" ");
-        sb.append(Arrays.stream(args).collect(Collectors.joining(" ")));
-        this.options.put(option, sb.toString());
+        StringBuilder sb = new StringBuilder(" --")
+                .append(option.toString()
+                        .replaceAll("_", "-")
+                        .replaceAll("\\$", " ")
+                        .toLowerCase())
+                .append(" ")
+                .append(Arrays.stream(args)
+                        .collect(Collectors.joining(" ")));
+        this.options.put(option, 
+                option.isAllowMultiple()
+                        ? sb.insert(0, this.options.getOrDefault(option, "")).toString()
+                        : sb.toString());
     }
-    
+
     private String convertBoolean(boolean b) {
         return b ? "yes" : "no";
     }
-    
+
     public RedisRunner daemonize(boolean daemonize) {
         addConfigOption(OPTIONS.DAEMONIZE, convertBoolean(daemonize));
         return this;
     }
-    
+
     public RedisRunner pidfile(String pidfile) {
         addConfigOption(OPTIONS.PIDFILE, pidfile);
         return this;
     }
-    
+
     public RedisRunner port(int port) {
         addConfigOption(OPTIONS.PORT, port + "");
         return this;
     }
-    
+
     public RedisRunner tcpBacklog(int tcpBacklog) {
         addConfigOption(OPTIONS.TCP_BACKLOG, "" + tcpBacklog);
         return this;
     }
+
+    public RedisRunner bind(String bind) {
+        addConfigOption(OPTIONS.BIND, bind);
+        return this;
+    }
+
+    public RedisRunner timeout(long timeout) {
+        addConfigOption(OPTIONS.TIMEOUT, "" + timeout);
+        return this;
+    }
+
+    public RedisRunner tcpKeepalive(long tcpKeepalive) {
+        addConfigOption(OPTIONS.TCP_KEEPALIVE, "" + tcpKeepalive);
+        return this;
+    }
     
+    public RedisRunner loglevel(LOGLEVEL_OPTIONS loglevel) {
+        addConfigOption(OPTIONS.LOGLEVEL, loglevel.toString());
+        return this;
+    }
+    
+    public RedisRunner logfile(String logfile) {
+        addConfigOption(OPTIONS.LOGLEVEL, logfile);
+        return this;
+    }
+
     public Process run() throws IOException, InterruptedException {
-        ProcessBuilder master = new ProcessBuilder(options.values().stream().collect(Collectors.joining(" ")));
+        ProcessBuilder master = new ProcessBuilder(
+                options.values().stream()
+                .collect(Collectors.joining()));
         master.directory(new File(redisBinary).getParentFile());
         Process p = master.start();
         Thread.sleep(1000);
