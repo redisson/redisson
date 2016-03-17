@@ -238,6 +238,16 @@ public class RedisRunner {
         return this;
     }
 
+    public RedisRunner unixsocket(String unixsocket) {
+        addConfigOption(OPTIONS.UNIXSOCKET, unixsocket);
+        return this;
+    }
+
+    public RedisRunner unixsocketperm(String unixsocketperm) {
+        addConfigOption(OPTIONS.UNIXSOCKETPERM, unixsocketperm);
+        return this;
+    }
+
     public RedisRunner timeout(long timeout) {
         addConfigOption(OPTIONS.TIMEOUT, "" + timeout);
         return this;
