@@ -8,6 +8,7 @@ import java.net.Inet4Address;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -165,7 +166,7 @@ public class RedisRunner {
 
     static {
         redisBinary = Optional.ofNullable(System.getProperty("redisBinary"))
-                .orElse("C:\\Devel\\projects\\redis\\Redis-x64-3.0.500\\redis-server.exe") + " ";
+                .orElse("C:\\Devel\\projects\\redis\\Redis-x64-3.0.500\\redis-server.exe");
     }
 
     {
@@ -193,10 +194,10 @@ public class RedisRunner {
     }
 
     private static RedisProcess runWithOptions(String... options) throws IOException, InterruptedException {
-        String[] launchOptions = Arrays.stream(options)
-                .collect(Collectors.joining())
-                .split(" ");
-        System.out.println("REDIS LAUNCH OPTIONS: " + Arrays.toString(launchOptions));
+        List<String> launchOptions = Arrays.stream(options)
+            .map(x -> Arrays.asList(x.split(" "))).flatMap(x -> x.stream())
+            .collect(Collectors.toList());
+        System.out.println("REDIS LAUNCH OPTIONS: " + Arrays.toString(launchOptions.toArray()));
         ProcessBuilder master = new ProcessBuilder(launchOptions)
                 .redirectErrorStream(true)
                 .directory(new File(redisBinary).getParentFile());
