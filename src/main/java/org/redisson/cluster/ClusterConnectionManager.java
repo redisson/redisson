@@ -96,11 +96,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (lastPartitions.isEmpty()) {
-            try {
-                group.shutdownGracefully().await();
-            } catch (Exception e) {
-                // skip it
-            }
+            stopThreads();
             throw new RedisConnectionException("Can't connect to servers!", lastException);
         }
 

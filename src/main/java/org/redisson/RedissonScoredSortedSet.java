@@ -480,4 +480,14 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
+    @Override
+    public Future<Integer> revRankAsync(V o) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANK_INT, getName(), o);
+    }
+
+    @Override
+    public int revRank(V o) {
+        return get(revRankAsync(o));
+    }
+
 }

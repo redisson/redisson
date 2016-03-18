@@ -39,6 +39,8 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
     Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 
     Future<Integer> rankAsync(V o);
+    
+    Future<Integer> revRankAsync(V o);
 
     Future<Double> getScoreAsync(V o);
 

@@ -37,6 +37,8 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int removeRangeByRank(int startIndex, int endIndex);
 
     int rank(V o);
+    
+    int revRank(V o);
 
     Double getScore(V o);
 

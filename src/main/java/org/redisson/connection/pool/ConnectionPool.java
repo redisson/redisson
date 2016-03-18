@@ -153,7 +153,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        StringBuilder errorMsg = new StringBuilder("Connection pool exhausted! All connections are busy. Try to increase connection pool size.");
+        StringBuilder errorMsg = new StringBuilder("Publish/Subscribe connection pool exhausted! All connections are busy. Try to increase Publish/Subscribe connection pool size.");
 //        if (!freezed.isEmpty()) {
 //            errorMsg.append(" Disconnected hosts: " + freezed);
 //        }

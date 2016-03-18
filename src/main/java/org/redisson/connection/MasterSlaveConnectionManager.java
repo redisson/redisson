@@ -202,11 +202,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         try {
             initEntry(config);
         } catch (RuntimeException e) {
-            try {
-                group.shutdownGracefully().await();
-            } catch (Exception e1) {
-                // skip
-            }
+            stopThreads();
             throw e;
         }
     }
@@ -741,4 +737,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return connectionEventsHub;
     }
 
+    protected void stopThreads() {
+        timer.stop();
+        try {
+            group.shutdownGracefully().await();
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }
