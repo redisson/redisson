@@ -15,9 +15,22 @@
 language: java
 jdk:
   - oraclejdk8
-services:
-    - redis-server
+env:
+    - REDIS_VERSION=3.0.7
 cache:
   directories:
   - $HOME/.m2
-script: mvn -DargLine="-DredisBinary=`which redis-server`" -Punit-test -Ptravis clean verify
+install:
+    - export REDIS_BIN=$HOME/redis/${REDIS_VERSION}/bin
+    - >
+        wget -c https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz -O redis-${REDIS_VERSION}.tar.gz
+        tar -xvf redis-${REDIS_VERSION}.tar.gz
+        make -C redis-${REDIS_VERSION} PREFIX=$HOME/redis/${REDIS_VERSION} install
+before_script:
+    - >
+        $REDIS_BIN/redis-server --daemonize yes
+    - sleep 3
+    - $REDIS_BIN/redis-cli PING
+    - export REDIS_VERSION="$(redis-cli INFO SERVER | sed -n 2p)"
+    - echo $REDIS_VERSION
+script: mvn -DargLine="-DredisBinary=$REDIS_BIN" -Punit-test -Ptravis clean verify
