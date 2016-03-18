@@ -41,6 +41,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import static com.jayway.awaitility.Awaitility.*;
+import org.redisson.RedisRunner.RedisProcess;
 
 public class RedissonTest {
 
@@ -61,7 +62,7 @@ public class RedissonTest {
     
     @Test(expected = RedisOutOfMemoryException.class)
     public void testMemoryScript() throws IOException, InterruptedException {
-        Process p = RedisRunner.runRedis("/redis_oom_test.conf");
+        RedisProcess p = redisTestSmallMemory();
 
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319").setTimeout(100000);
@@ -72,13 +73,13 @@ public class RedissonTest {
                 r.getMap("test").put("" + i, "" + i);
             }
         } finally {
-            p.destroy();
+            p.stop();
         }
     }
 
     @Test(expected = RedisOutOfMemoryException.class)
     public void testMemoryCommand() throws IOException, InterruptedException {
-        Process p = RedisRunner.runRedis("/redis_oom_test.conf");
+        RedisProcess p = redisTestSmallMemory();
 
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319").setTimeout(100000);
@@ -89,7 +90,7 @@ public class RedissonTest {
                 r.getMap("test").fastPut("" + i, "" + i);
             }
         } finally {
-            p.destroy();
+            p.stop();
         }
     }
 
@@ -97,7 +98,7 @@ public class RedissonTest {
     @Test
     public void testConnectionListener() throws IOException, InterruptedException, TimeoutException {
 
-        Process p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
+        RedisProcess p = redisTestConnection();
 
         final AtomicInteger connectCounter = new AtomicInteger();
         final AtomicInteger disconnectCounter = new AtomicInteger();
@@ -126,22 +127,20 @@ public class RedissonTest {
         assertThat(id).isNotZero();
 
         r.getBucket("1").get();
-        p.destroy();
-        Assert.assertEquals(1, p.waitFor());
+        Assert.assertEquals(0, p.stop());
 
         try {
             r.getBucket("1").get();
         } catch (Exception e) {
         }
 
-        p = RedisRunner.runRedis("/redis_connectionListener_test.conf");
+        p = redisTestConnection();
 
         r.getBucket("1").get();
 
         r.shutdown();
 
-        p.destroy();
-        Assert.assertEquals(1, p.waitFor());
+        Assert.assertEquals(0, p.stop());
 
         await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(2));
         await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
@@ -282,5 +281,17 @@ public class RedissonTest {
         r.shutdown();
     }
 
+    private RedisProcess redisTestSmallMemory() throws IOException, InterruptedException {
+        return new RedisRunner()
+                .maxmemory("1mb")
+                .port(6319)
+                .run();
+    }
 
+    private RedisProcess redisTestConnection() throws IOException, InterruptedException {
+        return new RedisRunner()
+                .port(6319)
+                .run();
+    }
+    
 }

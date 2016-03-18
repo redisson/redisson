@@ -12,14 +12,15 @@ import org.redisson.core.RLock;
 import org.redisson.core.RedissonMultiLock;
 
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.redisson.RedisRunner.RedisProcess;
 
 public class RedissonMultiLockTest {
 
     @Test
     public void test() throws IOException, InterruptedException {
-        Process redis1 = RedisRunner.runRedis("/redis_multiLock_test_instance1.conf");
-        Process redis2 = RedisRunner.runRedis("/redis_multiLock_test_instance2.conf");
-        Process redis3 = RedisRunner.runRedis("/redis_multiLock_test_instance3.conf");
+        RedisProcess redis1 = redisTestMultilockInstance1();
+        RedisProcess redis2 = redisTestMultilockInstance2();
+        RedisProcess redis3 = redisTestMultilockInstance3();
 
         NioEventLoopGroup group = new NioEventLoopGroup();
         Config config1 = new Config();
@@ -65,14 +66,28 @@ public class RedissonMultiLockTest {
 
         lock.unlock();
 
-        redis1.destroy();
-        assertThat(redis1.waitFor()).isEqualTo(1);
+        assertThat(redis1.stop()).isEqualTo(0);
 
-        redis2.destroy();
-        assertThat(redis2.waitFor()).isEqualTo(1);
+        assertThat(redis2.stop()).isEqualTo(0);
 
-        redis3.destroy();
-        assertThat(redis3.waitFor()).isEqualTo(1);
+        assertThat(redis3.stop()).isEqualTo(0);
     }
-
+    
+    private RedisProcess redisTestMultilockInstance1() throws IOException, InterruptedException {
+        return new RedisRunner()
+                .port(6320)
+                .run();
+    }
+    
+    private RedisProcess redisTestMultilockInstance2() throws IOException, InterruptedException {
+        return new RedisRunner()
+                .port(6321)
+                .run();
+    }
+    
+    private RedisProcess redisTestMultilockInstance3() throws IOException, InterruptedException {
+        return new RedisRunner()
+                .port(6322)
+                .run();
+    }
 }
