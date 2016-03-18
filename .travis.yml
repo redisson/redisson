@@ -22,13 +22,11 @@ cache:
   - $HOME/.m2
 install:
     - export REDIS_BIN=$HOME/redis/${REDIS_VERSION}/bin
-    - >
-        wget -c https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz -O redis-${REDIS_VERSION}.tar.gz
-        tar -xvf redis-${REDIS_VERSION}.tar.gz
-        make -C redis-${REDIS_VERSION} PREFIX=$HOME/redis/${REDIS_VERSION} install
+    - wget -c https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz -O redis-${REDIS_VERSION}.tar.gz
+    - tar -xvf redis-${REDIS_VERSION}.tar.gz
+    - make -C redis-${REDIS_VERSION} PREFIX=$HOME/redis/${REDIS_VERSION} install
 before_script:
-    - >
-        $REDIS_BIN/redis-server --daemonize yes
+    - $REDIS_BIN/redis-server --daemonize yes
     - sleep 3
     - $REDIS_BIN/redis-cli PING
     - export REDIS_VERSION="$(redis-cli INFO SERVER | sed -n 2p)"
