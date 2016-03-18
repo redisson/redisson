@@ -6,14 +6,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Inet4Address;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class RedisRunner {
@@ -197,8 +194,11 @@ public class RedisRunner {
     }
 
     private static RedisProcess runWithOptions(String... options) throws IOException, InterruptedException {
-        System.out.println("REDIS LAUNCH OPTIONS: " + Arrays.toString(options));
-        ProcessBuilder master = new ProcessBuilder(options)
+        List<String> launchOptions = Arrays.stream(options)
+            .map(x -> Arrays.asList(x.split(" "))).flatMap(x -> x.stream())
+            .collect(Collectors.toList());
+        System.out.println("REDIS LAUNCH OPTIONS: " + Arrays.toString(launchOptions.toArray()));
+        ProcessBuilder master = new ProcessBuilder(launchOptions)
                 .redirectErrorStream(true)
                 .directory(new File(redisBinary).getParentFile());
         Process p = master.start();
@@ -217,20 +217,18 @@ public class RedisRunner {
         return new RedisProcess(p);
     }
 
-    
-    
     public RedisProcess run() throws IOException, InterruptedException {
         return runWithOptions(options.values().toArray(new String[0]));
     }
 
-    private void addConfigOption(REDIS_OPTIONS option, String... args) {
+    private void addConfigOption(REDIS_OPTIONS option, Object... args) {
         StringBuilder sb = new StringBuilder("--")
                 .append(option.toString()
                         .replaceAll("_", "-")
                         .replaceAll("\\$", " ")
                         .toLowerCase())
                 .append(" ")
-                .append(Arrays.stream(args)
+                .append(Arrays.stream(args).map(Object::toString)
                         .collect(Collectors.joining(" ")));
         this.options.put(option,
                 option.isAllowMultiple()
@@ -253,12 +251,12 @@ public class RedisRunner {
     }
 
     public RedisRunner port(int port) {
-        addConfigOption(REDIS_OPTIONS.PORT, "" + port);
+        addConfigOption(REDIS_OPTIONS.PORT, port);
         return this;
     }
 
     public RedisRunner tcpBacklog(long tcpBacklog) {
-        addConfigOption(REDIS_OPTIONS.TCP_BACKLOG, "" + tcpBacklog);
+        addConfigOption(REDIS_OPTIONS.TCP_BACKLOG, tcpBacklog);
         return this;
     }
 
@@ -273,17 +271,17 @@ public class RedisRunner {
     }
 
     public RedisRunner unixsocketperm(int unixsocketperm) {
-        addConfigOption(REDIS_OPTIONS.UNIXSOCKETPERM, "" + unixsocketperm);
+        addConfigOption(REDIS_OPTIONS.UNIXSOCKETPERM, unixsocketperm);
         return this;
     }
 
     public RedisRunner timeout(long timeout) {
-        addConfigOption(REDIS_OPTIONS.TIMEOUT, "" + timeout);
+        addConfigOption(REDIS_OPTIONS.TIMEOUT, timeout);
         return this;
     }
 
     public RedisRunner tcpKeepalive(long tcpKeepalive) {
-        addConfigOption(REDIS_OPTIONS.TCP_KEEPALIVE, "" + tcpKeepalive);
+        addConfigOption(REDIS_OPTIONS.TCP_KEEPALIVE, tcpKeepalive);
         return this;
     }
 
@@ -313,12 +311,12 @@ public class RedisRunner {
     }
 
     public RedisRunner databases(int databases) {
-        addConfigOption(REDIS_OPTIONS.DATABASES, "" + databases);
+        addConfigOption(REDIS_OPTIONS.DATABASES, databases);
         return this;
     }
 
     public RedisRunner save(long seconds, long changes) {
-        addConfigOption(REDIS_OPTIONS.SAVE, "" + seconds, "" + changes);
+        addConfigOption(REDIS_OPTIONS.SAVE, seconds, changes);
         return this;
     }
 
@@ -348,7 +346,7 @@ public class RedisRunner {
     }
 
     public RedisRunner slaveof(Inet4Address masterip, int port) {
-        addConfigOption(REDIS_OPTIONS.SLAVEOF, masterip.getHostAddress(), "" + port);
+        addConfigOption(REDIS_OPTIONS.SLAVEOF, masterip.getHostAddress(), port);
         return this;
     }
 
@@ -373,17 +371,17 @@ public class RedisRunner {
     }
 
     public RedisRunner replDisklessSyncDelay(long replDisklessSyncDelay) {
-        addConfigOption(REDIS_OPTIONS.REPL_DISKLESS_SYNC_DELAY, "" + replDisklessSyncDelay);
+        addConfigOption(REDIS_OPTIONS.REPL_DISKLESS_SYNC_DELAY, replDisklessSyncDelay);
         return this;
     }
 
     public RedisRunner replPingSlavePeriod(long replPingSlavePeriod) {
-        addConfigOption(REDIS_OPTIONS.REPL_PING_SLAVE_PERIOD, "" + replPingSlavePeriod);
+        addConfigOption(REDIS_OPTIONS.REPL_PING_SLAVE_PERIOD, replPingSlavePeriod);
         return this;
     }
 
     public RedisRunner replTimeout(long replTimeout) {
-        addConfigOption(REDIS_OPTIONS.REPL_TIMEOUT, "" + replTimeout);
+        addConfigOption(REDIS_OPTIONS.REPL_TIMEOUT, replTimeout);
         return this;
     }
 
@@ -393,27 +391,27 @@ public class RedisRunner {
     }
 
     public RedisRunner replBacklogSize(String replBacklogSize) {
-        addConfigOption(REDIS_OPTIONS.REPL_BACKLOG_SIZE, "" + replBacklogSize);
+        addConfigOption(REDIS_OPTIONS.REPL_BACKLOG_SIZE, replBacklogSize);
         return this;
     }
 
     public RedisRunner replBacklogTtl(long replBacklogTtl) {
-        addConfigOption(REDIS_OPTIONS.REPL_BACKLOG_TTL, "" + replBacklogTtl);
+        addConfigOption(REDIS_OPTIONS.REPL_BACKLOG_TTL, replBacklogTtl);
         return this;
     }
 
     public RedisRunner slavePriority(long slavePriority) {
-        addConfigOption(REDIS_OPTIONS.SLAVE_PRIORITY, "" + slavePriority);
+        addConfigOption(REDIS_OPTIONS.SLAVE_PRIORITY, slavePriority);
         return this;
     }
 
     public RedisRunner minSlaveToWrite(long minSlaveToWrite) {
-        addConfigOption(REDIS_OPTIONS.MIN_SLAVES_TO_WRITE, "" + minSlaveToWrite);
+        addConfigOption(REDIS_OPTIONS.MIN_SLAVES_TO_WRITE, minSlaveToWrite);
         return this;
     }
 
     public RedisRunner minSlaveMaxLag(long minSlaveMaxLag) {
-        addConfigOption(REDIS_OPTIONS.MIN_SLAVES_MAX_LAG, "" + minSlaveMaxLag);
+        addConfigOption(REDIS_OPTIONS.MIN_SLAVES_MAX_LAG, minSlaveMaxLag);
         return this;
     }
 
@@ -428,12 +426,12 @@ public class RedisRunner {
     }
 
     public RedisRunner maxclients(long maxclients) {
-        addConfigOption(REDIS_OPTIONS.MAXCLIENTS, "" + maxclients);
+        addConfigOption(REDIS_OPTIONS.MAXCLIENTS, maxclients);
         return this;
     }
 
     public RedisRunner maxmemory(String maxmemory) {
-        addConfigOption(REDIS_OPTIONS.MAXMEMORY, "" + maxmemory);
+        addConfigOption(REDIS_OPTIONS.MAXMEMORY, maxmemory);
         return this;
     }
 
@@ -443,7 +441,7 @@ public class RedisRunner {
     }
 
     public RedisRunner maxmemorySamples(long maxmemorySamples) {
-        addConfigOption(REDIS_OPTIONS.MAXMEMORY, "" + maxmemorySamples);
+        addConfigOption(REDIS_OPTIONS.MAXMEMORY, maxmemorySamples);
         return this;
     }
 
@@ -468,7 +466,7 @@ public class RedisRunner {
     }
 
     public RedisRunner autoAofRewritePercentage(int autoAofRewritePercentage) {
-        addConfigOption(REDIS_OPTIONS.AUTO_AOF_REWRITE_PERCENTAGE, "" + autoAofRewritePercentage);
+        addConfigOption(REDIS_OPTIONS.AUTO_AOF_REWRITE_PERCENTAGE, autoAofRewritePercentage);
         return this;
     }
 
@@ -483,7 +481,7 @@ public class RedisRunner {
     }
 
     public RedisRunner luaTimeLimit(long luaTimeLimit) {
-        addConfigOption(REDIS_OPTIONS.AOF_LOAD_TRUNCATED, "" + luaTimeLimit);
+        addConfigOption(REDIS_OPTIONS.AOF_LOAD_TRUNCATED, luaTimeLimit);
         return this;
     }
 
@@ -498,17 +496,17 @@ public class RedisRunner {
     }
 
     public RedisRunner clusterNodeTimeout(long clusterNodeTimeout) {
-        addConfigOption(REDIS_OPTIONS.CLUSTER_NODE_TIMEOUT, "" + clusterNodeTimeout);
+        addConfigOption(REDIS_OPTIONS.CLUSTER_NODE_TIMEOUT, clusterNodeTimeout);
         return this;
     }
 
     public RedisRunner clusterSlaveValidityFactor(long clusterSlaveValidityFactor) {
-        addConfigOption(REDIS_OPTIONS.CLUSTER_SLAVE_VALIDITY_FACTOR, "" + clusterSlaveValidityFactor);
+        addConfigOption(REDIS_OPTIONS.CLUSTER_SLAVE_VALIDITY_FACTOR, clusterSlaveValidityFactor);
         return this;
     }
 
     public RedisRunner clusterMigrationBarrier(long clusterMigrationBarrier) {
-        addConfigOption(REDIS_OPTIONS.CLUSTER_MIGRATION_BARRIER, "" + clusterMigrationBarrier);
+        addConfigOption(REDIS_OPTIONS.CLUSTER_MIGRATION_BARRIER, clusterMigrationBarrier);
         return this;
     }
 
@@ -518,17 +516,17 @@ public class RedisRunner {
     }
 
     public RedisRunner slowlogLogSlowerThan(long slowlogLogSlowerThan) {
-        addConfigOption(REDIS_OPTIONS.SLOWLOG_LOG_SLOWER_THAN, "" + slowlogLogSlowerThan);
+        addConfigOption(REDIS_OPTIONS.SLOWLOG_LOG_SLOWER_THAN, slowlogLogSlowerThan);
         return this;
     }
 
     public RedisRunner slowlogMaxLen(long slowlogMaxLen) {
-        addConfigOption(REDIS_OPTIONS.SLOWLOG_MAX_LEN, "" + slowlogMaxLen);
+        addConfigOption(REDIS_OPTIONS.SLOWLOG_MAX_LEN, slowlogMaxLen);
         return this;
     }
 
     public RedisRunner latencyMonitorThreshold(long latencyMonitorThreshold) {
-        addConfigOption(REDIS_OPTIONS.LATENCY_MONITOR_THRESHOLD, "" + latencyMonitorThreshold);
+        addConfigOption(REDIS_OPTIONS.LATENCY_MONITOR_THRESHOLD, latencyMonitorThreshold);
         return this;
     }
 
@@ -536,48 +534,48 @@ public class RedisRunner {
         String existing = this.options.getOrDefault(REDIS_OPTIONS.CLUSTER_CONFIG_FILE, "");
         addConfigOption(REDIS_OPTIONS.CLUSTER_CONFIG_FILE,
                 existing.contains(notifyKeyspaceEvents.toString())
-                        ? existing
-                        : (existing + notifyKeyspaceEvents.toString()));
+                ? existing
+                : (existing + notifyKeyspaceEvents.toString()));
         return this;
     }
 
     public RedisRunner hashMaxZiplistEntries(long hashMaxZiplistEntries) {
-        addConfigOption(REDIS_OPTIONS.HASH_MAX_ZIPLIST_ENTRIES, "" + hashMaxZiplistEntries);
+        addConfigOption(REDIS_OPTIONS.HASH_MAX_ZIPLIST_ENTRIES, hashMaxZiplistEntries);
         return this;
     }
 
     public RedisRunner hashMaxZiplistValue(long hashMaxZiplistValue) {
-        addConfigOption(REDIS_OPTIONS.HASH_MAX_ZIPLIST_VALUE, "" + hashMaxZiplistValue);
+        addConfigOption(REDIS_OPTIONS.HASH_MAX_ZIPLIST_VALUE, hashMaxZiplistValue);
         return this;
     }
 
     public RedisRunner listMaxZiplistEntries(long listMaxZiplistEntries) {
-        addConfigOption(REDIS_OPTIONS.LIST_MAX_ZIPLIST_ENTRIES, "" + listMaxZiplistEntries);
+        addConfigOption(REDIS_OPTIONS.LIST_MAX_ZIPLIST_ENTRIES, listMaxZiplistEntries);
         return this;
     }
 
     public RedisRunner listMaxZiplistValue(long listMaxZiplistValue) {
-        addConfigOption(REDIS_OPTIONS.LIST_MAX_ZIPLIST_VALUE, "" + listMaxZiplistValue);
+        addConfigOption(REDIS_OPTIONS.LIST_MAX_ZIPLIST_VALUE, listMaxZiplistValue);
         return this;
     }
 
     public RedisRunner setMaxIntsetEntries(long setMaxIntsetEntries) {
-        addConfigOption(REDIS_OPTIONS.SET_MAX_INTSET_ENTRIES, "" + setMaxIntsetEntries);
+        addConfigOption(REDIS_OPTIONS.SET_MAX_INTSET_ENTRIES, setMaxIntsetEntries);
         return this;
     }
 
     public RedisRunner zsetMaxZiplistEntries(long zsetMaxZiplistEntries) {
-        addConfigOption(REDIS_OPTIONS.ZSET_MAX_ZIPLIST_ENTRIES, "" + zsetMaxZiplistEntries);
+        addConfigOption(REDIS_OPTIONS.ZSET_MAX_ZIPLIST_ENTRIES, zsetMaxZiplistEntries);
         return this;
     }
 
     public RedisRunner zsetMaxZiplistValue(long zsetMaxZiplistValue) {
-        addConfigOption(REDIS_OPTIONS.ZSET_MAX_ZIPLIST_VALUE, "" + zsetMaxZiplistValue);
+        addConfigOption(REDIS_OPTIONS.ZSET_MAX_ZIPLIST_VALUE, zsetMaxZiplistValue);
         return this;
     }
 
     public RedisRunner hllSparseMaxBytes(long hllSparseMaxBytes) {
-        addConfigOption(REDIS_OPTIONS.HLL_SPARSE_MAX_BYTES, "" + hllSparseMaxBytes);
+        addConfigOption(REDIS_OPTIONS.HLL_SPARSE_MAX_BYTES, hllSparseMaxBytes);
         return this;
     }
 
@@ -587,22 +585,22 @@ public class RedisRunner {
     }
 
     public RedisRunner clientOutputBufferLimit$Normal(String hardLimit, String softLimit, long softSeconds) {
-        addConfigOption(REDIS_OPTIONS.CLIENT_OUTPUT_BUFFER_LIMIT$NORMAL, hardLimit, softLimit, "" + softSeconds);
+        addConfigOption(REDIS_OPTIONS.CLIENT_OUTPUT_BUFFER_LIMIT$NORMAL, hardLimit, softLimit, softSeconds);
         return this;
     }
 
     public RedisRunner clientOutputBufferLimit$Slave(String hardLimit, String softLimit, long softSeconds) {
-        addConfigOption(REDIS_OPTIONS.CLIENT_OUTPUT_BUFFER_LIMIT$SLAVE, hardLimit, softLimit, "" + softSeconds);
+        addConfigOption(REDIS_OPTIONS.CLIENT_OUTPUT_BUFFER_LIMIT$SLAVE, hardLimit, softLimit, softSeconds);
         return this;
     }
 
     public RedisRunner clientOutputBufferLimit$Pubsub(String hardLimit, String softLimit, long softSeconds) {
-        addConfigOption(REDIS_OPTIONS.CLIENT_OUTPUT_BUFFER_LIMIT$PUBSUB, hardLimit, softLimit, "" + softSeconds);
+        addConfigOption(REDIS_OPTIONS.CLIENT_OUTPUT_BUFFER_LIMIT$PUBSUB, hardLimit, softLimit, softSeconds);
         return this;
     }
 
     public RedisRunner hz(int hz) {
-        addConfigOption(REDIS_OPTIONS.HZ, "" + hz);
+        addConfigOption(REDIS_OPTIONS.HZ, hz);
         return this;
     }
 
@@ -612,25 +610,26 @@ public class RedisRunner {
     }
 
     public static final class RedisProcess {
+
         private final Process redisProcess;
-        
+
         private RedisProcess(Process redisProcess) {
             this.redisProcess = redisProcess;
         }
-        
+
         public int stop() throws InterruptedException {
             redisProcess.destroy();
             int exitCode = redisProcess.waitFor();
-            return exitCode == 1 && isWindows() ? 0 : exitCode ;
+            return exitCode == 1 && isWindows() ? 0 : exitCode;
         }
 
         public Process getRedisProcess() {
             return redisProcess;
         }
-        
+
         private boolean isWindows() {
             return System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH).contains("win");
         }
     }
-    
+
 }
