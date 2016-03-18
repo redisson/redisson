@@ -193,13 +193,11 @@ public class RedisRunner {
     }
 
     private static RedisProcess runWithOptions(String... options) throws IOException, InterruptedException {
-        System.out.println("REDIS LAUNCH OPTIONS: " + Arrays.toString(Arrays.stream(options)
+        String[] launchOptions = Arrays.stream(options)
                 .collect(Collectors.joining())
-                .split(" ")));
-        ProcessBuilder master = new ProcessBuilder(
-                Arrays.stream(options)
-                .collect(Collectors.joining())
-                .split(" "))
+                .split(" ");
+        System.out.println("REDIS LAUNCH OPTIONS: " + Arrays.toString(launchOptions));
+        ProcessBuilder master = new ProcessBuilder(launchOptions)
                 .redirectErrorStream(true)
                 .directory(new File(redisBinary).getParentFile());
         Process p = master.start();

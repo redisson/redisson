@@ -8,3 +8,5 @@
 /target
 
 /*.cmd
+
+nb-configuration.xml
