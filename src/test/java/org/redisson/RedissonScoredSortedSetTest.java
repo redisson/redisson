@@ -161,6 +161,21 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
         Assert.assertEquals(3, (int)set.rank("d"));
     }
+    
+    @Test
+    public void testRevRank() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
+        set.add(0.5, "e");
+        set.add(0.6, "f");
+        set.add(0.7, "g");
+
+        Assert.assertEquals(1, (int)set.revRank("f"));
+    }
+
 
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
