@@ -57,6 +57,7 @@ import org.redisson.core.RListMultimap;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapCache;
+import org.redisson.core.RMultimapCache;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
 import org.redisson.core.RReadWriteLock;
@@ -66,6 +67,7 @@ import org.redisson.core.RSemaphore;
 import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
 import org.redisson.core.RSetMultimap;
+import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
@@ -264,6 +266,14 @@ public class Redisson implements RedissonClient {
     @Override
     public <K, V> RSetMultimap<K, V> getSetMultimap(String name) {
         return new RedissonSetMultimap<K, V>(commandExecutor, name);
+    }
+    
+    public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name) {
+        return new RedissonSetMultimapCache<K, V>(commandExecutor, name);
+    }
+    
+    public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name, Codec codec) {
+        return new RedissonSetMultimapCache<K, V>(codec, commandExecutor, name);
     }
 
     @Override
