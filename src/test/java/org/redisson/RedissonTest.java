@@ -49,6 +49,7 @@ public class RedissonTest {
 
         try {
             RedissonClient r = Redisson.create(config);
+            r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").put("" + i, "" + i);
             }
@@ -66,6 +67,7 @@ public class RedissonTest {
 
         try {
             RedissonClient r = Redisson.create(config);
+            r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").fastPut("" + i, "" + i);
             }
