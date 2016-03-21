@@ -42,7 +42,7 @@ import org.redisson.core.RSet;
 import io.netty.util.concurrent.Future;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.Set}
+ * Set based Multimap Cache values holder
  *
  * @author Nikita Koksharov
  *
