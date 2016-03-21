@@ -27,11 +27,10 @@ install:
     - wget -c https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz -O redis-${REDIS_VERSION}.tar.gz
     - tar -xvf redis-${REDIS_VERSION}.tar.gz
     - make -C redis-${REDIS_VERSION} PREFIX=$HOME/redis/${REDIS_VERSION} install
-    - chmod +x $REDIS_BIN/*
 before_script:
     - $REDIS_BIN/redis-server --daemonize yes
     - sleep 3
     - $REDIS_BIN/redis-cli PING
     - export REDIS_VERSION="$(redis-cli INFO SERVER | sed -n 2p)"
     - echo $REDIS_VERSION
-script: mvn -DargLine="-DredisBinary=$REDIS_BIN" -Punit-test -Ptravis clean verify
+script: mvn -DargLine="-DredisBinary=$REDIS_BIN/redis-server" -Punit-test -Ptravis clean verify
