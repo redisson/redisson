@@ -93,15 +93,21 @@ public class Redisson implements RedissonClient {
     Redisson(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
+        
         if (configCopy.getMasterSlaveServersConfig() != null) {
+            validate(configCopy.getMasterSlaveServersConfig());
             connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
         } else if (configCopy.getSingleServerConfig() != null) {
+            validate(configCopy.getSingleServerConfig());
             connectionManager = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
         } else if (configCopy.getSentinelServersConfig() != null) {
+            validate(configCopy.getSentinelServersConfig());
             connectionManager = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
         } else if (configCopy.getClusterServersConfig() != null) {
+            validate(configCopy.getClusterServersConfig());
             connectionManager = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
         } else if (configCopy.getElasticacheServersConfig() != null) {
+            validate(configCopy.getElasticacheServersConfig());
             connectionManager = new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy);
         } else {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
@@ -110,7 +116,23 @@ public class Redisson implements RedissonClient {
         evictionScheduler = new EvictionScheduler(commandExecutor);
     }
 
+    private void validate(SingleServerConfig config) {
+        if (config.getConnectionPoolSize() < config.getConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("connectionPoolSize can't be lower than connectionMinimumIdleSize");
+        }
+    }
 
+    private void validate(BaseMasterSlaveServersConfig<?> config) {
+        if (config.getSlaveConnectionPoolSize() < config.getSlaveConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("slaveConnectionPoolSize can't be lower than slaveConnectionMinimumIdleSize");
+        }
+        if (config.getMasterConnectionPoolSize() < config.getMasterConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("masterConnectionPoolSize can't be lower than masterConnectionMinimumIdleSize");
+        }
+        if (config.getSlaveSubscriptionConnectionPoolSize() < config.getSlaveSubscriptionConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("slaveSubscriptionConnectionMinimumIdleSize can't be lower than slaveSubscriptionConnectionPoolSize");
+        }
+    }
 
     /**
      * Create sync/async Redisson instance with default config
