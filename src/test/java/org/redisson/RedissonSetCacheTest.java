@@ -169,7 +169,7 @@ public class RedissonSetCacheTest extends BaseTest {
     }
 
     @Test
-    public void testRetainAll() {
+    public void testRetainAll() throws InterruptedException {
         RSetCache<Integer> set = redisson.getSetCache("set");
         for (int i = 0; i < 10000; i++) {
             set.add(i);
@@ -177,6 +177,7 @@ public class RedissonSetCacheTest extends BaseTest {
         }
 
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
+        Thread.sleep(500);
         assertThat(set).containsOnly(1, 2);
         Assert.assertEquals(2, set.size());
     }
