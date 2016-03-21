@@ -211,7 +211,7 @@ public class RedissonTest {
         assertThat(c.toJSON()).isEqualTo(t);
     }
 
-    @Test
+//    @Test
     public void testCluster() {
         NodesGroup<ClusterNode> nodes = redisson.getClusterNodesGroup();
         Assert.assertEquals(2, nodes.getNodes().size());
