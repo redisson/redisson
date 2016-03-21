@@ -54,6 +54,7 @@ import org.redisson.core.RKeys;
 import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RList;
 import org.redisson.core.RListMultimap;
+import org.redisson.core.RListMultimapCache;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapCache;
@@ -181,10 +182,12 @@ public class Redisson implements RedissonClient {
         return buckets;
     }
 
+    @Override
     public <V> Map<String, V> loadBucketValues(Collection<String> keys) {
         return loadBucketValues(keys.toArray(new String[keys.size()]));
     }
 
+    @Override
     public <V> Map<String, V> loadBucketValues(String ... keys) {
         if (keys.length == 0) {
             return Collections.emptyMap();
@@ -205,6 +208,7 @@ public class Redisson implements RedissonClient {
         return result;
     }
 
+    @Override
     public void saveBuckets(Map<String, ?> buckets) {
         if (buckets.isEmpty()) {
             return;
@@ -268,12 +272,24 @@ public class Redisson implements RedissonClient {
         return new RedissonSetMultimap<K, V>(commandExecutor, name);
     }
     
+    @Override
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name) {
         return new RedissonSetMultimapCache<K, V>(evictionScheduler, commandExecutor, name);
     }
     
+    @Override
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name, Codec codec) {
         return new RedissonSetMultimapCache<K, V>(evictionScheduler, codec, commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name) {
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, commandExecutor, name);
+    }
+    
+    @Override
+    public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name, Codec codec) {
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, commandExecutor, name);
     }
 
     @Override
@@ -471,10 +487,12 @@ public class Redisson implements RedissonClient {
         return config;
     }
 
+    @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);
     }
 
+    @Override
     public NodesGroup<ClusterNode> getClusterNodesGroup() {
         if (!config.isClusterConfig()) {
             throw new IllegalStateException("Redisson is not in cluster mode!");
