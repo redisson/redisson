@@ -39,6 +39,10 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RSetCache;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.base64.Base64;
+import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.Future;
 import net.openhft.hashing.LongHashFunction;
 
@@ -114,10 +118,12 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         long h1 = LongHashFunction.farmUo().hashBytes(objectState);
         long h2 = LongHashFunction.xx_r39().hashBytes(objectState);
 
-        return ByteBuffer.allocate((2 * Long.SIZE) / Byte.SIZE)
-                .putLong(h1)
-                .putLong(h2)
-                .array();
+        ByteBuf buf = Unpooled.buffer((2 * Long.SIZE) / Byte.SIZE).writeLong(h1).writeLong(h2);
+        try {
+            return buf.array();
+        } finally {
+            buf.release();
+        }
     }
 
     String getTimeoutSetName() {
