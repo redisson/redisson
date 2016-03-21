@@ -27,6 +27,7 @@ install:
     - wget -c https://github.com/antirez/redis/archive/${REDIS_VERSION}.tar.gz -O redis-${REDIS_VERSION}.tar.gz
     - tar -xvf redis-${REDIS_VERSION}.tar.gz
     - make -C redis-${REDIS_VERSION} PREFIX=$HOME/redis/${REDIS_VERSION} install
+    - chmod +x $REDIS_BIN/*
 before_script:
     - $REDIS_BIN/redis-server --daemonize yes
     - sleep 3
