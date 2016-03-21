@@ -41,12 +41,14 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     private static final RedisCommand<Boolean> EVAL_EXPIRE_KEY = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 6, ValueType.MAP_KEY);
     
-    RedissonSetMultimapCache(CommandAsyncExecutor connectionManager, String name) {
+    RedissonSetMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
+        evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
     }
 
-    RedissonSetMultimapCache(Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    RedissonSetMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
+        evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
     }
 
     public Future<Boolean> containsKeyAsync(Object key) {

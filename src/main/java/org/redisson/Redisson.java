@@ -269,11 +269,11 @@ public class Redisson implements RedissonClient {
     }
     
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name) {
-        return new RedissonSetMultimapCache<K, V>(commandExecutor, name);
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, commandExecutor, name);
     }
     
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name, Codec codec) {
-        return new RedissonSetMultimapCache<K, V>(codec, commandExecutor, name);
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, codec, commandExecutor, name);
     }
 
     @Override
