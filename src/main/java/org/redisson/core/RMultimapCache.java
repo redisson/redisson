@@ -19,6 +19,15 @@ import java.util.concurrent.TimeUnit;
 
 public interface RMultimapCache<K, V> extends RMultimap<K, V>, RMultimapCacheAsync<K, V> {
 
+    /**
+     * Set a timeout for key. After the timeout has expired,
+     * the key and its values will automatically be deleted.
+     * 
+     * @param key
+     * @param timeToLive - timeout before key will be deleted
+     * @param timeUnit - timeout time unit
+     * @return <code>true</code> if key exists and the timeout was set and <code>false</code> if key not exists
+     */
     boolean expireKey(K key, long timeToLive, TimeUnit timeUnit);
     
 }
