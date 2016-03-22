@@ -18,7 +18,7 @@ language: java
 jdk:
   - oraclejdk8
 env:
-    - REDIS_VERSION=3.0.7
+    - REDIS_VERSION=2.8.24
 cache:
   directories:
   - $HOME/.m2
