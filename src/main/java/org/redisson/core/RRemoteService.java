@@ -46,10 +46,10 @@ public interface RRemoteService {
     
     /**
      * Get remote service object for remote invocations 
-     * with specified timeout invocation
+     * with specified invocation timeout
      * 
      * @param remoteInterface
-     * @param timeout - timeout invocation
+     * @param timeout - invocation timeout
      * @param timeUnit
      * @return
      */
