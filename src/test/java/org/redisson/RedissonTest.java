@@ -264,8 +264,8 @@ public class RedissonTest {
     public void testManyConnections() {
         Config redisConfig = new Config();
         redisConfig.useSingleServer()
-        .setConnectionMinimumIdleSize(10000)
-        .setConnectionPoolSize(10000)
+        .setConnectionMinimumIdleSize(2000)
+        .setConnectionPoolSize(2000)
         .setAddress("localhost:6379");
         RedissonClient r = Redisson.create(redisConfig);
         r.shutdown();
