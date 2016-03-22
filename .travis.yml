@@ -28,6 +28,8 @@ install:
     - tar -xvf redis-${REDIS_VERSION}.tar.gz
     - make -C redis-${REDIS_VERSION} PREFIX=$HOME/redis/${REDIS_VERSION} install
 before_script:
+    - sysctl -w fs.file-max=100000
+    - ulimit -Sn 100000
     - $REDIS_BIN/redis-server --daemonize yes
     - sleep 3
     - $REDIS_BIN/redis-cli PING
