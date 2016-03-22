@@ -106,7 +106,6 @@ public class RedissonRemoteService implements RRemoteService {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 String requestId = generateRequestId();
-                System.out.println(requestId);
 
                 String requestQueueName = "redisson_remote_service:{" + serviceInterface.getName() + "}";
                 RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName);
