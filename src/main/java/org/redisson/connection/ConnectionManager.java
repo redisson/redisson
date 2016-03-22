@@ -107,5 +107,7 @@ public interface ConnectionManager {
     Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);
 
     InfinitySemaphoreLatch getShutdownLatch();
+    
+    Future<Boolean> getShutdownPromise();
 
 }

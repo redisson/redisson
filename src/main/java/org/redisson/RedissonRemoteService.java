@@ -19,8 +19,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,7 +41,6 @@ public class RedissonRemoteService implements RRemoteService {
     private static final Logger log = LoggerFactory.getLogger(RedissonRemoteService.class); 
     
     private final Map<RemoteServiceKey, RemoteServiceMethod> beans = PlatformDependent.newConcurrentHashMap();
-    private final Queue<Future<RemoteServiceRequest>> futures = new ConcurrentLinkedQueue<Future<RemoteServiceRequest>>();
     
     private final Redisson redisson;
     
@@ -78,7 +75,6 @@ public class RedissonRemoteService implements RRemoteService {
 
     private <T> void subscribe(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue) {
         Future<RemoteServiceRequest> take = requestQueue.takeAsync();
-        futures.add(take);
         take.addListener(new FutureListener<RemoteServiceRequest>() {
             @Override
             public void operationComplete(Future<RemoteServiceRequest> future) throws Exception {
@@ -104,7 +100,6 @@ public class RedissonRemoteService implements RRemoteService {
                     log.error("None of clients has not received a response for: {}", request);
                 }
                 
-                futures.remove(future);
                 subscribe(remoteInterface, requestQueue);
             }
         });
@@ -159,12 +154,6 @@ public class RedissonRemoteService implements RRemoteService {
         // TODO JDK UPGRADE replace to native ThreadLocalRandom
         ThreadLocalRandom.current().nextBytes(id);
         return ByteBufUtil.hexDump(id);
-    }
-    
-    public void shutdown() {
-        for (Future<RemoteServiceRequest> future : futures) {
-            future.cancel(true);
-        }
     }
     
 }

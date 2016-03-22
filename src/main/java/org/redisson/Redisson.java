@@ -87,7 +87,6 @@ public class Redisson implements RedissonClient {
     private final CommandExecutor commandExecutor;
     private final ConnectionManager connectionManager;
     private final Config config;
-    private final RedissonRemoteService remoteService;
 
     private final UUID id = UUID.randomUUID();
 
@@ -115,7 +114,6 @@ public class Redisson implements RedissonClient {
         }
         commandExecutor = new CommandSyncService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
-        remoteService = new RedissonRemoteService(this);
     }
 
     private void validate(SingleServerConfig config) {
@@ -372,7 +370,7 @@ public class Redisson implements RedissonClient {
     }
 
     public RRemoteService getRemoteSerivce() {
-        return remoteService;
+        return new RedissonRemoteService(this);
     }
     
     @Override
@@ -507,7 +505,6 @@ public class Redisson implements RedissonClient {
 
     @Override
     public void shutdown() {
-        remoteService.shutdown();
         connectionManager.shutdown();
     }
 
