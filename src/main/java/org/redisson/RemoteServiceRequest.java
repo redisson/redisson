@@ -47,7 +47,7 @@ public class RemoteServiceRequest {
 
     @Override
     public String toString() {
-        return "[requestId=" + requestId + ", methodName=" + methodName + ", args="
+        return "RemoteServiceRequest[requestId=" + requestId + ", methodName=" + methodName + ", args="
                 + Arrays.toString(args) + "]";
     }
 

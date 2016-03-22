@@ -84,14 +84,13 @@ public class RedissonRemoteService implements RRemoteService {
                     Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
                     response = new RemoteServiceResponse(result);
                 } catch (Exception e) {
-                    e.getCause().printStackTrace();
                     response = new RemoteServiceResponse(e.getCause());
-                    log.error("Can't execute: " + method.getMethod().getName() + " with args: " + request.getArgs(), e);
+                    log.error("Can't execute: " + request, e);
                 }
                 
                 long clients = topic.publish(response);
                 if (clients == 0) {
-                    log.error("None of clients has not received a response for request {}", request);
+                    log.error("None of clients has not received a response for: {}", request);
                 }
                 
                 futures.remove(future);
