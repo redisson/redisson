@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.core.MessageListener;
@@ -110,7 +111,12 @@ public class RedissonRemoteService implements RRemoteService {
     }
 
     @Override
-    public <T> T get(final Class<T> remoteInterface) {
+    public <T> T get(Class<T> remoteInterface) {
+        return get(remoteInterface, -1, null);
+    }
+
+    @Override
+    public <T> T get(final Class<T> remoteInterface, final int timeout, final TimeUnit timeUnit) {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -132,7 +138,11 @@ public class RedissonRemoteService implements RRemoteService {
                     }
                 });
                 
-                latch.await();
+                if (timeout == -1) {
+                    latch.await();
+                } else {
+                    latch.await(timeout, timeUnit);
+                }
                 topic.removeListener(listenerId);
                 RemoteServiceResponse msg = response.get();
                 if (msg.getError() != null) {

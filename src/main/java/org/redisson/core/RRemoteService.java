@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import java.util.concurrent.TimeUnit;
+
 public interface RRemoteService {
 
     /**
@@ -41,5 +43,16 @@ public interface RRemoteService {
      * @return
      */
     <T> T get(Class<T> remoteInterface);
+    
+    /**
+     * Get remote service object for remote invocations 
+     * with specified timeout invocation
+     * 
+     * @param remoteInterface
+     * @param timeout - timeout invocation
+     * @param timeUnit
+     * @return
+     */
+    <T> T get(Class<T> remoteInterface, int timeout, TimeUnit timeUnit);
     
 }
