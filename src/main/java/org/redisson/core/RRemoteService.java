@@ -18,12 +18,21 @@ package org.redisson.core;
 public interface RRemoteService {
 
     /**
-     * Register object as remote service
+     * Register remote service with single executor
      * 
      * @param remoteInterface
      * @param object
      */
     <T> void register(Class<T> remoteInterface, T object);
+    
+    /**
+     * Register remote service with custom executors amount
+     * 
+     * @param remoteInterface
+     * @param object
+     * @param executorsAmount
+     */
+    <T> void register(Class<T> remoteInterface, T object, int executorsAmount);
     
     /**
      * Get remote service object for remote invocations
