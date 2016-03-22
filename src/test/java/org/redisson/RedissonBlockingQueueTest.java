@@ -1,9 +1,6 @@
 package org.redisson;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,8 +19,47 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RBlockingQueue;
 
+import io.netty.util.concurrent.Future;
+
 public class RedissonBlockingQueueTest extends BaseTest {
 
+    @Test
+    public void testTakeAsyncCancel() {
+        Config config = createConfig();
+        config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
+
+        RedissonClient redisson = Redisson.create(config);
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        for (int i = 0; i < 10; i++) {
+            Future<Integer> f = queue1.takeAsync();
+            f.cancel(true);
+        }
+        assertThat(queue1.add(1)).isTrue();
+        assertThat(queue1.add(2)).isTrue();
+        assertThat(queue1.size()).isEqualTo(2);
+        
+        redisson.shutdown();
+    }
+    
+    @Test
+    public void testPollAsyncCancel() {
+        Config config = createConfig();
+        config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
+
+        RedissonClient redisson = Redisson.create(config);
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        for (int i = 0; i < 10; i++) {
+            Future<Integer> f = queue1.pollAsync(1, TimeUnit.SECONDS);
+            f.cancel(true);
+        }
+        assertThat(queue1.add(1)).isTrue();
+        assertThat(queue1.add(2)).isTrue();
+        assertThat(queue1.size()).isEqualTo(2);
+        
+        redisson.shutdown();
+    }
+
+    
     @Test
     public void testPollFromAny() throws InterruptedException {
         final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
@@ -225,14 +261,14 @@ public class RedissonBlockingQueueTest extends BaseTest {
             try {
                 // blocking
                 int item = queue.take();
-                assertTrue(item > 0 && item <= total);
+                assertThat(item > 0 && item <= total).isTrue();
             } catch (InterruptedException exception) {
-                fail();
+                Assert.fail();
             }
             count++;
         }
 
-        assertThat(counter.get(), equalTo(total));
+        assertThat(counter.get()).isEqualTo(total);
         queue.delete();
     }
 

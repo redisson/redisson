@@ -462,6 +462,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         int timeoutTime = connectionManager.getConfig().getTimeout();
         if (skipTimeout.contains(details.getCommand().getName())) {
             Integer popTimeout = Integer.valueOf(details.getParams()[details.getParams().length - 1].toString());
+            details.getMainPromise().addListener(new FutureListener<R>() {
+                @Override
+                public void operationComplete(Future<R> future) throws Exception {
+                    if (!future.isCancelled()) {
+                        return;
+                    }
+                    // cancel handling for commands from skipTimeout collection
+                    if (details.getAttemptPromise().cancel(true)) {
+                        connection.forceReconnectAsync();
+                    }
+                }
+            });
             if (popTimeout == 0) {
                 return;
             }
