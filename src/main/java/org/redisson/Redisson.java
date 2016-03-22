@@ -58,10 +58,10 @@ import org.redisson.core.RListMultimapCache;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapCache;
-import org.redisson.core.RMultimapCache;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
 import org.redisson.core.RReadWriteLock;
+import org.redisson.core.RRemoteService;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSemaphore;
@@ -87,6 +87,7 @@ public class Redisson implements RedissonClient {
     private final CommandExecutor commandExecutor;
     private final ConnectionManager connectionManager;
     private final Config config;
+    private final RedissonRemoteService remoteService;
 
     private final UUID id = UUID.randomUUID();
 
@@ -114,6 +115,7 @@ public class Redisson implements RedissonClient {
         }
         commandExecutor = new CommandSyncService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
+        remoteService = new RedissonRemoteService(this);
     }
 
     private void validate(SingleServerConfig config) {
@@ -369,6 +371,10 @@ public class Redisson implements RedissonClient {
         return new RedissonScript(commandExecutor);
     }
 
+    public RRemoteService getRemoteSerivce() {
+        return remoteService;
+    }
+    
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
         return new RedissonSortedSet<V>(commandExecutor, name);
@@ -501,6 +507,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public void shutdown() {
+        remoteService.shutdown();
         connectionManager.shutdown();
     }
 

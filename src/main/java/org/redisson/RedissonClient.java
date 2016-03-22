@@ -45,6 +45,7 @@ import org.redisson.core.RMapCache;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
 import org.redisson.core.RReadWriteLock;
+import org.redisson.core.RRemoteService;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSemaphore;
@@ -585,6 +586,13 @@ public interface RedissonClient {
      */
     RScript getScript();
 
+    /**
+     * Returns object for remote operations
+     * 
+     * @return
+     */
+    RRemoteService getRemoteSerivce();
+    
     /**
      * Return batch object which executes group of
      * command in pipeline.
