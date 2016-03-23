@@ -38,5 +38,10 @@ public class RemoteServiceResponse {
     public Object getResult() {
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "RemoteServiceResponse [result=" + result + ", error=" + error + "]";
+    }
     
 }

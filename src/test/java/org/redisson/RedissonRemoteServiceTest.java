@@ -2,9 +2,12 @@ package org.redisson;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.client.RedisTimeoutException;
+
 import static org.assertj.core.api.Assertions.*;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class RedissonRemoteServiceTest extends BaseTest {
 
@@ -17,6 +20,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
         void errorMethod() throws IOException;
         
         void errorMethodWithCause();
+        
+        void timeoutMethod() throws InterruptedException;
         
     }
     
@@ -46,7 +51,28 @@ public class RedissonRemoteServiceTest extends BaseTest {
             }
         }
 
+        @Override
+        public void timeoutMethod() throws InterruptedException {
+            Thread.sleep(2000);
+        }
+
         
+    }
+
+    @Test(expected = RedisTimeoutException.class)
+    public void testTimeout() throws InterruptedException {
+        RedissonClient r1 = Redisson.create();
+        r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+        
+        RedissonClient r2 = Redisson.create();
+        RemoteInterface ri = r2.getRemoteSerivce().get(RemoteInterface.class, 1, TimeUnit.SECONDS);
+        
+        try {
+            ri.timeoutMethod();
+        } finally {
+            r1.shutdown();
+            r2.shutdown();
+        }
     }
     
     @Test
@@ -74,7 +100,6 @@ public class RedissonRemoteServiceTest extends BaseTest {
             assertThat(e.getCause()).isInstanceOf(ArithmeticException.class);
             assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
         }
-
         
         r1.shutdown();
         r2.shutdown();

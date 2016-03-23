@@ -493,8 +493,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.getMainPromise().addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
+                connectionManager.getShutdownPromise().removeListener(listener);
                 if (!future.isCancelled()) {
-                    connectionManager.getShutdownPromise().removeListener(listener);
                     return;
                 }
                 // cancel handling for commands from skipTimeout collection

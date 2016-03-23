@@ -23,6 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.client.RedisException;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RRemoteService;
@@ -97,7 +99,7 @@ public class RedissonRemoteService implements RRemoteService {
                 
                 long clients = topic.publish(response);
                 if (clients == 0) {
-                    log.error("None of clients has not received a response for: {}", request);
+                    log.error("None of clients has not received a response: {} for request: {}", response, request);
                 }
                 
                 subscribe(remoteInterface, requestQueue);
@@ -119,7 +121,8 @@ public class RedissonRemoteService implements RRemoteService {
 
                 String requestQueueName = "redisson_remote_service:{" + remoteInterface.getName() + "}";
                 RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName);
-                requestQueue.add(new RemoteServiceRequest(requestId, method.getName(), args));
+                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args);
+                requestQueue.add(request);
                 
                 String responseName = "redisson_remote_service:{" + remoteInterface.getName() + "}:" + requestId;
                 final RTopic<RemoteServiceResponse> topic = redisson.getTopic(responseName);
@@ -136,7 +139,10 @@ public class RedissonRemoteService implements RRemoteService {
                 if (timeout == -1) {
                     latch.await();
                 } else {
-                    latch.await(timeout, timeUnit);
+                    if (!latch.await(timeout, timeUnit)) {
+                        topic.removeListener(listenerId);
+                        throw new RedisTimeoutException("No response after " + timeUnit.toMillis(timeout) + "ms for request: " + request);
+                    }
                 }
                 topic.removeListener(listenerId);
                 RemoteServiceResponse msg = response.get();
