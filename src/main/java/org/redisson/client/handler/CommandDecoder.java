@@ -84,12 +84,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             currentDecoder = StringCodec.INSTANCE.getValueDecoder();
         }
 
-        if (log.isTraceEnabled()) {
-            log.trace("channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
-        }
-
         if (state() == null) {
             state(new State());
+
+            if (log.isTraceEnabled()) {
+                log.trace("channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
+            }
         }
         state().setDecoderState(null);
 
@@ -139,7 +139,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 cmd.getPromise().tryFailure(e);
             }
             if (!cmd.getPromise().isSuccess()) {
-                error = (RedisException) cmd.getPromise().cause();
+                if (!(cmd.getPromise().cause() instanceof RedisMovedException 
+                        || cmd.getPromise().cause() instanceof RedisAskException
+                            || cmd.getPromise().cause() instanceof RedisLoadingException)) {
+                    error = (RedisException) cmd.getPromise().cause();
+                }
             }
         }
 

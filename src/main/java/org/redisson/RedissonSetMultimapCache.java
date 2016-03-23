@@ -22,10 +22,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RSetMultimapCache;
 
@@ -39,16 +36,18 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> implements RSetMultimapCache<K, V> {
 
-    private static final RedisCommand<Boolean> EVAL_EXPIRE_KEY = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 6, ValueType.MAP_KEY);
+    private final RedissonMultimapCache<K> baseCache;
     
     RedissonSetMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
     }
 
     RedissonSetMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
     }
 
     public Future<Boolean> containsKeyAsync(Object key) {
@@ -199,20 +198,27 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
     
     @Override
     public Future<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
-        long ttlTimeout = System.currentTimeMillis() + timeUnit.toMillis(timeToLive);
+        return baseCache.expireKeyAsync(key, timeToLive, timeUnit);
+    }
+    
+    @Override
+    public Future<Boolean> deleteAsync() {
+        return baseCache.deleteAsync();
+    }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_EXPIRE_KEY,
-                "if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then "
-                    + "if tonumber(ARGV[1]) > 0 then "
-                        + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); " +
-                      "else " +
-                          "redis.call('zrem', KEYS[2], ARGV[2]); "
-                    + "end; "
-                    + "return 1; "
-              + "else "
-                + "return 0; "
-              + "end",
-            Arrays.<Object>asList(getName(), getTimeoutSetName()), ttlTimeout, key);
+    @Override
+    public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+        return baseCache.expireAsync(timeToLive, timeUnit);
+    }
+
+    @Override
+    public Future<Boolean> expireAtAsync(long timestamp) {
+        return baseCache.expireAtAsync(timestamp);
+    }
+
+    @Override
+    public Future<Boolean> clearExpireAsync() {
+        return baseCache.clearExpireAsync();
     }
     
 }
