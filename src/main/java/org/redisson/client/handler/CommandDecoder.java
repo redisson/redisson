@@ -139,7 +139,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 cmd.getPromise().tryFailure(e);
             }
             if (!cmd.getPromise().isSuccess()) {
-                error = (RedisException) cmd.getPromise().cause();
+                if (!(cmd.getPromise().cause() instanceof RedisMovedException 
+                        || cmd.getPromise().cause() instanceof RedisAskException
+                            || cmd.getPromise().cause() instanceof RedisLoadingException)) {
+                    error = (RedisException) cmd.getPromise().cause();
+                }
             }
         }
 
