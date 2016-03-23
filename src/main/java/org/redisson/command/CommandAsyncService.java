@@ -462,6 +462,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         int timeoutTime = connectionManager.getConfig().getTimeout();
         if (skipTimeout.contains(details.getCommand().getName())) {
             Integer popTimeout = Integer.valueOf(details.getParams()[details.getParams().length - 1].toString());
+            handleBlockingOperations(details, connection);
             if (popTimeout == 0) {
                 return;
             }
@@ -480,6 +481,29 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         Timeout timeout = connectionManager.newTimeout(timeoutTask, timeoutTime, TimeUnit.MILLISECONDS);
         details.setTimeout(timeout);
+    }
+
+    private <R, V> void handleBlockingOperations(final AsyncDetails<V, R> details, final RedisConnection connection) {
+        final FutureListener<Boolean> listener = new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(Future<Boolean> future) throws Exception {
+                details.getMainPromise().cancel(true);
+            }
+        };
+        details.getMainPromise().addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                connectionManager.getShutdownPromise().removeListener(listener);
+                if (!future.isCancelled()) {
+                    return;
+                }
+                // cancel handling for commands from skipTimeout collection
+                if (details.getAttemptPromise().cancel(true)) {
+                    connection.forceReconnectAsync();
+                }
+            }
+        });
+        connectionManager.getShutdownPromise().addListener(listener);
     }
 
     private <R, V> void checkConnectionFuture(final NodeSource source,

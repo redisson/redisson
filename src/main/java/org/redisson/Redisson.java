@@ -54,18 +54,21 @@ import org.redisson.core.RKeys;
 import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RList;
 import org.redisson.core.RListMultimap;
+import org.redisson.core.RListMultimapCache;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
 import org.redisson.core.RMapCache;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
 import org.redisson.core.RReadWriteLock;
+import org.redisson.core.RRemoteService;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSemaphore;
 import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
 import org.redisson.core.RSetMultimap;
+import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
@@ -90,15 +93,21 @@ public class Redisson implements RedissonClient {
     Redisson(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
+        
         if (configCopy.getMasterSlaveServersConfig() != null) {
+            validate(configCopy.getMasterSlaveServersConfig());
             connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
         } else if (configCopy.getSingleServerConfig() != null) {
+            validate(configCopy.getSingleServerConfig());
             connectionManager = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
         } else if (configCopy.getSentinelServersConfig() != null) {
+            validate(configCopy.getSentinelServersConfig());
             connectionManager = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
         } else if (configCopy.getClusterServersConfig() != null) {
+            validate(configCopy.getClusterServersConfig());
             connectionManager = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
         } else if (configCopy.getElasticacheServersConfig() != null) {
+            validate(configCopy.getElasticacheServersConfig());
             connectionManager = new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy);
         } else {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
@@ -107,7 +116,23 @@ public class Redisson implements RedissonClient {
         evictionScheduler = new EvictionScheduler(commandExecutor);
     }
 
+    private void validate(SingleServerConfig config) {
+        if (config.getConnectionPoolSize() < config.getConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("connectionPoolSize can't be lower than connectionMinimumIdleSize");
+        }
+    }
 
+    private void validate(BaseMasterSlaveServersConfig<?> config) {
+        if (config.getSlaveConnectionPoolSize() < config.getSlaveConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("slaveConnectionPoolSize can't be lower than slaveConnectionMinimumIdleSize");
+        }
+        if (config.getMasterConnectionPoolSize() < config.getMasterConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("masterConnectionPoolSize can't be lower than masterConnectionMinimumIdleSize");
+        }
+        if (config.getSlaveSubscriptionConnectionPoolSize() < config.getSlaveSubscriptionConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("slaveSubscriptionConnectionMinimumIdleSize can't be lower than slaveSubscriptionConnectionPoolSize");
+        }
+    }
 
     /**
      * Create sync/async Redisson instance with default config
@@ -179,10 +204,12 @@ public class Redisson implements RedissonClient {
         return buckets;
     }
 
+    @Override
     public <V> Map<String, V> loadBucketValues(Collection<String> keys) {
         return loadBucketValues(keys.toArray(new String[keys.size()]));
     }
 
+    @Override
     public <V> Map<String, V> loadBucketValues(String ... keys) {
         if (keys.length == 0) {
             return Collections.emptyMap();
@@ -203,6 +230,7 @@ public class Redisson implements RedissonClient {
         return result;
     }
 
+    @Override
     public void saveBuckets(Map<String, ?> buckets) {
         if (buckets.isEmpty()) {
             return;
@@ -265,6 +293,26 @@ public class Redisson implements RedissonClient {
     public <K, V> RSetMultimap<K, V> getSetMultimap(String name) {
         return new RedissonSetMultimap<K, V>(commandExecutor, name);
     }
+    
+    @Override
+    public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name) {
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, commandExecutor, name);
+    }
+    
+    @Override
+    public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name, Codec codec) {
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, codec, commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name) {
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, commandExecutor, name);
+    }
+    
+    @Override
+    public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name, Codec codec) {
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, commandExecutor, name);
+    }
 
     @Override
     public <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec) {
@@ -321,6 +369,10 @@ public class Redisson implements RedissonClient {
         return new RedissonScript(commandExecutor);
     }
 
+    public RRemoteService getRemoteSerivce() {
+        return new RedissonRemoteService(this);
+    }
+    
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
         return new RedissonSortedSet<V>(commandExecutor, name);
@@ -461,10 +513,12 @@ public class Redisson implements RedissonClient {
         return config;
     }
 
+    @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);
     }
 
+    @Override
     public NodesGroup<ClusterNode> getClusterNodesGroup() {
         if (!config.isClusterConfig()) {
             throw new IllegalStateException("Redisson is not in cluster mode!");

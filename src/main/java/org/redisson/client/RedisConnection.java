@@ -174,8 +174,8 @@ public class RedisConnection implements RedisCommands {
         return closed;
     }
 
-    public void forceReconnect() {
-        channel.close();
+    public ChannelFuture forceReconnectAsync() {
+        return channel.close();
     }
 
     /**

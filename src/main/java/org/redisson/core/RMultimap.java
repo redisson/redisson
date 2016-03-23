@@ -120,6 +120,7 @@ public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
      * <p>Once this method returns, {@code key} will not be mapped to any values,
      * so it will not appear in {@link #keySet()}, {@link #asMap()}, or any other
      * views.
+     * <p>Use {@link #fastRemove()} if values are not needed.</p>
      *
      * @return the values that were removed (possibly empty). The returned
      *     collection <i>may</i> be modifiable, but updating it will have no
@@ -186,7 +187,7 @@ public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
     /**
      * Removes <code>keys</code> from map by one operation
      *
-     * Works faster than <code>RMap.remove</code> but not returning
+     * Works faster than <code>RMultimap.remove</code> but not returning
      * the value associated with <code>key</code>
      *
      * @param keys

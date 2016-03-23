@@ -122,6 +122,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
+    private final Promise<Boolean> shutdownPromise;
+    
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
     private final Set<RedisClientEntry> clients = Collections.newSetFromMap(PlatformDependent.<RedisClientEntry, Boolean>newConcurrentHashMap());
@@ -156,6 +158,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = NioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
+        this.shutdownPromise = group.next().newPromise();
         this.isClusterMode = cfg.isClusterConfig();
     }
 
@@ -202,11 +205,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         try {
             initEntry(config);
         } catch (RuntimeException e) {
-            try {
-                group.shutdownGracefully().await();
-            } catch (Exception e1) {
-                // skip
-            }
+            stopThreads();
             throw e;
         }
     }
@@ -678,6 +677,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
+        shutdownPromise.trySuccess(true);
         shutdownLatch.closeAndAwaitUninterruptibly();
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
@@ -735,10 +735,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public InfinitySemaphoreLatch getShutdownLatch() {
         return shutdownLatch;
     }
+    
+    @Override
+    public Future<Boolean> getShutdownPromise() {
+        return shutdownPromise;
+    }
 
     @Override
     public ConnectionEventsHub getConnectionEventsHub() {
         return connectionEventsHub;
     }
 
+    protected void stopThreads() {
+        timer.stop();
+        try {
+            group.shutdownGracefully().await();
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }

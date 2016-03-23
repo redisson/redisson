@@ -31,7 +31,6 @@ import org.redisson.core.RBlockingDeque;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBloomFilter;
 import org.redisson.core.RBucket;
-import org.redisson.core.RMapCache;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RHyperLogLog;
@@ -39,17 +38,21 @@ import org.redisson.core.RKeys;
 import org.redisson.core.RLexSortedSet;
 import org.redisson.core.RList;
 import org.redisson.core.RListMultimap;
+import org.redisson.core.RListMultimapCache;
 import org.redisson.core.RLock;
 import org.redisson.core.RMap;
+import org.redisson.core.RMapCache;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RQueue;
 import org.redisson.core.RReadWriteLock;
+import org.redisson.core.RRemoteService;
 import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RScript;
 import org.redisson.core.RSemaphore;
 import org.redisson.core.RSet;
 import org.redisson.core.RSetCache;
 import org.redisson.core.RSetMultimap;
+import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
@@ -218,7 +221,7 @@ public interface RedissonClient {
     <V> RList<V> getList(String name, Codec codec);
 
     /**
-     * Returns List based MultiMap instance by name.
+     * Returns List based Multimap instance by name.
      *
      * @param name
      * @return
@@ -226,7 +229,7 @@ public interface RedissonClient {
     <K, V> RListMultimap<K, V> getListMultimap(String name);
 
     /**
-     * Returns List based MultiMap instance by name
+     * Returns List based Multimap instance by name
      * using provided codec for both map keys and values.
      *
      * @param name
@@ -235,6 +238,29 @@ public interface RedissonClient {
      */
     <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec);
 
+    /**
+     * Returns List based Multimap instance by name.
+     * Supports key-entry eviction with a given TTL value.
+     * 
+     * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String)}.</p>
+     * 
+     * @param name
+     * @return
+     */
+    <K, V> RListMultimapCache<K, V> getListMultimapCache(String name);
+    
+    /**
+     * Returns List based Multimap instance by name
+     * using provided codec for both map keys and values.
+     * Supports key-entry eviction with a given TTL value.
+     * 
+     * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String, Codec)}.</p>
+     * 
+     * @param name
+     * @return
+     */
+    <K, V> RListMultimapCache<K, V> getListMultimapCache(String name, Codec codec);
+    
     /**
      * Returns map instance by name.
      *
@@ -254,15 +280,15 @@ public interface RedissonClient {
     <K, V> RMap<K, V> getMap(String name, Codec codec);
 
     /**
-     * Returns Set based MultiMap instance by name.
+     * Returns Set based Multimap instance by name.
      *
      * @param name
      * @return
      */
     <K, V> RSetMultimap<K, V> getSetMultimap(String name);
-
+    
     /**
-     * Returns Set based MultiMap instance by name
+     * Returns Set based Multimap instance by name
      * using provided codec for both map keys and values.
      *
      * @param name
@@ -270,6 +296,29 @@ public interface RedissonClient {
      * @return
      */
     <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec);
+
+    /**
+     * Returns Set based Multimap instance by name.
+     * Supports key-entry eviction with a given TTL value.
+     * 
+     * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String)}.</p>
+     * 
+     * @param name
+     * @return
+     */
+    <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name);
+
+    /**
+     * Returns Set based Multimap instance by name
+     * using provided codec for both map keys and values.
+     * Supports key-entry eviction with a given TTL value.
+     * 
+     * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String, Codec)}.</p>
+     * 
+     * @param name
+     * @return
+     */
+    <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name, Codec codec);
 
     /**
      * Returns semaphore instance by name
@@ -537,6 +586,13 @@ public interface RedissonClient {
      */
     RScript getScript();
 
+    /**
+     * Returns object for remote operations
+     * 
+     * @return
+     */
+    RRemoteService getRemoteSerivce();
+    
     /**
      * Return batch object which executes group of
      * command in pipeline.
