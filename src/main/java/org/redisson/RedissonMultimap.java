@@ -214,7 +214,6 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
-                "local keys = {}; " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
                         "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
@@ -229,7 +228,6 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     public Future<Boolean> expireAtAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
-                "local keys = {}; " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
                         "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
@@ -244,7 +242,6 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     public Future<Boolean> clearExpireAsync() {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
-                "local keys = {}; " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
                         "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
