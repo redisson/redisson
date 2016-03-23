@@ -1,14 +1,12 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RBucket;
@@ -26,7 +24,7 @@ public class RedissonKeysTest extends BaseTest {
         Iterator<String> iterator = redisson.getKeys().getKeysByPattern("test?").iterator();
         for (; iterator.hasNext();) {
             String key = iterator.next();
-            MatcherAssert.assertThat(key, Matchers.isOneOf("test1", "test2"));
+            assertThat(key).isIn("test1", "test2");
         }
     }
 
@@ -57,7 +55,7 @@ public class RedissonKeysTest extends BaseTest {
         RBucket<String> bucket2 = redisson.getBucket("test2");
         bucket2.set("someValue2");
 
-        MatcherAssert.assertThat(redisson.getKeys().randomKey(), Matchers.isOneOf("test1", "test2"));
+        assertThat(redisson.getKeys().randomKey()).isIn("test1", "test2");
         redisson.getKeys().delete("test1");
         Assert.assertEquals(redisson.getKeys().randomKey(), "test2");
         redisson.flushdb();
@@ -95,10 +93,10 @@ public class RedissonKeysTest extends BaseTest {
         map.fastPut("1", "2");
 
         Collection<String> keys = redisson.getKeys().findKeysByPattern("test?");
-        MatcherAssert.assertThat(keys, Matchers.containsInAnyOrder("test1", "test2"));
+        assertThat(keys).containsOnly("test1", "test2");
 
         Collection<String> keys2 = redisson.getKeys().findKeysByPattern("test");
-        MatcherAssert.assertThat(keys2, Matchers.empty());
+        assertThat(keys2).isEmpty();
     }
 
     @Test
