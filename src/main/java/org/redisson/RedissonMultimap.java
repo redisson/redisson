@@ -20,15 +20,18 @@ import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.Set;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -152,10 +155,12 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return new EntrySet();
     }
 
+    @Override
     public long fastRemove(K ... keys) {
         return get(fastRemoveAsync(keys));
     }
 
+    @Override
     public Future<Long> fastRemoveAsync(K ... keys) {
         if (keys == null || keys.length == 0) {
             return newSucceededFuture(0L);
@@ -184,6 +189,72 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
             throw new RuntimeException(e);
         }
     }
+    
+    @Override
+    public Future<Boolean> deleteAsync() {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN_AMOUNT,
+                "local entries = redis.call('hgetall', KEYS[1]); " +
+                "local keys = {KEYS[1]}; " +
+                "for i, v in ipairs(entries) do " +
+                    "if i % 2 == 0 then " +
+                        "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
+                        "table.insert(keys, name); " +
+                    "end;" +
+                "end; " +
+                
+                "local n = 0 "
+                + "for i=1, #keys,5000 do "
+                    + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
+                + "end; "
+                + "return n;",
+                Arrays.<Object>asList(getName()));
+    }
+
+    @Override
+    public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local entries = redis.call('hgetall', KEYS[1]); " +
+                "local keys = {}; " +
+                "for i, v in ipairs(entries) do " +
+                    "if i % 2 == 0 then " +
+                        "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
+                        "redis.call('pexpire', name, ARGV[1]); " +
+                    "end;" +
+                "end; " +
+                "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
+                Arrays.<Object>asList(getName()), timeUnit.toMillis(timeToLive));
+    }
+
+    @Override
+    public Future<Boolean> expireAtAsync(long timestamp) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local entries = redis.call('hgetall', KEYS[1]); " +
+                "local keys = {}; " +
+                "for i, v in ipairs(entries) do " +
+                    "if i % 2 == 0 then " +
+                        "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
+                        "redis.call('pexpireat', name, ARGV[1]); " +
+                    "end;" +
+                "end; " +
+                "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
+                Arrays.<Object>asList(getName()), timestamp);
+    }
+
+    @Override
+    public Future<Boolean> clearExpireAsync() {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local entries = redis.call('hgetall', KEYS[1]); " +
+                "local keys = {}; " +
+                "for i, v in ipairs(entries) do " +
+                    "if i % 2 == 0 then " +
+                        "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
+                        "redis.call('persist', name); " +
+                    "end;" +
+                "end; " +
+                "return redis.call('persist', KEYS[1]); ",
+                Arrays.<Object>asList(getName()));
+    }
+
 
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
         Future<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new ScanCodec(codec, StringCodec.INSTANCE), RedisCommands.HSCAN, getName(), startPos);
