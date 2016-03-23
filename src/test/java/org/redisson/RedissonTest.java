@@ -12,6 +12,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.client.RedisConnectionException;
@@ -262,6 +263,7 @@ public class RedissonTest {
 
     @Test
     public void testManyConnections() {
+        Assume.assumeFalse(Boolean.valueOf(System.getProperty("travisEnv")));
         Config redisConfig = new Config();
         redisConfig.useSingleServer()
         .setConnectionMinimumIdleSize(10000)

@@ -34,4 +34,4 @@ before_script:
     - $REDIS_BIN/redis-cli PING
     - export REDIS_VERSION="$(redis-cli INFO SERVER | sed -n 2p)"
     - echo $REDIS_VERSION
-script: mvn -DargLine="-DredisBinary=$REDIS_BIN/redis-server" -Punit-test -Ptravis clean verify
+script: mvn -DargLine="-DredisBinary=$REDIS_BIN/redis-server -DtravisEnv=true" -Punit-test -Ptravis clean verify
