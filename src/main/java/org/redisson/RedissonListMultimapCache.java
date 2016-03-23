@@ -41,13 +41,13 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     RedissonListMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<>(connectionManager, name, codec, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
     }
 
     RedissonListMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<>(connectionManager, name, codec, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
     }
 
     public Future<Boolean> containsKeyAsync(Object key) {
