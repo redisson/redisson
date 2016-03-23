@@ -31,6 +31,15 @@ public class RedissonSetCacheTest extends BaseTest {
         }
 
     }
+    
+    @Test
+    public void testDelete() {
+        RSetCache<Integer> set = redisson.getSetCache("set");
+        assertThat(set.delete()).isFalse();
+        set.add(1, 1, TimeUnit.SECONDS);
+        assertThat(set.delete()).isTrue();
+        assertThat(set.delete()).isFalse();
+    }
 
     @Test
     public void testEmptyReadAll() {

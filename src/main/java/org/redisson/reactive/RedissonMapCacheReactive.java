@@ -361,7 +361,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
 
     @Override
     public Publisher<Boolean> delete() {
-        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_BOOL, getName(), getTimeoutSetName());
+        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_OBJECTS, getName(), getTimeoutSetName());
     }
 
     @Override
