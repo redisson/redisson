@@ -83,9 +83,12 @@ public class InfinitySemaphoreLatch extends AbstractQueuedSynchronizer {
         return closed;
     }
 
+    public void close() {
+        closed = true;        
+    }
+    
     // waiting for an open state
-    public final boolean closeAndAwaitUninterruptibly() {
-        closed = true;
+    public final boolean awaitUninterruptibly() {
         try {
             return await(15, TimeUnit.SECONDS);
         } catch (InterruptedException e) {

@@ -124,6 +124,7 @@ public class JsonJacksonCodec implements Codec {
                 .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN, true);
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         objectMapper.addMixIn(Throwable.class, ThrowableMixIn.class);
     }

@@ -1,13 +1,13 @@
 package org.redisson;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.client.RedisTimeoutException;
-
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.redisson.remote.RemoteServiceTimeoutException;
 
 public class RedissonRemoteServiceTest extends BaseTest {
 
@@ -59,7 +59,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         
     }
 
-    @Test(expected = RedisTimeoutException.class)
+    @Test(expected = RemoteServiceTimeoutException.class)
     public void testTimeout() throws InterruptedException {
         RedissonClient r1 = Redisson.create();
         r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());

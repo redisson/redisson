@@ -23,12 +23,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RRemoteService;
 import org.redisson.core.RTopic;
+import org.redisson.remote.RRemoteServiceResponse;
+import org.redisson.remote.RemoteServiceAck;
+import org.redisson.remote.RemoteServiceAckTimeoutException;
+import org.redisson.remote.RemoteServiceKey;
+import org.redisson.remote.RemoteServiceMethod;
+import org.redisson.remote.RemoteServiceRequest;
+import org.redisson.remote.RemoteServiceResponse;
+import org.redisson.remote.RemoteServiceTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,71 +87,126 @@ public class RedissonRemoteService implements RRemoteService {
             @Override
             public void operationComplete(Future<RemoteServiceRequest> future) throws Exception {
                 if (!future.isSuccess()) {
+                    if (future.cause() instanceof RedissonShutdownException) {
+                        return;
+                    }
+                    subscribe(remoteInterface, requestQueue);
+                    return;
+                }
+                subscribe(remoteInterface, requestQueue);
+                
+                RemoteServiceRequest request = future.getNow();
+                if (System.currentTimeMillis() - request.getDate() > request.getAckTimeout()) {
+                    log.debug("request: {} has been skipped due to ackTimeout");
                     return;
                 }
                 
-                RemoteServiceRequest request = future.getNow();
                 RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName()));
                 String responseName = "redisson_remote_service:{" + remoteInterface.getName() + "}:" + request.getRequestId();
-                RTopic<RemoteServiceResponse> topic = redisson.getTopic(responseName);
-                RemoteServiceResponse response;
-                try {
-                    Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
-                    response = new RemoteServiceResponse(result);
-                } catch (Exception e) {
-                    response = new RemoteServiceResponse(e.getCause());
-                    log.error("Can't execute: " + request, e);
-                }
-                
-                long clients = topic.publish(response);
-                if (clients == 0) {
-                    log.error("None of clients has not received a response: {} for request: {}", response, request);
-                }
-                
-                subscribe(remoteInterface, requestQueue);
+                RTopic<RRemoteServiceResponse> topic = redisson.getTopic(responseName);
+                Future<Long> ackClientsFuture = topic.publishAsync(new RemoteServiceAck());
+                ackClientsFuture.addListener(new FutureListener<Long>() {
+                    @Override
+                    public void operationComplete(Future<Long> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            log.error("Can't send ack for request: " + request, future.cause());
+                            return;
+                        }
+                        if (future.getNow() == 0) {
+                            log.error("Client has not received ack for request: {}", request);
+                            return;
+                        }
+                        
+                        invokeMethod(request, method, topic);
+                    }
+                });
             }
+
         });
     }
 
+    private void invokeMethod(RemoteServiceRequest request, RemoteServiceMethod method,
+            RTopic<RRemoteServiceResponse> topic) {
+        final AtomicReference<RemoteServiceResponse> responseHolder = new AtomicReference<RemoteServiceResponse>();
+        try {
+            Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
+            RemoteServiceResponse response = new RemoteServiceResponse(result);
+            responseHolder.set(response);
+        } catch (Exception e) {
+            RemoteServiceResponse response = new RemoteServiceResponse(e.getCause());
+            responseHolder.set(response);
+            log.error("Can't execute: " + request, e);
+        }
+        
+        Future<Long> clientsFuture = topic.publishAsync(responseHolder.get());
+        clientsFuture.addListener(new FutureListener<Long>() {
+            @Override
+            public void operationComplete(Future<Long> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                
+                if (future.getNow() == 0) {
+                    log.error("None of clients has not received a response: {} for request: {}", responseHolder.get(), request);
+                }
+            }
+        });
+    }
+    
     @Override
     public <T> T get(Class<T> remoteInterface) {
         return get(remoteInterface, -1, null);
     }
 
     @Override
-    public <T> T get(final Class<T> remoteInterface, final int timeout, final TimeUnit timeUnit) {
+    public <T> T get(final Class<T> remoteInterface, final long executionTimeout, final TimeUnit executionTimeUnit) {
+        return get(remoteInterface, executionTimeout, executionTimeUnit, 1, TimeUnit.SECONDS);
+    }
+    
+    public <T> T get(final Class<T> remoteInterface, final long executionTimeout, final TimeUnit executionTimeUnit, 
+                        final long ackTimeout, final TimeUnit ackTimeUnit) {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 String requestId = generateRequestId();
-
+                
                 String requestQueueName = "redisson_remote_service:{" + remoteInterface.getName() + "}";
                 RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName);
-                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args);
+                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args, ackTimeUnit.toMillis(ackTimeout), System.currentTimeMillis());
                 requestQueue.add(request);
                 
                 String responseName = "redisson_remote_service:{" + remoteInterface.getName() + "}:" + requestId;
-                final RTopic<RemoteServiceResponse> topic = redisson.getTopic(responseName);
+                final CountDownLatch ackLatch = new CountDownLatch(1);
                 final CountDownLatch latch = new CountDownLatch(1);
-                final AtomicReference<RemoteServiceResponse> response = new AtomicReference<RemoteServiceResponse>();
-                int listenerId = topic.addListener(new MessageListener<RemoteServiceResponse>() {
+                final AtomicReference<RRemoteServiceResponse> response = new AtomicReference<RRemoteServiceResponse>();
+                final RTopic<RRemoteServiceResponse> topic = redisson.getTopic(responseName);
+                int listenerId = topic.addListener(new MessageListener<RRemoteServiceResponse>() {
                     @Override
-                    public void onMessage(String channel, RemoteServiceResponse msg) {
-                        response.set(msg);
-                        latch.countDown();
+                    public void onMessage(String channel, RRemoteServiceResponse msg) {
+                        if (msg instanceof RemoteServiceResponse) {
+                            response.set(msg);
+                            latch.countDown();
+                        } else {
+                            ackLatch.countDown();
+                        }
                     }
                 });
                 
-                if (timeout == -1) {
+                if (!ackLatch.await(ackTimeout, ackTimeUnit)) {
+                    topic.removeListener(listenerId);
+                    throw new RemoteServiceAckTimeoutException("No ACK response after " + ackTimeUnit.toMillis(ackTimeout) + "ms for request: " + request);
+                }
+                
+                if (executionTimeout == -1) {
                     latch.await();
                 } else {
-                    if (!latch.await(timeout, timeUnit)) {
+                    if (!latch.await(executionTimeout, executionTimeUnit)) {
                         topic.removeListener(listenerId);
-                        throw new RedisTimeoutException("No response after " + timeUnit.toMillis(timeout) + "ms for request: " + request);
+                        throw new RemoteServiceTimeoutException("No response after " + executionTimeUnit.toMillis(executionTimeout) + "ms for request: " + request);
                     }
                 }
                 topic.removeListener(listenerId);
-                RemoteServiceResponse msg = response.get();
+                RemoteServiceResponse msg = (RemoteServiceResponse) response.get();
                 if (msg.getError() != null) {
                     throw msg.getError();
                 }

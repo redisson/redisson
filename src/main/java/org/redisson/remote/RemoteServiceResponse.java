@@ -13,27 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.remote;
 
-import java.lang.reflect.Method;
+public class RemoteServiceResponse implements RRemoteServiceResponse {
 
-public class RemoteServiceMethod {
-
-    private final Object bean;
-    private final Method method;
+    private Object result;
+    private Throwable error;
     
-    public RemoteServiceMethod(Method method, Object bean) {
-        super();
-        this.method = method;
-        this.bean = bean;
-    }
-
-    public Object getBean() {
-        return bean;
+    public RemoteServiceResponse() {
     }
     
-    public Method getMethod() {
-        return method;
+    public RemoteServiceResponse(Object result) {
+        this.result = result;
+    }
+
+    public RemoteServiceResponse(Throwable error) {
+        this.error = error;
+    }
+
+    public Throwable getError() {
+        return error;
+    }
+    
+    public Object getResult() {
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "RemoteServiceResponse [result=" + result + ", error=" + error + "]";
     }
     
 }

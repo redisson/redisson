@@ -677,8 +677,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
+        shutdownLatch.close();
         shutdownPromise.trySuccess(true);
-        shutdownLatch.closeAndAwaitUninterruptibly();
+        shutdownLatch.awaitUninterruptibly();
+        
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }

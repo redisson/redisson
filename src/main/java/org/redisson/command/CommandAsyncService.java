@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedisClientResult;
+import org.redisson.RedissonShutdownException;
 import org.redisson.SlotCallback;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
@@ -354,7 +355,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         if (!connectionManager.getShutdownLatch().acquire()) {
-            mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
+            mainPromise.setFailure(new RedissonShutdownException("Redisson is shutdown"));
             return;
         }
 

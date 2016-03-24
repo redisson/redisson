@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.remote;
 
 import java.util.Arrays;
 
@@ -22,15 +22,27 @@ public class RemoteServiceRequest {
     private String requestId;
     private String methodName;
     private Object[] args;
+    private long ackTimeout;
+    private long date;
     
     public RemoteServiceRequest() {
     }
     
-    public RemoteServiceRequest(String requestId, String methodName, Object[] args) {
+    public RemoteServiceRequest(String requestId, String methodName, Object[] args, long ackTimeout, long date) {
         super();
         this.requestId = requestId;
         this.methodName = methodName;
         this.args = args;
+        this.ackTimeout = ackTimeout;
+        this.date = date;
+    }
+    
+    public long getDate() {
+        return date;
+    }
+    
+    public long getAckTimeout() {
+        return ackTimeout;
     }
     
     public String getRequestId() {
@@ -47,8 +59,8 @@ public class RemoteServiceRequest {
 
     @Override
     public String toString() {
-        return "RemoteServiceRequest[requestId=" + requestId + ", methodName=" + methodName + ", args="
-                + Arrays.toString(args) + "]";
+        return "RemoteServiceRequest [requestId=" + requestId + ", methodName=" + methodName + ", args="
+                + Arrays.toString(args) + ", ackTimeout=" + ackTimeout + ", date=" + date + "]";
     }
 
 }
