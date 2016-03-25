@@ -82,7 +82,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
                     for (Object channel : cd.getParams()) {
-                        ch.pipeline().get(CommandDecoder.class).addChannel(channel.toString(), cd);
+                        ch.pipeline().get(CommandDecoder.class).addPubSubCommand(channel.toString(), cd);
                     }
                 }
             } else {

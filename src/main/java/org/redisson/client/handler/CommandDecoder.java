@@ -68,11 +68,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     private static final char ZERO = '0';
 
     // It is not needed to use concurrent map because responses are coming consecutive
-    private final Map<String, MultiDecoder<Object>> messageDecoders = new HashMap<String, MultiDecoder<Object>>();
-    private final Map<String, CommandData<Object, Object>> channels = PlatformDependent.newConcurrentHashMap();
+    private final Map<String, MultiDecoder<Object>> pubSubMessageDecoders = new HashMap<String, MultiDecoder<Object>>();
+    private final Map<String, CommandData<Object, Object>> pubSubChannels = PlatformDependent.newConcurrentHashMap();
 
-    public void addChannel(String channel, CommandData<Object, Object> data) {
-        channels.put(channel, data);
+    public void addPubSubCommand(String channel, CommandData<Object, Object> data) {
+        pubSubChannels.put(channel, data);
     }
 
     @Override
@@ -271,14 +271,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         } else {
             if (result instanceof PubSubStatusMessage) {
                 String channelName = ((PubSubStatusMessage) result).getChannel();
-                CommandData<Object, Object> d = channels.get(channelName);
+                CommandData<Object, Object> d = pubSubChannels.get(channelName);
                 if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(d.getCommand().getName())) {
-                    channels.remove(channelName);
-                    messageDecoders.put(channelName, d.getMessageDecoder());
+                    pubSubChannels.remove(channelName);
+                    pubSubMessageDecoders.put(channelName, d.getMessageDecoder());
                 }
                 if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(d.getCommand().getName())) {
-                    channels.remove(channelName);
-                    messageDecoders.remove(channelName);
+                    pubSubChannels.remove(channelName);
+                    pubSubMessageDecoders.remove(channelName);
                 }
             }
 
@@ -314,17 +314,17 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (data == null) {
             if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(parts.get(0))) {
                 String channelName = (String) parts.get(1);
-                CommandData<Object, Object> commandData = channels.get(channelName);
+                CommandData<Object, Object> commandData = pubSubChannels.get(channelName);
                 if (commandData == null) {
                     return null;
                 }
                 return commandData.getCommand().getReplayMultiDecoder();
             } else if (parts.get(0).equals("message")) {
                 String channelName = (String) parts.get(1);
-                return messageDecoders.get(channelName);
+                return pubSubMessageDecoders.get(channelName);
             } else if (parts.get(0).equals("pmessage")) {
                 String patternName = (String) parts.get(1);
-                return messageDecoders.get(patternName);
+                return pubSubMessageDecoders.get(patternName);
             }
         }
 
@@ -335,11 +335,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (data == null) {
             if (parts.size() == 2 && parts.get(0).equals("message")) {
                 String channelName = (String) parts.get(1);
-                return messageDecoders.get(channelName);
+                return pubSubMessageDecoders.get(channelName);
             }
             if (parts.size() == 3 && parts.get(0).equals("pmessage")) {
                 String patternName = (String) parts.get(1);
-                return messageDecoders.get(patternName);
+                return pubSubMessageDecoders.get(patternName);
             }
             return currentDecoder;
         }
