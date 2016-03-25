@@ -488,7 +488,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         final FutureListener<Boolean> listener = new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
-                details.getMainPromise().cancel(true);
+                details.getMainPromise().tryFailure(new RedissonShutdownException("Redisson is shutdown"));
             }
         };
         details.getMainPromise().addListener(new FutureListener<R>() {
@@ -496,6 +496,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             public void operationComplete(Future<R> future) throws Exception {
                 connectionManager.getShutdownPromise().removeListener(listener);
                 if (!future.isCancelled()) {
+                    if (future.cause() instanceof RedissonShutdownException) {
+                        details.getAttemptPromise().cancel(true);
+                    }
                     return;
                 }
                 // cancel handling for commands from skipTimeout collection
