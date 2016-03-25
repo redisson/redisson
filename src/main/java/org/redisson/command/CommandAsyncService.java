@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedisClientResult;
@@ -56,6 +57,7 @@ import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.ScheduledFuture;
 
 /**
  *
@@ -460,7 +462,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         int timeoutTime = connectionManager.getConfig().getTimeout();
         if (QueueCommand.TIMEOUTLESS_COMMANDS.contains(details.getCommand().getName())) {
             Integer popTimeout = Integer.valueOf(details.getParams()[details.getParams().length - 1].toString());
-            handleBlockingOperations(details, connection);
+            handleBlockingOperations(details, connection, popTimeout);
             if (popTimeout == 0) {
                 return;
             }
@@ -481,7 +483,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.setTimeout(timeout);
     }
 
-    private <R, V> void handleBlockingOperations(final AsyncDetails<V, R> details, final RedisConnection connection) {
+    private <R, V> void handleBlockingOperations(final AsyncDetails<V, R> details, final RedisConnection connection, Integer popTimeout) {
         final FutureListener<Boolean> listener = new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
@@ -489,19 +491,41 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         };
         
+        final AtomicBoolean canceledByScheduler = new AtomicBoolean();
+        final ScheduledFuture<?> scheduledFuture;
+        if (popTimeout != 0) {
+            // to handle cases when connection has been lost 
+            scheduledFuture = connectionManager.getGroup().schedule(new Runnable() {
+                @Override
+                public void run() {
+                    if (connection.isActive()) {
+                        return;
+                    }
+                    
+                    canceledByScheduler.set(true);
+                    details.getAttemptPromise().trySuccess(null);
+                }
+            }, popTimeout, TimeUnit.SECONDS);
+        } else {
+            scheduledFuture = null;
+        }
+        
         details.getMainPromise().addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
+                if (scheduledFuture != null) {
+                    scheduledFuture.cancel(false);
+                }
                 connectionManager.getShutdownPromise().removeListener(listener);
-                if (!future.isCancelled()) {
-                    if (future.cause() instanceof RedissonShutdownException) {
-                        details.getAttemptPromise().tryFailure(future.cause());
-                    }
+                // handling cancel operation for commands from skipTimeout collection
+                if ((future.isCancelled() && details.getAttemptPromise().cancel(true)) 
+                        || canceledByScheduler.get()) {
+                    connection.forceReconnectAsync();
                     return;
                 }
-                // cancel handling for commands from skipTimeout collection
-                if (details.getAttemptPromise().cancel(true)) {
-                    connection.forceReconnectAsync();
+                
+                if (future.cause() instanceof RedissonShutdownException) {
+                    details.getAttemptPromise().tryFailure(future.cause());
                 }
             }
         });
@@ -510,6 +534,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
                 if (future.isCancelled()) {
+                    // command should be removed due to 
+                    // ConnectionWatchdog blockingQueue reconnection logic
                     connection.removeCurrentCommand();
                 }
             }

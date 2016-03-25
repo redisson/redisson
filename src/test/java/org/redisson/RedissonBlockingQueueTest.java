@@ -1,7 +1,6 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,10 +9,11 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hamcrest.MatcherAssert;
@@ -24,29 +24,35 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.core.RBlockingQueue;
 
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
-    public void testPollReattach() throws InterruptedException, IOException {
+    public void testPollWithBrokenConnection() throws IOException, InterruptedException, ExecutionException {
         RedisProcess runner = new RedisRunner().port(6319).run();
         
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319");
         RedissonClient redisson = Redisson.create(config);
-        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollTimeout");
+        Future<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
+        
+        f.await(1, TimeUnit.SECONDS);
+        runner.stop();
+        
+        assertThat(f.get()).isNull();
+    }
+    
+    @Test
+    public void testPollReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
+        RedisProcess runner = new RedisRunner().port(6319).run();
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319");
+        RedissonClient redisson = Redisson.create(config);
+        
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
         Future<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
-        
-        final AtomicBoolean executed = new AtomicBoolean();
-        f.addListener(new FutureListener<Integer>() {
-            @Override
-            public void operationComplete(Future<Integer> future) throws Exception {
-                assertThat(future.get()).isEqualTo(123);
-                executed.set(true);
-            }
-        });
-        
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
 
@@ -59,30 +65,21 @@ public class RedissonBlockingQueueTest extends BaseTest {
         }
         assertThat(queue1.size()).isEqualTo(10);
         
-        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        Integer result = f.get(1, TimeUnit.SECONDS);
+        assertThat(result).isEqualTo(123);
         runner.stop();
     }
 
     
     @Test
-    public void testTakeReattach() throws InterruptedException, IOException {
+    public void testTakeReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner().port(6319).run();
         
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319");
         RedissonClient redisson = Redisson.create(config);
-        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("testTakeReattach");
         Future<Integer> f = queue1.takeAsync();
-        
-        final AtomicBoolean executed = new AtomicBoolean();
-        f.addListener(new FutureListener<Integer>() {
-            @Override
-            public void operationComplete(Future<Integer> future) throws Exception {
-                assertThat(future.get()).isEqualTo(123);
-                executed.set(true);
-            }
-        });
-        
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
 
@@ -95,7 +92,8 @@ public class RedissonBlockingQueueTest extends BaseTest {
         }
         assertThat(queue1.size()).isEqualTo(10);
         
-        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        Integer result = f.get(1, TimeUnit.SECONDS);
+        assertThat(result).isEqualTo(123);
         runner.stop();
     }
     
@@ -105,7 +103,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("testTakeAsyncCancel");
         for (int i = 0; i < 10; i++) {
             Future<Integer> f = queue1.takeAsync();
             f.cancel(true);
