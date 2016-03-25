@@ -22,6 +22,8 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.QueueCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,18 +123,16 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                 @Override
                 public void operationComplete(Future<RedisConnection> future) throws Exception {
                     if (future.isSuccess()) {
-                        connection.updateChannel(channel);
-                        resubscribe(connection);
+                        refresh(connection, channel);
                     }
                 }
             });
         } else {
-            connection.updateChannel(channel);
-            resubscribe(connection);
+            refresh(connection, channel);
         }
     }
 
-    private void resubscribe(RedisConnection connection) {
+    private void reattachPubSub(RedisConnection connection) {
         if (connection instanceof RedisPubSubConnection) {
             RedisPubSubConnection conn = (RedisPubSubConnection) connection;
             for (Entry<String, Codec> entry : conn.getChannels().entrySet()) {
@@ -147,6 +147,29 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         ctx.channel().close();
+    }
+
+    private void refresh(RedisConnection connection, Channel channel) {
+        CommandData commandData = connection.getCurrentCommand();
+        connection.updateChannel(channel);
+        
+        reattachBlockingQueue(connection, commandData);            
+        reattachPubSub(connection);
+    }
+
+    private void reattachBlockingQueue(RedisConnection connection, final CommandData commandData) {
+        if (commandData != null 
+                && QueueCommand.TIMEOUTLESS_COMMANDS.contains(commandData.getCommand().getName())) {
+            ChannelFuture future = connection.send(commandData);
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        log.error("Can't reconnect blocking queue to new connection {}", commandData);
+                    }
+                }
+            });
+        }
     }
 
 }

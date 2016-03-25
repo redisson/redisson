@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +38,7 @@ import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterSlotRange;
@@ -67,9 +67,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
-
-    private final Set<String> skipTimeout = new HashSet<String>(Arrays.asList(RedisCommands.BLPOP_VALUE.getName(),
-            RedisCommands.BRPOP_VALUE.getName(), RedisCommands.BRPOPLPUSH.getName()));
 
     public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
@@ -461,7 +458,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.getTimeout().cancel();
 
         int timeoutTime = connectionManager.getConfig().getTimeout();
-        if (skipTimeout.contains(details.getCommand().getName())) {
+        if (QueueCommand.TIMEOUTLESS_COMMANDS.contains(details.getCommand().getName())) {
             Integer popTimeout = Integer.valueOf(details.getParams()[details.getParams().length - 1].toString());
             handleBlockingOperations(details, connection);
             if (popTimeout == 0) {

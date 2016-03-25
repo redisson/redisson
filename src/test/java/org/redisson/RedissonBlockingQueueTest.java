@@ -1,7 +1,9 @@
 package org.redisson;
 
+import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -11,18 +13,56 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.core.RBlockingQueue;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 public class RedissonBlockingQueueTest extends BaseTest {
 
+    @Test
+    public void testTakeReattach() throws InterruptedException, IOException {
+        RedisProcess runner = new RedisRunner().port(6319).run();
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319");
+        RedissonClient redisson = Redisson.create(config);
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        Future<Integer> f = queue1.takeAsync();
+        
+        final AtomicBoolean executed = new AtomicBoolean();
+        f.addListener(new FutureListener<Integer>() {
+            @Override
+            public void operationComplete(Future<Integer> future) throws Exception {
+                assertThat(future.get()).isEqualTo(123);
+                executed.set(true);
+            }
+        });
+        
+        f.await(1, TimeUnit.SECONDS);
+        runner.stop();
+
+        runner = new RedisRunner().port(6319).run();
+        queue1.put(123);
+        
+        // check connection rotation
+        for (int i = 0; i < 10; i++) {
+            queue1.put(i);
+        }
+        assertThat(queue1.size()).isEqualTo(10);
+        
+        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        runner.stop();
+    }
+    
     @Test
     public void testTakeAsyncCancel() {
         Config config = createConfig();

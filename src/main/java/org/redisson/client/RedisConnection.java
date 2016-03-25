@@ -18,8 +18,10 @@ package org.redisson.client;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -57,6 +59,14 @@ public class RedisConnection implements RedisCommands {
 
     public static <C extends RedisConnection> C getFrom(Channel channel) {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
+    }
+
+    public CommandData getCurrentCommand() {
+        QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).get();
+        if (command instanceof CommandData) {
+            return (CommandData)command;
+        }
+        return null;
     }
 
     public long getLastUsageTime() {
