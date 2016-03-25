@@ -49,6 +49,7 @@ import org.redisson.connection.NodeSource.Redirect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.Timeout;
@@ -494,11 +495,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         final AtomicBoolean canceledByScheduler = new AtomicBoolean();
         final ScheduledFuture<?> scheduledFuture;
         if (popTimeout != 0) {
-            // to handle cases when connection has been lost 
+            // to handle cases when connection has been lost
+            final Channel orignalChannel = connection.getChannel();
             scheduledFuture = connectionManager.getGroup().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    if (connection.isActive()) {
+                    // there is no re-connection was made
+                    // and connection is still active
+                    if (orignalChannel == connection.getChannel() 
+                            && connection.isActive()) {
                         return;
                     }
                     
