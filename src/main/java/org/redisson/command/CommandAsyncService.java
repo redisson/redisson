@@ -488,13 +488,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 details.getMainPromise().tryFailure(new RedissonShutdownException("Redisson is shutdown"));
             }
         };
+        
         details.getMainPromise().addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
                 connectionManager.getShutdownPromise().removeListener(listener);
                 if (!future.isCancelled()) {
                     if (future.cause() instanceof RedissonShutdownException) {
-                        details.getAttemptPromise().cancel(true);
+                        details.getAttemptPromise().tryFailure(future.cause());
                     }
                     return;
                 }
@@ -504,6 +505,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
             }
         });
+        
+        details.getAttemptPromise().addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                if (future.isCancelled()) {
+                    connection.removeCurrentCommand();
+                }
+            }
+        });
+        
         connectionManager.getShutdownPromise().addListener(listener);
     }
 
@@ -626,7 +637,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             details.getMainPromise().setSuccess(res);
         } else {
-            details.getMainPromise().setFailure(future.cause());
+            details.getMainPromise().tryFailure(future.cause());
         }
         AsyncDetails.release(details);
     }
