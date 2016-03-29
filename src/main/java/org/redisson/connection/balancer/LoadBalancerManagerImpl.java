@@ -95,16 +95,16 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         return false;
     }
 
-    public boolean freeze(String host, int port, FreezeReason freezeReason) {
+    public ClientConnectionsEntry freeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         ClientConnectionsEntry connectionEntry = addr2Entry.get(addr);
         if (connectionEntry == null) {
-            return false;
+            return null;
         }
 
         synchronized (connectionEntry) {
             if (connectionEntry.isFreezed()) {
-                return false;
+                return null;
             }
             
             connectionEntry.setFreezed(true);
@@ -116,27 +116,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
             }
         }
 
-        // close all connections
-        while (true) {
-            RedisConnection connection = connectionEntry.pollConnection();
-            if (connection == null) {
-                break;
-            }
-            connection.closeAsync();
-        }
-
-        // close all pub/sub connections
-        while (true) {
-            RedisPubSubConnection connection = connectionEntry.pollSubscribeConnection();
-            if (connection == null) {
-                break;
-            }
-            connection.closeAsync();
-        }
-
-        connectionManager.reattachPubSub(connectionEntry.getAllSubscribeConnections());
-        connectionEntry.getAllSubscribeConnections().clear();
-        return true;
+        return connectionEntry;
     }
 
     public Future<RedisPubSubConnection> nextPubSubConnection() {

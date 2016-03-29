@@ -158,19 +158,19 @@ public class ClientConnectionsEntry {
     }
 
     private <T extends RedisConnection> void addReconnectListener(Promise<T> connectionFuture, T conn) {
-        connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, connectionManager.getConfig());
-        addFireEventListener(connectionFuture);
+        addFireEventListener(conn, connectionFuture);
 
         conn.setReconnectListener(new ReconnectListener() {
             @Override
             public void onReconnect(RedisConnection conn, Promise<RedisConnection> connectionFuture) {
-                connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, connectionManager.getConfig());
-                addFireEventListener(connectionFuture);
+                addFireEventListener(conn, connectionFuture);
             }
         });
     }
 
-    private <T extends RedisConnection> void addFireEventListener(Promise<T> connectionFuture) {
+    private <T extends RedisConnection> void addFireEventListener(T conn, Promise<T> connectionFuture) {
+        connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, connectionManager.getConfig());
+        
         if (connectionFuture.isSuccess()) {
             connectionManager.getConnectionEventsHub().fireConnect(connectionFuture.getNow().getRedisClient().getAddr());
             return;
@@ -196,10 +196,12 @@ public class ClientConnectionsEntry {
                     connectionFuture.tryFailure(future.cause());
                     return;
                 }
+                
                 RedisPubSubConnection conn = future.getNow();
                 log.debug("new pubsub connection created: {}", conn);
 
                 addReconnectListener(connectionFuture, conn);
+                
 
                 allSubscribeConnections.add(conn);
             }

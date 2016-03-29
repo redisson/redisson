@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -44,8 +43,6 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
-    void reattachPubSub(Collection<RedisPubSubConnection> allPubSubConnections);
-    
     boolean isClusterMode();
 
     <R> Future<R> newSucceededFuture(R value);
