@@ -23,18 +23,25 @@ public class RemoteServiceRequest {
     private String methodName;
     private Object[] args;
     private long ackTimeout;
+    private long responseTimeout;
     private long date;
+    
     
     public RemoteServiceRequest() {
     }
     
-    public RemoteServiceRequest(String requestId, String methodName, Object[] args, long ackTimeout, long date) {
+    public RemoteServiceRequest(String requestId, String methodName, Object[] args, long ackTimeout, long responseTimeout, long date) {
         super();
         this.requestId = requestId;
         this.methodName = methodName;
         this.args = args;
         this.ackTimeout = ackTimeout;
+        this.responseTimeout = responseTimeout;
         this.date = date;
+    }
+    
+    public long getResponseTimeout() {
+        return responseTimeout;
     }
     
     public long getDate() {

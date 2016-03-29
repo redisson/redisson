@@ -17,8 +17,6 @@ package org.redisson.core;
 
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.remote.RemoteServiceAckTimeoutException;
-
 /**
  * Allows to execute object methods remotely between Redisson instances (Server side and Client side instances in terms of remote invocation).
  * <p/>
@@ -78,7 +76,10 @@ public interface RRemoteService {
     
     /**
      * Get remote service object for remote invocations.
-     * Uses ack timeout = 1000 ms by default
+     * <p/>
+     * Ack timeout = 1000 ms by default
+     * <p/>
+     * Execution timeout = 30 sec by default
      * 
      * @param remoteInterface
      * @return
@@ -87,7 +88,9 @@ public interface RRemoteService {
     
     /**
      * Get remote service object for remote invocations 
-     * with specified invocation timeout. Uses ack timeout = 1000 ms by default
+     * with specified invocation timeout.
+     * <p/> 
+     * Ack timeout = 1000 ms by default
      * 
      * @param remoteInterface
      * @param executionTimeout - invocation timeout
