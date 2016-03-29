@@ -37,6 +37,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
@@ -117,7 +118,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         if (connection.getReconnectListener() != null) {
             // new connection used only for channel init
             RedisConnection rc = new RedisConnection(connection.getRedisClient(), channel);
-            Promise<RedisConnection> connectionFuture = bootstrap.group().next().newPromise();
+            Promise<RedisConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
             connection.getReconnectListener().onReconnect(rc, connectionFuture);
             connectionFuture.addListener(new FutureListener<RedisConnection>() {
                 @Override

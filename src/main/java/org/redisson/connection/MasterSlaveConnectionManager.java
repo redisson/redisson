@@ -61,6 +61,7 @@ import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
@@ -136,7 +137,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this(config);
         init(cfg);
     }
-
+    
     public MasterSlaveConnectionManager(Config cfg) {
         Version.logVersion();
 
@@ -158,7 +159,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = NioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
-        this.shutdownPromise = group.next().newPromise();
+        this.shutdownPromise = newPromise();
         this.isClusterMode = cfg.isClusterConfig();
     }
 
@@ -714,17 +715,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public <R> Promise<R> newPromise() {
-        return group.next().newPromise();
+        return ImmediateEventExecutor.INSTANCE.newPromise();
     }
 
     @Override
     public <R> Future<R> newSucceededFuture(R value) {
-        return new FastSuccessFuture<R>(value);
+        return ImmediateEventExecutor.INSTANCE.newSucceededFuture(value);
     }
 
     @Override
     public <R> Future<R> newFailedFuture(Throwable cause) {
-        return new FastFailedFuture<R>(cause);
+        return ImmediateEventExecutor.INSTANCE.newFailedFuture(cause);
     }
 
     @Override

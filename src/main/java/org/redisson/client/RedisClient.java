@@ -38,6 +38,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 public class RedisClient {
@@ -95,7 +96,7 @@ public class RedisClient {
     }
 
     public Future<RedisConnection> connectAsync() {
-        final Promise<RedisConnection> f = bootstrap.group().next().newPromise();
+        final Promise<RedisConnection> f = ImmediateEventExecutor.INSTANCE.newPromise();
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
@@ -122,7 +123,7 @@ public class RedisClient {
     }
 
     public Future<RedisPubSubConnection> connectPubSubAsync() {
-        final Promise<RedisPubSubConnection> f = bootstrap.group().next().newPromise();
+        final Promise<RedisPubSubConnection> f = ImmediateEventExecutor.INSTANCE.newPromise();
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override

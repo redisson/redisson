@@ -25,13 +25,13 @@ import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.connection.FastSuccessFuture;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -47,7 +47,7 @@ public class RedisConnection implements RedisCommands {
     private ReconnectListener reconnectListener;
     private long lastUsageTime;
 
-    private final Future<?> acquireFuture = new FastSuccessFuture<Object>(this);
+    private final Future<?> acquireFuture = ImmediateEventExecutor.INSTANCE.newSucceededFuture(this);
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
@@ -151,13 +151,13 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
         send(new CommandData<T, R>(promise, encoder, command, params));
         return promise;
     }
 
     public <T, R> Future<R> asyncWithTimeout(Codec encoder, RedisCommand<T> command, Object ... params) {
-        final Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        final Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
         final ScheduledFuture<?> scheduledFuture = redisClient.getBootstrap().group().next().schedule(new Runnable() {
             @Override
             public void run() {
@@ -176,7 +176,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> CommandData<T, R> create(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
         return new CommandData<T, R>(promise, encoder, command, params);
     }
 

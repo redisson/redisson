@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 public class ClientConnectionsEntry {
@@ -137,7 +138,7 @@ public class ClientConnectionsEntry {
     }
 
     public Future<RedisConnection> connect() {
-        final Promise<RedisConnection> connectionFuture = client.getBootstrap().group().next().newPromise();
+        final Promise<RedisConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
         Future<RedisConnection> future = client.connectAsync();
         future.addListener(new FutureListener<RedisConnection>() {
             @Override
@@ -186,7 +187,7 @@ public class ClientConnectionsEntry {
     }
 
     public Future<RedisPubSubConnection> connectPubSub() {
-        final Promise<RedisPubSubConnection> connectionFuture = client.getBootstrap().group().next().newPromise();
+        final Promise<RedisPubSubConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
         Future<RedisPubSubConnection> future = client.connectPubSubAsync();
         future.addListener(new FutureListener<RedisPubSubConnection>() {
             @Override
