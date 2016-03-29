@@ -59,43 +59,64 @@ public class RedissonSetCacheTest extends BaseTest {
     @Test
     public void testAddExpire() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple3");
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
         assertThat(set).contains("123");
 
-        Thread.sleep(1000);
-
+        Thread.sleep(500);
+        
+        assertThat(set.size()).isEqualTo(1);
         assertThat(set).doesNotContain("123");
+        
+        assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
+
     }
 
     @Test
     public void testAddExpireTwise() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple31");
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
         Thread.sleep(1000);
 
         Assert.assertFalse(set.contains("123"));
 
-        set.add("4341", 1, TimeUnit.SECONDS);
+        assertThat(set.add("4341", 1, TimeUnit.SECONDS)).isTrue();
         Thread.sleep(1000);
 
         Assert.assertFalse(set.contains("4341"));
     }
+    
+    @Test
+    public void testAddExpireThenAdd() throws InterruptedException, ExecutionException {
+        RSetCache<String> set = redisson.getSetCache("simple31");
+        assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
+        
+        Thread.sleep(500);
+
+        assertThat(set.size()).isEqualTo(1);
+        assertThat(set.contains("123")).isFalse();
+
+        assertThat(set.add("123")).isTrue();
+        Thread.sleep(1000);
+
+        assertThat(set.contains("123")).isTrue();
+    }
+
 
     @Test
     public void testExpireOverwrite() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple");
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
 
         Thread.sleep(800);
 
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(set.add("123", 1, TimeUnit.SECONDS)).isFalse();
 
-        Thread.sleep(800);
-        Assert.assertTrue(set.contains("123"));
+        Thread.sleep(100);
+        assertThat(set.contains("123")).isTrue();
 
-        Thread.sleep(200);
+        Thread.sleep(100);
 
-        Assert.assertFalse(set.contains("123"));
+        assertThat(set.contains("123")).isFalse();
     }
 
     @Test
