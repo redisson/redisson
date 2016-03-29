@@ -23,11 +23,11 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.core.NodeType;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
@@ -44,6 +44,8 @@ import io.netty.util.concurrent.Promise;
  */
 public interface ConnectionManager {
 
+    void reattachPubSub(Collection<RedisPubSubConnection> allPubSubConnections);
+    
     boolean isClusterMode();
 
     <R> Future<R> newSucceededFuture(R value);
@@ -61,8 +63,6 @@ public interface ConnectionManager {
     IdleConnectionWatcher getConnectionWatcher();
 
     <R> Future<R> newFailedFuture(Throwable cause);
-
-    void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason);
 
     Collection<RedisClientEntry> getClients();
 

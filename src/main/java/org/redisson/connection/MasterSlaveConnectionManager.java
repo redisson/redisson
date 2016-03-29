@@ -542,13 +542,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return null;
     }
 
-    public void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason) {
-        Collection<RedisPubSubConnection> allPubSubConnections = entry.slaveDown(host, port, freezeReason);
-        if (allPubSubConnections.isEmpty()) {
-            return;
-        }
-
-        // reattach listeners to other channels
+    @Override
+    public void reattachPubSub(Collection<RedisPubSubConnection> allPubSubConnections) {
         for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
             for (RedisPubSubConnection redisPubSubConnection : allPubSubConnections) {
                 PubSubConnectionEntry pubSubEntry = mapEntry.getValue();
@@ -620,8 +615,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void slaveDown(ClusterSlotRange slotRange, String host, int port, FreezeReason freezeReason) {
-        MasterSlaveEntry entry = getEntry(slotRange);
-        slaveDown(entry, host, port, freezeReason);
+        getEntry(slotRange).slaveDown(host, port, freezeReason);
     }
 
     protected void changeMaster(ClusterSlotRange slotRange, String host, int port) {

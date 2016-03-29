@@ -90,9 +90,11 @@ public class MasterSlaveEntry {
         return writeConnectionHolder.add(masterEntry);
     }
 
-    public Collection<RedisPubSubConnection> slaveDown(String host, int port, FreezeReason freezeReason) {
-        Collection<RedisPubSubConnection> conns = slaveBalancer.freeze(host, port, freezeReason);
-
+    public boolean slaveDown(String host, int port, FreezeReason freezeReason) {
+        if (!slaveBalancer.freeze(host, port, freezeReason)) {
+            return false;
+        }
+        
         // add master as slave if no more slaves available
         if (config.getReadMode() == ReadMode.SLAVE && slaveBalancer.getAvailableClients() == 0) {
             InetSocketAddress addr = masterEntry.getClient().getAddr();
@@ -100,7 +102,7 @@ public class MasterSlaveEntry {
                 log.info("master {}:{} used as slave", addr.getHostName(), addr.getPort());
             }
         }
-        return conns;
+        return true;
     }
 
     public Future<Void> addSlave(String host, int port) {
@@ -134,7 +136,7 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (config.getReadMode() == ReadMode.SLAVE
                 && (!addr.getHostName().equals(host) || port != addr.getPort())) {
-            connectionManager.slaveDown(this, addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM);
+            slaveDown(addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM);
             log.info("master {}:{} excluded from slaves", addr.getHostName(), addr.getPort());
         }
         return true;
@@ -155,7 +157,7 @@ public class MasterSlaveEntry {
         // more than one slave available, so master can be removed from slaves
         if (config.getReadMode() == ReadMode.SLAVE
                 && slaveBalancer.getAvailableClients() > 1) {
-            connectionManager.slaveDown(this, host, port, FreezeReason.SYSTEM);
+            slaveDown(host, port, FreezeReason.SYSTEM);
         }
         connectionManager.shutdownAsync(oldMaster.getClient());
     }

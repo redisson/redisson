@@ -16,10 +16,6 @@
 package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.redisson.MasterSlaveServersConfig;
@@ -99,16 +95,20 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         return false;
     }
 
-    public Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
+    public boolean freeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         ClientConnectionsEntry connectionEntry = addr2Entry.get(addr);
         if (connectionEntry == null) {
-            return Collections.emptyList();
+            return false;
         }
 
         synchronized (connectionEntry) {
-            log.debug("{} freezed", addr);
+            if (connectionEntry.isFreezed()) {
+                return false;
+            }
+            
             connectionEntry.setFreezed(true);
+
             // only RECONNECT freeze reason could be replaced
             if (connectionEntry.getFreezeReason() == null
                     || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
@@ -134,11 +134,9 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
             connection.closeAsync();
         }
 
-        synchronized (connectionEntry) {
-            List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
-            connectionEntry.getAllSubscribeConnections().clear();
-            return list;
-        }
+        connectionManager.reattachPubSub(connectionEntry.getAllSubscribeConnections());
+        connectionEntry.getAllSubscribeConnections().clear();
+        return true;
     }
 
     public Future<RedisPubSubConnection> nextPubSubConnection() {
