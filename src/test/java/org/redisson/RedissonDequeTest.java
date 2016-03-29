@@ -1,12 +1,11 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.Iterator;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RDeque;
@@ -23,7 +22,7 @@ public class RedissonDequeTest extends BaseTest {
 
         queue1.removeLastOccurrence(3);
 
-        MatcherAssert.assertThat(queue1, Matchers.containsInAnyOrder(3, 2, 1));
+        assertThat(queue1).containsExactly(3, 2, 1);
     }
 
     @Test
@@ -36,7 +35,7 @@ public class RedissonDequeTest extends BaseTest {
 
         queue1.removeFirstOccurrence(3);
 
-        MatcherAssert.assertThat(queue1, Matchers.containsInAnyOrder(2, 1, 3));
+        assertThat(queue1).containsExactly(2, 1, 3);
     }
 
     @Test
@@ -86,7 +85,7 @@ public class RedissonDequeTest extends BaseTest {
         queue2.addFirst(4);
 
         queue1.pollLastAndOfferFirstTo(queue2);
-        MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
+        assertThat(queue2).containsExactly(3, 4, 5, 6);
     }
 
     @Test
@@ -96,8 +95,8 @@ public class RedissonDequeTest extends BaseTest {
         queue.addFirst(2);
         queue.addFirst(3);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 2, 1));
-    }
+        assertThat(queue).containsExactly(3, 2, 1);
+   }
 
     @Test
     public void testAddFirst() {
@@ -106,7 +105,7 @@ public class RedissonDequeTest extends BaseTest {
         queue.addFirst(2);
         queue.addFirst(3);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 2, 1));
+        assertThat(queue).containsExactly(3, 2, 1);
     }
 
     @Test
@@ -116,7 +115,7 @@ public class RedissonDequeTest extends BaseTest {
         queue.addLast(2);
         queue.addLast(3);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3));
+        assertThat(queue).containsExactly(1, 2, 3);
     }
 
     @Test
@@ -126,7 +125,7 @@ public class RedissonDequeTest extends BaseTest {
         queue.addLast(2);
         queue.addLast(3);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3));
+        assertThat(queue).containsExactly(1, 2, 3);
     }
 
     @Test
@@ -136,7 +135,7 @@ public class RedissonDequeTest extends BaseTest {
         queue.offerFirst(2);
         queue.offerFirst(3);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 2, 1));
+        assertThat(queue).containsExactly(3, 2, 1);
     }
 
     @Test
@@ -146,7 +145,7 @@ public class RedissonDequeTest extends BaseTest {
         queue.offerFirst(2);
         queue.offerFirst(3);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 2, 1));
+        assertThat(queue).containsExactly(3, 2, 1);
     }
 
     @Test
@@ -156,7 +155,7 @@ public class RedissonDequeTest extends BaseTest {
         queue.offerLast(2);
         queue.offerLast(3);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3));
+        assertThat(queue).containsExactly(1, 2, 3);
 
         Assert.assertEquals((Integer)1, queue.poll());
     }
@@ -166,14 +165,7 @@ public class RedissonDequeTest extends BaseTest {
         final Deque<Integer> queue = new ArrayDeque<Integer>();
         queue.addAll(Arrays.asList(1, 2, 3));
 
-        MatcherAssert.assertThat(new Iterable<Integer>() {
-
-            @Override
-            public Iterator<Integer> iterator() {
-                return queue.descendingIterator();
-            }
-
-        }, Matchers.contains(3, 2, 1));
+        assertThat(queue.descendingIterator()).containsExactly(3, 2, 1);
     }
 
     @Test
@@ -181,14 +173,7 @@ public class RedissonDequeTest extends BaseTest {
         final RDeque<Integer> queue = redisson.getDeque("deque");
         queue.addAll(Arrays.asList(1, 2, 3));
 
-        MatcherAssert.assertThat(new Iterable<Integer>() {
-
-            @Override
-            public Iterator<Integer> iterator() {
-                return queue.descendingIterator();
-            }
-
-        }, Matchers.contains(3, 2, 1));
+        assertThat(queue.descendingIterator()).containsExactly(3, 2, 1);
     }
 
 }
