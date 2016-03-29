@@ -18,7 +18,10 @@ language: java
 jdk:
   - oraclejdk8
 env:
-    - REDIS_VERSION=3.0.7
+    matrix:
+        - REDIS_VERSION=3.0.7
+        - REDIS_VERSION=2.8.24
+        - REDIS_VERSION=3.2.0-rc3
 cache:
   directories:
   - $HOME/.m2
