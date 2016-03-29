@@ -13,20 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson.remote;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+/**
+ * Rises when remote method executor has not answered 
+ * within Ack timeout.
+ * <p/>
+ * Method invocation has not been started in this case. 
+ * So a new invocation attempt can be made. 
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class RemoteServiceAckTimeoutException extends RuntimeException {
 
-public interface QueueCommand {
+    private static final long serialVersionUID = 1820133675653636587L;
 
-    Set<String> PUBSUB_COMMANDS = new HashSet<String>(Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE"));
+    public RemoteServiceAckTimeoutException(String message) {
+        super(message);
+    }
     
-    Set<String> TIMEOUTLESS_COMMANDS = new HashSet<String>(Arrays.asList(RedisCommands.BLPOP_VALUE.getName(),
-            RedisCommands.BRPOP_VALUE.getName(), RedisCommands.BRPOPLPUSH.getName()));
-
-    List<CommandData<Object, Object>> getPubSubOperations();
-
 }

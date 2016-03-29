@@ -61,6 +61,7 @@ import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
@@ -122,6 +123,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
+    private final Promise<Boolean> shutdownPromise;
+    
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
     private final Set<RedisClientEntry> clients = Collections.newSetFromMap(PlatformDependent.<RedisClientEntry, Boolean>newConcurrentHashMap());
@@ -134,7 +137,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this(config);
         init(cfg);
     }
-
+    
     public MasterSlaveConnectionManager(Config cfg) {
         Version.logVersion();
 
@@ -156,6 +159,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = NioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
+        this.shutdownPromise = newPromise();
         this.isClusterMode = cfg.isClusterConfig();
     }
 
@@ -538,77 +542,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return null;
     }
 
-    public void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason) {
-        Collection<RedisPubSubConnection> allPubSubConnections = entry.slaveDown(host, port, freezeReason);
-        if (allPubSubConnections.isEmpty()) {
-            return;
-        }
-
-        // reattach listeners to other channels
-        for (Entry<String, PubSubConnectionEntry> mapEntry : name2PubSubConnection.entrySet()) {
-            for (RedisPubSubConnection redisPubSubConnection : allPubSubConnections) {
-                PubSubConnectionEntry pubSubEntry = mapEntry.getValue();
-                final String channelName = mapEntry.getKey();
-
-                if (!pubSubEntry.getConnection().equals(redisPubSubConnection)) {
-                    continue;
-                }
-
-                synchronized (pubSubEntry) {
-                    pubSubEntry.close();
-
-                    final Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
-                    if (pubSubEntry.getConnection().getPatternChannels().get(channelName) != null) {
-                        Codec subscribeCodec = punsubscribe(channelName);
-                        if (!listeners.isEmpty()) {
-                            Future<PubSubConnectionEntry> future = psubscribe(channelName, subscribeCodec);
-                            future.addListener(new FutureListener<PubSubConnectionEntry>() {
-                                @Override
-                                public void operationComplete(Future<PubSubConnectionEntry> future)
-                                        throws Exception {
-                                    if (!future.isSuccess()) {
-                                        log.error("Can't resubscribe topic channel: " + channelName);
-                                        return;
-                                    }
-
-                                    PubSubConnectionEntry newEntry = future.getNow();
-                                    for (RedisPubSubListener redisPubSubListener : listeners) {
-                                        newEntry.addListener(channelName, redisPubSubListener);
-                                    }
-                                    log.debug("resubscribed listeners for '{}' channel-pattern", channelName);
-                                }
-                            });
-                        }
-                    } else {
-                        Codec subscribeCodec = unsubscribe(channelName);
-                        if (!listeners.isEmpty()) {
-                            Future<PubSubConnectionEntry> future = subscribe(subscribeCodec, channelName, null);
-                            future.addListener(new FutureListener<PubSubConnectionEntry>() {
-
-                                @Override
-                                public void operationComplete(Future<PubSubConnectionEntry> future)
-                                        throws Exception {
-                                    if (!future.isSuccess()) {
-                                        log.error("Can't resubscribe topic channel: " + channelName);
-                                        return;
-                                    }
-                                    PubSubConnectionEntry newEntry = future.getNow();
-                                    for (RedisPubSubListener redisPubSubListener : listeners) {
-                                        newEntry.addListener(channelName, redisPubSubListener);
-                                    }
-                                    log.debug("resubscribed listeners for '{}' channel", channelName);
-                                }
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     protected void slaveDown(ClusterSlotRange slotRange, String host, int port, FreezeReason freezeReason) {
-        MasterSlaveEntry entry = getEntry(slotRange);
-        slaveDown(entry, host, port, freezeReason);
+        getEntry(slotRange).slaveDown(host, port, freezeReason);
     }
 
     protected void changeMaster(ClusterSlotRange slotRange, String host, int port) {
@@ -674,7 +609,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
-        shutdownLatch.closeAndAwaitUninterruptibly();
+        shutdownLatch.close();
+        shutdownPromise.trySuccess(true);
+        shutdownLatch.awaitUninterruptibly();
+        
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
@@ -699,17 +637,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public <R> Promise<R> newPromise() {
-        return group.next().newPromise();
+        return ImmediateEventExecutor.INSTANCE.newPromise();
     }
 
     @Override
     public <R> Future<R> newSucceededFuture(R value) {
-        return new FastSuccessFuture<R>(value);
+        return ImmediateEventExecutor.INSTANCE.newSucceededFuture(value);
     }
 
     @Override
     public <R> Future<R> newFailedFuture(Throwable cause) {
-        return new FastFailedFuture<R>(cause);
+        return ImmediateEventExecutor.INSTANCE.newFailedFuture(cause);
     }
 
     @Override
@@ -730,6 +668,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public InfinitySemaphoreLatch getShutdownLatch() {
         return shutdownLatch;
+    }
+    
+    @Override
+    public Future<Boolean> getShutdownPromise() {
+        return shutdownPromise;
     }
 
     @Override

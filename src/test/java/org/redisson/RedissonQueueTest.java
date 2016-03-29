@@ -1,11 +1,11 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RQueue;
@@ -20,9 +20,9 @@ public class RedissonQueueTest extends BaseTest {
         queue.add(3);
         queue.offer(4);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
+        assertThat(queue).containsExactly(1, 2, 3, 4);
         Assert.assertEquals((Integer)1, queue.poll());
-        MatcherAssert.assertThat(queue, Matchers.contains(2, 3, 4));
+        assertThat(queue).containsExactly(2, 3, 4);
         Assert.assertEquals((Integer)2, queue.element());
     }
 
@@ -34,9 +34,9 @@ public class RedissonQueueTest extends BaseTest {
         queue.add(3);
         queue.offer(4);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
+        assertThat(queue).containsExactly(1, 2, 3, 4);
         Assert.assertEquals((Integer)1, queue.poll());
-        MatcherAssert.assertThat(queue, Matchers.contains(2, 3, 4));
+        assertThat(queue).containsExactly(2, 3, 4);
         Assert.assertEquals((Integer)2, queue.element());
     }
 
@@ -51,7 +51,7 @@ public class RedissonQueueTest extends BaseTest {
         queue.remove();
         queue.remove();
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 4));
+        assertThat(queue).containsExactly(3, 4);
         queue.remove();
         queue.remove();
 
@@ -69,7 +69,7 @@ public class RedissonQueueTest extends BaseTest {
         queue.remove();
         queue.remove();
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 4));
+        assertThat(queue).containsExactly(3, 4);
         queue.remove();
         queue.remove();
 

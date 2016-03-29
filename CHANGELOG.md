@@ -2,6 +2,21 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####23-Mar-2016 - version 2.2.10 released  
+
+Feature - __new object added__ `RRemoteService`  
+Feature - __new object added__ `RSetMultimapCache`  
+Feature - __new object added__ `RListMultimapCache`  
+Improvement - ability to cancel BRPOP and BLPOP async command execution  
+Improvement - Config params validation  
+Improvement - test RedisRunner improvements (thanks to jackygurui)  
+Improvement - `Double.NEGATIVE_INFINITY` and `Double.POSITIVE_INFINITY` handling for ScoredSortedSet (thanks to jackygurui)  
+Fixed - MOVED, ASK handling in cluster mode using RBatch  
+Fixed - delete and expire logic for Multimap objects  
+Fixed - `RLock.tryLockAsync` NPE  
+Fixed - possible NPE during Redisson version logging  
+Fixed - Netty threads shutdown after connection error  
+
 ####04-Mar-2016 - version 2.2.9 released  
 
 Feature - __new object added__ `RSetMultimap`  

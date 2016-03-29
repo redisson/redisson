@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson.remote;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-public interface QueueCommand {
-
-    Set<String> PUBSUB_COMMANDS = new HashSet<String>(Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE"));
-    
-    Set<String> TIMEOUTLESS_COMMANDS = new HashSet<String>(Arrays.asList(RedisCommands.BLPOP_VALUE.getName(),
-            RedisCommands.BRPOP_VALUE.getName(), RedisCommands.BRPOPLPUSH.getName()));
-
-    List<CommandData<Object, Object>> getPubSubOperations();
+/**
+ * Worker sends this message when it has received a {@link RemoteServiceRequest}. 
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class RemoteServiceAck implements RRemoteServiceResponse {
 
 }

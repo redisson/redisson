@@ -13,35 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.remote;
 
-/**
- *
- * @author Nikita Koksharov
- *
- * @param <V>
- */
-public class FastSuccessFuture<V> extends FastCompleteFuture<V> {
+import java.lang.reflect.Method;
 
-    private final V result;
+public class RemoteServiceMethod {
 
-    public FastSuccessFuture(V result) {
-        this.result = result;
+    private final Object bean;
+    private final Method method;
+    
+    public RemoteServiceMethod(Method method, Object bean) {
+        super();
+        this.method = method;
+        this.bean = bean;
     }
 
-    @Override
-    public Throwable cause() {
-        return null;
+    public Object getBean() {
+        return bean;
     }
-
-    @Override
-    public boolean isSuccess() {
-        return true;
+    
+    public Method getMethod() {
+        return method;
     }
-
-    @Override
-    public V getNow() {
-        return result;
-    }
-
+    
 }

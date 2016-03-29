@@ -77,5 +77,9 @@ public class CommandData<T, R> implements QueueCommand {
         }
         return Collections.emptyList();
     }
+    
+    public boolean isBlockingCommand() {
+        return QueueCommand.TIMEOUTLESS_COMMANDS.contains(command.getName()) && !promise.isDone();
+    }
 
 }

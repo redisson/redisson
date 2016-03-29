@@ -346,8 +346,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         failedSlaves.removeAll(currentPart.getFailedSlaveAddresses());
         for (URI uri : failedSlaves) {
             currentPart.addFailedSlaveAddress(uri);
-            slaveDown(entry, uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
-            log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
+            if (entry.slaveDown(uri.getHost(), uri.getPort(), FreezeReason.MANAGER)) {
+                log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
+            }
         }
     }
 
@@ -358,8 +359,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (URI uri : removedSlaves) {
             currentPart.removeSlaveAddress(uri);
 
-            slaveDown(entry, uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
-            log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
+            if (entry.slaveDown(uri.getHost(), uri.getPort(), FreezeReason.MANAGER)) {
+                log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
+            }
         }
 
         Set<URI> addedSlaves = new HashSet<URI>(newPart.getSlaveAddresses());

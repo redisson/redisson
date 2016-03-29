@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson.remote;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+/**
+ * Rises when invocation timeout has been occurred
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class RemoteServiceTimeoutException extends RuntimeException {
 
-public interface QueueCommand {
+    private static final long serialVersionUID = -1749266931994840256L;
 
-    Set<String> PUBSUB_COMMANDS = new HashSet<String>(Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE"));
+    public RemoteServiceTimeoutException(String message) {
+        super(message);
+    }
     
-    Set<String> TIMEOUTLESS_COMMANDS = new HashSet<String>(Arrays.asList(RedisCommands.BLPOP_VALUE.getName(),
-            RedisCommands.BRPOP_VALUE.getName(), RedisCommands.BRPOPLPUSH.getName()));
-
-    List<CommandData<Object, Object>> getPubSubOperations();
-
 }

@@ -277,7 +277,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private void checkForReconnect(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE) {
-            connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
+            masterSlaveEntry.slaveDown(entry.getClient().getAddr().getHostName(),
                     entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
             log.warn("slave {} disconnected due to failedAttempts={} limit reached", entry.getClient().getAddr(), config.getFailedAttempts());
             scheduleCheck(entry);

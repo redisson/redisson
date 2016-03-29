@@ -16,7 +16,6 @@
 package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -37,7 +36,7 @@ public interface LoadBalancerManager {
 
     boolean unfreeze(String host, int port, FreezeReason freezeReason);
 
-    Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason);
+    ClientConnectionsEntry freeze(String host, int port, FreezeReason freezeReason);
 
     Future<Void> add(ClientConnectionsEntry entry);
 

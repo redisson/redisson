@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol;
+package org.redisson;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+public class RedissonShutdownException extends RuntimeException {
 
-public interface QueueCommand {
+    private static final long serialVersionUID = -2694051226420789395L;
 
-    Set<String> PUBSUB_COMMANDS = new HashSet<String>(Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE"));
+    public RedissonShutdownException(String message) {
+        super(message);
+    }
     
-    Set<String> TIMEOUTLESS_COMMANDS = new HashSet<String>(Arrays.asList(RedisCommands.BLPOP_VALUE.getName(),
-            RedisCommands.BRPOP_VALUE.getName(), RedisCommands.BRPOPLPUSH.getName()));
-
-    List<CommandData<Object, Object>> getPubSubOperations();
-
 }

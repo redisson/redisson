@@ -20,13 +20,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedisClientResult;
+import org.redisson.RedissonShutdownException;
 import org.redisson.SlotCallback;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
@@ -38,6 +39,7 @@ import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterSlotRange;
@@ -47,6 +49,7 @@ import org.redisson.connection.NodeSource.Redirect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.Timeout;
@@ -55,6 +58,7 @@ import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.ScheduledFuture;
 
 /**
  *
@@ -66,9 +70,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
-
-    private final Set<String> skipTimeout = new HashSet<String>(Arrays.asList(RedisCommands.BLPOP_VALUE.getName(),
-            RedisCommands.BRPOP_VALUE.getName(), RedisCommands.BRPOPLPUSH.getName()));
 
     public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
@@ -354,7 +355,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         if (!connectionManager.getShutdownLatch().acquire()) {
-            mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
+            mainPromise.setFailure(new RedissonShutdownException("Redisson is shutdown"));
             return;
         }
 
@@ -460,8 +461,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.getTimeout().cancel();
 
         int timeoutTime = connectionManager.getConfig().getTimeout();
-        if (skipTimeout.contains(details.getCommand().getName())) {
+        if (QueueCommand.TIMEOUTLESS_COMMANDS.contains(details.getCommand().getName())) {
             Integer popTimeout = Integer.valueOf(details.getParams()[details.getParams().length - 1].toString());
+            handleBlockingOperations(details, connection, popTimeout);
             if (popTimeout == 0) {
                 return;
             }
@@ -480,6 +482,71 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         Timeout timeout = connectionManager.newTimeout(timeoutTask, timeoutTime, TimeUnit.MILLISECONDS);
         details.setTimeout(timeout);
+    }
+
+    private <R, V> void handleBlockingOperations(final AsyncDetails<V, R> details, final RedisConnection connection, Integer popTimeout) {
+        final FutureListener<Boolean> listener = new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(Future<Boolean> future) throws Exception {
+                details.getMainPromise().tryFailure(new RedissonShutdownException("Redisson is shutdown"));
+            }
+        };
+        
+        final AtomicBoolean canceledByScheduler = new AtomicBoolean();
+        final ScheduledFuture<?> scheduledFuture;
+        if (popTimeout != 0) {
+            // to handle cases when connection has been lost
+            final Channel orignalChannel = connection.getChannel();
+            scheduledFuture = connectionManager.getGroup().schedule(new Runnable() {
+                @Override
+                public void run() {
+                    // there is no re-connection was made
+                    // and connection is still active
+                    if (orignalChannel == connection.getChannel() 
+                            && connection.isActive()) {
+                        return;
+                    }
+                    
+                    canceledByScheduler.set(true);
+                    details.getAttemptPromise().trySuccess(null);
+                }
+            }, popTimeout, TimeUnit.SECONDS);
+        } else {
+            scheduledFuture = null;
+        }
+        
+        details.getMainPromise().addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                if (scheduledFuture != null) {
+                    scheduledFuture.cancel(false);
+                }
+                connectionManager.getShutdownPromise().removeListener(listener);
+                // handling cancel operation for commands from skipTimeout collection
+                if ((future.isCancelled() && details.getAttemptPromise().cancel(true)) 
+                        || canceledByScheduler.get()) {
+                    connection.forceReconnectAsync();
+                    return;
+                }
+                
+                if (future.cause() instanceof RedissonShutdownException) {
+                    details.getAttemptPromise().tryFailure(future.cause());
+                }
+            }
+        });
+        
+        details.getAttemptPromise().addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                if (future.isCancelled()) {
+                    // command should be removed due to 
+                    // ConnectionWatchdog blockingQueue reconnection logic
+                    connection.removeCurrentCommand();
+                }
+            }
+        });
+        
+        connectionManager.getShutdownPromise().addListener(listener);
     }
 
     private <R, V> void checkConnectionFuture(final NodeSource source,
@@ -601,7 +668,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             details.getMainPromise().setSuccess(res);
         } else {
-            details.getMainPromise().setFailure(future.cause());
+            details.getMainPromise().tryFailure(future.cause());
         }
         AsyncDetails.release(details);
     }
