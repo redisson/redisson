@@ -330,12 +330,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                        "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
-                            + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = 1 end "
-                        +"end "
-                       + "return v ",
+                      "local v = 0;"
+                    + "for i=1, #ARGV, 5000 do "
+                        + "v = v + redis.call('zrem', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
+                    + "end "
+                    + "return v > 0;",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
