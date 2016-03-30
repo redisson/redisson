@@ -203,7 +203,7 @@ public class RedissonSetCacheTest extends BaseTest {
         RSetCache<Integer> set = redisson.getSetCache("set");
         for (int i = 0; i < 10000; i++) {
             set.add(i);
-            set.add(i*10, 10, TimeUnit.SECONDS);
+            set.add(i*10, 15, TimeUnit.SECONDS);
         }
 
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
