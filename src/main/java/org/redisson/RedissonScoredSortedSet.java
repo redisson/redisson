@@ -30,11 +30,8 @@ import java.util.NoSuchElementException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RScoredSortedSet;
@@ -315,7 +312,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('zrange', KEYS[1], 0, -1);" +
                         "for i = 0, table.getn(s), 1 do " +
                             "for j = 0, table.getn(ARGV), 1 do "
@@ -329,13 +326,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                        "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
-                            + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = 1 end "
-                        +"end "
-                       + "return v ",
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+                      "local v = 0;"
+                    + "for i=1, #ARGV, 5000 do "
+                        + "v = v + redis.call('zrem', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
+                    + "end "
+                    + "return v > 0;",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -351,7 +347,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                     "local changed = 0 " +
                     "local s = redis.call('zrange', KEYS[1], 0, -1) "
                        + "local i = 0 "
