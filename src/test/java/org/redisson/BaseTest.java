@@ -1,5 +1,8 @@
 package org.redisson;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -7,15 +10,26 @@ import org.junit.BeforeClass;
 public abstract class BaseTest {
 
     protected static RedissonClient redisson;
-
+    protected static RedisRunner.RedisProcess redis;
+    
     @BeforeClass
-    public static void beforeClass() {
+    public static void beforeClass() throws IOException, InterruptedException {
+        System.out.println("Starting up...");
+        redis = defaultRedisTestInstance();
         redisson = createInstance();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                afterClass();
+            } catch (InterruptedException ex) {
+            }
+        }));
     }
 
     @AfterClass
-    public static void afterClass() {
+    public static void afterClass() throws InterruptedException {
+        System.out.println("Shutting down...");
         redisson.shutdown();
+        redis.stop();
     }
 
     public static Config createConfig() {
@@ -44,6 +58,10 @@ public abstract class BaseTest {
     @Before
     public void before() {
         redisson.getKeys().flushall();
+    }
+    
+    private static RedisRunner.RedisProcess defaultRedisTestInstance() throws IOException, InterruptedException {
+        return new RedisRunner().run();
     }
 
 }

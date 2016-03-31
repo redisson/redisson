@@ -213,7 +213,7 @@ public class RedisRunner {
                 System.out.println("Exception: " + ex.getLocalizedMessage());
             }
         }).start();
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         return new RedisProcess(p);
     }
 
