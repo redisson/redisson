@@ -13,51 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection.decoder;
+package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.buffer.ByteBuf;
 
-public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
+public class GeoMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
 
-    private final List<Object> args;
-
-    public MapGetAllDecoder(List<Object> args) {
-        this.args = args;
+    @Override
+    public Object decode(ByteBuf buf, State state) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        throw new UnsupportedOperationException();
+    public Map<Object, Object> decode(List<Object> parts, State state) {
+        Map<Object, Object> result = new HashMap<Object, Object>(parts.size());
+        for (Object object : parts) {
+            List<Object> vals = ((List<Object>) object);
+            result.put(vals.get(0), vals.get(1));
+        }
+        return result;
     }
 
     @Override
     public boolean isApplicable(int paramNum, State state) {
         return false;
-    }
-
-    @Override
-    public Map<Object, Object> decode(List<Object> parts, State state) {
-        if (parts.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Map<Object, Object> result = new HashMap<Object, Object>(parts.size());
-        for (int index = 0; index < args.size()-1; index++) {
-            Object value = parts.get(index);
-            if (value == null) {
-                continue;
-            }
-            result.put(args.get(index+1), value);
-        }
-        return result;
     }
 
 }
