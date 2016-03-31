@@ -27,9 +27,45 @@ import org.redisson.client.protocol.pubsub.PubSubType;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import java.io.IOException;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import static org.redisson.BaseTest.afterClass;
 
 public class RedisClientTest {
 
+    protected static RedisRunner.RedisProcess redis;
+
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        System.out.println("Starting up...");
+        redis = defaultRedisTestInstance();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                afterClass();
+            } catch (InterruptedException ex) {
+            }
+        }));
+    }
+
+    @AfterClass
+    public static void afterClass() throws InterruptedException {
+        System.out.println("Shutting down...");
+        redis.stop();
+    }
+
+    private static RedisRunner.RedisProcess defaultRedisTestInstance() throws IOException, InterruptedException {
+        return new RedisRunner().run();
+    }
+
+    @Before
+    public void before() {
+        System.out.println("Cleaning up...");
+        RedisClient c = new RedisClient("localhost", 6379);
+        c.connect().sync(RedisCommands.FLUSHDB);
+    }
+    
     @Test
     public void testConnectAsync() throws InterruptedException {
         RedisClient c = new RedisClient("localhost", 6379);
@@ -43,7 +79,7 @@ public class RedisClientTest {
                 l.countDown();
             }
         });
-        l.await();
+        l.await(10, TimeUnit.SECONDS);
     }
 
     @Test
@@ -71,7 +107,7 @@ public class RedisClientTest {
         });
         pubSubConnection.subscribe(StringCodec.INSTANCE, "test1", "test2");
 
-        latch.await();
+        latch.await(10, TimeUnit.SECONDS);
     }
 
     @Test
@@ -80,7 +116,7 @@ public class RedisClientTest {
         final RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
-        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
+        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         for (int i = 0; i < 100000; i++) {
             pool.execute(new Runnable() {
                 @Override
@@ -94,7 +130,7 @@ public class RedisClientTest {
 
         assertThat(pool.awaitTermination(1, TimeUnit.HOURS)).isTrue();
 
-        assertThat((Long)conn.sync(LongCodec.INSTANCE, RedisCommands.GET, "test")).isEqualTo(100000);
+        assertThat((Long) conn.sync(LongCodec.INSTANCE, RedisCommands.GET, "test")).isEqualTo(100000);
 
         conn.sync(RedisCommands.FLUSHDB);
     }
