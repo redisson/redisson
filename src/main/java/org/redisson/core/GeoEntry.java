@@ -13,17 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.convertor;
+package org.redisson.core;
 
-public class DoubleReplayConvertor extends SingleConvertor<Double> {
+public class GeoEntry {
 
-    @Override
-    public Double convert(Object obj) {
-        if (obj == null || obj.toString().isEmpty()) {
-            return null;
-        }
-        return Double.valueOf(obj.toString());
+    private final double longitude;
+    private final double latitude;
+    private final Object member;
+    
+    public GeoEntry(double longitude, double latitude, Object member) {
+        super();
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.member = member;
     }
-
-
+    
+    public double getLatitude() {
+        return latitude;
+    }
+    
+    public double getLongitude() {
+        return longitude;
+    }
+    
+    public Object getMember() {
+        return member;
+    }
+    
 }

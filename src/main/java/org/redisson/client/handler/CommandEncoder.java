@@ -18,6 +18,7 @@ package org.redisson.client.handler;
 import java.util.List;
 
 import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.DefaultParamsEncoder;
@@ -112,8 +113,11 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         if (inParamType.get(typeIndex) == ValueType.OBJECTS) {
             return msg.getCodec().getValueEncoder();
         }
-        if (inParamType.get(typeIndex) == ValueType.BINARY) {
-            return ByteArrayCodec.INSTANCE.getValueEncoder();
+        if (inParamType.get(typeIndex) == ValueType.OBJECT) {
+            return msg.getCodec().getValueEncoder();
+        }
+        if (inParamType.get(typeIndex) == ValueType.STRING) {
+            return StringCodec.INSTANCE.getValueEncoder();
         }
         throw new IllegalStateException();
     }

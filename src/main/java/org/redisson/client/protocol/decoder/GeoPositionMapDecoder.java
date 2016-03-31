@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection.decoder;
+package org.redisson.client.protocol.decoder;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -22,20 +22,19 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.buffer.ByteBuf;
 
-public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
+public class GeoPositionMapDecoder implements MultiDecoder<Map<Object, Object>> {
 
     private final List<Object> args;
 
-    public MapGetAllDecoder(List<Object> args) {
+    public GeoPositionMapDecoder(List<Object> args) {
         this.args = args;
     }
 
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
+    public Double decode(ByteBuf buf, State state) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -52,7 +51,7 @@ public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
         Map<Object, Object> result = new HashMap<Object, Object>(parts.size());
         for (int index = 0; index < args.size()-1; index++) {
             Object value = parts.get(index);
-            if (value == null) {
+            if (value == null || value == Collections.emptyMap()) {
                 continue;
             }
             result.put(args.get(index+1), value);

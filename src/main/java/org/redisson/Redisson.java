@@ -49,6 +49,7 @@ import org.redisson.core.RBloomFilter;
 import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
+import org.redisson.core.RGeo;
 import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RKeys;
 import org.redisson.core.RLexSortedSet;
@@ -179,6 +180,16 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonReactiveClient createReactive(Config config) {
         return new RedissonReactive(config);
+    }
+    
+    @Override
+    public <V> RGeo<V> getGeo(String name) {
+        return new RedissonGeo<V>(commandExecutor, name);
+    }
+    
+    @Override
+    public <V> RGeo<V> getGeo(String name, Codec codec) {
+        return new RedissonGeo<V>(codec, commandExecutor, name);
     }
 
     @Override

@@ -13,17 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.convertor;
+package org.redisson.client.codec;
 
-public class DoubleReplayConvertor extends SingleConvertor<Double> {
+import org.redisson.client.protocol.Encoder;
 
-    @Override
-    public Double convert(Object obj) {
-        if (obj == null || obj.toString().isEmpty()) {
-            return null;
-        }
-        return Double.valueOf(obj.toString());
+public class GeoEntryCodec extends StringCodec {
+
+    private final ThreadLocal<Integer> pos = new ThreadLocal<Integer>() {
+        protected Integer initialValue() {
+            return 0;
+        };
+    };
+    
+    private final Codec delegate;
+
+    public GeoEntryCodec(Codec delegate) {
+        super();
+        this.delegate = delegate;
     }
 
+    @Override
+    public Encoder getValueEncoder() {
+        Integer p = pos.get() + 1;
+        pos.set(p);
+        if (p % 3 == 0) {
+            return delegate.getValueEncoder();
+        }
+        return super.getValueEncoder();
+    }
 
 }

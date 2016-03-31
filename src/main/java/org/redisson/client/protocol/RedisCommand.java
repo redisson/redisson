@@ -24,7 +24,7 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 
 public class RedisCommand<R> {
 
-    public enum ValueType {OBJECT, OBJECTS, MAP_VALUE, MAP_KEY, MAP, BINARY}
+    public enum ValueType {OBJECT, OBJECTS, MAP_VALUE, MAP_KEY, MAP, BINARY, STRING}
 
     private ValueType outParamType = ValueType.OBJECT;
     private List<ValueType> inParamType = Arrays.asList(ValueType.OBJECT);
