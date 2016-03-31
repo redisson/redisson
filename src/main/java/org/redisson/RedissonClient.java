@@ -33,6 +33,7 @@ import org.redisson.core.RBloomFilter;
 import org.redisson.core.RBucket;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
+import org.redisson.core.RGeo;
 import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RKeys;
 import org.redisson.core.RLexSortedSet;
@@ -65,6 +66,24 @@ import org.redisson.core.RTopic;
  */
 public interface RedissonClient {
 
+    /**
+     * Returns geospatial items holder instance by <code>name</code>.
+     * 
+     * @param name
+     * @return
+     */
+    <V> RGeo<V> getGeo(String name);
+    
+    /**
+     * Returns geospatial items holder instance by <code>name</code>
+     * using provided codec for geospatial members.
+     *
+     * @param name
+     * @param geospatial member codec
+     * @return
+     */
+    <V> RGeo<V> getGeo(String name, Codec codec);
+    
     /**
      * Returns set-based cache instance by <code>name</code>.
      * Supports value eviction with a given TTL value.

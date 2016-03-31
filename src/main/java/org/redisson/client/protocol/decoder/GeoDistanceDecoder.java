@@ -13,51 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection.decoder;
+package org.redisson.client.protocol.decoder;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.CharsetUtil;
 
-public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
+public class GeoDistanceDecoder implements MultiDecoder<List<Object>> {
 
-    private final List<Object> args;
-
-    public MapGetAllDecoder(List<Object> args) {
-        this.args = args;
+    private final ThreadLocal<Integer> pos = new ThreadLocal<Integer>();
+    
+    private final Codec codec;
+    
+    public GeoDistanceDecoder(Codec codec) {
+        super();
+        this.codec = codec;
     }
 
     @Override
     public Object decode(ByteBuf buf, State state) throws IOException {
-        throw new UnsupportedOperationException();
+        if (pos.get() % 2 == 0) {
+            return codec.getValueDecoder().decode(buf, state);
+        }
+        return DoubleCodec.INSTANCE.getValueDecoder().decode(buf, state);
     }
 
     @Override
     public boolean isApplicable(int paramNum, State state) {
-        return false;
+        pos.set(paramNum);
+        return true;
     }
 
     @Override
-    public Map<Object, Object> decode(List<Object> parts, State state) {
-        if (parts.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Map<Object, Object> result = new HashMap<Object, Object>(parts.size());
-        for (int index = 0; index < args.size()-1; index++) {
-            Object value = parts.get(index);
-            if (value == null) {
-                continue;
-            }
-            result.put(args.get(index+1), value);
-        }
-        return result;
+    public List<Object> decode(List<Object> parts, State state) {
+        return parts;
     }
 
 }

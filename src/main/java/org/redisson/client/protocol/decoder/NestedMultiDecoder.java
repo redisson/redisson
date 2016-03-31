@@ -16,9 +16,6 @@
 package org.redisson.client.protocol.decoder;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Deque;
 import java.util.List;
 
 import org.redisson.client.handler.State;
@@ -29,53 +26,94 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
 
     public static class DecoderState {
 
-        Deque<MultiDecoder<?>> decoders;
+        int decoderIndex;
+        
+        int flipDecoderIndex;
 
-        Deque<MultiDecoder<?>> flipDecoders;
-
-        public DecoderState(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder) {
-            super();
-            this.decoders = new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder));
-            this.flipDecoders = new ArrayDeque<MultiDecoder<?>>(Arrays.asList(firstDecoder, secondDecoder, firstDecoder));
+        public DecoderState() {
         }
 
-        public Deque<MultiDecoder<?>> getDecoders() {
-            return decoders;
+        public int getDecoderIndex() {
+            return decoderIndex;
         }
-
-        public Deque<MultiDecoder<?>> getFlipDecoders() {
-            return flipDecoders;
+        public void resetDecoderIndex() {
+            decoderIndex = 0;
+        }
+        public void incDecoderIndex() {
+            decoderIndex++;
+        }
+        
+        public int getFlipDecoderIndex() {
+            return flipDecoderIndex;
+        }
+        public void resetFlipDecoderIndex() {
+            flipDecoderIndex = 0;
+        }
+        public void incFlipDecoderIndex() {
+            flipDecoderIndex++;
         }
 
     }
 
-    private final MultiDecoder<Object> firstDecoder;
-    private final MultiDecoder<Object> secondDecoder;
+    protected final MultiDecoder<Object> firstDecoder;
+    protected final MultiDecoder<Object> secondDecoder;
+    private MultiDecoder<Object> thirdDecoder;
 
     public NestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder) {
         this.firstDecoder = firstDecoder;
         this.secondDecoder = secondDecoder;
     }
+    
+    public NestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder, MultiDecoder<Object> thirdDecoder) {
+        this.firstDecoder = firstDecoder;
+        this.secondDecoder = secondDecoder;
+        this.thirdDecoder = thirdDecoder;
+    }
+
 
     @Override
     public Object decode(ByteBuf buf, State state) throws IOException {
         DecoderState ds = getDecoder(state);
-        return ds.getFlipDecoders().peek().decode(buf, state);
+
+        MultiDecoder<?> decoder = null;
+        if (ds.getFlipDecoderIndex() == 2) {
+            decoder = firstDecoder;
+        }
+        if (ds.getFlipDecoderIndex() == 1) {
+            decoder = secondDecoder;
+        }
+
+        return decoder.decode(buf, state);
     }
 
     @Override
     public boolean isApplicable(int paramNum, State state) {
         DecoderState ds = getDecoder(state);
         if (paramNum == 0) {
-            ds.getFlipDecoders().poll();
+            ds.incFlipDecoderIndex();
+            ds.resetDecoderIndex();
         }
-        return ds.getFlipDecoders().peek().isApplicable(paramNum, state);
+        // used only with thirdDecoder
+        if (ds.getFlipDecoderIndex() == 3) {
+            ds.resetFlipDecoderIndex();
+            ds.incFlipDecoderIndex();
+        }
+
+        MultiDecoder<?> decoder = null;
+        if (ds.getFlipDecoderIndex() == 2) {
+            decoder = firstDecoder;
+        }
+        if (ds.getFlipDecoderIndex() == 1) {
+            decoder = secondDecoder;
+        }
+        
+        return decoder.isApplicable(paramNum, state);
     }
 
-    private DecoderState getDecoder(State state) {
+    protected final DecoderState getDecoder(State state) {
         DecoderState ds = state.getDecoderState();
         if (ds == null) {
-            ds = new DecoderState(firstDecoder, secondDecoder);
+            ds = new DecoderState();
             state.setDecoderState(ds);
         }
         return ds;
@@ -83,8 +121,32 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
+        if (parts.isEmpty() && state.getDecoderState() == null) {
+            MultiDecoder<?> decoder = secondDecoder;
+            if (thirdDecoder != null) {
+                decoder = thirdDecoder;
+            }
+            return decoder.decode(parts, state);
+        }
+
         DecoderState ds = getDecoder(state);
-        return ds.getDecoders().poll().decode(parts, state);
+        if (parts.isEmpty()) {
+            ds.resetDecoderIndex();
+        }
+        
+        ds.incDecoderIndex();
+        MultiDecoder<?> decoder = null;
+        if (ds.getDecoderIndex() == 1) {
+            decoder = firstDecoder;
+        }
+        if (ds.getDecoderIndex() == 2) {
+            decoder = secondDecoder;
+        }
+        if (ds.getDecoderIndex() == 3) {
+            decoder = thirdDecoder;
+        }
+
+        return decoder.decode(parts, state);
     }
 
 }

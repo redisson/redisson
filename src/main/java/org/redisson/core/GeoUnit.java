@@ -13,17 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.convertor;
+package org.redisson.core;
 
-public class DoubleReplayConvertor extends SingleConvertor<Double> {
+public enum GeoUnit {
 
-    @Override
-    public Double convert(Object obj) {
-        if (obj == null || obj.toString().isEmpty()) {
-            return null;
+    METERS {
+        @Override
+        public String toString() {
+            return "m";
         }
-        return Double.valueOf(obj.toString());
+    },
+    
+    KILOMETERS {
+        @Override
+        public String toString() {
+            return "km";
+        }
+    },
+    
+    MILES {
+        @Override
+        public String toString() {
+            return "mi";
+        }
+    },
+    
+    FEET {
+        @Override
+        public String toString() {
+            return "ft";
+        }
     }
-
-
+    
 }
