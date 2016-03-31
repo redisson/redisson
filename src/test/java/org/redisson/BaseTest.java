@@ -45,7 +45,8 @@ public abstract class BaseTest {
     }
 
     @Before
-    public void before() {
+    public void before() throws InterruptedException {
+        Thread.sleep(5000l);
         redisson.getKeys().flushall();
     }
 }
