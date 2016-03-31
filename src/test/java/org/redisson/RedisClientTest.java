@@ -28,29 +28,26 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import java.io.IOException;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import static org.redisson.BaseTest.afterClass;
 
 public class RedisClientTest {
 
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
+    @Before
+    public static void before() throws IOException, InterruptedException {
         RedisRunner.startDefaultRedisTestInstance();
     }
 
-    @AfterClass
-    public static void afterClass() throws InterruptedException {
+    @After
+    public static void after() throws InterruptedException {
         RedisRunner.shutDownDefaultRedisTestInstance();
     }
 
-    @Before
-    public void before() {
-        System.out.println("Cleaning up...");
-        RedisClient c = new RedisClient("localhost", 6379);
-        c.connect().sync(RedisCommands.FLUSHDB);
-    }
+//    @After
+//    public void after() throws InterruptedException, IOException {
+//        afterClass();
+//        beforeClass();
+//    }
     
     @Test
     public void testConnectAsync() throws InterruptedException {

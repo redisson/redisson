@@ -29,7 +29,11 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
     public void testPollWithBrokenConnection() throws IOException, InterruptedException, ExecutionException {
-        RedisProcess runner = new RedisRunner().port(6319).run();
+        RedisProcess runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
         
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319");
@@ -45,7 +49,11 @@ public class RedissonBlockingQueueTest extends BaseTest {
     
     @Test
     public void testPollReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
-        RedisProcess runner = new RedisRunner().port(6319).run();
+        RedisProcess runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
         
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319");
@@ -56,7 +64,11 @@ public class RedissonBlockingQueueTest extends BaseTest {
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
 
-        runner = new RedisRunner().port(6319).run();
+        runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
         queue1.put(123);
         
         // check connection rotation
@@ -73,7 +85,11 @@ public class RedissonBlockingQueueTest extends BaseTest {
     
     @Test
     public void testTakeReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
-        RedisProcess runner = new RedisRunner().port(6319).run();
+        RedisProcess runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
         
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6319");
@@ -83,7 +99,11 @@ public class RedissonBlockingQueueTest extends BaseTest {
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
 
-        runner = new RedisRunner().port(6319).run();
+        runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
         queue1.put(123);
         
         // check connection rotation

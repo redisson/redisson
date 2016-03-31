@@ -75,18 +75,24 @@ public class RedissonMultiLockTest {
     
     private RedisProcess redisTestMultilockInstance1() throws IOException, InterruptedException {
         return new RedisRunner()
+                .nosave()
+                .randomDir()
                 .port(6320)
                 .run();
     }
     
     private RedisProcess redisTestMultilockInstance2() throws IOException, InterruptedException {
         return new RedisRunner()
+                .nosave()
+                .randomDir()
                 .port(6321)
                 .run();
     }
     
     private RedisProcess redisTestMultilockInstance3() throws IOException, InterruptedException {
         return new RedisRunner()
+                .nosave()
+                .randomDir()
                 .port(6322)
                 .run();
     }

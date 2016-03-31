@@ -276,12 +276,16 @@ public class RedissonTest {
     private RedisProcess redisTestSmallMemory() throws IOException, InterruptedException {
         return new RedisRunner()
                 .maxmemory("1mb")
+                .nosave()
+                .randomDir()
                 .port(6319)
                 .run();
     }
 
     private RedisProcess redisTestConnection() throws IOException, InterruptedException {
         return new RedisRunner()
+                .nosave()
+                .randomDir()
                 .port(6319)
                 .run();
     }

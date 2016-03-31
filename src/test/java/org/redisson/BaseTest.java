@@ -1,22 +1,21 @@
 package org.redisson;
 
 import java.io.IOException;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 public abstract class BaseTest {
 
-    protected static RedissonClient redisson;
+    protected RedissonClient redisson;
     
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
+    @Before
+    public void before() throws IOException, InterruptedException {
         RedisRunner.startDefaultRedisTestInstance();
         redisson = createInstance();
     }
 
-    @AfterClass
-    public static void afterClass() throws InterruptedException {
+    @After
+    public void after() throws InterruptedException {
         redisson.shutdown();
         RedisRunner.shutDownDefaultRedisTestInstance();
     }
@@ -44,9 +43,9 @@ public abstract class BaseTest {
         return Redisson.create(config);
     }
 
-    @Before
-    public void before() throws InterruptedException {
-        Thread.sleep(5000l);
-        redisson.getKeys().flushall();
-    }
+//    @After
+//    public void after() throws InterruptedException, IOException {
+//        afterClass();
+//        beforeClass();
+//    }
 }
