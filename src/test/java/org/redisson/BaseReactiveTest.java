@@ -1,5 +1,6 @@
 package org.redisson;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -20,13 +21,15 @@ public abstract class BaseReactiveTest {
     protected static RedissonReactiveClient redisson;
 
     @BeforeClass
-    public static void beforeClass() {
+    public static void beforeClass() throws IOException, InterruptedException {
+        RedisRunner.startDefaultRedisTestInstance();
         redisson = createInstance();
     }
 
     @AfterClass
-    public static void afterClass() {
+    public static void afterClass() throws InterruptedException {
         redisson.shutdown();
+        RedisRunner.shutDownDefaultRedisTestInstance();
     }
 
     public <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {

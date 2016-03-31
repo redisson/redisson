@@ -35,28 +35,14 @@ import static org.redisson.BaseTest.afterClass;
 
 public class RedisClientTest {
 
-    protected static RedisRunner.RedisProcess redis;
-
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
-        System.out.println("Starting up...");
-        redis = defaultRedisTestInstance();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                afterClass();
-            } catch (InterruptedException ex) {
-            }
-        }));
+        RedisRunner.startDefaultRedisTestInstance();
     }
 
     @AfterClass
     public static void afterClass() throws InterruptedException {
-        System.out.println("Shutting down...");
-        redis.stop();
-    }
-
-    private static RedisRunner.RedisProcess defaultRedisTestInstance() throws IOException, InterruptedException {
-        return new RedisRunner().run();
+        RedisRunner.shutDownDefaultRedisTestInstance();
     }
 
     @Before

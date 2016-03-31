@@ -164,6 +164,8 @@ public class RedisRunner {
 
     private final LinkedHashMap<REDIS_OPTIONS, String> options = new LinkedHashMap<>();
 
+    private static RedisRunner.RedisProcess defaultRedisInstance;
+
     static {
         redisBinary = Optional.ofNullable(System.getProperty("redisBinary"))
                 .orElse("C:\\Devel\\projects\\redis\\Redis-x64-3.0.500\\redis-server.exe");
@@ -195,8 +197,8 @@ public class RedisRunner {
 
     private static RedisProcess runWithOptions(String... options) throws IOException, InterruptedException {
         List<String> launchOptions = Arrays.stream(options)
-            .map(x -> Arrays.asList(x.split(" "))).flatMap(x -> x.stream())
-            .collect(Collectors.toList());
+                .map(x -> Arrays.asList(x.split(" "))).flatMap(x -> x.stream())
+                .collect(Collectors.toList());
         System.out.println("REDIS LAUNCH OPTIONS: " + Arrays.toString(launchOptions.toArray()));
         ProcessBuilder master = new ProcessBuilder(launchOptions)
                 .redirectErrorStream(true)
@@ -632,4 +634,29 @@ public class RedisRunner {
         }
     }
 
+    public static RedisRunner.RedisProcess startDefaultRedisTestInstance() throws IOException, InterruptedException {
+        if (defaultRedisInstance == null) {
+            System.out.println("REDIS PROCESS: Starting up default instance...");
+            defaultRedisInstance = new RedisRunner().run();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    shutDownDefaultRedisTestInstance();
+                } catch (InterruptedException ex) {
+                }
+            }));
+        }
+        return defaultRedisInstance;
+    }
+
+    public static int shutDownDefaultRedisTestInstance() throws InterruptedException {
+        if (defaultRedisInstance != null) {
+            System.out.println("REDIS PROCESS: Shutting down default instance...");
+            try {
+                return defaultRedisInstance.stop();
+            } finally {
+                defaultRedisInstance = null;
+            }
+        }
+        throw new IllegalStateException("REDIS PROCESS: Default redis instance is not running.");
+    }
 }

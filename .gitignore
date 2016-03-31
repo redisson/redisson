@@ -10,3 +10,5 @@
 /*.cmd
 
 nb-configuration.xml
+
+nbactions-unit-test.xml
