@@ -1,10 +1,12 @@
 package org.redisson;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.reactivestreams.Publisher;
 import org.redisson.api.RCollectionReactive;
@@ -17,16 +19,18 @@ import reactor.rx.Streams;
 
 public abstract class BaseReactiveTest {
 
-    protected static RedissonReactiveClient redisson;
+    protected RedissonReactiveClient redisson;
 
-    @BeforeClass
-    public static void beforeClass() {
+    @Before
+    public void before() throws IOException, InterruptedException {
+        RedisRunner.startDefaultRedisTestInstance();
         redisson = createInstance();
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @After
+    public void after() throws InterruptedException {
         redisson.shutdown();
+        RedisRunner.shutDownDefaultRedisTestInstance();
     }
 
     public <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
@@ -75,9 +79,10 @@ public abstract class BaseReactiveTest {
         return Redisson.createReactive(config);
     }
 
-    @After
-    public void after() {
-        sync(redisson.getKeys().flushdb());
-    }
+//    @After
+//    public void after() throws InterruptedException, IOException {
+//        afterClass();
+//        beforeClass();
+//    }
 
 }

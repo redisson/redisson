@@ -1,35 +1,23 @@
 package org.redisson;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 public abstract class BaseTest {
 
-    protected static RedissonClient redisson;
-    protected static RedisRunner.RedisProcess redis;
+    protected RedissonClient redisson;
     
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        System.out.println("Starting up...");
-        redis = defaultRedisTestInstance();
+    @Before
+    public void before() throws IOException, InterruptedException {
+        RedisRunner.startDefaultRedisTestInstance();
         redisson = createInstance();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                afterClass();
-            } catch (InterruptedException ex) {
-            }
-        }));
     }
 
-    @AfterClass
-    public static void afterClass() throws InterruptedException {
-        System.out.println("Shutting down...");
+    @After
+    public void after() throws InterruptedException {
         redisson.shutdown();
-        redis.stop();
+        RedisRunner.shutDownDefaultRedisTestInstance();
     }
 
     public static Config createConfig() {
@@ -55,13 +43,9 @@ public abstract class BaseTest {
         return Redisson.create(config);
     }
 
-    @Before
-    public void before() {
-        redisson.getKeys().flushall();
-    }
-    
-    private static RedisRunner.RedisProcess defaultRedisTestInstance() throws IOException, InterruptedException {
-        return new RedisRunner().run();
-    }
-
+//    @After
+//    public void after() throws InterruptedException, IOException {
+//        afterClass();
+//        beforeClass();
+//    }
 }

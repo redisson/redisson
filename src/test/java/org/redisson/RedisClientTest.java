@@ -28,43 +28,26 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import java.io.IOException;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import static org.redisson.BaseTest.afterClass;
 
 public class RedisClientTest {
 
-    protected static RedisRunner.RedisProcess redis;
-
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        System.out.println("Starting up...");
-        redis = defaultRedisTestInstance();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                afterClass();
-            } catch (InterruptedException ex) {
-            }
-        }));
-    }
-
-    @AfterClass
-    public static void afterClass() throws InterruptedException {
-        System.out.println("Shutting down...");
-        redis.stop();
-    }
-
-    private static RedisRunner.RedisProcess defaultRedisTestInstance() throws IOException, InterruptedException {
-        return new RedisRunner().run();
-    }
-
     @Before
-    public void before() {
-        System.out.println("Cleaning up...");
-        RedisClient c = new RedisClient("localhost", 6379);
-        c.connect().sync(RedisCommands.FLUSHDB);
+    public static void before() throws IOException, InterruptedException {
+        RedisRunner.startDefaultRedisTestInstance();
     }
+
+    @After
+    public static void after() throws InterruptedException {
+        RedisRunner.shutDownDefaultRedisTestInstance();
+    }
+
+//    @After
+//    public void after() throws InterruptedException, IOException {
+//        afterClass();
+//        beforeClass();
+//    }
     
     @Test
     public void testConnectAsync() throws InterruptedException {

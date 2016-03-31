@@ -9,7 +9,7 @@
                 <goal>test</goal>
             </goals>
             <properties>
-                <argLine>"-DredisBinary=/usr/local/bin/redis-server"</argLine>
+                <argLine>"-DredisBinary=/Applications/EAPManager.app/Contents/Resources/redis/redis-server"</argLine>
             </properties>
         </action>
         <action>
@@ -23,7 +23,7 @@
             </goals>
             <properties>
                 <test>${packageClassName}</test>
-                <argLine>"-DredisBinary=/usr/local/bin/redis-server"</argLine>
+                <argLine>"-DredisBinary=/Applications/EAPManager.app/Contents/Resources/redis/redis-server"</argLine>
             </properties>
         </action>
         <action>
@@ -39,13 +39,13 @@
                 <exec.args>-classpath %classpath ${packageClassName}</exec.args>
                 <exec.executable>java</exec.executable>
                 <exec.classpathScope>${classPathScope}</exec.classpathScope>
-                <argLine>"-DredisBinary=/usr/local/bin/redis-server"</argLine>
+                <argLine>"-DredisBinary=/Applications/EAPManager.app/Contents/Resources/redis/redis-server"</argLine>
             </properties>
         </action>
         <action>
             <actionName>debug</actionName>
             <properties>
-                <argLine>"-DredisBinary=/usr/local/bin/redis-server"</argLine>
+                <argLine>"-DredisBinary=/Applications/EAPManager.app/Contents/Resources/redis/redis-server"</argLine>
             </properties>
         </action>
         <action>
@@ -62,7 +62,7 @@
                 <exec.executable>java</exec.executable>
                 <exec.classpathScope>${classPathScope}</exec.classpathScope>
                 <jpda.listen>true</jpda.listen>
-                <argLine>"-DredisBinary=/usr/local/bin/redis-server"</argLine>
+                <argLine>"-DredisBinary=/Applications/EAPManager.app/Contents/Resources/redis/redis-server"</argLine>
             </properties>
         </action>
         <action>
@@ -79,13 +79,13 @@
                 <forkMode>once</forkMode>
                 <maven.surefire.debug>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address}</maven.surefire.debug>
                 <jpda.listen>true</jpda.listen>
-                <argLine>"-DredisBinary=/usr/local/bin/redis-server"</argLine>
+                <argLine>"-DredisBinary=/Applications/EAPManager.app/Contents/Resources/redis/redis-server"</argLine>
             </properties>
         </action>
         <action>
             <actionName>profile</actionName>
             <properties>
-                <argLine>"-DredisBinary=/usr/local/bin/redis-server"</argLine>
+                <argLine>"-DredisBinary=/Applications/EAPManager.app/Contents/Resources/redis/redis-server"</argLine>
             </properties>
         </action>
         <action>
@@ -101,7 +101,7 @@
                 <exec.args>-classpath %classpath ${packageClassName}</exec.args>
                 <exec.executable>java</exec.executable>
                 <exec.classpathScope>${classPathScope}</exec.classpathScope>
-                <argLine>"-DredisBinary=/usr/local/bin/redis-server"</argLine>
+                <argLine>"-DredisBinary=/Applications/EAPManager.app/Contents/Resources/redis/redis-server"</argLine>
             </properties>
         </action>
     </actions>
