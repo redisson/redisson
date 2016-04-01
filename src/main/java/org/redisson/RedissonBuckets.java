@@ -72,7 +72,7 @@ public class RedissonBuckets implements RBuckets {
             return Collections.emptyMap();
         }
 
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.asList(keys), 0), ValueType.OBJECTS);
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.<Object>asList(keys), 0), ValueType.OBJECTS);
         Future<Map<String, V>> future = commandExecutor.readAsync(keys[0], new DelegateDecoderCodec(codec), command, keys);
         return commandExecutor.get(future);
     }
