@@ -1,15 +1,28 @@
 package org.redisson;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.After;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.redisson.core.RCountDownLatch;
 
 public class RedissonCountDownLatchConcurrentTest {
+    
+    @Before
+    public void before() throws IOException, InterruptedException {
+        RedisRunner.startDefaultRedisTestInstance();
+    }
+
+    @After
+    public void after() throws InterruptedException {
+        RedisRunner.shutDownDefaultRedisTestInstance();
+    }
 
     @Test
     public void testSingleCountDownAwait_SingleInstance() throws InterruptedException {
