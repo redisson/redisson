@@ -709,7 +709,7 @@ public class RedisRunner {
         }
 
         public int stop() throws InterruptedException {
-            if (runner.isNosave()) {
+            if (runner.isNosave() && !runner.isRandomDir()) {
                 ArrayList<String> b = runner.getBindAddr();
                 RedisClient c = new RedisClient(b.size() > 0 ? b.get(0) : "localhost", runner.getPort());
                 c.connect()
