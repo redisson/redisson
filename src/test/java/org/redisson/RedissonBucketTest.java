@@ -59,7 +59,7 @@ public class RedissonBucketTest extends BaseTest {
         assertThat(r1.trySet("4", 500, TimeUnit.MILLISECONDS)).isFalse();
         assertThat(r1.get()).isEqualTo("3");
 
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         assertThat(r1.get()).isNull();
     }

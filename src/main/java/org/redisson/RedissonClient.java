@@ -659,18 +659,6 @@ public interface RedissonClient {
     NodesGroup<ClusterNode> getClusterNodesGroup();
 
     /**
-     * Use {@link RKeys#flushdb()}
-     */
-    @Deprecated
-    void flushdb();
-
-    /**
-     * Use {@link RKeys#flushall()}
-     */
-    @Deprecated
-    void flushall();
-
-    /**
      * Returns {@code true} if this Redisson instance has been shut down.
      *
      * @return

@@ -538,16 +538,6 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public void flushdb() {
-        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHDB));
-    }
-
-    @Override
-    public void flushall() {
-        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
-    }
-
-    @Override
     public boolean isShutdown() {
         return connectionManager.isShutdown();
     }
