@@ -1,7 +1,6 @@
 package org.redisson;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
+import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RLexSortedSet;
@@ -20,12 +19,12 @@ public class RedissonLexSortedSetTest extends BaseTest {
         Assert.assertTrue(set.add("f"));
         Assert.assertTrue(set.add("g"));
 
-        Assert.assertEquals(0, (int)set.removeRangeTailByLex("z", false));
+        Assert.assertEquals(0, (int)set.removeRangeTail("z", false));
 
-        Assert.assertEquals(4, (int)set.removeRangeTailByLex("c", false));
-        MatcherAssert.assertThat(set, Matchers.contains("a", "b", "c"));
-        Assert.assertEquals(1, (int)set.removeRangeTailByLex("c", true));
-        MatcherAssert.assertThat(set, Matchers.contains("a", "b"));
+        Assert.assertEquals(4, (int)set.removeRangeTail("c", false));
+        assertThat(set).containsExactly("a", "b", "c");
+        Assert.assertEquals(1, (int)set.removeRangeTail("c", true));
+        assertThat(set).containsExactly("a", "b");
     }
 
 
@@ -40,10 +39,10 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("f");
         set.add("g");
 
-        Assert.assertEquals(2, (int)set.removeRangeHeadByLex("c", false));
-        MatcherAssert.assertThat(set, Matchers.contains("c", "d", "e", "f", "g"));
-        Assert.assertEquals(1, (int)set.removeRangeHeadByLex("c", true));
-        MatcherAssert.assertThat(set, Matchers.contains("d", "e", "f", "g"));
+        Assert.assertEquals(2, (int)set.removeRangeHead("c", false));
+        assertThat(set).containsExactly("c", "d", "e", "f", "g");
+        Assert.assertEquals(1, (int)set.removeRangeHead("c", true));
+        assertThat(set).containsExactly("d", "e", "f", "g");
     }
 
     @Test
@@ -57,8 +56,8 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("f");
         set.add("g");
 
-        Assert.assertEquals(5, set.removeRangeByLex("aaa", true, "g", false));
-        MatcherAssert.assertThat(set, Matchers.contains("a", "g"));
+        Assert.assertEquals(5, set.removeRange("aaa", true, "g", false));
+        assertThat(set).containsExactly("a", "g");
     }
 
 
@@ -74,8 +73,8 @@ public class RedissonLexSortedSetTest extends BaseTest {
         Assert.assertTrue(set.add("f"));
         Assert.assertTrue(set.add("g"));
 
-        MatcherAssert.assertThat(set.lexRangeTail("c", false), Matchers.contains("d", "e", "f", "g"));
-        MatcherAssert.assertThat(set.lexRangeTail("c", true), Matchers.contains("c", "d", "e", "f", "g"));
+        assertThat(set.rangeTail("c", false)).containsExactly("d", "e", "f", "g");
+        assertThat(set.rangeTail("c", true)).containsExactly("c", "d", "e", "f", "g");
     }
 
 
@@ -90,8 +89,8 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("f");
         set.add("g");
 
-        MatcherAssert.assertThat(set.lexRangeHead("c", false), Matchers.contains("a", "b"));
-        MatcherAssert.assertThat(set.lexRangeHead("c", true), Matchers.contains("a", "b", "c"));
+        assertThat(set.rangeHead("c", false)).containsExactly("a", "b");
+        assertThat(set.rangeHead("c", true)).containsExactly("a", "b", "c");
     }
 
 
@@ -106,7 +105,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("f");
         set.add("g");
 
-        MatcherAssert.assertThat(set.lexRange("aaa", true, "g", false), Matchers.contains("b", "c", "d", "e", "f"));
+        assertThat(set.range("aaa", true, "g", false)).containsExactly("b", "c", "d", "e", "f");
     }
 
     @Test
@@ -120,8 +119,8 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("f");
         set.add("g");
 
-        Assert.assertEquals(5, (int)set.lexCount("b", true, "f", true));
-        Assert.assertEquals(3, (int)set.lexCount("b", false, "f", false));
+        assertThat(set.count("b", true, "f", true)).isEqualTo(5);
+        assertThat(set.count("b", false, "f", false)).isEqualTo(3);
     }
 
 }
