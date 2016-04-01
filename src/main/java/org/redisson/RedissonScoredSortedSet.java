@@ -121,9 +121,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Long> addAllAsync(Map<V, Double> objects) {
-        if (objects.isEmpty()) {
-            return newSucceededFuture(0L);
-        }
         List<Object> params = new ArrayList<Object>(objects.size()*2+1);
         params.add(getName());
         try {

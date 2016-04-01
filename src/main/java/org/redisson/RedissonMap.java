@@ -130,7 +130,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(getName());
         args.addAll(keys);
-        return commandExecutor.readAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("HMGET", new MapGetAllDecoder(args, 1), 2, ValueType.MAP_KEY, ValueType.MAP_VALUE), args.toArray());
+        return commandExecutor.readAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("HMGET", new MapGetAllDecoder(args), 2, ValueType.MAP_KEY, ValueType.MAP_VALUE), args.toArray());
     }
 
     @Override

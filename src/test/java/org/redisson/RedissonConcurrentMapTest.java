@@ -94,7 +94,7 @@ public class RedissonConcurrentMapTest extends BaseConcurrentTest {
         }
         assertMapSize(5, name);
 
-        redisson.getKeys().flushdb();
+        redisson.flushdb();
         redisson.shutdown();
     }
 

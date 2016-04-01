@@ -31,7 +31,6 @@ import org.redisson.core.RBlockingDeque;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBloomFilter;
 import org.redisson.core.RBucket;
-import org.redisson.core.RBuckets;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RGeo;
@@ -152,43 +151,57 @@ public interface RedissonClient {
     <V> RBucket<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns interface for mass operations with Bucket objects.
+     * <p>Returns a list of object holder instances by a key pattern.
      *
+     * <pre>Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *    h[^e]llo matches hallo, hbllo, ... but not hello
+     *    h[a-b]llo matches hallo and hbllo</pre>
+     * <p>Use \ to escape special characters if you want to match them verbatim.
+     *
+     * <p>Uses <code>KEYS</code> Redis command.
+     *
+     * @param pattern
      * @return
      */
-    RBuckets getBuckets();
-
-    /**
-     * Returns interface for mass operations with Bucket objects
-     * using provided codec for object.
-     *
-     * @return
-     */
-    RBuckets getBuckets(Codec codec);
-
-    /**
-     * Use {@link RBuckets#find(String)}
-     */
-    @Deprecated
     <V> List<RBucket<V>> findBuckets(String pattern);
 
     /**
-     * Use {@link RBuckets#get(String...)}
+     * <p>Returns Redis object mapped by key. Result Map is not contains
+     * key-value entry for null values.
+     *
+     * <p>Uses <code>MGET</code> Redis command.
+     *
+     * @param keys
+     * @return
      */
-    @Deprecated
     <V> Map<String, V> loadBucketValues(Collection<String> keys);
 
     /**
-     * Use {@link RBuckets#get(String...)}
+     * <p>Returns Redis object mapped by key. Result Map is not contains
+     * key-value entry for null values.
+     *
+     * <p>Uses <code>MGET</code> Redis command.
+     *
+     * @param keys
+     * @return
      */
-    @Deprecated
     <V> Map<String, V> loadBucketValues(String ... keys);
 
     /**
-     * Use {@link RBuckets#set(Map)}
+     * Saves Redis object mapped by key.
+     *
+     * @param buckets
+     */
+    void saveBuckets(Map<String, ?> buckets);
+
+    /**
+     * Use {@link #findBuckets(String)}
      */
     @Deprecated
-    void saveBuckets(Map<String, ?> buckets);
+    <V> List<RBucket<V>> getBuckets(String pattern);
 
     /**
      * Returns HyperLogLog instance by name.
@@ -644,6 +657,18 @@ public interface RedissonClient {
      * @return
      */
     NodesGroup<ClusterNode> getClusterNodesGroup();
+
+    /**
+     * Use {@link RKeys#flushdb()}
+     */
+    @Deprecated
+    void flushdb();
+
+    /**
+     * Use {@link RKeys#flushall()}
+     */
+    @Deprecated
+    void flushall();
 
     /**
      * Returns {@code true} if this Redisson instance has been shut down.

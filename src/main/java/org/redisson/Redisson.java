@@ -47,7 +47,6 @@ import org.redisson.core.RBlockingDeque;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBloomFilter;
 import org.redisson.core.RBucket;
-import org.redisson.core.RBuckets;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
 import org.redisson.core.RGeo;
@@ -204,16 +203,6 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public RBuckets getBuckets() {
-        return new RedissonBuckets(this, commandExecutor);
-    }
-    
-    @Override
-    public RBuckets getBuckets(Codec codec) {
-        return new RedissonBuckets(this, codec, commandExecutor);
-    }
-    
-    @Override
     public <V> List<RBucket<V>> findBuckets(String pattern) {
         Collection<String> keys = commandExecutor.get(commandExecutor.<List<String>, String>readAllAsync(RedisCommands.KEYS, pattern));
         List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
@@ -269,6 +258,11 @@ public class Redisson implements RedissonClient {
         }
 
         commandExecutor.write(params.get(0).toString(), RedisCommands.MSET, params.toArray());
+    }
+
+    @Override
+    public <V> List<RBucket<V>> getBuckets(String pattern) {
+        return findBuckets(pattern);
     }
 
     @Override
@@ -541,6 +535,16 @@ public class Redisson implements RedissonClient {
             throw new IllegalStateException("Redisson is not in cluster mode!");
         }
         return new RedisNodes<ClusterNode>(connectionManager);
+    }
+
+    @Override
+    public void flushdb() {
+        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHDB));
+    }
+
+    @Override
+    public void flushall() {
+        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
     }
 
     @Override

@@ -104,7 +104,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
         List<Object> params = new ArrayList<Object>(members.length + 1);
         params.add(getName());
         params.addAll(Arrays.asList(members));
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOHASH", new MapGetAllDecoder(params, 1), 2, ValueType.OBJECTS);
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOHASH", new MapGetAllDecoder(params), 2, ValueType.OBJECTS);
         return commandExecutor.readAsync(getName(), new ScoredCodec(codec), command, params.toArray());
     }
     
