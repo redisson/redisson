@@ -25,7 +25,6 @@ import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 public class GeoDistanceMapDecoder implements MultiDecoder<Map<Object, Object>> {
 
@@ -40,7 +39,6 @@ public class GeoDistanceMapDecoder implements MultiDecoder<Map<Object, Object>> 
 
     @Override
     public Object decode(ByteBuf buf, State state) throws IOException {
-        System.out.println("1 " + buf.toString(CharsetUtil.UTF_8));
         if (pos.get() % 2 == 0) {
             return codec.getValueDecoder().decode(buf, state);
         }
@@ -55,7 +53,6 @@ public class GeoDistanceMapDecoder implements MultiDecoder<Map<Object, Object>> 
 
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
-        System.out.println(parts);
         Map<Object, Object> result = new HashMap<Object, Object>(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
