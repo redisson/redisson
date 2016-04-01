@@ -34,12 +34,12 @@ import org.junit.Before;
 public class RedisClientTest {
 
     @Before
-    public static void before() throws IOException, InterruptedException {
+    public void before() throws IOException, InterruptedException {
         RedisRunner.startDefaultRedisTestInstance();
     }
 
     @After
-    public static void after() throws InterruptedException {
+    public void after() throws InterruptedException {
         RedisRunner.shutDownDefaultRedisTestInstance();
     }
 
