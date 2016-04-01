@@ -20,32 +20,110 @@ import java.util.Set;
 
 public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirable {
 
+    int removeRangeTail(String fromElement, boolean fromInclusive);
+    
+    /**
+     * Use {@link RLexSortedSet#removeRangeTail(String, boolean)}
+     */
+    @Deprecated
     int removeRangeTailByLex(String fromElement, boolean fromInclusive);
 
+    int removeRangeHead(String toElement, boolean toInclusive);
+
+    /**
+     * Use {@link RLexSortedSet#removeRangeHead(String, boolean)}
+     */
+    @Deprecated
     int removeRangeHeadByLex(String toElement, boolean toInclusive);
 
+    int removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+
+    /**
+     * Use {@link RLexSortedSet#removeRange(String, boolean)}
+     */
+    @Deprecated
     int removeRangeByLex(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
+    int countTail(String fromElement, boolean fromInclusive);
+
+    /**
+     * Use {@link RLexSortedSet#countTail(String, boolean)}
+     */
+    @Deprecated
     int lexCountTail(String fromElement, boolean fromInclusive);
 
+    int countHead(String toElement, boolean toInclusive);
+
+    /**
+     * Use {@link RLexSortedSet#countHead(String, boolean)}
+     */
+    @Deprecated
     int lexCountHead(String toElement, boolean toInclusive);
 
+    Collection<String> rangeTail(String fromElement, boolean fromInclusive);
+
+    /**
+     * Use {@link RLexSortedSet#rangeTail(String, boolean)}
+     */
+    @Deprecated
     Collection<String> lexRangeTail(String fromElement, boolean fromInclusive);
 
+    Collection<String> rangeHead(String toElement, boolean toInclusive);
+
+    /**
+     * Use {@link RLexSortedSet#rangeHead(String, boolean)}
+     */
+    @Deprecated
     Collection<String> lexRangeHead(String toElement, boolean toInclusive);
 
+    Collection<String> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+
+    /**
+     * Use {@link RLexSortedSet#range(String, boolean, String, boolean)}
+     */
+    @Deprecated
     Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
+    Collection<String> rangeTail(String fromElement, boolean fromInclusive, int offset, int count);
+
+    /**
+     * Use {@link RLexSortedSet#rangeTail(String, boolean, int, int)}
+     */
+    @Deprecated
     Collection<String> lexRangeTail(String fromElement, boolean fromInclusive, int offset, int count);
 
+    Collection<String> rangeHead(String toElement, boolean toInclusive, int offset, int count);
+
+    /**
+     * Use {@link RLexSortedSet#rangeHead(String, boolean, int, int)}
+     */
+    @Deprecated
     Collection<String> lexRangeHead(String toElement, boolean toInclusive, int offset, int count);
 
+    Collection<String> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
+
+    /**
+     * Use {@link RLexSortedSet#range(String, boolean, String, boolean, int, int)}
+     */
+    @Deprecated
     Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
+    int count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+
+    /**
+     * Use {@link RLexSortedSet#count(String, boolean, String, boolean)}
+     */
+    @Deprecated
     int lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     int rank(String o);
 
+    Collection<String> range(int startIndex, int endIndex);
+
+    /**
+     * Use {@link RLexSortedSet#range(int, int)}
+     */
+    @Deprecated
     Collection<String> valueRange(int startIndex, int endIndex);
 
 }

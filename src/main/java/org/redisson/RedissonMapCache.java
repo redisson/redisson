@@ -162,11 +162,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return newSucceededFuture(Collections.<K, V>emptyMap());
         }
 
-        List<Object> args = new ArrayList<Object>(keys.size() + 2);
+        List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(System.currentTimeMillis());
         args.addAll(keys);
 
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args), 7, ValueType.MAP_KEY, ValueType.MAP_VALUE),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 1), 7, ValueType.MAP_KEY, ValueType.MAP_VALUE),
                         "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
                         "local expireIdleHead = redis.call('zrange', KEYS[3], 0, 0, 'withscores');" +
                         "local maxDate = table.remove(ARGV, 1); " // index is the first parameter

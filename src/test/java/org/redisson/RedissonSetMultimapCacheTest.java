@@ -102,7 +102,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
         multimap.put("1", "3");
         multimap.expireKey("1", 1, TimeUnit.SECONDS);
         
-        Thread.sleep(1000);
+        Thread.sleep(1500);
         
         assertThat(multimap.get("1").size()).isZero();
         assertThat(multimap.get("1")).contains();
