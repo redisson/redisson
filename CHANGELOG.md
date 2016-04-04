@@ -2,6 +2,21 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####04-Apr-2016 - version 2.2.11 released  
+
+Since this version Redisson has __perfomance boost up to 43%__
+
+Feature - __new object added__ `RGeo`  
+Feature - __new object added__ `RBuckets`  
+Feature - travis-ci integration (thanks to jackygurui)  
+Improvement - `RScoredSortedSet.removeAllAsync` & `removeAll` methods optimization  
+Improvement - `RemoteService` reliability tuned up  
+Improvement - Reattaching RBlockingQueue\Deque blocking commands (poll, take ...) after Redis failover process or channel reconnection  
+Fixed - iterator objects may skip results in some cases  
+Fixed - RTopic listeners hangs during synchronous commands execution inside it  
+Fixed - Redisson hangs during shutdown if `RBlockingQueue\Deque.take` or `RBlockingQueue\Deque.poll` methods were invoked  
+
+
 ####23-Mar-2016 - version 2.2.10 released  
 
 Feature - __new object added__ `RRemoteService`  
