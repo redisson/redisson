@@ -28,10 +28,12 @@ import io.netty.buffer.ByteBuf;
 
 public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
 
+    private final int shiftIndex;
     private final List<Object> args;
 
-    public MapGetAllDecoder(List<Object> args) {
+    public MapGetAllDecoder(List<Object> args, int shiftIndex) {
         this.args = args;
+        this.shiftIndex = shiftIndex;
     }
 
     @Override
@@ -50,12 +52,12 @@ public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
             return Collections.emptyMap();
         }
         Map<Object, Object> result = new HashMap<Object, Object>(parts.size());
-        for (int index = 0; index < args.size()-1; index++) {
+        for (int index = 0; index < args.size()-shiftIndex; index++) {
             Object value = parts.get(index);
             if (value == null) {
                 continue;
             }
-            result.put(args.get(index+1), value);
+            result.put(args.get(index+shiftIndex), value);
         }
         return result;
     }

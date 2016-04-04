@@ -10,9 +10,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.After;
 
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.client.RedisConnectionException;
@@ -27,6 +29,16 @@ import org.redisson.core.NodesGroup;
 public class RedissonTest {
 
     RedissonClient redisson;
+
+    @Before
+    public void before() throws IOException, InterruptedException {
+        RedisRunner.startDefaultRedisTestInstance();
+    }
+
+    @After
+    public void after() throws InterruptedException {
+        RedisRunner.shutDownDefaultRedisTestInstance();
+    }
 
     public static class Dummy {
         private String field;

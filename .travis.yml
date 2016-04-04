@@ -38,4 +38,4 @@ before_script:
     - export REDIS_VERSION="$(redis-cli INFO SERVER | sed -n 2p)"
     - echo $REDIS_VERSION
     - redis-cli SHUTDOWN NOSAVE
-script: mvn -DargLine="-DredisBinary=$REDIS_BIN/redis-server -DtravisEnv=true -server -Dorg.slf4j.simpleLogger.defaultLogLevel=trace -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.sss" -Punit-test clean verify
+script: mvn -Dsurefire.rerunFailingTestsCount=5 -DargLine="-DredisBinary=$REDIS_BIN/redis-server -DtravisEnv=true -server -Dorg.slf4j.simpleLogger.defaultLogLevel=trace -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.sss" -Punit-test clean verify

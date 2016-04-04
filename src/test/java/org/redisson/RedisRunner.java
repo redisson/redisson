@@ -222,14 +222,14 @@ public class RedisRunner {
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             try {
-                while (p.isAlive() && (line = reader.readLine()) != null) {
+                while (p.isAlive() && (line = reader.readLine()) != null && !"true".equalsIgnoreCase(System.getProperty("travisEnv"))) {
                     System.out.println("REDIS PROCESS: " + line);
                 }
             } catch (IOException ex) {
                 System.out.println("Exception: " + ex.getLocalizedMessage());
             }
         }).start();
-        Thread.sleep(3000);
+        Thread.sleep(1500);
         return new RedisProcess(p, runner);
     }
 
@@ -681,7 +681,7 @@ public class RedisRunner {
     public boolean deleteDBfileDir() {
         File f = new File(defaultDir);
         if (f.exists()) {
-            System.out.println("RedisRunner: Deleting directory " + defaultDir);
+            System.out.println("REDIS RUNNER: Deleting directory " + defaultDir);
             return f.delete();
         }
         return false;
@@ -692,7 +692,7 @@ public class RedisRunner {
         if (f.exists()) {
             makeRandomDefaultDir();
         } else {
-            System.out.println("RedisRunner: Making directory " + f.getAbsolutePath());
+            System.out.println("REDIS RUNNER: Making directory " + f.getAbsolutePath());
             f.mkdirs();
             this.defaultDir = f.getAbsolutePath();
         }
@@ -709,7 +709,7 @@ public class RedisRunner {
         }
 
         public int stop() throws InterruptedException {
-            if (runner.isNosave()) {
+            if (runner.isNosave() && !runner.isRandomDir()) {
                 ArrayList<String> b = runner.getBindAddr();
                 RedisClient c = new RedisClient(b.size() > 0 ? b.get(0) : "localhost", runner.getPort());
                 c.connect()
@@ -736,7 +736,7 @@ public class RedisRunner {
 
     public static RedisRunner.RedisProcess startDefaultRedisTestInstance() throws IOException, InterruptedException {
         if (defaultRedisInstance == null) {
-            System.out.println("REDIS PROCESS: Starting up default instance...");
+            System.out.println("REDIS RUNNER: Starting up default instance...");
             defaultRedisInstance = new RedisRunner().nosave().randomDir().run();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
@@ -750,14 +750,14 @@ public class RedisRunner {
 
     public static int shutDownDefaultRedisTestInstance() throws InterruptedException {
         if (defaultRedisInstance != null) {
-            System.out.println("REDIS PROCESS: Shutting down default instance...");
+            System.out.println("REDIS RUNNER: Shutting down default instance...");
             try {
                 defaultRedisInstanceExitCode = defaultRedisInstance.stop();
             } finally {
                 defaultRedisInstance = null;
             }
         } else {
-            System.out.println("REDIS PROCESS: Default instance is already down with an exit code " + defaultRedisInstanceExitCode);
+            System.out.println("REDIS RUNNER: Default instance is already down with an exit code " + defaultRedisInstanceExitCode);
         }
         return defaultRedisInstanceExitCode;
     }

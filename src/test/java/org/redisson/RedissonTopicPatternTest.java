@@ -1,9 +1,12 @@
 package org.redisson;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.redisson.core.BasePatternStatusListener;
 import org.redisson.core.MessageListener;
@@ -12,6 +15,16 @@ import org.redisson.core.RPatternTopic;
 import org.redisson.core.RTopic;
 
 public class RedissonTopicPatternTest {
+    
+    @Before
+    public void before() throws IOException, InterruptedException {
+        RedisRunner.startDefaultRedisTestInstance();
+    }
+
+    @After
+    public void after() throws InterruptedException {
+        RedisRunner.shutDownDefaultRedisTestInstance();
+    }
 
     public static class Message {
 
