@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScoredCodec;
@@ -245,54 +244,18 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Iterator<V> iterator() {
-        return new Iterator<V>() {
-
-            private List<V> firstValues;
-            private Iterator<V> iter;
-            private InetSocketAddress client;
-            private long iterPos;
-
-            private boolean removeExecuted;
-            private V value;
+        return new RedissonBaseIterator<V>() {
 
             @Override
-            public boolean hasNext() {
-                if (iter == null || !iter.hasNext()) {
-                    ListScanResult<V> res = scanIterator(client, iterPos);
-                    client = res.getRedisClient();
-                    if (iterPos == 0 && firstValues == null) {
-                        firstValues = res.getValues();
-                    } else if (res.getValues().equals(firstValues)) {
-                        return false;
-                    }
-                    iter = res.getValues().iterator();
-                    iterPos = res.getPos();
-                }
-                return iter.hasNext();
+            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+                return scanIterator(client, nextIterPos);
             }
 
             @Override
-            public V next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index");
-                }
-
-                value = iter.next();
-                removeExecuted = false;
-                return value;
-            }
-
-            @Override
-            public void remove() {
-                if (removeExecuted) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-
-                iter.remove();
+            void remove(V value) {
                 RedissonScoredSortedSet.this.remove(value);
-                removeExecuted = true;
             }
-
+            
         };
     }
 
