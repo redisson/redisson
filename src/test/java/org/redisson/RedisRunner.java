@@ -359,7 +359,7 @@ public class RedisRunner {
     public RedisRunner nosave() {
         this.nosave = true;
         options.remove(REDIS_OPTIONS.SAVE);
-        addConfigOption(REDIS_OPTIONS.SAVE, "");
+        addConfigOption(REDIS_OPTIONS.SAVE, "''");
         return this;
     }
 
