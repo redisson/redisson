@@ -29,7 +29,7 @@ public class RedissonMultiMapKeysIterator<K, V, M> extends RedissonBaseMapIterat
     }
 
     protected MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator() {
-        return map.scanIterator(client, iterPos);
+        return map.scanIterator(client, nextIterPos);
     }
 
     protected void removeKey() {

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.redisson.client.codec.Codec;
@@ -128,66 +127,18 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
 
     @Override
     public Iterator<V> iterator() {
-        return new Iterator<V>() {
-
-            private List<V> firstValues;
-            private Iterator<V> iter;
-            private InetSocketAddress client;
-            private long nextIterPos;
-
-            private boolean currentElementRemoved;
-            private boolean removeExecuted;
-            private V value;
+        return new RedissonBaseIterator<V>() {
 
             @Override
-            public boolean hasNext() {
-                if (iter == null || !iter.hasNext()) {
-                    if (nextIterPos == -1) {
-                        return false;
-                    }
-                    long prevIterPos = nextIterPos;
-                    ListScanResult<V> res = scanIterator(client, nextIterPos);
-                    client = res.getRedisClient();
-                    if (nextIterPos == 0 && firstValues == null) {
-                        firstValues = res.getValues();
-                    } else if (res.getValues().equals(firstValues)) {
-                        return false;
-                    }
-                    iter = res.getValues().iterator();
-                    nextIterPos = res.getPos();
-                    if (prevIterPos == nextIterPos && !removeExecuted) {
-                        nextIterPos = -1;
-                    }
-                }
-                return iter.hasNext();
+            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+                return scanIterator(client, nextIterPos);
             }
 
             @Override
-            public V next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index");
-                }
-
-                value = iter.next();
-                currentElementRemoved = false;
-                return value;
-            }
-
-            @Override
-            public void remove() {
-                if (currentElementRemoved) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-                if (iter == null) {
-                    throw new IllegalStateException();
-                }
-
-                iter.remove();
+            void remove(V value) {
                 RedissonSetMultimapValues.this.remove(value);
-                currentElementRemoved = true;
-                removeExecuted = true;
             }
-
+            
         };
     }
 
