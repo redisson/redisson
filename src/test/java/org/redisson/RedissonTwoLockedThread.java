@@ -1,5 +1,6 @@
 package org.redisson;
 
+import java.io.IOException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -29,15 +30,17 @@ public class RedissonTwoLockedThread {
     private RedissonClient redisson;
 
     @Before
-    public void before() {
+    public void before() throws IOException, InterruptedException {
+        RedisRunner.startDefaultRedisTestInstance();
         Config config = BaseTest.createConfig();
         config.setCodec(codec);
         redisson = Redisson.create(config);
     }
 
     @After
-    public void after() {
+    public void after() throws InterruptedException {
         redisson.shutdown();
+        RedisRunner.shutDownDefaultRedisTestInstance();
     }
 
     @Test(timeout = 3000)
