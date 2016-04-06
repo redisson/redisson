@@ -9,6 +9,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.reactivestreams.Publisher;
+import static org.redisson.BaseTest.createInstance;
 import org.redisson.api.RCollectionReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -42,6 +43,7 @@ public abstract class BaseReactiveTest {
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
+            redisson = createInstance();
         } else {
             if (redisson == null) {
                 redisson = defaultRedisson;

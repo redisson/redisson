@@ -31,6 +31,7 @@ public abstract class BaseTest {
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
+            redisson = createInstance();
         } else {
             if (redisson == null) {
                 redisson = defaultRedisson;

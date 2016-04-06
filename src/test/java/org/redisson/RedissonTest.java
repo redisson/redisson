@@ -33,6 +33,7 @@ import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.BaseTest.createInstance;
 
 public class RedissonTest {
 
@@ -59,6 +60,7 @@ public class RedissonTest {
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
+            redisson = createInstance();
         } else {
             if (redisson == null) {
                 redisson = defaultRedisson;

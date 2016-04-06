@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import static org.redisson.BaseTest.createInstance;
 
 @RunWith(Parameterized.class)
 public class RedissonTwoLockedThread {
@@ -49,6 +50,7 @@ public class RedissonTwoLockedThread {
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
+            redisson = createInstance();
         }
         Config config = BaseTest.createConfig();
         config.setCodec(codec);
