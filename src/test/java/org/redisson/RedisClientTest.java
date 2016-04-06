@@ -29,26 +29,40 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import java.io.IOException;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 public class RedisClientTest {
 
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
+    }
+
     @Before
     public void before() throws IOException, InterruptedException {
-        RedisRunner.startDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
     }
 
     @After
     public void after() throws InterruptedException {
-        RedisRunner.shutDownDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisTestInstance();
+        }
     }
 
-//    @After
-//    public void after() throws InterruptedException, IOException {
-//        afterClass();
-//        beforeClass();
-//    }
-    
     @Test
     public void testConnectAsync() throws InterruptedException {
         RedisClient c = new RedisClient("localhost", 6379);

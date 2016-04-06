@@ -6,22 +6,42 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
+import org.junit.AfterClass;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.core.RCountDownLatch;
 
 public class RedissonCountDownLatchConcurrentTest {
     
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
+    }
+
     @Before
     public void before() throws IOException, InterruptedException {
-        RedisRunner.startDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
     }
 
     @After
     public void after() throws InterruptedException {
-        RedisRunner.shutDownDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisTestInstance();
+        }
     }
 
     @Test

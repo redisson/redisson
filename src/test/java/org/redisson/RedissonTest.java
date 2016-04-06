@@ -11,10 +11,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
+import org.junit.AfterClass;
 
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.client.RedisConnectionException;
@@ -28,18 +30,45 @@ import org.redisson.core.NodesGroup;
 
 public class RedissonTest {
 
-    RedissonClient redisson;
+    protected RedissonClient redisson;
+    protected static RedissonClient defaultRedisson;
+
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+            defaultRedisson = BaseTest.createInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+            defaultRedisson.shutdown();
+        }
+    }
 
     @Before
     public void before() throws IOException, InterruptedException {
-        RedisRunner.startDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        } else {
+            if (redisson == null) {
+                redisson = defaultRedisson;
+            }
+            redisson.getKeys().flushall();
+        }
     }
 
     @After
     public void after() throws InterruptedException {
-        RedisRunner.shutDownDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            redisson.shutdown();
+            RedisRunner.shutDownDefaultRedisTestInstance();
+        }
     }
-
+    
     public static class Dummy {
         private String field;
     }

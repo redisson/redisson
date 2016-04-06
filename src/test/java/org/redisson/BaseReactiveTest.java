@@ -20,17 +20,42 @@ import reactor.rx.Streams;
 public abstract class BaseReactiveTest {
 
     protected RedissonReactiveClient redisson;
+    protected static RedissonReactiveClient defaultRedisson;
+
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+            defaultRedisson = createInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+            defaultRedisson.shutdown();
+        }
+    }
 
     @Before
     public void before() throws IOException, InterruptedException {
-        RedisRunner.startDefaultRedisTestInstance();
-        redisson = createInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        } else {
+            if (redisson == null) {
+                redisson = defaultRedisson;
+            }
+            redisson.getKeys().flushall();
+        }
     }
 
     @After
     public void after() throws InterruptedException {
-        redisson.shutdown();
-        RedisRunner.shutDownDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            redisson.shutdown();
+            RedisRunner.shutDownDefaultRedisTestInstance();
+        }
     }
 
     public <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {

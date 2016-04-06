@@ -15,6 +15,8 @@ import org.redisson.core.RLock;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 @RunWith(Parameterized.class)
 public class RedissonTwoLockedThread {
@@ -29,9 +31,25 @@ public class RedissonTwoLockedThread {
 
     private RedissonClient redisson;
 
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
+    }
+
     @Before
     public void before() throws IOException, InterruptedException {
-        RedisRunner.startDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        }
         Config config = BaseTest.createConfig();
         config.setCodec(codec);
         redisson = Redisson.create(config);
@@ -40,7 +58,9 @@ public class RedissonTwoLockedThread {
     @After
     public void after() throws InterruptedException {
         redisson.shutdown();
-        RedisRunner.shutDownDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisTestInstance();
+        }
     }
 
     @Test(timeout = 3000)

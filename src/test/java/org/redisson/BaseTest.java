@@ -2,22 +2,49 @@ package org.redisson;
 
 import java.io.IOException;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 public abstract class BaseTest {
 
     protected RedissonClient redisson;
-    
+    protected static RedissonClient defaultRedisson;
+
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+            defaultRedisson = createInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+            defaultRedisson.shutdown();
+        }
+    }
+
     @Before
     public void before() throws IOException, InterruptedException {
-        RedisRunner.startDefaultRedisTestInstance();
-        redisson = createInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisTestInstance();
+        } else {
+            if (redisson == null) {
+                redisson = defaultRedisson;
+            }
+            redisson.getKeys().flushall();
+        }
     }
 
     @After
     public void after() throws InterruptedException {
-        redisson.shutdown();
-        RedisRunner.shutDownDefaultRedisTestInstance();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            redisson.shutdown();
+            RedisRunner.shutDownDefaultRedisTestInstance();
+        }
     }
 
     public static Config createConfig() {

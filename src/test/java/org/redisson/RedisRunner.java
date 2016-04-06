@@ -9,7 +9,6 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -18,7 +17,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 
@@ -169,7 +167,6 @@ public class RedisRunner {
         A
     }
 
-    private static final String redisBinary;
     private final LinkedHashMap<REDIS_OPTIONS, String> options = new LinkedHashMap<>();
     private static RedisRunner.RedisProcess defaultRedisInstance;
     private static int defaultRedisInstanceExitCode;
@@ -179,14 +176,9 @@ public class RedisRunner {
     private boolean randomDir = false;
     private ArrayList<String> bindAddr = new ArrayList<>();
     private int port = 6379;
-    
-    static {
-        redisBinary = Optional.ofNullable(System.getProperty("redisBinary"))
-                .orElse("C:\\Devel\\projects\\redis\\Redis-x64-3.0.500\\redis-server.exe");
-    }
 
     {
-        this.options.put(REDIS_OPTIONS.BINARY_PATH, redisBinary);
+        this.options.put(REDIS_OPTIONS.BINARY_PATH, RedissonRuntimeEnvironment.redisBinaryPath);
     }
 
     /**
@@ -206,23 +198,24 @@ public class RedisRunner {
      */
     public static RedisProcess runRedisWithConfigFile(String configPath) throws IOException, InterruptedException {
         URL resource = RedisRunner.class.getResource(configPath);
-        return runWithOptions(new RedisRunner(), redisBinary, resource.getFile());
+        return runWithOptions(new RedisRunner(), RedissonRuntimeEnvironment.redisBinaryPath, resource.getFile());
     }
 
     private static RedisProcess runWithOptions(RedisRunner runner, String... options) throws IOException, InterruptedException {
+        System.out.println("REDIS VER: " + RedissonRuntimeEnvironment.redisFullVersion);
         List<String> launchOptions = Arrays.stream(options)
                 .map(x -> Arrays.asList(x.split(" "))).flatMap(x -> x.stream())
                 .collect(Collectors.toList());
         System.out.println("REDIS LAUNCH OPTIONS: " + Arrays.toString(launchOptions.toArray()));
         ProcessBuilder master = new ProcessBuilder(launchOptions)
                 .redirectErrorStream(true)
-                .directory(new File(System.getProperty("java.io.tmpdir")));
+                .directory(new File(RedissonRuntimeEnvironment.tempDir));
         Process p = master.start();
         new Thread(() -> {
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             try {
-                while (p.isAlive() && (line = reader.readLine()) != null && !"true".equalsIgnoreCase(System.getProperty("travisEnv"))) {
+                while (p.isAlive() && (line = reader.readLine()) != null && !RedissonRuntimeEnvironment.isTravis) {
                     System.out.println("REDIS PROCESS: " + line);
                 }
             } catch (IOException ex) {
@@ -688,7 +681,7 @@ public class RedisRunner {
     }
 
     private void makeRandomDefaultDir() {
-        File f = new File(System.getProperty("java.io.tmpdir") + "/" + UUID.randomUUID());
+        File f = new File(RedissonRuntimeEnvironment.tempDir + "/" + UUID.randomUUID());
         if (f.exists()) {
             makeRandomDefaultDir();
         } else {
@@ -730,7 +723,7 @@ public class RedisRunner {
         }
 
         private boolean isWindows() {
-            return System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH).contains("win");
+            return RedissonRuntimeEnvironment.isWindows;
         }
     }
 
@@ -762,4 +755,7 @@ public class RedisRunner {
         return defaultRedisInstanceExitCode;
     }
 
+    public static boolean isDefaultRedisTestInstanceRunning() {
+        return defaultRedisInstance != null && defaultRedisInstance.redisProcess.isAlive();
+    }
 }
