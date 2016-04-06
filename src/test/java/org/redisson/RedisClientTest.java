@@ -38,28 +38,28 @@ public class RedisClientTest {
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
         }
     }
 
     @AfterClass
     public static void afterClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.shutDownDefaultRedisServerInstance();
         }
     }
 
     @Before
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
         }
     }
 
     @After
     public void after() throws InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisTestInstance();
+            RedisRunner.shutDownDefaultRedisServerInstance();
         }
     }
 

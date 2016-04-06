@@ -27,6 +27,12 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonTest {
 
@@ -36,7 +42,7 @@ public class RedissonTest {
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
             defaultRedisson = BaseTest.createInstance();
         }
     }
@@ -44,7 +50,7 @@ public class RedissonTest {
     @AfterClass
     public static void afterClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
             defaultRedisson.shutdown();
         }
     }
@@ -52,7 +58,7 @@ public class RedissonTest {
     @Before
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
         } else {
             if (redisson == null) {
                 redisson = defaultRedisson;
@@ -65,7 +71,7 @@ public class RedissonTest {
     public void after() throws InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             redisson.shutdown();
-            RedisRunner.shutDownDefaultRedisTestInstance();
+            RedisRunner.shutDownDefaultRedisServerInstance();
         }
     }
     

@@ -34,21 +34,21 @@ public class RedissonTwoLockedThread {
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
         }
     }
 
     @AfterClass
     public static void afterClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
         }
     }
 
     @Before
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
         }
         Config config = BaseTest.createConfig();
         config.setCodec(codec);
@@ -59,7 +59,7 @@ public class RedissonTwoLockedThread {
     public void after() throws InterruptedException {
         redisson.shutdown();
         if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisTestInstance();
+            RedisRunner.shutDownDefaultRedisServerInstance();
         }
     }
 

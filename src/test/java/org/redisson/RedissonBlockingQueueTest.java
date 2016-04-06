@@ -24,6 +24,9 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.core.RBlockingQueue;
 
 import io.netty.util.concurrent.Future;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBlockingQueueTest extends BaseTest {
 

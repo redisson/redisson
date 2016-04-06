@@ -14,7 +14,7 @@ public abstract class BaseTest {
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
             defaultRedisson = createInstance();
         }
     }
@@ -22,7 +22,7 @@ public abstract class BaseTest {
     @AfterClass
     public static void afterClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
             defaultRedisson.shutdown();
         }
     }
@@ -30,7 +30,7 @@ public abstract class BaseTest {
     @Before
     public void before() throws IOException, InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisTestInstance();
+            RedisRunner.startDefaultRedisServerInstance();
         } else {
             if (redisson == null) {
                 redisson = defaultRedisson;
@@ -43,7 +43,7 @@ public abstract class BaseTest {
     public void after() throws InterruptedException {
         if (RedissonRuntimeEnvironment.isTravis) {
             redisson.shutdown();
-            RedisRunner.shutDownDefaultRedisTestInstance();
+            RedisRunner.shutDownDefaultRedisServerInstance();
         }
     }
 
