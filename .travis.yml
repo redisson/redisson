@@ -42,7 +42,7 @@ env:
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonCountDownLatchTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonDequeReactiveTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonDequeTest
-#        - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonGeoTest
+        - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonGeoTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonHyperLogLogReactiveTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonHyperLogLogTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonKeysReactiveTest
@@ -103,7 +103,7 @@ env:
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonCountDownLatchTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonDequeReactiveTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonDequeTest
-#        - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonGeoTest
+        - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonGeoTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonHyperLogLogReactiveTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonHyperLogLogTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonKeysReactiveTest

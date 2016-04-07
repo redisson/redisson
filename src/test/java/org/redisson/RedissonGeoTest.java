@@ -1,10 +1,13 @@
 package org.redisson;
 
+import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 
 import org.junit.Test;
 import org.redisson.core.GeoEntry;
@@ -14,6 +17,18 @@ import org.redisson.core.RGeo;
 
 public class RedissonGeoTest extends BaseTest {
 
+    @BeforeClass
+    public static void checkRedisVersion() throws IOException, InterruptedException {
+        boolean running = RedisRunner.isDefaultRedisServerInstanceRunning();
+        if (!running) {
+            RedisRunner.startDefaultRedisServerInstance();
+        }
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.1.0") > 0);
+        if (!running) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
+    }
+    
     @Test
     public void testAdd() {
         RGeo<String> geo = redisson.getGeo("test");

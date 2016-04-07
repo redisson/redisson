@@ -700,11 +700,8 @@ public class RedisRunner {
 
         private final Process redisProcess;
         private final RedisRunner runner;
-        private String redisFullVersion;
-        private Integer redisMajorVersion;
-        private Integer redisMinorVersion;
-        private Integer redisPatchVersion;
-
+        private RedisVersion redisVersion;
+        
         private RedisProcess(Process redisProcess, RedisRunner runner) {
             this.redisProcess = redisProcess;
             this.runner = runner;
@@ -738,41 +735,13 @@ public class RedisRunner {
             throw new IllegalStateException("Redis server instance is not running.");
         }
 
-        public String getRedisFullVersion() {
-            if (redisFullVersion == null) {
-                redisFullVersion = createRedisClientInstance().serverInfo().get("redis_version");
+        public RedisVersion getRedisVersion() {
+            if (redisVersion == null) {
+                redisVersion = new RedisVersion(createRedisClientInstance().serverInfo().get("redis_version"));
             }
-            return redisFullVersion;
+            return redisVersion;
         }
 
-        public int getRedisMajorVersion() {
-            if (redisMajorVersion == null) {
-                parseVersion();
-            }
-            return redisMajorVersion;
-        }
-        
-        public int getRedisMinorVersion() {
-            if (redisMinorVersion == null) {
-                parseVersion();
-            }
-            return redisMinorVersion;
-        }
-        
-        public int getRedisPatchVersion() {
-            if (redisPatchVersion == null) {
-                parseVersion();
-            }
-            return redisPatchVersion;
-        }
-        
-        private void parseVersion() {
-            Matcher matcher = Pattern.compile("^([\\d]{0,2})\\.([\\d]{0,2})\\.([\\d]{0,2})$").matcher(getRedisFullVersion());
-            matcher.find();
-            redisMajorVersion = Integer.parseInt(matcher.group(1));
-            redisMinorVersion = Integer.parseInt(matcher.group(2));
-            redisPatchVersion = Integer.parseInt(matcher.group(3));
-        }
     }
 
     public static RedisRunner.RedisProcess startDefaultRedisServerInstance() throws IOException, InterruptedException {
@@ -803,7 +772,7 @@ public class RedisRunner {
         return defaultRedisInstanceExitCode;
     }
 
-    public static boolean isDefaultRedisTestInstanceRunning() {
+    public static boolean isDefaultRedisServerInstanceRunning() {
         return defaultRedisInstance != null && defaultRedisInstance.redisProcess.isAlive();
     }
 
@@ -811,4 +780,7 @@ public class RedisRunner {
         return defaultRedisInstance.createRedisClientInstance();
     }
 
+    public static RedisRunner.RedisProcess getDefaultRedisServerInstance() {
+        return defaultRedisInstance;
+    }
 }
