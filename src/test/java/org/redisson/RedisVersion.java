@@ -15,7 +15,6 @@ public class RedisVersion implements Comparable<RedisVersion>{
     private final Integer patchVersion;
 
     public RedisVersion(String fullVersion) {
-        System.out.println("Construction Redis Version: " + fullVersion);
         this.fullVersion = fullVersion;
         Matcher matcher = Pattern.compile("^([\\d]+)\\.([\\d]+)\\.([\\d]+)$").matcher(fullVersion);
         matcher.find();
@@ -42,7 +41,6 @@ public class RedisVersion implements Comparable<RedisVersion>{
 
     @Override
     public int compareTo(RedisVersion o) {
-        System.out.println("Comparing " + fullVersion + " vs " + o.fullVersion);
         int ma = this.majorVersion.compareTo(o.majorVersion);
         int mi = this.minorVersion.compareTo(o.minorVersion);
         int pa = this.patchVersion.compareTo(o.patchVersion);
