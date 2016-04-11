@@ -351,4 +351,41 @@ public class RedissonSetTest extends BaseTest {
         Assert.assertEquals(1, set.size());
         Assert.assertEquals(0, otherSet.size());
     }
+    
+    
+    @Test
+    public void testRemoveAllEmpty() {
+        Set<Integer> list = redisson.getSet("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        Assert.assertFalse(list.removeAll(Collections.emptyList()));
+        Assert.assertFalse(Arrays.asList(1).removeAll(Collections.emptyList()));
+    }
+
+    @Test
+    public void testRemoveAll() {
+        Set<Integer> list = redisson.getSet("list");
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        Assert.assertFalse(list.removeAll(Collections.emptyList()));
+        Assert.assertTrue(list.removeAll(Arrays.asList(3, 2, 10, 6)));
+
+        assertThat(list).containsExactly(1, 4, 5);
+
+        Assert.assertTrue(list.removeAll(Arrays.asList(4)));
+
+        assertThat(list).containsExactly(1, 5);
+
+        Assert.assertTrue(list.removeAll(Arrays.asList(1, 5, 1, 5)));
+
+        Assert.assertTrue(list.isEmpty());
+    }
 }

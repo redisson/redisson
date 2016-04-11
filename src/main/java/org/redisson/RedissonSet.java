@@ -229,7 +229,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                         "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, table.getn(ARGV), 1 do "
                             + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "

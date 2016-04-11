@@ -222,7 +222,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                         "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, table.getn(ARGV), 1 do "
                             + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "
