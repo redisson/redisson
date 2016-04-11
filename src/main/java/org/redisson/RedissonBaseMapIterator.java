@@ -64,7 +64,7 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
                     firstValues = convert(res.getMap());
                 } else {
                     Map<ByteBuf, ByteBuf> newValues = convert(res.getMap());
-                    if (newValues.equals(firstValues)) {
+                    if (firstValues.entrySet().containsAll(newValues.entrySet())) {
                         finished = true;
                         free(firstValues);
                         free(newValues);
