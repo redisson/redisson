@@ -154,7 +154,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     public Publisher<Boolean> removeAll(Collection<?> c) {
         return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
                         "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, table.getn(ARGV), 1 do "
                             + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "
