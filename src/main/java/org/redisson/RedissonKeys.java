@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -90,55 +90,18 @@ public class RedissonKeys implements RKeys {
     }
 
     private Iterator<String> createKeysIterator(final int slot, final String pattern) {
-        return new Iterator<String>() {
-
-            private List<String> firstValues;
-            private Iterator<String> iter;
-            private long iterPos;
-
-            private boolean removeExecuted;
-            private String value;
+        return new RedissonBaseIterator<String>() {
 
             @Override
-            public boolean hasNext() {
-                if (iter == null || !iter.hasNext()) {
-                    ListScanResult<String> res = scanIterator(slot, iterPos, pattern);
-                    if (iterPos == 0 && firstValues == null) {
-                        firstValues = res.getValues();
-                    } else if (res.getValues().equals(firstValues)) {
-                        return false;
-                    }
-                    iter = res.getValues().iterator();
-                    iterPos = res.getPos();
-                }
-                return iter.hasNext();
+            ListScanResult<String> iterator(InetSocketAddress client, long nextIterPos) {
+                return RedissonKeys.this.scanIterator(slot, nextIterPos, pattern);
             }
 
             @Override
-            public String next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element");
-                }
-
-                value = iter.next();
-                removeExecuted = false;
-                return value;
+            void remove(String value) {
+                RedissonKeys.this.delete(value);
             }
-
-            @Override
-            public void remove() {
-                if (removeExecuted) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-                if (iter == null) {
-                    throw new IllegalStateException();
-                }
-
-                iter.remove();
-                delete(value);
-                removeExecuted = true;
-            }
-
+            
         };
     }
 

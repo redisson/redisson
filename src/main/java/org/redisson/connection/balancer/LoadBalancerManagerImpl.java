@@ -16,10 +16,6 @@
 package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.redisson.MasterSlaveServersConfig;
@@ -99,16 +95,20 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         return false;
     }
 
-    public Collection<RedisPubSubConnection> freeze(String host, int port, FreezeReason freezeReason) {
+    public ClientConnectionsEntry freeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         ClientConnectionsEntry connectionEntry = addr2Entry.get(addr);
         if (connectionEntry == null) {
-            return Collections.emptyList();
+            return null;
         }
 
         synchronized (connectionEntry) {
-            log.debug("{} freezed", addr);
+            if (connectionEntry.isFreezed()) {
+                return null;
+            }
+            
             connectionEntry.setFreezed(true);
+
             // only RECONNECT freeze reason could be replaced
             if (connectionEntry.getFreezeReason() == null
                     || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
@@ -116,29 +116,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
             }
         }
 
-        // close all connections
-        while (true) {
-            RedisConnection connection = connectionEntry.pollConnection();
-            if (connection == null) {
-                break;
-            }
-            connection.closeAsync();
-        }
-
-        // close all pub/sub connections
-        while (true) {
-            RedisPubSubConnection connection = connectionEntry.pollSubscribeConnection();
-            if (connection == null) {
-                break;
-            }
-            connection.closeAsync();
-        }
-
-        synchronized (connectionEntry) {
-            List<RedisPubSubConnection> list = new ArrayList<RedisPubSubConnection>(connectionEntry.getAllSubscribeConnections());
-            connectionEntry.getAllSubscribeConnections().clear();
-            return list;
-        }
+        return connectionEntry;
     }
 
     public Future<RedisPubSubConnection> nextPubSubConnection() {

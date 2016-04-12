@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 public class ClientConnectionsEntry {
@@ -137,7 +138,7 @@ public class ClientConnectionsEntry {
     }
 
     public Future<RedisConnection> connect() {
-        final Promise<RedisConnection> connectionFuture = client.getBootstrap().group().next().newPromise();
+        final Promise<RedisConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
         Future<RedisConnection> future = client.connectAsync();
         future.addListener(new FutureListener<RedisConnection>() {
             @Override
@@ -157,19 +158,19 @@ public class ClientConnectionsEntry {
     }
 
     private <T extends RedisConnection> void addReconnectListener(Promise<T> connectionFuture, T conn) {
-        connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, connectionManager.getConfig());
-        addFireEventListener(connectionFuture);
+        addFireEventListener(conn, connectionFuture);
 
         conn.setReconnectListener(new ReconnectListener() {
             @Override
             public void onReconnect(RedisConnection conn, Promise<RedisConnection> connectionFuture) {
-                connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, connectionManager.getConfig());
-                addFireEventListener(connectionFuture);
+                addFireEventListener(conn, connectionFuture);
             }
         });
     }
 
-    private <T extends RedisConnection> void addFireEventListener(Promise<T> connectionFuture) {
+    private <T extends RedisConnection> void addFireEventListener(T conn, Promise<T> connectionFuture) {
+        connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, connectionManager.getConfig());
+        
         if (connectionFuture.isSuccess()) {
             connectionManager.getConnectionEventsHub().fireConnect(connectionFuture.getNow().getRedisClient().getAddr());
             return;
@@ -186,7 +187,7 @@ public class ClientConnectionsEntry {
     }
 
     public Future<RedisPubSubConnection> connectPubSub() {
-        final Promise<RedisPubSubConnection> connectionFuture = client.getBootstrap().group().next().newPromise();
+        final Promise<RedisPubSubConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
         Future<RedisPubSubConnection> future = client.connectPubSubAsync();
         future.addListener(new FutureListener<RedisPubSubConnection>() {
             @Override
@@ -195,10 +196,12 @@ public class ClientConnectionsEntry {
                     connectionFuture.tryFailure(future.cause());
                     return;
                 }
+                
                 RedisPubSubConnection conn = future.getNow();
                 log.debug("new pubsub connection created: {}", conn);
 
                 addReconnectListener(connectionFuture, conn);
+                
 
                 allSubscribeConnections.add(conn);
             }

@@ -20,19 +20,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
-import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * Groups multiple independent locks and handles them as one lock.
@@ -75,52 +72,16 @@ public class RedissonMultiLock implements Lock {
     }
 
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicReference<Object> result = new AtomicReference<Object>();
-        Promise<Void> promise = new DefaultPromise<Void>() {
-            public Promise<Void> setSuccess(Void result) {
-                latch.countDown();
-                return this;
-            };
-
-            public Promise<Void> setFailure(Throwable cause) {
-                result.set(cause);
-                latch.countDown();
-                return this;
-            };
-        };
+        Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();
 
         lock(promise, 0, leaseTime, unit);
 
-        latch.await();
-        if (result.get() instanceof Throwable) {
-            PlatformDependent.throwException((Throwable)result.get());
-        }
+        promise.sync();
     }
 
     @Override
     public void lockInterruptibly() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicReference<Object> result = new AtomicReference<Object>();
-        Promise<Void> promise = new DefaultPromise<Void>() {
-            public Promise<Void> setSuccess(Void result) {
-                latch.countDown();
-                return this;
-            };
-
-            public Promise<Void> setFailure(Throwable cause) {
-                result.set(cause);
-                latch.countDown();
-                return this;
-            };
-        };
-
-        lock(promise, 0, -1, null);
-
-        latch.await();
-        if (result.get() instanceof Throwable) {
-            PlatformDependent.throwException((Throwable)result.get());
-        }
+        lockInterruptibly(-1, null);
     }
 
     private void lock(final Promise<Void> promise, final long waitTime, final long leaseTime, final TimeUnit unit) throws InterruptedException {

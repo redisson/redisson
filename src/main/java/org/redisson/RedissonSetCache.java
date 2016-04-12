@@ -17,14 +17,12 @@ package org.redisson;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +37,8 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RSetCache;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import net.openhft.hashing.LongHashFunction;
 
@@ -114,10 +114,12 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         long h1 = LongHashFunction.farmUo().hashBytes(objectState);
         long h2 = LongHashFunction.xx_r39().hashBytes(objectState);
 
-        return ByteBuffer.allocate((2 * Long.SIZE) / Byte.SIZE)
-                .putLong(h1)
-                .putLong(h2)
-                .array();
+        ByteBuf buf = Unpooled.buffer((2 * Long.SIZE) / Byte.SIZE).writeLong(h1).writeLong(h2);
+        try {
+            return buf.array();
+        } finally {
+            buf.release();
+        }
     }
 
     String getTimeoutSetName() {
@@ -158,66 +160,18 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public Iterator<V> iterator() {
-        return new Iterator<V>() {
-
-            private List<V> firstValues;
-            private Iterator<V> iter;
-            private InetSocketAddress client;
-            private long nextIterPos;
-
-            private boolean currentElementRemoved;
-            private boolean removeExecuted;
-            private V value;
+        return new RedissonBaseIterator<V>() {
 
             @Override
-            public boolean hasNext() {
-                if (iter == null || !iter.hasNext()) {
-                    if (nextIterPos == -1) {
-                        return false;
-                    }
-                    long prevIterPos = nextIterPos;
-                    ListScanResult<V> res = scanIterator(client, nextIterPos);
-                    client = res.getRedisClient();
-                    if (nextIterPos == 0 && firstValues == null) {
-                        firstValues = res.getValues();
-                    } else if (res.getValues().equals(firstValues)) {
-                        return false;
-                    }
-                    iter = res.getValues().iterator();
-                    nextIterPos = res.getPos();
-                    if (prevIterPos == nextIterPos && !removeExecuted) {
-                        nextIterPos = -1;
-                    }
-                }
-                return iter.hasNext();
+            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+                return scanIterator(client, nextIterPos);
             }
 
             @Override
-            public V next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index");
-                }
-
-                value = iter.next();
-                currentElementRemoved = false;
-                return value;
-            }
-
-            @Override
-            public void remove() {
-                if (currentElementRemoved) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-                if (iter == null) {
-                    throw new IllegalStateException();
-                }
-
-                iter.remove();
+            void remove(V value) {
                 RedissonSetCache.this.remove(value);
-                currentElementRemoved = true;
-                removeExecuted = true;
             }
-
+            
         };
     }
 
@@ -314,13 +268,20 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
             long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
             return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); " +
-                            "if redis.call('hexists', KEYS[1], ARGV[3]) == 0 then " +
-                                "redis.call('hset', KEYS[1], ARGV[3], ARGV[2]); " +
-                                "return 1; " +
-                            "end;" +
-                            "return 0; ",
-                            Arrays.<Object>asList(getName(), getTimeoutSetName()), timeoutDate, objectState, key);
+                    "local value = redis.call('hexists', KEYS[1], ARGV[3]); " +
+                    "if value == 1 then " +
+                        "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
+                        + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then "
+                            + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[2]); "
+                            + "return 1;"
+                        + "else "
+                            + "return 0;"
+                        + "end; " +
+                    "end;" +
+                    "redis.call('zadd', KEYS[2], ARGV[2], ARGV[3]); " +
+                    "redis.call('hset', KEYS[1], ARGV[3], ARGV[4]); " +
+                    "return 1; ",
+                    Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis(), timeoutDate, key, objectState);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -336,12 +297,19 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             byte[] objectState = encode(value);
             byte[] key = hash(objectState);
             return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then " +
-                        "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
-                        "return 1; " +
-                    "end; " +
-                    "return 0; ",
-                Arrays.<Object>asList(getName()), key, objectState);
+                        "local value = redis.call('hexists', KEYS[1], ARGV[2]); " +
+                        "if value == 1 then " +
+                            "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                            + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then "
+                                + "redis.call('zrem', KEYS[2], ARGV[2]); "
+                                + "return 1;"
+                            + "else "
+                                + "return 0;"
+                            + "end; " +
+                        "end;" +
+                        "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); " +
+                        "return 1; ",
+                        Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis(), key, objectState);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -367,14 +335,14 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public Future<Boolean> containsAllAsync(Collection<?> c) {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('hvals', KEYS[1]);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, #s, 1 do " +
+                            "for j = 1, #ARGV, 1 do "
                             + "if ARGV[j] == s[i] then "
                                 + "table.remove(ARGV, j) "
                             + "end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
+                       + "return #ARGV == 0 and 1 or 0; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -468,7 +436,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public Future<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_BOOL, getName(), getTimeoutSetName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), getTimeoutSetName());
     }
 
     @Override

@@ -23,6 +23,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
+import org.redisson.core.RSet;
 
 import io.netty.util.concurrent.Future;
 
@@ -257,6 +258,26 @@ public class RedissonMapTest extends BaseTest {
         assertThat(val2).isEqualTo(4);
     }
 
+    @Test
+    public void testIteratorRemoveHighVolume() throws InterruptedException {
+        RMap<Integer, Integer> map = redisson.getMap("simpleMap");
+        for (int i = 0; i < 10000; i++) {
+            map.put(i, i*10);
+        }
+        
+        int cnt = 0;
+        Iterator<Integer> iterator = map.keySet().iterator();
+        while (iterator.hasNext()) {
+            Integer integer = iterator.next();
+            iterator.remove();
+            cnt++;
+        }
+        Assert.assertEquals(10000, cnt);
+        assertThat(map).isEmpty();
+        Assert.assertEquals(0, map.size());
+    }
+
+    
     @Test
     public void testIterator() {
         RMap<Integer, Integer> rMap = redisson.getMap("123");

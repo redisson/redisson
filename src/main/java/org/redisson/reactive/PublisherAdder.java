@@ -15,6 +15,8 @@
  */
 package org.redisson.reactive;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RCollectionReactive;
@@ -40,9 +42,10 @@ public class PublisherAdder<V> {
 
         c.subscribe(new DefaultSubscriber<V>() {
 
+            volatile boolean completed;
+            AtomicLong values = new AtomicLong();
             Subscription s;
             Long lastSize = 0L;
-            V lastValue;
 
             @Override
             public void onSubscribe(Subscription s) {
@@ -52,7 +55,7 @@ public class PublisherAdder<V> {
 
             @Override
             public void onNext(V o) {
-                lastValue = o;
+                values.getAndIncrement();
                 destination.add(o).subscribe(new DefaultSubscriber<Long>() {
 
                     @Override
@@ -68,19 +71,18 @@ public class PublisherAdder<V> {
                     @Override
                     public void onNext(Long o) {
                         lastSize = sum(lastSize, o);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        lastValue = null;
                         s.request(1);
+                        if (values.decrementAndGet() == 0 && completed) {
+                            promise.onNext(lastSize);
+                        }
                     }
                 });
             }
 
             @Override
             public void onComplete() {
-                if (lastValue == null) {
+                completed = true;
+                if (values.get() == 0) {
                     promise.onNext(lastSize);
                 }
             }

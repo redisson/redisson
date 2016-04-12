@@ -1,10 +1,8 @@
 package org.redisson;
 
-import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.codec.MsgPackJacksonCodec;
 
 public abstract class BaseTest {
 
@@ -43,9 +41,9 @@ public abstract class BaseTest {
         return Redisson.create(config);
     }
 
-    @After
-    public void after() {
-        redisson.flushdb();
+    @Before
+    public void before() {
+        redisson.getKeys().flushall();
     }
 
 }

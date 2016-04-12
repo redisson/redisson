@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -32,10 +33,12 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
     private Map<ByteBuf, ByteBuf> firstValues;
     private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> iter;
-    protected long iterPos = 0;
+    protected long nextIterPos;
+    protected long startPos = -1;
     protected InetSocketAddress client;
 
     private boolean finished;
+    private boolean currentElementRemoved;
     private boolean removeExecuted;
     protected Map.Entry<ScanObjectEntry, ScanObjectEntry> entry;
 
@@ -44,26 +47,41 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
         if (finished) {
             return false;
         }
+        
         if (iter == null || !iter.hasNext()) {
-            MapScanResult<ScanObjectEntry, ScanObjectEntry> res = iterator();
-            client = res.getRedisClient();
-            if (iterPos == 0 && firstValues == null) {
-                firstValues = convert(res.getMap());
-            } else {
-                Map<ByteBuf, ByteBuf> newValues = convert(res.getMap());
-                if (newValues.equals(firstValues)) {
-                    finished = true;
-                    free(firstValues);
-                    free(newValues);
-                    firstValues = null;
-                    return false;
-                }
-                free(newValues);
+            if (nextIterPos == -1) {
+                return false;
             }
-            iter = res.getMap().entrySet().iterator();
-            iterPos = res.getPos();
+            long prevIterPos;
+            do {
+                prevIterPos = nextIterPos;
+                MapScanResult<ScanObjectEntry, ScanObjectEntry> res = iterator();
+                client = res.getRedisClient();
+                if (startPos == -1) {
+                    startPos = res.getPos();
+                }
+                if (nextIterPos == 0 && firstValues == null) {
+                    firstValues = convert(res.getMap());
+                } else {
+                    Map<ByteBuf, ByteBuf> newValues = convert(res.getMap());
+                    if (firstValues.entrySet().containsAll(newValues.entrySet())) {
+                        finished = true;
+                        free(firstValues);
+                        free(newValues);
+                        firstValues = null;
+                        return false;
+                    }
+                    free(newValues);
+                }
+                iter = res.getMap().entrySet().iterator();
+                nextIterPos = res.getPos();
+            } while (!iter.hasNext() && nextIterPos != prevIterPos);
+            if (prevIterPos == nextIterPos && !removeExecuted) {
+                nextIterPos = -1;
+            }
         }
         return iter.hasNext();
+        
     }
 
     protected abstract MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator();
@@ -90,7 +108,7 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
         }
 
         entry = iter.next();
-        removeExecuted = false;
+        currentElementRemoved = false;
         return getValue(entry);
     }
 
@@ -108,14 +126,16 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
     @Override
     public void remove() {
-        if (removeExecuted) {
+        if (currentElementRemoved) {
             throw new IllegalStateException("Element been already deleted");
         }
+        if (iter == null) {
+            throw new IllegalStateException();
+        }
 
-        // lazy init iterator
-        hasNext();
         iter.remove();
         removeKey();
+        currentElementRemoved = true;
         removeExecuted = true;
     }
 

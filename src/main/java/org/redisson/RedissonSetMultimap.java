@@ -77,7 +77,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
             String setName = getValuesName(keyHash);
             return commandExecutor.readAsync(getName(), codec, SCARD_VALUE, setName);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -98,7 +98,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                     "return 0; ",
                     Arrays.<Object>asList(getName()), valueState);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -111,7 +111,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
             String setName = getValuesName(keyHash);
             return commandExecutor.readAsync(getName(), codec, SISMEMBER_VALUE, setName, valueState);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -127,7 +127,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                     "return redis.call('sadd', KEYS[2], ARGV[3]); ",
                 Arrays.<Object>asList(getName(), setName), keyState, keyHash, valueState);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -146,7 +146,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                   + "return res; ",
                 Arrays.<Object>asList(getName(), setName), keyState, valueState);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -168,7 +168,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                     "return redis.call('sadd', KEYS[2], unpack(ARGV, 3, #ARGV)); ",
                 Arrays.<Object>asList(getName(), setName), params.toArray());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -181,7 +181,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
 
             return new RedissonSet<V>(codec, commandExecutor, setName);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -198,7 +198,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
 
             return commandExecutor.readAsync(getName(), codec, RedisCommands.SMEMBERS, setName);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -220,7 +220,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                     "return members; ",
                 Arrays.<Object>asList(getName(), setName), keyState);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -268,7 +268,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                     "return members; ",
                 Arrays.<Object>asList(getName(), setName), params.toArray());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 

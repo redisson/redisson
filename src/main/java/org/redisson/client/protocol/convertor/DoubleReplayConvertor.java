@@ -19,7 +19,7 @@ public class DoubleReplayConvertor extends SingleConvertor<Double> {
 
     @Override
     public Double convert(Object obj) {
-        if (obj == null) {
+        if (obj == null || obj.toString().isEmpty()) {
             return null;
         }
         return Double.valueOf(obj.toString());

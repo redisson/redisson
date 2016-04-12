@@ -18,6 +18,7 @@ package org.redisson.command;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.SlotCallback;
 import org.redisson.client.RedisException;
@@ -38,6 +39,8 @@ public interface CommandAsyncExecutor {
 
     <V> RedisException convertException(Future<V> future);
 
+    boolean await(Future<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException;
+    
     <V> V get(Future<V> future);
 
     <T, R> Future<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);

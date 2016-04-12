@@ -110,7 +110,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         Future<RedissonLockEntry> future = subscribe();
-        future.sync();
+        get(future);
 
         try {
             while (true) {
@@ -229,7 +229,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         Future<RedissonLockEntry> future = subscribe();
-        if (!future.await(time, TimeUnit.MILLISECONDS)) {
+        if (!await(future, time, TimeUnit.MILLISECONDS)) {
             future.addListener(new FutureListener<RedissonLockEntry>() {
                 @Override
                 public void operationComplete(Future<RedissonLockEntry> future) throws Exception {

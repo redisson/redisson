@@ -29,11 +29,12 @@ public class State {
         super();
     }
 
-    public void setSizeOnce(long size) {
+    public boolean trySetSize(long size) {
         if (this.size != 0) {
-            return;
+            return false;
         }
         this.size = size;
+        return true;
     }
     public long getSize() {
         return size;

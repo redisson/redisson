@@ -25,16 +25,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RScoredSortedSet;
@@ -124,6 +120,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Long> addAllAsync(Map<V, Double> objects) {
+        if (objects.isEmpty()) {
+            return newSucceededFuture(0L);
+        }
         List<Object> params = new ArrayList<Object>(objects.size()*2+1);
         params.add(getName());
         try {
@@ -245,54 +244,18 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Iterator<V> iterator() {
-        return new Iterator<V>() {
-
-            private List<V> firstValues;
-            private Iterator<V> iter;
-            private InetSocketAddress client;
-            private long iterPos;
-
-            private boolean removeExecuted;
-            private V value;
+        return new RedissonBaseIterator<V>() {
 
             @Override
-            public boolean hasNext() {
-                if (iter == null || !iter.hasNext()) {
-                    ListScanResult<V> res = scanIterator(client, iterPos);
-                    client = res.getRedisClient();
-                    if (iterPos == 0 && firstValues == null) {
-                        firstValues = res.getValues();
-                    } else if (res.getValues().equals(firstValues)) {
-                        return false;
-                    }
-                    iter = res.getValues().iterator();
-                    iterPos = res.getPos();
-                }
-                return iter.hasNext();
+            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+                return scanIterator(client, nextIterPos);
             }
 
             @Override
-            public V next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index");
-                }
-
-                value = iter.next();
-                removeExecuted = false;
-                return value;
-            }
-
-            @Override
-            public void remove() {
-                if (removeExecuted) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-
-                iter.remove();
+            void remove(V value) {
                 RedissonScoredSortedSet.this.remove(value);
-                removeExecuted = true;
             }
-
+            
         };
     }
 
@@ -315,27 +278,26 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('zrange', KEYS[1], 0, -1);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, #s, 1 do " +
+                            "for j = 1, #ARGV, 1 do "
                             + "if ARGV[j] == s[i] "
                             + "then table.remove(ARGV, j) end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
+                       + "return #ARGV == 0 and 1 or 0; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                        "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
-                            + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = 1 end "
-                        +"end "
-                       + "return v ",
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+                      "local v = 0;"
+                    + "for i=1, #ARGV, 5000 do "
+                        + "v = v + redis.call('zrem', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
+                    + "end "
+                    + "return v > 0;",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -351,14 +313,14 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                     "local changed = 0 " +
                     "local s = redis.call('zrange', KEYS[1], 0, -1) "
-                       + "local i = 0 "
-                       + "while i <= table.getn(s) do "
+                       + "local i = 1 "
+                       + "while i <= #s do "
                             + "local element = s[i] "
                             + "local isInAgrs = false "
-                            + "for j = 0, table.getn(ARGV), 1 do "
+                            + "for j = 1, #ARGV, 1 do "
                                 + "if ARGV[j] == element then "
                                     + "isInAgrs = true "
                                     + "break "
