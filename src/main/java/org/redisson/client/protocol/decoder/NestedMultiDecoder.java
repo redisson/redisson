@@ -58,18 +58,26 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
     protected final MultiDecoder<Object> firstDecoder;
     protected final MultiDecoder<Object> secondDecoder;
     private MultiDecoder<Object> thirdDecoder;
+    private boolean handleEmpty;
 
     public NestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder) {
-        this.firstDecoder = firstDecoder;
-        this.secondDecoder = secondDecoder;
+        this(firstDecoder, secondDecoder, false);
+    }
+
+    public NestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder, boolean handleEmpty) {
+        this(firstDecoder, secondDecoder, null, handleEmpty);
     }
     
     public NestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder, MultiDecoder<Object> thirdDecoder) {
+        this(firstDecoder, secondDecoder, thirdDecoder, false);
+    }
+
+    public NestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder, MultiDecoder<Object> thirdDecoder, boolean handleEmpty) {
         this.firstDecoder = firstDecoder;
         this.secondDecoder = secondDecoder;
         this.thirdDecoder = thirdDecoder;
+        this.handleEmpty = handleEmpty;
     }
-
 
     @Override
     public Object decode(ByteBuf buf, State state) throws IOException {
@@ -121,7 +129,7 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (parts.isEmpty() && state.getDecoderState() == null) {
+        if (parts.isEmpty() && state.getDecoderState() == null && handleEmpty) {
             MultiDecoder<?> decoder = secondDecoder;
             if (thirdDecoder != null) {
                 decoder = thirdDecoder;
