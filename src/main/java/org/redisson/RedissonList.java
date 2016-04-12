@@ -143,13 +143,13 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
                 "for i=1, #items do " +
-                    "for j = 0, table.getn(ARGV), 1 do " +
+                    "for j = 1, #ARGV, 1 do " +
                         "if items[i] == ARGV[j] then " +
                             "table.remove(ARGV, j) " +
                         "end " +
                     "end " +
                 "end " +
-                "return table.getn(ARGV) == 0 and 1 or 0",
+                "return #ARGV == 0 and 1 or 0",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -222,7 +222,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                         "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, #ARGV, 1 do "
                             + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "
@@ -246,11 +246,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 "local changed = 0 " +
                 "local items = redis.call('lrange', KEYS[1], 0, -1) "
                    + "local i = 1 "
-                   + "local s = table.getn(items) "
-                   + "while i <= s do "
+                   + "while i <= #items do "
                         + "local element = items[i] "
                         + "local isInAgrs = false "
-                        + "for j = 0, table.getn(ARGV), 1 do "
+                        + "for j = 1, #ARGV, 1 do "
                             + "if ARGV[j] == element then "
                                 + "isInAgrs = true "
                                 + "break "
@@ -390,7 +389,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
                 "local key = KEYS[1] " +
                 "local obj = ARGV[1] " +
                 "local items = redis.call('lrange', key, 0, -1) " +
-                "for i = #items, 0, -1 do " +
+                "for i = #items, 1, -1 do " +
                     "if items[i] == obj then " +
                         "return i - 1 " +
                     "end " +

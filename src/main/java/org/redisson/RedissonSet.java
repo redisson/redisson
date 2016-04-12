@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.redisson.client.codec.Codec;
@@ -168,13 +167,13 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     public Future<Boolean> containsAllAsync(Collection<?> c) {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('smembers', KEYS[1]);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, #s, 1 do " +
+                            "for j = 1, #ARGV, 1 do "
                             + "if ARGV[j] == s[i] "
                             + "then table.remove(ARGV, j) end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
+                       + "return #ARGV == 0 and 1 or 0; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
@@ -205,11 +204,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                     "local changed = 0 " +
                     "local s = redis.call('smembers', KEYS[1]) "
-                       + "local i = 0 "
-                       + "while i <= table.getn(s) do "
+                       + "local i = 1 "
+                       + "while i <= #s do "
                             + "local element = s[i] "
                             + "local isInAgrs = false "
-                            + "for j = 0, table.getn(ARGV), 1 do "
+                            + "for j = 1, #ARGV, 1 do "
                                 + "if ARGV[j] == element then "
                                     + "isInAgrs = true "
                                     + "break "
@@ -229,7 +228,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     public Future<Boolean> removeAllAsync(Collection<?> c) {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                         "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, #ARGV, 1 do "
                             + "if redis.call('srem', KEYS[1], ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "

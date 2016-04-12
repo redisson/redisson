@@ -199,13 +199,13 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
                   + "return 0;"
               + "end; " +
                 "local items = redis.call('lrange', KEYS[2], 0, -1);" +
-                        "for i = 0, #items, 1 do " +
-                            "for j = 2, table.getn(ARGV), 1 do "
+                        "for i = 1, #items, 1 do " +
+                            "for j = 2, #ARGV, 1 do "
                             + "if ARGV[j] == items[i] "
                             + "then table.remove(ARGV, j) end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 2 and 1 or 0; ",
+                       + "return #ARGV == 2 and 1 or 0; ",
                    Arrays.<Object>asList(timeoutSetName, getName()), args.toArray());
         
     }
@@ -340,7 +340,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
 
                     "local changed = 0; " +
                     "local s = redis.call('lrange', KEYS[2], 0, -1); "
-                       + "local i = 0; "
+                       + "local i = 1; "
                        + "while i <= #s do "
                             + "local element = s[i]; "
                             + "local isInAgrs = false; "
@@ -508,7 +508,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
               + "end; " +
                 
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
-                "for i = #items, 0, -1 do " +
+                "for i = #items, 1, -1 do " +
                     "if items[i] == ARGV[1] then " +
                         "return i - 1 " +
                     "end " +
