@@ -179,7 +179,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 "local items = redis.call('lrange', KEYS[1], fromIndex, toIndex); " +
 
                 "for i=1, #items do " +
-                    "for j = 0, #ARGV, 1 do " +
+                    "for j = 1, #ARGV, 1 do " +
                         "if items[i] == ARGV[j] then " +
                             "redis.call('lrem', KEYS[1], count, ARGV[i]); " +
                             "v = 1; " +

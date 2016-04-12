@@ -224,8 +224,8 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     public Publisher<Boolean> containsAll(Collection<?> c) {
         return commandExecutor.evalReadReactive(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('hvals', KEYS[1]);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, table.getn(s), 1 do " +
+                            "for j = 1, table.getn(ARGV), 1 do "
                             + "if ARGV[j] == s[i] then "
                                 + "table.remove(ARGV, j) "
                             + "end "
