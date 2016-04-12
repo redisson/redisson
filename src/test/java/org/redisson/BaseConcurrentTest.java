@@ -1,9 +1,12 @@
 package org.redisson;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import org.junit.Assert;
@@ -26,14 +29,24 @@ public abstract class BaseConcurrentTest extends BaseTest {
         pool.awaitQuiescence(5, TimeUnit.MINUTES);
 
         pool.submit(() -> {
+            final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
+            final AtomicLong u = new AtomicLong(runtimeBean.getUptime());
             IntStream.range(0, iterations)
                     .parallel()
                     .forEach((i) -> {
                         if (RedissonRuntimeEnvironment.isTravis) {
-                            System.out.println("Travis please don't kill me, I am still running.");
+                            long upTime = runtimeBean.getUptime();
+                            if (upTime >= u.get() + 10000) {
+                                u.set(upTime);
+                                System.out.printf("Test Up Time    = %.3f (s)%n", upTime / 1000d);
+                                System.out.printf("Heap Usage      = %.3f (MB)%n", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() / 1024d / 1024d);
+                                System.out.printf("None Heap Usage = %.3f (MB)%n", ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed() / 1024d / 1024d);
+                                System.out.println("=============================");
+                            }
                         }
                         runnable.run(instances.get(i));
                     });
+            System.out.printf("Test Up Time    = %.3f (s)%n", runtimeBean.getUptime() /1000d);
         });
 
         pool.shutdown();
@@ -59,16 +72,24 @@ public abstract class BaseConcurrentTest extends BaseTest {
         long watch = System.currentTimeMillis();
 
         ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors() * 2);
-        System.out.println("");
+
         pool.submit(() -> {
+            final RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
+            final AtomicLong u = new AtomicLong(runtimeBean.getUptime());
             IntStream.range(0, iterations)
                     .parallel()
                     .forEach((i) -> {
-                        if (RedissonRuntimeEnvironment.isTravis) {
-                            System.out.println("Travis please don't kill me, I am still running.");
+                        long upTime = runtimeBean.getUptime();
+                        if (upTime >= u.get() + 10000) {
+                            u.set(upTime);
+                            System.out.printf("Test Up Time    = %.3f (s)%n", upTime / 1000d);
+                            System.out.printf("Heap Usage      = %.3f (MB)%n", ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed() / 1024d / 1024d);
+                            System.out.printf("None Heap Usage = %.3f (MB)%n", ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed() / 1024d / 1024d);
+                            System.out.println("=============================");
                         }
                         runnable.run(r);
                     });
+            System.out.printf("Test Up Time    = %.3f (s)%n", runtimeBean.getUptime() / 1000d);
         });
 
         pool.shutdown();
