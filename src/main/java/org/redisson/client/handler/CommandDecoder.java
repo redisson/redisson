@@ -173,7 +173,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (code == '+') {
             String result = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
-
+            
             handleResult(data, parts, result, false, channel);
         } else if (code == '-') {
             String error = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
@@ -206,9 +206,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
         } else if (code == ':') {
-            String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
-            in.skipBytes(2);
-            Object result = Long.valueOf(status);
+            Long result = readLong(in);
             handleResult(data, parts, result, false, channel);
         } else if (code == '$') {
             ByteBuf buf = readBytes(in);

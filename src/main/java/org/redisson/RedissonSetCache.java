@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -336,14 +335,14 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public Future<Boolean> containsAllAsync(Collection<?> c) {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local s = redis.call('hvals', KEYS[1]);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, #s, 1 do " +
+                            "for j = 1, #ARGV, 1 do "
                             + "if ARGV[j] == s[i] then "
                                 + "table.remove(ARGV, j) "
                             + "end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
+                       + "return #ARGV == 0 and 1 or 0; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 

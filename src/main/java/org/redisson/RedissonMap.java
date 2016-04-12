@@ -107,7 +107,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public Future<Boolean> containsValueAsync(Object value) {
         return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local s = redis.call('hvals', KEYS[1]);" +
-                        "for i = 0, table.getn(s), 1 do "
+                        "for i = 1, #s, 1 do "
                             + "if ARGV[1] == s[i] then "
                                 + "return 1 "
                             + "end "

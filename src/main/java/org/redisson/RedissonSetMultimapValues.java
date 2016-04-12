@@ -251,13 +251,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                   + "return 0;"
               + "end; " +
                 "local s = redis.call('smembers', KEYS[2]);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 2, table.getn(ARGV), 1 do "
+                        "for i = 1, #s, 1 do " +
+                            "for j = 2, #ARGV, 1 do "
                             + "if ARGV[j] == s[i] "
                             + "then table.remove(ARGV, j) end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 2 and 1 or 0; ",
+                       + "return #ARGV == 2 and 1 or 0; ",
                    Arrays.<Object>asList(timeoutSetName, getName()), args.toArray());
     }
 
@@ -307,11 +307,11 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
 
                     "local changed = 0 " +
                     "local s = redis.call('smembers', KEYS[2]) "
-                       + "local i = 0 "
-                       + "while i <= table.getn(s) do "
+                       + "local i = 1 "
+                       + "while i <= #s do "
                             + "local element = s[i] "
                             + "local isInAgrs = false "
-                            + "for j = 2, table.getn(ARGV), 1 do "
+                            + "for j = 2, #ARGV, 1 do "
                                 + "if ARGV[j] == element then "
                                     + "isInAgrs = true "
                                     + "break "
@@ -350,7 +350,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                       + "end; " +
                 
                         "local v = 0 " +
-                        "for i = 2, table.getn(ARGV), 1 do "
+                        "for i = 2, #ARGV, 1 do "
                             + "if redis.call('srem', KEYS[2], ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "

@@ -27,6 +27,10 @@ public class FlatNestedMultiDecoder<T> extends NestedMultiDecoder {
         super(firstDecoder, secondDecoder);
     }
     
+    public FlatNestedMultiDecoder(MultiDecoder firstDecoder, MultiDecoder secondDecoder, boolean handleEmpty) {
+        super(firstDecoder, secondDecoder, handleEmpty);
+    }
+
     @Override
     public Object decode(ByteBuf buf, State state) throws IOException {
         return firstDecoder.decode(buf, state);

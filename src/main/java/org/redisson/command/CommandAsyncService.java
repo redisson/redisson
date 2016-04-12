@@ -22,9 +22,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.RedisClientResult;
 import org.redisson.RedissonShutdownException;
@@ -82,13 +84,38 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> V get(Future<V> future) {
-        future.awaitUninterruptibly();
+        final CountDownLatch l = new CountDownLatch(1);
+        future.addListener(new FutureListener<V>() {
+            @Override
+            public void operationComplete(Future<V> future) throws Exception {
+                l.countDown();
+            }
+        });
+        try {
+            l.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        // commented out due to blocking issues up to 200 ms per minute for each thread
+        // future.awaitUninterruptibly();
         if (future.isSuccess()) {
             return future.getNow();
         }
         throw convertException(future);
     }
 
+    @Override
+    public boolean await(Future<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException {
+        final CountDownLatch l = new CountDownLatch(1);
+        future.addListener(new FutureListener<Object>() {
+            @Override
+            public void operationComplete(Future<Object> future) throws Exception {
+                l.countDown();
+            }
+        });
+        return l.await(timeout, timeoutUnit);
+    }
+    
     @Override
     public <T, R> Future<R> readAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();

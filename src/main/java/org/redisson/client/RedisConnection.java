@@ -15,6 +15,7 @@
  */
 package org.redisson.client;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
@@ -111,21 +112,34 @@ public class RedisConnection implements RedisCommands {
         return redisClient;
     }
 
-    public <R> R await(Future<R> cmd) {
-        // TODO change connectTimeout to timeout
-        if (!cmd.awaitUninterruptibly(redisClient.getTimeout(), TimeUnit.MILLISECONDS)) {
-            Promise<R> promise = (Promise<R>)cmd;
-            RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
-            promise.setFailure(ex);
-            throw ex;
-        }
-        if (!cmd.isSuccess()) {
-            if (cmd.cause() instanceof RedisException) {
-                throw (RedisException) cmd.cause();
+    public <R> R await(Future<R> future) {
+        final CountDownLatch l = new CountDownLatch(1);
+        future.addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                l.countDown();
             }
-            throw new RedisException("Unexpected exception while processing command", cmd.cause());
+        });
+        
+        try {
+            // TODO change connectTimeout to timeout
+            if (!l.await(redisClient.getTimeout(), TimeUnit.MILLISECONDS)) {
+                Promise<R> promise = (Promise<R>)future;
+                RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
+                promise.setFailure(ex);
+                throw ex;
+            }
+            if (!future.isSuccess()) {
+                if (future.cause() instanceof RedisException) {
+                    throw (RedisException) future.cause();
+                }
+                throw new RedisException("Unexpected exception while processing command", future.cause());
+            }
+            return future.getNow();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
         }
-        return cmd.getNow();
     }
 
     public <T> T sync(RedisStrictCommand<T> command, Object ... params) {

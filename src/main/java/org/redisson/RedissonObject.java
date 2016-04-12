@@ -15,6 +15,8 @@
  */
 package org.redisson;
 
+import java.util.concurrent.TimeUnit;
+
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -45,6 +47,10 @@ abstract class RedissonObject implements RObject {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
+    protected boolean await(Future<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException {
+        return commandExecutor.await(future, timeout, timeoutUnit);
+    }
+    
     protected <V> V get(Future<V> future) {
         return commandExecutor.get(future);
     }

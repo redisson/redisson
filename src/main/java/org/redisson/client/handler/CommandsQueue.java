@@ -23,10 +23,10 @@ import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.PlatformDependent;
@@ -37,7 +37,7 @@ import io.netty.util.internal.PlatformDependent;
  * @author Nikita Koksharov
  *
  */
-public class CommandsQueue extends ChannelDuplexHandler {
+public class CommandsQueue extends ChannelOutboundHandlerAdapter {
 
     public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 

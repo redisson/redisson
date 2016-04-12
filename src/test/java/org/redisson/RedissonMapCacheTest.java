@@ -6,9 +6,12 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.MatcherAssert;
@@ -198,6 +201,47 @@ public class RedissonMapCacheTest extends BaseTest {
         Thread.sleep(500);
 
         Assert.assertEquals(0, cache.size());
+    }
+
+    @Test
+    public void testIteratorRemoveHighVolume() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simpleMap");
+        for (int i = 0; i < 10000; i++) {
+            map.put(i, i*10);
+        }
+        
+        int cnt = 0;
+        Iterator<Entry<Integer, Integer>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Entry<Integer, Integer> entry = iterator.next();
+            iterator.remove();
+            cnt++;
+        }
+        Assert.assertEquals(10000, cnt);
+        assertThat(map).isEmpty();
+        Assert.assertEquals(0, map.size());
+    }
+    
+    @Test
+    public void testIteratorRandomRemoveHighVolume() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simpleMap");
+        for (int i = 0; i < 10000; i++) {
+            map.put(i, i*10);
+        }
+        
+        int cnt = 0;
+        int removed = 0;
+        Iterator<Entry<Integer, Integer>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Entry<Integer, Integer> entry = iterator.next();
+            if (ThreadLocalRandom.current().nextBoolean()) {
+                iterator.remove();
+                removed++;
+            }
+            cnt++;
+        }
+        Assert.assertEquals(10000, cnt);
+        assertThat(map.size()).isEqualTo(cnt - removed);
     }
 
     @Test

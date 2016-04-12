@@ -45,12 +45,19 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
 
+    MultiDecoder<Map<Object, Object>> postitionDecoder;
+    MultiDecoder<Map<Object, Object>> distanceDecoder;
+    
     public RedissonGeo(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
+        postitionDecoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoDistanceDecoder(codec), new GeoMapReplayDecoder(), true);
+        distanceDecoder = new FlatNestedMultiDecoder(new GeoDistanceDecoder(codec), new GeoMapReplayDecoder(), true);
     }
     
     public RedissonGeo(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
+        postitionDecoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoDistanceDecoder(codec), new GeoMapReplayDecoder(), true);
+        distanceDecoder = new FlatNestedMultiDecoder(new GeoDistanceDecoder(codec), new GeoMapReplayDecoder(), true);
     }
 
     @Override
@@ -119,7 +126,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
         params.add(getName());
         params.addAll(Arrays.asList(members));
         
-        MultiDecoder<Map<Object, Object>> decoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoPositionMapDecoder(params));
+        MultiDecoder<Map<Object, Object>> decoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoPositionMapDecoder(params), true);
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder, 2, ValueType.OBJECTS);
         return commandExecutor.readAsync(getName(), new ScoredCodec(codec), command, params.toArray());
     }
@@ -141,8 +148,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     
     @Override
     public Future<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
-        MultiDecoder<Map<Object, Object>> decoder = new FlatNestedMultiDecoder(new GeoDistanceDecoder(codec), new GeoMapReplayDecoder());
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUS", decoder);
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUS", distanceDecoder);
         return commandExecutor.readAsync(getName(), codec, command, getName(), convert(longitude), convert(latitude), radius, geoUnit, "WITHDIST");
     }
 
@@ -153,8 +159,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     
     @Override
     public Future<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
-        MultiDecoder<Map<Object, Object>> decoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoDistanceDecoder(codec), new GeoMapReplayDecoder());
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUS", decoder);
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUS", postitionDecoder);
         return commandExecutor.readAsync(getName(), codec, command, getName(), convert(longitude), convert(latitude), radius, geoUnit, "WITHCOORD");
     }
 
@@ -175,8 +180,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     
     @Override
     public Future<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit) {
-        MultiDecoder<Map<Object, Object>> decoder = new FlatNestedMultiDecoder(new GeoDistanceDecoder(codec), new GeoMapReplayDecoder());
-        RedisCommand command = new RedisCommand("GEORADIUSBYMEMBER", decoder, 2);
+        RedisCommand command = new RedisCommand("GEORADIUSBYMEMBER", distanceDecoder, 2);
         return commandExecutor.readAsync(getName(), codec, command, getName(), member, radius, geoUnit, "WITHDIST");
     }
 
@@ -187,8 +191,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     
     @Override
     public Future<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit) {
-        MultiDecoder<Map<Object, Object>> decoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoDistanceDecoder(codec), new GeoMapReplayDecoder());
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUSBYMEMBER", decoder, 2);
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUSBYMEMBER", postitionDecoder, 2);
         return commandExecutor.readAsync(getName(), codec, command, getName(), member, radius, geoUnit, "WITHCOORD");
     }
 }
