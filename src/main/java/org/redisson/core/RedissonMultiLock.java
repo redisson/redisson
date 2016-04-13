@@ -122,8 +122,7 @@ public class RedissonMultiLock implements Lock {
                                 if (tryLockRequestsAmount.decrementAndGet() == 0) {
                                     if (failed.get() != null) {
                                         promise.setFailure(failed.get());
-                                    }
-                                    if (lockedLockHolder.get() != null) {
+                                    } else if (lockedLockHolder.get() != null) {
                                         final RedissonLock lockedLock = (RedissonLock) lockedLockHolder.get();
                                         lockedLock.lockAsync(leaseTime, unit, currentThreadId).addListener(new FutureListener<Void>() {
                                             @Override
