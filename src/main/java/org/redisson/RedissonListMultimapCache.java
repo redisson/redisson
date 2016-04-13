@@ -131,7 +131,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                   + "end; "
                   + "if expireDate > tonumber(ARGV[1]) then " +
                       "local items = redis.call('lrange', KEYS[1], 0, -1); " +
-                      "for i=0, #items do " +
+                      "for i = 1, #items do " +
                           "if items[i] == ARGV[3] then " +
                               "return 1; " +
                           "end; " +
