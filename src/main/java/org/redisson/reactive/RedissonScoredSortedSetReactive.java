@@ -167,7 +167,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
         return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
                     "local changed = 0 " +
                     "local s = redis.call('zrange', KEYS[1], 0, -1) "
-                       + "local i = 0 "
+                       + "local i = 1 "
                        + "while i <= table.getn(s) do "
                             + "local element = s[i] "
                             + "local isInAgrs = false "
