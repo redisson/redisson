@@ -766,6 +766,21 @@ public class RedissonMapCacheTest extends BaseTest {
         }
     }
 
+    
+    @Test
+    public void testRMapCacheValues() {
+        final RMapCache<String, String> map = redisson.getMapCache("testRMapCacheValues");
+        map.put("1234", "5678", 1, TimeUnit.MINUTES, 60, TimeUnit.MINUTES);
+        assertThat(map.values()).containsOnly("5678");
+    }
+
+    @Test
+    public void testRMapCacheAllValues() {
+        final RMapCache<String, String> map = redisson.getMapCache("testRMapCacheAllValues");
+        map.put("1234", "5678", 1, TimeUnit.MINUTES, 60, TimeUnit.MINUTES);
+        assertThat(map.readAllValues()).containsOnly("5678");
+    }
+
     public static class SimpleObjectWithoutDefaultConstructor {
 
         private String testField;
