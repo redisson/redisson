@@ -19,7 +19,7 @@ import java.net.InetSocketAddress;
 
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
-import org.redisson.client.handler.CommandsListEncoder;
+import org.redisson.client.handler.CommandBatchEncoder;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.handler.ConnectionWatchdog;
 
@@ -37,13 +37,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import org.redisson.client.protocol.RedisCommands;
 
 public class RedisClient {
 
@@ -66,10 +62,10 @@ public class RedisClient {
             @Override
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels),
-                        new CommandEncoder(),
-                        new CommandsListEncoder(),
-                        new CommandsQueue(),
-                        new CommandDecoder());
+                    CommandEncoder.INSTANCE,
+                    CommandBatchEncoder.INSTANCE,
+                    new CommandsQueue(),
+                    new CommandDecoder());
             }
         });
 
@@ -152,37 +148,6 @@ public class RedisClient {
 
     public ChannelGroupFuture shutdownAsync() {
         return channels.close();
-    }
-
-    /**
-     * Execute INFO SERVER operation.
-     *
-     * @return Map extracted from each response line splitting by ':' symbol
-     */
-    public Map<String, String> serverInfo() {
-        try {
-            return serverInfoAsync().sync().get();
-        } catch (Exception e) {
-            throw new RedisConnectionException("Unable to retrieve server into from: " + addr, e);
-        }
-    }
-
-    /**
-     * Asynchronously execute INFO SERVER operation.
-     *
-     * @return A future for a map extracted from each response line splitting by
-     * ':' symbol
-     */
-    public Future<Map<String, String>> serverInfoAsync() {
-        final RedisConnection connection = connect();
-        Promise<Map<String, String>> async = (Promise) connection.async(RedisCommands.SERVER_INFO);
-        async.addListener(new GenericFutureListener<Promise<Map<String, String>>>() {
-            @Override
-            public void operationComplete(Promise<Map<String, String>> future) throws Exception {
-                connection.closeAsync();
-            }
-        });
-        return async;
     }
 
     @Override

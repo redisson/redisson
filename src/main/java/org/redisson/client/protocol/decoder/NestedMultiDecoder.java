@@ -24,13 +24,19 @@ import io.netty.buffer.ByteBuf;
 
 public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
 
-    public static class DecoderState {
+    public static class NestedDecoderState implements DecoderState {
 
         int decoderIndex;
         
         int flipDecoderIndex;
 
-        public DecoderState() {
+        public NestedDecoderState() {
+        }
+        
+        public NestedDecoderState(int decoderIndex, int flipDecoderIndex) {
+            super();
+            this.decoderIndex = decoderIndex;
+            this.flipDecoderIndex = flipDecoderIndex;
         }
 
         public int getDecoderIndex() {
@@ -53,6 +59,16 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
             flipDecoderIndex++;
         }
 
+        @Override
+        public DecoderState copy() {
+            return new NestedDecoderState(decoderIndex, flipDecoderIndex);
+        }
+
+        @Override
+        public String toString() {
+            return "NestedDecoderState [decoderIndex=" + decoderIndex + ", flipDecoderIndex=" + flipDecoderIndex + "]";
+        }
+        
     }
 
     protected final MultiDecoder<Object> firstDecoder;
@@ -81,7 +97,7 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
 
     @Override
     public Object decode(ByteBuf buf, State state) throws IOException {
-        DecoderState ds = getDecoder(state);
+        NestedDecoderState ds = getDecoder(state);
 
         MultiDecoder<?> decoder = null;
         if (ds.getFlipDecoderIndex() == 2) {
@@ -96,7 +112,7 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
 
     @Override
     public boolean isApplicable(int paramNum, State state) {
-        DecoderState ds = getDecoder(state);
+        NestedDecoderState ds = getDecoder(state);
         if (paramNum == 0) {
             ds.incFlipDecoderIndex();
             ds.resetDecoderIndex();
@@ -118,10 +134,10 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
         return decoder.isApplicable(paramNum, state);
     }
 
-    protected final DecoderState getDecoder(State state) {
-        DecoderState ds = state.getDecoderState();
+    protected final NestedDecoderState getDecoder(State state) {
+        NestedDecoderState ds = state.getDecoderState();
         if (ds == null) {
-            ds = new DecoderState();
+            ds = new NestedDecoderState();
             state.setDecoderState(ds);
         }
         return ds;
@@ -137,7 +153,7 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
             return decoder.decode(parts, state);
         }
 
-        DecoderState ds = getDecoder(state);
+        NestedDecoderState ds = getDecoder(state);
         if (parts.isEmpty()) {
             ds.resetDecoderIndex();
         }

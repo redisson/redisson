@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.Assume;
 import org.junit.BeforeClass;
+import java.util.Map.Entry;
 
 import org.junit.Test;
 import org.redisson.core.GeoEntry;
@@ -118,6 +119,61 @@ public class RedissonGeoTest extends BaseTest {
         expected.put("Catania", 56.4413);
         assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(expected);
     }
+
+    @Test
+    public void testRadiusWithDistanceHugeAmount() {
+        RGeo<String> geo = redisson.getGeo("test");
+
+        for (int i = 0; i < 10000; i++) {
+            geo.add(10 + 0.000001*i, 11 + 0.000001*i, "" + i);
+        }
+        
+        Map<String, Double> res = geo.radiusWithDistance(10, 11, 200, GeoUnit.KILOMETERS);
+        assertThat(res).hasSize(10000);
+    }
+    
+    @Test
+    public void testRadiusWithPositionHugeAmount() {
+        RGeo<String> geo = redisson.getGeo("test");
+
+        for (int i = 0; i < 10000; i++) {
+            geo.add(10 + 0.000001*i, 11 + 0.000001*i, "" + i);
+        }
+        
+        Map<String, GeoPosition> res = geo.radiusWithPosition(10, 11, 200, GeoUnit.KILOMETERS);
+        assertThat(res).hasSize(10000);
+    }
+
+    
+    @Test
+    public void testRadiusWithDistanceBigObject() {
+        RGeo<Map<String, String>> geo = redisson.getGeo("test");
+
+        Map<String, String> map = new HashMap<String, String>();
+        for (int i = 0; i < 150; i++) {
+            map.put("" + i, "" + i);
+        }
+        
+        geo.add(new GeoEntry(13.361389, 38.115556, map));
+        
+        Map<String, String> map1 = new HashMap<String, String>(map);
+        map1.remove("100");
+        geo.add(new GeoEntry(15.087269, 37.502669, map1));
+        
+        Map<String, String> map2 = new HashMap<String, String>(map);
+        map2.remove("0");
+        geo.add(new GeoEntry(15.081269, 37.502169, map2));
+
+        Map<Map<String, String>, Double> expected = new HashMap<Map<String, String>, Double>();
+        expected.put(map, 190.4424);
+        expected.put(map1, 56.4413);
+        expected.put(map2, 56.3159);
+        
+        Map<Map<String, String>, Double> res = geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS);
+        assertThat(res.keySet()).containsOnlyElementsOf(expected.keySet());
+        assertThat(res.values()).containsOnlyElementsOf(expected.values());
+    }
+
     
     @Test
     public void testRadiusWithDistanceEmpty() {

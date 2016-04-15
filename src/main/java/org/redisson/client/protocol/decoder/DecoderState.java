@@ -13,33 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client;
+package org.redisson.client.protocol.decoder;
 
-import java.net.InetSocketAddress;
-import java.net.URI;
+public interface DecoderState {
 
-public class RedisRedirectException extends RedisException {
-
-    private static final long serialVersionUID = 181505625075250011L;
-
-    private int slot;
-    private URI url;
-
-    public RedisRedirectException(int slot, String url) {
-        this.slot = slot;
-        this.url = URI.create("//" + url);
-    }
-
-    public int getSlot() {
-        return slot;
-    }
-
-    public URI getUrl() {
-        return url;
-    }
-
-    public InetSocketAddress getAddr() {
-        return new InetSocketAddress(url.getHost(), url.getPort());
-    }
-
+    DecoderState copy();
+    
 }

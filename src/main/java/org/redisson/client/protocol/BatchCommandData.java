@@ -1,0 +1,62 @@
+/**
+ * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson.client.protocol;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.redisson.client.RedisRedirectException;
+import org.redisson.client.codec.Codec;
+
+import io.netty.util.concurrent.Promise;
+
+public class BatchCommandData<T, R> extends CommandData<T, R> {
+
+    private final AtomicReference<RedisRedirectException> redirectError = new AtomicReference<RedisRedirectException>();
+    
+    public BatchCommandData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
+        super(promise, codec, command, params);
+    }
+    
+    @Override
+    public boolean tryFailure(Throwable cause) {
+        if (redirectError.get() != null) {
+            return false;
+        }
+        if (cause instanceof RedisRedirectException) {
+            return redirectError.compareAndSet(null, (RedisRedirectException) cause);
+        }
+
+        return super.tryFailure(cause);
+    }
+    
+    @Override
+    public boolean isSuccess() {
+        return redirectError.get() == null && super.isSuccess();
+    }
+    
+    @Override
+    public Throwable cause() {
+        if (redirectError.get() != null) {
+            return redirectError.get();
+        }
+        return super.cause();
+    }
+    
+    public void clearError() {
+        redirectError.set(null);
+    }
+
+}
