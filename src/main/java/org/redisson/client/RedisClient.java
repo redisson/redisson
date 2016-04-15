@@ -19,7 +19,7 @@ import java.net.InetSocketAddress;
 
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
-import org.redisson.client.handler.CommandsListEncoder;
+import org.redisson.client.handler.CommandBatchEncoder;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.handler.ConnectionWatchdog;
 
@@ -62,8 +62,8 @@ public class RedisClient {
             @Override
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels),
-                    new CommandEncoder(),
-                    new CommandsListEncoder(),
+                    CommandEncoder.INSTANCE,
+                    CommandBatchEncoder.INSTANCE,
                     new CommandsQueue(),
                     new CommandDecoder());
             }

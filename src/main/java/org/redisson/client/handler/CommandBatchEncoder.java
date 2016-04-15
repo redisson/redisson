@@ -20,6 +20,7 @@ import org.redisson.client.protocol.CommandsData;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
@@ -27,12 +28,16 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * @author Nikita Koksharov
  *
  */
-public class CommandsListEncoder extends MessageToByteEncoder<CommandsData> {
+@Sharable
+public class CommandBatchEncoder extends MessageToByteEncoder<CommandsData> {
 
+    public static final CommandBatchEncoder INSTANCE = new CommandBatchEncoder();
+    
     @Override
     protected void encode(ChannelHandlerContext ctx, CommandsData msg, ByteBuf out) throws Exception {
+        CommandEncoder encoder = ctx.pipeline().get(CommandEncoder.class);
         for (CommandData<?, ?> commandData : msg.getCommands()) {
-            ctx.pipeline().get(CommandEncoder.class).encode(ctx, (CommandData<Object, Object>)commandData, out);
+            encoder.encode(ctx, commandData, out);
         }
     }
 

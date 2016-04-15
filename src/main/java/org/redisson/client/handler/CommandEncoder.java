@@ -17,17 +17,17 @@ package org.redisson.client.handler;
 
 import java.util.List;
 
-import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.DefaultParamsEncoder;
+import org.redisson.client.protocol.Encoder;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
 
@@ -39,8 +39,11 @@ import io.netty.util.CharsetUtil;
  * @author Nikita Koksharov
  *
  */
-public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Object>> {
+@Sharable
+public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
+    public static final CommandEncoder INSTANCE = new CommandEncoder();
+    
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final Encoder paramsEncoder = new DefaultParamsEncoder();
@@ -50,7 +53,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
     private static final byte[] CRLF = "\r\n".getBytes();
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, CommandData<Object, Object> msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CommandData<?, ?> msg, ByteBuf out) throws Exception {
         out.writeByte(ARGS_PREFIX);
         int len = 1 + msg.getParams().length;
         if (msg.getCommand().getSubName() != null) {
@@ -91,7 +94,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         }
     }
 
-    private Encoder selectEncoder(CommandData<Object, Object> msg, int param) {
+    private Encoder selectEncoder(CommandData<?, ?> msg, int param) {
         int typeIndex = 0;
         List<ValueType> inParamType = msg.getCommand().getInParamType();
         if (inParamType.size() > 1) {
