@@ -111,7 +111,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     decode(in, cmd, null, ctx.channel());
                 }
             } catch (IOException e) {
-                cmd.getPromise().tryFailure(e);
+                cmd.tryFailure(e);
             }
         } else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData)data;
@@ -175,14 +175,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 decode(in, cmd, null, ctx.channel());
                 i++;
             } catch (IOException e) {
-                cmd.getPromise().tryFailure(e);
+                cmd.tryFailure(e);
             }
-            if (!cmd.getPromise().isSuccess()) {
-                if (!(cmd.getPromise().cause() instanceof RedisMovedException 
-                        || cmd.getPromise().cause() instanceof RedisAskException
-                            || cmd.getPromise().cause() instanceof RedisLoadingException)) {
-                    error = (RedisException) cmd.getPromise().cause();
-                }
+            if (!cmd.isSuccess()) {
+                error = (RedisException) cmd.cause();
             }
         }
 
@@ -197,7 +193,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
                 }
             }
-
+            
             ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());
 
             state(null);
@@ -222,24 +218,24 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
-                data.getPromise().tryFailure(new RedisMovedException(slot, addr));
+                data.tryFailure(new RedisMovedException(slot, addr));
             } else if (error.startsWith("ASK")) {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
-                data.getPromise().tryFailure(new RedisAskException(slot, addr));
+                data.tryFailure(new RedisAskException(slot, addr));
             } else if (error.startsWith("LOADING")) {
-                data.getPromise().tryFailure(new RedisLoadingException(error
+                data.tryFailure(new RedisLoadingException(error
                         + ". channel: " + channel + " data: " + data));
             } else if (error.startsWith("OOM")) {
-                data.getPromise().tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
+                data.tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
                         + ". channel: " + channel + " data: " + data));
             } else if (error.contains("-OOM ")) {
-                data.getPromise().tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
+                data.tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
                         + ". channel: " + channel + " data: " + data));
             } else {
                 if (data != null) {
-                    data.getPromise().tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
+                    data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
                 } else {
                     log.error("Error: {} channel: {} data: {}", error, channel, data);
                 }
@@ -346,7 +342,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            if (!data.getPromise().trySuccess(result) && data.getPromise().cause() instanceof RedisTimeoutException) {
+            if (!data.getPromise().trySuccess(result) && data.cause() instanceof RedisTimeoutException) {
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, data, result);
             }
         }
