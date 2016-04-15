@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +48,20 @@ public class RedissonSetCacheTest extends BaseTest {
         RSetCache<Integer> set = redisson.getSetCache("set");
         assertThat(set.readAll()).isEmpty();
     }
-
+    
+    @Test
+    public void testAddBigBean() {
+        RSetCache<Map<Integer, Integer>> set = redisson.getSetCache("simple");
+        Map<Integer, Integer> map = new HashMap<Integer, Integer>();
+        for (int i = 0; i < 150; i++) {
+            map.put(i, i);
+        }
+        set.add(map);
+        map.remove(0);
+        set.add(map);
+        set.iterator().next();
+    }
+    
     @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();

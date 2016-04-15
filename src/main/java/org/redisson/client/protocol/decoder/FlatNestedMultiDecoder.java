@@ -38,7 +38,7 @@ public class FlatNestedMultiDecoder<T> extends NestedMultiDecoder {
 
     @Override
     public boolean isApplicable(int paramNum, State state) {
-        DecoderState ds = getDecoder(state);
+        NestedDecoderState ds = getDecoder(state);
         if (paramNum == 0) {
             ds.resetDecoderIndex();
         }

@@ -15,50 +15,80 @@
  */
 package org.redisson.client.handler;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import org.redisson.client.protocol.decoder.DecoderState;
 
 public class State {
 
-    private int index;
-    private Object decoderState;
+    private int batchIndex;
+    private DecoderState decoderState;
 
-    private long size;
-    private List<Object> respParts;
+    private int level = -1;
+    private List<StateLevel> levels;
+    private DecoderState decoderStateCopy;
+    private final boolean makeCheckpoint;
 
-    public State() {
-        super();
+    public State(boolean makeCheckpoint) {
+        this.makeCheckpoint = makeCheckpoint;
     }
 
-    public boolean trySetSize(long size) {
-        if (this.size != 0) {
-            return false;
+    public boolean isMakeCheckpoint() {
+        return makeCheckpoint;
+    }
+
+    public void resetLevel() {
+        level = -1;
+    }
+    public int decLevel() {
+        return --level;
+    }
+    public int incLevel() {
+        return ++level;
+    }
+    
+    public void addLevel(StateLevel stateLevel) {
+        if (levels == null) {
+            levels = new ArrayList<StateLevel>(2);
         }
-        this.size = size;
-        return true;
+        levels.add(stateLevel);
     }
-    public long getSize() {
-        return size;
-    }
-
-    public void setRespParts(List<Object> respParts) {
-        this.respParts = respParts;
-    }
-    public List<Object> getRespParts() {
-        return respParts;
+    public List<StateLevel> getLevels() {
+        if (levels == null) {
+            return Collections.emptyList();
+        }
+        return levels;
     }
 
-    public void setIndex(int index) {
-        this.index = index;
+    public void setBatchIndex(int index) {
+        this.batchIndex = index;
     }
-    public int getIndex() {
-        return index;
+    public int getBatchIndex() {
+        return batchIndex;
     }
 
-    public <T> T getDecoderState() {
-        return (T)decoderState;
+    public <T extends DecoderState> T getDecoderState() {
+        return (T) decoderState;
     }
-    public void setDecoderState(Object decoderState) {
+    public void setDecoderState(DecoderState decoderState) {
         this.decoderState = decoderState;
     }
 
+    public DecoderState getDecoderStateCopy() {
+        return decoderStateCopy;
+    }
+    public void setDecoderStateCopy(DecoderState decoderStateCopy) {
+        this.decoderStateCopy = decoderStateCopy;
+    }
+
+    @Override
+    public String toString() {
+        return "State [batchIndex=" + batchIndex + ", decoderState=" + decoderState + ", level=" + level + ", levels="
+                + levels + ", decoderStateCopy=" + decoderStateCopy + "]";
+    }
+
+    
+    
 }
