@@ -90,20 +90,14 @@ public class RedissonTopicPatternTest {
 
         RedissonClient redisson = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson.getPatternTopic("topic1.*");
-        int listenerId = topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.fail();
-            }
+        int listenerId = topic1.addListener((pattern, channel, msg) -> {
+            Assert.fail();
         });
-        topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.assertEquals("topic1.*", pattern);
-                Assert.assertEquals("topic1.t3", channel);
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic1.addListener((pattern, channel, msg) -> {
+            Assert.assertEquals("topic1.*", pattern);
+            Assert.assertEquals("topic1.t3", channel);
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
         topic1.removeListener(listenerId);
 
@@ -121,11 +115,8 @@ public class RedissonTopicPatternTest {
 
         RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
-        int listenerId = topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.fail();
-            }
+        int listenerId = topic1.addListener((pattern, channel, msg) -> {
+            Assert.fail();
         });
 
         Thread.sleep(1000);
@@ -134,14 +125,11 @@ public class RedissonTopicPatternTest {
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RPatternTopic<Message> topic2 = redisson2.getPatternTopic("topic.*");
-        topic2.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.assertEquals("topic.*", pattern);
-                Assert.assertEquals("topic.t1", channel);
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic2.addListener((pattern, channel, msg) -> {
+            Assert.assertEquals("topic.*", pattern);
+            Assert.assertEquals("topic.t1", channel);
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
 
         RTopic<Message> topic3 = redisson2.getTopic("topic.t1");
@@ -167,22 +155,16 @@ public class RedissonTopicPatternTest {
                 statusRecieved.countDown();
             }
         });
-        topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic1.addListener((pattern, channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
-        topic2.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic2.addListener((channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
         topic2.publish(new Message("123"));
         topic2.publish(new Message("123"));
@@ -214,11 +196,8 @@ public class RedissonTopicPatternTest {
                 l.countDown();
             }
         });
-        int id = topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.fail();
-            }
+        int id = topic1.addListener((pattern, channel, msg) -> {
+            Assert.fail();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();

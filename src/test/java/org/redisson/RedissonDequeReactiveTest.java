@@ -122,14 +122,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         final RDequeReactive<Integer> queue = redisson.getDeque("deque");
         sync(queue.addAll(Arrays.asList(1, 2, 3)));
 
-        MatcherAssert.assertThat(new Iterable<Integer>() {
-
-            @Override
-            public Iterator<Integer> iterator() {
-                return toIterator(queue.descendingIterator());
-            }
-
-        }, Matchers.contains(3, 2, 1));
-    }
+        MatcherAssert.assertThat(() -> toIterator(queue.descendingIterator()), Matchers.contains(3, 2, 1));
+}
 
 }

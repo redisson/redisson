@@ -1,8 +1,5 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
@@ -27,10 +24,6 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
 import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.redisson.BaseTest.createInstance;
@@ -216,9 +209,9 @@ public class RedissonTest {
         NodesGroup<Node> nodes = redisson.getNodesGroup();
         Assert.assertEquals(5, nodes.getNodes().size());
 
-        for (Node node : nodes.getNodes()) {
+        nodes.getNodes().stream().forEach((node) -> {
             Assert.assertTrue(node.ping());
-        }
+        });
 
         Assert.assertTrue(nodes.pingAll());
     }
@@ -256,11 +249,11 @@ public class RedissonTest {
         NodesGroup<ClusterNode> nodes = redisson.getClusterNodesGroup();
         Assert.assertEquals(2, nodes.getNodes().size());
 
-        for (ClusterNode node : nodes.getNodes()) {
+        nodes.getNodes().stream().forEach((node) -> {
             Map<String, String> params = node.info();
             Assert.assertNotNull(params);
             Assert.assertTrue(node.ping());
-        }
+        });
 
         Assert.assertTrue(nodes.pingAll());
     }

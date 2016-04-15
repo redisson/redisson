@@ -55,28 +55,22 @@ public class RedissonCountDownLatchConcurrentTest {
         final AtomicInteger counter = new AtomicInteger();
         ExecutorService executor = Executors.newScheduledThreadPool(iterations);
         for (int i = 0; i < iterations; i++) {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        latch.await();
-                        Assert.assertEquals(0, latch.getCount());
-                        Assert.assertEquals(iterations, counter.get());
-                    } catch (InterruptedException e) {
-                        Assert.fail();
-                    }
+            executor.execute(() -> {
+                try {
+                    latch.await();
+                    Assert.assertEquals(0, latch.getCount());
+                    Assert.assertEquals(iterations, counter.get());
+                } catch (InterruptedException e) {
+                    Assert.fail();
                 }
             });
         }
 
         ExecutorService countDownExecutor = Executors.newFixedThreadPool(iterations);
         for (int i = 0; i < iterations; i++) {
-            countDownExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    latch.countDown();
-                    counter.incrementAndGet();
-                }
+            countDownExecutor.execute(() -> {
+                latch.countDown();
+                counter.incrementAndGet();
             });
         }
 

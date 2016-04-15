@@ -14,11 +14,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RSetCacheReactive;
-import org.redisson.api.RSetReactive;
 import org.redisson.codec.MsgPackJacksonCodec;
-import org.redisson.core.RSetCache;
-
-import reactor.rx.Streams;
 
 public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 

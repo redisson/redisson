@@ -153,20 +153,17 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         s.setPermits(1);
 
         int iterations = 15;
-        testSingleInstanceConcurrency(iterations, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RSemaphore s = redisson.getSemaphore("test");
-                try {
-                    s.acquire();
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                int value = lockedCounter.get();
-                lockedCounter.set(value + 1);
-                s.release();
+        testSingleInstanceConcurrency(iterations, r -> {
+            RSemaphore s1 = r.getSemaphore("test");
+            try {
+                s1.acquire();
+            }catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
+            int value = lockedCounter.get();
+            lockedCounter.set(value + 1);
+            s1.release();
         });
 
         assertThat(lockedCounter.get()).isEqualTo(iterations);
@@ -180,25 +177,22 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         RSemaphore s = redisson.getSemaphore("test");
         s.setPermits(1);
 
-        testMultiInstanceConcurrency(16, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                for (int i = 0; i < iterations; i++) {
-                    try {
-                        redisson.getSemaphore("test").acquire();
-                    } catch (InterruptedException e1) {
-                        // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    }
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    int value = lockedCounter.get();
-                    lockedCounter.set(value + 1);
-                    redisson.getSemaphore("test").release();
+        testMultiInstanceConcurrency(16, r -> {
+            for (int i = 0; i < iterations; i++) {
+                try {
+                    r.getSemaphore("test").acquire();
+                }catch (InterruptedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
                 }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                int value = lockedCounter.get();
+                lockedCounter.set(value + 1);
+                r.getSemaphore("test").release();
             }
         });
 
@@ -213,20 +207,17 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         RSemaphore s = redisson.getSemaphore("test");
         s.setPermits(1);
 
-        testMultiInstanceConcurrency(iterations, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RSemaphore s = redisson.getSemaphore("test");
-                try {
-                    s.acquire();
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                int value = lockedCounter.get();
-                lockedCounter.set(value + 1);
-                s.release();
+        testMultiInstanceConcurrency(iterations, r -> {
+            RSemaphore s1 = r.getSemaphore("test");
+            try {
+                s1.acquire();
+            }catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
+            int value = lockedCounter.get();
+            lockedCounter.set(value + 1);
+            s1.release();
         });
 
         assertThat(lockedCounter.get()).isEqualTo(iterations);
@@ -241,31 +232,21 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         s.setPermits(10);
 
         final CyclicBarrier barrier = new CyclicBarrier(10);
-        testMultiInstanceConcurrency(iterations, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RSemaphore s = redisson.getSemaphore("test");
-                try {
-                    s.acquire();
-
-                    barrier.await();
-
-                    assertThat(s.availablePermits()).isEqualTo(0);
-                    assertThat(s.tryAcquire()).isFalse();
-
-                    Thread.sleep(50);
-
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (BrokenBarrierException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                int value = lockedCounter.get();
-                lockedCounter.set(value + 1);
-                s.release();
+        testMultiInstanceConcurrency(iterations, r -> {
+            RSemaphore s1 = r.getSemaphore("test");
+            try {
+                s1.acquire();
+                barrier.await();
+                assertThat(s1.availablePermits()).isEqualTo(0);
+                assertThat(s1.tryAcquire()).isFalse();
+                Thread.sleep(50);
+            } catch (InterruptedException | BrokenBarrierException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
+            int value = lockedCounter.get();
+            lockedCounter.set(value + 1);
+            s1.release();
         });
 
         assertThat(lockedCounter.get()).isLessThan(iterations);

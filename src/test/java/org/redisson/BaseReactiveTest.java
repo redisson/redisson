@@ -2,20 +2,17 @@ package org.redisson;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.reactivestreams.Publisher;
-import static org.redisson.BaseTest.createInstance;
 import org.redisson.api.RCollectionReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RedissonReactiveClient;
 
 import reactor.rx.Promise;
-import reactor.rx.Stream;
 import reactor.rx.Streams;
 
 public abstract class BaseReactiveTest {

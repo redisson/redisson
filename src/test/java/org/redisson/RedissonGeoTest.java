@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.Assume;
 import org.junit.BeforeClass;
-import java.util.Map.Entry;
 
 import org.junit.Test;
 import org.redisson.core.GeoEntry;

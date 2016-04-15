@@ -14,7 +14,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
-import org.assertj.core.data.MapEntry;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -23,7 +22,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.Predicate;
 import org.redisson.core.RMap;
-import org.redisson.core.RSet;
 
 import io.netty.util.concurrent.Future;
 
@@ -196,12 +194,7 @@ public class RedissonMapTest extends BaseTest {
         map.put(3, 300);
         map.put(4, 400);
 
-        Map<Integer, Integer> filtered = map.filterKeys(new Predicate<Integer>() {
-            @Override
-            public boolean apply(Integer input) {
-                return input >= 2 && input <= 3;
-            }
-        });
+        Map<Integer, Integer> filtered = map.filterKeys(input -> input >= 2 && input <= 3);
 
         Map<Integer, Integer> expectedMap = new HashMap<Integer, Integer>();
         expectedMap.put(2, 200);
