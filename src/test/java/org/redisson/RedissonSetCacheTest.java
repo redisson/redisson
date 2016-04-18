@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -31,13 +33,35 @@ public class RedissonSetCacheTest extends BaseTest {
         }
 
     }
+    
+    @Test
+    public void testDelete() {
+        RSetCache<Integer> set = redisson.getSetCache("set");
+        assertThat(set.delete()).isFalse();
+        set.add(1, 1, TimeUnit.SECONDS);
+        assertThat(set.delete()).isTrue();
+        assertThat(set.delete()).isFalse();
+    }
 
     @Test
     public void testEmptyReadAll() {
         RSetCache<Integer> set = redisson.getSetCache("set");
         assertThat(set.readAll()).isEmpty();
     }
-
+    
+    @Test
+    public void testAddBigBean() {
+        RSetCache<Map<Integer, Integer>> set = redisson.getSetCache("simple");
+        Map<Integer, Integer> map = new HashMap<Integer, Integer>();
+        for (int i = 0; i < 150; i++) {
+            map.put(i, i);
+        }
+        set.add(map);
+        map.remove(0);
+        set.add(map);
+        set.iterator().next();
+    }
+    
     @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
@@ -50,43 +74,64 @@ public class RedissonSetCacheTest extends BaseTest {
     @Test
     public void testAddExpire() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple3");
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
         assertThat(set).contains("123");
 
-        Thread.sleep(1000);
-
+        Thread.sleep(500);
+        
+        assertThat(set.size()).isEqualTo(1);
         assertThat(set).doesNotContain("123");
+        
+        assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
+
     }
 
     @Test
     public void testAddExpireTwise() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple31");
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
         Thread.sleep(1000);
 
         Assert.assertFalse(set.contains("123"));
 
-        set.add("4341", 1, TimeUnit.SECONDS);
+        assertThat(set.add("4341", 1, TimeUnit.SECONDS)).isTrue();
         Thread.sleep(1000);
 
         Assert.assertFalse(set.contains("4341"));
     }
+    
+    @Test
+    public void testAddExpireThenAdd() throws InterruptedException, ExecutionException {
+        RSetCache<String> set = redisson.getSetCache("simple31");
+        assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
+        
+        Thread.sleep(500);
+
+        assertThat(set.size()).isEqualTo(1);
+        assertThat(set.contains("123")).isFalse();
+
+        assertThat(set.add("123")).isTrue();
+        Thread.sleep(1000);
+
+        assertThat(set.contains("123")).isTrue();
+    }
+
 
     @Test
     public void testExpireOverwrite() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple");
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
 
         Thread.sleep(800);
 
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(set.add("123", 1, TimeUnit.SECONDS)).isFalse();
 
-        Thread.sleep(800);
-        Assert.assertTrue(set.contains("123"));
+        Thread.sleep(100);
+        assertThat(set.contains("123")).isTrue();
 
-        Thread.sleep(200);
+        Thread.sleep(100);
 
-        Assert.assertFalse(set.contains("123"));
+        assertThat(set.contains("123")).isFalse();
     }
 
     @Test
@@ -169,14 +214,15 @@ public class RedissonSetCacheTest extends BaseTest {
     }
 
     @Test
-    public void testRetainAll() {
+    public void testRetainAll() throws InterruptedException {
         RSetCache<Integer> set = redisson.getSetCache("set");
         for (int i = 0; i < 10000; i++) {
             set.add(i);
-            set.add(i*10, 10, TimeUnit.SECONDS);
+            set.add(i*10, 15, TimeUnit.SECONDS);
         }
 
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
+        Thread.sleep(500);
         assertThat(set).containsOnly(1, 2);
         Assert.assertEquals(2, set.size());
     }

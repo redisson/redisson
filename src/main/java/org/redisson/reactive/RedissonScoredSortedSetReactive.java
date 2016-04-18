@@ -140,8 +140,8 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     public Publisher<Boolean> containsAll(Collection<?> c) {
         return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
                 "local s = redis.call('zrange', KEYS[1], 0, -1);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, table.getn(s), 1 do " +
+                            "for j = 1, table.getn(ARGV), 1 do "
                             + "if ARGV[j] == s[i] "
                             + "then table.remove(ARGV, j) end "
                         + "end; "
@@ -154,7 +154,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     public Publisher<Boolean> removeAll(Collection<?> c) {
         return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
                         "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
+                        "for i = 1, table.getn(ARGV), 1 do "
                             + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
                             + "then v = 1 end "
                         +"end "
@@ -167,11 +167,11 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
         return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
                     "local changed = 0 " +
                     "local s = redis.call('zrange', KEYS[1], 0, -1) "
-                       + "local i = 0 "
+                       + "local i = 1 "
                        + "while i <= table.getn(s) do "
                             + "local element = s[i] "
                             + "local isInAgrs = false "
-                            + "for j = 0, table.getn(ARGV), 1 do "
+                            + "for j = 1, table.getn(ARGV), 1 do "
                                 + "if ARGV[j] == element then "
                                     + "isInAgrs = true "
                                     + "break "

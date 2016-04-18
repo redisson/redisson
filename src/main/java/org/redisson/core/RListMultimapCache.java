@@ -13,35 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.core;
 
-/**
- *
- * @author Nikita Koksharov
- *
- * @param <V>
- */
-public class FastSuccessFuture<V> extends FastCompleteFuture<V> {
-
-    private final V result;
-
-    public FastSuccessFuture(V result) {
-        this.result = result;
-    }
-
-    @Override
-    public Throwable cause() {
-        return null;
-    }
-
-    @Override
-    public boolean isSuccess() {
-        return true;
-    }
-
-    @Override
-    public V getNow() {
-        return result;
-    }
+public interface RListMultimapCache<K, V> extends RListMultimap<K, V>, RMultimapCache<K, V> {
 
 }

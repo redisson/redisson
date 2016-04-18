@@ -16,6 +16,7 @@
 package org.redisson.connection.decoder;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,10 +28,12 @@ import io.netty.buffer.ByteBuf;
 
 public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
 
+    private final int shiftIndex;
     private final List<Object> args;
 
-    public MapGetAllDecoder(List<Object> args) {
+    public MapGetAllDecoder(List<Object> args, int shiftIndex) {
         this.args = args;
+        this.shiftIndex = shiftIndex;
     }
 
     @Override
@@ -45,13 +48,16 @@ public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
 
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
+        if (parts.isEmpty()) {
+            return Collections.emptyMap();
+        }
         Map<Object, Object> result = new HashMap<Object, Object>(parts.size());
-        for (int index = 0; index < args.size()-1; index++) {
+        for (int index = 0; index < args.size()-shiftIndex; index++) {
             Object value = parts.get(index);
             if (value == null) {
                 continue;
             }
-            result.put(args.get(index+1), value);
+            result.put(args.get(index+shiftIndex), value);
         }
         return result;
     }

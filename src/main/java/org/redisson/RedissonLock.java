@@ -110,7 +110,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         Future<RedissonLockEntry> future = subscribe();
-        future.sync();
+        get(future);
 
         try {
             while (true) {
@@ -229,7 +229,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         Future<RedissonLockEntry> future = subscribe();
-        if (!future.await(time, TimeUnit.MILLISECONDS)) {
+        if (!await(future, time, TimeUnit.MILLISECONDS)) {
             future.addListener(new FutureListener<RedissonLockEntry>() {
                 @Override
                 public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
@@ -377,6 +377,11 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     public Future<Void> unlockAsync() {
+        long threadId = Thread.currentThread().getId();
+        return unlockAsync(threadId);
+    }
+
+    public Future<Void> unlockAsync(final long threadId) {
         final Promise<Void> result = newPromise();
         Future<Boolean> future = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         "if (redis.call('exists', KEYS[1]) == 0) then " +
@@ -396,7 +401,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                             "return 1; "+
                         "end; " +
                         "return nil;",
-                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(Thread.currentThread().getId()));
+                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId));
 
         future.addListener(new FutureListener<Boolean>() {
             @Override
@@ -409,7 +414,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 Boolean opStatus = future.getNow();
                 if (opStatus == null) {
                     IllegalMonitorStateException cause = new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
-                            + id + " thread-id: " + Thread.currentThread().getId());
+                            + id + " thread-id: " + threadId);
                     result.setFailure(cause);
                     return;
                 }
@@ -428,8 +433,12 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     public Future<Void> lockAsync(final long leaseTime, final TimeUnit unit) {
-        final Promise<Void> result = newPromise();
         final long currentThreadId = Thread.currentThread().getId();
+        return lockAsync(leaseTime, unit, currentThreadId);
+    }
+
+    public Future<Void> lockAsync(final long leaseTime, final TimeUnit unit, final long currentThreadId) {
+        final Promise<Void> result = newPromise();
         Future<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
         ttlFuture.addListener(new FutureListener<Long>() {
             @Override
@@ -525,8 +534,13 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     public Future<Boolean> tryLockAsync() {
+        long threadId = Thread.currentThread().getId();
+        return tryLockAsync(threadId);
+    }
+
+    public Future<Boolean> tryLockAsync(long threadId) {
         final Promise<Boolean> result = newPromise();
-        Future<Long> future = tryLockInnerAsync(Thread.currentThread().getId());
+        Future<Long> future = tryLockInnerAsync(threadId);
         future.addListener(new FutureListener<Long>() {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
@@ -546,10 +560,15 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     public Future<Boolean> tryLockAsync(final long waitTime, final long leaseTime, final TimeUnit unit) {
+        final long currentThreadId = Thread.currentThread().getId();
+        return tryLockAsync(waitTime, leaseTime, unit, currentThreadId);
+    }
+
+    public Future<Boolean> tryLockAsync(final long waitTime, final long leaseTime, final TimeUnit unit,
+            final long currentThreadId) {
         final Promise<Boolean> result = newPromise();
 
         final AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
-        final long currentThreadId = Thread.currentThread().getId();
         Future<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
         ttlFuture.addListener(new FutureListener<Long>() {
             @Override

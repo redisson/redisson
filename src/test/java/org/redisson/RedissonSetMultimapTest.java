@@ -1,15 +1,17 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.redisson.core.RSetMultimap;
-import static org.assertj.core.api.Assertions.*;
 
 public class RedissonSetMultimapTest extends BaseTest {
 
@@ -273,5 +275,56 @@ public class RedissonSetMultimapTest extends BaseTest {
         assertThat(allValues).containsOnlyElementsOf(values);
     }
 
+    @Test
+    public void testExpire() throws InterruptedException {
+        RSetMultimap<String, String> map = redisson.getSetMultimap("simple");
+        map.put("1", "2");
+        map.put("2", "3");
+
+        map.expire(100, TimeUnit.MILLISECONDS);
+
+        Thread.sleep(500);
+
+        assertThat(map.size()).isZero();
+    }
+
+    @Test
+    public void testExpireAt() throws InterruptedException {
+        RSetMultimap<String, String> map = redisson.getSetMultimap("simple");
+        map.put("1", "2");
+        map.put("2", "3");
+
+        map.expireAt(System.currentTimeMillis() + 100);
+
+        Thread.sleep(500);
+
+        assertThat(map.size()).isZero();
+    }
+
+    @Test
+    public void testClearExpire() throws InterruptedException {
+        RSetMultimap<String, String> map = redisson.getSetMultimap("simple");
+        map.put("1", "2");
+        map.put("2", "3");
+
+        map.expireAt(System.currentTimeMillis() + 100);
+
+        map.clearExpire();
+
+        Thread.sleep(500);
+
+        assertThat(map.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testDelete() {
+        RSetMultimap<String, String> map = redisson.getSetMultimap("simple");
+        map.put("1", "2");
+        map.put("2", "3");
+        assertThat(map.delete()).isTrue();
+        
+        RSetMultimap<String, String> map2 = redisson.getSetMultimap("simple1");
+        assertThat(map2.delete()).isFalse();
+    }
 
 }

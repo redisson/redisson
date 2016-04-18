@@ -15,25 +15,30 @@
  */
 package org.redisson.client.handler;
 
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.CommandsData;
+import java.util.List;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
+public class StateLevel {
 
-/**
- *
- * @author Nikita Koksharov
- *
- */
-public class CommandsListEncoder extends MessageToByteEncoder<CommandsData> {
+    private long size;
+    private List<Object> parts;
 
-    @Override
-    protected void encode(ChannelHandlerContext ctx, CommandsData msg, ByteBuf out) throws Exception {
-        for (CommandData<?, ?> commandData : msg.getCommands()) {
-            ctx.pipeline().get(CommandEncoder.class).encode(ctx, (CommandData<Object, Object>)commandData, out);
-        }
+    public StateLevel(long size, List<Object> parts) {
+        super();
+        this.size = size;
+        this.parts = parts;
     }
 
+    public long getSize() {
+        return size;
+    }
+
+    public List<Object> getParts() {
+        return parts;
+    }
+
+    @Override
+    public String toString() {
+        return "StateLevel [size=" + size + ", parts=" + parts + "]";
+    }
+    
 }

@@ -346,8 +346,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         failedSlaves.removeAll(currentPart.getFailedSlaveAddresses());
         for (URI uri : failedSlaves) {
             currentPart.addFailedSlaveAddress(uri);
-            slaveDown(entry, uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
-            log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
+            if (entry.slaveDown(uri.getHost(), uri.getPort(), FreezeReason.MANAGER)) {
+                log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
+            }
         }
     }
 
@@ -358,8 +359,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (URI uri : removedSlaves) {
             currentPart.removeSlaveAddress(uri);
 
-            slaveDown(entry, uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
-            log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
+            if (entry.slaveDown(uri.getHost(), uri.getPort(), FreezeReason.MANAGER)) {
+                log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
+            }
         }
 
         Set<URI> addedSlaves = new HashSet<URI>(newPart.getSlaveAddresses());
@@ -483,10 +485,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         List<ClusterPartition> currentPartitions = new ArrayList<ClusterPartition>(lastPartitions.values());
         for (ClusterPartition currentPartition : currentPartitions) {
             for (ClusterPartition newPartition : newPartitions) {
-                if (!currentPartition.getNodeId().equals(newPartition.getNodeId())) {
+                if (!currentPartition.getNodeId().equals(newPartition.getNodeId()) 
+                        // skip master change case
+                        || !currentPartition.getMasterAddr().equals(newPartition.getMasterAddr())) {
                     continue;
                 }
-
+                
                 Set<ClusterSlotRange> addedSlots = new HashSet<ClusterSlotRange>(newPartition.getSlotRanges());
                 addedSlots.removeAll(currentPartition.getSlotRanges());
                 MasterSlaveEntry entry = getEntry(currentPartition.getSlotRanges().iterator().next());

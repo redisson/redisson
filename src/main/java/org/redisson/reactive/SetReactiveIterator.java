@@ -16,7 +16,6 @@
 package org.redisson.reactive;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
@@ -24,56 +23,36 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
-import reactor.core.reactivestreams.SubscriberBarrier;
 import reactor.rx.Stream;
+import reactor.rx.subscription.ReactiveSubscription;
 
 public abstract class SetReactiveIterator<V> extends Stream<V> {
 
     @Override
     public void subscribe(final Subscriber<? super V> t) {
-        t.onSubscribe(new SubscriberBarrier<V, V>(t) {
+        t.onSubscribe(new ReactiveSubscription<V>(this, t) {
 
             private List<V> firstValues;
             private long nextIterPos;
             private InetSocketAddress client;
 
             private long currentIndex;
-            private List<V> prevValues = new ArrayList<V>();
 
             @Override
-            protected void doRequest(long n) {
+            protected void onRequest(long n) {
                 currentIndex = n;
-
-                if (!prevValues.isEmpty()) {
-                    List<V> vals = new ArrayList<V>(prevValues);
-                    prevValues.clear();
-
-                    handle(vals);
-
-                    if (currentIndex == 0) {
-                        return;
-                    }
-                }
 
                 nextValues();
             }
 
             private void handle(List<V> vals) {
                 for (V val : vals) {
-                    if (currentIndex > 0) {
-                        onNext(val);
-                    } else {
-                        prevValues.add(val);
-                    }
-                    currentIndex--;
-                    if (currentIndex == 0) {
-                        onComplete();
-                    }
+                    onNext(val);
                 }
             }
 
             protected void nextValues() {
-                final SubscriberBarrier<V, V> m = this;
+                final ReactiveSubscription<V> m = this;
                 scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<V>>() {
 
                     @Override

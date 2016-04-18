@@ -19,7 +19,7 @@ import org.redisson.client.protocol.Encoder;
 
 public class ScoredCodec extends StringCodec {
 
-    public final Codec delegate;
+    private final Codec delegate;
 
     public ScoredCodec(Codec delegate) {
         super();

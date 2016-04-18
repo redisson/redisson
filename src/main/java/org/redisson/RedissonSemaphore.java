@@ -70,7 +70,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             return;
         }
 
-        Future<RedissonLockEntry> future = subscribe().sync();
+        Future<RedissonLockEntry> future = subscribe();
+        get(future);
         try {
             while (true) {
                 if (tryAcquire(permits)) {
@@ -113,7 +114,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
         long time = unit.toMillis(waitTime);
         Future<RedissonLockEntry> future = subscribe();
-        if (!future.await(time, TimeUnit.MILLISECONDS)) {
+        if (!await(future, time, TimeUnit.MILLISECONDS)) {
             return false;
         }
 

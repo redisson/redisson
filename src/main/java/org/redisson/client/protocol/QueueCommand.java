@@ -23,6 +23,9 @@ import java.util.Set;
 public interface QueueCommand {
 
     Set<String> PUBSUB_COMMANDS = new HashSet<String>(Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE"));
+    
+    Set<String> TIMEOUTLESS_COMMANDS = new HashSet<String>(Arrays.asList(RedisCommands.BLPOP_VALUE.getName(),
+            RedisCommands.BRPOP_VALUE.getName(), RedisCommands.BRPOPLPUSH.getName()));
 
     List<CommandData<Object, Object>> getPubSubOperations();
 

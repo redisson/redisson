@@ -2,6 +2,36 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####04-Apr-2016 - version 2.2.11 released  
+
+Since this version Redisson has __perfomance boost up to 43%__
+
+Feature - __new object added__ `RGeo`  
+Feature - __new object added__ `RBuckets`  
+Feature - travis-ci integration (thanks to jackygurui)  
+Improvement - `RScoredSortedSet.removeAllAsync` & `removeAll` methods optimization  
+Improvement - `RemoteService` reliability tuned up  
+Improvement - Reattaching RBlockingQueue\Deque blocking commands (poll, take ...) after Redis failover process or channel reconnection  
+Fixed - iterator objects may skip results in some cases  
+Fixed - RTopic listeners hangs during synchronous commands execution inside it  
+Fixed - Redisson hangs during shutdown if `RBlockingQueue\Deque.take` or `RBlockingQueue\Deque.poll` methods were invoked  
+
+
+####23-Mar-2016 - version 2.2.10 released  
+
+Feature - __new object added__ `RRemoteService`  
+Feature - __new object added__ `RSetMultimapCache`  
+Feature - __new object added__ `RListMultimapCache`  
+Improvement - ability to cancel BRPOP and BLPOP async command execution  
+Improvement - Config params validation  
+Improvement - test RedisRunner improvements (thanks to jackygurui)  
+Improvement - `Double.NEGATIVE_INFINITY` and `Double.POSITIVE_INFINITY` handling for ScoredSortedSet (thanks to jackygurui)  
+Fixed - MOVED, ASK handling in cluster mode using RBatch  
+Fixed - delete and expire logic for Multimap objects  
+Fixed - `RLock.tryLockAsync` NPE  
+Fixed - possible NPE during Redisson version logging  
+Fixed - Netty threads shutdown after connection error  
+
 ####04-Mar-2016 - version 2.2.9 released  
 
 Feature - __new object added__ `RSetMultimap`  

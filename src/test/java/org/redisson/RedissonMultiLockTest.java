@@ -17,6 +17,41 @@ import org.redisson.RedisRunner.RedisProcess;
 public class RedissonMultiLockTest {
 
     @Test
+    public void testMultiThreads() throws IOException, InterruptedException {
+        RedisProcess redis1 = redisTestMultilockInstance1();
+        
+        Config config1 = new Config();
+        config1.useSingleServer().setAddress("127.0.0.1:6320");
+        RedissonClient client = Redisson.create(config1);
+        
+        RLock lock1 = client.getLock("lock1");
+        RLock lock2 = client.getLock("lock2");
+        RLock lock3 = client.getLock("lock3");
+        
+        Thread t = new Thread() {
+            public void run() {
+                RedissonMultiLock lock = new RedissonMultiLock(lock1, lock2, lock3);
+                lock.lock();
+                
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                }
+                
+                lock.unlock();
+            };
+        };
+        t.start();
+        t.join(1000);
+
+        RedissonMultiLock lock = new RedissonMultiLock(lock1, lock2, lock3);
+        lock.lock();
+        lock.unlock();
+        
+        assertThat(redis1.stop()).isEqualTo(0);
+    }
+    
+    @Test
     public void test() throws IOException, InterruptedException {
         RedisProcess redis1 = redisTestMultilockInstance1();
         RedisProcess redis2 = redisTestMultilockInstance2();

@@ -18,7 +18,7 @@ package org.redisson.client;
 import java.net.InetSocketAddress;
 import java.net.URI;
 
-class RedisRedirectException extends RedisException {
+public class RedisRedirectException extends RedisException {
 
     private static final long serialVersionUID = 181505625075250011L;
 

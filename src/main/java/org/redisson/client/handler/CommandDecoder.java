@@ -36,6 +36,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.pubsub.Message;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
@@ -68,107 +69,146 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     private static final char ZERO = '0';
 
     // It is not needed to use concurrent map because responses are coming consecutive
-    private final Map<String, MultiDecoder<Object>> messageDecoders = new HashMap<String, MultiDecoder<Object>>();
-    private final Map<String, CommandData<Object, Object>> channels = PlatformDependent.newConcurrentHashMap();
+    private final Map<String, MultiDecoder<Object>> pubSubMessageDecoders = new HashMap<String, MultiDecoder<Object>>();
+    private final Map<String, CommandData<Object, Object>> pubSubChannels = PlatformDependent.newConcurrentHashMap();
 
-    public void addChannel(String channel, CommandData<Object, Object> data) {
-        channels.put(channel, data);
+    public void addPubSubCommand(String channel, CommandData<Object, Object> data) {
+        pubSubChannels.put(channel, data);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         QueueCommand data = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
 
-        Decoder<Object> currentDecoder = null;
-        if (data == null) {
-            currentDecoder = StringCodec.INSTANCE.getValueDecoder();
-        }
-
         if (log.isTraceEnabled()) {
             log.trace("channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
         }
-
         if (state() == null) {
-            state(new State());
+            boolean makeCheckpoint = data != null;
+            if (data != null) {
+                if (data instanceof CommandsData) {
+                    makeCheckpoint = false;
+                } else {
+                    CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
+                    if (cmd.getCommand().getReplayMultiDecoder() != null && NestedMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())) {
+                        makeCheckpoint = false;
+                    }
+                }
+            }
+            state(new State(makeCheckpoint));
         }
+
         state().setDecoderState(null);
 
         if (data == null) {
-            decode(in, null, null, ctx.channel(), currentDecoder);
+            decode(in, null, null, ctx.channel());
         } else if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
-//                if (state().getSize() > 0) {
-//                    List<Object> respParts = new ArrayList<Object>();
-//                    respParts.addAll(state().getRespParts());
-//                    decodeMulti(in, cmd, null, ctx.channel(), currentDecoder, state().getSize(), respParts);
-//                } else {
-                    decode(in, cmd, null, ctx.channel(), currentDecoder);
-//                }
+                if (state().getLevels().size() > 0) {
+                    decodeFromCheckpoint(ctx, in, data, cmd);
+                } else {
+                    decode(in, cmd, null, ctx.channel());
+                }
             } catch (IOException e) {
-                cmd.getPromise().tryFailure(e);
+                cmd.tryFailure(e);
             }
         } else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData)data;
 
-            handleCommandsDataResponse(ctx, in, data, currentDecoder, commands);
+            decodeCommandBatch(ctx, in, data, commands);
             return;
         }
-
+        
         ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());
 
         state(null);
     }
 
-    private void handleCommandsDataResponse(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data,
-            Decoder<Object> currentDecoder, CommandsData commands) {
-        int i = state().getIndex();
+    private void decodeFromCheckpoint(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data,
+            CommandData<Object, Object> cmd) throws IOException {
+        if (state().getLevels().size() == 2) {
+            StateLevel secondLevel = state().getLevels().get(1);
+            
+            if (secondLevel.getParts().isEmpty()) {
+                state().getLevels().remove(1);
+            }
+        }
+        
+        if (state().getLevels().size() == 2) {
+            StateLevel firstLevel = state().getLevels().get(0);
+            StateLevel secondLevel = state().getLevels().get(1);
+            
+            decodeMulti(in, cmd, firstLevel.getParts(), ctx.channel(), secondLevel.getSize(), secondLevel.getParts());
+            
+            Channel channel = ctx.channel();
+            MultiDecoder<Object> decoder = messageDecoder(cmd, firstLevel.getParts(), channel);
+            if (decoder != null) {
+                Object result = decoder.decode(firstLevel.getParts(), state());
+                if (data != null) {
+                    handleResult(cmd, null, result, true, channel);
+                }
+            }
+        }
+        if (state().getLevels().size() == 1) {
+            StateLevel firstLevel = state().getLevels().get(0);
+            if (firstLevel.getParts().isEmpty()) {
+                state().resetLevel();
+                decode(in, cmd, null, ctx.channel());
+            } else {
+                decodeMulti(in, cmd, null, ctx.channel(), firstLevel.getSize(), firstLevel.getParts());
+            }
+        }
+    }
+
+    private void decodeCommandBatch(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data,
+                    CommandsData commandBatch) {
+        int i = state().getBatchIndex();
 
         RedisException error = null;
         while (in.writerIndex() > in.readerIndex()) {
             CommandData<Object, Object> cmd = null;
             try {
                 checkpoint();
-                state().setIndex(i);
-                cmd = (CommandData<Object, Object>) commands.getCommands().get(i);
-                decode(in, cmd, null, ctx.channel(), currentDecoder);
+                state().setBatchIndex(i);
+                cmd = (CommandData<Object, Object>) commandBatch.getCommands().get(i);
+                decode(in, cmd, null, ctx.channel());
                 i++;
             } catch (IOException e) {
-                cmd.getPromise().tryFailure(e);
+                cmd.tryFailure(e);
             }
-            if (!cmd.getPromise().isSuccess()) {
-                error = (RedisException) cmd.getPromise().cause();
+            if (!cmd.isSuccess()) {
+                error = (RedisException) cmd.cause();
             }
         }
 
-        if (i == commands.getCommands().size()) {
-            Promise<Void> promise = commands.getPromise();
+        if (i == commandBatch.getCommands().size()) {
+            Promise<Void> promise = commandBatch.getPromise();
             if (error != null) {
                 if (!promise.tryFailure(error) && promise.cause() instanceof RedisTimeoutException) {
                     log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
                 }
             } else {
                 if (!promise.trySuccess(null) && promise.cause() instanceof RedisTimeoutException) {
-                    // TODO try increase timeout
                     log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
                 }
             }
-
+            
             ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());
 
             state(null);
         } else {
             checkpoint();
-            state().setIndex(i);
+            state().setBatchIndex(i);
         }
     }
 
-    private void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel, Decoder<Object> currentDecoder) throws IOException {
+    private void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel) throws IOException {
         int code = in.readByte();
         if (code == '+') {
             String result = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
             in.skipBytes(2);
-
+            
             handleResult(data, parts, result, false, channel);
         } else if (code == '-') {
             String error = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
@@ -178,57 +218,69 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
-                data.getPromise().tryFailure(new RedisMovedException(slot, addr));
+                data.tryFailure(new RedisMovedException(slot, addr));
             } else if (error.startsWith("ASK")) {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
-                data.getPromise().tryFailure(new RedisAskException(slot, addr));
+                data.tryFailure(new RedisAskException(slot, addr));
             } else if (error.startsWith("LOADING")) {
-                data.getPromise().tryFailure(new RedisLoadingException(error
+                data.tryFailure(new RedisLoadingException(error
                         + ". channel: " + channel + " data: " + data));
             } else if (error.startsWith("OOM")) {
-                data.getPromise().tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
+                data.tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
                         + ". channel: " + channel + " data: " + data));
             } else if (error.contains("-OOM ")) {
-                data.getPromise().tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
+                data.tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
                         + ". channel: " + channel + " data: " + data));
             } else {
                 if (data != null) {
-                    data.getPromise().tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
+                    data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
                 } else {
                     log.error("Error: {} channel: {} data: {}", error, channel, data);
                 }
             }
         } else if (code == ':') {
-            String status = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
-            in.skipBytes(2);
-            Object result = Long.valueOf(status);
+            Long result = readLong(in);
             handleResult(data, parts, result, false, channel);
         } else if (code == '$') {
             ByteBuf buf = readBytes(in);
             Object result = null;
             if (buf != null) {
-                result = decoder(data, parts, currentDecoder).decode(buf, state());
+                Decoder<Object> decoder = selectDecoder(data, parts);
+                result = decoder.decode(buf, state());
             }
             handleResult(data, parts, result, false, channel);
         } else if (code == '*') {
+            int level = state().incLevel();
+            
             long size = readLong(in);
-//            state().setSizeOnce(size);
-
-            List<Object> respParts = new ArrayList<Object>();
-
-            decodeMulti(in, data, parts, channel, currentDecoder, size, respParts);
+            List<Object> respParts;
+            if (state().getLevels().size()-1 >= level) {
+                StateLevel stateLevel = state().getLevels().get(level);
+                respParts = stateLevel.getParts();
+                size = stateLevel.getSize();
+            } else {
+                respParts = new ArrayList<Object>();
+                if (state().isMakeCheckpoint()) {
+                    state().addLevel(new StateLevel(size, respParts));
+                }
+            }
+            
+            decodeMulti(in, data, parts, channel, size, respParts);
         } else {
             throw new IllegalStateException("Can't decode replay " + (char)code);
         }
     }
 
     private void decodeMulti(ByteBuf in, CommandData<Object, Object> data, List<Object> parts,
-            Channel channel, Decoder<Object> currentDecoder, long size, List<Object> respParts)
+            Channel channel, long size, List<Object> respParts)
                     throws IOException {
         for (int i = respParts.size(); i < size; i++) {
-            decode(in, data, respParts, channel, currentDecoder);
+            decode(in, data, respParts, channel);
+            if (state().isMakeCheckpoint()) {
+                checkpoint();
+            }
         }
 
         MultiDecoder<Object> decoder = messageDecoder(data, respParts, channel);
@@ -237,7 +289,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
 
         Object result = decoder.decode(respParts, state());
-
+        if (data != null) {
+            handleResult(data, parts, result, true, channel);
+            return;
+        }
 
         if (result instanceof Message) {
             // store current message index
@@ -246,42 +301,33 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             handleMultiResult(data, null, channel, result);
             // has next messages?
             if (in.writerIndex() > in.readerIndex()) {
-                decode(in, data, null, channel, currentDecoder);
+                decode(in, data, null, channel);
             }
-        } else {
-            handleMultiResult(data, parts, channel, result);
-//            if (parts != null && !decoder.isApplicable(parts.size(), state())) {
-//                state().setRespParts(parts);
-//            }
         }
     }
 
     private void handleMultiResult(CommandData<Object, Object> data, List<Object> parts,
             Channel channel, Object result) {
-        if (data != null) {
-            handleResult(data, parts, result, true, channel);
-        } else {
-            if (result instanceof PubSubStatusMessage) {
-                String channelName = ((PubSubStatusMessage) result).getChannel();
-                CommandData<Object, Object> d = channels.get(channelName);
-                if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(d.getCommand().getName())) {
-                    channels.remove(channelName);
-                    messageDecoders.put(channelName, d.getMessageDecoder());
-                }
-                if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(d.getCommand().getName())) {
-                    channels.remove(channelName);
-                    messageDecoders.remove(channelName);
-                }
+        if (result instanceof PubSubStatusMessage) {
+            String channelName = ((PubSubStatusMessage) result).getChannel();
+            CommandData<Object, Object> d = pubSubChannels.get(channelName);
+            if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(d.getCommand().getName())) {
+                pubSubChannels.remove(channelName);
+                pubSubMessageDecoders.put(channelName, d.getMessageDecoder());
             }
+            if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(d.getCommand().getName())) {
+                pubSubChannels.remove(channelName);
+                pubSubMessageDecoders.remove(channelName);
+            }
+        }
 
-            RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
-            if (result instanceof PubSubStatusMessage) {
-                pubSubConnection.onMessage((PubSubStatusMessage) result);
-            } else if (result instanceof PubSubMessage) {
-                pubSubConnection.onMessage((PubSubMessage) result);
-            } else {
-                pubSubConnection.onMessage((PubSubPatternMessage) result);
-            }
+        RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
+        if (result instanceof PubSubStatusMessage) {
+            pubSubConnection.onMessage((PubSubStatusMessage) result);
+        } else if (result instanceof PubSubMessage) {
+            pubSubConnection.onMessage((PubSubMessage) result);
+        } else {
+            pubSubConnection.onMessage((PubSubPatternMessage) result);
         }
     }
 
@@ -296,7 +342,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            if (!data.getPromise().trySuccess(result) && data.getPromise().cause() instanceof RedisTimeoutException) {
+            if (!data.getPromise().trySuccess(result) && data.cause() instanceof RedisTimeoutException) {
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, data, result);
             }
         }
@@ -306,34 +352,34 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (data == null) {
             if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(parts.get(0))) {
                 String channelName = (String) parts.get(1);
-                CommandData<Object, Object> commandData = channels.get(channelName);
+                CommandData<Object, Object> commandData = pubSubChannels.get(channelName);
                 if (commandData == null) {
                     return null;
                 }
                 return commandData.getCommand().getReplayMultiDecoder();
             } else if (parts.get(0).equals("message")) {
                 String channelName = (String) parts.get(1);
-                return messageDecoders.get(channelName);
+                return pubSubMessageDecoders.get(channelName);
             } else if (parts.get(0).equals("pmessage")) {
                 String patternName = (String) parts.get(1);
-                return messageDecoders.get(patternName);
+                return pubSubMessageDecoders.get(patternName);
             }
         }
 
         return data.getCommand().getReplayMultiDecoder();
     }
 
-    private Decoder<Object> decoder(CommandData<Object, Object> data, List<Object> parts, Decoder<Object> currentDecoder) {
+    private Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts) {
         if (data == null) {
             if (parts.size() == 2 && parts.get(0).equals("message")) {
                 String channelName = (String) parts.get(1);
-                return messageDecoders.get(channelName);
+                return pubSubMessageDecoders.get(channelName);
             }
             if (parts.size() == 3 && parts.get(0).equals("pmessage")) {
                 String patternName = (String) parts.get(1);
-                return messageDecoders.get(patternName);
+                return pubSubMessageDecoders.get(patternName);
             }
-            return currentDecoder;
+            return StringCodec.INSTANCE.getValueDecoder();
         }
 
         Decoder<Object> decoder = data.getCommand().getReplayDecoder();

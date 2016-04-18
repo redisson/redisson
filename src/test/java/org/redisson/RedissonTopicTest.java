@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.BaseStatusListener;
 import org.redisson.core.MessageListener;
+import org.redisson.core.RSet;
 import org.redisson.core.RTopic;
 
 public class RedissonTopicTest {
@@ -46,6 +47,29 @@ public class RedissonTopicTest {
 
     }
 
+    @Test
+    public void testSyncCommands() throws InterruptedException {
+        RedissonClient redisson = BaseTest.createInstance();
+        RTopic<String> topic = redisson.getTopic("system_bus");
+        RSet<String> redissonSet = redisson.getSet("set1");
+        CountDownLatch latch = new CountDownLatch(1);
+        topic.addListener(new MessageListener<String>() {
+            
+            @Override
+            public void onMessage(String channel, String msg) {
+                for (int j = 0; j < 1000; j++) {
+                    redissonSet.contains("" + j);
+                }
+                latch.countDown();
+            }
+        });
+        
+        topic.publish("sometext");
+        
+        latch.await();
+        redisson.shutdown();
+    }
+    
     @Test
     public void testInnerPublish() throws InterruptedException {
 
@@ -105,7 +129,8 @@ public class RedissonTopicTest {
         });
         topic1.removeListener(listenerId);
         topic1.removeListener(listenerId2);
-        l.await();
+        
+        Assert.assertTrue(l.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -166,7 +191,7 @@ public class RedissonTopicTest {
         });
         topic2.publish(new Message("123"));
 
-        messageRecieved.await();
+        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
 
         redisson1.shutdown();
         redisson2.shutdown();
@@ -231,7 +256,7 @@ public class RedissonTopicTest {
             }
         });
 
-        for (int i = 0; i < 500; i++) {
+        for (int i = 0; i < 5000; i++) {
             topic2.publish(new Message("123"));
         }
 
@@ -239,7 +264,7 @@ public class RedissonTopicTest {
 
         Thread.sleep(1000);
 
-        Assert.assertEquals(500, counter);
+        Assert.assertEquals(5000, counter);
 
         redisson1.shutdown();
         redisson2.shutdown();

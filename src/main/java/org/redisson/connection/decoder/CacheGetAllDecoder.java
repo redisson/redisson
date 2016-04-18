@@ -21,11 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 public class CacheGetAllDecoder implements MultiDecoder<List<Object>> {
 
@@ -37,7 +37,7 @@ public class CacheGetAllDecoder implements MultiDecoder<List<Object>> {
 
     @Override
     public Object decode(ByteBuf buf, State state) throws IOException {
-        return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
+        return LongCodec.INSTANCE.getValueDecoder().decode(buf, state);
     }
 
     @Override
