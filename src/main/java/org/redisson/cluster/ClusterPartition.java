@@ -93,4 +93,11 @@ public class ClusterPartition {
         failedSlaves.remove(uri);
     }
 
+    @Override
+    public String toString() {
+        return "ClusterPartition [nodeId=" + nodeId + ", masterFail=" + masterFail + ", masterAddress=" + masterAddress
+                + ", slaveAddresses=" + slaveAddresses + ", failedSlaves=" + failedSlaves + ", slotRanges=" + slotRanges
+                + "]";
+    }
+    
 }
