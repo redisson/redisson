@@ -485,10 +485,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         List<ClusterPartition> currentPartitions = new ArrayList<ClusterPartition>(lastPartitions.values());
         for (ClusterPartition currentPartition : currentPartitions) {
             for (ClusterPartition newPartition : newPartitions) {
-                if (!currentPartition.getNodeId().equals(newPartition.getNodeId())) {
+                if (!currentPartition.getNodeId().equals(newPartition.getNodeId()) 
+                        // skip master change case
+                        || !currentPartition.getMasterAddr().equals(newPartition.getMasterAddr())) {
                     continue;
                 }
-
+                
                 Set<ClusterSlotRange> addedSlots = new HashSet<ClusterSlotRange>(newPartition.getSlotRanges());
                 addedSlots.removeAll(currentPartition.getSlotRanges());
                 MasterSlaveEntry entry = getEntry(currentPartition.getSlotRanges().iterator().next());
