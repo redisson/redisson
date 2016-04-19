@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
@@ -398,6 +399,18 @@ public class RedissonMapTest extends BaseTest {
         map.put(new SimpleKey("5"), new SimpleValue("6"));
 
         assertThat(map.readAllKeySet().size()).isEqualTo(3);
+        Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
+        assertThat(map.readAllKeySet()).containsOnlyElementsOf(testMap.keySet());
+    }
+    
+    @Test
+    public void testReadAllKeySetHighAmount() {
+        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        for (int i = 0; i < 1000; i++) {
+            map.put(new SimpleKey("" + i), new SimpleValue("" + i));
+        }
+
+        assertThat(map.readAllKeySet().size()).isEqualTo(1000);
         Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
         assertThat(map.readAllKeySet()).containsOnlyElementsOf(testMap.keySet());
     }
