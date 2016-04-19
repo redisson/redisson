@@ -228,6 +228,28 @@ public class RedissonMapCacheTest extends BaseTest {
     }
     
     @Test
+    public void testIteratorRandomRemoveFirst() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simpleMap");
+        for (int i = 0; i < 1000; i++) {
+            map.put(i, i*10);
+        }
+        
+        int cnt = 0;
+        int removed = 0;
+        Iterator<Entry<Integer, Integer>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Entry<Integer, Integer> entry = iterator.next();
+            if (cnt < 20) {
+                iterator.remove();
+                removed++;
+            }
+            cnt++;
+        }
+        Assert.assertEquals(1000, cnt);
+        assertThat(map.size()).isEqualTo(cnt - removed);
+    }
+    
+    @Test
     public void testIteratorRandomRemoveHighVolume() throws InterruptedException {
         RMapCache<Integer, Integer> map = redisson.getMapCache("simpleMap");
         for (int i = 0; i < 10000; i++) {
