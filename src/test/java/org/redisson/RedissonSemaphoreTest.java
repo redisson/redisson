@@ -6,6 +6,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import org.redisson.core.RSemaphore;
@@ -231,16 +232,23 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         RSemaphore s = redisson.getSemaphore("test");
         s.setPermits(10);
 
-        final CyclicBarrier barrier = new CyclicBarrier(10);
+        final AtomicInteger checkPermits = new AtomicInteger(s.availablePermits());
+        final CyclicBarrier barrier = new CyclicBarrier(s.availablePermits());
         testMultiInstanceConcurrency(iterations, r -> {
             RSemaphore s1 = r.getSemaphore("test");
             try {
                 s1.acquire();
                 barrier.await();
-                assertThat(s1.availablePermits()).isEqualTo(0);
-                assertThat(s1.tryAcquire()).isFalse();
-                Thread.sleep(50);
-            } catch (InterruptedException | BrokenBarrierException e) {
+                if (checkPermits.decrementAndGet() > 0) {
+                    assertThat(s1.availablePermits()).isEqualTo(0);
+                    assertThat(s1.tryAcquire()).isFalse();
+                } else {
+                    Thread.sleep(50);
+                }
+            }catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }catch (BrokenBarrierException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
@@ -249,6 +257,8 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
             s1.release();
         });
 
+        System.out.println(lockedCounter.get());
+        
         assertThat(lockedCounter.get()).isLessThan(iterations);
     }
 
