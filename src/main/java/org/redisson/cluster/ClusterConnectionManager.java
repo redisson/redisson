@@ -315,7 +315,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
-    private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, Iterator<URI> iterator) {
+    private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, final Iterator<URI> iterator) {
         Future<String> future = connection.asyncWithTimeout(null, RedisCommands.CLUSTER_NODES);
         future.addListener(new FutureListener<String>() {
             @Override
