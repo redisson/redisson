@@ -1,6 +1,4 @@
-Redisson.
-====
-Redis based In-Memory Data Grid for Java.
+Redisson: Redis based In-Memory Data Grid for Java.
 ====
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
