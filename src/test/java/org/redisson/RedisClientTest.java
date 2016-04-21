@@ -68,13 +68,10 @@ public class RedisClientTest {
         RedisClient c = new RedisClient("localhost", 6379);
         Future<RedisConnection> f = c.connectAsync();
         final CountDownLatch l = new CountDownLatch(1);
-        f.addListener(new FutureListener<RedisConnection>() {
-            @Override
-            public void operationComplete(Future<RedisConnection> future) throws Exception {
-                RedisConnection conn = future.get();
-                assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
-                l.countDown();
-            }
+        f.addListener((FutureListener<RedisConnection>) future -> {
+            RedisConnection conn = future.get();
+            assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
+            l.countDown();
         });
         l.await(10, TimeUnit.SECONDS);
     }
@@ -115,11 +112,8 @@ public class RedisClientTest {
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
         ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         for (int i = 0; i < 100000; i++) {
-            pool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    conn.async(StringCodec.INSTANCE, RedisCommands.INCR, "test");
-                }
+            pool.execute(() -> {
+                conn.async(StringCodec.INSTANCE, RedisCommands.INCR, "test");
             });
         }
 

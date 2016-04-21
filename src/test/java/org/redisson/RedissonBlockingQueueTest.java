@@ -156,18 +156,15 @@ public class RedissonBlockingQueueTest extends BaseTest {
     @Test
     public void testPollFromAny() throws InterruptedException {
         final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
-                RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
-                try {
-                    queue3.put(2);
-                    queue1.put(1);
-                    queue2.put(3);
-                } catch (InterruptedException e) {
-                    Assert.fail();
-                }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
+            RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+            try {
+                queue3.put(2);
+                queue1.put(1);
+                queue2.put(3);
+            } catch (InterruptedException e) {
+                Assert.fail();
             }
         }, 3, TimeUnit.SECONDS);
 
@@ -181,16 +178,13 @@ public class RedissonBlockingQueueTest extends BaseTest {
     @Test
     public void testTake() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:take");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue:take");
-                try {
-                    queue.put(3);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue:take");
+            try {
+                queue.put(3);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         }, 10, TimeUnit.SECONDS);
 
@@ -222,15 +216,12 @@ public class RedissonBlockingQueueTest extends BaseTest {
     @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
         final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("{queue}1");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    queue1.put(3);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            try {
+                queue1.put(3);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         }, 10, TimeUnit.SECONDS);
 
@@ -342,11 +333,8 @@ public class RedissonBlockingQueueTest extends BaseTest {
         int total = 100;
         for (int i = 0; i < total; i++) {
             // runnable won't be executed in any particular order, and hence, int value as well.
-            executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
-                }
+            executor.submit(() -> {
+                redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
             });
         }
         int count = 0;

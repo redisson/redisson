@@ -23,25 +23,21 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 
         int length = 5000;
         final List<Integer> elements = new ArrayList<Integer>();
-        for (int i = 1; i < length+1; i++) {
+        for (int i = 1; i < length + 1; i++) {
             elements.add(i);
         }
         Collections.shuffle(elements);
         final AtomicInteger counter = new AtomicInteger(-1);
-        testSingleInstanceConcurrency(length, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RSortedSet<Integer> set = redisson.getSortedSet(name);
-                int c = counter.incrementAndGet();
-                Integer element = elements.get(c);
-                Assert.assertTrue(set.add(element));
-            }
+        testSingleInstanceConcurrency(length, rc -> {
+            RSortedSet<Integer> set = rc.getSortedSet(name);
+            int c = counter.incrementAndGet();
+            Integer element = elements.get(c);
+            Assert.assertTrue(set.add(element));
         });
 
 //        for (Integer integer : map) {
 //            System.out.println("int: " + integer);
 //        }
-
         Collections.sort(elements);
         Integer[] p = elements.toArray(new Integer[elements.size()]);
         MatcherAssert.assertThat(map, Matchers.contains(p));
@@ -60,13 +56,10 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 
         int length = 1000;
         final AtomicInteger counter = new AtomicInteger();
-        testSingleInstanceConcurrency(length, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RSortedSet<Integer> set = redisson.getSortedSet(name);
-                int c = counter.decrementAndGet();
-                Assert.assertTrue(set.add(c));
-            }
+        testSingleInstanceConcurrency(length, rc -> {
+            RSortedSet<Integer> set = rc.getSortedSet(name);
+            int c = counter.decrementAndGet();
+            Assert.assertTrue(set.add(c));
         });
 
         List<Integer> elements = new ArrayList<Integer>();

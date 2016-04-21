@@ -103,10 +103,4 @@ public abstract class BaseReactiveTest {
         return Redisson.createReactive(config);
     }
 
-//    @After
-//    public void after() throws InterruptedException, IOException {
-//        afterClass();
-//        beforeClass();
-//    }
-
 }

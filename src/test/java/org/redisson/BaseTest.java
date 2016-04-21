@@ -71,9 +71,4 @@ public abstract class BaseTest {
         return Redisson.create(config);
     }
 
-//    @After
-//    public void after() throws InterruptedException, IOException {
-//        afterClass();
-//        beforeClass();
-//    }
 }
