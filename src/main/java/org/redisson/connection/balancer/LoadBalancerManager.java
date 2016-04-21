@@ -36,6 +36,8 @@ public interface LoadBalancerManager {
 
     boolean unfreeze(String host, int port, FreezeReason freezeReason);
 
+    ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason);
+    
     ClientConnectionsEntry freeze(String host, int port, FreezeReason freezeReason);
 
     Future<Void> add(ClientConnectionsEntry entry);

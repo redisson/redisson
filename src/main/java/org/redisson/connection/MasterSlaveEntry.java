@@ -96,12 +96,25 @@ public class MasterSlaveEntry {
         return writeConnectionHolder.add(masterEntry);
     }
 
+    private boolean slaveDown(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+        ClientConnectionsEntry e = slaveBalancer.freeze(entry, freezeReason);
+        if (e == null) {
+            return false;
+        }
+        
+        return slaveDown(e);
+    }
+    
     public boolean slaveDown(String host, int port, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = slaveBalancer.freeze(host, port, freezeReason);
         if (entry == null) {
             return false;
         }
         
+        return slaveDown(entry);
+    }
+
+    private boolean slaveDown(ClientConnectionsEntry entry) {
         // add master as slave if no more slaves available
         if (config.getReadMode() == ReadMode.SLAVE && slaveBalancer.getAvailableClients() == 0) {
             InetSocketAddress addr = masterEntry.getClient().getAddr();
@@ -305,7 +318,7 @@ public class MasterSlaveEntry {
         ClientConnectionsEntry oldMaster = masterEntry;
         setupMasterEntry(host, port);
         writeConnectionHolder.remove(oldMaster);
-        oldMaster.freezeMaster(FreezeReason.MANAGER);
+        slaveDown(oldMaster, FreezeReason.MANAGER);
 
         // more than one slave available, so master can be removed from slaves
         if (config.getReadMode() == ReadMode.SLAVE

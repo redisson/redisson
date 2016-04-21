@@ -222,7 +222,7 @@ public class RedisConnection implements RedisCommands {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " [redisClient=" + redisClient + ", channel=" + channel + "]";
+        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + "]";
     }
 
     public Future<?> getAcquireFuture() {

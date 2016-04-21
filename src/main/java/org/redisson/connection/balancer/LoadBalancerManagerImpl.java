@@ -94,25 +94,28 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         }
         return false;
     }
-
+    
     public ClientConnectionsEntry freeze(String host, int port, FreezeReason freezeReason) {
         InetSocketAddress addr = new InetSocketAddress(host, port);
         ClientConnectionsEntry connectionEntry = addr2Entry.get(addr);
+        return freeze(connectionEntry, freezeReason);
+    }
+
+    public ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason) {
         if (connectionEntry == null) {
             return null;
         }
 
         synchronized (connectionEntry) {
-            if (connectionEntry.isFreezed()) {
-                return null;
-            }
-            
-            connectionEntry.setFreezed(true);
-
             // only RECONNECT freeze reason could be replaced
             if (connectionEntry.getFreezeReason() == null
                     || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
+                connectionEntry.setFreezed(true);
                 connectionEntry.setFreezeReason(freezeReason);
+                return connectionEntry;
+            }
+            if (connectionEntry.isFreezed()) {
+                return null;
             }
         }
 
