@@ -161,7 +161,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.6, "f");
         set.add(0.7, "g");
 
-        Assert.assertEquals(3, (int)set.rank("d"));
+        assertThat(set.revRank("d")).isEqualTo(3);
+        assertThat(set.rank("abc")).isNull();
     }
     
     @Test
@@ -175,7 +176,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.6, "f");
         set.add(0.7, "g");
 
-        Assert.assertEquals(1, (int)set.revRank("f"));
+        assertThat(set.revRank("f")).isEqualTo(1);
+        assertThat(set.revRank("abc")).isNull();
     }
 
 
