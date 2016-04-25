@@ -99,7 +99,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     };
 
-    protected static final int MAX_SLOT = 16384;
+    public static final int MAX_SLOT = 16384;
 
     protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT);
 
@@ -121,7 +121,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected boolean isClusterMode;
 
-    protected final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
+    private final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
     private final Promise<Boolean> shutdownPromise;
     

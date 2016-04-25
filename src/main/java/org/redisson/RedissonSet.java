@@ -80,8 +80,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return getName();
     }
 
-    private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        Future<ListScanResult<V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
+    ListScanResult<V> scanIterator(String name, InetSocketAddress client, long startPos) {
+        Future<ListScanResult<V>> f = commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos);
         return get(f);
     }
 
@@ -91,7 +91,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
             @Override
             ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
-                return scanIterator(client, nextIterPos);
+                return scanIterator(getName(), client, nextIterPos);
             }
 
             @Override
@@ -185,10 +185,6 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
 
     @Override
     public boolean addAll(Collection<? extends V> c) {
-        if (c.isEmpty()) {
-            return false;
-        }
-
         return get(addAllAsync(c));
     }
 
@@ -229,7 +225,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
             return newSucceededFuture(false);
         }
         
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SREM_SINGLE, getName(), c.toArray());
+        List<Object> args = new ArrayList<Object>(c.size() + 1);
+        args.add(getName());
+        args.addAll(c);
+        
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SREM_SINGLE, c.toArray());
     }
 
     @Override
@@ -268,4 +268,21 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         delete();
     }
 
+    @Override
+    public String toString() {
+        Iterator<V> it = iterator();
+        if (! it.hasNext())
+            return "[]";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        for (;;) {
+            V e = it.next();
+            sb.append(e == this ? "(this Collection)" : e);
+            if (! it.hasNext())
+                return sb.append(']').toString();
+            sb.append(',').append(' ');
+        }
+    }
+    
 }
