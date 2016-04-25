@@ -180,7 +180,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                         + "local size = redis.call('sdiff', KEYS[2], KEYS[1]);"
                         + "redis.call('del', KEYS[2]); "
                         + "return #size == 0 and 1 or 0; ",
-                       Arrays.asList(getName(), "redisson_temp__{" + getName() + "}"), c.toArray());
+                       Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), c.toArray());
     }
 
     @Override
@@ -220,7 +220,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
                 + "local size = redis.call('sinterstore', KEYS[1], KEYS[1], KEYS[2]);"
                 + "redis.call('del', KEYS[2]); "
                 + "return size ~= prevSize and 1 or 0; ",
-            Arrays.asList(getName(), "redisson_temp__{" + getName() + "}"), c.toArray());
+            Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), c.toArray());
     }
 
     @Override
