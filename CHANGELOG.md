@@ -2,6 +2,23 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####22-Apr-2016 - version 2.2.12 released  
+
+Imporovement - Replaying phase handling in CommandDecoder  
+Fixed - cluster state update manager can't try next node if current node has failed to response   
+Fixed - cluster initialization  
+Fixed - items removing during `RMap` iteration  
+Fixed - `RGeo.addAsync` codec definition  
+Fixed - `RMapCache` iterator and readAll methods  
+Fixed - unnecessary slots migration in cluster mode  
+Fixed - Command batches redirect in cluster mode  
+Fixed - cluster mode compatibility for `RedissonMultimap.fastRemove` method  
+Fixed - `RedissonMultiLock` deadlock  
+Fixed - MultiDecoder empty result handling  
+Fixed - array start index in LUA scripts  
+Fixed - RMap iterator  
+Fixed - probably thread blocking issues  
+
 ####04-Apr-2016 - version 2.2.11 released  
 
 Since this version Redisson has __perfomance boost up to 43%__
