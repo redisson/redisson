@@ -75,6 +75,7 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
                     if (firstValues.isEmpty() && tryAgain()) {
                         client = null;
                         firstValues = null;
+                        nextIterPos = 0;
                         prevIterPos = -1;
                     }
                 } else {
@@ -82,6 +83,10 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
                         firstValues = lastValues;
                         lastValues = null;
                         if (firstValues.isEmpty() && tryAgain()) {
+                            client = null;
+                            firstValues = null;
+                            nextIterPos = 0;
+                            prevIterPos = -1;
                             continue;
                         }
                     } else if (lastValues.keySet().removeAll(firstValues.keySet())) {

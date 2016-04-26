@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -25,42 +26,87 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 abstract class RedissonBaseIterator<V> implements Iterator<V> {
 
     private List<V> firstValues;
-    private Iterator<V> iter;
-    private InetSocketAddress client;
-    private long nextIterPos;
-    private long startPos = -1;
+    private List<V> lastValues;
+    private Iterator<V> lastIter;
+    protected long nextIterPos;
+    protected InetSocketAddress client;
 
+    private boolean finished;
     private boolean currentElementRemoved;
     private boolean removeExecuted;
     private V value;
 
     @Override
     public boolean hasNext() {
-        if (iter == null || !iter.hasNext()) {
-            if (nextIterPos == -1) {
-                return false;
+        if (lastIter == null || !lastIter.hasNext()) {
+            if (finished) {
+
+                currentElementRemoved = false;
+                removeExecuted = false;
+                client = null;
+                firstValues = null;
+                lastValues = null;
+                nextIterPos = 0;
+
+                if (!tryAgain()) {
+                    return false;
+                }
+                finished = false;
             }
             long prevIterPos;
             do {
                 prevIterPos = nextIterPos;
                 ListScanResult<V> res = iterator(client, nextIterPos);
+                lastValues = new ArrayList<V>(res.getValues());
                 client = res.getRedisClient();
-                if (startPos == -1) {
-                    startPos = res.getPos();
-                }
+
                 if (nextIterPos == 0 && firstValues == null) {
-                    firstValues = res.getValues();
-                } else if (res.getValues().equals(firstValues) && res.getPos() == startPos) {
-                    return false;
+                    firstValues = lastValues;
+                    lastValues = null;
+                    if (firstValues.isEmpty() && tryAgain()) {
+                        client = null;
+                        firstValues = null;
+                        nextIterPos = 0;
+                        prevIterPos = -1;
+                    }
+                } else {
+                    if (firstValues.isEmpty()) {
+                        firstValues = lastValues;
+                        lastValues = null;
+                        if (firstValues.isEmpty() && tryAgain()) {
+                            client = null;
+                            firstValues = null;
+                            nextIterPos = 0;
+                            prevIterPos = -1;
+                            continue;
+                        }
+                    } else if (lastValues.removeAll(firstValues)) {
+                        currentElementRemoved = false;
+                        removeExecuted = false;
+                        client = null;
+                        firstValues = null;
+                        lastValues = null;
+                        nextIterPos = 0;
+                        prevIterPos = -1;
+                        if (tryAgain()) {
+                            continue;
+                        }
+                        finished = true;
+                        return false;
+                    }
                 }
-                iter = res.getValues().iterator();
+                lastIter = res.getValues().iterator();
                 nextIterPos = res.getPos();
-            } while (!iter.hasNext() && nextIterPos != prevIterPos);
+            } while (!lastIter.hasNext() && nextIterPos != prevIterPos);
             if (prevIterPos == nextIterPos && !removeExecuted) {
-                nextIterPos = -1;
+                finished = true;
             }
         }
-        return iter.hasNext();
+        return lastIter.hasNext();
+    }
+    
+    protected boolean tryAgain() {
+        return false;
     }
 
     abstract ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos);
@@ -71,7 +117,7 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
             throw new NoSuchElementException("No such element");
         }
 
-        value = iter.next();
+        value = lastIter.next();
         currentElementRemoved = false;
         return value;
     }
@@ -81,11 +127,12 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
         if (currentElementRemoved) {
             throw new IllegalStateException("Element been already deleted");
         }
-        if (iter == null) {
+        if (lastIter == null) {
             throw new IllegalStateException();
         }
 
-        iter.remove();
+        firstValues.remove(value);
+        lastIter.remove();
         remove(value);
         currentElementRemoved = true;
         removeExecuted = true;

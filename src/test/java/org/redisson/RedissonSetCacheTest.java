@@ -87,6 +87,16 @@ public class RedissonSetCacheTest extends BaseTest {
     }
 
     @Test
+    public void testAddOverrideExpiration() throws InterruptedException {
+        RSetCache<String> set = redisson.getSetCache("simple31");
+        assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
+        Thread.sleep(500);
+        assertThat(set.add("123", 3, TimeUnit.SECONDS)).isTrue();
+        Thread.sleep(2000);
+        assertThat(set.contains("123")).isTrue();
+    }
+    
+    @Test
     public void testAddExpireTwise() throws InterruptedException, ExecutionException {
         RSetCache<String> set = redisson.getSetCache("simple31");
         assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
@@ -319,6 +329,14 @@ public class RedissonSetCacheTest extends BaseTest {
         Assert.assertEquals(5, set.size());
     }
 
+    @Test
+    public void testReadAllExpired() throws InterruptedException {
+        RSetCache<Integer> set = redisson.getSetCache("set");
+        set.add(1, 1, TimeUnit.SECONDS);
+        Thread.sleep(1000);
+        assertThat(set.readAll()).isEmpty();
+    }
+    
     @Test
     public void testReadAll() {
         RSetCache<Integer> set = redisson.getSetCache("set");
