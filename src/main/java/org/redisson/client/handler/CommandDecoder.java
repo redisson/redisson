@@ -35,6 +35,7 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.pubsub.Message;
@@ -90,7 +91,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     makeCheckpoint = false;
                 } else {
                     CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
-                    if (cmd.getCommand().getReplayMultiDecoder() != null && NestedMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())) {
+                    if (cmd.getCommand().getReplayMultiDecoder() != null 
+                            && (NestedMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())
+                                    || ListMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass()))) {
                         makeCheckpoint = false;
                     }
                 }
@@ -139,7 +142,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             StateLevel firstLevel = state().getLevels().get(0);
             StateLevel secondLevel = state().getLevels().get(1);
             
-            decodeMulti(in, cmd, firstLevel.getParts(), ctx.channel(), secondLevel.getSize(), secondLevel.getParts());
+            decodeList(in, cmd, firstLevel.getParts(), ctx.channel(), secondLevel.getSize(), secondLevel.getParts());
             
             Channel channel = ctx.channel();
             MultiDecoder<Object> decoder = messageDecoder(cmd, firstLevel.getParts(), channel);
@@ -156,7 +159,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 state().resetLevel();
                 decode(in, cmd, null, ctx.channel());
             } else {
-                decodeMulti(in, cmd, null, ctx.channel(), firstLevel.getSize(), firstLevel.getParts());
+                decodeList(in, cmd, null, ctx.channel(), firstLevel.getSize(), firstLevel.getParts());
             }
         }
     }
@@ -267,13 +270,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
             
-            decodeMulti(in, data, parts, channel, size, respParts);
+            decodeList(in, data, parts, channel, size, respParts);
         } else {
             throw new IllegalStateException("Can't decode replay " + (char)code);
         }
     }
 
-    private void decodeMulti(ByteBuf in, CommandData<Object, Object> data, List<Object> parts,
+    private void decodeList(ByteBuf in, CommandData<Object, Object> data, List<Object> parts,
             Channel channel, long size, List<Object> respParts)
                     throws IOException {
         for (int i = respParts.size(); i < size; i++) {

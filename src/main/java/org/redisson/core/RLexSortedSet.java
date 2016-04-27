@@ -116,7 +116,7 @@ public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirab
     @Deprecated
     int lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    int rank(String o);
+    Integer rank(String o);
 
     Collection<String> range(int startIndex, int endIndex);
 

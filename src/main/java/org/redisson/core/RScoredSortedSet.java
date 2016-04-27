@@ -36,9 +36,21 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     int removeRangeByRank(int startIndex, int endIndex);
 
-    int rank(V o);
+    /**
+     * Returns rank of value, with the scores ordered from low to high.
+     * 
+     * @param o
+     * @return rank or <code>null</code> if value does not exist
+     */
+    Integer rank(V o);
     
-    int revRank(V o);
+    /**
+     * Returns rank of value, with the scores ordered from high to low.
+     * 
+     * @param o
+     * @return rank or <code>null</code> if value does not exist
+     */
+    Integer revRank(V o);
 
     Double getScore(V o);
 

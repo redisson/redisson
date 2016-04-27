@@ -15,24 +15,27 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.HashSet;
+import java.io.IOException;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
-public class ObjectSetReplayDecoder<T> implements MultiDecoder<Set<T>> {
+public class MapCacheScanResultReplayDecoder implements MultiDecoder<MapCacheScanResult<Object, Object>> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
+    public Object decode(ByteBuf buf, State state) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Set<T> decode(List<Object> parts, State state) {
-        return new HashSet(parts);
+    public MapCacheScanResult<Object, Object> decode(List<Object> parts, State state) {
+        Long pos = (Long)parts.get(0);
+        Map<Object, Object> values = (Map<Object, Object>)parts.get(1);
+        List<Object> idleKeys = (List<Object>) parts.get(2);
+        return new MapCacheScanResult<Object, Object>(pos, values, idleKeys);
     }
 
     @Override

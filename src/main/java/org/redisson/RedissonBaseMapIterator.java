@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
-import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -32,9 +31,9 @@ import io.netty.buffer.ByteBuf;
 abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
     private Map<ByteBuf, ByteBuf> firstValues;
-    private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> iter;
+    private Map<ByteBuf, ByteBuf> lastValues;
+    private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> lastIter;
     protected long nextIterPos;
-    protected long startPos = -1;
     protected InetSocketAddress client;
 
     private boolean finished;
@@ -44,49 +43,91 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
     @Override
     public boolean hasNext() {
-        if (finished) {
-            return false;
-        }
-        
-        if (iter == null || !iter.hasNext()) {
-            if (nextIterPos == -1) {
-                return false;
+        if (lastIter == null || !lastIter.hasNext()) {
+            if (finished) {
+                free(firstValues);
+                free(lastValues);
+
+                currentElementRemoved = false;
+                removeExecuted = false;
+                client = null;
+                firstValues = null;
+                lastValues = null;
+                nextIterPos = 0;
+
+                if (!tryAgain()) {
+                    return false;
+                }
+                finished = false;
             }
             long prevIterPos;
             do {
                 prevIterPos = nextIterPos;
                 MapScanResult<ScanObjectEntry, ScanObjectEntry> res = iterator();
-                client = res.getRedisClient();
-                if (startPos == -1) {
-                    startPos = res.getPos();
+                if (lastValues != null) {
+                    free(lastValues);
                 }
+                lastValues = convert(res.getMap());
+                client = res.getRedisClient();
                 if (nextIterPos == 0 && firstValues == null) {
-                    firstValues = convert(res.getMap());
-                } else {
-                    Map<ByteBuf, ByteBuf> newValues = convert(res.getMap());
-                    if (firstValues.entrySet().containsAll(newValues.entrySet())) {
-                        finished = true;
-                        free(firstValues);
-                        free(newValues);
+                    firstValues = lastValues;
+                    lastValues = null;
+                    if (firstValues.isEmpty() && tryAgain()) {
+                        client = null;
                         firstValues = null;
+                        nextIterPos = 0;
+                        prevIterPos = -1;
+                    }
+                } else {
+                    if (firstValues.isEmpty()) {
+                        firstValues = lastValues;
+                        lastValues = null;
+                        if (firstValues.isEmpty() && tryAgain()) {
+                            client = null;
+                            firstValues = null;
+                            nextIterPos = 0;
+                            prevIterPos = -1;
+                            continue;
+                        }
+                    } else if (lastValues.keySet().removeAll(firstValues.keySet())) {
+                        free(firstValues);
+                        free(lastValues);
+
+                        currentElementRemoved = false;
+                        removeExecuted = false;
+                        client = null;
+                        firstValues = null;
+                        lastValues = null;
+                        nextIterPos = 0;
+                        prevIterPos = -1;
+                        if (tryAgain()) {
+                            continue;
+                        }
+                        finished = true;
                         return false;
                     }
-                    free(newValues);
                 }
-                iter = res.getMap().entrySet().iterator();
+                lastIter = res.getMap().entrySet().iterator();
                 nextIterPos = res.getPos();
-            } while (!iter.hasNext() && nextIterPos != prevIterPos);
+            } while (!lastIter.hasNext() && nextIterPos != prevIterPos);
             if (prevIterPos == nextIterPos && !removeExecuted) {
-                nextIterPos = -1;
+                finished = true;
             }
         }
-        return iter.hasNext();
+        return lastIter.hasNext();
         
+    }
+
+    protected boolean tryAgain() {
+        return false;
     }
 
     protected abstract MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator();
 
     private void free(Map<ByteBuf, ByteBuf> map) {
+        if (map == null) {
+            return;
+        }
         for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
             entry.getKey().release();
             entry.getValue().release();
@@ -107,7 +148,7 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
             throw new NoSuchElementException("No such element at index");
         }
 
-        entry = iter.next();
+        entry = lastIter.next();
         currentElementRemoved = false;
         return getValue(entry);
     }
@@ -129,11 +170,12 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
         if (currentElementRemoved) {
             throw new IllegalStateException("Element been already deleted");
         }
-        if (iter == null) {
+        if (lastIter == null) {
             throw new IllegalStateException();
         }
 
-        iter.remove();
+        firstValues.remove(entry.getKey().getBuf());
+        lastIter.remove();
         removeKey();
         currentElementRemoved = true;
         removeExecuted = true;

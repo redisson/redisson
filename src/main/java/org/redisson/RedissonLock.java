@@ -30,6 +30,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.core.RLock;
 import org.redisson.pubsub.LockPubSub;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
@@ -49,6 +51,8 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class RedissonLock extends RedissonExpirable implements RLock {
 
+    private final Logger log = LoggerFactory.getLogger(RedissonLock.class);
+    
     public static final long LOCK_EXPIRATION_INTERVAL_SECONDS = 30;
     private static final ConcurrentMap<String, Timeout> expirationRenewalMap = PlatformDependent.newConcurrentHashMap();
     protected long internalLockLeaseTime = TimeUnit.SECONDS.toMillis(LOCK_EXPIRATION_INTERVAL_SECONDS);
@@ -155,7 +159,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
 
-    private Future<Long> tryLockInnerAsync(long threadId) {
+    private Future<Long> tryLockInnerAsync(final long threadId) {
         Future<Long> ttlRemaining = tryLockInnerAsync(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.SECONDS, threadId);
         ttlRemaining.addListener(new FutureListener<Long>() {
             @Override
@@ -175,26 +179,39 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     private void scheduleExpirationRenewal() {
-        if (expirationRenewalMap.containsKey(getName())) {
+        if (expirationRenewalMap.containsKey(getEntryName())) {
             return;
         }
 
         Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                expireAsync(internalLockLeaseTime, TimeUnit.MILLISECONDS);
-                expirationRenewalMap.remove(getName());
-                scheduleExpirationRenewal(); // reschedule itself
+                Future<Boolean> future = expireAsync(internalLockLeaseTime, TimeUnit.MILLISECONDS);
+                future.addListener(new FutureListener<Boolean>() {
+                    @Override
+                    public void operationComplete(Future<Boolean> future) throws Exception {
+                        expirationRenewalMap.remove(getEntryName());
+                        if (!future.isSuccess()) {
+                            log.error("Can't update lock " + getName() + " expiration", future.cause());
+                            return;
+                        }
+                        
+                        if (future.getNow()) {
+                            // reschedule itself
+                            scheduleExpirationRenewal();
+                        }
+                    }
+                });
             }
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
 
-        if (expirationRenewalMap.putIfAbsent(getName(), task) != null) {
+        if (expirationRenewalMap.putIfAbsent(getEntryName(), task) != null) {
             task.cancel();
         }
     }
 
     void cancelExpirationRenewal() {
-        Timeout task = expirationRenewalMap.remove(getName());
+        Timeout task = expirationRenewalMap.remove(getEntryName());
         if (task != null) {
             task.cancel();
         }

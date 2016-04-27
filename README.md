@@ -1,4 +1,4 @@
-Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
+Redis based In-Memory Data Grid for Java. Redisson.
 ====
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
@@ -82,12 +82,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.11</version>
+       <version>2.2.12</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.11'
+    compile 'org.redisson:redisson:2.2.12'
 
 ### Supported by
 

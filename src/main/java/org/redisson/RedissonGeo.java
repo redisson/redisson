@@ -62,7 +62,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
 
     @Override
     public Future<Long> addAsync(double longitude, double latitude, V member) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.GEOADD, getName(), convert(longitude), convert(latitude), member);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEOADD, getName(), convert(longitude), convert(latitude), member);
     }
 
     private String convert(double longitude) {
