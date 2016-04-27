@@ -35,6 +35,18 @@ public class RedissonSetCacheTest extends BaseTest {
     }
     
     @Test
+    public void testRemoveAll() {
+        RSetCache<Integer> set = redisson.getSetCache("set");
+        set.add(1);
+        set.add(2, 10, TimeUnit.SECONDS);
+        set.add(3);
+        
+        assertThat(set.removeAll(Arrays.asList(1, 3))).isTrue();
+        assertThat(set.removeAll(Arrays.asList(1, 3))).isFalse();
+        assertThat(set).containsOnly(2);
+    }
+    
+    @Test
     public void testDelete() {
         RSetCache<Integer> set = redisson.getSetCache("set");
         assertThat(set.delete()).isFalse();
@@ -67,7 +79,7 @@ public class RedissonSetCacheTest extends BaseTest {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
         RSetCache<SimpleBean> set = redisson.getSetCache("simple");
-        set.add(sb);
+        assertThat(set.add(sb)).isTrue();
         Assert.assertEquals(sb.getLng(), set.iterator().next().getLng());
     }
 
@@ -333,7 +345,7 @@ public class RedissonSetCacheTest extends BaseTest {
     public void testReadAllExpired() throws InterruptedException {
         RSetCache<Integer> set = redisson.getSetCache("set");
         set.add(1, 1, TimeUnit.SECONDS);
-        Thread.sleep(1000);
+        Thread.sleep(1005);
         assertThat(set.readAll()).isEmpty();
     }
     

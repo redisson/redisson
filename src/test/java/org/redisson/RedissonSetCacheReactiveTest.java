@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,18 +75,18 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
     @Test
     public void testExpireOverwrite() throws InterruptedException, ExecutionException {
         RSetCacheReactive<String> set = redisson.getSetCache("simple");
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(sync(set.add("123", 1, TimeUnit.SECONDS))).isTrue();
 
         Thread.sleep(800);
 
-        set.add("123", 1, TimeUnit.SECONDS);
+        assertThat(sync(set.add("123", 1, TimeUnit.SECONDS))).isFalse();
 
-        Thread.sleep(800);
-        Assert.assertTrue(sync(set.contains("123")));
+        Thread.sleep(50);
+        assertThat(sync(set.contains("123"))).isTrue();
 
-        Thread.sleep(200);
+        Thread.sleep(150);
 
-        Assert.assertFalse(sync(set.contains("123")));
+        assertThat(sync(set.contains("123"))).isFalse();
     }
 
     @Test
@@ -238,7 +240,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
         Thread.sleep(1000);
 
-        MatcherAssert.assertThat(sync(cache), Matchers.contains("0", "2", "3"));
+        assertThat(sync(cache)).contains("0", "2", "3");
     }
 
     @Test

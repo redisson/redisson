@@ -207,7 +207,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     public Publisher<Collection<V>> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE_LIST, getName(), startValue, endValue);
     }
 
     @Override
@@ -221,7 +221,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     public Publisher<Collection<V>> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
         String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue, "LIMIT", offset, count);
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE_LIST, getName(), startValue, endValue, "LIMIT", offset, count);
     }
 
     @Override

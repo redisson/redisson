@@ -141,6 +141,9 @@ public class EvictionScheduler {
         }
     }
 
+    public void schedule(String name) {
+        schedule(name, null);
+    }
 
     public void schedule(String name, String timeoutSetName, String maxIdleSetName) {
         RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, maxIdleSetName, false);
@@ -223,6 +226,10 @@ public class EvictionScheduler {
                   + "end; "
                   + "return #expiredKeys1 + #expiredKeys2;",
                   Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName), System.currentTimeMillis(), keysLimit);
+        }
+        
+        if (timeoutSetName == null) {
+            return executor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.ZREMRANGEBYSCORE, name, 0, System.currentTimeMillis());
         }
         
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
