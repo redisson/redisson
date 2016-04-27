@@ -196,8 +196,10 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                             return;
                         }
                         
-                        // reschedule itself
-                        scheduleExpirationRenewal();
+                        if (future.getNow()) {
+                            // reschedule itself
+                            scheduleExpirationRenewal();
+                        }
                     }
                 });
             }
