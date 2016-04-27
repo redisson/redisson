@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.core.ClusterNode;
@@ -619,8 +620,24 @@ public interface RedissonClient {
 
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server
+     * 
+     * This equates to invoke shutdown(2, 15, TimeUnit.SECONDS);
      */
     void shutdown();
+    
+    /**
+     * Shuts down Redisson instance <b>NOT</b> Redis server
+     * 
+     * Shutdown ensures that no tasks are submitted for <i>'the quiet period'</i>
+     * (usually a couple seconds) before it shuts itself down.  If a task is submitted during the quiet period,
+     * it is guaranteed to be accepted and the quiet period will start over.
+     * 
+     * @param quietPeriod the quiet period as described in the documentation
+     * @param timeout     the maximum amount of time to wait until the executor is {@linkplain #shutdown()}
+     *                    regardless if a task was submitted during the quiet period
+     * @param unit        the unit of {@code quietPeriod} and {@code timeout}
+     */
+    void shutdown(long quietPeriod, long timeout, TimeUnit unit);
 
     /**
      * Allows to get configuration provided
