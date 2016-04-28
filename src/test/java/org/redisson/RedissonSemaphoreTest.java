@@ -235,20 +235,22 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         s.setPermits(10);
 
         final AtomicInteger checkPermits = new AtomicInteger(s.availablePermits());
-        final CountDownLatch latch = new CountDownLatch(s.availablePermits());
+        final CyclicBarrier barrier = new CyclicBarrier(s.availablePermits());
         testMultiInstanceConcurrencySequentiallyLaunched(iterations, r -> {
             RSemaphore s1 = r.getSemaphore("test");
             try {
                 s1.acquire();
-                latch.countDown();
-                latch.await();
+                barrier.await();
                 if (checkPermits.decrementAndGet() > 0) {
                     assertThat(s1.availablePermits()).isEqualTo(0);
                     assertThat(s1.tryAcquire()).isFalse();
                 } else {
                     Thread.sleep(50);
                 }
-            } catch (InterruptedException e) {
+            }catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }catch (BrokenBarrierException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
