@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RSet;
+import org.redisson.core.RSetCache;
 
 import io.netty.util.concurrent.Future;
 
@@ -30,6 +31,18 @@ public class RedissonSetTest extends BaseTest {
             this.lng = lng;
         }
 
+    }
+
+    @Test
+    public void testRemoveAll() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(1);
+        set.add(2);
+        set.add(3);
+        
+        assertThat(set.removeAll(Arrays.asList(1, 3))).isTrue();
+        assertThat(set.removeAll(Arrays.asList(1, 3))).isFalse();
+        assertThat(set).containsOnly(2);
     }
 
     @Test
