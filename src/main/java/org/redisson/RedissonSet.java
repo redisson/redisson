@@ -229,7 +229,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         args.add(getName());
         args.addAll(c);
         
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SREM_SINGLE, c.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SREM_SINGLE, args.toArray());
     }
 
     @Override
