@@ -75,6 +75,7 @@ import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
 import io.netty.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Main infrastructure class allows to get access
@@ -523,6 +524,12 @@ public class Redisson implements RedissonClient {
     @Override
     public void shutdown() {
         connectionManager.shutdown();
+    }
+    
+    
+    @Override
+    public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
+        connectionManager.shutdown(quietPeriod, timeout, unit);
     }
 
     @Override
