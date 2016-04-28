@@ -3,10 +3,12 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.Assume;
 
 import org.junit.Test;
 import org.redisson.core.RSemaphore;
@@ -233,22 +235,20 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         s.setPermits(10);
 
         final AtomicInteger checkPermits = new AtomicInteger(s.availablePermits());
-        final CyclicBarrier barrier = new CyclicBarrier(s.availablePermits());
+        final CountDownLatch latch = new CountDownLatch(s.availablePermits());
         testMultiInstanceConcurrencySequentiallyLaunched(iterations, r -> {
             RSemaphore s1 = r.getSemaphore("test");
             try {
                 s1.acquire();
-                barrier.await();
+                latch.countDown();
+                latch.await();
                 if (checkPermits.decrementAndGet() > 0) {
                     assertThat(s1.availablePermits()).isEqualTo(0);
                     assertThat(s1.tryAcquire()).isFalse();
                 } else {
                     Thread.sleep(50);
                 }
-            }catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }catch (BrokenBarrierException e) {
+            } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
