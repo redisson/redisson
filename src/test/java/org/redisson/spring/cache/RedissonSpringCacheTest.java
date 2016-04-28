@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.redisson.RedisRunner;
+import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.Redisson;
 import org.redisson.RedissonClient;
 import org.springframework.cache.CacheManager;
@@ -87,11 +88,6 @@ public class RedissonSpringCacheTest {
     @EnableCaching
     public static class Application {
 
-        @Bean(destroyMethod = "stop")
-        RedisRunner.RedisProcess startRedis() throws IOException, InterruptedException {
-            return RedisRunner.startDefaultRedisServerInstance();
-        }
-
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
             return Redisson.create();
@@ -111,11 +107,6 @@ public class RedissonSpringCacheTest {
     @EnableCaching
     public static class JsonConfigApplication {
 
-        @Bean(destroyMethod = "stop")
-        RedisRunner.RedisProcess startRedis() throws IOException, InterruptedException {
-            return RedisRunner.startDefaultRedisServerInstance();
-        }
-
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
             return Redisson.create();
@@ -128,8 +119,13 @@ public class RedissonSpringCacheTest {
 
     }
 
+    private static RedisProcess p;
+
     @Parameterized.Parameters(name = "{index} - {0}")
-    public static Iterable<Object[]> data() {
+    public static Iterable<Object[]> data() throws IOException, InterruptedException {
+        if (p == null) {
+            p = RedisRunner.startDefaultRedisServerInstance();
+        }
         return Arrays.asList(new Object[][]{
             {new AnnotationConfigApplicationContext(Application.class)},
             {new AnnotationConfigApplicationContext(JsonConfigApplication.class)}
@@ -140,8 +136,9 @@ public class RedissonSpringCacheTest {
     public AnnotationConfigApplicationContext context;
 
     @AfterClass
-    public static void after() {
+    public static void after() throws InterruptedException, IOException {
         RedissonSpringCacheTest.data().forEach(e -> ((ConfigurableApplicationContext) e[0]).close());
+        RedisRunner.shutDownDefaultRedisServerInstance();
     }
 
     @Test
