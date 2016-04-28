@@ -234,7 +234,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
 
         final AtomicInteger checkPermits = new AtomicInteger(s.availablePermits());
         final CyclicBarrier barrier = new CyclicBarrier(s.availablePermits());
-        testMultiInstanceConcurrencySequentiallyLaunched(iterations, r -> {
+        testMultiInstanceConcurrency(iterations, r -> {
             RSemaphore s1 = r.getSemaphore("test");
             try {
                 s1.acquire();
