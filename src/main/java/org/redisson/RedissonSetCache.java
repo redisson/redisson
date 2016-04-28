@@ -41,8 +41,6 @@ import io.netty.util.concurrent.Future;
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
  * {@link #put(Object, Object, long, TimeUnit)} method.
- * And therefore has an complex lua-scripts inside.
- * Uses map(value_hash, value) to tie with sorted set which contains expiration record for every value with TTL.
  * </p>
  *
  * <p>Current Redis implementation doesn't have set entry eviction functionality.
