@@ -34,18 +34,6 @@ public class RedissonSetTest extends BaseTest {
     }
 
     @Test
-    public void testRemoveAll() {
-        RSet<Integer> set = redisson.getSet("set");
-        set.add(1);
-        set.add(2);
-        set.add(3);
-        
-        assertThat(set.removeAll(Arrays.asList(1, 3))).isTrue();
-        assertThat(set.removeAll(Arrays.asList(1, 3))).isFalse();
-        assertThat(set).containsOnly(2);
-    }
-
-    @Test
     public void testRemoveRandom() {
         RSet<Integer> set = redisson.getSet("simple");
         set.add(1);
