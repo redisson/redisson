@@ -264,6 +264,58 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
+    public int diff(String... names) {
+        return get(diffAsync(names));
+    }
+
+    @Override
+    public Future<Integer> diffAsync(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SDIFFSTORE_INT, args.toArray());
+    }
+
+    @Override
+    public Set<V> readDiff(String... names) {
+        return get(readDiffAsync(names));
+    }
+
+    @Override
+    public Future<Set<V>> readDiffAsync(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SDIFF, args.toArray());
+    }
+
+    @Override
+    public int intersection(String... names) {
+        return get(intersectionAsync(names));
+    }
+
+    @Override
+    public Future<Integer> intersectionAsync(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SINTERSTORE_INT, args.toArray());
+    }
+
+    @Override
+    public Set<V> readIntersection(String... names) {
+        return get(readIntersectionAsync(names));
+    }
+
+    @Override
+    public Future<Set<V>> readIntersectionAsync(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SINTER, args.toArray());
+    }
+    
+    @Override
     public void clear() {
         delete();
     }
