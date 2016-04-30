@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -29,8 +30,11 @@ import java.util.Map.Entry;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RScoredSortedSet;
@@ -278,27 +282,32 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                "local s = redis.call('zrange', KEYS[1], 0, -1);" +
-                        "for i = 1, #s, 1 do " +
+        if (c.isEmpty()) {
+            return newSucceededFuture(true);
+        }
+        
+        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
                             "for j = 1, #ARGV, 1 do "
-                            + "if ARGV[j] == s[i] "
-                            + "then table.remove(ARGV, j) end "
+                            + "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[j]) "
+                            + "if expireDateScore == false then "
+                                + "return 0;"
+                            + "end; "
                         + "end; "
-                       + "end;"
-                       + "return #ARGV == 0 and 1 or 0; ",
+                       + "return 1; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                      "local v = 0;"
-                    + "for i=1, #ARGV, 5000 do "
-                        + "v = v + redis.call('zrem', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
-                    + "end "
-                    + "return v > 0;",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        if (c.isEmpty()) {
+            return newSucceededFuture(false);
+        }
+        
+        List<Object> params = new ArrayList<Object>(c.size()+1);
+        params.add(getName());
+        params.addAll(c);
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREM, params.toArray());
     }
 
     @Override
@@ -310,30 +319,34 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public boolean retainAll(Collection<?> c) {
         return get(retainAllAsync(c));
     }
+    
+    private byte[] encode(V value) {
+        try {
+            return codec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
-                    "local changed = 0 " +
-                    "local s = redis.call('zrange', KEYS[1], 0, -1) "
-                       + "local i = 1 "
-                       + "while i <= #s do "
-                            + "local element = s[i] "
-                            + "local isInAgrs = false "
-                            + "for j = 1, #ARGV, 1 do "
-                                + "if ARGV[j] == element then "
-                                    + "isInAgrs = true "
-                                    + "break "
-                                + "end "
-                            + "end "
-                            + "if isInAgrs == false then "
-                                + "redis.call('zrem', KEYS[1], element) "
-                                + "changed = 1 "
-                            + "end "
-                            + "i = i + 1 "
-                       + "end "
-                       + "return changed ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        if (c.isEmpty()) {
+            return deleteAsync();
+        }
+        
+        List<Object> params = new ArrayList<Object>(c.size()*2);
+        for (Object object : c) {
+            params.add(0);
+            params.add(encode((V)object));
+        }
+        
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('zadd', KEYS[2], unpack(ARGV)); "
+                 + "local prevSize = redis.call('zcard', KEYS[1]); "
+                 + "local size = redis.call('zinterstore', KEYS[1], #ARGV/2, KEYS[1], KEYS[2], 'aggregate', 'sum');"
+                 + "redis.call('del', KEYS[2]); "
+                 + "return size ~= prevSize and 1 or 0; ",
+             Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), params.toArray());
     }
 
     @Override

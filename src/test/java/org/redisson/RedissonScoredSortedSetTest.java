@@ -288,6 +288,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
         Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
         Assert.assertEquals(2, set.size());
+        assertThat(set.getScore(1)).isEqualTo(10);
+        assertThat(set.getScore(2)).isEqualTo(20);
     }
 
     @Test
