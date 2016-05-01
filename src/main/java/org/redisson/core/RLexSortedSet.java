@@ -20,6 +20,24 @@ import java.util.Set;
 
 public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirable {
 
+    String pollFirst();
+
+    String pollLast();
+
+    String first();
+
+    String last();
+
+    /**
+     * Returns rank of value, with the scores ordered from high to low.
+     * 
+     * @param o
+     * @return rank or <code>null</code> if value does not exist
+     */
+    Integer revRank(String o);
+    
+    Collection<String> readAll();
+    
     int removeRangeTail(String fromElement, boolean fromInclusive);
     
     /**

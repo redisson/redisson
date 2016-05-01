@@ -1,12 +1,53 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RLexSortedSet;
 
 public class RedissonLexSortedSetTest extends BaseTest {
 
+    @Test
+    public void testPollLast() {
+        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        Assert.assertNull(set.pollLast());
+
+        set.add("a");
+        set.add("b");
+        set.add("c");
+
+        Assert.assertEquals("c", set.pollLast());
+        MatcherAssert.assertThat(set, Matchers.contains("a", "b"));
+    }
+
+    @Test
+    public void testPollFirst() {
+        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        Assert.assertNull(set.pollFirst());
+
+        set.add("a");
+        set.add("b");
+        set.add("c");
+
+        Assert.assertEquals("a", set.pollFirst());
+        MatcherAssert.assertThat(set, Matchers.contains("b", "c"));
+    }
+
+    @Test
+    public void testFirstLast() {
+        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        set.add("a");
+        set.add("b");
+        set.add("c");
+        set.add("d");
+
+        Assert.assertEquals("a", set.first());
+        Assert.assertEquals("d", set.last());
+    }
+    
     @Test
     public void testRemoveLexRangeTail() {
         RLexSortedSet set = redisson.getLexSortedSet("simple");
