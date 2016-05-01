@@ -52,6 +52,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> readAll() {
+        return get(readAllAsync());
+    }
+    
+    @Override
+    public Future<Collection<V>> readAllAsync() {
+        return valueRangeAsync(0, -1);
+    }
+    
+    @Override
     public V pollFirst() {
         return get(pollFirstAsync());
     }
