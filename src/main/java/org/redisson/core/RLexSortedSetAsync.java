@@ -29,6 +29,11 @@ public interface RLexSortedSetAsync extends RCollectionAsync<String> {
 
     Future<String> lastAsync();
     
+    /**
+     * Read all values at once.
+     * 
+     * @return
+     */
     Future<Collection<String>> readAllAsync();
     
     Future<Integer> removeRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);

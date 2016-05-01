@@ -36,6 +36,11 @@ public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirab
      */
     Integer revRank(String o);
     
+    /**
+     * Read all values at once.
+     * 
+     * @return
+     */
     Collection<String> readAll();
     
     int removeRangeTail(String fromElement, boolean fromInclusive);
