@@ -653,11 +653,31 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(4, "e");
 
         Collection<ScoredEntry<String>> r = set.entryRange(1, true, 4, false, 1, 2);
+        Assert.assertEquals(2, r.size());
         ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
         Assert.assertEquals(2d, a[0].getScore(), 0);
         Assert.assertEquals(3d, a[1].getScore(), 0);
         Assert.assertEquals("c", a[0].getValue());
         Assert.assertEquals("d", a[1].getValue());
+    }
+
+    @Test
+    public void testScoredSortedSetEntryRangeReversed() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<ScoredEntry<String>> r = set.entryRangeReversed(1, true, 4, false, 1, 2);
+        Assert.assertEquals(2, r.size());
+        ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
+        Assert.assertEquals(2d, a[0].getScore(), 0);
+        Assert.assertEquals(1d, a[1].getScore(), 0);
+        Assert.assertEquals("c", a[0].getValue());
+        Assert.assertEquals("b", a[1].getValue());
     }
     
     @Test
