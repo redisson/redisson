@@ -68,4 +68,40 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
      */
     Set<V> readUnion(String... names);
 
+    /**
+     * Diff sets specified by name and write to current set.
+     * If current set already exists, it is overwritten.
+     *
+     * @param names
+     * @return
+     */
+    int diff(String... names);
+
+    /**
+     * Diff sets specified by name with current set.
+     * Without current set state change.
+     *
+     * @param names
+     * @return
+     */
+
+    Set<V> readDiff(String... names);
+    /**
+     * Intersection sets specified by name and write to current set.
+     * If current set already exists, it is overwritten.
+     *
+     * @param names
+     * @return
+     */
+    int intersection(String... names);
+
+    /**
+     * Intersection sets specified by name with current set.
+     * Without current set state change.
+     *
+     * @param names
+     * @return
+     */
+    Set<V> readIntersection(String... names);
+
 }

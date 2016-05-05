@@ -71,4 +71,40 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      */
     Future<Set<V>> readUnionAsync(String... keys);
 
+    /**
+     * Diff sets specified by name and write to current set.
+     * If current set already exists, it is overwritten.
+     *
+     * @param names
+     * @return
+     */
+    Future<Integer> diffAsync(String... keys);
+
+    /**
+     * Diff sets specified by name with current set.
+     * Without current set state change.
+     *
+     * @param names
+     * @return
+     */
+    Future<Set<V>> readDiffAsync(String... keys);
+
+    /**
+     * Intersection sets specified by name and write to current set.
+     * If current set already exists, it is overwritten.
+     *
+     * @param names
+     * @return
+     */
+    Future<Integer> intersectionAsync(String... keys);
+
+    /**
+     * Intersection sets specified by name with current set.
+     * Without current set state change.
+     *
+     * @param names
+     * @return
+     */
+    Future<Set<V>> readIntersectionAsync(String... keys);
+    
 }

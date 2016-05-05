@@ -94,4 +94,13 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
     Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    Future<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
+
+    /**
+     * Read all values at once.
+     * 
+     * @return
+     */
+    Future<Collection<V>> readAllAsync();
+    
 }
