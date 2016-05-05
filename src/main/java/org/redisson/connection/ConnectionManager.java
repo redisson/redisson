@@ -99,6 +99,8 @@ public interface ConnectionManager {
 
     void shutdown();
 
+    void shutdown(long quietPeriod, long timeout, TimeUnit unit);
+    
     EventLoopGroup getGroup();
 
     Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);

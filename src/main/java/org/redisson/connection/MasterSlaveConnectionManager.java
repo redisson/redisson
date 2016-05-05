@@ -124,7 +124,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
     private final Promise<Boolean> shutdownPromise;
-    
+
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
     private final Set<RedisClientEntry> clients = Collections.newSetFromMap(PlatformDependent.<RedisClientEntry, Boolean>newConcurrentHashMap());
@@ -137,7 +137,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this(config);
         init(cfg);
     }
-    
+
     public MasterSlaveConnectionManager(Config cfg) {
         Version.logVersion();
 
@@ -189,7 +189,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
-        int[] timeouts = new int[] {config.getRetryInterval(), config.getTimeout(), config.getReconnectionTimeout()};
+        int[] timeouts = new int[]{config.getRetryInterval(), config.getTimeout(), config.getReconnectionTimeout()};
         Arrays.sort(timeouts);
         int minTimeout = timeouts[0];
         if (minTimeout % 100 != 0) {
@@ -609,15 +609,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
+        shutdown(2, 15, TimeUnit.SECONDS);//default netty value
+    }
+
+    @Override
+    public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
         shutdownLatch.close();
         shutdownPromise.trySuccess(true);
         shutdownLatch.awaitUninterruptibly();
-        
+
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
         timer.stop();
-        group.shutdownGracefully().syncUninterruptibly();
+        group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
     }
 
     @Override
@@ -669,7 +674,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public InfinitySemaphoreLatch getShutdownLatch() {
         return shutdownLatch;
     }
-    
+
     @Override
     public Future<Boolean> getShutdownPromise() {
         return shutdownPromise;
