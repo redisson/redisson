@@ -21,6 +21,21 @@ import io.netty.util.concurrent.Future;
 
 public interface RLexSortedSetAsync extends RCollectionAsync<String> {
 
+    Future<String> pollLastAsync();
+
+    Future<String> pollFirstAsync();
+
+    Future<String> firstAsync();
+
+    Future<String> lastAsync();
+    
+    /**
+     * Read all values at once.
+     * 
+     * @return
+     */
+    Future<Collection<String>> readAllAsync();
+    
     Future<Integer> removeRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     /**
@@ -126,5 +141,13 @@ public interface RLexSortedSetAsync extends RCollectionAsync<String> {
      */
     @Deprecated
     Future<Collection<String>> valueRangeAsync(int startIndex, int endIndex);
+    
+    /**
+     * Returns rank of value, with the scores ordered from high to low.
+     * 
+     * @param o
+     * @return rank or <code>null</code> if value does not exist
+     */
+    Future<Integer> revRankAsync(String o);
 
 }

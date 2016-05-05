@@ -28,6 +28,18 @@ import io.netty.util.concurrent.Future;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testReadAll() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0, "1");
+        set.add(1, "4");
+        set.add(2, "2");
+        set.add(3, "5");
+        set.add(4, "3");
+
+        assertThat(set.readAll()).containsOnly("1", "2", "4", "5", "3");
+    }
+    
+    @Test
     public void testAddAll() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
@@ -288,6 +300,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
         Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
         Assert.assertEquals(2, set.size());
+        assertThat(set.getScore(1)).isEqualTo(10);
+        assertThat(set.getScore(2)).isEqualTo(20);
     }
 
     @Test
@@ -651,11 +665,31 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(4, "e");
 
         Collection<ScoredEntry<String>> r = set.entryRange(1, true, 4, false, 1, 2);
+        Assert.assertEquals(2, r.size());
         ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
         Assert.assertEquals(2d, a[0].getScore(), 0);
         Assert.assertEquals(3d, a[1].getScore(), 0);
         Assert.assertEquals("c", a[0].getValue());
         Assert.assertEquals("d", a[1].getValue());
+    }
+
+    @Test
+    public void testScoredSortedSetEntryRangeReversed() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<ScoredEntry<String>> r = set.entryRangeReversed(1, true, 4, false, 1, 2);
+        Assert.assertEquals(2, r.size());
+        ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
+        Assert.assertEquals(2d, a[0].getScore(), 0);
+        Assert.assertEquals(1d, a[1].getScore(), 0);
+        Assert.assertEquals("c", a[0].getValue());
+        Assert.assertEquals("b", a[1].getValue());
     }
     
     @Test

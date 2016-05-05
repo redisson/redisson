@@ -2,6 +2,16 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####30-Apr-2016 - version 2.2.13 released  
+
+Feature - `RSet.diff` and `RSet.intersection` methods added  
+Imporovement - `RScoredSortedSet`.`containsAll`, `removeAll` and `retainAll` methods speed optimization  
+Imporovement - `RSetCache` memory and speed optimization  
+Imporovement - `RSet`.`retainAll`, `containsAll`, `removeAll` methods speed optimized up to 100x  
+Fixed - possible infinity `RLock` expiration renewal process  
+Fixed - error during `RSetCache.readAll` invocation.  
+Fixed - expiration override wasn't work in `RSetCache.add`  
+
 ####22-Apr-2016 - version 2.2.12 released  
 
 Imporovement - Replaying phase handling in CommandDecoder  
