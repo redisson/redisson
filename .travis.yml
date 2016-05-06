@@ -21,6 +21,67 @@ jdk:
 env:
     matrix:
         # Current
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.ConcurrentRedissonSortedSetTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedisClientTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonAtomicDoubleTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonAtomicLongReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonAtomicLongTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBatchTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBitSetReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBitSetTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBlockingDequeTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBlockingQueueReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBlockingQueueTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBloomFilterTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBucketReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBucketTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBucketsTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonCodecTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonConcurrentMapTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonCountDownLatchConcurrentTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonCountDownLatchTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonDequeReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonDequeTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonGeoTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonHyperLogLogReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonHyperLogLogTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonKeysReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonKeysTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonLexSortedSetReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonLexSortedSetTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonListMultimapCacheTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonListMultimapTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonListReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonListTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonLockTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonMapCacheReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonMapCacheTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonMapReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonMapTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonMultiLockTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonQueueReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonQueueTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonReadWriteLockTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonRemoteServiceTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonScoredSortedSetReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonScoredSortedSetTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonScriptReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonScriptTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonSemaphoreTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonSetCacheReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonSetCacheTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonSetMultimapCacheTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonSetMultimapTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonSetReactiveTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonSetTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonSortedSetTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonTopicPatternTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonTopicTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonTwoLockedThread
+#        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.TimeoutTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.spring.cache.RedissonSpringCacheTest
+        # Legacy
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.ConcurrentRedissonSortedSetTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedisClientTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonAtomicDoubleTest
@@ -81,7 +142,6 @@ env:
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonTwoLockedThread
 #        - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.TimeoutTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.spring.cache.RedissonSpringCacheTest
-        # Legacy
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.ConcurrentRedissonSortedSetTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedisClientTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonAtomicDoubleTest
@@ -143,66 +203,6 @@ env:
 #        - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.TimeoutTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.spring.cache.RedissonSpringCacheTest
         # Unstable
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.ConcurrentRedissonSortedSetTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedisClientTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonAtomicDoubleTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonAtomicLongReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonAtomicLongTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBatchTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBitSetReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBitSetTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBlockingDequeTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBlockingQueueReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBlockingQueueTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBloomFilterTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBucketReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBucketTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonBucketsTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonCodecTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonConcurrentMapTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonCountDownLatchConcurrentTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonCountDownLatchTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonDequeReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonDequeTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonGeoTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonHyperLogLogReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonHyperLogLogTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonKeysReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonKeysTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonLexSortedSetReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonLexSortedSetTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonListMultimapCacheTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonListMultimapTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonListReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonListTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonLockTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonMapCacheReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonMapCacheTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonMapReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonMapTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonMultiLockTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonQueueReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonQueueTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonReadWriteLockTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonRemoteServiceTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonScoredSortedSetReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonScoredSortedSetTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonScriptReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonScriptTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonSemaphoreTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonSetCacheReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonSetCacheTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonSetMultimapCacheTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonSetMultimapTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonSetReactiveTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonSetTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonSortedSetTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonTopicPatternTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonTopicTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.RedissonTwoLockedThread
-#        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.TimeoutTest
-        - REDIS_VERSION=3.2.0-rc3 REDISSON_TEST=org.redisson.spring.cache.RedissonSpringCacheTest
 cache:
   directories:
   - $HOME/.m2
