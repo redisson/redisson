@@ -377,4 +377,35 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
 
     }
+    
+    @Test
+    public void testSingleCharAsKeyName() {
+        String value = "Long Test Message;Long Test Message;Long Test Message;"
+                + "Long Test Message;Long Test Message;Long Test Message;Long "
+                + "Test Message;Long Test Message;Long Test Message;Long Test "
+                + "Message;Long Test Message;Long Test Message;Long Test Messa"
+                + "ge;Long Test Message;Long Test Message;Long Test Message;Lo"
+                + "ng Test Message;Long Test Message;Long Test Message;Long Te"
+                + "st Message;Long Test Message;Long Test Message;Long Test Me"
+                + "ssage;Long Test Message;Long Test Message;Long Test Message"
+                + ";Long Test Message;Long Test Message;Long Test Message;Long"
+                + " Test Message;Long Test Message;Long Test Message;Long Test"
+                + " Message;Long Test Message;Long Test Message;Long Test Mess"
+                + "age;";
+        try {
+            for (int i = 0; i < 10; i++) {
+                System.out.println("Iteration: " + i);
+                RBlockingQueue<String> q = redisson.<String>getBlockingQueue(String.valueOf(i));
+                q.add(value);
+                System.out.println("Message added to [" + i + "]");
+                q.expire(1, TimeUnit.MINUTES);
+                System.out.println("Expiry set to [" + i + "]");
+                String poll = q.poll(1, TimeUnit.SECONDS);
+                System.out.println("Message polled from [" + i + "]" + poll);
+                Assert.assertEquals(value, poll);
+            }
+        } catch (Exception e) {
+            Assert.fail(e.getLocalizedMessage());
+        }
+    }
 }
