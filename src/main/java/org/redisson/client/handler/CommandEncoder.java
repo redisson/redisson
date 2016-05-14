@@ -15,7 +15,9 @@
  */
 package org.redisson.client.handler;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
@@ -52,6 +54,8 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
     private static final char BYTES_PREFIX = '$';
     private static final byte[] CRLF = "\r\n".getBytes();
 
+    private static final Map<Long, byte[]> longCache = new HashMap<Long, byte[]>();
+    
     @Override
     protected void encode(ChannelHandlerContext ctx, CommandData<?, ?> msg, ByteBuf out) throws Exception {
         out.writeByte(ARGS_PREFIX);
@@ -59,7 +63,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
         if (msg.getCommand().getSubName() != null) {
             len++;
         }
-        out.writeBytes(toChars(len));
+        out.writeBytes(convert(len));
         out.writeBytes(CRLF);
 
         writeArgument(out, msg.getCommand().getName().getBytes("UTF-8"));
@@ -127,7 +131,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
     private void writeArgument(ByteBuf out, byte[] arg) {
         out.writeByte(BYTES_PREFIX);
-        out.writeBytes(toChars(arg.length));
+        out.writeBytes(convert(arg.length));
         out.writeBytes(CRLF);
         out.writeBytes(arg);
         out.writeBytes(CRLF);
@@ -192,11 +196,26 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
         }
     }
 
+    public static byte[] convert(long i) {
+        if (i >= 0 && i <= 255) {
+            return longCache.get(i);
+        }
+        return toChars(i);
+    }
+    
     public static byte[] toChars(long i) {
         int size = (i < 0) ? stringSize(-i) + 1 : stringSize(i);
         byte[] buf = new byte[size];
         getChars(i, size, buf);
         return buf;
     }
+
+    static {
+        for (long i = 0; i < 256; i++) {
+            byte[] value = toChars(i);
+            longCache.put(i, value);
+        }
+    }
+    
 
 }
