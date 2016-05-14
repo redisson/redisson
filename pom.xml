@@ -356,7 +356,7 @@
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>org.redisson.TestNameToConsoleRunListener</value>
+                            <value>org.redisson.RedissonTestRunListener</value>
                         </property>
                     </properties>
                 </configuration>
