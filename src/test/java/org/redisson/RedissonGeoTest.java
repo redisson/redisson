@@ -32,7 +32,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo = redisson.getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
         
-        assertThat(geo.dist("Palermo", "Catania", GeoUnit.METERS)).isEqualTo(166274.15156960033D);
+        assertThat(geo.dist("Palermo", "Catania", GeoUnit.METERS)).isEqualTo(166274.1516D);
     }
     
     @Test

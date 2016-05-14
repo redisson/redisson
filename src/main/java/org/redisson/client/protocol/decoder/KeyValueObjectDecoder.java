@@ -27,7 +27,7 @@ public class KeyValueObjectDecoder implements MultiDecoder<Object> {
     @Override
     public Object decode(ByteBuf buf, State state) {
         String status = buf.toString(CharsetUtil.UTF_8);
-        buf.skipBytes(2);
+        buf.skipBytes(1);
         return status;
     }
 
