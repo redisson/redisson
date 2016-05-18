@@ -80,7 +80,7 @@ public class RedissonTopicTest {
 
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testSyncCommands() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         RTopic<String> topic = redisson.getTopic("system_bus");
@@ -99,7 +99,7 @@ public class RedissonTopicTest {
         redisson.shutdown();
     }
     
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testInnerPublish() throws InterruptedException {
 
         RedissonClient redisson1 = BaseTest.createInstance();
@@ -128,7 +128,7 @@ public class RedissonTopicTest {
         redisson2.shutdown();
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testStatus() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         final RTopic<Message> topic1 = redisson.getTopic("topic1");
@@ -156,7 +156,7 @@ public class RedissonTopicTest {
         Assert.assertTrue(l.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -181,7 +181,7 @@ public class RedissonTopicTest {
     }
 
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -209,7 +209,7 @@ public class RedissonTopicTest {
     }
 
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void test() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(2);
 
@@ -236,7 +236,7 @@ public class RedissonTopicTest {
 
     volatile long counter;
 
-    @Test
+    @Test(timeout = 600 * 1000)
     public void testHeavyLoad() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1000);
 
@@ -268,7 +268,7 @@ public class RedissonTopicTest {
         redisson1.shutdown();
         redisson2.shutdown();
     }
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testListenerRemove() throws InterruptedException {
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
