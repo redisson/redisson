@@ -594,12 +594,20 @@ public interface RedissonClient {
     RScript getScript();
 
     /**
-     * Returns object for remote operations
+     * Returns object for remote operations prefixed with the default name (redisson_remote_service)
      * 
      * @return
      */
     RRemoteService getRemoteSerivce();
-    
+
+    /**
+     * Returns object for remote operations prefixed with the specified name
+     *
+     * @param name The name used as the Redis key prefix for the services
+     * @return
+     */
+    RRemoteService getRemoteSerivce(String name);
+
     /**
      * Return batch object which executes group of
      * command in pipeline.
