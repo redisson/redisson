@@ -104,5 +104,21 @@ public class RedissonRemoteServiceTest extends BaseTest {
         r1.shutdown();
         r2.shutdown();
     }
-    
+
+    @Test
+    public void testInvocationWithServiceName() {
+        String name = "MyServiceName";
+
+        RedissonClient r1 = Redisson.create();
+        r1.getRemoteSerivce(name).register(RemoteInterface.class, new RemoteImpl());
+
+        RedissonClient r2 = Redisson.create();
+        RemoteInterface ri = r2.getRemoteSerivce(name).get(RemoteInterface.class);
+
+        ri.voidMethod("someName", 100L);
+        assertThat(ri.resultMethod(100L)).isEqualTo(200);
+
+        r1.shutdown();
+        r2.shutdown();
+    }
 }
