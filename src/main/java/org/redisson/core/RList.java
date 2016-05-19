@@ -27,6 +27,32 @@ import java.util.RandomAccess;
  */
 public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAccess {
 
+    /**
+     * Add <code>element</code> after <code>elementToFind</code>
+     * 
+     * @param elementToFind
+     * @param element
+     * @return new list size
+     */
+    Integer addAfter(V elementToFind, V element);
+    
+    /**
+     * Add <code>element</code> before <code>elementToFind</code>
+     * 
+     * @param elementToFind
+     * @param element
+     * @return new list size
+     */
+    Integer addBefore(V elementToFind, V element);
+    
+    /**
+     * Set <code>element</code> at <code>index</code>.
+     * Works faster than {@link #set(int, Object)} but 
+     * doesn't return previous element.
+     * 
+     * @param index
+     * @param element
+     */
     void fastSet(int index, V element);
 
     RList<V> subList(int fromIndex, int toIndex);

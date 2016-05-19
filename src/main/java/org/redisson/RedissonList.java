@@ -566,4 +566,24 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return hashCode;
     }
 
+    @Override
+    public Future<Integer> addAfterAsync(V elementToFind, V element) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT, getName(), "AFTER", elementToFind, element);
+    }
+
+    @Override
+    public Future<Integer> addBeforeAsync(V elementToFind, V element) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT, getName(), "BEFORE", elementToFind, element);
+    }
+
+    @Override
+    public Integer addAfter(V elementToFind, V element) {
+        return get(addAfterAsync(elementToFind, element));
+    }
+
+    @Override
+    public Integer addBefore(V elementToFind, V element) {
+        return get(addBeforeAsync(elementToFind, element));
+    }
+
 }
