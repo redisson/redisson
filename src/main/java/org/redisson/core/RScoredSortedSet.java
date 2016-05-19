@@ -115,6 +115,17 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<ScoredEntry<V>> entryRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**
+     * Returns the number of elements with a score between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore
+     * @param startScoreInclusive
+     * @param endScore
+     * @param endScoreInclusive
+     * @return
+     */
+    Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    
+    /**
      * Read all values at once.
      * 
      * @return

@@ -28,6 +28,18 @@ import io.netty.util.concurrent.Future;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testCount() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0, "1");
+        set.add(1, "4");
+        set.add(2, "2");
+        set.add(3, "5");
+        set.add(4, "3");
+        
+        assertThat(set.count(0, true, 3, false)).isEqualTo(3);
+    }
+    
+    @Test
     public void testReadAll() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         set.add(0, "1");
