@@ -16,8 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
@@ -221,7 +219,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue2.put(6);
 
         queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
-        MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
+        assertThat(queue2).containsExactly(3, 4, 5, 6);
     }
 
     @Test
@@ -232,9 +230,9 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.add(3);
         queue.offer(4);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
+        assertThat(queue).containsExactly(1, 2, 3, 4);
         Assert.assertEquals((Integer) 1, queue.poll());
-        MatcherAssert.assertThat(queue, Matchers.contains(2, 3, 4));
+        assertThat(queue).containsExactly(2, 3, 4);
         Assert.assertEquals((Integer) 2, queue.element());
     }
 
@@ -246,9 +244,9 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.add(3);
         queue.offer(4);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
+        assertThat(queue).containsExactly(1, 2, 3, 4);
         Assert.assertEquals((Integer) 1, queue.poll());
-        MatcherAssert.assertThat(queue, Matchers.contains(2, 3, 4));
+        assertThat(queue).containsExactly(2, 3, 4);
         Assert.assertEquals((Integer) 2, queue.element());
     }
 
@@ -263,7 +261,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.remove();
         queue.remove();
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 4));
+        assertThat(queue).containsExactly(3, 4);
         queue.remove();
         queue.remove();
 
@@ -281,7 +279,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.remove();
         queue.remove();
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 4));
+        assertThat(queue).containsExactly(3, 4);
         queue.remove();
         queue.remove();
 
@@ -355,7 +353,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
         ArrayList<Object> dst = new ArrayList<Object>();
         queue1.drainTo(dst);
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains(1, 2L, "e"));
+        assertThat(dst).containsExactly(1, 2L, "e");
         Assert.assertEquals(0, queue1.size());
     }
 
@@ -368,14 +366,12 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
         ArrayList<Object> dst = new ArrayList<Object>();
         queue1.drainTo(dst, 2);
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains(1, 2L));
+        assertThat(dst).containsExactly(1, 2L);
         Assert.assertEquals(1, queue1.size());
 
         dst.clear();
         queue1.drainTo(dst, 2);
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains("e"));
-
-
+        assertThat(dst).containsExactly("e");
     }
     
     @Test
