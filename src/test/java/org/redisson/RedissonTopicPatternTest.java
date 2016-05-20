@@ -84,7 +84,7 @@ public class RedissonTopicPatternTest {
         }
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -109,7 +109,7 @@ public class RedissonTopicPatternTest {
         redisson.shutdown();
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -141,7 +141,7 @@ public class RedissonTopicPatternTest {
         redisson2.shutdown();
     }
 
-    @Test
+    @Test(timeout = 600 * 1000)
     public void test() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(5);
 
@@ -184,7 +184,7 @@ public class RedissonTopicPatternTest {
         redisson2.shutdown();
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testListenerRemove() throws InterruptedException {
         RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
