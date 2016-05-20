@@ -36,9 +36,21 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     int removeRangeByRank(int startIndex, int endIndex);
 
-    int rank(V o);
+    /**
+     * Returns rank of value, with the scores ordered from low to high.
+     * 
+     * @param o
+     * @return rank or <code>null</code> if value does not exist
+     */
+    Integer rank(V o);
     
-    int revRank(V o);
+    /**
+     * Returns rank of value, with the scores ordered from high to low.
+     * 
+     * @param o
+     * @return rank or <code>null</code> if value does not exist
+     */
+    Integer revRank(V o);
 
     Double getScore(V o);
 
@@ -100,4 +112,24 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     Collection<ScoredEntry<V>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    Collection<ScoredEntry<V>> entryRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
+
+    /**
+     * Returns the number of elements with a score between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore
+     * @param startScoreInclusive
+     * @param endScore
+     * @param endScoreInclusive
+     * @return
+     */
+    Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    
+    /**
+     * Read all values at once.
+     * 
+     * @return
+     */
+    Collection<V> readAll();
+    
 }

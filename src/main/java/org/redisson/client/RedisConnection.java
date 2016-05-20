@@ -15,21 +15,24 @@
  */
 package org.redisson.client;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.connection.FastSuccessFuture;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -45,7 +48,7 @@ public class RedisConnection implements RedisCommands {
     private ReconnectListener reconnectListener;
     private long lastUsageTime;
 
-    private final Future<?> acquireFuture = new FastSuccessFuture<Object>(this);
+    private final Future<?> acquireFuture = ImmediateEventExecutor.INSTANCE.newSucceededFuture(this);
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
@@ -57,6 +60,18 @@ public class RedisConnection implements RedisCommands {
 
     public static <C extends RedisConnection> C getFrom(Channel channel) {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
+    }
+
+    public void removeCurrentCommand() {
+        channel.attr(CommandsQueue.CURRENT_COMMAND).remove();
+    }
+    
+    public CommandData getCurrentCommand() {
+        QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).get();
+        if (command instanceof CommandData) {
+            return (CommandData)command;
+        }
+        return null;
     }
 
     public long getLastUsageTime() {
@@ -97,21 +112,34 @@ public class RedisConnection implements RedisCommands {
         return redisClient;
     }
 
-    public <R> R await(Future<R> cmd) {
-        // TODO change connectTimeout to timeout
-        if (!cmd.awaitUninterruptibly(redisClient.getTimeout(), TimeUnit.MILLISECONDS)) {
-            Promise<R> promise = (Promise<R>)cmd;
-            RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
-            promise.setFailure(ex);
-            throw ex;
-        }
-        if (!cmd.isSuccess()) {
-            if (cmd.cause() instanceof RedisException) {
-                throw (RedisException) cmd.cause();
+    public <R> R await(Future<R> future) {
+        final CountDownLatch l = new CountDownLatch(1);
+        future.addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                l.countDown();
             }
-            throw new RedisException("Unexpected exception while processing command", cmd.cause());
+        });
+        
+        try {
+            // TODO change connectTimeout to timeout
+            if (!l.await(redisClient.getTimeout(), TimeUnit.MILLISECONDS)) {
+                Promise<R> promise = (Promise<R>)future;
+                RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
+                promise.setFailure(ex);
+                throw ex;
+            }
+            if (!future.isSuccess()) {
+                if (future.cause() instanceof RedisException) {
+                    throw (RedisException) future.cause();
+                }
+                throw new RedisException("Unexpected exception while processing command", future.cause());
+            }
+            return future.getNow();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
         }
-        return cmd.getNow();
     }
 
     public <T> T sync(RedisStrictCommand<T> command, Object ... params) {
@@ -137,13 +165,13 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
         send(new CommandData<T, R>(promise, encoder, command, params));
         return promise;
     }
 
     public <T, R> Future<R> asyncWithTimeout(Codec encoder, RedisCommand<T> command, Object ... params) {
-        final Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        final Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
         final ScheduledFuture<?> scheduledFuture = redisClient.getBootstrap().group().next().schedule(new Runnable() {
             @Override
             public void run() {
@@ -162,7 +190,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> CommandData<T, R> create(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = redisClient.getBootstrap().group().next().<R>newPromise();
+        Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
         return new CommandData<T, R>(promise, encoder, command, params);
     }
 
@@ -194,7 +222,7 @@ public class RedisConnection implements RedisCommands {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " [redisClient=" + redisClient + ", channel=" + channel + "]";
+        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + "]";
     }
 
     public Future<?> getAcquireFuture() {

@@ -19,7 +19,7 @@ import java.net.InetSocketAddress;
 
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
-import org.redisson.client.handler.CommandsListEncoder;
+import org.redisson.client.handler.CommandBatchEncoder;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.handler.ConnectionWatchdog;
 
@@ -38,6 +38,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 public class RedisClient {
@@ -61,8 +62,8 @@ public class RedisClient {
             @Override
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels),
-                    new CommandEncoder(),
-                    new CommandsListEncoder(),
+                    CommandEncoder.INSTANCE,
+                    CommandBatchEncoder.INSTANCE,
                     new CommandsQueue(),
                     new CommandDecoder());
             }
@@ -95,7 +96,7 @@ public class RedisClient {
     }
 
     public Future<RedisConnection> connectAsync() {
-        final Promise<RedisConnection> f = bootstrap.group().next().newPromise();
+        final Promise<RedisConnection> f = ImmediateEventExecutor.INSTANCE.newPromise();
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
@@ -122,7 +123,7 @@ public class RedisClient {
     }
 
     public Future<RedisPubSubConnection> connectPubSubAsync() {
-        final Promise<RedisPubSubConnection> f = bootstrap.group().next().newPromise();
+        final Promise<RedisPubSubConnection> f = ImmediateEventExecutor.INSTANCE.newPromise();
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override

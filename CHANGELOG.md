@@ -2,6 +2,63 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####30-Apr-2016 - version 2.2.13 released  
+
+Feature - `RSet.diff` and `RSet.intersection` methods added  
+Imporovement - `RScoredSortedSet`.`containsAll`, `removeAll` and `retainAll` methods speed optimization  
+Imporovement - `RSetCache` memory and speed optimization  
+Imporovement - `RSet`.`retainAll`, `containsAll`, `removeAll` methods speed optimized up to 100x  
+Fixed - possible infinity `RLock` expiration renewal process  
+Fixed - error during `RSetCache.readAll` invocation.  
+Fixed - expiration override wasn't work in `RSetCache.add`  
+
+####22-Apr-2016 - version 2.2.12 released  
+
+Imporovement - Replaying phase handling in CommandDecoder  
+Fixed - cluster state update manager can't try next node if current node has failed to response   
+Fixed - cluster initialization  
+Fixed - items removing during `RMap` iteration  
+Fixed - `RGeo.addAsync` codec definition  
+Fixed - `RMapCache` iterator and readAll methods  
+Fixed - unnecessary slots migration in cluster mode  
+Fixed - Command batches redirect in cluster mode  
+Fixed - cluster mode compatibility for `RedissonMultimap.fastRemove` method  
+Fixed - `RedissonMultiLock` deadlock  
+Fixed - MultiDecoder empty result handling  
+Fixed - array start index in LUA scripts  
+Fixed - RMap iterator  
+Fixed - probably thread blocking issues  
+
+####04-Apr-2016 - version 2.2.11 released  
+
+Since this version Redisson has __perfomance boost up to 43%__
+
+Feature - __new object added__ `RGeo`  
+Feature - __new object added__ `RBuckets`  
+Feature - travis-ci integration (thanks to jackygurui)  
+Improvement - `RScoredSortedSet.removeAllAsync` & `removeAll` methods optimization  
+Improvement - `RemoteService` reliability tuned up  
+Improvement - Reattaching RBlockingQueue\Deque blocking commands (poll, take ...) after Redis failover process or channel reconnection  
+Fixed - iterator objects may skip results in some cases  
+Fixed - RTopic listeners hangs during synchronous commands execution inside it  
+Fixed - Redisson hangs during shutdown if `RBlockingQueue\Deque.take` or `RBlockingQueue\Deque.poll` methods were invoked  
+
+
+####23-Mar-2016 - version 2.2.10 released  
+
+Feature - __new object added__ `RRemoteService`  
+Feature - __new object added__ `RSetMultimapCache`  
+Feature - __new object added__ `RListMultimapCache`  
+Improvement - ability to cancel BRPOP and BLPOP async command execution  
+Improvement - Config params validation  
+Improvement - test RedisRunner improvements (thanks to jackygurui)  
+Improvement - `Double.NEGATIVE_INFINITY` and `Double.POSITIVE_INFINITY` handling for ScoredSortedSet (thanks to jackygurui)  
+Fixed - MOVED, ASK handling in cluster mode using RBatch  
+Fixed - delete and expire logic for Multimap objects  
+Fixed - `RLock.tryLockAsync` NPE  
+Fixed - possible NPE during Redisson version logging  
+Fixed - Netty threads shutdown after connection error  
+
 ####04-Mar-2016 - version 2.2.9 released  
 
 Feature - __new object added__ `RSetMultimap`  

@@ -13,35 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.client.protocol.decoder;
 
-/**
- *
- * @author Nikita Koksharov
- *
- * @param <V>
- */
-public class FastSuccessFuture<V> extends FastCompleteFuture<V> {
+import java.util.List;
+import java.util.Map;
 
-    private final V result;
+public class MapCacheScanResult<K, V> extends MapScanResult<K, V> {
 
-    public FastSuccessFuture(V result) {
-        this.result = result;
+    private final List<K> idleKeys;
+
+    public MapCacheScanResult(Long pos, Map<K, V> values, List<K> idleKeys) {
+        super(pos, values);
+        this.idleKeys = idleKeys;
+    };
+
+    public List<K> getIdleKeys() {
+        return idleKeys;
     }
-
-    @Override
-    public Throwable cause() {
-        return null;
-    }
-
-    @Override
-    public boolean isSuccess() {
-        return true;
-    }
-
-    @Override
-    public V getNow() {
-        return result;
-    }
-
+    
 }

@@ -22,13 +22,12 @@ import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -167,24 +166,24 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         }
 
         try {
-            List<Object> args = new ArrayList<Object>(keys.length*2);
-            List<Object> hashes = new ArrayList<Object>();
+            List<Object> mapKeys = new ArrayList<Object>(keys.length);
+            List<Object> listKeys = new ArrayList<Object>(keys.length + 1);
+            listKeys.add(getName());
             for (K key : keys) {
                 byte[] keyState = codec.getMapKeyEncoder().encode(key);
-                args.add(keyState);
+                mapKeys.add(keyState);
                 String keyHash = hash(keyState);
                 String name = getValuesName(keyHash);
-                hashes.add(name);
+                listKeys.add(name);
             }
-            args.addAll(hashes);
 
             return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LONG,
-                        "local res = redis.call('hdel', KEYS[1], unpack(ARGV, 1, #ARGV/2)); " +
+                        "local res = redis.call('hdel', KEYS[1], unpack(ARGV)); " +
                         "if res > 0 then " +
-                            "redis.call('del', unpack(ARGV, #ARGV/2, #ARGV)); " +
+                            "redis.call('del', unpack(KEYS, 2, #KEYS)); " +
                         "end; " +
                         "return res; ",
-                            Collections.<Object>singletonList(getName()), args.toArray());
+                        listKeys, mapKeys.toArray());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

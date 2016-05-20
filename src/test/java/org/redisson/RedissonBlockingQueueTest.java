@@ -1,22 +1,24 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.core.RBlockingQueue;
 
 import io.netty.util.concurrent.Future;
@@ -24,12 +26,82 @@ import io.netty.util.concurrent.Future;
 public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
+    public void testPollWithBrokenConnection() throws IOException, InterruptedException, ExecutionException {
+        RedisProcess runner = new RedisRunner().port(6319).run();
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319");
+        RedissonClient redisson = Redisson.create(config);
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollTimeout");
+        Future<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
+        
+        f.await(1, TimeUnit.SECONDS);
+        runner.stop();
+        
+        assertThat(f.get()).isNull();
+    }
+    
+    @Test
+    public void testPollReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
+        RedisProcess runner = new RedisRunner().port(6319).run();
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319");
+        RedissonClient redisson = Redisson.create(config);
+        
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        Future<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
+        f.await(1, TimeUnit.SECONDS);
+        runner.stop();
+
+        runner = new RedisRunner().port(6319).run();
+        queue1.put(123);
+        
+        // check connection rotation
+        for (int i = 0; i < 10; i++) {
+            queue1.put(i);
+        }
+        assertThat(queue1.size()).isEqualTo(10);
+        
+        Integer result = f.get(1, TimeUnit.SECONDS);
+        assertThat(result).isEqualTo(123);
+        runner.stop();
+    }
+
+    
+    @Test
+    public void testTakeReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
+        RedisProcess runner = new RedisRunner().port(6319).run();
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319");
+        RedissonClient redisson = Redisson.create(config);
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("testTakeReattach");
+        Future<Integer> f = queue1.takeAsync();
+        f.await(1, TimeUnit.SECONDS);
+        runner.stop();
+
+        runner = new RedisRunner().port(6319).run();
+        queue1.put(123);
+        
+        // check connection rotation
+        for (int i = 0; i < 10; i++) {
+            queue1.put(i);
+        }
+        assertThat(queue1.size()).isEqualTo(10);
+        
+        Integer result = f.get(1, TimeUnit.SECONDS);
+        assertThat(result).isEqualTo(123);
+        runner.stop();
+    }
+    
+    @Test
     public void testTakeAsyncCancel() {
         Config config = createConfig();
         config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("testTakeAsyncCancel");
         for (int i = 0; i < 10; i++) {
             Future<Integer> f = queue1.takeAsync();
             f.cancel(true);
@@ -147,7 +219,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue2.put(6);
 
         queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
-        MatcherAssert.assertThat(queue2, Matchers.contains(3, 4, 5, 6));
+        assertThat(queue2).containsExactly(3, 4, 5, 6);
     }
 
     @Test
@@ -158,9 +230,9 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.add(3);
         queue.offer(4);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
+        assertThat(queue).containsExactly(1, 2, 3, 4);
         Assert.assertEquals((Integer) 1, queue.poll());
-        MatcherAssert.assertThat(queue, Matchers.contains(2, 3, 4));
+        assertThat(queue).containsExactly(2, 3, 4);
         Assert.assertEquals((Integer) 2, queue.element());
     }
 
@@ -172,9 +244,9 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.add(3);
         queue.offer(4);
 
-        MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
+        assertThat(queue).containsExactly(1, 2, 3, 4);
         Assert.assertEquals((Integer) 1, queue.poll());
-        MatcherAssert.assertThat(queue, Matchers.contains(2, 3, 4));
+        assertThat(queue).containsExactly(2, 3, 4);
         Assert.assertEquals((Integer) 2, queue.element());
     }
 
@@ -189,7 +261,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.remove();
         queue.remove();
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 4));
+        assertThat(queue).containsExactly(3, 4);
         queue.remove();
         queue.remove();
 
@@ -207,7 +279,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         queue.remove();
         queue.remove();
 
-        MatcherAssert.assertThat(queue, Matchers.contains(3, 4));
+        assertThat(queue).containsExactly(3, 4);
         queue.remove();
         queue.remove();
 
@@ -281,7 +353,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
         ArrayList<Object> dst = new ArrayList<Object>();
         queue1.drainTo(dst);
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains(1, 2L, "e"));
+        assertThat(dst).containsExactly(1, 2L, "e");
         Assert.assertEquals(0, queue1.size());
     }
 
@@ -294,13 +366,42 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
         ArrayList<Object> dst = new ArrayList<Object>();
         queue1.drainTo(dst, 2);
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains(1, 2L));
+        assertThat(dst).containsExactly(1, 2L);
         Assert.assertEquals(1, queue1.size());
 
         dst.clear();
         queue1.drainTo(dst, 2);
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains("e"));
-
-
+        assertThat(dst).containsExactly("e");
+    }
+    
+    @Test
+    public void testSingleCharAsKeyName() {
+        String value = "Long Test Message;Long Test Message;Long Test Message;"
+                + "Long Test Message;Long Test Message;Long Test Message;Long "
+                + "Test Message;Long Test Message;Long Test Message;Long Test "
+                + "Message;Long Test Message;Long Test Message;Long Test Messa"
+                + "ge;Long Test Message;Long Test Message;Long Test Message;Lo"
+                + "ng Test Message;Long Test Message;Long Test Message;Long Te"
+                + "st Message;Long Test Message;Long Test Message;Long Test Me"
+                + "ssage;Long Test Message;Long Test Message;Long Test Message"
+                + ";Long Test Message;Long Test Message;Long Test Message;Long"
+                + " Test Message;Long Test Message;Long Test Message;Long Test"
+                + " Message;Long Test Message;Long Test Message;Long Test Mess"
+                + "age;";
+        try {
+            for (int i = 0; i < 10; i++) {
+                System.out.println("Iteration: " + i);
+                RBlockingQueue<String> q = redisson.<String>getBlockingQueue(String.valueOf(i));
+                q.add(value);
+                System.out.println("Message added to [" + i + "]");
+                q.expire(1, TimeUnit.MINUTES);
+                System.out.println("Expiry set to [" + i + "]");
+                String poll = q.poll(1, TimeUnit.SECONDS);
+                System.out.println("Message polled from [" + i + "]" + poll);
+                Assert.assertEquals(value, poll);
+            }
+        } catch (Exception e) {
+            Assert.fail(e.getLocalizedMessage());
+        }
     }
 }

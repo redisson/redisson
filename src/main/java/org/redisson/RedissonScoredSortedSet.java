@@ -19,13 +19,13 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScoredCodec;
@@ -51,6 +51,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         super(codec, commandExecutor, name);
     }
 
+    @Override
+    public Collection<V> readAll() {
+        return get(readAllAsync());
+    }
+    
+    @Override
+    public Future<Collection<V>> readAllAsync() {
+        return valueRangeAsync(0, -1);
+    }
+    
     @Override
     public V pollFirst() {
         return get(pollFirstAsync());
@@ -124,6 +134,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Long> addAllAsync(Map<V, Double> objects) {
+        if (objects.isEmpty()) {
+            return newSucceededFuture(0L);
+        }
         List<Object> params = new ArrayList<Object>(objects.size()*2+1);
         params.add(getName());
         try {
@@ -229,7 +242,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public int rank(V o) {
+    public Integer rank(V o) {
         return get(rankAsync(o));
     }
 
@@ -245,54 +258,18 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Iterator<V> iterator() {
-        return new Iterator<V>() {
-
-            private List<V> firstValues;
-            private Iterator<V> iter;
-            private InetSocketAddress client;
-            private long iterPos;
-
-            private boolean removeExecuted;
-            private V value;
+        return new RedissonBaseIterator<V>() {
 
             @Override
-            public boolean hasNext() {
-                if (iter == null || !iter.hasNext()) {
-                    ListScanResult<V> res = scanIterator(client, iterPos);
-                    client = res.getRedisClient();
-                    if (iterPos == 0 && firstValues == null) {
-                        firstValues = res.getValues();
-                    } else if (res.getValues().equals(firstValues)) {
-                        return false;
-                    }
-                    iter = res.getValues().iterator();
-                    iterPos = res.getPos();
-                }
-                return iter.hasNext();
+            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+                return scanIterator(client, nextIterPos);
             }
 
             @Override
-            public V next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index");
-                }
-
-                value = iter.next();
-                removeExecuted = false;
-                return value;
-            }
-
-            @Override
-            public void remove() {
-                if (removeExecuted) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-
-                iter.remove();
+            void remove(V value) {
                 RedissonScoredSortedSet.this.remove(value);
-                removeExecuted = true;
             }
-
+            
         };
     }
 
@@ -315,28 +292,32 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
+        if (c.isEmpty()) {
+            return newSucceededFuture(true);
+        }
+        
         return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                "local s = redis.call('zrange', KEYS[1], 0, -1);" +
-                        "for i = 0, table.getn(s), 1 do " +
-                            "for j = 0, table.getn(ARGV), 1 do "
-                            + "if ARGV[j] == s[i] "
-                            + "then table.remove(ARGV, j) end "
+                            "for j = 1, #ARGV, 1 do "
+                            + "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[j]) "
+                            + "if expireDateScore == false then "
+                                + "return 0;"
+                            + "end; "
                         + "end; "
-                       + "end;"
-                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
+                       + "return 1; ",
                 Collections.<Object>singletonList(getName()), c.toArray());
     }
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                        "local v = 0 " +
-                        "for i = 0, table.getn(ARGV), 1 do "
-                            + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = 1 end "
-                        +"end "
-                       + "return v ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        if (c.isEmpty()) {
+            return newSucceededFuture(false);
+        }
+        
+        List<Object> params = new ArrayList<Object>(c.size()+1);
+        params.add(getName());
+        params.addAll(c);
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREM, params.toArray());
     }
 
     @Override
@@ -348,30 +329,34 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public boolean retainAll(Collection<?> c) {
         return get(retainAllAsync(c));
     }
+    
+    private byte[] encode(V value) {
+        try {
+            return codec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                    "local changed = 0 " +
-                    "local s = redis.call('zrange', KEYS[1], 0, -1) "
-                       + "local i = 0 "
-                       + "while i <= table.getn(s) do "
-                            + "local element = s[i] "
-                            + "local isInAgrs = false "
-                            + "for j = 0, table.getn(ARGV), 1 do "
-                                + "if ARGV[j] == element then "
-                                    + "isInAgrs = true "
-                                    + "break "
-                                + "end "
-                            + "end "
-                            + "if isInAgrs == false then "
-                                + "redis.call('zrem', KEYS[1], element) "
-                                + "changed = 1 "
-                            + "end "
-                            + "i = i + 1 "
-                       + "end "
-                       + "return changed ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+        if (c.isEmpty()) {
+            return deleteAsync();
+        }
+        
+        List<Object> params = new ArrayList<Object>(c.size()*2);
+        for (Object object : c) {
+            params.add(0);
+            params.add(encode((V)object));
+        }
+        
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('zadd', KEYS[2], unpack(ARGV)); "
+                 + "local prevSize = redis.call('zcard', KEYS[1]); "
+                 + "local size = redis.call('zinterstore', KEYS[1], 2, KEYS[1], KEYS[2], 'aggregate', 'sum');"
+                 + "redis.call('del', KEYS[2]); "
+                 + "return size ~= prevSize and 1 or 0; ",
+             Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), params.toArray());
     }
 
     @Override
@@ -414,7 +399,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_LIST, getName(), startValue, endValue);
     }
 
     @Override
@@ -453,7 +438,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), startValue, endValue, "LIMIT", offset, count);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_LIST, getName(), startValue, endValue, "LIMIT", offset, count);
     }
 
     @Override
@@ -474,10 +459,22 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<ScoredEntry<V>> entryRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        return get(entryRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count));
+    }
+
+    @Override
     public Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
+    }
+
+    @Override
+    public Future<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY, getName(), endValue, startValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
     @Override
@@ -486,8 +483,18 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public int revRank(V o) {
+    public Integer revRank(V o) {
         return get(revRankAsync(o));
     }
 
+    public Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        return get(countAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
+    }
+    
+    public Future<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZCOUNT, getName(), startValue, endValue);
+    }
+    
 }

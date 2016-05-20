@@ -23,7 +23,7 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
-public class ObjectSetReplayDecoder implements MultiDecoder<Set<Object>> {
+public class ObjectSetReplayDecoder<T> implements MultiDecoder<Set<T>> {
 
     @Override
     public Object decode(ByteBuf buf, State state) {
@@ -31,8 +31,8 @@ public class ObjectSetReplayDecoder implements MultiDecoder<Set<Object>> {
     }
 
     @Override
-    public Set<Object> decode(List<Object> parts, State state) {
-        return new HashSet<Object>(parts);
+    public Set<T> decode(List<Object> parts, State state) {
+        return new HashSet(parts);
     }
 
     @Override

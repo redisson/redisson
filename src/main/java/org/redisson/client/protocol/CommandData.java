@@ -59,6 +59,18 @@ public class CommandData<T, R> implements QueueCommand {
     public Promise<R> getPromise() {
         return promise;
     }
+    
+    public Throwable cause() {
+        return promise.cause();
+    }
+
+    public boolean isSuccess() {
+        return promise.isSuccess();
+    }
+
+    public boolean tryFailure(Throwable cause) {
+        return promise.tryFailure(cause);
+    }
 
     public Codec getCodec() {
         return codec;
@@ -76,6 +88,10 @@ public class CommandData<T, R> implements QueueCommand {
             return Collections.singletonList((CommandData<Object, Object>)this);
         }
         return Collections.emptyList();
+    }
+    
+    public boolean isBlockingCommand() {
+        return QueueCommand.TIMEOUTLESS_COMMANDS.contains(command.getName()) && !promise.isDone();
     }
 
 }

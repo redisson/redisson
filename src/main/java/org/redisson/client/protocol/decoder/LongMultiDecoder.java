@@ -13,27 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.handler;
+package org.redisson.client.protocol.decoder;
 
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.CommandsData;
+import java.io.IOException;
+import java.util.List;
+
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
 
-/**
- *
- * @author Nikita Koksharov
- *
- */
-public class CommandsListEncoder extends MessageToByteEncoder<CommandsData> {
+public class LongMultiDecoder implements MultiDecoder<Object> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, CommandsData msg, ByteBuf out) throws Exception {
-        for (CommandData<?, ?> commandData : msg.getCommands()) {
-            ctx.pipeline().get(CommandEncoder.class).encode(ctx, (CommandData<Object, Object>)commandData, out);
-        }
+    public Object decode(ByteBuf buf, State state) throws IOException {
+        return LongCodec.INSTANCE.getValueDecoder().decode(buf, state);
+    }
+
+    @Override
+    public boolean isApplicable(int paramNum, State state) {
+        return false;
+    }
+
+    @Override
+    public Object decode(List<Object> parts, State state) {
+        return null;
     }
 
 }

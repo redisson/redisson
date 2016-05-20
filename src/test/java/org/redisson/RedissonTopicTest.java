@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.BaseStatusListener;
 import org.redisson.core.MessageListener;
+import org.redisson.core.RSet;
 import org.redisson.core.RTopic;
 
 public class RedissonTopicTest {
@@ -46,6 +47,29 @@ public class RedissonTopicTest {
 
     }
 
+    @Test
+    public void testSyncCommands() throws InterruptedException {
+        RedissonClient redisson = BaseTest.createInstance();
+        RTopic<String> topic = redisson.getTopic("system_bus");
+        RSet<String> redissonSet = redisson.getSet("set1");
+        CountDownLatch latch = new CountDownLatch(1);
+        topic.addListener(new MessageListener<String>() {
+            
+            @Override
+            public void onMessage(String channel, String msg) {
+                for (int j = 0; j < 1000; j++) {
+                    redissonSet.contains("" + j);
+                }
+                latch.countDown();
+            }
+        });
+        
+        topic.publish("sometext");
+        
+        latch.await();
+        redisson.shutdown();
+    }
+    
     @Test
     public void testInnerPublish() throws InterruptedException {
 

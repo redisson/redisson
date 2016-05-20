@@ -13,8 +13,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.codec.StringCodec;
@@ -27,6 +25,30 @@ import io.netty.util.concurrent.Future;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
+    @Test
+    public void testCount() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0, "1");
+        set.add(1, "4");
+        set.add(2, "2");
+        set.add(3, "5");
+        set.add(4, "3");
+        
+        assertThat(set.count(0, true, 3, false)).isEqualTo(3);
+    }
+    
+    @Test
+    public void testReadAll() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0, "1");
+        set.add(1, "4");
+        set.add(2, "2");
+        set.add(3, "5");
+        set.add(4, "3");
+
+        assertThat(set.readAll()).containsOnly("1", "2", "4", "5", "3");
+    }
+    
     @Test
     public void testAddAll() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
@@ -59,7 +81,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.3, "c");
 
         Assert.assertEquals("c", set.pollLast());
-        MatcherAssert.assertThat(set, Matchers.contains("a", "b"));
+        assertThat(set).containsExactly("a", "b");
     }
 
     @Test
@@ -72,7 +94,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.3, "c");
 
         Assert.assertEquals("a", set.pollFirst());
-        MatcherAssert.assertThat(set, Matchers.contains("b", "c"));
+        assertThat(set).containsExactly("b", "c");
     }
 
     @Test
@@ -100,7 +122,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.7, "g");
 
         Assert.assertEquals(2, set.removeRangeByScore(0.1, false, 0.3, true));
-        MatcherAssert.assertThat(set, Matchers.contains("a", "d", "e", "f", "g"));
+        assertThat(set).containsExactly("a", "d", "e", "f", "g");
     }
 
     @Test
@@ -115,7 +137,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.7, "g");
 
         Assert.assertEquals(3, set.removeRangeByScore(Double.NEGATIVE_INFINITY, false, 0.3, true));
-        MatcherAssert.assertThat(set, Matchers.contains("d", "e", "f", "g"));
+        assertThat(set).containsExactly("d", "e", "f", "g");
     }
     
     @Test
@@ -130,7 +152,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.7, "g");
 
         Assert.assertEquals(3, set.removeRangeByScore(0.4, false, Double.POSITIVE_INFINITY, true));
-        MatcherAssert.assertThat(set, Matchers.contains("a", "b", "c", "d"));
+        assertThat(set).containsExactly("a", "b", "c", "d");
     }
 
     @Test
@@ -145,7 +167,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.7, "g");
 
         Assert.assertEquals(2, set.removeRangeByRank(0, 1));
-        MatcherAssert.assertThat(set, Matchers.contains("c", "d", "e", "f", "g"));
+        assertThat(set).containsExactly("c", "d", "e", "f", "g");
     }
 
     @Test
@@ -159,7 +181,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.6, "f");
         set.add(0.7, "g");
 
-        Assert.assertEquals(3, (int)set.rank("d"));
+        assertThat(set.revRank("d")).isEqualTo(3);
+        assertThat(set.rank("abc")).isNull();
     }
     
     @Test
@@ -173,7 +196,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.6, "f");
         set.add(0.7, "g");
 
-        Assert.assertEquals(1, (int)set.revRank("f"));
+        assertThat(set.revRank("f")).isEqualTo(1);
+        assertThat(set.revRank("abc")).isNull();
     }
 
 
@@ -197,14 +221,14 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
         Assert.assertTrue(set.removeAsync(1).get());
         Assert.assertFalse(set.contains(1));
-        Assert.assertThat(set, Matchers.contains(3, 7));
+        assertThat(set).containsExactly(3, 7);
 
         Assert.assertFalse(set.removeAsync(1).get());
-        Assert.assertThat(set, Matchers.contains(3, 7));
+        assertThat(set).containsExactly(3, 7);
 
         set.removeAsync(3).get();
         Assert.assertFalse(set.contains(3));
-        Assert.assertThat(set, Matchers.contains(7));
+        assertThat(set).containsExactly(7);
     }
 
     @Test
@@ -235,7 +259,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
             }
         }
 
-        Assert.assertThat(set, Matchers.contains("1", "4", "5", "3"));
+        assertThat(set).containsExactly("1", "4", "5", "3");
 
         int iteration = 0;
         for (Iterator<String> iterator = set.iterator(); iterator.hasNext();) {
@@ -284,8 +308,10 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         }
 
         Assert.assertTrue(set.retainAll(Arrays.asList(1, 2)));
-        Assert.assertThat(set, Matchers.containsInAnyOrder(1, 2));
+        assertThat(set).containsExactly(1, 2); 
         Assert.assertEquals(2, set.size());
+        assertThat(set.getScore(1)).isEqualTo(10);
+        assertThat(set.getScore(2)).isEqualTo(20);
     }
 
     @Test
@@ -296,7 +322,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.3, 3);
 
         Assert.assertTrue(set.removeAll(Arrays.asList(1, 2)));
-        Assert.assertThat(set, Matchers.contains(3));
+        assertThat(set).containsOnly(3);
         Assert.assertEquals(1, set.size());
     }
 
@@ -314,15 +340,15 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         SortedSet<Integer> hs = set.tailSet(3);
         hs.add(10);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(3, 4, 5, 10));
+        assertThat(hs).containsExactly(3, 4, 5, 10);
 
         set.remove(4);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(3, 5, 10));
+        assertThat(hs).containsExactly(3, 5, 10);
 
         set.remove(3);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(5, 10));
+        assertThat(hs).containsExactly(5, 10);
 
         hs.add(-1);
     }
@@ -341,15 +367,15 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         SortedSet<Integer> hs = set.headSet(3);
         hs.add(0);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(0, 1, 2));
+        assertThat(hs).containsExactly(0, 1, 2);
 
         set.remove(2);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(0, 1));
+        assertThat(hs).containsExactly(0, 1);
 
         set.remove(3);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(0, 1));
+        assertThat(hs).containsExactly(0, 1);
 
         hs.add(7);
     }
@@ -367,15 +393,15 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         SortedSet<Integer> hs = set.tailSet(3);
         hs.add(10);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(3, 4, 5, 10));
+        assertThat(hs).containsExactly(3, 4, 5, 10);
 
         set.remove(4);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(3, 5, 10));
+        assertThat(hs).containsExactly(3, 5, 10);
 
         set.remove(3);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(5, 10));
+        assertThat(hs).containsExactly(5, 10);
 
         hs.add(-1);
     }
@@ -393,15 +419,15 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         SortedSet<Integer> hs = set.headSet(3);
         hs.add(0);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(0, 1, 2));
+        assertThat(hs).containsExactly(0, 1, 2);
 
         set.remove(2);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(0, 1));
+        assertThat(hs).containsExactly(0, 1);
 
         set.remove(3);
 
-        MatcherAssert.assertThat(hs, Matchers.contains(0, 1));
+        assertThat(hs).containsExactly(0, 1);
 
         hs.add(7);
     }
@@ -417,10 +443,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertTrue(set.add(1, -1));
         Assert.assertTrue(set.add(2, 0));
 
-        MatcherAssert.assertThat(set, Matchers.contains(-1, 0, 1, 2, 3, 4, 10));
-
-//        Assert.assertEquals(-1, (int)set.first());
-//        Assert.assertEquals(10, (int)set.last());
+        assertThat(set).containsExactly(-1, 0, 1, 2, 3, 4, 10);
     }
 
     @Test
@@ -435,7 +458,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertFalse(set.remove(0));
         Assert.assertTrue(set.remove(3));
 
-        Assert.assertThat(set, Matchers.contains(1, 2, 4, 5));
+        assertThat(set).containsExactly(1, 2, 4, 5);
     }
 
     @Test
@@ -458,10 +481,10 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(3, "5");
         set.add(4, "3");
 
-        MatcherAssert.assertThat(Arrays.asList(set.toArray()), Matchers.<Object>containsInAnyOrder("1", "2", "4", "5", "3"));
+        assertThat(Arrays.asList(set.toArray())).containsExactly("1", "4", "2", "5", "3");
 
         String[] strs = set.toArray(new String[0]);
-        MatcherAssert.assertThat(Arrays.asList(strs), Matchers.containsInAnyOrder("1", "4", "2", "5", "3"));
+        assertThat(Arrays.asList(strs)).containsExactly("1", "4", "2", "5", "3");
     }
 
     @Test
@@ -517,7 +540,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(4, 5);
 
         Collection<Integer> vals = set.valueRange(0, -1);
-        MatcherAssert.assertThat(vals, Matchers.contains(1, 2, 3, 4, 5));
+        assertThat(vals).containsExactly(1, 2, 3, 4, 5);
     }
 
     @Test
@@ -530,11 +553,11 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(50, 5);
 
         Collection<ScoredEntry<Integer>> vals = set.entryRange(0, -1);
-        MatcherAssert.assertThat(vals, Matchers.contains(new ScoredEntry<Integer>(10D, 1),
+        assertThat(vals).containsExactly(new ScoredEntry<Integer>(10D, 1),
                 new ScoredEntry<Integer>(20D, 2),
                 new ScoredEntry<Integer>(30D, 3),
                 new ScoredEntry<Integer>(40D, 4),
-                new ScoredEntry<Integer>(50D, 5)));
+                new ScoredEntry<Integer>(50D, 5));
     }
 
     @Test
@@ -649,11 +672,31 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(4, "e");
 
         Collection<ScoredEntry<String>> r = set.entryRange(1, true, 4, false, 1, 2);
+        Assert.assertEquals(2, r.size());
         ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
         Assert.assertEquals(2d, a[0].getScore(), 0);
         Assert.assertEquals(3d, a[1].getScore(), 0);
         Assert.assertEquals("c", a[0].getValue());
         Assert.assertEquals("d", a[1].getValue());
+    }
+
+    @Test
+    public void testScoredSortedSetEntryRangeReversed() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        set.add(0, "a");
+        set.add(1, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+        set.add(4, "e");
+
+        Collection<ScoredEntry<String>> r = set.entryRangeReversed(1, true, 4, false, 1, 2);
+        Assert.assertEquals(2, r.size());
+        ScoredEntry<String>[] a = r.toArray(new ScoredEntry[0]);
+        Assert.assertEquals(2d, a[0].getScore(), 0);
+        Assert.assertEquals(1d, a[1].getScore(), 0);
+        Assert.assertEquals("c", a[0].getValue());
+        Assert.assertEquals("b", a[1].getValue());
     }
     
     @Test

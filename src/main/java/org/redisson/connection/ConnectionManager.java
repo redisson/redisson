@@ -27,7 +27,6 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.core.NodeType;
 import org.redisson.misc.InfinitySemaphoreLatch;
 
@@ -61,8 +60,6 @@ public interface ConnectionManager {
     IdleConnectionWatcher getConnectionWatcher();
 
     <R> Future<R> newFailedFuture(Throwable cause);
-
-    void slaveDown(MasterSlaveEntry entry, String host, int port, FreezeReason freezeReason);
 
     Collection<RedisClientEntry> getClients();
 
@@ -102,6 +99,8 @@ public interface ConnectionManager {
 
     void shutdown();
 
+    void shutdown(long quietPeriod, long timeout, TimeUnit unit);
+    
     EventLoopGroup getGroup();
 
     Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);

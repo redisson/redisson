@@ -15,18 +15,21 @@
  */
 package org.redisson.client.handler;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.DefaultParamsEncoder;
+import org.redisson.client.protocol.Encoder;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
 
@@ -38,8 +41,11 @@ import io.netty.util.CharsetUtil;
  * @author Nikita Koksharov
  *
  */
-public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Object>> {
+@Sharable
+public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
+    public static final CommandEncoder INSTANCE = new CommandEncoder();
+    
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final Encoder paramsEncoder = new DefaultParamsEncoder();
@@ -48,14 +54,16 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
     private static final char BYTES_PREFIX = '$';
     private static final byte[] CRLF = "\r\n".getBytes();
 
+    private static final Map<Long, byte[]> longCache = new HashMap<Long, byte[]>();
+    
     @Override
-    protected void encode(ChannelHandlerContext ctx, CommandData<Object, Object> msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, CommandData<?, ?> msg, ByteBuf out) throws Exception {
         out.writeByte(ARGS_PREFIX);
         int len = 1 + msg.getParams().length;
         if (msg.getCommand().getSubName() != null) {
             len++;
         }
-        out.writeBytes(toChars(len));
+        out.writeBytes(convert(len));
         out.writeBytes(CRLF);
 
         writeArgument(out, msg.getCommand().getName().getBytes("UTF-8"));
@@ -90,7 +98,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         }
     }
 
-    private Encoder selectEncoder(CommandData<Object, Object> msg, int param) {
+    private Encoder selectEncoder(CommandData<?, ?> msg, int param) {
         int typeIndex = 0;
         List<ValueType> inParamType = msg.getCommand().getInParamType();
         if (inParamType.size() > 1) {
@@ -112,15 +120,18 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         if (inParamType.get(typeIndex) == ValueType.OBJECTS) {
             return msg.getCodec().getValueEncoder();
         }
-        if (inParamType.get(typeIndex) == ValueType.BINARY) {
-            return ByteArrayCodec.INSTANCE.getValueEncoder();
+        if (inParamType.get(typeIndex) == ValueType.OBJECT) {
+            return msg.getCodec().getValueEncoder();
+        }
+        if (inParamType.get(typeIndex) == ValueType.STRING) {
+            return StringCodec.INSTANCE.getValueEncoder();
         }
         throw new IllegalStateException();
     }
 
     private void writeArgument(ByteBuf out, byte[] arg) {
         out.writeByte(BYTES_PREFIX);
-        out.writeBytes(toChars(arg.length));
+        out.writeBytes(convert(arg.length));
         out.writeBytes(CRLF);
         out.writeBytes(arg);
         out.writeBytes(CRLF);
@@ -185,11 +196,26 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<Object, Obj
         }
     }
 
+    public static byte[] convert(long i) {
+        if (i >= 0 && i <= 255) {
+            return longCache.get(i);
+        }
+        return toChars(i);
+    }
+    
     public static byte[] toChars(long i) {
         int size = (i < 0) ? stringSize(-i) + 1 : stringSize(i);
         byte[] buf = new byte[size];
         getChars(i, size, buf);
         return buf;
     }
+
+    static {
+        for (long i = 0; i < 256; i++) {
+            byte[] value = toChars(i);
+            longCache.put(i, value);
+        }
+    }
+    
 
 }

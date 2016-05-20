@@ -47,8 +47,10 @@ import org.redisson.core.RBlockingDeque;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBloomFilter;
 import org.redisson.core.RBucket;
+import org.redisson.core.RBuckets;
 import org.redisson.core.RCountDownLatch;
 import org.redisson.core.RDeque;
+import org.redisson.core.RGeo;
 import org.redisson.core.RHyperLogLog;
 import org.redisson.core.RKeys;
 import org.redisson.core.RLexSortedSet;
@@ -73,6 +75,7 @@ import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
 import io.netty.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Main infrastructure class allows to get access
@@ -180,6 +183,16 @@ public class Redisson implements RedissonClient {
     public static RedissonReactiveClient createReactive(Config config) {
         return new RedissonReactive(config);
     }
+    
+    @Override
+    public <V> RGeo<V> getGeo(String name) {
+        return new RedissonGeo<V>(commandExecutor, name);
+    }
+    
+    @Override
+    public <V> RGeo<V> getGeo(String name, Codec codec) {
+        return new RedissonGeo<V>(codec, commandExecutor, name);
+    }
 
     @Override
     public <V> RBucket<V> getBucket(String name) {
@@ -191,6 +204,16 @@ public class Redisson implements RedissonClient {
         return new RedissonBucket<V>(codec, commandExecutor, name);
     }
 
+    @Override
+    public RBuckets getBuckets() {
+        return new RedissonBuckets(this, commandExecutor);
+    }
+    
+    @Override
+    public RBuckets getBuckets(Codec codec) {
+        return new RedissonBuckets(this, codec, commandExecutor);
+    }
+    
     @Override
     public <V> List<RBucket<V>> findBuckets(String pattern) {
         Collection<String> keys = commandExecutor.get(commandExecutor.<List<String>, String>readAllAsync(RedisCommands.KEYS, pattern));
@@ -247,11 +270,6 @@ public class Redisson implements RedissonClient {
         }
 
         commandExecutor.write(params.get(0).toString(), RedisCommands.MSET, params.toArray());
-    }
-
-    @Override
-    public <V> List<RBucket<V>> getBuckets(String pattern) {
-        return findBuckets(pattern);
     }
 
     @Override
@@ -372,7 +390,12 @@ public class Redisson implements RedissonClient {
     public RRemoteService getRemoteSerivce() {
         return new RedissonRemoteService(this);
     }
-    
+
+    @Override
+    public RRemoteService getRemoteSerivce(String name) {
+        return new RedissonRemoteService(this, name);
+    }
+
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
         return new RedissonSortedSet<V>(commandExecutor, name);
@@ -507,6 +530,12 @@ public class Redisson implements RedissonClient {
     public void shutdown() {
         connectionManager.shutdown();
     }
+    
+    
+    @Override
+    public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
+        connectionManager.shutdown(quietPeriod, timeout, unit);
+    }
 
     @Override
     public Config getConfig() {
@@ -524,16 +553,6 @@ public class Redisson implements RedissonClient {
             throw new IllegalStateException("Redisson is not in cluster mode!");
         }
         return new RedisNodes<ClusterNode>(connectionManager);
-    }
-
-    @Override
-    public void flushdb() {
-        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHDB));
-    }
-
-    @Override
-    public void flushall() {
-        commandExecutor.get(commandExecutor.writeAllAsync(RedisCommands.FLUSHALL));
     }
 
     @Override

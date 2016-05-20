@@ -6,13 +6,14 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.codec.JsonJacksonCodec;
@@ -124,13 +125,20 @@ public class RedissonMapCacheTest extends BaseTest {
         }
 
     }
+    
+    @Test
+    public void testCacheValues() {
+        final RMapCache<String, String> map = redisson.getMapCache("testRMapCacheValues");
+        map.put("1234", "5678", 0, TimeUnit.MINUTES, 60, TimeUnit.MINUTES);
+        assertThat(map.values()).containsOnly("5678");
+    }    
 
     @Test
     public void testGetAll() throws InterruptedException {
         RMapCache<Integer, Integer> map = redisson.getMapCache("getAll");
         map.put(1, 100);
         map.put(2, 200, 1, TimeUnit.SECONDS);
-        map.put(3, 300, 1, TimeUnit.SECONDS);
+        map.put(3, 300, 1, TimeUnit.SECONDS, 1, TimeUnit.SECONDS);
         map.put(4, 400);
 
         Map<Integer, Integer> filtered = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3, 5)));
@@ -201,6 +209,69 @@ public class RedissonMapCacheTest extends BaseTest {
     }
 
     @Test
+    public void testIteratorRemoveHighVolume() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simpleMap");
+        for (int i = 0; i < 10000; i++) {
+            map.put(i, i*10);
+        }
+        
+        int cnt = 0;
+        Iterator<Entry<Integer, Integer>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Entry<Integer, Integer> entry = iterator.next();
+            iterator.remove();
+            cnt++;
+        }
+        Assert.assertEquals(10000, cnt);
+        assertThat(map).isEmpty();
+        Assert.assertEquals(0, map.size());
+    }
+    
+    @Test
+    public void testIteratorRandomRemoveFirst() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simpleMap");
+        for (int i = 0; i < 1000; i++) {
+            map.put(i, i*10);
+        }
+        
+        int cnt = 0;
+        int removed = 0;
+        Iterator<Entry<Integer, Integer>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Entry<Integer, Integer> entry = iterator.next();
+            if (cnt < 20) {
+                iterator.remove();
+                removed++;
+            }
+            cnt++;
+        }
+        Assert.assertEquals(1000, cnt);
+        assertThat(map.size()).isEqualTo(cnt - removed);
+    }
+    
+    @Test
+    public void testIteratorRandomRemoveHighVolume() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simpleMap");
+        for (int i = 0; i < 10000; i++) {
+            map.put(i, i*10);
+        }
+        
+        int cnt = 0;
+        int removed = 0;
+        Iterator<Entry<Integer, Integer>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Entry<Integer, Integer> entry = iterator.next();
+            if (ThreadLocalRandom.current().nextBoolean()) {
+                iterator.remove();
+                removed++;
+            }
+            cnt++;
+        }
+        Assert.assertEquals(10000, cnt);
+        assertThat(map.size()).isEqualTo(cnt - removed);
+    }
+
+    @Test
     public void testClearExpire() throws InterruptedException {
         RMapCache<String, String> cache = redisson.getMapCache("simple");
         cache.put("0", "8", 1, TimeUnit.SECONDS);
@@ -221,10 +292,12 @@ public class RedissonMapCacheTest extends BaseTest {
         map.put(2, "33", 1, TimeUnit.SECONDS);
         map.put(3, "43");
 
-        Assert.assertEquals(3, map.entrySet().size());
-
-        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(1), Matchers.equalTo("12")));
-        MatcherAssert.assertThat(map, Matchers.hasEntry(Matchers.equalTo(3), Matchers.equalTo("43")));
+        Map<Integer, String> expected = new HashMap<>();
+        map.put(1, "12");
+        map.put(3, "43");
+        
+        assertThat(map.entrySet()).containsAll(expected.entrySet());
+        assertThat(map).hasSize(3);
     }
 
     @Test
@@ -253,7 +326,7 @@ public class RedissonMapCacheTest extends BaseTest {
         joinMap.put(6, "6");
         map.putAll(joinMap);
 
-        MatcherAssert.assertThat(map.keySet(), Matchers.containsInAnyOrder(1, 2, 3, 4, 5, 6));
+        assertThat(map.keySet()).containsOnly(1, 2, 3, 4, 5, 6);
     }
 
     @Test
@@ -535,47 +608,6 @@ public class RedissonMapCacheTest extends BaseTest {
         Assert.assertEquals(1, map.size());
     }
 
-//    @Test
-//    public void testKeyIterator() {
-//        RMap<Integer, Integer> map = redisson.getCache("simple");
-//        map.put(1, 0);
-//        map.put(3, 5);
-//        map.put(4, 6);
-//        map.put(7, 8);
-//
-//        Collection<Integer> keys = map.keySet();
-//        MatcherAssert.assertThat(keys, Matchers.containsInAnyOrder(1, 3, 4, 7));
-//        for (Iterator<Integer> iterator = map.keyIterator(); iterator.hasNext();) {
-//            Integer value = iterator.next();
-//            if (!keys.remove(value)) {
-//                Assert.fail();
-//            }
-//        }
-//
-//        Assert.assertEquals(0, keys.size());
-//    }
-
-//    @Test
-//    public void testValueIterator() {
-//        RCache<Integer, Integer> map = redisson.getCache("simple");
-//        map.put(1, 0);
-//        map.put(3, 5);
-//        map.put(4, 6);
-//        map.put(7, 8);
-//
-//        Collection<Integer> values = map.values();
-//        MatcherAssert.assertThat(values, Matchers.containsInAnyOrder(0, 5, 6, 8));
-//        for (Iterator<Integer> iterator = map.valueIterator(); iterator.hasNext();) {
-//            Integer value = iterator.next();
-//            if (!values.remove(value)) {
-//                Assert.fail();
-//            }
-//        }
-//
-//        Assert.assertEquals(0, values.size());
-//    }
-
-
     @Test
     public void testFastPutIfAbsent() throws Exception {
         RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
@@ -720,6 +752,33 @@ public class RedissonMapCacheTest extends BaseTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    
+    
+    @Test
+    public void testRMapCacheValues() {
+        final RMapCache<String, String> map = redisson.getMapCache("testRMapCacheValues");
+        map.put("1234", "5678", 1, TimeUnit.MINUTES, 60, TimeUnit.MINUTES);
+        assertThat(map.values()).containsOnly("5678");
+    }
+
+    @Test
+    public void testReadAllEntrySet() throws InterruptedException {
+        RMapCache<Integer, String> map = redisson.getMapCache("simple12");
+        map.put(1, "12");
+        map.put(2, "33", 10, TimeUnit.MINUTES, 60, TimeUnit.MINUTES);
+        map.put(3, "43");
+        
+        assertThat(map.readAllEntrySet()).isEqualTo(map.entrySet());
+    }
+
+    
+    @Test
+    public void testReadAllValues() {
+        final RMapCache<String, String> map = redisson.getMapCache("testRMapCacheAllValues");
+        map.put("1234", "5678", 1, TimeUnit.MINUTES, 60, TimeUnit.MINUTES);
+        assertThat(map.readAllValues()).containsOnly("5678");
     }
 
     public static class SimpleObjectWithoutDefaultConstructor {

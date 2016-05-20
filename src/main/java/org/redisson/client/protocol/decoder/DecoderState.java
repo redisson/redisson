@@ -13,35 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.client.protocol.decoder;
 
-public class RemoteServiceResponse {
+public interface DecoderState {
 
-    private Object result;
-    private Throwable error;
-    
-    public RemoteServiceResponse() {
-    }
-    
-    public RemoteServiceResponse(Object result) {
-        this.result = result;
-    }
-
-    public RemoteServiceResponse(Throwable error) {
-        this.error = error;
-    }
-
-    public Throwable getError() {
-        return error;
-    }
-    
-    public Object getResult() {
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "RemoteServiceResponse [result=" + result + ", error=" + error + "]";
-    }
+    DecoderState copy();
     
 }

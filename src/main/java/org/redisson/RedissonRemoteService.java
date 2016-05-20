@@ -18,17 +18,23 @@ package org.redisson;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisTimeoutException;
-import org.redisson.core.MessageListener;
+import org.redisson.core.RBatch;
 import org.redisson.core.RBlockingQueue;
+import org.redisson.core.RBlockingQueueAsync;
 import org.redisson.core.RRemoteService;
-import org.redisson.core.RTopic;
+import org.redisson.remote.RRemoteServiceResponse;
+import org.redisson.remote.RemoteServiceAck;
+import org.redisson.remote.RemoteServiceAckTimeoutException;
+import org.redisson.remote.RemoteServiceKey;
+import org.redisson.remote.RemoteServiceMethod;
+import org.redisson.remote.RemoteServiceRequest;
+import org.redisson.remote.RemoteServiceResponse;
+import org.redisson.remote.RemoteServiceTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +44,11 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.ThreadLocalRandom;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonRemoteService implements RRemoteService {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonRemoteService.class); 
@@ -45,9 +56,15 @@ public class RedissonRemoteService implements RRemoteService {
     private final Map<RemoteServiceKey, RemoteServiceMethod> beans = PlatformDependent.newConcurrentHashMap();
     
     private final Redisson redisson;
+    private final String name;
     
     public RedissonRemoteService(Redisson redisson) {
+        this(redisson, "redisson_remote_service");
+    }
+
+    public RedissonRemoteService(Redisson redisson, String name) {
         this.redisson = redisson;
+        this.name = name;
     }
 
     @Override
@@ -69,7 +86,7 @@ public class RedissonRemoteService implements RRemoteService {
         }
         
         for (int i = 0; i < executorsAmount; i++) {
-            String requestQueueName = "redisson_remote_service:{" + remoteInterface.getName() + "}";
+            String requestQueueName = name + ":{" + remoteInterface.getName() + "}";
             RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName);
             subscribe(remoteInterface, requestQueue);
         }
@@ -81,75 +98,117 @@ public class RedissonRemoteService implements RRemoteService {
             @Override
             public void operationComplete(Future<RemoteServiceRequest> future) throws Exception {
                 if (!future.isSuccess()) {
+                    if (future.cause() instanceof RedissonShutdownException) {
+                        return;
+                    }
+                    // re-subscribe after a failed takeAsync
+                    subscribe(remoteInterface, requestQueue);
+                    return;
+                }
+
+                // do not subscribe now, see https://github.com/mrniko/redisson/issues/493
+                // subscribe(remoteInterface, requestQueue);
+                
+                final RemoteServiceRequest request = future.getNow();
+                if (System.currentTimeMillis() - request.getDate() > request.getAckTimeout()) {
+                    log.debug("request: {} has been skipped due to ackTimeout");
+                    // re-subscribe after a skipped ackTimeout
+                    subscribe(remoteInterface, requestQueue);
                     return;
                 }
                 
-                RemoteServiceRequest request = future.getNow();
-                RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName()));
-                String responseName = "redisson_remote_service:{" + remoteInterface.getName() + "}:" + request.getRequestId();
-                RTopic<RemoteServiceResponse> topic = redisson.getTopic(responseName);
-                RemoteServiceResponse response;
-                try {
-                    Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
-                    response = new RemoteServiceResponse(result);
-                } catch (Exception e) {
-                    response = new RemoteServiceResponse(e.getCause());
-                    log.error("Can't execute: " + request, e);
-                }
+                final RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName()));
+                final String responseName = name + ":{" + remoteInterface.getName() + "}:" + request.getRequestId();
                 
-                long clients = topic.publish(response);
-                if (clients == 0) {
-                    log.error("None of clients has not received a response: {} for request: {}", response, request);
+                Future<List<?>> ackClientsFuture = send(request.getAckTimeout(), responseName, new RemoteServiceAck());
+                ackClientsFuture.addListener(new FutureListener<List<?>>() {
+                    @Override
+                    public void operationComplete(Future<List<?>> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            log.error("Can't send ack for request: " + request, future.cause());
+                            if (future.cause() instanceof RedissonShutdownException) {
+                                return;
+                            }
+                            // re-subscribe after a failed send (ack)
+                            subscribe(remoteInterface, requestQueue);
+                            return;
+                        }
+
+                        invokeMethod(remoteInterface, requestQueue, request, method, responseName);
+                    }
+                });
+            }
+
+        });
+    }
+
+    private <T> void invokeMethod(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue, final RemoteServiceRequest request, RemoteServiceMethod method, String responseName) {
+        final AtomicReference<RemoteServiceResponse> responseHolder = new AtomicReference<RemoteServiceResponse>();
+        try {
+            Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
+            RemoteServiceResponse response = new RemoteServiceResponse(result);
+            responseHolder.set(response);
+        } catch (Exception e) {
+            RemoteServiceResponse response = new RemoteServiceResponse(e.getCause());
+            responseHolder.set(response);
+            log.error("Can't execute: " + request, e);
+        }
+        
+        Future<List<?>> clientsFuture = send(request.getResponseTimeout(), responseName, responseHolder.get());
+        clientsFuture.addListener(new FutureListener<List<?>>() {
+            @Override
+            public void operationComplete(Future<List<?>> future) throws Exception {
+                if (!future.isSuccess()) {
+                    log.error("Can't send response: " + responseHolder.get() + " for request: " + request, future.cause());
+                    if (future.cause() instanceof RedissonShutdownException) {
+                        return;
+                    }
                 }
-                
+                // re-subscribe anyways (fail or success) after the send (response)
                 subscribe(remoteInterface, requestQueue);
             }
         });
     }
-
+    
     @Override
     public <T> T get(Class<T> remoteInterface) {
-        return get(remoteInterface, -1, null);
+        return get(remoteInterface, 30, TimeUnit.SECONDS);
     }
 
     @Override
-    public <T> T get(final Class<T> remoteInterface, final int timeout, final TimeUnit timeUnit) {
+    public <T> T get(final Class<T> remoteInterface, final long executionTimeout, final TimeUnit executionTimeUnit) {
+        return get(remoteInterface, executionTimeout, executionTimeUnit, 1, TimeUnit.SECONDS);
+    }
+    
+    public <T> T get(final Class<T> remoteInterface, final long executionTimeout, final TimeUnit executionTimeUnit, 
+                        final long ackTimeout, final TimeUnit ackTimeUnit) {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 String requestId = generateRequestId();
-
-                String requestQueueName = "redisson_remote_service:{" + remoteInterface.getName() + "}";
+                
+                String requestQueueName = name + ":{" + remoteInterface.getName() + "}";
                 RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName);
-                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args);
+                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args, 
+                                                ackTimeUnit.toMillis(ackTimeout), executionTimeUnit.toMillis(executionTimeout), System.currentTimeMillis());
                 requestQueue.add(request);
                 
-                String responseName = "redisson_remote_service:{" + remoteInterface.getName() + "}:" + requestId;
-                final RTopic<RemoteServiceResponse> topic = redisson.getTopic(responseName);
-                final CountDownLatch latch = new CountDownLatch(1);
-                final AtomicReference<RemoteServiceResponse> response = new AtomicReference<RemoteServiceResponse>();
-                int listenerId = topic.addListener(new MessageListener<RemoteServiceResponse>() {
-                    @Override
-                    public void onMessage(String channel, RemoteServiceResponse msg) {
-                        response.set(msg);
-                        latch.countDown();
-                    }
-                });
+                String responseName = name + ":{" + remoteInterface.getName() + "}:" + requestId;
+                RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseName);
                 
-                if (timeout == -1) {
-                    latch.await();
-                } else {
-                    if (!latch.await(timeout, timeUnit)) {
-                        topic.removeListener(listenerId);
-                        throw new RedisTimeoutException("No response after " + timeUnit.toMillis(timeout) + "ms for request: " + request);
-                    }
+                RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(ackTimeout, ackTimeUnit);
+                if (ack == null) {
+                    throw new RemoteServiceAckTimeoutException("No ACK response after " + ackTimeUnit.toMillis(ackTimeout) + "ms for request: " + request);
                 }
-                topic.removeListener(listenerId);
-                RemoteServiceResponse msg = response.get();
-                if (msg.getError() != null) {
-                    throw msg.getError();
+                
+                RemoteServiceResponse response = (RemoteServiceResponse) responseQueue.poll(executionTimeout, executionTimeUnit);
+                if (response == null) {
+                    throw new RemoteServiceTimeoutException("No response after " + executionTimeUnit.toMillis(executionTimeout) + "ms for request: " + request);
                 }
-                return msg.getResult();
+                if (response.getError() != null) {
+                    throw response.getError();
+                }
+                return response.getResult();
             }
         };
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[] {remoteInterface}, handler);
@@ -160,6 +219,14 @@ public class RedissonRemoteService implements RRemoteService {
         // TODO JDK UPGRADE replace to native ThreadLocalRandom
         ThreadLocalRandom.current().nextBytes(id);
         return ByteBufUtil.hexDump(id);
+    }
+
+    private <T extends RRemoteServiceResponse> Future<List<?>> send(long timeout, String responseName, T response) {
+        RBatch batch = redisson.createBatch();
+        RBlockingQueueAsync<T> queue = batch.getBlockingQueue(responseName);
+        queue.putAsync(response);
+        queue.expireAsync(timeout, TimeUnit.MILLISECONDS);
+        return batch.executeAsync();
     }
     
 }

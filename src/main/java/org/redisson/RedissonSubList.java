@@ -104,13 +104,13 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 "local toIndex = table.remove(ARGV, 2);" +
                 "local items = redis.call('lrange', KEYS[1], tonumber(fromIndex), tonumber(toIndex)) " +
                 "for i=1, #items do " +
-                    "for j = 0, #ARGV, 1 do " +
+                    "for j = 1, #ARGV, 1 do " +
                         "if items[i] == ARGV[j] then " +
                             "table.remove(ARGV, j) " +
                         "end " +
                     "end " +
                 "end " +
-                "return table.getn(ARGV) == 0 and 1 or 0",
+                "return #ARGV == 0 and 1 or 0",
                 Collections.<Object>singletonList(getName()), params.toArray());
     }
 
@@ -179,7 +179,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 "local items = redis.call('lrange', KEYS[1], fromIndex, toIndex); " +
 
                 "for i=1, #items do " +
-                    "for j = 0, #ARGV, 1 do " +
+                    "for j = 1, #ARGV, 1 do " +
                         "if items[i] == ARGV[j] then " +
                             "redis.call('lrem', KEYS[1], count, ARGV[i]); " +
                             "v = 1; " +
@@ -203,11 +203,10 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 "local toIndex = table.remove(ARGV, 2);" +
                 "local items = redis.call('lrange', KEYS[1], fromIndex, toIndex) "
                    + "local i = 1 "
-                   + "local s = table.getn(items) "
-                   + "while i <= s do "
+                   + "while i <= #items do "
                         + "local element = items[i] "
                         + "local isInAgrs = false "
-                        + "for j = 0, table.getn(ARGV), 1 do "
+                        + "for j = 1, #ARGV, 1 do "
                             + "if ARGV[j] == element then "
                                 + "isInAgrs = true "
                                 + "break "

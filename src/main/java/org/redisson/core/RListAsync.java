@@ -30,12 +30,38 @@ import io.netty.util.concurrent.Future;
  */
 public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
 
+    /**
+     * Add <code>element</code> after <code>elementToFind</code>
+     * 
+     * @param elementToFind
+     * @param element
+     * @return new list size
+     */
+    Future<Integer> addAfterAsync(V elementToFind, V element);
+    
+    /**
+     * Add <code>element</code> before <code>elementToFind</code>
+     * 
+     * @param elementToFind
+     * @param element
+     * @return new list size
+     */
+    Future<Integer> addBeforeAsync(V elementToFind, V element);
+    
     Future<Boolean> addAllAsync(int index, Collection<? extends V> coll);
 
     Future<Integer> lastIndexOfAsync(Object o);
 
     Future<Integer> indexOfAsync(Object o);
 
+    /**
+     * Set <code>element</code> at <code>index</code>.
+     * Works faster than {@link #setAsync(int, Object)} but 
+     * doesn't return previous element.
+     * 
+     * @param index
+     * @param element
+     */
     Future<Void> fastSetAsync(int index, V element);
 
     Future<V> setAsync(int index, V element);

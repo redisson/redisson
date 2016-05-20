@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RSet;
+import org.redisson.core.RSetCache;
 
 import io.netty.util.concurrent.Future;
 
@@ -30,6 +31,18 @@ public class RedissonSetTest extends BaseTest {
             this.lng = lng;
         }
 
+    }
+
+    @Test
+    public void testRemoveAll() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(1);
+        set.add(2);
+        set.add(3);
+        
+        assertThat(set.removeAll(Arrays.asList(1, 3))).isTrue();
+        assertThat(set.removeAll(Arrays.asList(1, 3))).isFalse();
+        assertThat(set).containsOnly(2);
     }
 
     @Test
@@ -321,7 +334,81 @@ public class RedissonSetTest extends BaseTest {
         assertThat(set).containsOnly(5, 6);
     }
 
+    @Test
+    public void testDiff() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(5);
+        set.add(6);
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(1);
+        set1.add(2);
+        set1.add(3);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(3);
+        set2.add(4);
+        set2.add(5);
 
+        assertThat(set.diff("set1", "set2")).isEqualTo(2);
+        assertThat(set).containsOnly(1, 2);
+    }
+
+    @Test
+    public void testReadDiff() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(5);
+        set.add(7);
+        set.add(6);
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(1);
+        set1.add(2);
+        set1.add(5);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(3);
+        set2.add(4);
+        set2.add(5);
+
+        assertThat(set.readDiff("set1", "set2")).containsOnly(7, 6);
+        assertThat(set).containsOnly(6, 5, 7);
+    }
+
+    @Test
+    public void testIntersection() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(5);
+        set.add(6);
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(1);
+        set1.add(2);
+        set1.add(3);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(3);
+        set2.add(4);
+        set2.add(5);
+
+        assertThat(set.intersection("set1", "set2")).isEqualTo(1);
+        assertThat(set).containsOnly(3);
+    }
+
+    @Test
+    public void testReadIntersection() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(5);
+        set.add(7);
+        set.add(6);
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(1);
+        set1.add(2);
+        set1.add(5);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(3);
+        set2.add(4);
+        set2.add(5);
+
+        assertThat(set.readIntersection("set1", "set2")).containsOnly(5);
+        assertThat(set).containsOnly(6, 5, 7);
+    }
+
+    
     @Test
     public void testMove() throws Exception {
         RSet<Integer> set = redisson.getSet("set");

@@ -57,7 +57,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     private static final RedisCommand<Integer> LAST_INDEX = new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 4, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE));
     private static final RedisCommand<Integer> EVAL_SIZE = new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 6, ValueType.MAP_KEY);
     private static final RedisCommand<Integer> EVAL_GET = new RedisCommand<Integer>("EVAL", 7, ValueType.MAP_KEY);
-    private static final RedisCommand<Set<Object>> EVAL_READALL = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder(), 6, ValueType.MAP_KEY);
+    private static final RedisCommand<Set<Object>> EVAL_READALL = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder<Object>(), 6, ValueType.MAP_KEY);
     private static final RedisCommand<Boolean> EVAL_CONTAINS_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE));
     private static final RedisCommand<Boolean> EVAL_CONTAINS_ALL_WITH_VALUES = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7, ValueType.OBJECTS);
 
@@ -199,13 +199,13 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
                   + "return 0;"
               + "end; " +
                 "local items = redis.call('lrange', KEYS[2], 0, -1);" +
-                        "for i = 0, #items, 1 do " +
-                            "for j = 2, table.getn(ARGV), 1 do "
+                        "for i = 1, #items, 1 do " +
+                            "for j = 2, #ARGV, 1 do "
                             + "if ARGV[j] == items[i] "
                             + "then table.remove(ARGV, j) end "
                         + "end; "
                        + "end;"
-                       + "return table.getn(ARGV) == 2 and 1 or 0; ",
+                       + "return #ARGV == 2 and 1 or 0; ",
                    Arrays.<Object>asList(timeoutSetName, getName()), args.toArray());
         
     }
@@ -340,7 +340,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
 
                     "local changed = 0; " +
                     "local s = redis.call('lrange', KEYS[2], 0, -1); "
-                       + "local i = 0; "
+                       + "local i = 1; "
                        + "while i <= #s do "
                             + "local element = s[i]; "
                             + "local isInAgrs = false; "
@@ -508,7 +508,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
               + "end; " +
                 
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
-                "for i = #items, 0, -1 do " +
+                "for i = #items, 1, -1 do " +
                     "if items[i] == ARGV[1] then " +
                         "return i - 1 " +
                     "end " +
@@ -683,6 +683,26 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
             hashCode = 31*hashCode + (e==null ? 0 : e.hashCode());
         }
         return hashCode;
+    }
+
+    @Override
+    public Future<Integer> addAfterAsync(V elementToFind, V element) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT, getName(), "AFTER", elementToFind, element);
+    }
+
+    @Override
+    public Future<Integer> addBeforeAsync(V elementToFind, V element) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT, getName(), "BEFORE", elementToFind, element);
+    }
+
+    @Override
+    public Integer addAfter(V elementToFind, V element) {
+        return get(addAfterAsync(elementToFind, element));
+    }
+
+    @Override
+    public Integer addBefore(V elementToFind, V element) {
+        return get(addBeforeAsync(elementToFind, element));
     }
 
 }

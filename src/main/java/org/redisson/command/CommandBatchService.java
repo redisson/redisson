@@ -31,6 +31,7 @@ import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.BatchCommandData;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
@@ -52,16 +53,16 @@ public class CommandBatchService extends CommandReactiveService {
 
     public static class CommandEntry implements Comparable<CommandEntry> {
 
-        final CommandData<?, ?> command;
+        final BatchCommandData<?, ?> command;
         final int index;
 
-        public CommandEntry(CommandData<?, ?> command, int index) {
+        public CommandEntry(BatchCommandData<?, ?> command, int index) {
             super();
             this.command = command;
             this.index = index;
         }
 
-        public CommandData<?, ?> getCommand() {
+        public BatchCommandData<?, ?> getCommand() {
             return command;
         }
 
@@ -89,6 +90,12 @@ public class CommandBatchService extends CommandReactiveService {
         public boolean isReadOnlyMode() {
             return readOnlyMode;
         }
+        
+        public void clearErrors() {
+            for (CommandEntry commandEntry : commands) {
+                commandEntry.getCommand().clearError();
+            }
+        }
 
     }
 
@@ -96,7 +103,7 @@ public class CommandBatchService extends CommandReactiveService {
 
     private ConcurrentMap<Integer, Entry> commands = PlatformDependent.newConcurrentHashMap();
 
-    private boolean executed;
+    private volatile boolean executed;
 
     public CommandBatchService(ConnectionManager connectionManager) {
         super(connectionManager);
@@ -106,7 +113,7 @@ public class CommandBatchService extends CommandReactiveService {
     protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, int attempt) {
         if (executed) {
-            throw new IllegalStateException("Batch already executed!");
+            throw new IllegalStateException("Batch already has been executed!");
         }
         Entry entry = commands.get(nodeSource.getSlot());
         if (entry == null) {
@@ -120,7 +127,9 @@ public class CommandBatchService extends CommandReactiveService {
         if (!readOnlyMode) {
             entry.setReadOnlyMode(false);
         }
-        entry.getCommands().add(new CommandEntry(new CommandData<V, R>(mainPromise, codec, command, params), index.incrementAndGet()));
+        
+        BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codec, command, params);
+        entry.getCommands().add(new CommandEntry(commandData, index.incrementAndGet()));
     }
 
     public List<?> execute() {
@@ -278,15 +287,18 @@ public class CommandBatchService extends CommandReactiveService {
 
                 if (future.cause() instanceof RedisMovedException) {
                     RedisMovedException ex = (RedisMovedException)future.cause();
+                    entry.clearErrors();
                     execute(entry, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), mainPromise, slots, attempt);
                     return;
                 }
                 if (future.cause() instanceof RedisAskException) {
                     RedisAskException ex = (RedisAskException)future.cause();
+                    entry.clearErrors();
                     execute(entry, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), mainPromise, slots, attempt);
                     return;
                 }
                 if (future.cause() instanceof RedisLoadingException) {
+                    entry.clearErrors();
                     execute(entry, source, mainPromise, slots, attempt);
                     return;
                 }

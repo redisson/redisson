@@ -14,9 +14,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
-import org.assertj.core.data.MapEntry;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.client.codec.StringCodec;
@@ -258,6 +255,26 @@ public class RedissonMapTest extends BaseTest {
     }
 
     @Test
+    public void testIteratorRemoveHighVolume() throws InterruptedException {
+        RMap<Integer, Integer> map = redisson.getMap("simpleMap");
+        for (int i = 0; i < 10000; i++) {
+            map.put(i, i*10);
+        }
+        
+        int cnt = 0;
+        Iterator<Integer> iterator = map.keySet().iterator();
+        while (iterator.hasNext()) {
+            Integer integer = iterator.next();
+            iterator.remove();
+            cnt++;
+        }
+        Assert.assertEquals(10000, cnt);
+        assertThat(map).isEmpty();
+        Assert.assertEquals(0, map.size());
+    }
+
+    
+    @Test
     public void testIterator() {
         RMap<Integer, Integer> rMap = redisson.getMap("123");
 
@@ -384,6 +401,18 @@ public class RedissonMapTest extends BaseTest {
         map.put(new SimpleKey("5"), new SimpleValue("6"));
 
         assertThat(map.readAllKeySet().size()).isEqualTo(3);
+        Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
+        assertThat(map.readAllKeySet()).containsOnlyElementsOf(testMap.keySet());
+    }
+    
+    @Test
+    public void testReadAllKeySetHighAmount() {
+        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        for (int i = 0; i < 1000; i++) {
+            map.put(new SimpleKey("" + i), new SimpleValue("" + i));
+        }
+
+        assertThat(map.readAllKeySet().size()).isEqualTo(1000);
         Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
         assertThat(map.readAllKeySet()).containsOnlyElementsOf(testMap.keySet());
     }
@@ -633,7 +662,7 @@ public class RedissonMapTest extends BaseTest {
         map.put(7, 8);
 
         Collection<Integer> keys = map.keySet();
-        MatcherAssert.assertThat(keys, Matchers.containsInAnyOrder(1, 3, 4, 7));
+        assertThat(keys).containsOnly(1, 3, 4, 7);
         for (Iterator<Integer> iterator = map.keyIterator(); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!keys.remove(value)) {
@@ -653,7 +682,7 @@ public class RedissonMapTest extends BaseTest {
         map.put(7, 8);
 
         Collection<Integer> values = map.values();
-        MatcherAssert.assertThat(values, Matchers.containsInAnyOrder(0, 5, 6, 8));
+        assertThat(values).containsOnly(0, 5, 6, 8);
         for (Iterator<Integer> iterator = map.valueIterator(); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!values.remove(value)) {

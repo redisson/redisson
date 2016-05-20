@@ -1,4 +1,4 @@
-Redisson - distributed and scalable Java objects powered by Redis. Advanced Java Redis client
+Redis based In-Memory Data Grid for Java. Redisson.
 ====
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
@@ -63,6 +63,7 @@ Features
 * [Spring cache](http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html) integration  
 * Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
+* Supports [Remote services](https://github.com/mrniko/redisson/wiki/5.-distributed-objects#513-remote-service)
 * Supports Android platform  
 * Supports auto-reconnect  
 * Supports failed to send command auto-retry  
@@ -81,12 +82,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.9</version>
+       <version>2.2.13</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.9'
+    compile 'org.redisson:redisson:2.2.13'
 
 ### Supported by
 

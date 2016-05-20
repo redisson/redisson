@@ -153,10 +153,15 @@ abstract class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        StringBuilder errorMsg = new StringBuilder("Publish/Subscribe connection pool exhausted! All connections are busy. Try to increase Publish/Subscribe connection pool size.");
-//        if (!freezed.isEmpty()) {
-//            errorMsg.append(" Disconnected hosts: " + freezed);
-//        }
+        StringBuilder errorMsg;
+        if (connectionManager.isClusterMode()) {
+            errorMsg = new StringBuilder("Connection pool exhausted! for slots: " + masterSlaveEntry.getSlotRanges());
+        } else {
+            errorMsg = new StringBuilder("Connection pool exhausted! ");
+        }
+        if (!freezed.isEmpty()) {
+            errorMsg.append(" Disconnected hosts: " + freezed);
+        }
         if (!zeroConnectionsAmount.isEmpty()) {
             errorMsg.append(" Hosts with fully busy connections: " + zeroConnectionsAmount);
         }
@@ -277,7 +282,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private void checkForReconnect(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE) {
-            connectionManager.slaveDown(masterSlaveEntry, entry.getClient().getAddr().getHostName(),
+            masterSlaveEntry.slaveDown(entry.getClient().getAddr().getHostName(),
                     entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
             log.warn("slave {} disconnected due to failedAttempts={} limit reached", entry.getClient().getAddr(), config.getFailedAttempts());
             scheduleCheck(entry);
