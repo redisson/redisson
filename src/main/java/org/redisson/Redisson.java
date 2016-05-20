@@ -390,7 +390,12 @@ public class Redisson implements RedissonClient {
     public RRemoteService getRemoteSerivce() {
         return new RedissonRemoteService(this);
     }
-    
+
+    @Override
+    public RRemoteService getRemoteSerivce(String name) {
+        return new RedissonRemoteService(this, name);
+    }
+
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
         return new RedissonSortedSet<V>(commandExecutor, name);

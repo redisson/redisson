@@ -18,6 +18,31 @@ import org.redisson.core.RList;
 public class RedissonListTest extends BaseTest {
 
     @Test
+    public void testAddBefore() {
+        RList<String> list = redisson.getList("list");
+        list.add("1");
+        list.add("2");
+        list.add("3");
+        
+        assertThat(list.addBefore("2", "0")).isEqualTo(4);
+
+        assertThat(list).containsExactly("1", "0", "2", "3");        
+    }
+    
+    @Test
+    public void testAddAfter() {
+        RList<String> list = redisson.getList("list");
+        list.add("1");
+        list.add("2");
+        list.add("3");
+        
+        assertThat(list.addAfter("2", "0")).isEqualTo(4);
+
+        assertThat(list).containsExactly("1", "2", "0", "3");        
+    }
+
+    
+    @Test
     public void testTrim() {
         RList<String> list = redisson.getList("list1");
         list.add("1");

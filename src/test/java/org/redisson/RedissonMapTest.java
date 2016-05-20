@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
@@ -660,7 +659,7 @@ public class RedissonMapTest extends BaseTest {
         map.put(7, 8);
 
         Collection<Integer> keys = map.keySet();
-        MatcherAssert.assertThat(keys, Matchers.containsInAnyOrder(1, 3, 4, 7));
+        assertThat(keys).containsOnly(1, 3, 4, 7);
         for (Iterator<Integer> iterator = map.keyIterator(); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!keys.remove(value)) {
@@ -680,7 +679,7 @@ public class RedissonMapTest extends BaseTest {
         map.put(7, 8);
 
         Collection<Integer> values = map.values();
-        MatcherAssert.assertThat(values, Matchers.containsInAnyOrder(0, 5, 6, 8));
+        assertThat(values).containsOnly(0, 5, 6, 8);
         for (Iterator<Integer> iterator = map.valueIterator(); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!values.remove(value)) {

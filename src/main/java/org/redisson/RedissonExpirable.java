@@ -58,12 +58,12 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     @Override
     public boolean expireAt(Date timestamp) {
-        return expireAt(timestamp.getTime() / 1000);
+        return expireAt(timestamp.getTime());
     }
 
     @Override
     public Future<Boolean> expireAtAsync(Date timestamp) {
-        return expireAtAsync(timestamp.getTime() / 1000);
+        return expireAtAsync(timestamp.getTime());
     }
 
     @Override

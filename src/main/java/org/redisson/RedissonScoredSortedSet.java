@@ -487,4 +487,14 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(revRankAsync(o));
     }
 
+    public Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        return get(countAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
+    }
+    
+    public Future<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZCOUNT, getName(), startValue, endValue);
+    }
+    
 }

@@ -86,6 +86,7 @@ public interface RedisCommands {
     RedisCommand<Boolean> ZREM = new RedisCommand<Boolean>("ZREM", new BooleanAmountReplayConvertor(), 2, ValueType.OBJECTS);
     RedisStrictCommand<Integer> ZCARD_INT = new RedisStrictCommand<Integer>("ZCARD", new IntegerReplayConvertor());
     RedisStrictCommand<Long> ZCARD = new RedisStrictCommand<Long>("ZCARD");
+    RedisStrictCommand<Long> ZCOUNT = new RedisStrictCommand<Long>("ZCOUNT");
     RedisStrictCommand<Integer> ZLEXCOUNT = new RedisStrictCommand<Integer>("ZLEXCOUNT", new IntegerReplayConvertor());
     RedisCommand<Boolean> ZSCORE_CONTAINS = new RedisCommand<Boolean>("ZSCORE", new BooleanNotNullReplayConvertor(), 2);
     RedisStrictCommand<Double> ZSCORE = new RedisStrictCommand<Double>("ZSCORE", new DoubleReplayConvertor(), 2);
@@ -142,7 +143,7 @@ public interface RedisCommands {
     RedisCommand<Boolean> LREM_SINGLE = new RedisCommand<Boolean>("LREM", new BooleanReplayConvertor(), 3);
     RedisStrictCommand<Long> LREM = new RedisStrictCommand<Long>("LREM", 3);
     RedisCommand<Object> LINDEX = new RedisCommand<Object>("LINDEX");
-    RedisCommand<Object> LINSERT = new RedisCommand<Object>("LINSERT", 3, ValueType.OBJECTS);
+    RedisCommand<Integer> LINSERT = new RedisCommand<Integer>("LINSERT", new IntegerReplayConvertor(), 3, ValueType.OBJECTS);
     RedisStrictCommand<Integer> LLEN_INT = new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor());
     RedisStrictCommand<Long> LLEN = new RedisStrictCommand<Long>("LLEN");
     RedisStrictCommand<Void> LTRIM = new RedisStrictCommand<Void>("LTRIM", new VoidReplayConvertor());
