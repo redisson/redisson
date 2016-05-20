@@ -91,7 +91,9 @@ public interface RRemoteService {
      * with specified invocation timeout.
      * <p/> 
      * Ack timeout = 1000 ms by default
-     * 
+     * <p/>
+     * A negative executionTimeout will make fire-and-forget calls
+     *
      * @param remoteInterface
      * @param executionTimeout - invocation timeout
      * @param executionTimeUnit
@@ -102,7 +104,11 @@ public interface RRemoteService {
     /**
      * Get remote service object for remote invocations
      * with specified invocation and ack timeouts
-     * 
+     * <p/>
+     * A negative executionTimeout will make fire-and-forget calls
+     * <p/>
+     * A negative ackTimeout will make unacknowledged calls
+     *
      * @param remoteInterface
      * @param executionTimeout - invocation timeout
      * @param executionTimeUnit

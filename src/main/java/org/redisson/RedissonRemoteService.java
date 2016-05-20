@@ -108,9 +108,10 @@ public class RedissonRemoteService implements RRemoteService {
 
                 // do not subscribe now, see https://github.com/mrniko/redisson/issues/493
                 // subscribe(remoteInterface, requestQueue);
-                
+
                 final RemoteServiceRequest request = future.getNow();
-                if (System.currentTimeMillis() - request.getDate() > request.getAckTimeout()) {
+                // negative ackTimeout means unacknowledged call, do not check the ack
+                if (request.getAckTimeout() >= 0 && System.currentTimeMillis() - request.getDate() > request.getAckTimeout()) {
                     log.debug("request: {} has been skipped due to ackTimeout");
                     // re-subscribe after a skipped ackTimeout
                     subscribe(remoteInterface, requestQueue);
@@ -119,24 +120,29 @@ public class RedissonRemoteService implements RRemoteService {
                 
                 final RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName()));
                 final String responseName = name + ":{" + remoteInterface.getName() + "}:" + request.getRequestId();
-                
-                Future<List<?>> ackClientsFuture = send(request.getAckTimeout(), responseName, new RemoteServiceAck());
-                ackClientsFuture.addListener(new FutureListener<List<?>>() {
-                    @Override
-                    public void operationComplete(Future<List<?>> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            log.error("Can't send ack for request: " + request, future.cause());
-                            if (future.cause() instanceof RedissonShutdownException) {
+
+                // negative ackTimeout means unacknowledged call, do not send the ack
+                if (request.getAckTimeout() >= 0) {
+                    Future<List<?>> ackClientsFuture = send(request.getAckTimeout(), responseName, new RemoteServiceAck());
+                    ackClientsFuture.addListener(new FutureListener<List<?>>() {
+                        @Override
+                        public void operationComplete(Future<List<?>> future) throws Exception {
+                            if (!future.isSuccess()) {
+                                log.error("Can't send ack for request: " + request, future.cause());
+                                if (future.cause() instanceof RedissonShutdownException) {
+                                    return;
+                                }
+                                // re-subscribe after a failed send (ack)
+                                subscribe(remoteInterface, requestQueue);
                                 return;
                             }
-                            // re-subscribe after a failed send (ack)
-                            subscribe(remoteInterface, requestQueue);
-                            return;
-                        }
 
-                        invokeMethod(remoteInterface, requestQueue, request, method, responseName);
-                    }
-                });
+                            invokeMethod(remoteInterface, requestQueue, request, method, responseName);
+                        }
+                    });
+                } else {
+                    invokeMethod(remoteInterface, requestQueue, request, method, responseName);
+                }
             }
 
         });
@@ -153,21 +159,27 @@ public class RedissonRemoteService implements RRemoteService {
             responseHolder.set(response);
             log.error("Can't execute: " + request, e);
         }
-        
-        Future<List<?>> clientsFuture = send(request.getResponseTimeout(), responseName, responseHolder.get());
-        clientsFuture.addListener(new FutureListener<List<?>>() {
-            @Override
-            public void operationComplete(Future<List<?>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    log.error("Can't send response: " + responseHolder.get() + " for request: " + request, future.cause());
-                    if (future.cause() instanceof RedissonShutdownException) {
-                        return;
+
+        // negative responseTimeout means fire-and-forget call, do not send the response
+        if (request.getResponseTimeout() >= 0) {
+            Future<List<?>> clientsFuture = send(request.getResponseTimeout(), responseName, responseHolder.get());
+            clientsFuture.addListener(new FutureListener<List<?>>() {
+                @Override
+                public void operationComplete(Future<List<?>> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        log.error("Can't send response: " + responseHolder.get() + " for request: " + request, future.cause());
+                        if (future.cause() instanceof RedissonShutdownException) {
+                            return;
+                        }
                     }
+                    // re-subscribe anyways (fail or success) after the send (response)
+                    subscribe(remoteInterface, requestQueue);
                 }
-                // re-subscribe anyways (fail or success) after the send (response)
-                subscribe(remoteInterface, requestQueue);
-            }
-        });
+            });
+        } else {
+            // re-subscribe anyways after the method invocation
+            subscribe(remoteInterface, requestQueue);
+        }
     }
     
     @Override
@@ -204,20 +216,28 @@ public class RedissonRemoteService implements RRemoteService {
                 
                 String responseName = name + ":{" + remoteInterface.getName() + "}:" + requestId;
                 RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseName);
-                
-                RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(ackTimeout, ackTimeUnit);
-                if (ack == null) {
-                    throw new RemoteServiceAckTimeoutException("No ACK response after " + ackTimeUnit.toMillis(ackTimeout) + "ms for request: " + request);
+
+                // negative ackTimeout means unacknowledged call, do not poll for the ack
+                if (ackTimeout >= 0) {
+                    RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(ackTimeout, ackTimeUnit);
+                    if (ack == null) {
+                        throw new RemoteServiceAckTimeoutException("No ACK response after " + ackTimeUnit.toMillis(ackTimeout) + "ms for request: " + request);
+                    }
                 }
-                
-                RemoteServiceResponse response = (RemoteServiceResponse) responseQueue.poll(executionTimeout, executionTimeUnit);
-                if (response == null) {
-                    throw new RemoteServiceTimeoutException("No response after " + executionTimeUnit.toMillis(executionTimeout) + "ms for request: " + request);
+
+                // negative executionTimeout means fire-and-forget call, do not poll for the response
+                if (executionTimeout >= 0) {
+                    RemoteServiceResponse response = (RemoteServiceResponse) responseQueue.poll(executionTimeout, executionTimeUnit);
+                    if (response == null) {
+                        throw new RemoteServiceTimeoutException("No response after " + executionTimeUnit.toMillis(executionTimeout) + "ms for request: " + request);
+                    }
+                    if (response.getError() != null) {
+                        throw response.getError();
+                    }
+                    return response.getResult();
                 }
-                if (response.getError() != null) {
-                    throw response.getError();
-                }
-                return response.getResult();
+
+                return getDefaultValue(method.getReturnType());
             }
         };
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[] {remoteInterface}, handler);
@@ -237,5 +257,33 @@ public class RedissonRemoteService implements RRemoteService {
         queue.expireAsync(timeout, TimeUnit.MILLISECONDS);
         return batch.executeAsync();
     }
-    
+
+    /**
+     * Horrible hack to get the default value for a Class
+     *
+     * @param type the Class
+     * @return the default value as
+     */
+    private static Object getDefaultValue(Class type) {
+        if (!type.isPrimitive() || type.equals(void.class)) {
+            return null;
+        } else if (type.equals(boolean.class)) {
+            return false;
+        } else if (type.equals(byte.class)) {
+            return (byte) 0;
+        } else if (type.equals(char.class)) {
+            return (char) 0;
+        } else if (type.equals(short.class)) {
+            return (short) 0;
+        } else if (type.equals(int.class)) {
+            return (int) 0;
+        } else if (type.equals(long.class)) {
+            return (long) 0;
+        } else if (type.equals(float.class)) {
+            return (float) 0;
+        } else if (type.equals(double.class)) {
+            return (double) 0;
+        }
+        throw new IllegalArgumentException("Class " + type + " not supported");
+    }
 }

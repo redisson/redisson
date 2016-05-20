@@ -61,6 +61,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
     public interface RemoteInterface {
         
         void voidMethod(String name, Long param);
+
+        int primitiveMethod();
         
         Long resultMethod(Long value);
         
@@ -82,7 +84,12 @@ public class RedissonRemoteServiceTest extends BaseTest {
         public void voidMethod(String name, Long param) {
             System.out.println(name + " " + param);
         }
-        
+
+        @Override
+        public int primitiveMethod() {
+            return 42;
+        }
+
         @Override
         public Long resultMethod(Long value) {
             return value*2;
@@ -361,5 +368,76 @@ public class RedissonRemoteServiceTest extends BaseTest {
             client.shutdown();
             server.shutdown();
         }
+    }
+
+    @Test
+    public void testUnacknowledgedInvocations() throws InterruptedException {
+        RedissonClient r1 = Redisson.create();
+        r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+        RedissonClient r2 = Redisson.create();
+        RemoteInterface ri = r2.getRemoteSerivce().get(RemoteInterface.class, 30, TimeUnit.SECONDS, -1, TimeUnit.SECONDS);
+
+        ri.voidMethod("someName", 100L);
+        assertThat(ri.resultMethod(100L)).isEqualTo(200);
+
+        assertThat(ri.primitiveMethod()).isEqualTo(42);
+
+        try {
+            ri.errorMethod();
+            Assert.fail();
+        } catch (IOException e) {
+            assertThat(e.getMessage()).isEqualTo("Checking error throw");
+        }
+
+        try {
+            ri.errorMethodWithCause();
+            Assert.fail();
+        } catch (Exception e) {
+            assertThat(e.getCause()).isInstanceOf(ArithmeticException.class);
+            assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
+        }
+
+        long time = System.currentTimeMillis();
+        ri.timeoutMethod();
+        time = System.currentTimeMillis() - time;
+        assertThat(time).describedAs("unacknowledged should still wait for the server to return a response").isGreaterThanOrEqualTo(2000);
+
+        r1.shutdown();
+        r2.shutdown();
+    }
+
+    @Test
+    public void testFireAndForgetInvocations() throws InterruptedException {
+        RedissonClient r1 = Redisson.create();
+        r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+        RedissonClient r2 = Redisson.create();
+        RemoteInterface ri = r2.getRemoteSerivce().get(RemoteInterface.class, -1, TimeUnit.SECONDS);
+
+        ri.voidMethod("someName", 100L);
+        assertThat(ri.resultMethod(100L)).isNull();
+
+        assertThat(ri.primitiveMethod()).isEqualTo(0);
+
+        try {
+            ri.errorMethod();
+        } catch (IOException e) {
+            Assert.fail("fire-and-forget should not throw");
+        }
+
+        try {
+            ri.errorMethodWithCause();
+        } catch (Exception e) {
+            Assert.fail("fire-and-forget should not throw");
+        }
+
+        long time = System.currentTimeMillis();
+        ri.timeoutMethod();
+        time = System.currentTimeMillis() - time;
+        assertThat(time).describedAs("fire-and-forget should not wait for the server to return a response").isLessThan(2000);
+
+        r1.shutdown();
+        r2.shutdown();
     }
 }
