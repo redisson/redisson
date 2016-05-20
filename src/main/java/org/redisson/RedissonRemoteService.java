@@ -95,14 +95,19 @@ public class RedissonRemoteService implements RRemoteService {
                     if (future.cause() instanceof RedissonShutdownException) {
                         return;
                     }
+                    // re-subscribe after a failed takeAsync
                     subscribe(remoteInterface, requestQueue);
                     return;
                 }
-                subscribe(remoteInterface, requestQueue);
+
+                // do not subscribe now, see https://github.com/mrniko/redisson/issues/493
+                // subscribe(remoteInterface, requestQueue);
                 
                 final RemoteServiceRequest request = future.getNow();
                 if (System.currentTimeMillis() - request.getDate() > request.getAckTimeout()) {
                     log.debug("request: {} has been skipped due to ackTimeout");
+                    // re-subscribe after a skipped ackTimeout
+                    subscribe(remoteInterface, requestQueue);
                     return;
                 }
                 
@@ -115,10 +120,15 @@ public class RedissonRemoteService implements RRemoteService {
                     public void operationComplete(Future<List<?>> future) throws Exception {
                         if (!future.isSuccess()) {
                             log.error("Can't send ack for request: " + request, future.cause());
+                            if (future.cause() instanceof RedissonShutdownException) {
+                                return;
+                            }
+                            // re-subscribe after a failed send (ack)
+                            subscribe(remoteInterface, requestQueue);
                             return;
                         }
-                        
-                        invokeMethod(request, method, responseName);
+
+                        invokeMethod(remoteInterface, requestQueue, request, method, responseName);
                     }
                 });
             }
@@ -126,7 +136,7 @@ public class RedissonRemoteService implements RRemoteService {
         });
     }
 
-    private void invokeMethod(final RemoteServiceRequest request, RemoteServiceMethod method, String responseName) {
+    private <T> void invokeMethod(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue, final RemoteServiceRequest request, RemoteServiceMethod method, String responseName) {
         final AtomicReference<RemoteServiceResponse> responseHolder = new AtomicReference<RemoteServiceResponse>();
         try {
             Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
@@ -144,8 +154,12 @@ public class RedissonRemoteService implements RRemoteService {
             public void operationComplete(Future<List<?>> future) throws Exception {
                 if (!future.isSuccess()) {
                     log.error("Can't send response: " + responseHolder.get() + " for request: " + request, future.cause());
-                    return;
+                    if (future.cause() instanceof RedissonShutdownException) {
+                        return;
+                    }
                 }
+                // re-subscribe anyways (fail or success) after the send (response)
+                subscribe(remoteInterface, requestQueue);
             }
         });
     }
