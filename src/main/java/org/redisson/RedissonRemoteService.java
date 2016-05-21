@@ -15,6 +15,16 @@
  */
 package org.redisson;
 
+import io.netty.buffer.ByteBufUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.internal.PlatformDependent;
+import io.netty.util.internal.ThreadLocalRandom;
+import org.redisson.core.*;
+import org.redisson.remote.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -22,27 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.redisson.core.RBatch;
-import org.redisson.core.RBlockingQueue;
-import org.redisson.core.RBlockingQueueAsync;
-import org.redisson.core.RRemoteService;
-import org.redisson.remote.RRemoteServiceResponse;
-import org.redisson.remote.RemoteServiceAck;
-import org.redisson.remote.RemoteServiceAckTimeoutException;
-import org.redisson.remote.RemoteServiceKey;
-import org.redisson.remote.RemoteServiceMethod;
-import org.redisson.remote.RemoteServiceRequest;
-import org.redisson.remote.RemoteServiceResponse;
-import org.redisson.remote.RemoteServiceTimeoutException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.netty.buffer.ByteBufUtil;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * 
@@ -181,19 +170,29 @@ public class RedissonRemoteService implements RRemoteService {
             subscribe(remoteInterface, requestQueue);
         }
     }
-    
+
     @Override
     public <T> T get(Class<T> remoteInterface) {
-        return get(remoteInterface, 30, TimeUnit.SECONDS);
+        return get(remoteInterface, RemoteInvocationOptions.defaults());
     }
 
     @Override
     public <T> T get(final Class<T> remoteInterface, final long executionTimeout, final TimeUnit executionTimeUnit) {
-        return get(remoteInterface, executionTimeout, executionTimeUnit, 1, TimeUnit.SECONDS);
+        return get(remoteInterface, RemoteInvocationOptions.defaults()
+                .expectResultWithin(executionTimeout, executionTimeUnit));
     }
-    
-    public <T> T get(final Class<T> remoteInterface, final long executionTimeout, final TimeUnit executionTimeUnit, 
-                        final long ackTimeout, final TimeUnit ackTimeUnit) {
+
+    public <T> T get(final Class<T> remoteInterface, final long executionTimeout, final TimeUnit executionTimeUnit,
+                     final long ackTimeout, final TimeUnit ackTimeUnit) {
+        return get(remoteInterface, RemoteInvocationOptions.defaults()
+                .expectAckWithin(ackTimeout, ackTimeUnit)
+                .expectResultWithin(executionTimeout, executionTimeUnit));
+    }
+
+    public <T> T get(final Class<T> remoteInterface, RemoteInvocationOptions options) {
+        // local copy of the options, to prevent mutation
+        final long ackTimeoutInMillis = options.isAckExpected() ? options.getAckTimeoutInMillis() : -1;
+        final long executionTimeoutInMillis = options.isResultExpected() ? options.getExecutionTimeoutInMillis() : -1;
         final String toString = getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + generateRequestId();
         InvocationHandler handler = new InvocationHandler() {
             @Override
@@ -206,30 +205,36 @@ public class RedissonRemoteService implements RRemoteService {
                     return toString.hashCode();
                 }
 
+                if (executionTimeoutInMillis < 0 && !(method.getReturnType().equals(Void.class) || method.getReturnType().equals(Void.TYPE)))
+                    throw new IllegalArgumentException("The noResult option only supports void return value");
+
                 String requestId = generateRequestId();
-                
+
                 String requestQueueName = name + ":{" + remoteInterface.getName() + "}";
                 RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName);
-                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args, 
-                                                ackTimeUnit.toMillis(ackTimeout), executionTimeUnit.toMillis(executionTimeout), System.currentTimeMillis());
+                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args,
+                        ackTimeoutInMillis, executionTimeoutInMillis, System.currentTimeMillis());
                 requestQueue.add(request);
-                
-                String responseName = name + ":{" + remoteInterface.getName() + "}:" + requestId;
-                RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseName);
+
+                RBlockingQueue<RRemoteServiceResponse> responseQueue = null;
+                if (ackTimeoutInMillis >= 0 || executionTimeoutInMillis >= 0) {
+                    String responseName = name + ":{" + remoteInterface.getName() + "}:" + requestId;
+                    responseQueue = redisson.getBlockingQueue(responseName);
+                }
 
                 // negative ackTimeout means unacknowledged call, do not poll for the ack
-                if (ackTimeout >= 0) {
-                    RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(ackTimeout, ackTimeUnit);
+                if (ackTimeoutInMillis >= 0) {
+                    RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(ackTimeoutInMillis, TimeUnit.MILLISECONDS);
                     if (ack == null) {
-                        throw new RemoteServiceAckTimeoutException("No ACK response after " + ackTimeUnit.toMillis(ackTimeout) + "ms for request: " + request);
+                        throw new RemoteServiceAckTimeoutException("No ACK response after " + ackTimeoutInMillis + "ms for request: " + request);
                     }
                 }
 
                 // negative executionTimeout means fire-and-forget call, do not poll for the response
-                if (executionTimeout >= 0) {
-                    RemoteServiceResponse response = (RemoteServiceResponse) responseQueue.poll(executionTimeout, executionTimeUnit);
+                if (executionTimeoutInMillis >= 0) {
+                    RemoteServiceResponse response = (RemoteServiceResponse) responseQueue.poll(executionTimeoutInMillis, TimeUnit.MILLISECONDS);
                     if (response == null) {
-                        throw new RemoteServiceTimeoutException("No response after " + executionTimeUnit.toMillis(executionTimeout) + "ms for request: " + request);
+                        throw new RemoteServiceTimeoutException("No response after " + executionTimeoutInMillis + "ms for request: " + request);
                     }
                     if (response.getError() != null) {
                         throw response.getError();
@@ -237,10 +242,10 @@ public class RedissonRemoteService implements RRemoteService {
                     return response.getResult();
                 }
 
-                return getDefaultValue(method.getReturnType());
+                return null;
             }
         };
-        return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[] {remoteInterface}, handler);
+        return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[]{remoteInterface}, handler);
     }
 
     private String generateRequestId() {
@@ -256,34 +261,5 @@ public class RedissonRemoteService implements RRemoteService {
         queue.putAsync(response);
         queue.expireAsync(timeout, TimeUnit.MILLISECONDS);
         return batch.executeAsync();
-    }
-
-    /**
-     * Horrible hack to get the default value for a Class
-     *
-     * @param type the Class
-     * @return the default value as
-     */
-    private static Object getDefaultValue(Class type) {
-        if (!type.isPrimitive() || type.equals(void.class)) {
-            return null;
-        } else if (type.equals(boolean.class)) {
-            return false;
-        } else if (type.equals(byte.class)) {
-            return (byte) 0;
-        } else if (type.equals(char.class)) {
-            return (char) 0;
-        } else if (type.equals(short.class)) {
-            return (short) 0;
-        } else if (type.equals(int.class)) {
-            return (int) 0;
-        } else if (type.equals(long.class)) {
-            return (long) 0;
-        } else if (type.equals(float.class)) {
-            return (float) 0;
-        } else if (type.equals(double.class)) {
-            return (double) 0;
-        }
-        throw new IllegalArgumentException("Class " + type + " not supported");
     }
 }

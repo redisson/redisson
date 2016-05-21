@@ -77,22 +77,31 @@ public interface RRemoteService {
     /**
      * Get remote service object for remote invocations.
      * <p/>
-     * Ack timeout = 1000 ms by default
-     * <p/>
-     * Execution timeout = 30 sec by default
-     * 
+     * This method is a shortcut for
+     * <pre>
+     *     get(remoteInterface, RemoteInvocationOptions.defaults())
+     * </pre>
+     *
+     * @see RemoteInvocationOptions#defaults()
+     * @see #get(Class, RemoteInvocationOptions)
+     *
      * @param remoteInterface
      * @return
      */
     <T> T get(Class<T> remoteInterface);
-    
+
     /**
      * Get remote service object for remote invocations 
      * with specified invocation timeout.
-     * <p/> 
-     * Ack timeout = 1000 ms by default
      * <p/>
-     * A negative executionTimeout will make fire-and-forget calls
+     * This method is a shortcut for
+     * <pre>
+     *     get(remoteInterface, RemoteInvocationOptions.defaults()
+     *      .expectResultWithin(executionTimeout, executionTimeUnit))
+     * </pre>
+     *
+     * @see RemoteInvocationOptions#defaults()
+     * @see #get(Class, RemoteInvocationOptions)
      *
      * @param remoteInterface
      * @param executionTimeout - invocation timeout
@@ -105,9 +114,15 @@ public interface RRemoteService {
      * Get remote service object for remote invocations
      * with specified invocation and ack timeouts
      * <p/>
-     * A negative executionTimeout will make fire-and-forget calls
-     * <p/>
-     * A negative ackTimeout will make unacknowledged calls
+     * This method is a shortcut for
+     * <pre>
+     *     get(remoteInterface, RemoteInvocationOptions.defaults()
+     *      .expectAckWithin(ackTimeout, ackTimeUnit)
+     *      .expectResultWithin(executionTimeout, executionTimeUnit))
+     * </pre>
+     *
+     * @see RemoteInvocationOptions
+     * @see #get(Class, RemoteInvocationOptions)
      *
      * @param remoteInterface
      * @param executionTimeout - invocation timeout
@@ -117,5 +132,17 @@ public interface RRemoteService {
      * @return
      */
     <T> T get(Class<T> remoteInterface, long executionTimeout, TimeUnit executionTimeUnit, long ackTimeout, TimeUnit ackTimeUnit);
-    
+
+    /**
+     * Get remote service object for remote invocations
+     * with the specified options
+     * <p/>
+     * Note that when using the noResult() option,
+     * it is expected that the invoked method returns void,
+     * or else IllegalArgumentException will be thrown.
+     *
+     * @see RemoteInvocationOptions
+     */
+    <T> T get(Class<T> remoteInterface, RemoteInvocationOptions options);
+
 }
