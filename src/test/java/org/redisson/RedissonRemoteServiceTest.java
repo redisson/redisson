@@ -1,17 +1,45 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Assert;
+import org.junit.Test;
+import org.redisson.codec.FstCodec;
+import org.redisson.codec.SerializationCodec;
+import org.redisson.remote.RemoteServiceTimeoutException;
 
 import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.Serializable;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.remote.RemoteServiceTimeoutException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRemoteServiceTest extends BaseTest {
+
+    public class Pojo {
+
+        private String stringField;
+
+        public Pojo(String stringField) {
+            this.stringField = stringField;
+        }
+
+        public String getStringField() {
+            return stringField;
+        }
+
+        public void setStringField(String stringField) {
+            this.stringField = stringField;
+        }
+    }
+
+    public class SerializablePojo extends Pojo implements Serializable {
+
+        public SerializablePojo(String stringField) {
+            super(stringField);
+        }
+    }
 
     public interface RemoteInterface {
         
@@ -24,7 +52,11 @@ public class RedissonRemoteServiceTest extends BaseTest {
         void errorMethodWithCause();
         
         void timeoutMethod() throws InterruptedException;
-        
+
+        Pojo doSomethingWithPojo(Pojo pojo);
+
+        SerializablePojo doSomethingWithSerializablePojo(SerializablePojo pojo);
+
     }
     
     public class RemoteImpl implements RemoteInterface {
@@ -58,7 +90,15 @@ public class RedissonRemoteServiceTest extends BaseTest {
             Thread.sleep(2000);
         }
 
-        
+        @Override
+        public Pojo doSomethingWithPojo(Pojo pojo) {
+            return pojo;
+        }
+
+        @Override
+        public SerializablePojo doSomethingWithSerializablePojo(SerializablePojo pojo) {
+            return pojo;
+        }
     }
 
     @Test
@@ -232,6 +272,74 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
         } finally {
             client.shutdown();
+        }
+    }
+
+    @Test
+    public void testInvocationWithFstCodec() {
+        RedissonClient server = Redisson.create(createConfig().setCodec(new FstCodec()));
+        RedissonClient client = Redisson.create(createConfig().setCodec(new FstCodec()));
+        try {
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class);
+
+            try {
+                assertThat(service.resultMethod(21L)).isEqualTo(42L);
+            } catch (Exception e) {
+                Assert.fail("Should be compatible with FstCodec");
+            }
+
+            try {
+                assertThat(service.doSomethingWithPojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
+            } catch (Exception e) {
+                Assert.fail("Should be compatible with FstCodec");
+            }
+
+            try {
+                assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
+                Assert.fail("FstCodec should not be able to serialize a not serializable class");
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(RuntimeException.class);
+                assertThat(e.getMessage()).contains("Pojo does not implement Serializable");
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void testInvocationWithSerializationCodec() {
+        RedissonClient server = Redisson.create(createConfig().setCodec(new SerializationCodec()));
+        RedissonClient client = Redisson.create(createConfig().setCodec(new SerializationCodec()));
+        try {
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class);
+
+            try {
+                assertThat(service.resultMethod(21L)).isEqualTo(42L);
+            } catch (Exception e) {
+                Assert.fail("Should be compatible with SerializationCodec");
+            }
+
+            try {
+                assertThat(service.doSomethingWithPojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
+            } catch (Exception e) {
+                Assert.fail("Should be compatible with SerializationCodec");
+            }
+
+            try {
+                assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
+                Assert.fail("SerializationCodec should not be able to serialize a not serializable class");
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(NotSerializableException.class);
+                assertThat(e.getMessage()).contains("Pojo");
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
         }
     }
 }
