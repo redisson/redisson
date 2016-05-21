@@ -3,7 +3,6 @@ Redis based In-Memory Data Grid for Java. Redisson.
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
 
-##Please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
 ###Try [Redisson PRO](http://redisson.pro) edition
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
@@ -19,6 +18,8 @@ Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANG
 Licensed under the Apache License 2.0.
 
 Welcome to support chat - [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+##Please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
 
 Features
 ================================
