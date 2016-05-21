@@ -65,6 +65,11 @@ public class RemoteInvocationOptions {
         this.executionTimeoutInMillis = executionTimeoutInMillis;
     }
 
+    public RemoteInvocationOptions(RemoteInvocationOptions copy) {
+        this.ackTimeoutInMillis = copy.ackTimeoutInMillis;
+        this.executionTimeoutInMillis = copy.executionTimeoutInMillis;
+    }
+
     /**
      * Creates a new instance of RemoteInvocationOptions with opinionated defaults.
      * <p/>
