@@ -4,6 +4,7 @@ Redis based In-Memory Data Grid for Java. Redisson.
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
 
 ##Please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
+###Try [Redisson PRO](http://redisson.pro) edition
 
 Use familiar Java data structures with power of [Redis](http://redis.io).
 
