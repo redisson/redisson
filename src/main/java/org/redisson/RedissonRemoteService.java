@@ -182,9 +182,18 @@ public class RedissonRemoteService implements RRemoteService {
     
     public <T> T get(final Class<T> remoteInterface, final long executionTimeout, final TimeUnit executionTimeUnit, 
                         final long ackTimeout, final TimeUnit ackTimeUnit) {
+        final String toString = getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + generateRequestId();
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                if (method.getName().equals("toString")) {
+                    return toString;
+                } else if (method.getName().equals("equals")) {
+                    return proxy == args[0];
+                } else if (method.getName().equals("hashCode")) {
+                    return toString.hashCode();
+                }
+
                 String requestId = generateRequestId();
                 
                 String requestQueueName = name + ":{" + remoteInterface.getName() + "}";
