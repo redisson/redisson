@@ -15,9 +15,10 @@
  */
 package org.redisson.remote;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class RemoteServiceRequest {
+public class RemoteServiceRequest implements Serializable {
 
     private String requestId;
     private String methodName;

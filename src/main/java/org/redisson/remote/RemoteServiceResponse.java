@@ -15,7 +15,9 @@
  */
 package org.redisson.remote;
 
-public class RemoteServiceResponse implements RRemoteServiceResponse {
+import java.io.Serializable;
+
+public class RemoteServiceResponse implements RRemoteServiceResponse, Serializable {
 
     private Object result;
     private Throwable error;
