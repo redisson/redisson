@@ -15,6 +15,8 @@
  */
 package org.redisson.remote;
 
-public interface RRemoteServiceResponse {
+import java.io.Serializable;
+
+public interface RRemoteServiceResponse extends Serializable {
 
 }

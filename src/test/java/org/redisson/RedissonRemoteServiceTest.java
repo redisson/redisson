@@ -1,5 +1,6 @@
 package org.redisson;
 
+import io.netty.handler.codec.EncoderException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.codec.FstCodec;
@@ -17,9 +18,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRemoteServiceTest extends BaseTest {
 
-    public class Pojo {
+    public static class Pojo {
 
         private String stringField;
+
+        public Pojo() {
+        }
 
         public Pojo(String stringField) {
             this.stringField = stringField;
@@ -34,10 +38,23 @@ public class RedissonRemoteServiceTest extends BaseTest {
         }
     }
 
-    public class SerializablePojo extends Pojo implements Serializable {
+    public static class SerializablePojo implements Serializable {
+
+        private String stringField;
+
+        public SerializablePojo() {
+        }
 
         public SerializablePojo(String stringField) {
-            super(stringField);
+            this.stringField = stringField;
+        }
+
+        public String getStringField() {
+            return stringField;
+        }
+
+        public void setStringField(String stringField) {
+            this.stringField = stringField;
         }
     }
 
@@ -291,7 +308,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
             }
 
             try {
-                assertThat(service.doSomethingWithPojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
+                assertThat(service.doSomethingWithSerializablePojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
             } catch (Exception e) {
                 Assert.fail("Should be compatible with FstCodec");
             }
@@ -300,8 +317,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
                 assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
                 Assert.fail("FstCodec should not be able to serialize a not serializable class");
             } catch (Exception e) {
-                assertThat(e).isInstanceOf(RuntimeException.class);
-                assertThat(e.getMessage()).contains("Pojo does not implement Serializable");
+                assertThat(e.getCause()).isInstanceOf(EncoderException.class);
+                assertThat(e.getCause().getMessage()).contains("Pojo does not implement Serializable");
             }
         } finally {
             client.shutdown();
@@ -325,8 +342,9 @@ public class RedissonRemoteServiceTest extends BaseTest {
             }
 
             try {
-                assertThat(service.doSomethingWithPojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
+                assertThat(service.doSomethingWithSerializablePojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
             } catch (Exception e) {
+                e.printStackTrace();
                 Assert.fail("Should be compatible with SerializationCodec");
             }
 
@@ -334,8 +352,10 @@ public class RedissonRemoteServiceTest extends BaseTest {
                 assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
                 Assert.fail("SerializationCodec should not be able to serialize a not serializable class");
             } catch (Exception e) {
-                assertThat(e).isInstanceOf(NotSerializableException.class);
-                assertThat(e.getMessage()).contains("Pojo");
+                e.printStackTrace();
+                assertThat(e.getCause()).isInstanceOf(EncoderException.class);
+                assertThat(e.getCause().getCause()).isInstanceOf(NotSerializableException.class);
+                assertThat(e.getCause().getCause().getMessage()).contains("Pojo");
             }
         } finally {
             client.shutdown();
