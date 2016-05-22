@@ -383,135 +383,138 @@ public class RedissonRemoteServiceTest extends BaseTest {
     public void testNoAckWithResultInvocations() throws InterruptedException {
         RedissonClient server = Redisson.create();
         RedissonClient client = Redisson.create();
-
-        server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
-
-        // no ack but an execution timeout of 1 second
-        RemoteInvocationOptions options = RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.SECONDS);
-        RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
-
-        service.voidMethod("noAck", 100L);
-        assertThat(service.resultMethod(21L)).isEqualTo(42);
-
         try {
-            service.errorMethod();
-            Assert.fail();
-        } catch (IOException e) {
-            assertThat(e.getMessage()).isEqualTo("Checking error throw");
-        }
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
 
-        try {
-            service.errorMethodWithCause();
-            Assert.fail();
-        } catch (Exception e) {
-            assertThat(e.getCause()).isInstanceOf(ArithmeticException.class);
-            assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
-        }
+            // no ack but an execution timeout of 1 second
+            RemoteInvocationOptions options = RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.SECONDS);
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
 
-        try {
-            service.timeoutMethod();
-            Assert.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(RemoteServiceTimeoutException.class);
-        }
+            service.voidMethod("noAck", 100L);
+            assertThat(service.resultMethod(21L)).isEqualTo(42);
 
-        client.shutdown();
-        server.shutdown();
+            try {
+                service.errorMethod();
+                Assert.fail();
+            } catch (IOException e) {
+                assertThat(e.getMessage()).isEqualTo("Checking error throw");
+            }
+
+            try {
+                service.errorMethodWithCause();
+                Assert.fail();
+            } catch (Exception e) {
+                assertThat(e.getCause()).isInstanceOf(ArithmeticException.class);
+                assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
+            }
+
+            try {
+                service.timeoutMethod();
+                Assert.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(RemoteServiceTimeoutException.class);
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
     }
 
     @Test
     public void testAckWithoutResultInvocations() throws InterruptedException {
         RedissonClient server = Redisson.create();
         RedissonClient client = Redisson.create();
-
-        server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
-
-        // fire and forget with an ack timeout of 1 sec
-        RemoteInvocationOptions options = RemoteInvocationOptions.defaults().expectAckWithin(1, TimeUnit.SECONDS).noResult();
-        RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
-
-        service.voidMethod("noResult", 100L);
-
         try {
-            service.resultMethod(100L);
-            Assert.fail();
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(IllegalArgumentException.class);
-        }
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
 
-        try {
-            service.errorMethod();
-        } catch (IOException e) {
-            Assert.fail("noResult option should not throw server side exception");
-        }
+            // fire and forget with an ack timeout of 1 sec
+            RemoteInvocationOptions options = RemoteInvocationOptions.defaults().expectAckWithin(1, TimeUnit.SECONDS).noResult();
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
 
-        try {
-            service.errorMethodWithCause();
-        } catch (Exception e) {
-            Assert.fail("noResult option should not throw server side exception");
-        }
+            service.voidMethod("noResult", 100L);
 
-        long time = System.currentTimeMillis();
-        service.timeoutMethod();
-        time = System.currentTimeMillis() - time;
-        assertThat(time).describedAs("noResult option should not wait for the server to return a response").isLessThan(2000);
+            try {
+                service.resultMethod(100L);
+                Assert.fail();
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(IllegalArgumentException.class);
+            }
 
-        try {
+            try {
+                service.errorMethod();
+            } catch (IOException e) {
+                Assert.fail("noResult option should not throw server side exception");
+            }
+
+            try {
+                service.errorMethodWithCause();
+            } catch (Exception e) {
+                Assert.fail("noResult option should not throw server side exception");
+            }
+
+            long time = System.currentTimeMillis();
             service.timeoutMethod();
-            Assert.fail("noResult option should still wait for the server to ack the request and throw if the ack timeout is exceeded");
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
-        }
+            time = System.currentTimeMillis() - time;
+            assertThat(time).describedAs("noResult option should not wait for the server to return a response").isLessThan(2000);
 
-        client.shutdown();
-        server.shutdown();
+            try {
+                service.timeoutMethod();
+                Assert.fail("noResult option should still wait for the server to ack the request and throw if the ack timeout is exceeded");
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
     }
 
     @Test
     public void testNoAckWithoutResultInvocations() throws InterruptedException {
         RedissonClient server = Redisson.create();
         RedissonClient client = Redisson.create();
-
-        server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
-
-        // no ack fire and forget
-        RemoteInvocationOptions options = RemoteInvocationOptions.defaults().noAck().noResult();
-        RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
-        RemoteInterface invalidService = client.getRemoteSerivce("Invalid").get(RemoteInterface.class, options);
-
-        service.voidMethod("noAck/noResult", 100L);
-
         try {
-            service.resultMethod(100L);
-            Assert.fail();
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(IllegalArgumentException.class);
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            // no ack fire and forget
+            RemoteInvocationOptions options = RemoteInvocationOptions.defaults().noAck().noResult();
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
+            RemoteInterface invalidService = client.getRemoteSerivce("Invalid").get(RemoteInterface.class, options);
+
+            service.voidMethod("noAck/noResult", 100L);
+
+            try {
+                service.resultMethod(100L);
+                Assert.fail();
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(IllegalArgumentException.class);
+            }
+
+            try {
+                service.errorMethod();
+            } catch (IOException e) {
+                Assert.fail("noAck with noResult options should not throw server side exception");
+            }
+
+            try {
+                service.errorMethodWithCause();
+            } catch (Exception e) {
+                Assert.fail("noAck with noResult options should not throw server side exception");
+            }
+
+            long time = System.currentTimeMillis();
+            service.timeoutMethod();
+            time = System.currentTimeMillis() - time;
+            assertThat(time).describedAs("noAck with noResult options should not wait for the server to return a response").isLessThan(2000);
+
+            try {
+                invalidService.voidMethod("noAck/noResult", 21L);
+            } catch (Exception e) {
+                Assert.fail("noAck with noResult options should not throw any exception even while invoking a service in an unregistered services namespace");
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
         }
-
-        try {
-            service.errorMethod();
-        } catch (IOException e) {
-            Assert.fail("noAck with noResult options should not throw server side exception");
-        }
-
-        try {
-            service.errorMethodWithCause();
-        } catch (Exception e) {
-            Assert.fail("noAck with noResult options should not throw server side exception");
-        }
-
-        long time = System.currentTimeMillis();
-        service.timeoutMethod();
-        time = System.currentTimeMillis() - time;
-        assertThat(time).describedAs("noAck with noResult options should not wait for the server to return a response").isLessThan(2000);
-
-        try {
-            invalidService.voidMethod("noAck/noResult", 21L);
-        } catch (Exception e) {
-            Assert.fail("noAck with noResult options should not throw any exception even while invoking a service in an unregistered services namespace");
-        }
-
-        client.shutdown();
-        server.shutdown();
     }
 }

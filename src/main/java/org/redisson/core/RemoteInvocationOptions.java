@@ -15,6 +15,7 @@
  */
 package org.redisson.core;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -55,14 +56,12 @@ import java.util.concurrent.TimeUnit;
  *
  * @see RRemoteService#get(Class, RemoteInvocationOptions)
  */
-public class RemoteInvocationOptions {
+public class RemoteInvocationOptions implements Serializable {
 
     private Long ackTimeoutInMillis;
     private Long executionTimeoutInMillis;
 
-    private RemoteInvocationOptions(Long ackTimeoutInMillis, Long executionTimeoutInMillis) {
-        this.ackTimeoutInMillis = ackTimeoutInMillis;
-        this.executionTimeoutInMillis = executionTimeoutInMillis;
+    private RemoteInvocationOptions() {
     }
 
     public RemoteInvocationOptions(RemoteInvocationOptions copy) {
@@ -75,13 +74,15 @@ public class RemoteInvocationOptions {
      * <p/>
      * This is equivalent to:
      * <pre>
-     *     RemoteInvocationOptions.defaults()
+     *     new RemoteInvocationOptions()
      *      .expectAckWithin(1, TimeUnit.SECONDS)
      *      .expectResultWithin(30, TimeUnit.SECONDS)
      * </pre>
      */
     public static RemoteInvocationOptions defaults() {
-        return new RemoteInvocationOptions(TimeUnit.SECONDS.toMillis(1), TimeUnit.SECONDS.toMillis(30));
+        return new RemoteInvocationOptions()
+                .expectAckWithin(1, TimeUnit.SECONDS)
+                .expectResultWithin(20, TimeUnit.SECONDS);
     }
 
     public Long getAckTimeoutInMillis() {
@@ -128,5 +129,13 @@ public class RemoteInvocationOptions {
     public RemoteInvocationOptions noResult() {
         executionTimeoutInMillis = null;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return "RemoteInvocationOptions[" +
+                "ackTimeoutInMillis=" + ackTimeoutInMillis +
+                ", executionTimeoutInMillis=" + executionTimeoutInMillis +
+                ']';
     }
 }

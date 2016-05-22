@@ -99,8 +99,8 @@ public class RedissonRemoteService implements RRemoteService {
                 // subscribe(remoteInterface, requestQueue);
 
                 final RemoteServiceRequest request = future.getNow();
-                // negative ackTimeout means unacknowledged call, do not check the ack
-                if (request.getAckTimeout() >= 0 && System.currentTimeMillis() - request.getDate() > request.getAckTimeout()) {
+                // check the ack only if expected
+                if (request.getOptions().isAckExpected() && System.currentTimeMillis() - request.getDate() > request.getOptions().getAckTimeoutInMillis()) {
                     log.debug("request: {} has been skipped due to ackTimeout");
                     // re-subscribe after a skipped ackTimeout
                     subscribe(remoteInterface, requestQueue);
@@ -110,9 +110,9 @@ public class RedissonRemoteService implements RRemoteService {
                 final RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName()));
                 final String responseName = name + ":{" + remoteInterface.getName() + "}:" + request.getRequestId();
 
-                // negative ackTimeout means unacknowledged call, do not send the ack
-                if (request.getAckTimeout() >= 0) {
-                    Future<List<?>> ackClientsFuture = send(request.getAckTimeout(), responseName, new RemoteServiceAck());
+                // send the ack only if expected
+                if (request.getOptions().isAckExpected()) {
+                    Future<List<?>> ackClientsFuture = send(request.getOptions().getAckTimeoutInMillis(), responseName, new RemoteServiceAck());
                     ackClientsFuture.addListener(new FutureListener<List<?>>() {
                         @Override
                         public void operationComplete(Future<List<?>> future) throws Exception {
@@ -149,9 +149,9 @@ public class RedissonRemoteService implements RRemoteService {
             log.error("Can't execute: " + request, e);
         }
 
-        // negative responseTimeout means fire-and-forget call, do not send the response
-        if (request.getResponseTimeout() >= 0) {
-            Future<List<?>> clientsFuture = send(request.getResponseTimeout(), responseName, responseHolder.get());
+        // send the response only if expected
+        if (request.getOptions().isResultExpected()) {
+            Future<List<?>> clientsFuture = send(request.getOptions().getExecutionTimeoutInMillis(), responseName, responseHolder.get());
             clientsFuture.addListener(new FutureListener<List<?>>() {
                 @Override
                 public void operationComplete(Future<List<?>> future) throws Exception {
@@ -189,7 +189,7 @@ public class RedissonRemoteService implements RRemoteService {
                 .expectResultWithin(executionTimeout, executionTimeUnit));
     }
 
-    public <T> T get(final Class<T> remoteInterface, RemoteInvocationOptions options) {
+    public <T> T get(final Class<T> remoteInterface, final RemoteInvocationOptions options) {
         // local copy of the options, to prevent mutation
         final RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
         final String toString = getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + generateRequestId();
@@ -212,11 +212,7 @@ public class RedissonRemoteService implements RRemoteService {
                 String requestQueueName = name + ":{" + remoteInterface.getName() + "}";
                 RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName);
                 RemoteServiceRequest request = new RemoteServiceRequest(requestId,
-                        method.getName(),
-                        args,
-                        optionsCopy.isAckExpected() ? optionsCopy.getAckTimeoutInMillis() : -1,
-                        optionsCopy.isResultExpected() ? optionsCopy.getExecutionTimeoutInMillis() : -1,
-                        System.currentTimeMillis());
+                        method.getName(), args, optionsCopy, System.currentTimeMillis());
                 requestQueue.add(request);
 
                 RBlockingQueue<RRemoteServiceResponse> responseQueue = null;
