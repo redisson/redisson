@@ -205,4 +205,33 @@ public class RedissonRemoteServiceTest extends BaseTest {
         r1.shutdown();
         r2.shutdown();
     }
+
+    @Test
+    public void testProxyToStringEqualsAndHashCode() {
+        RedissonClient client = Redisson.create();
+        try {
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class);
+
+            try {
+                System.out.println(service.toString());
+            } catch (Exception e) {
+                Assert.fail("calling toString on the client service proxy should not make a remote call");
+            }
+
+            try {
+                assertThat(service.hashCode() == service.hashCode()).isTrue();
+            } catch (Exception e) {
+                Assert.fail("calling hashCode on the client service proxy should not make a remote call");
+            }
+
+            try {
+                assertThat(service.equals(service)).isTrue();
+            } catch (Exception e) {
+                Assert.fail("calling equals on the client service proxy should not make a remote call");
+            }
+
+        } finally {
+            client.shutdown();
+        }
+    }
 }
