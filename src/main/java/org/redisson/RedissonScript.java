@@ -103,6 +103,7 @@ public class RedissonScript implements RScript {
         return evalAsync(null, mode, codec, luaScript, returnType, keys, values);
     }
 
+    @Override
     public <R> Future<R> evalAsync(String key, Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
         if (mode == Mode.READ_ONLY) {
             return commandExecutor.evalReadAsync(key, codec, returnType.getCommand(), luaScript, keys, values);
