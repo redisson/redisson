@@ -15,6 +15,8 @@
  */
 package org.redisson.remote;
 
+import org.redisson.core.RemoteInvocationOptions;
+
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -23,34 +25,24 @@ public class RemoteServiceRequest implements Serializable {
     private String requestId;
     private String methodName;
     private Object[] args;
-    private long ackTimeout;
-    private long responseTimeout;
+    private RemoteInvocationOptions options;
     private long date;
     
     
     public RemoteServiceRequest() {
     }
     
-    public RemoteServiceRequest(String requestId, String methodName, Object[] args, long ackTimeout, long responseTimeout, long date) {
+    public RemoteServiceRequest(String requestId, String methodName, Object[] args, RemoteInvocationOptions options, long date) {
         super();
         this.requestId = requestId;
         this.methodName = methodName;
         this.args = args;
-        this.ackTimeout = ackTimeout;
-        this.responseTimeout = responseTimeout;
+        this.options = options;
         this.date = date;
-    }
-    
-    public long getResponseTimeout() {
-        return responseTimeout;
     }
     
     public long getDate() {
         return date;
-    }
-    
-    public long getAckTimeout() {
-        return ackTimeout;
     }
     
     public String getRequestId() {
@@ -60,7 +52,11 @@ public class RemoteServiceRequest implements Serializable {
     public Object[] getArgs() {
         return args;
     }
-    
+
+    public RemoteInvocationOptions getOptions() {
+        return options;
+    }
+
     public String getMethodName() {
         return methodName;
     }
@@ -68,7 +64,7 @@ public class RemoteServiceRequest implements Serializable {
     @Override
     public String toString() {
         return "RemoteServiceRequest [requestId=" + requestId + ", methodName=" + methodName + ", args="
-                + Arrays.toString(args) + ", ackTimeout=" + ackTimeout + ", date=" + date + "]";
+                + Arrays.toString(args) + ", options=" + options + ", date=" + date + "]";
     }
 
 }
