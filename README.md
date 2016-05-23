@@ -64,7 +64,7 @@ Features
 * [Spring cache](http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html) integration  
 * Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
-* Supports [Remote services](https://github.com/mrniko/redisson/wiki/5.-distributed-objects#59-remote-service)
+* Supports [Remote services](https://github.com/mrniko/redisson/wiki/6.-distributed-objects#69-remote-service)
 * Supports Android platform  
 * Supports auto-reconnect  
 * Supports failed to send command auto-retry  
