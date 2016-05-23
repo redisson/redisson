@@ -20,7 +20,10 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.ThreadLocalRandom;
+
+import org.redisson.client.codec.LongCodec;
 import org.redisson.core.*;
+import org.redisson.core.RScript.Mode;
 import org.redisson.remote.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -112,10 +116,21 @@ public class RedissonRemoteService implements RRemoteService {
 
                 // send the ack only if expected
                 if (request.getOptions().isAckExpected()) {
-                    Future<List<?>> ackClientsFuture = send(request.getOptions().getAckTimeoutInMillis(), responseName, new RemoteServiceAck());
-                    ackClientsFuture.addListener(new FutureListener<List<?>>() {
+                    String ackName = name + ":{" + remoteInterface.getName() + "}:ack";
+                    Future<Boolean> ackClientsFuture = redisson.getScript().evalAsync(responseName, Mode.READ_WRITE, LongCodec.INSTANCE, 
+                            "if redis.call('setnx', KEYS[1], 1) == 1 then "
+                            + "redis.call('pexpire', KEYS[1], ARGV[2]);"
+                            + "redis.call('rpush', KEYS[2], ARGV[1]);"
+                            + "redis.call('pexpire', KEYS[2], ARGV[2]);"
+                            + "return 1;"
+                           + "end;"
+                           + "return 0;", RScript.ReturnType.BOOLEAN, Arrays.<Object>asList(ackName, responseName), 
+                               redisson.getConfig().getCodec().getValueEncoder().encode(new RemoteServiceAck()), request.getOptions().getAckTimeoutInMillis());
+//                    Future<List<?>> ackClientsFuture = send(request.getOptions().getAckTimeoutInMillis(), responseName, new RemoteServiceAck());
+//                    ackClientsFuture.addListener(new FutureListener<List<?>>() {
+                    ackClientsFuture.addListener(new FutureListener<Boolean>() {
                         @Override
-                        public void operationComplete(Future<List<?>> future) throws Exception {
+                        public void operationComplete(Future<Boolean> future) throws Exception {
                             if (!future.isSuccess()) {
                                 log.error("Can't send ack for request: " + request, future.cause());
                                 if (future.cause() instanceof RedissonShutdownException) {
@@ -126,6 +141,11 @@ public class RedissonRemoteService implements RRemoteService {
                                 return;
                             }
 
+                            if (!future.getNow()) {
+                                subscribe(remoteInterface, requestQueue);
+                                return;
+                            }
+                            
                             invokeMethod(remoteInterface, requestQueue, request, method, responseName);
                         }
                     });
@@ -223,10 +243,15 @@ public class RedissonRemoteService implements RRemoteService {
 
                 // poll for the ack only if expected
                 if (optionsCopy.isAckExpected()) {
+                    String ackName = name + ":{" + remoteInterface.getName() + "}:ack";
                     RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
                     if (ack == null) {
-                        throw new RemoteServiceAckTimeoutException("No ACK response after " + optionsCopy.getAckTimeoutInMillis() + "ms for request: " + request);
+                        ack = tryPollAckAgain(optionsCopy, responseQueue, ackName);
+                        if (ack == null) {
+                            throw new RemoteServiceAckTimeoutException("No ACK response after " + optionsCopy.getAckTimeoutInMillis() + "ms for request: " + request);
+                        }
                     }
+                    redisson.getBucket(ackName).delete();
                 }
 
                 // poll for the response only if expected
@@ -243,8 +268,26 @@ public class RedissonRemoteService implements RRemoteService {
 
                 return null;
             }
+
         };
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[]{remoteInterface}, handler);
+    }
+
+    private RemoteServiceAck tryPollAckAgain(RemoteInvocationOptions optionsCopy,
+                                    RBlockingQueue<RRemoteServiceResponse> responseQueue, String ackName) throws InterruptedException {
+        Future<Boolean> ackClientsFuture = redisson.getScript().evalAsync(ackName, Mode.READ_WRITE, LongCodec.INSTANCE, 
+                  "if redis.call('setnx', KEYS[1], 1) == 1 then "
+                    + "redis.call('pexpire', KEYS[1], ARGV[1]);"
+                    + "return 0;"
+                + "end;"
+                + "redis.call('del', KEYS[1]);"
+                + "return 1;", RScript.ReturnType.BOOLEAN, Arrays.<Object>asList(ackName), optionsCopy.getAckTimeoutInMillis());
+        
+        ackClientsFuture.sync();
+        if (ackClientsFuture.getNow()) {
+            return (RemoteServiceAck) responseQueue.poll();
+        }
+        return null;
     }
 
     private String generateRequestId() {
