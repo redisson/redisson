@@ -72,8 +72,7 @@ public class FstCodec implements Codec {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             FSTObjectOutput oos = config.getObjectOutput(os);
             oos.writeObject(in);
-            oos.close();
-
+            oos.flush();
             return os.toByteArray();
         }
     };

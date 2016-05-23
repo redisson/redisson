@@ -1,22 +1,69 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.netty.handler.codec.EncoderException;
+import org.junit.Assert;
+import org.junit.Test;
+import org.redisson.codec.FstCodec;
+import org.redisson.codec.SerializationCodec;
+import org.redisson.core.RemoteInvocationOptions;
+import org.redisson.remote.RemoteServiceAckTimeoutException;
+import org.redisson.remote.RemoteServiceTimeoutException;
 
 import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.Serializable;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.remote.RemoteServiceTimeoutException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRemoteServiceTest extends BaseTest {
+
+    public static class Pojo {
+
+        private String stringField;
+
+        public Pojo() {
+        }
+
+        public Pojo(String stringField) {
+            this.stringField = stringField;
+        }
+
+        public String getStringField() {
+            return stringField;
+        }
+
+        public void setStringField(String stringField) {
+            this.stringField = stringField;
+        }
+    }
+
+    public static class SerializablePojo implements Serializable {
+
+        private String stringField;
+
+        public SerializablePojo() {
+        }
+
+        public SerializablePojo(String stringField) {
+            this.stringField = stringField;
+        }
+
+        public String getStringField() {
+            return stringField;
+        }
+
+        public void setStringField(String stringField) {
+            this.stringField = stringField;
+        }
+    }
 
     public interface RemoteInterface {
         
         void voidMethod(String name, Long param);
-        
+
         Long resultMethod(Long value);
         
         void errorMethod() throws IOException;
@@ -24,7 +71,11 @@ public class RedissonRemoteServiceTest extends BaseTest {
         void errorMethodWithCause();
         
         void timeoutMethod() throws InterruptedException;
-        
+
+        Pojo doSomethingWithPojo(Pojo pojo);
+
+        SerializablePojo doSomethingWithSerializablePojo(SerializablePojo pojo);
+
     }
     
     public class RemoteImpl implements RemoteInterface {
@@ -33,7 +84,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         public void voidMethod(String name, Long param) {
             System.out.println(name + " " + param);
         }
-        
+
         @Override
         public Long resultMethod(Long value) {
             return value*2;
@@ -58,7 +109,15 @@ public class RedissonRemoteServiceTest extends BaseTest {
             Thread.sleep(2000);
         }
 
-        
+        @Override
+        public Pojo doSomethingWithPojo(Pojo pojo) {
+            return pojo;
+        }
+
+        @Override
+        public SerializablePojo doSomethingWithSerializablePojo(SerializablePojo pojo) {
+            return pojo;
+        }
     }
 
     @Test
@@ -191,18 +250,271 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test
     public void testInvocationWithServiceName() {
-        String name = "MyServiceName";
+        RedissonClient server = Redisson.create();
+        RedissonClient client = Redisson.create();
 
-        RedissonClient r1 = Redisson.create();
-        r1.getRemoteSerivce(name).register(RemoteInterface.class, new RemoteImpl());
+        server.getRemoteSerivce("MyServiceNamespace").register(RemoteInterface.class, new RemoteImpl());
 
-        RedissonClient r2 = Redisson.create();
-        RemoteInterface ri = r2.getRemoteSerivce(name).get(RemoteInterface.class);
+        RemoteInterface serviceRemoteInterface = client.getRemoteSerivce("MyServiceNamespace").get(RemoteInterface.class);
+        RemoteInterface otherServiceRemoteInterface = client.getRemoteSerivce("MyOtherServiceNamespace").get(RemoteInterface.class);
+        RemoteInterface defaultServiceRemoteInterface = client.getRemoteSerivce().get(RemoteInterface.class);
 
-        ri.voidMethod("someName", 100L);
-        assertThat(ri.resultMethod(100L)).isEqualTo(200);
+        assertThat(serviceRemoteInterface.resultMethod(21L)).isEqualTo(42L);
 
-        r1.shutdown();
-        r2.shutdown();
+        try {
+            otherServiceRemoteInterface.resultMethod(21L);
+            Assert.fail("Invoking a service in an unregistered custom services namespace should throw");
+        } catch (Exception e) {
+            assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
+        }
+
+        try {
+            defaultServiceRemoteInterface.resultMethod(21L);
+            Assert.fail("Invoking a service in the unregistered default services namespace should throw");
+        } catch (Exception e) {
+            assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
+        }
+
+        client.shutdown();
+        server.shutdown();
+    }
+
+    @Test
+    public void testProxyToStringEqualsAndHashCode() {
+        RedissonClient client = Redisson.create();
+        try {
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class);
+
+            try {
+                System.out.println(service.toString());
+            } catch (Exception e) {
+                Assert.fail("calling toString on the client service proxy should not make a remote call");
+            }
+
+            try {
+                assertThat(service.hashCode() == service.hashCode()).isTrue();
+            } catch (Exception e) {
+                Assert.fail("calling hashCode on the client service proxy should not make a remote call");
+            }
+
+            try {
+                assertThat(service.equals(service)).isTrue();
+            } catch (Exception e) {
+                Assert.fail("calling equals on the client service proxy should not make a remote call");
+            }
+
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    public void testInvocationWithFstCodec() {
+        RedissonClient server = Redisson.create(createConfig().setCodec(new FstCodec()));
+        RedissonClient client = Redisson.create(createConfig().setCodec(new FstCodec()));
+        try {
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class);
+
+            try {
+                assertThat(service.resultMethod(21L)).isEqualTo(42L);
+            } catch (Exception e) {
+                Assert.fail("Should be compatible with FstCodec");
+            }
+
+            try {
+                assertThat(service.doSomethingWithSerializablePojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
+            } catch (Exception e) {
+                Assert.fail("Should be compatible with FstCodec");
+            }
+
+            try {
+                assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
+                Assert.fail("FstCodec should not be able to serialize a not serializable class");
+            } catch (Exception e) {
+                assertThat(e.getCause()).isInstanceOf(EncoderException.class);
+                assertThat(e.getCause().getMessage()).contains("Pojo does not implement Serializable");
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void testInvocationWithSerializationCodec() {
+        RedissonClient server = Redisson.create(createConfig().setCodec(new SerializationCodec()));
+        RedissonClient client = Redisson.create(createConfig().setCodec(new SerializationCodec()));
+        try {
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class);
+
+            try {
+                assertThat(service.resultMethod(21L)).isEqualTo(42L);
+            } catch (Exception e) {
+                Assert.fail("Should be compatible with SerializationCodec");
+            }
+
+            try {
+                assertThat(service.doSomethingWithSerializablePojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
+            } catch (Exception e) {
+                e.printStackTrace();
+                Assert.fail("Should be compatible with SerializationCodec");
+            }
+
+            try {
+                assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
+                Assert.fail("SerializationCodec should not be able to serialize a not serializable class");
+            } catch (Exception e) {
+                e.printStackTrace();
+                assertThat(e.getCause()).isInstanceOf(EncoderException.class);
+                assertThat(e.getCause().getCause()).isInstanceOf(NotSerializableException.class);
+                assertThat(e.getCause().getCause().getMessage()).contains("Pojo");
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void testNoAckWithResultInvocations() throws InterruptedException {
+        RedissonClient server = Redisson.create();
+        RedissonClient client = Redisson.create();
+        try {
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            // no ack but an execution timeout of 1 second
+            RemoteInvocationOptions options = RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.SECONDS);
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
+
+            service.voidMethod("noAck", 100L);
+            assertThat(service.resultMethod(21L)).isEqualTo(42);
+
+            try {
+                service.errorMethod();
+                Assert.fail();
+            } catch (IOException e) {
+                assertThat(e.getMessage()).isEqualTo("Checking error throw");
+            }
+
+            try {
+                service.errorMethodWithCause();
+                Assert.fail();
+            } catch (Exception e) {
+                assertThat(e.getCause()).isInstanceOf(ArithmeticException.class);
+                assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
+            }
+
+            try {
+                service.timeoutMethod();
+                Assert.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(RemoteServiceTimeoutException.class);
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void testAckWithoutResultInvocations() throws InterruptedException {
+        RedissonClient server = Redisson.create();
+        RedissonClient client = Redisson.create();
+        try {
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            // fire and forget with an ack timeout of 1 sec
+            RemoteInvocationOptions options = RemoteInvocationOptions.defaults().expectAckWithin(1, TimeUnit.SECONDS).noResult();
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
+
+            service.voidMethod("noResult", 100L);
+
+            try {
+                service.resultMethod(100L);
+                Assert.fail();
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(IllegalArgumentException.class);
+            }
+
+            try {
+                service.errorMethod();
+            } catch (IOException e) {
+                Assert.fail("noResult option should not throw server side exception");
+            }
+
+            try {
+                service.errorMethodWithCause();
+            } catch (Exception e) {
+                Assert.fail("noResult option should not throw server side exception");
+            }
+
+            long time = System.currentTimeMillis();
+            service.timeoutMethod();
+            time = System.currentTimeMillis() - time;
+            assertThat(time).describedAs("noResult option should not wait for the server to return a response").isLessThan(2000);
+
+            try {
+                service.timeoutMethod();
+                Assert.fail("noResult option should still wait for the server to ack the request and throw if the ack timeout is exceeded");
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(RemoteServiceAckTimeoutException.class);
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void testNoAckWithoutResultInvocations() throws InterruptedException {
+        RedissonClient server = Redisson.create();
+        RedissonClient client = Redisson.create();
+        try {
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            // no ack fire and forget
+            RemoteInvocationOptions options = RemoteInvocationOptions.defaults().noAck().noResult();
+            RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class, options);
+            RemoteInterface invalidService = client.getRemoteSerivce("Invalid").get(RemoteInterface.class, options);
+
+            service.voidMethod("noAck/noResult", 100L);
+
+            try {
+                service.resultMethod(100L);
+                Assert.fail();
+            } catch (Exception e) {
+                assertThat(e).isInstanceOf(IllegalArgumentException.class);
+            }
+
+            try {
+                service.errorMethod();
+            } catch (IOException e) {
+                Assert.fail("noAck with noResult options should not throw server side exception");
+            }
+
+            try {
+                service.errorMethodWithCause();
+            } catch (Exception e) {
+                Assert.fail("noAck with noResult options should not throw server side exception");
+            }
+
+            long time = System.currentTimeMillis();
+            service.timeoutMethod();
+            time = System.currentTimeMillis() - time;
+            assertThat(time).describedAs("noAck with noResult options should not wait for the server to return a response").isLessThan(2000);
+
+            try {
+                invalidService.voidMethod("noAck/noResult", 21L);
+            } catch (Exception e) {
+                Assert.fail("noAck with noResult options should not throw any exception even while invoking a service in an unregistered services namespace");
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
     }
 }

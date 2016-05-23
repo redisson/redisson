@@ -15,12 +15,14 @@
  */
 package org.redisson.remote;
 
+import java.io.Serializable;
+
 /**
  * Worker sends this message when it has received a {@link RemoteServiceRequest}. 
  * 
  * @author Nikita Koksharov
  *
  */
-public class RemoteServiceAck implements RRemoteServiceResponse {
+public class RemoteServiceAck implements RRemoteServiceResponse, Serializable {
 
 }
