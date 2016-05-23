@@ -31,7 +31,7 @@ public abstract class BaseReactiveTest {
     @AfterClass
     public static void afterClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
+            RedisRunner.shutDownDefaultRedisServerInstance();
             defaultRedisson.shutdown();
         }
     }
