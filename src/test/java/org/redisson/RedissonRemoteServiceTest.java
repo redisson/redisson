@@ -317,11 +317,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
             RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class);
 
-            try {
-                assertThat(service.resultMethod(21L)).isEqualTo(42L);
-            } catch (Exception e) {
-                Assert.fail("Should be compatible with FstCodec");
-            }
+            assertThat(service.resultMethod(21L)).as("Should be compatible with FstCodec").isEqualTo(42L);
 
             try {
                 assertThat(service.doSomethingWithSerializablePojo(new SerializablePojo("test")).getStringField()).isEqualTo("test");
