@@ -11,21 +11,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
-import org.redisson.RedissonMapCacheTest.SimpleKey;
-import org.redisson.RedissonMapCacheTest.SimpleValue;
 import org.redisson.api.RMapReactive;
-import org.redisson.codec.MsgPackJacksonCodec;
-import org.redisson.core.RMap;
-import org.redisson.core.RMapCache;
-
-import reactor.rx.Streams;
 
 public class RedissonMapReactiveTest extends BaseReactiveTest {
 

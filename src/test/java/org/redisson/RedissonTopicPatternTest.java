@@ -1,9 +1,14 @@
 package org.redisson;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
+import org.junit.AfterClass;
 
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.core.BasePatternStatusListener;
 import org.redisson.core.MessageListener;
@@ -12,6 +17,34 @@ import org.redisson.core.RPatternTopic;
 import org.redisson.core.RTopic;
 
 public class RedissonTopicPatternTest {
+
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
+    }
+
+    @Before
+    public void before() throws IOException, InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+        }
+    }
+
+    @After
+    public void after() throws InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
+    }
 
     public static class Message {
 
@@ -51,26 +84,20 @@ public class RedissonTopicPatternTest {
         }
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
         RedissonClient redisson = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson.getPatternTopic("topic1.*");
-        int listenerId = topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.fail();
-            }
+        int listenerId = topic1.addListener((pattern, channel, msg) -> {
+            Assert.fail();
         });
-        topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.assertEquals("topic1.*", pattern);
-                Assert.assertEquals("topic1.t3", channel);
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic1.addListener((pattern, channel, msg) -> {
+            Assert.assertEquals("topic1.*", pattern);
+            Assert.assertEquals("topic1.t3", channel);
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
         topic1.removeListener(listenerId);
 
@@ -82,17 +109,14 @@ public class RedissonTopicPatternTest {
         redisson.shutdown();
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
         RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
-        int listenerId = topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.fail();
-            }
+        int listenerId = topic1.addListener((pattern, channel, msg) -> {
+            Assert.fail();
         });
 
         Thread.sleep(1000);
@@ -101,14 +125,11 @@ public class RedissonTopicPatternTest {
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RPatternTopic<Message> topic2 = redisson2.getPatternTopic("topic.*");
-        topic2.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.assertEquals("topic.*", pattern);
-                Assert.assertEquals("topic.t1", channel);
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic2.addListener((pattern, channel, msg) -> {
+            Assert.assertEquals("topic.*", pattern);
+            Assert.assertEquals("topic.t1", channel);
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
 
         RTopic<Message> topic3 = redisson2.getTopic("topic.t1");
@@ -120,7 +141,7 @@ public class RedissonTopicPatternTest {
         redisson2.shutdown();
     }
 
-    @Test
+    @Test(timeout = 600 * 1000)
     public void test() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(5);
 
@@ -134,22 +155,16 @@ public class RedissonTopicPatternTest {
                 statusRecieved.countDown();
             }
         });
-        topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic1.addListener((pattern, channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
-        topic2.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic2.addListener((channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
         topic2.publish(new Message("123"));
         topic2.publish(new Message("123"));
@@ -169,7 +184,7 @@ public class RedissonTopicPatternTest {
         redisson2.shutdown();
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testListenerRemove() throws InterruptedException {
         RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
@@ -181,11 +196,8 @@ public class RedissonTopicPatternTest {
                 l.countDown();
             }
         });
-        int id = topic1.addListener(new PatternMessageListener<Message>() {
-            @Override
-            public void onMessage(String pattern, String channel, Message msg) {
-                Assert.fail();
-            }
+        int id = topic1.addListener((pattern, channel, msg) -> {
+            Assert.fail();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();

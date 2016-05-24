@@ -57,7 +57,7 @@ public class RedissonKeysTest extends BaseTest {
 
         assertThat(redisson.getKeys().randomKey()).isIn("test1", "test2");
         redisson.getKeys().delete("test1");
-        Assert.assertEquals(redisson.getKeys().randomKey(), "test2");
+        Assert.assertEquals("test2", redisson.getKeys().randomKey());
         redisson.getKeys().flushdb();
         Assert.assertNull(redisson.getKeys().randomKey());
     }

@@ -2,9 +2,7 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.hamcrest.MatcherAssert;
@@ -13,7 +11,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RListReactive;
 import org.redisson.client.RedisException;
-import org.redisson.core.RMap;
 
 import reactor.rx.Promise;
 

@@ -18,29 +18,23 @@ public class RedissonCountDownLatchTest extends BaseTest {
         final RCountDownLatch latch = redisson.getCountDownLatch("latch1");
         Assert.assertTrue(latch.trySetCount(1));
 
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    Assert.fail();
-                }
-                latch.countDown();
+        executor.execute(() -> {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Assert.fail();
             }
+            latch.countDown();
         });
 
 
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Assert.assertEquals(1, latch.getCount());
-                    boolean res = latch.await(550, TimeUnit.MILLISECONDS);
-                    Assert.assertTrue(res);
-                } catch (InterruptedException e) {
-                    Assert.fail();
-                }
+        executor.execute(() -> {
+            try {
+                Assert.assertEquals(1, latch.getCount());
+                boolean res = latch.await(550, TimeUnit.MILLISECONDS);
+                Assert.assertTrue(res);
+            } catch (InterruptedException e) {
+                Assert.fail();
             }
         });
 
@@ -56,29 +50,23 @@ public class RedissonCountDownLatchTest extends BaseTest {
         final RCountDownLatch latch = redisson.getCountDownLatch("latch1");
         Assert.assertTrue(latch.trySetCount(1));
 
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Assert.fail();
-                }
-                latch.countDown();
+        executor.execute(() -> {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Assert.fail();
             }
+            latch.countDown();
         });
 
 
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Assert.assertEquals(1, latch.getCount());
-                    boolean res = latch.await(500, TimeUnit.MILLISECONDS);
-                    Assert.assertFalse(res);
-                } catch (InterruptedException e) {
-                    Assert.fail();
-                }
+        executor.execute(() -> {
+            try {
+                Assert.assertEquals(1, latch.getCount());
+                boolean res = latch.await(500, TimeUnit.MILLISECONDS);
+                Assert.assertFalse(res);
+            } catch (InterruptedException e) {
+                Assert.fail();
             }
         });
 

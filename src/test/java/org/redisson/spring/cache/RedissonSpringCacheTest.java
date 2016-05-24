@@ -2,24 +2,19 @@ package org.redisson.spring.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.redisson.RedisRunner;
+import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.Redisson;
 import org.redisson.RedissonClient;
-import org.redisson.client.codec.Codec;
-import org.redisson.codec.JsonJacksonCodec;
-import org.redisson.codec.SerializationCodec;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -62,26 +57,26 @@ public class RedissonSpringCacheTest {
     @Service
     public static class SampleBean {
 
-        @CachePut(cacheNames="testMap", key="#key")
+        @CachePut(cacheNames = "testMap", key = "#key")
         public SampleObject store(String key, SampleObject object) {
             return object;
         }
 
-        @CachePut(cacheNames="testMap", key="#key")
+        @CachePut(cacheNames = "testMap", key = "#key")
         public SampleObject storeNull(String key) {
             return null;
         }
 
-        @CacheEvict(cacheNames="testMap", key="#key")
+        @CacheEvict(cacheNames = "testMap", key = "#key")
         public void remove(String key) {
         }
 
-        @Cacheable(cacheNames="testMap", key="#key")
+        @Cacheable(cacheNames = "testMap", key = "#key")
         public SampleObject read(String key) {
             throw new IllegalStateException();
         }
 
-        @Cacheable(cacheNames="testMap", key="#key")
+        @Cacheable(cacheNames = "testMap", key = "#key")
         public SampleObject readNull(String key) {
             return null;
         }
@@ -93,7 +88,7 @@ public class RedissonSpringCacheTest {
     @EnableCaching
     public static class Application {
 
-        @Bean(destroyMethod="shutdown")
+        @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
             return Redisson.create();
         }
@@ -101,7 +96,7 @@ public class RedissonSpringCacheTest {
         @Bean
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
             Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
-            config.put("testMap", new CacheConfig(24*60*1000, 12*60*1000));
+            config.put("testMap", new CacheConfig(24 * 60 * 1000, 12 * 60 * 1000));
             return new RedissonSpringCacheManager(redissonClient, config);
         }
 
@@ -112,7 +107,7 @@ public class RedissonSpringCacheTest {
     @EnableCaching
     public static class JsonConfigApplication {
 
-        @Bean(destroyMethod="shutdown")
+        @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
             return Redisson.create();
         }
@@ -124,10 +119,14 @@ public class RedissonSpringCacheTest {
 
     }
 
+    private static RedisProcess p;
 
-    @Parameterized.Parameters(name= "{index} - {0}")
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[][] {
+    @Parameterized.Parameters(name = "{index} - {0}")
+    public static Iterable<Object[]> data() throws IOException, InterruptedException {
+        if (p == null) {
+            p = RedisRunner.startDefaultRedisServerInstance();
+        }
+        return Arrays.asList(new Object[][]{
             {new AnnotationConfigApplicationContext(Application.class)},
             {new AnnotationConfigApplicationContext(JsonConfigApplication.class)}
         });
@@ -137,8 +136,9 @@ public class RedissonSpringCacheTest {
     public AnnotationConfigApplicationContext context;
 
     @AfterClass
-    public static void after() {
-        RedissonSpringCacheTest.data().forEach(e -> ((ConfigurableApplicationContext)e[0]).close());
+    public static void after() throws InterruptedException, IOException {
+        RedissonSpringCacheTest.data().forEach(e -> ((ConfigurableApplicationContext) e[0]).close());
+        RedisRunner.shutDownDefaultRedisServerInstance();
     }
 
     @Test

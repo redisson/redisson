@@ -105,7 +105,7 @@ public class RedissonListMultimapCacheTest extends BaseTest {
         Thread.sleep(1000);
         
         assertThat(multimap.get("1").size()).isZero();
-        assertThat(multimap.get("1")).contains();
+        assertThat(multimap.get("1").isEmpty()).isTrue();
         assertThat(multimap.get("1").remove("3")).isFalse();
         assertThat(multimap.get("1").contains("3")).isFalse();
         assertThat(multimap.get("1").retainAll(Arrays.asList("1"))).isFalse();
