@@ -41,8 +41,6 @@ public interface RScriptAsync {
     
     <R> Future<R> evalAsync(String key, Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Future<R> evalAsync(String key, Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
-
     <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType);
 
     <R> Future<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType);
