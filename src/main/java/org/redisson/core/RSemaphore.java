@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public interface RSemaphore extends RExpirable {
+public interface RSemaphore extends RExpirable, RSemaphoreAsync {
 
     /**
      * Acquires a permit from this semaphore, blocking until one is
@@ -139,8 +139,41 @@ public interface RSemaphore extends RExpirable {
      *         if the waiting time elapsed before a permit was acquired
      * @throws InterruptedException if the current thread is interrupted
      */
-    boolean tryAcquire(long timeout, TimeUnit unit) throws InterruptedException;
+    boolean tryAcquire(long waitTime, TimeUnit unit) throws InterruptedException;
 
+    /**
+     * Acquires the given number of permits only if all are available
+     * within the given waiting time and the current thread has not
+     * been {@linkplain Thread#interrupt interrupted}.
+     *
+     * <p>Acquires a permits, if all are available and returns immediately,
+     * with the value {@code true},
+     * reducing the number of available permits by one.
+     *
+     * <p>If no permit is available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until
+     * one of three things happens:
+     * <ul>
+     * <li>Some other thread invokes the {@link #release} method for this
+     * semaphore and the current thread is next to be assigned a permit; or
+     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
+     * the current thread; or
+     * <li>The specified waiting time elapses.
+     * </ul>
+     *
+     * <p>If a permits is acquired then the value {@code true} is returned.
+     *
+     * <p>If the specified waiting time elapses then the value {@code false}
+     * is returned.  If the time is less than or equal to zero, the method
+     * will not wait at all.
+     *
+     * @param permits
+     * @param waitTime the maximum time to wait for a permit
+     * @param unit the time unit of the {@code timeout} argument
+     * @return {@code true} if a permit was acquired and {@code false}
+     *         if the waiting time elapsed before a permit was acquired
+     * @throws InterruptedException if the current thread is interrupted
+     */
     boolean tryAcquire(int permits, long waitTime, TimeUnit unit) throws InterruptedException;
 
     /**
