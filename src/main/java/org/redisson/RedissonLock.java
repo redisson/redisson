@@ -603,6 +603,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     return;
                 }
 
+                final long current = System.currentTimeMillis();
                 final AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<ScheduledFuture<?>>();
                 final Future<RedissonLockEntry> subscribeFuture = subscribe();
                 subscribeFuture.addListener(new FutureListener<RedissonLockEntry>() {
@@ -615,6 +616,15 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
                         if (futureRef.get() != null) {
                             futureRef.get().cancel(false);
+                        }
+
+                        long elapsed = System.currentTimeMillis() - current;
+                        time.addAndGet(-elapsed);
+                        
+                        if (time.get() < 0) {
+                            unsubscribe(subscribeFuture);
+                            result.trySuccess(false);
+                            return;
                         }
 
                         tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);

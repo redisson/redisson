@@ -1,11 +1,11 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
-import static com.jayway.awaitility.Awaitility.*;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         
         long startTime = System.currentTimeMillis();
         lock.tryLock(3, TimeUnit.SECONDS);
-        assertThat(System.currentTimeMillis() - startTime).isGreaterThan(2990);
+        assertThat(System.currentTimeMillis() - startTime).isBetween(2990L, 3020L);
     }
     
     @Test
