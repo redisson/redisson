@@ -27,7 +27,7 @@ import org.redisson.connection.ConnectionListener;
 public interface NodesGroup<N extends Node> {
 
     /**
-     * Adds connect listener which will be triggered
+     * Adds connection listener which will be triggered
      * when Redisson has just been connected to or disconnected from redis server
      *
      * @param connectionListener
@@ -35,7 +35,7 @@ public interface NodesGroup<N extends Node> {
     int addConnectionListener(ConnectionListener connectionListener);
 
     /**
-     * Removes connect listener by id
+     * Removes connection listener by id
      *
      * @param listenerId
      */
