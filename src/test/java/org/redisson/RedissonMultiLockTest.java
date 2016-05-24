@@ -1,8 +1,5 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -13,6 +10,8 @@ import org.redisson.core.RedissonMultiLock;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.redisson.RedisRunner.RedisProcess;
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonMultiLockTest {
 
@@ -110,18 +109,24 @@ public class RedissonMultiLockTest {
     
     private RedisProcess redisTestMultilockInstance1() throws IOException, InterruptedException {
         return new RedisRunner()
+                .nosave()
+                .randomDir()
                 .port(6320)
                 .run();
     }
     
     private RedisProcess redisTestMultilockInstance2() throws IOException, InterruptedException {
         return new RedisRunner()
+                .nosave()
+                .randomDir()
                 .port(6321)
                 .run();
     }
     
     private RedisProcess redisTestMultilockInstance3() throws IOException, InterruptedException {
         return new RedisRunner()
+                .nosave()
+                .randomDir()
                 .port(6322)
                 .run();
     }

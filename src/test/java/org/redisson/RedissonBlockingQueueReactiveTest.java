@@ -23,15 +23,12 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
     @Test
     public void testPollFromAny() throws InterruptedException {
         final RBlockingQueueReactive<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingQueueReactive<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
-                RBlockingQueueReactive<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
-                sync(queue3.put(2));
-                sync(queue1.put(1));
-                sync(queue2.put(3));
-            }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingQueueReactive<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
+            RBlockingQueueReactive<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+            sync(queue3.put(2));
+            sync(queue1.put(1));
+            sync(queue2.put(3));
         }, 3, TimeUnit.SECONDS);
 
         long s = System.currentTimeMillis();
@@ -44,12 +41,9 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
     @Test
     public void testTake() throws InterruptedException {
         RBlockingQueueReactive<Integer> queue1 = redisson.getBlockingQueue("queue:take");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("queue:take");
-                sync(queue.put(3));
-            }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("queue:take");
+            sync(queue.put(3));
         }, 10, TimeUnit.SECONDS);
 
         long s = System.currentTimeMillis();
@@ -160,11 +154,8 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
         int total = 100;
         for (int i = 0; i < total; i++) {
             // runnable won't be executed in any particular order, and hence, int value as well.
-            executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
-                }
+            executor.submit(() -> {
+                redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
             });
         }
         int count = 0;

@@ -27,23 +27,53 @@ import org.redisson.client.protocol.pubsub.PubSubType;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import java.io.IOException;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 
 public class RedisClientTest {
+
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
+    }
+
+    @Before
+    public void before() throws IOException, InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+        }
+    }
+
+    @After
+    public void after() throws InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
+    }
 
     @Test
     public void testConnectAsync() throws InterruptedException {
         RedisClient c = new RedisClient("localhost", 6379);
         Future<RedisConnection> f = c.connectAsync();
         final CountDownLatch l = new CountDownLatch(1);
-        f.addListener(new FutureListener<RedisConnection>() {
-            @Override
-            public void operationComplete(Future<RedisConnection> future) throws Exception {
-                RedisConnection conn = future.get();
-                assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
-                l.countDown();
-            }
+        f.addListener((FutureListener<RedisConnection>) future -> {
+            RedisConnection conn = future.get();
+            assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
+            l.countDown();
         });
-        l.await();
+        l.await(10, TimeUnit.SECONDS);
     }
 
     @Test
@@ -71,7 +101,7 @@ public class RedisClientTest {
         });
         pubSubConnection.subscribe(StringCodec.INSTANCE, "test1", "test2");
 
-        latch.await();
+        latch.await(10, TimeUnit.SECONDS);
     }
 
     @Test
@@ -80,13 +110,10 @@ public class RedisClientTest {
         final RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
-        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
+        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         for (int i = 0; i < 100000; i++) {
-            pool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    conn.async(StringCodec.INSTANCE, RedisCommands.INCR, "test");
-                }
+            pool.execute(() -> {
+                conn.async(StringCodec.INSTANCE, RedisCommands.INCR, "test");
             });
         }
 
@@ -94,7 +121,7 @@ public class RedisClientTest {
 
         assertThat(pool.awaitTermination(1, TimeUnit.HOURS)).isTrue();
 
-        assertThat((Long)conn.sync(LongCodec.INSTANCE, RedisCommands.GET, "test")).isEqualTo(100000);
+        assertThat((Long) conn.sync(LongCodec.INSTANCE, RedisCommands.GET, "test")).isEqualTo(100000);
 
         conn.sync(RedisCommands.FLUSHDB);
     }

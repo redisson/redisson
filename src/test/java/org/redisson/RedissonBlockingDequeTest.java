@@ -94,19 +94,16 @@ public class RedissonBlockingDequeTest extends BaseTest {
     @Test
     public void testTakeFirstAwait() throws InterruptedException {
         RBlockingDeque<Integer> deque = redisson.getBlockingDeque("queue:take");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingDeque<Integer> deque = redisson.getBlockingDeque("queue:take");
-                try {
-                    deque.putFirst(1);
-                    deque.putFirst(2);
-                    deque.putLast(3);
-                    deque.putLast(4);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingDeque<Integer> deque1 = redisson.getBlockingDeque("queue:take");
+            try {
+                deque1.putFirst(1);
+                deque1.putFirst(2);
+                deque1.putLast(3);
+                deque1.putLast(4);
+            }catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         }, 10, TimeUnit.SECONDS);
 
@@ -122,19 +119,16 @@ public class RedissonBlockingDequeTest extends BaseTest {
     @Test
     public void testTakeLastAwait() throws InterruptedException {
         RBlockingDeque<Integer> deque = redisson.getBlockingDeque("queue:take");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingDeque<Integer> deque = redisson.getBlockingDeque("queue:take");
-                try {
-                    deque.putFirst(1);
-                    deque.putFirst(2);
-                    deque.putLast(3);
-                    deque.putLast(4);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingDeque<Integer> deque1 = redisson.getBlockingDeque("queue:take");
+            try {
+                deque1.putFirst(1);
+                deque1.putFirst(2);
+                deque1.putLast(3);
+                deque1.putLast(4);
+            }catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         }, 10, TimeUnit.SECONDS);
 

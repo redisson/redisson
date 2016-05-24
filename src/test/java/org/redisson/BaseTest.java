@@ -1,21 +1,51 @@
 package org.redisson;
 
+import java.io.IOException;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
 public abstract class BaseTest {
 
-    protected static RedissonClient redisson;
+    protected RedissonClient redisson;
+    protected static RedissonClient defaultRedisson;
 
     @BeforeClass
-    public static void beforeClass() {
-        redisson = createInstance();
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+            defaultRedisson = createInstance();
+        }
     }
 
     @AfterClass
-    public static void afterClass() {
-        redisson.shutdown();
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+            defaultRedisson.shutdown();
+        }
+    }
+
+    @Before
+    public void before() throws IOException, InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+            redisson = createInstance();
+        } else {
+            if (redisson == null) {
+                redisson = defaultRedisson;
+            }
+            redisson.getKeys().flushall();
+        }
+    }
+
+    @After
+    public void after() throws InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            redisson.shutdown();
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
     }
 
     public static Config createConfig() {
@@ -39,11 +69,6 @@ public abstract class BaseTest {
     public static RedissonClient createInstance() {
         Config config = createConfig();
         return Redisson.create(config);
-    }
-
-    @Before
-    public void before() {
-        redisson.getKeys().flushall();
     }
 
 }

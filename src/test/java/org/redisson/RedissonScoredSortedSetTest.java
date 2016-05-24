@@ -22,6 +22,7 @@ import org.redisson.core.RScoredSortedSet;
 import org.redisson.core.RSortedSet;
 
 import io.netty.util.concurrent.Future;
+import org.junit.Assume;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
@@ -64,6 +65,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testTryAdd() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.0.2") >= 0);
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         assertThat(set.tryAdd(123.81, "1980")).isTrue();

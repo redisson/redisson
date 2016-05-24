@@ -190,13 +190,10 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
     @Test
     public void testAutoExpire() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        testSingleInstanceConcurrency(1, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RReadWriteLock lock1 = redisson.getReadWriteLock("lock");
-                lock1.writeLock().lock();
-                latch.countDown();
-            }
+        testSingleInstanceConcurrency(1, r -> {
+            RReadWriteLock lock1 = r.getReadWriteLock("lock");
+            lock1.writeLock().lock();
+            latch.countDown();
         });
 
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
@@ -372,21 +369,17 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
         final Random r = new SecureRandom();
         int iterations = 15;
-        testSingleInstanceConcurrency(iterations, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RReadWriteLock rwlock = redisson.getReadWriteLock("testConcurrency_SingleInstance");
-                RLock lock;
-                if (r.nextBoolean()) {
-                    lock = rwlock.writeLock();
-                } else {
-                    lock = rwlock.readLock();
-                }
-
-                lock.lock();
-                lockedCounter.incrementAndGet();
-                lock.unlock();
+        testSingleInstanceConcurrency(iterations, rc -> {
+            RReadWriteLock rwlock = rc.getReadWriteLock("testConcurrency_SingleInstance");
+            RLock lock;
+            if (r.nextBoolean()) {
+                lock = rwlock.writeLock();
+            } else {
+                lock = rwlock.readLock();
             }
+            lock.lock();
+            lockedCounter.incrementAndGet();
+            lock.unlock();
         });
 
         Assert.assertEquals(iterations, lockedCounter.get());
@@ -398,35 +391,30 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
         final Random r = new SecureRandom();
-        testMultiInstanceConcurrency(16, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                for (int i = 0; i < iterations; i++) {
-                    boolean useWriteLock = r.nextBoolean();
-                    RReadWriteLock rwlock = redisson.getReadWriteLock("testConcurrency_MultiInstance1");
-                    RLock lock;
-                    if (useWriteLock) {
-                        lock = rwlock.writeLock();
-                    } else {
-                        lock = rwlock.readLock();
-                    }
-                    lock.lock();
-
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    lockedCounter.incrementAndGet();
-
-                    rwlock = redisson.getReadWriteLock("testConcurrency_MultiInstance1");
-                    if (useWriteLock) {
-                        lock = rwlock.writeLock();
-                    } else {
-                        lock = rwlock.readLock();
-                    }
-                    lock.unlock();
+        testMultiInstanceConcurrency(16, rc -> {
+            for (int i = 0; i < iterations; i++) {
+                boolean useWriteLock = r.nextBoolean();
+                RReadWriteLock rwlock = rc.getReadWriteLock("testConcurrency_MultiInstance1");
+                RLock lock;
+                if (useWriteLock) {
+                    lock = rwlock.writeLock();
+                } else {
+                    lock = rwlock.readLock();
                 }
+                lock.lock();
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                lockedCounter.incrementAndGet();
+                rwlock = rc.getReadWriteLock("testConcurrency_MultiInstance1");
+                if (useWriteLock) {
+                    lock = rwlock.writeLock();
+                } else {
+                    lock = rwlock.readLock();
+                }
+                lock.unlock();
             }
         });
 
@@ -439,21 +427,17 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
         final Random r = new SecureRandom();
-        testMultiInstanceConcurrency(iterations, new RedissonRunnable() {
-            @Override
-            public void run(RedissonClient redisson) {
-                RReadWriteLock rwlock = redisson.getReadWriteLock("testConcurrency_MultiInstance2");
-                RLock lock;
-                if (r.nextBoolean()) {
-                    lock = rwlock.writeLock();
-                } else {
-                    lock = rwlock.readLock();
-                }
-
-                lock.lock();
-                lockedCounter.incrementAndGet();
-                lock.unlock();
+        testMultiInstanceConcurrency(iterations, rc -> {
+            RReadWriteLock rwlock = rc.getReadWriteLock("testConcurrency_MultiInstance2");
+            RLock lock;
+            if (r.nextBoolean()) {
+                lock = rwlock.writeLock();
+            } else {
+                lock = rwlock.readLock();
             }
+            lock.lock();
+            lockedCounter.incrementAndGet();
+            lock.unlock();
         });
 
         Assert.assertEquals(iterations, lockedCounter.get());

@@ -1,10 +1,15 @@
 package org.redisson;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
+import org.junit.AfterClass;
 
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.core.BaseStatusListener;
 import org.redisson.core.MessageListener;
@@ -12,6 +17,34 @@ import org.redisson.core.RSet;
 import org.redisson.core.RTopic;
 
 public class RedissonTopicTest {
+
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
+    }
+
+    @Before
+    public void before() throws IOException, InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+        }
+    }
+
+    @After
+    public void after() throws InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
+    }
 
     public static class Message implements Serializable {
 
@@ -47,21 +80,17 @@ public class RedissonTopicTest {
 
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testSyncCommands() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         RTopic<String> topic = redisson.getTopic("system_bus");
         RSet<String> redissonSet = redisson.getSet("set1");
         CountDownLatch latch = new CountDownLatch(1);
-        topic.addListener(new MessageListener<String>() {
-            
-            @Override
-            public void onMessage(String channel, String msg) {
-                for (int j = 0; j < 1000; j++) {
-                    redissonSet.contains("" + j);
-                }
-                latch.countDown();
+        topic.addListener((channel, msg) -> {
+            for (int j = 0; j < 1000; j++) {
+                redissonSet.contains("" + j);
             }
+            latch.countDown();
         });
         
         topic.publish("sometext");
@@ -70,31 +99,25 @@ public class RedissonTopicTest {
         redisson.shutdown();
     }
     
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testInnerPublish() throws InterruptedException {
 
         RedissonClient redisson1 = BaseTest.createInstance();
         final RTopic<Message> topic1 = redisson1.getTopic("topic1");
         final CountDownLatch messageRecieved = new CountDownLatch(3);
-        int listenerId = topic1.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals(msg, new Message("test"));
-                messageRecieved.countDown();
-            }
+        int listenerId = topic1.addListener((channel, msg) -> {
+            Assert.assertEquals(msg, new Message("test"));
+            messageRecieved.countDown();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
         final RTopic<Message> topic2 = redisson2.getTopic("topic2");
-        topic2.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                messageRecieved.countDown();
-                Message m = new Message("test");
-                if (!msg.equals(m)) {
-                    topic1.publish(m);
-                    topic2.publish(m);
-                }
+        topic2.addListener((channel, msg) -> {
+            messageRecieved.countDown();
+            Message m = new Message("test");
+            if (!msg.equals(m)) {
+                topic1.publish(m);
+                topic2.publish(m);
             }
         });
         topic2.publish(new Message("123"));
@@ -105,7 +128,7 @@ public class RedissonTopicTest {
         redisson2.shutdown();
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testStatus() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         final RTopic<Message> topic1 = redisson.getTopic("topic1");
@@ -133,25 +156,19 @@ public class RedissonTopicTest {
         Assert.assertTrue(l.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
         RedissonClient redisson = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson.getTopic("topic1");
-        int listenerId = topic1.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.fail();
-            }
+        int listenerId = topic1.addListener((channel, msg) -> {
+            Assert.fail();
         });
-        topic1.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals("topic1", channel);
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic1.addListener((channel, msg) -> {
+            Assert.assertEquals("topic1", channel);
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
         topic1.removeListener(listenerId);
 
@@ -164,17 +181,14 @@ public class RedissonTopicTest {
     }
 
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
-        int listenerId = topic1.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.fail();
-            }
+        int listenerId = topic1.addListener((channel, msg) -> {
+            Assert.fail();
         });
         Thread.sleep(1000);
         topic1.removeListener(listenerId);
@@ -182,12 +196,9 @@ public class RedissonTopicTest {
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic");
-        topic2.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic2.addListener((channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
         topic2.publish(new Message("123"));
 
@@ -198,28 +209,22 @@ public class RedissonTopicTest {
     }
 
 
-    @Test
+    @Test(timeout = 300 * 1000)
     public void test() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(2);
 
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
-        topic1.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic1.addListener((channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic");
-        topic2.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic2.addListener((channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
         topic2.publish(new Message("123"));
 
@@ -231,29 +236,23 @@ public class RedissonTopicTest {
 
     volatile long counter;
 
-    @Test
+    @Test(timeout = 600 * 1000)
     public void testHeavyLoad() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1000);
 
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
-        topic1.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-                counter++;
-            }
+        topic1.addListener((channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
+            counter++;
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
         RTopic<Message> topic2 = redisson2.getTopic("topic");
-        topic2.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.assertEquals(new Message("123"), msg);
-                messageRecieved.countDown();
-            }
+        topic2.addListener((channel, msg) -> {
+            Assert.assertEquals(new Message("123"), msg);
+            messageRecieved.countDown();
         });
 
         for (int i = 0; i < 5000; i++) {
@@ -269,15 +268,12 @@ public class RedissonTopicTest {
         redisson1.shutdown();
         redisson2.shutdown();
     }
-    @Test
+    @Test(timeout = 300 * 1000)
     public void testListenerRemove() throws InterruptedException {
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");
-        int id = topic1.addListener(new MessageListener<Message>() {
-            @Override
-            public void onMessage(String channel, Message msg) {
-                Assert.fail();
-            }
+        int id = topic1.addListener((channel, msg) -> {
+            Assert.fail();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();

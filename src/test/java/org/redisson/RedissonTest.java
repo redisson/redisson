@@ -1,8 +1,5 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Iterator;
@@ -10,9 +7,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.After;
+import org.junit.AfterClass;
 
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.client.RedisConnectionException;
@@ -23,11 +24,52 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.BaseTest.createInstance;
 
 public class RedissonTest {
 
-    RedissonClient redisson;
+    protected RedissonClient redisson;
+    protected static RedissonClient defaultRedisson;
 
+    @BeforeClass
+    public static void beforeClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+            defaultRedisson = BaseTest.createInstance();
+        }
+    }
+
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.shutDownDefaultRedisServerInstance();
+            defaultRedisson.shutdown();
+        }
+    }
+
+    @Before
+    public void before() throws IOException, InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            RedisRunner.startDefaultRedisServerInstance();
+            redisson = createInstance();
+        } else {
+            if (redisson == null) {
+                redisson = defaultRedisson;
+            }
+            redisson.getKeys().flushall();
+        }
+    }
+
+    @After
+    public void after() throws InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            redisson.shutdown();
+            RedisRunner.shutDownDefaultRedisServerInstance();
+        }
+    }
+    
     public static class Dummy {
         private String field;
     }
@@ -167,9 +209,9 @@ public class RedissonTest {
         NodesGroup<Node> nodes = redisson.getNodesGroup();
         Assert.assertEquals(5, nodes.getNodes().size());
 
-        for (Node node : nodes.getNodes()) {
+        nodes.getNodes().stream().forEach((node) -> {
             Assert.assertTrue(node.ping());
-        }
+        });
 
         Assert.assertTrue(nodes.pingAll());
     }
@@ -207,11 +249,11 @@ public class RedissonTest {
         NodesGroup<ClusterNode> nodes = redisson.getClusterNodesGroup();
         Assert.assertEquals(2, nodes.getNodes().size());
 
-        for (ClusterNode node : nodes.getNodes()) {
+        nodes.getNodes().stream().forEach((node) -> {
             Map<String, String> params = node.info();
             Assert.assertNotNull(params);
             Assert.assertTrue(node.ping());
-        }
+        });
 
         Assert.assertTrue(nodes.pingAll());
     }
@@ -276,12 +318,16 @@ public class RedissonTest {
     private RedisProcess redisTestSmallMemory() throws IOException, InterruptedException {
         return new RedisRunner()
                 .maxmemory("1mb")
+                .nosave()
+                .randomDir()
                 .port(6319)
                 .run();
     }
 
     private RedisProcess redisTestConnection() throws IOException, InterruptedException {
         return new RedisRunner()
+                .nosave()
+                .randomDir()
                 .port(6319)
                 .run();
     }
