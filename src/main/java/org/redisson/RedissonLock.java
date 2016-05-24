@@ -576,8 +576,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return tryLockAsync(time, -1, unit);
     }
 
-    public Future<Boolean> tryLockAsync(final long waitTime, final long leaseTime, final TimeUnit unit) {
-        final long currentThreadId = Thread.currentThread().getId();
+    public Future<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit) {
+        long currentThreadId = Thread.currentThread().getId();
         return tryLockAsync(waitTime, leaseTime, unit, currentThreadId);
     }
 
@@ -654,7 +654,13 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 // lock acquired
                 if (ttl == null) {
                     unsubscribe(subscribeFuture);
-                    result.trySuccess(null);
+                    result.trySuccess(true);
+                    return;
+                }
+                
+                if (time.get() < 0) {
+                    unsubscribe(subscribeFuture);
+                    result.trySuccess(false);
                     return;
                 }
 

@@ -4,6 +4,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import static com.jayway.awaitility.Awaitility.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -11,6 +13,24 @@ import org.redisson.core.RLock;
 
 public class RedissonLockTest extends BaseConcurrentTest {
 
+    @Test
+    public void testTryLockWait() throws InterruptedException {
+        Thread t = new Thread() {
+            public void run() {
+                RLock lock = redisson.getLock("lock");
+                lock.lock();
+            };
+        };
+        t.start();
+        t.join();
+        
+        RLock lock = redisson.getLock("lock");
+        
+        long startTime = System.currentTimeMillis();
+        lock.tryLock(3, TimeUnit.SECONDS);
+        assertThat(System.currentTimeMillis() - startTime).isGreaterThan(2990);
+    }
+    
     @Test
     public void testDelete() {
         RLock lock = redisson.getLock("lock");
