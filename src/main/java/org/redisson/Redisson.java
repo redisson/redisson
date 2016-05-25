@@ -368,6 +368,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RLock getFairLock(String name) {
+        return new RedissonFairLock(commandExecutor, name, id);
+    }
+    
+    @Override
     public RReadWriteLock getReadWriteLock(String name) {
         return new RedissonReadWriteLock(commandExecutor, name, id);
     }

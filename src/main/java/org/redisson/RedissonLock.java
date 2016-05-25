@@ -46,6 +46,8 @@ import io.netty.util.internal.PlatformDependent;
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
  * Implements reentrant lock.<br>
  * Lock will be removed automatically if client disconnects.
+ * <p/>
+ * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order.
  *
  * @author Nikita Koksharov
  *
@@ -60,7 +62,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     final UUID id;
 
-    private static final LockPubSub PUBSUB = new LockPubSub();
+    protected static final LockPubSub PUBSUB = new LockPubSub();
 
     final CommandExecutor commandExecutor;
 
@@ -70,7 +72,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         this.id = id;
     }
 
-    private String getEntryName() {
+    protected String getEntryName() {
         return id + ":" + getName();
     }
 
@@ -114,7 +116,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             return;
         }
 
-        Future<RedissonLockEntry> future = subscribe();
+        long threadId = Thread.currentThread().getId();
+        Future<RedissonLockEntry> future = subscribe(threadId);
         get(future);
 
         try {
@@ -126,19 +129,18 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 }
 
                 // waiting for message
-                RedissonLockEntry entry = getEntry();
                 if (ttl >= 0) {
-                    entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                    getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                 } else {
-                    entry.getLatch().acquire();
+                    getEntry(threadId).getLatch().acquire();
                 }
             }
         } finally {
-            unsubscribe(future);
+            unsubscribe(future, threadId);
         }
 //        get(lockAsync(leaseTime, unit));
     }
-
+    
     private Long tryAcquire(long leaseTime, TimeUnit unit) {
         return get(tryAcquireAsync(leaseTime, unit, Thread.currentThread().getId()));
     }
@@ -258,13 +260,14 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             return true;
         }
 
-        Future<RedissonLockEntry> future = subscribe();
+        final long threadId = Thread.currentThread().getId();
+        Future<RedissonLockEntry> future = subscribe(threadId);
         if (!await(future, time, TimeUnit.MILLISECONDS)) {
             future.addListener(new FutureListener<RedissonLockEntry>() {
                 @Override
                 public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
                     if (future.isSuccess()) {
-                        unsubscribe(future);
+                        unsubscribe(future, threadId);
                     }
                 }
             });
@@ -285,32 +288,30 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
                 // waiting for message
                 long current = System.currentTimeMillis();
-                RedissonLockEntry entry = getEntry();
-
                 if (ttl >= 0 && ttl < time) {
-                    entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                    getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                 } else {
-                    entry.getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
+                    getEntry(threadId).getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                 }
 
                 long elapsed = System.currentTimeMillis() - current;
                 time -= elapsed;
             }
         } finally {
-            unsubscribe(future);
+            unsubscribe(future, threadId);
         }
 //        return get(tryLockAsync(waitTime, leaseTime, unit));
     }
 
-    private RedissonLockEntry getEntry() {
+    protected RedissonLockEntry getEntry(long threadId) {
         return PUBSUB.getEntry(getEntryName());
     }
 
-    private Future<RedissonLockEntry> subscribe() {
+    protected Future<RedissonLockEntry> subscribe(long threadId) {
         return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 
-    private void unsubscribe(Future<RedissonLockEntry> future) {
+    protected void unsubscribe(Future<RedissonLockEntry> future, long threadId) {
         PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 
@@ -486,7 +487,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     return;
                 }
 
-                final Future<RedissonLockEntry> subscribeFuture = subscribe();
+                final Future<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
                 subscribeFuture.addListener(new FutureListener<RedissonLockEntry>() {
                     @Override
                     public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
@@ -512,7 +513,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
                 if (!future.isSuccess()) {
-                    unsubscribe(subscribeFuture);
+                    unsubscribe(subscribeFuture, currentThreadId);
                     result.setFailure(future.cause());
                     return;
                 }
@@ -520,13 +521,13 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 Long ttl = future.getNow();
                 // lock acquired
                 if (ttl == null) {
-                    unsubscribe(subscribeFuture);
+                    unsubscribe(subscribeFuture, currentThreadId);
                     result.setSuccess(null);
                     return;
                 }
 
                 // waiting for message
-                final RedissonLockEntry entry = getEntry();
+                final RedissonLockEntry entry = getEntry(currentThreadId);
                 synchronized (entry) {
                     if (entry.getLatch().tryAcquire()) {
                         lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
@@ -604,7 +605,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
                 final long current = System.currentTimeMillis();
                 final AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<ScheduledFuture<?>>();
-                final Future<RedissonLockEntry> subscribeFuture = subscribe();
+                final Future<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
                 subscribeFuture.addListener(new FutureListener<RedissonLockEntry>() {
                     @Override
                     public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
@@ -621,7 +622,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         time.addAndGet(-elapsed);
                         
                         if (time.get() < 0) {
-                            unsubscribe(subscribeFuture);
+                            unsubscribe(subscribeFuture, currentThreadId);
                             result.trySuccess(false);
                             return;
                         }
@@ -654,7 +655,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
                 if (!future.isSuccess()) {
-                    unsubscribe(subscribeFuture);
+                    unsubscribe(subscribeFuture, currentThreadId);
                     result.tryFailure(future.cause());
                     return;
                 }
@@ -662,20 +663,20 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 Long ttl = future.getNow();
                 // lock acquired
                 if (ttl == null) {
-                    unsubscribe(subscribeFuture);
+                    unsubscribe(subscribeFuture, currentThreadId);
                     result.trySuccess(true);
                     return;
                 }
                 
                 if (time.get() < 0) {
-                    unsubscribe(subscribeFuture);
+                    unsubscribe(subscribeFuture, currentThreadId);
                     result.trySuccess(false);
                     return;
                 }
 
                 // waiting for message
                 final long current = System.currentTimeMillis();
-                final RedissonLockEntry entry = getEntry();
+                final RedissonLockEntry entry = getEntry(currentThreadId);
                 synchronized (entry) {
                     if (entry.getLatch().tryAcquire()) {
                         tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);

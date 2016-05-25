@@ -337,12 +337,24 @@ public interface RedissonClient {
 
     /**
      * Returns lock instance by name.
+     * <p/>
+     * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
      *
      * @param name of lock
      * @return
      */
     RLock getLock(String name);
 
+    /**
+     * Returns lock instance by name.
+     * <p/>
+     * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
+     * 
+     * @param name
+     * @return
+     */
+    RLock getFairLock(String name);
+    
     /**
      * Returns readWriteLock instance by name.
      *
