@@ -23,6 +23,7 @@ import java.util.concurrent.locks.Condition;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandExecutor;
 import org.redisson.core.RLock;
 import org.redisson.pubsub.LockPubSub;
@@ -45,14 +46,16 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
         this.commandExecutor = commandExecutor;
     }
 
+    @Override
     String getChannelName() {
         return "redisson_rwlock__{" + getName() + "}";
     }
 
-    Future<Long> tryLockInnerAsync(final long leaseTime, final TimeUnit unit, long threadId) {
+    @Override
+    <T> Future<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, command,
                             "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                             "if (mode == false) then " +
                                   "redis.call('hset', KEYS[1], 'mode', 'write'); " +

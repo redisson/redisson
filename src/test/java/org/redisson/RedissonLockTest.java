@@ -15,20 +15,16 @@ public class RedissonLockTest extends BaseConcurrentTest {
 
     @Test
     public void testTryLockWait() throws InterruptedException {
-        Thread t = new Thread() {
-            public void run() {
-                RLock lock = redisson.getLock("lock");
-                lock.lock();
-            };
-        };
-        t.start();
-        t.join();
-        
+        testSingleInstanceConcurrency(1, r -> {
+            RLock lock = r.getLock("lock");
+            lock.lock();
+        });
+
         RLock lock = redisson.getLock("lock");
         
         long startTime = System.currentTimeMillis();
         lock.tryLock(3, TimeUnit.SECONDS);
-        assertThat(System.currentTimeMillis() - startTime).isBetween(2990L, 3020L);
+        assertThat(System.currentTimeMillis() - startTime).isBetween(2990L, 3100L);
     }
     
     @Test
@@ -85,7 +81,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redisson.getLock("lock");
         Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS + 1));
-        Assert.assertFalse("Transient lock expired automatically", lock.isLocked());
+        Assert.assertFalse("Transient lock has not expired automatically", lock.isLocked());
     }
 
     @Test

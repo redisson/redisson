@@ -189,14 +189,11 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
     @Test
     public void testAutoExpire() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
         testSingleInstanceConcurrency(1, r -> {
             RReadWriteLock lock1 = r.getReadWriteLock("lock");
             lock1.writeLock().lock();
-            latch.countDown();
         });
 
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RReadWriteLock lock1 = redisson.getReadWriteLock("lock");
         Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS + 1));
         Assert.assertFalse("Transient lock expired automatically", lock1.writeLock().isLocked());
@@ -325,7 +322,12 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         t.join();
 
         RLock lock = rwlock.readLock();
-        lock.unlock();
+        try {
+            lock.unlock();
+        } finally {
+            // clear scheduler
+            lock.delete();
+        }
     }
 
     @Test
