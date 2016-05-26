@@ -22,12 +22,14 @@ import org.redisson.client.codec.Codec;
 
 import io.netty.util.concurrent.Promise;
 
-public class BatchCommandData<T, R> extends CommandData<T, R> {
+public class BatchCommandData<T, R> extends CommandData<T, R> implements Comparable<BatchCommandData<T, R>> {
 
+    private final int index;
     private final AtomicReference<RedisRedirectException> redirectError = new AtomicReference<RedisRedirectException>();
     
-    public BatchCommandData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
+    public BatchCommandData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params, int index) {
         super(promise, codec, command, params);
+        this.index = index;
     }
     
     @Override
@@ -57,6 +59,11 @@ public class BatchCommandData<T, R> extends CommandData<T, R> {
     
     public void clearError() {
         redirectError.set(null);
+    }
+
+    @Override
+    public int compareTo(BatchCommandData<T, R> o) {
+        return index - o.index;
     }
 
 }

@@ -51,35 +51,13 @@ import io.netty.util.internal.PlatformDependent;
 
 public class CommandBatchService extends CommandReactiveService {
 
-    public static class CommandEntry implements Comparable<CommandEntry> {
-
-        final BatchCommandData<?, ?> command;
-        final int index;
-
-        public CommandEntry(BatchCommandData<?, ?> command, int index) {
-            super();
-            this.command = command;
-            this.index = index;
-        }
-
-        public BatchCommandData<?, ?> getCommand() {
-            return command;
-        }
-
-        @Override
-        public int compareTo(CommandEntry o) {
-            return index - o.index;
-        }
-
-    }
-
     public static class Entry {
 
-        Queue<CommandEntry> commands = PlatformDependent.newMpscQueue();
+        Queue<BatchCommandData<?, ?>> commands = PlatformDependent.newMpscQueue();
 
         volatile boolean readOnlyMode = true;
 
-        public Queue<CommandEntry> getCommands() {
+        public Queue<BatchCommandData<?, ?>> getCommands() {
             return commands;
         }
 
@@ -92,8 +70,8 @@ public class CommandBatchService extends CommandReactiveService {
         }
         
         public void clearErrors() {
-            for (CommandEntry commandEntry : commands) {
-                commandEntry.getCommand().clearError();
+            for (BatchCommandData<?, ?> commandEntry : commands) {
+                commandEntry.clearError();
             }
         }
 
@@ -128,8 +106,8 @@ public class CommandBatchService extends CommandReactiveService {
             entry.setReadOnlyMode(false);
         }
         
-        BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codec, command, params);
-        entry.getCommands().add(new CommandEntry(commandData, index.incrementAndGet()));
+        BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codec, command, params, index.incrementAndGet());
+        entry.getCommands().add(commandData);
     }
 
     public List<?> execute() {
@@ -182,14 +160,14 @@ public class CommandBatchService extends CommandReactiveService {
                     return;
                 }
 
-                List<CommandEntry> entries = new ArrayList<CommandEntry>();
+                List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
                 for (Entry e : commands.values()) {
                     entries.addAll(e.getCommands());
                 }
                 Collections.sort(entries);
                 List<Object> result = new ArrayList<Object>(entries.size());
-                for (CommandEntry commandEntry : entries) {
-                    result.add(commandEntry.getCommand().getPromise().getNow());
+                for (BatchCommandData<?, ?> commandEntry : entries) {
+                    result.add(commandEntry.getPromise().getNow());
                 }
                 promise.setSuccess(result);
                 commands = null;
@@ -356,12 +334,12 @@ public class CommandBatchService extends CommandReactiveService {
             Promise<Void> promise = connectionManager.newPromise();
             list.add(new CommandData<Void, Void>(promise, StringCodec.INSTANCE, RedisCommands.ASKING, new Object[] {}));
         } 
-        for (CommandEntry c : entry.getCommands()) {
-            if (c.getCommand().getPromise().isSuccess()) {
+        for (BatchCommandData<?, ?> c : entry.getCommands()) {
+            if (c.getPromise().isSuccess()) {
                 // skip successful commands
                 continue;
             }
-            list.add(c.getCommand());
+            list.add(c);
         }
         ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
         details.setWriteFuture(future);
