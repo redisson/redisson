@@ -351,23 +351,20 @@ public class CommandBatchService extends CommandReactiveService {
 
         final RedisConnection connection = connFuture.getNow();
 
+        List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size() + 1);
         if (source.getRedirect() == Redirect.ASK) {
-            List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size() + 1);
             Promise<Void> promise = connectionManager.newPromise();
             list.add(new CommandData<Void, Void>(promise, StringCodec.INSTANCE, RedisCommands.ASKING, new Object[] {}));
-            for (CommandEntry c : entry.getCommands()) {
-                list.add(c.getCommand());
+        } 
+        for (CommandEntry c : entry.getCommands()) {
+            if (c.getCommand().getPromise().isSuccess()) {
+                // skip successful commands
+                continue;
             }
-            ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
-            details.setWriteFuture(future);
-        } else {
-            List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size());
-            for (CommandEntry c : entry.getCommands()) {
-                list.add(c.getCommand());
-            }
-            ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
-            details.setWriteFuture(future);
+            list.add(c.getCommand());
         }
+        ChannelFuture future = connection.send(new CommandsData(attemptPromise, list));
+        details.setWriteFuture(future);
 
         if (details.getWriteFuture().isDone()) {
             checkWriteFuture(attemptPromise, details, connection, details.getWriteFuture());
