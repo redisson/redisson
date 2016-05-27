@@ -6,12 +6,14 @@ import org.junit.Test;
 import org.redisson.codec.FstCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.core.RemoteInvocationOptions;
+import org.redisson.remote.RRemoteAsync;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.redisson.remote.RemoteServiceTimeoutException;
 
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
+import io.netty.util.concurrent.Future;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -60,6 +62,34 @@ public class RedissonRemoteServiceTest extends BaseTest {
         }
     }
 
+    @RRemoteAsync(RemoteInterface.class)
+    public interface RemoteInterfaceAsync {
+        
+        Future<Void> voidMethod(String name, Long param);
+        
+        Future<Long> resultMethod(Long value);
+        
+    }
+    
+    @RRemoteAsync(RemoteInterface.class)
+    public interface RemoteInterfaceWrongMethodAsync {
+        
+        Future<Void> voidMethod1(String name, Long param);
+        
+        Future<Long> resultMethod(Long value);
+        
+    }
+    
+    @RRemoteAsync(RemoteInterface.class)
+    public interface RemoteInterfaceWrongParamsAsync {
+        
+        Future<Void> voidMethod(Long param, String name);
+        
+        Future<Long> resultMethod(Long value);
+        
+    }
+
+    
     public interface RemoteInterface {
         
         void voidMethod(String name, Long param);
@@ -119,6 +149,34 @@ public class RedissonRemoteServiceTest extends BaseTest {
             return pojo;
         }
     }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testWrongMethodAsync() throws InterruptedException {
+        redisson.getRemoteSerivce().get(RemoteInterfaceWrongMethodAsync.class);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testWrongParamsAsync() throws InterruptedException {
+        redisson.getRemoteSerivce().get(RemoteInterfaceWrongParamsAsync.class);
+    }
+    
+    @Test
+    public void testAsync() throws InterruptedException {
+        RedissonClient r1 = Redisson.create();
+        r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+        
+        RedissonClient r2 = Redisson.create();
+        RemoteInterfaceAsync ri = r2.getRemoteSerivce().get(RemoteInterfaceAsync.class);
+        
+        Future<Void> f = ri.voidMethod("someName", 100L);
+        f.sync();
+        Future<Long> resFuture = ri.resultMethod(100L);
+        resFuture.sync();
+        assertThat(resFuture.getNow()).isEqualTo(200);
+
+        r1.shutdown();
+        r2.shutdown();
+    }
 
     @Test
     public void testExecutorsAmountConcurrency() throws InterruptedException {
@@ -162,7 +220,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         // the client: starts a couple of threads that will:
         // - await for the ready latch
         // - then call timeoutMethod
-        Future[] clientFutures = new Future[clientAmount];
+        java.util.concurrent.Future[] clientFutures = new java.util.concurrent.Future[clientAmount];
         ExecutorService executor = Executors.newFixedThreadPool(clientAmount);
         for (int i = 0; i < clientAmount; i++) {
             clientFutures[i] = executor.submit(new Runnable() {
@@ -183,7 +241,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         readyLatch.countDown();
 
         // await for the client threads to terminate
-        for (Future clientFuture : clientFutures) {
+        for (java.util.concurrent.Future clientFuture : clientFutures) {
             try {
                 clientFuture.get();
             } catch (ExecutionException e) {
