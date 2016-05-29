@@ -5,7 +5,7 @@ Redisson Releases History
 ####27-May-2016 - version 2.2.14 released  
 Redisson Team is pleased to announce [Redisson PRO](http://redisson.pro) edition. This version is based on open-source edition and has 24x7 support and some features.  
 
-Feature - __`RMap`, `RSet` data sharding support in cluster mode__ available only in [Redisson PRO](http://redisson.pro) edition  
+Feature - __data sharding for `RMap`, `RSet` structures in cluster mode__ available only in [Redisson PRO](http://redisson.pro) edition  
 Feature - __new object added__ `RLock` with fair mode support  
 Feature -  Ability to execute interface methods used for RemoteService in asynchronous way  
 Feature - `RSemaphoreAsync` interface implemented  
