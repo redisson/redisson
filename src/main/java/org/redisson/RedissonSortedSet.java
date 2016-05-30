@@ -362,22 +362,19 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 return false;
             }
 
+            conn.sync(RedisCommands.MULTI);
             if (res.getIndex() == 0) {
-                conn.sync(RedisCommands.MULTI);
                 conn.sync(codec, RedisCommands.LPOP, getName());
-                if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 1) {
-                    return true;
-                }
+            } else {
+                conn.sync(RedisCommands.EVAL_VOID, 
+                        "local len = redis.call('llen', KEYS[1]);"
+                                + "local tail = redis.call('lrange', KEYS[1], tonumber(ARGV[1]) + 1, len);"
+                                + "redis.call('ltrim', KEYS[1], 0, tonumber(ARGV[1]) - 1);"
+                                + "if #tail > 0 then "
+                                + "redis.call('rpush', KEYS[1], unpack(tail)); "
+                                + "end;", 1, getName(), res.getIndex()); 
             }
 
-            conn.sync(RedisCommands.MULTI);
-            conn.sync(RedisCommands.EVAL_VOID, 
-                    "local len = redis.call('llen', KEYS[1]);"
-                    + "local tail = redis.call('lrange', KEYS[1], tonumber(ARGV[1]) + 1, len);"
-                    + "redis.call('ltrim', KEYS[1], 0, tonumber(ARGV[1]) - 1);"
-                    + "if #tail > 0 then "
-                        + "redis.call('rpush', KEYS[1], unpack(tail)); "
-                    + "end;", 1, getName(), res.getIndex()); 
             if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 1) {
                 return true;
             }
@@ -473,10 +470,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return res;
     }
 
-    private String getScoreKeyName(int index) {
-        return "redisson__sortedset__score__" + getName() + "__" + index;
-    }
-
     private String getComparatorKeyName() {
         return "redisson__sortedset__comparator__{" + getName() + "}";
     }
@@ -539,25 +532,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     public BinarySearchResult<V> binarySearch(V value, Codec codec, RedisConnection connection) {
         int upperIndex = size(connection) - 1;
         return binarySearch(value, codec, connection, 0, upperIndex);
-    }
-
-    double score(V value, RedisConnection connection, int indexDiff, boolean tail) {
-        return -1;
-//        BinarySearchResult<V> res = binarySearch(value, connection);
-//        if (res.getIndex() < 0) {
-//            V element = getAtIndex(-res.getIndex() + indexDiff, connection);
-//            if (element.getScore() == null && res.getScore() == null && tail) {
-//                element = getAtIndex(-res.getIndex() - 2, connection);
-//                return element.getScore();
-//            }
-//            return element.getScore();
-//        }
-//        int ind = res.getIndex();
-//        if (tail) {
-//            ind = res.getIndex() - indexDiff;
-//        }
-//        BinarySearchResult<V> element = getAtIndex(ind, connection);
-//        return element.getScore();
     }
 
     public String toString() {
