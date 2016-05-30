@@ -68,7 +68,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     public static class BinarySearchResult<V> {
 
         private V value;
-        private int index;
+        private Integer index;
 
         public BinarySearchResult(V value) {
             super();
@@ -78,10 +78,10 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         public BinarySearchResult() {
         }
 
-        public void setIndex(int index) {
+        public void setIndex(Integer index) {
             this.index = index;
         }
-        public int getIndex() {
+        public Integer getIndex() {
             return index;
         }
 
@@ -250,9 +250,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     public Future<Boolean> addAsync(final V value) {
-        final Promise<Boolean> promise = new DefaultPromise<Boolean>(){};
-        GlobalEventExecutor.INSTANCE.execute(new Runnable() {
-            @Override
+        final Promise<Boolean> promise = commandExecutor.getConnectionManager().newPromise();
+        commandExecutor.getConnectionManager().getGroup().execute(new Runnable() {
             public void run() {
                 try {
                     boolean res = add(value);
@@ -272,6 +271,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             checkComparator(connection);
 
             BinarySearchResult<V> res = binarySearch(value, codec, connection);
+            if (res.getIndex() == null) {
+                continue;
+            }
             if (res.getIndex() < 0) {
                 int index = -(res.getIndex() + 1);
                 
@@ -357,6 +359,10 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         while (true) {
             conn.sync(RedisCommands.WATCH, getName());
             BinarySearchResult<V> res = binarySearch((V) value, codec, conn);
+            if (res.getIndex() == null) {
+                conn.sync(RedisCommands.UNWATCH);
+                continue;
+            }
             if (res.getIndex() < 0) {
                 conn.sync(RedisCommands.UNWATCH);
                 return false;
@@ -493,24 +499,17 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return res;
     }
 
-    private V getAtIndex(Codec codec, int index, RedisConnection connection) {
-        return connection.sync(codec, RedisCommands.LINDEX, getName(), index);
-    }
-
-    /**
-     * Binary search algorithm
-     *
-     * @param value
-     * @param connection
-     * @param lowerIndex
-     * @param upperIndex
-     * @return
-     */
-    private BinarySearchResult<V> binarySearch(V value, Codec codec, RedisConnection connection, int lowerIndex, int upperIndex) {
+    public BinarySearchResult<V> binarySearch(V value, Codec codec, RedisConnection connection) {
+        int size = size(connection);
+        int upperIndex = size - 1;
+        int lowerIndex = 0;
         while (lowerIndex <= upperIndex) {
             int index = lowerIndex + (upperIndex - lowerIndex) / 2;
 
-            V res = getAtIndex(codec, index, connection);
+            V res = connection.sync(codec, RedisCommands.LINDEX, getName(), index);
+            if (res == null) {
+                return new BinarySearchResult<V>();
+            }
             int cmp = comparator.compare(value, res);
 
             if (cmp == 0) {
@@ -527,11 +526,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         BinarySearchResult<V> indexRes = new BinarySearchResult<V>();
         indexRes.setIndex(-(lowerIndex + 1));
         return indexRes;
-    }
-
-    public BinarySearchResult<V> binarySearch(V value, Codec codec, RedisConnection connection) {
-        int upperIndex = size(connection) - 1;
-        return binarySearch(value, codec, connection, 0, upperIndex);
     }
 
     public String toString() {

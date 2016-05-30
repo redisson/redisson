@@ -85,15 +85,21 @@ public abstract class BaseConcurrentTest extends BaseTest {
         final RedissonClient r = BaseTest.createInstance();
         long watch = System.currentTimeMillis();
 
-        ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors() * 2);
+//        ForkJoinPool pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors() * 2);
+        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
 
-        pool.submit(() -> {
-            IntStream.range(0, iterations)
-                    .parallel()
-                    .forEach((i) -> {
-                        runnable.run(r);
-                    });
-        });
+        for (int i = 0; i < iterations; i++) {
+            pool.execute(() -> {
+                runnable.run(r);
+            });
+        }
+//        pool.submit(() -> {
+//            IntStream.range(0, iterations)
+//                    .parallel()
+//                    .forEach((i) -> {
+//                        runnable.run(r);
+//                    });
+//        });
 
         pool.shutdown();
         Assert.assertTrue(pool.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 10 : 3, TimeUnit.MINUTES));
