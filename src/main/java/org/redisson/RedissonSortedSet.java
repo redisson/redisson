@@ -260,19 +260,16 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 }
                 while (true) {
                     conn.sync(RedisCommands.WATCH, getName());
-                    List<Object> tail = conn.sync(codec, RedisCommands.LRANGE, getName(), index + 1, size());
                     conn.sync(RedisCommands.MULTI);
-                    conn.sync(codec, RedisCommands.LTRIM, getName(), 0, index - 1);
-                    if (tail.isEmpty()) {
-                        if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 1) {
-                            return null;
-                        }
-                    } else {
-                        tail.add(0, getName());
-                        conn.sync(codec, RedisCommands.RPUSH, tail.toArray());
-                        if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 2) {
-                            return null;
-                        }
+                    conn.sync(RedisCommands.EVAL_VOID, 
+                            "local len = redis.call('llen', KEYS[1]);"
+                            + "local tail = redis.call('lrange', KEYS[1], tonumber(ARGV[1]) + 1, len);"
+                            + "redis.call('ltrim', KEYS[1], 0, tonumber(ARGV[1]) - 1);"
+                            + "if #tail > 0 then "
+                                + "redis.call('rpush', KEYS[1], unpack(tail)); "
+                            + "end;", 1, getName(), index); 
+                    if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 1) {
+                        return null;
                     }
                 }
             }
@@ -492,19 +489,16 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 }
             }
 
-            List<Object> tail = conn.sync(codec, RedisCommands.LRANGE, getName(), res.getIndex() + 1, size());
             conn.sync(RedisCommands.MULTI);
-            conn.sync(RedisCommands.LTRIM, getName(), 0, res.getIndex() - 1);
-            if (tail.isEmpty()) {
-                if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 1) {
-                    return true;
-                }
-            } else {
-                tail.add(0, getName());
-                conn.sync(codec, RedisCommands.RPUSH, tail.toArray());
-                if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 2) {
-                    return true;
-                }
+            conn.sync(RedisCommands.EVAL_VOID, 
+                    "local len = redis.call('llen', KEYS[1]);"
+                    + "local tail = redis.call('lrange', KEYS[1], tonumber(ARGV[1]) + 1, len);"
+                    + "redis.call('ltrim', KEYS[1], 0, tonumber(ARGV[1]) - 1);"
+                    + "if #tail > 0 then "
+                        + "redis.call('rpush', KEYS[1], unpack(tail)); "
+                    + "end;", 1, getName(), res.getIndex()); 
+            if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 1) {
+                return true;
             }
         }
     }
