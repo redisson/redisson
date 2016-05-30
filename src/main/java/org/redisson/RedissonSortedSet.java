@@ -32,7 +32,6 @@ import java.util.SortedSet;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
@@ -191,6 +190,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return new Iterator<V>() {
 
             private int currentIndex = ind - 1;
+            private V currentElement;
             private boolean removeExecuted;
 
             @Override
@@ -206,7 +206,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 }
                 currentIndex++;
                 removeExecuted = false;
-                return RedissonSortedSet.this.get(currentIndex);
+                currentElement = RedissonSortedSet.this.get(currentIndex);
+                return currentElement;
             }
 
             @Override
@@ -214,66 +215,15 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 if (removeExecuted) {
                     throw new IllegalStateException("Element been already deleted");
                 }
-                RedissonSortedSet.this.remove(currentIndex);
+                RedissonSortedSet.this.remove(currentElement);
                 currentIndex--;
                 removeExecuted = true;
             }
 
         };
-//        Double startScore;
-//        RedisConnection<Object, V> connection = connectionManager.connectionReadOp();
-//        try {
-//            startScore = getScoreAtIndex(0, connection);
-//        } finally {
-//            connectionManager.releaseRead(connection);
-//        }
-//        if (startScore == null) {
-//            return new Iterator<V>() {
-//                @Override
-//                public boolean hasNext() {
-//                    return false;
-//                }
-//
-//                @Override
-//                public V next() {
-//                    throw new NoSuchElementException();
-//                }
-//
-//                @Override
-//                public void remove() {
-//                }
-//            };
-//        }
-//
-//        return iterator(startScore, Double.MAX_VALUE);
     }
 
-    private void remove(final int index) {
-        commandExecutor.write(getName(), codec, new SyncOperation<V>() {
-            @Override
-            public V execute(Codec codec, RedisConnection conn) {
-                if (index == 0) {
-                    return conn.sync(codec, RedisCommands.LPOP, getName());
-                }
-                while (true) {
-                    conn.sync(RedisCommands.WATCH, getName());
-                    conn.sync(RedisCommands.MULTI);
-                    conn.sync(RedisCommands.EVAL_VOID, 
-                            "local len = redis.call('llen', KEYS[1]);"
-                            + "local tail = redis.call('lrange', KEYS[1], tonumber(ARGV[1]) + 1, len);"
-                            + "redis.call('ltrim', KEYS[1], 0, tonumber(ARGV[1]) - 1);"
-                            + "if #tail > 0 then "
-                                + "redis.call('rpush', KEYS[1], unpack(tail)); "
-                            + "end;", 1, getName(), index); 
-                    if (((List<Object>)conn.sync(codec, RedisCommands.EXEC)).size() == 1) {
-                        return null;
-                    }
-                }
-            }
-        });
-    }
-
-    private V get(final int index) {
+    private V get(int index) {
         return commandExecutor.read(getName(), codec, RedisCommands.LINDEX, getName(), index);
     }
 
