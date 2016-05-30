@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -101,8 +102,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         this.commandExecutor = commandExecutor;
 
         loadComparator();
-
-        commandExecutor.write(getName(), StringCodec.INSTANCE, RedisCommands.SETNX, getCurrentVersionKey(), 0L);
     }
 
     public RedissonSortedSet(Codec codec, CommandExecutor commandExecutor, String name) {
@@ -110,8 +109,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         this.commandExecutor = commandExecutor;
 
         loadComparator();
-
-        commandExecutor.write(getName(), StringCodec.INSTANCE, RedisCommands.SETNX, getCurrentVersionKey(), 0L);
     }
 
     private void loadComparator() {
@@ -292,14 +289,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return res.toArray(a);
     }
 
-    private String getCurrentVersionKey() {
-        return "redisson__sortedset__version__{" + getName() + "}";
-    }
-
-    private Long getCurrentVersion(Codec codec, RedisConnection simpleConnection) {
-        return simpleConnection.sync(LongCodec.INSTANCE, RedisCommands.GET, getCurrentVersionKey());
-    }
-
     @Override
     public boolean add(final V value) {
         return commandExecutor.write(getName(), codec, new SyncOperation<Boolean>() {
@@ -332,83 +321,29 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
             checkComparator(connection);
 
-            Long version = getCurrentVersion(codec, connection);
             BinarySearchResult<V> res = binarySearch(value, codec, connection);
             if (res.getIndex() < 0) {
-//                System.out.println("index: " + res.getIndex() + " value: " + value);
-                if (!version.equals(getCurrentVersion(codec, connection))) {
-                    connection.sync(RedisCommands.UNWATCH);
-                    continue;
-                }
-//                NewScore newScore = calcNewScore(res.getIndex(), connection);
-//                if (!version.equals(getCurrentVersion(simpleConnection))) {
-//                    connection.unwatch();
-//                    continue;
-//                }
-//
-//                String leftScoreKey = getScoreKeyName(newScore.getLeftScore());
-//                String rightScoreKey = getScoreKeyName(newScore.getRightScore());
-//
-//                if (simpleConnection.setnx(leftScoreKey, 1)) {
-//                    if (!version.equals(getCurrentVersion(simpleConnection))) {
-//                        connection.unwatch();
-//
-//                        connection.del(leftScoreKey);
-//                        continue;
-//                    }
-//                    if (rightScoreKey != null) {
-//
-//                        if (!simpleConnection.setnx(rightScoreKey, 1)) {
-//                            connection.unwatch();
-//
-//                            connection.del(leftScoreKey);
-//                            continue;
-//                        }
-//                    }
-//                } else {
-//                    connection.unwatch();
-//                    continue;
-//                }
-
-                V pivot = null;
-                boolean before = false;
                 int index = -(res.getIndex() + 1);
-
-                if (index < size()) {
-                    before = true;
-                    pivot = connection.sync(codec, RedisCommands.LINDEX, getName(), index);
+                
+                byte[] encodedValue = null;
+                try {
+                    encodedValue = codec.getValueEncoder().encode(value);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
                 }
-
+                
                 connection.sync(RedisCommands.MULTI);
-                if (index >= size()) {
-                    connection.sync(codec, RedisCommands.RPUSH, getName(), value);
-                } else {
-                    connection.sync(codec, RedisCommands.LINSERT, getName(), before ? "BEFORE" : "AFTER", pivot, value);
-                }
-//                System.out.println("adding: " + newScore.getScore() + " " + value);
-//                connection.zadd(getName(), newScore.getScore(), value);
-//                if (rightScoreKey != null) {
-//                    connection.del(leftScoreKey, rightScoreKey);
-//                } else {
-//                    connection.del(leftScoreKey);
-//                }
-                connection.sync(RedisCommands.INCR, getCurrentVersionKey());
+                connection.sync(RedisCommands.EVAL_VOID, 
+                        "local len = redis.call('llen', KEYS[1]);"
+                        + "if tonumber(ARGV[1]) < len then "
+                            + "local pivot = redis.call('lindex', KEYS[1], ARGV[1]);"
+                            + "redis.call('linsert', KEYS[1], 'before', pivot, ARGV[2]);"
+                            + "return;"
+                        + "end;"
+                        + "redis.call('rpush', KEYS[1], ARGV[2]);", 1, getName(), index, encodedValue); 
                 List<Object> re = connection.sync(codec, RedisCommands.EXEC);
-                if (re.size() == 2) {
-//                    System.out.println("index: " + index + " value: " + value + " pivot: " + pivot);
+                if (re.size() == 1) {
                     return true;
-//                    Number val = (Number) re.get(0);
-//                    Long delCount = (Long) re.get(1);
-//                    if (rightScoreKey != null) {
-//                        if (delCount != 2) {
-//                            throw new IllegalStateException();
-//                        }
-//                    } else {
-//                        if (delCount != 1) {
-//                            throw new IllegalStateException();
-//                        }
-//                    }
-//                    return val != null && val.intValue() > 0;
                 }
             } else {
                 connection.sync(RedisCommands.UNWATCH);
@@ -423,11 +358,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             String[] vals = comparatorSign.split(":");
             String className = vals[0];
             if (!comparator.getClass().getName().equals(className)) {
-//                try {
-                    loadComparator(connection);
-//                } finally {
-//                    connection.sync(RedisCommands.UNWATCH);
-//                }
+                loadComparator(connection);
             }
         }
     }
