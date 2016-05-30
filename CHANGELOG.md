@@ -2,6 +2,31 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####27-May-2016 - version 2.2.14 released  
+Redisson Team is pleased to announce [Redisson PRO](http://redisson.pro) edition. This version is based on open-source edition and has 24x7 support and some features.  
+
+Feature - __data sharding for `RMap`, `RSet` structures in cluster mode__ available only in [Redisson PRO](http://redisson.pro) edition  
+Feature - __new object added__ `RLock` with fair mode support  
+Feature -  Ability to execute interface methods used for RemoteService in asynchronous way  
+Feature - `RSemaphoreAsync` interface implemented  
+Feature - `addBefore`, `addBeforeAsync`, `addAfter`,  `addAfterAsync` methods added to `RList` object  
+Feature - `readAll`, `pollFirst`, `pollLast`, `first`, `last`, `revRankAsync`, `readAllAsync`, `pollFirstAsync`, `pollLastAsync`, `firstAsync`, `lastAsync` and `revRankAsync` methods added to `RLexSortedSet` object  
+Feature - `count`, `countAsync`, `readAll`, `readAllAsync` methods added to `RScoredSortedSet` object  
+Feature - `entryValueReversed`, `entryValueReversedAsync` methods added to`RScoredSortedSet` (thanks to weiqiyiji)  
+Feature - Ability to specify the name prefix for `RRemoteService` (thanks to pierredavidbelanger)  
+Feature - Ability to make remote call in fire-and-forget and ack-response modes only  (thanks to pierredavidbelanger)  
+Improvement - optimized cluster redirect handling during `RBatch` execution  
+Fixed - `RScoredSortedSet.retainAll` method works incorrectly in some cases  
+Fixed - `getBlockingQueue` throws `IndexOutOfBoundsException` (thanks to jackygurui)  
+Fixed - `GEODIST` command handling in `RGeo` object  (thanks to jackygurui)  
+Fixed - `RObject.expireAt` method uses second instead of ms  
+Fixed - don't make a remote call when toString, equals and hashCode are called via remote interface (thanks to pierredavidbelanger)  
+Fixed - `RRemoteService` doesn't work correctly with serialzation codecs (thanks to pierredavidbelanger)  
+Fixed - executors amount is not enforced (thanks to pierredavidbelanger)  
+Fixed - FSTObjectOutput shouldn't be closed after write  
+Fixed - possible race-condition during ack waiting in `RRemoteService` object  
+Fixed - timeWait checking fixed in `RLock.tryLockAsync`  
+
 ####30-Apr-2016 - version 2.2.13 released  
 
 Feature - `RSet.diff` and `RSet.intersection` methods added  
