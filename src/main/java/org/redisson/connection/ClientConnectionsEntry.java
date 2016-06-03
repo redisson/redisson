@@ -19,6 +19,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.ReconnectListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -184,6 +185,10 @@ public class ClientConnectionsEntry {
                 }
             }
         });
+    }
+
+    public MasterSlaveServersConfig getConfig() {
+        return connectionManager.getConfig();
     }
 
     public Future<RedisPubSubConnection> connectPubSub() {
