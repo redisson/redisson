@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandExecutor;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
@@ -638,6 +639,8 @@ public interface RedissonClient {
      */
     RKeys getKeys();
 
+    <T, K> RedissonAttachedLiveObjectService<T, K> getAttachedLiveObjectService();
+    
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server
      * 

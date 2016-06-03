@@ -532,6 +532,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public <T, K> RedissonAttachedLiveObjectService<T, K> getAttachedLiveObjectService() {
+        return new RedissonAttachedLiveObjectService<T, K>(this, commandExecutor);
+    }
+    
+    @Override
     public void shutdown() {
         connectionManager.shutdown();
     }
