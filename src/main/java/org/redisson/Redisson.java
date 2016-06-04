@@ -532,8 +532,8 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <T, K> RedissonAttachedLiveObjectService<T, K> getAttachedLiveObjectService() {
-        return new RedissonAttachedLiveObjectService<T, K>(this, commandExecutor);
+    public RedissonAttachedLiveObjectService getAttachedLiveObjectService() {
+        return new RedissonAttachedLiveObjectService(this, commandExecutor);
     }
     
     @Override

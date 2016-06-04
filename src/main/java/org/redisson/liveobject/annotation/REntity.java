@@ -28,7 +28,7 @@ public @interface REntity {
 
         @Override
         public String getName(Class cls, String idFieldName, Object id) {
-            return "redisson_live_object:{class=" + cls.getCanonicalName() + ", " + idFieldName + "=" + id.toString() + "}";
+            return "redisson_live_object:{class=" + cls.getName() + ", " + idFieldName + "=" + id.toString() + "}";
         }
 
     }

@@ -67,7 +67,9 @@ public class RedissonReference {
      * @return the codec
      */
     public Codec getCodec() throws Exception {
-        return (Codec) Class.forName(codec).newInstance();
+        return codec == null
+                ? null
+                : (Codec) Class.forName(codec).newInstance();
     }
 
     /**

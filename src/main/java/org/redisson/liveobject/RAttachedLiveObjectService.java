@@ -4,10 +4,8 @@ package org.redisson.liveobject;
  *
  * @author ruigu
  * 
- * @param <T> Entity type
- * @param <K> Key type
  */
-public interface RAttachedLiveObjectService<T, K> extends RLiveObjectService<T, K> {
+public interface RAttachedLiveObjectService extends RLiveObjectService {
   
     /**
      * Finds the entity from Redis with the id. 
@@ -18,8 +16,10 @@ public interface RAttachedLiveObjectService<T, K> extends RLiveObjectService<T, 
      *              of this object will renew this. If it is not been accessed
      *              before the ttl reaches. This object is then expires and
      *              removed from redis. Think of it is been garbage collected.
+     * @param <T> Entity type
+     * @param <K> Key type
      * @return In ATTACHED Mode, this always returns a proxy class. Even it does
      *              not exist in redis.
      */
-    public T get(Class<T> entityClass, K id, long ttl);
+    public <T, K> T get(Class<T> entityClass, K id, long ttl);
 }

@@ -12,7 +12,7 @@ import org.redisson.RedissonClient;
 import org.redisson.RedissonReference;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RMap;
 import org.redisson.core.RObject;
 import org.redisson.liveobject.annotation.REntity;
@@ -23,25 +23,28 @@ import org.redisson.liveobject.misc.Introspectior;
  *
  * @author ruigu
  */
-public class AccessorInterceptor<T, K> {
+public class AccessorInterceptor {
 
     private final RedissonClient redisson;
     private final Class originalClass;
     private final String idFieldName;
     private final REntity.NamingScheme namingScheme;
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
     private RMap liveMap;
 
-    public AccessorInterceptor(RedissonClient redisson, Class entityClass, String idFieldName, CommandExecutor commandExecutor) throws Exception {
+    public AccessorInterceptor(RedissonClient redisson, Class entityClass,
+            String idFieldName, CommandAsyncExecutor commandExecutor) throws Exception {
         this.redisson = redisson;
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
         this.commandExecutor = commandExecutor;
-        this.namingScheme = ((REntity) entityClass.getAnnotation(REntity.class)).namingScheme().newInstance();
+        this.namingScheme = ((REntity) entityClass.getAnnotation(REntity.class))
+                .namingScheme().newInstance();
     }
 
     @RuntimeType
-    public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod, @AllArguments Object[] args, @This T me) throws Exception {
+    public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod,
+            @AllArguments Object[] args, @This Object me) throws Exception {
         if (isGetter(method, idFieldName)) {
             return superMethod.call();
         }
@@ -49,7 +52,7 @@ public class AccessorInterceptor<T, K> {
         if (isSetter(method, idFieldName)) {
             superMethod.call();
             try {
-                liveMap.rename(getMapKey((K) args[0]));
+                liveMap.rename(getMapKey(args[0]));
             } catch (RedisException e) {
                 if (e.getMessage() == null || !e.getMessage().startsWith("ERR no such key")) {
                     throw e;
@@ -62,10 +65,15 @@ public class AccessorInterceptor<T, K> {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (method.getReturnType().isAnnotationPresent(REntity.class)) {
-                return redisson.getAttachedLiveObjectService().get((Class<Object>) method.getReturnType(), result);
+                return redisson.getAttachedLiveObjectService()
+                        .get((Class<Object>) method.getReturnType(), result);
             } else if (result instanceof RedissonReference) {
                 RedissonReference r = ((RedissonReference) result);
-                return r.getType().getConstructor(Codec.class, CommandExecutor.class, String.class).newInstance(r.getCodec(), commandExecutor, r.getKeyName());
+                return r.getType()
+                        .getConstructor(Codec.class, CommandAsyncExecutor.class, String.class)
+                        .newInstance(r.isDefaultCodec()
+                                        ? commandExecutor.getConnectionManager().getCodec()
+                                        : r.getCodec(), commandExecutor, r.getKeyName());
             }
             return result;
         }
@@ -81,7 +89,7 @@ public class AccessorInterceptor<T, K> {
         return superMethod.call();
     }
 
-    private void initLiveMapIfRequired(K id) {
+    private void initLiveMapIfRequired(Object id) {
         if (liveMap == null) {
             liveMap = redisson.getMap(getMapKey(id));
         }
@@ -101,18 +109,18 @@ public class AccessorInterceptor<T, K> {
                 && method.getName().endsWith(getFieldNameSuffix(fieldName));
     }
 
-    private String getMapKey(K id) {
+    private String getMapKey(Object id) {
         return namingScheme.getName(originalClass, idFieldName, id);
     }
 
-    private K getId(T me) throws Exception {
-        return (K) originalClass.getDeclaredMethod("get" + getFieldNameSuffix(idFieldName)).invoke(me);
+    private Object getId(Object me) throws Exception {
+        return originalClass.getDeclaredMethod("get" + getFieldNameSuffix(idFieldName)).invoke(me);
     }
 
     private static String getFieldNameSuffix(String fieldName) {
         return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }
-    
+
     private static Object getFieldValue(Object o, String fieldName) throws Exception {
         return RedissonAttachedLiveObjectService.getActualClass(o.getClass()).getDeclaredMethod("get" + getFieldNameSuffix(fieldName)).invoke(o);
     }

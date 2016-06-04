@@ -9,21 +9,7 @@ import io.netty.util.concurrent.Future;
  * @param <T> Entity type
  * @param <K> Key type
  */
-public interface RDetachedLiveObjectService<T, K> extends RLiveObjectService<T, K> {
-    
-    
-    /**
-     * Finds the entity from Redis with the id. 
-     * 
-     * @param entityClass Entity class
-     * @param id identifier
-     * @return In ATTACHED Mode, this always returns a proxy class. Even it does
-     *              not exist in redis.
-     *         In DETACHED Mode, this returns an instance of the entity class. 
-     *              IF it doesn't exist in redis, null is returned.
-     */
-    @Override
-    public  T get(Class<T> entityClass, K id);
+public interface RDetachedLiveObjectService<T, K> extends RLiveObjectService {
     
     /**
      * Finds the entity from Redis with the id. 
@@ -34,8 +20,6 @@ public interface RDetachedLiveObjectService<T, K> extends RLiveObjectService<T, 
      *              not exist in redis.
      *         In DETACHED Mode, this returns an instance of the entity class. 
      *              IF it doesn't exist in redis, a runtime exception is thrown.
-     * @throws org.redisson.liveobject.REntityNotFoundException A Runtime 
-     *         exception is thrown when the entity does not exist in Redis.
      */
     public Future<T> getAsync(Class<T> entityClass, K id);
     

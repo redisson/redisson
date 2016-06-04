@@ -639,7 +639,13 @@ public interface RedissonClient {
      */
     RKeys getKeys();
 
-    <T, K> RedissonAttachedLiveObjectService<T, K> getAttachedLiveObjectService();
+    /**
+     * Returns RedissonAttachedLiveObjectService which can be used to 
+     * retrieve live REntity(s)
+     * 
+     * @return 
+     */
+    RedissonAttachedLiveObjectService getAttachedLiveObjectService();
     
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server
