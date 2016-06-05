@@ -75,6 +75,7 @@ import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.internal.PlatformDependent;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -89,6 +90,12 @@ public class Redisson implements RedissonClient {
     private final EvictionScheduler evictionScheduler;
     private final CommandExecutor commandExecutor;
     private final ConnectionManager connectionManager;
+    
+    private final Map<Class, Class> liveObjectClassCache
+            = PlatformDependent.<Class, Class>newConcurrentHashMap();
+    private final Map<Class, Class> liveObjectProxyCache
+            = PlatformDependent.<Class, Class>newConcurrentHashMap();
+    
     private final Config config;
 
     private final UUID id = UUID.randomUUID();
@@ -392,6 +399,7 @@ public class Redisson implements RedissonClient {
         return new RedissonScript(commandExecutor);
     }
 
+    @Override
     public RRemoteService getRemoteSerivce() {
         return new RedissonRemoteService(this);
     }
@@ -533,7 +541,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RedissonAttachedLiveObjectService getAttachedLiveObjectService() {
-        return new RedissonAttachedLiveObjectService(this, commandExecutor);
+        return new RedissonAttachedLiveObjectService(this, commandExecutor, liveObjectClassCache, liveObjectProxyCache);
     }
     
     @Override

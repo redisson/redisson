@@ -25,13 +25,16 @@ import org.redisson.liveobject.misc.Introspectior;
  */
 public class AccessorInterceptor {
 
-    private RedissonClient redisson;
-    private CommandAsyncExecutor commandExecutor;
+    private final RedissonClient redisson;
+    private final CommandAsyncExecutor commandExecutor;
     private final Class originalClass;
     private final String idFieldName;
     private final REntity.NamingScheme namingScheme;
-
-    public AccessorInterceptor(Class entityClass, String idFieldName) throws Exception {
+    private RMap liveMap;
+    
+    public AccessorInterceptor(RedissonClient redisson, CommandAsyncExecutor commandExecutor, Class entityClass, String idFieldName) throws Exception {
+        this.redisson = redisson;
+        this.commandExecutor = commandExecutor;
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
         this.namingScheme = ((REntity) entityClass.getAnnotation(REntity.class))
@@ -44,8 +47,9 @@ public class AccessorInterceptor {
         if (isGetter(method, idFieldName)) {
             return superMethod.call();
         }
-        RMap liveMap = redisson.getMap(getMapKey(getId(me)));
+        initLiveMapIfRequired(getId(me));
         if (isSetter(method, idFieldName)) {
+            //TODO: distributed locking maybe required.
             superMethod.call();
             try {
                 liveMap.rename(getMapKey(args[0]));
@@ -54,6 +58,7 @@ public class AccessorInterceptor {
                     throw e;
                 }
             }
+            liveMap = null;
             return null;
         }
         String fieldName = getFieldName(method);
@@ -85,6 +90,12 @@ public class AccessorInterceptor {
         return superMethod.call();
     }
 
+    private void initLiveMapIfRequired(Object id) {
+        if (liveMap == null) {
+            liveMap = redisson.getMap(getMapKey(id));
+        }
+    }
+
     private String getFieldName(Method method) {
         return method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4);
     }
@@ -112,29 +123,15 @@ public class AccessorInterceptor {
     }
 
     private static Object getFieldValue(Object o, String fieldName) throws Exception {
-        return RedissonAttachedLiveObjectService.getActualClass(o.getClass()).getDeclaredMethod("get" + getFieldNameSuffix(fieldName)).invoke(o);
+        return o.getClass().getSuperclass().getDeclaredMethod("get" + getFieldNameSuffix(fieldName)).invoke(o);
     }
 
     private static Object getREntityId(Object o) throws Exception {
         String idName = Introspectior
-                .getFieldsWithAnnotation(RedissonAttachedLiveObjectService.getActualClass(o.getClass()), RId.class)
+                .getFieldsWithAnnotation(o.getClass().getSuperclass(), RId.class)
                 .getOnly()
                 .getName();
         return getFieldValue(o, idName);
-    }
-
-    /**
-     * @param redisson the redisson to set
-     */
-    public void setRedisson(RedissonClient redisson) {
-        this.redisson = redisson;
-    }
-
-    /**
-     * @param commandExecutor the commandExecutor to set
-     */
-    public void setCommandExecutor(CommandAsyncExecutor commandExecutor) {
-        this.commandExecutor = commandExecutor;
     }
 
 }

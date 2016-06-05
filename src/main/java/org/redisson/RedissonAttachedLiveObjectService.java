@@ -1,7 +1,6 @@
 package org.redisson;
 
 import io.netty.util.internal.PlatformDependent;
-import java.lang.reflect.Field;
 import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
@@ -19,17 +18,17 @@ import org.redisson.liveobject.misc.Introspectior;
 
 public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectService {
 
-    private static final Map<Class, Class> classCache
-            = PlatformDependent.<Class, Class>newConcurrentHashMap();
-    private static final Map<Class, Class> proxyCache
-            = PlatformDependent.<Class, Class>newConcurrentHashMap();
+    private final Map<Class, Class> classCache;
+    private final Map<Class, Class> proxyCache;
 
     private final RedissonClient redisson;
     private final CommandAsyncExecutor commandExecutor;
 
-    public RedissonAttachedLiveObjectService(RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
+    public RedissonAttachedLiveObjectService(RedissonClient redisson, CommandAsyncExecutor commandExecutor, Map<Class, Class> classCache, Map<Class, Class> proxyCache) {
         this.redisson = redisson;
         this.commandExecutor = commandExecutor;
+        this.classCache = classCache;
+        this.proxyCache = proxyCache;
     }
 
     //TODO: Support ID Generator
@@ -42,11 +41,7 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
             //TODO: support class with no arg constructor
-            T instance = getProxyClass(entityClass).getConstructor(id.getClass()).newInstance(id);
-            AccessorInterceptor interceptor = getInterceptor(instance);
-            interceptor.setCommandExecutor(commandExecutor);
-            interceptor.setRedisson(redisson);
-            return instance;
+            return getProxyClass(entityClass).getConstructor(id.getClass()).newInstance(id);
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw new RuntimeException(ex);
@@ -88,38 +83,25 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
-                .intercept(MethodDelegation.to(new AccessorInterceptor(entityClass, idFieldName)))
+                .intercept(MethodDelegation.to(new AccessorInterceptor(redisson, commandExecutor, entityClass, idFieldName)))
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded());
         proxyCache.putIfAbsent(classCache.get(entityClass), entityClass);
     }
-    
-    private AccessorInterceptor getInterceptor(Object proxy) throws Exception {
-        for (Field field : proxy.getClass().getFields()) {
-            if (field.getType().isAssignableFrom(AccessorInterceptor.class)) {
-                return (AccessorInterceptor) field.get(proxy);
-            }
-        }
-        return null;
-    }
 
-    public static void unregisterProxy(Class proxy) {
+    public void unregisterProxy(Class proxy) {
         Class cls = proxyCache.remove(proxy);
         if (cls != null) {
             classCache.remove(cls);
         }
     }
 
-    public static void unregisterClass(Class cls) {
+    public void unregisterClass(Class cls) {
         Class proxy = classCache.remove(cls);
         if (proxy != null) {
             proxyCache.remove(proxy);
         }
-    }
-
-    public static Class getActualClass(Class proxyClass) {
-        return proxyCache.get(proxyClass);
     }
 
 }
