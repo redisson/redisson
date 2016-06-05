@@ -19,6 +19,10 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 
+/**
+ *
+ * @author Rui Gu (https://github.com/jackygurui)
+ */
 public class RedisRunner {
 
     public enum REDIS_OPTIONS {

@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 /**
  *
- * @author Jack
+ * @author Rui Gu (https://github.com/jackygurui)
  */
 public class RedisVersion implements Comparable<RedisVersion>{
 

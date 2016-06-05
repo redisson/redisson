@@ -8,7 +8,7 @@ import org.redisson.liveobject.resolver.FieldValueAsIdGenerator;
 
 /**
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})

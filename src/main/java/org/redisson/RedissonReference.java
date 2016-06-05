@@ -5,23 +5,24 @@ import org.redisson.core.RObject;
 
 /**
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  */
 public class RedissonReference {
+
     private String type;
-    private Object keyName;
+    private String keyName;
     private String codec;
 
     public RedissonReference() {
     }
 
-    public RedissonReference(Class<? extends RObject> type, Object keyName) {
+    public RedissonReference(Class<? extends RObject> type, String keyName) {
         this.type = type.getCanonicalName();
         this.keyName = keyName;
         this.codec = null;
     }
 
-    public RedissonReference(Class<? extends RObject> type, Object keyName, Codec codec) {
+    public RedissonReference(Class<? extends RObject> type, String keyName, Codec codec) {
         this.type = type.getCanonicalName();
         this.keyName = keyName;
         this.codec = codec.getClass().getCanonicalName();
@@ -34,12 +35,15 @@ public class RedissonReference {
     /**
      * @return the type
      */
-    public Class<? extends RObject> getType() {
-        try {
-            return (Class<? extends RObject>) Class.forName(type);
-        } catch (ClassNotFoundException ex) {
-            return null;
-        }
+    public Class<? extends RObject> getType() throws Exception {
+        return (Class<? extends RObject>) Class.forName(type);
+    }
+
+    /**
+     * @return type name in string
+     */
+    public String getTypeName() {
+        return type;
     }
 
     /**
@@ -52,32 +56,38 @@ public class RedissonReference {
     /**
      * @return the keyName
      */
-    public Object getKeyName() {
+    public String getKeyName() {
         return keyName;
     }
 
     /**
      * @param keyName the keyName to set
      */
-    public void setKeyName(Object keyName) {
+    public void setKeyName(String keyName) {
         this.keyName = keyName;
     }
 
     /**
      * @return the codec
      */
-    public Codec getCodec() throws Exception {
-        return codec == null
+    public Class<? extends Codec> getCodecType() throws Exception {
+        return (Class<? extends Codec>) (codec == null
                 ? null
-                : (Codec) Class.forName(codec).newInstance();
+                : Class.forName(codec));
+    }
+
+    /**
+     * @return Codec name in string
+     */
+    public String getCodecName() {
+        return codec;
     }
 
     /**
      * @param codec the codec to set
      */
-    public void setCodec(Codec codec) {
-        this.codec = codec.getClass().getCanonicalName();
+    public void setCodecType(Class<? extends Codec> codec) {
+        this.codec = codec.getCanonicalName();
     }
-    
-    
+
 }

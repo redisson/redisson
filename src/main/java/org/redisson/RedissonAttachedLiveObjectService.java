@@ -1,6 +1,5 @@
 package org.redisson;
 
-import io.netty.util.internal.PlatformDependent;
 import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
@@ -8,8 +7,8 @@ import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.matcher.ElementMatchers;
-import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RObject;
+import org.redisson.liveobject.CodecProvider;
 import org.redisson.liveobject.RAttachedLiveObjectService;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
@@ -20,17 +19,17 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
 
     private final Map<Class, Class> classCache;
     private final Map<Class, Class> proxyCache;
-
     private final RedissonClient redisson;
-    private final CommandAsyncExecutor commandExecutor;
 
-    public RedissonAttachedLiveObjectService(RedissonClient redisson, CommandAsyncExecutor commandExecutor, Map<Class, Class> classCache, Map<Class, Class> proxyCache) {
+    private final CodecProvider codecProvider;
+    
+    public RedissonAttachedLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, Map<Class, Class> proxyCache, CodecProvider codecProvider) {
         this.redisson = redisson;
-        this.commandExecutor = commandExecutor;
         this.classCache = classCache;
         this.proxyCache = proxyCache;
+        this.codecProvider = codecProvider;
     }
-
+    
     //TODO: Support ID Generator
     @Override
     public <T, K> T get(Class<T> entityClass, K id, long ttl) {
@@ -83,7 +82,7 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
-                .intercept(MethodDelegation.to(new AccessorInterceptor(redisson, commandExecutor, entityClass, idFieldName)))
+                .intercept(MethodDelegation.to(new AccessorInterceptor(redisson, codecProvider, entityClass, idFieldName)))
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded());
@@ -102,6 +101,13 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
         if (proxy != null) {
             proxyCache.remove(proxy);
         }
+    }
+
+    /**
+     * @return the codecProvider
+     */
+    public CodecProvider getCodecProvider() {
+        return codecProvider;
     }
 
 }

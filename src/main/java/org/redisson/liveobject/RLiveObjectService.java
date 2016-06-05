@@ -9,7 +9,7 @@ package org.redisson.liveobject;
  * In DETACHED Mode, entity's field values are kept local and only pushed to
  * Redis when update is called.
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  *
  */
 public interface RLiveObjectService {

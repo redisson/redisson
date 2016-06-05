@@ -59,6 +59,8 @@ import org.redisson.core.RSetMultimap;
 import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
+import org.redisson.liveobject.CodecProvider;
+import org.redisson.liveobject.RAttachedLiveObjectService;
 
 /**
  * Main Redisson interface for access
@@ -645,7 +647,16 @@ public interface RedissonClient {
      * 
      * @return 
      */
-    RedissonAttachedLiveObjectService getAttachedLiveObjectService();
+    RAttachedLiveObjectService getAttachedLiveObjectService();
+    
+    /**
+     * Returns RedissonAttachedLiveObjectService which can be used to 
+     * retrieve live REntity(s)
+     * 
+     * @param codecProvider the CodecProvider to be used to create the service
+     * @return 
+     */
+    RAttachedLiveObjectService getAttachedLiveObjectService(CodecProvider codecProvider);
     
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server

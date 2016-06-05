@@ -4,7 +4,7 @@ import org.redisson.liveobject.annotation.RId;
 
 /**
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  */
 public class FieldValueAsIdGenerator implements Resolver<Object, RId, String>{
 

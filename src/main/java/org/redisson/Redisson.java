@@ -73,6 +73,9 @@ import org.redisson.core.RSetMultimap;
 import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
+import org.redisson.liveobject.CodecProvider;
+import org.redisson.liveobject.DefaultCodecProvider;
+import org.redisson.liveobject.RAttachedLiveObjectService;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
@@ -95,7 +98,7 @@ public class Redisson implements RedissonClient {
             = PlatformDependent.<Class, Class>newConcurrentHashMap();
     private final Map<Class, Class> liveObjectProxyCache
             = PlatformDependent.<Class, Class>newConcurrentHashMap();
-    
+    private final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
     private final Config config;
 
     private final UUID id = UUID.randomUUID();
@@ -540,8 +543,13 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public RedissonAttachedLiveObjectService getAttachedLiveObjectService() {
-        return new RedissonAttachedLiveObjectService(this, commandExecutor, liveObjectClassCache, liveObjectProxyCache);
+    public RAttachedLiveObjectService getAttachedLiveObjectService() {
+        return new RedissonAttachedLiveObjectService(this, liveObjectClassCache, liveObjectProxyCache, liveObjectDefaultCodecProvider);
+    }
+    
+    @Override
+    public RAttachedLiveObjectService getAttachedLiveObjectService(CodecProvider ProviderCodec) {
+        return new RedissonAttachedLiveObjectService(this, liveObjectClassCache, liveObjectProxyCache, new DefaultCodecProvider());
     }
     
     @Override

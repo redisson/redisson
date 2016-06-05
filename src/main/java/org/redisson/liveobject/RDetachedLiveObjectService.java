@@ -4,7 +4,7 @@ import io.netty.util.concurrent.Future;
 
 /**
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  * 
  * @param <T> Entity type
  * @param <K> Key type

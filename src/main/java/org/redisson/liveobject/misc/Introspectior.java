@@ -11,7 +11,7 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 /**
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  */
 public class Introspectior {
 

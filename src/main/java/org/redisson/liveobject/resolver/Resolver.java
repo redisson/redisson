@@ -4,7 +4,7 @@ import java.lang.annotation.Annotation;
 
 /**
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  * @param <T> Field instance
  * @param <A> Annotation to resolve
  */

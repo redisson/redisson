@@ -2,7 +2,7 @@ package org.redisson.liveobject;
 
 /**
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  * 
  */
 public interface RAttachedLiveObjectService extends RLiveObjectService {

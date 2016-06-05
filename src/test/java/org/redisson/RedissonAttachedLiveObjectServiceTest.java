@@ -4,12 +4,13 @@ import java.io.Serializable;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.redisson.core.RMap;
+import org.redisson.liveobject.RAttachedLiveObjectService;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 
 /**
  *
- * @author ruigu
+ * @author Rui Gu (https://github.com/jackygurui)
  */
 public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
@@ -189,8 +190,8 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
-    public void test() {
-        RedissonAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+    public void testBasics() {
+        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
         TestREntity t = s.<TestREntity, String>get(TestREntity.class, "1");
         assertEquals("1", t.getName());
         assertTrue(!redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
@@ -206,7 +207,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithRObject() {
-        RedissonAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
         TestREntityWithRMap t = s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "2");
         RMap<String, String> map = redisson.<String, String>getMap("testMap");
         t.setValue(map);
@@ -222,7 +223,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithNestedLiveObjectAsId() {
-        RedissonAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
         TestREntity t1 = s.<TestREntity, String>get(TestREntity.class, "1");
         try {
             s.<TestREntityIdNested, TestREntity>get(TestREntityIdNested.class, t1);
@@ -233,7 +234,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithNestedLiveObjectAsValue() throws Exception {
-        RedissonAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
         TestREntityWithRMap t1 = s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "111");
         TestREntityValueNested t2 = s.<TestREntityValueNested, String>get(TestREntityValueNested.class, "122");
         RMap<String, String> map = redisson.<String, String>getMap("32123");

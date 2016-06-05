@@ -128,4 +128,9 @@ abstract class RedissonObject implements RObject {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.EXISTS, getName());
     }
 
+    @Override
+    public Codec getCodec() {
+        return codec;
+    }
+
 }
