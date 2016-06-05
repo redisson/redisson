@@ -232,22 +232,17 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
-    public void testLiveObjectWithNestedLiveObjectAsValue() throws InterruptedException {
+    public void testLiveObjectWithNestedLiveObjectAsValue() throws Exception {
         RedissonAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
         TestREntityWithRMap t1 = s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "111");
         TestREntityValueNested t2 = s.<TestREntityValueNested, String>get(TestREntityValueNested.class, "122");
         RMap<String, String> map = redisson.<String, String>getMap("32123");
-        System.out.println("111");
         t2.setValue(t1);
-        System.out.println("222");
         t2.getValue().setValue(map);
-        System.out.println("333");
         map.put("field", "123");
-        System.out.println("444");
         assertEquals("123",
                 s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "111")
                 .getValue().get("field"));
-        System.out.println("555");
         assertEquals("123",
                 s.<TestREntityValueNested, String>get(TestREntityValueNested.class, "122")
                 .getValue().getValue().get("field"));

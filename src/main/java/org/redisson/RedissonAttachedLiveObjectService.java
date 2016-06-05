@@ -1,7 +1,7 @@
 package org.redisson;
 
 import io.netty.util.internal.PlatformDependent;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.Field;
 import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
@@ -42,7 +42,11 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
             //TODO: support class with no arg constructor
-            return getProxyClass(entityClass).getConstructor(id.getClass()).newInstance(id);
+            T instance = getProxyClass(entityClass).getConstructor(id.getClass()).newInstance(id);
+            AccessorInterceptor interceptor = getInterceptor(instance);
+            interceptor.setCommandExecutor(commandExecutor);
+            interceptor.setRedisson(redisson);
+            return instance;
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw new RuntimeException(ex);
@@ -70,7 +74,7 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
         if (fieldsWithRIdAnnotation.size() > 1) {
             throw new IllegalArgumentException("Only one field with RId annotation is allowed in class field declaration.");
         }
-        FieldDescription.ForLoadedField idField = (FieldDescription.ForLoadedField) fieldsWithRIdAnnotation.getOnly();
+        FieldDescription.InDefinedShape idField = fieldsWithRIdAnnotation.getOnly();
         String idFieldName = idField.getName();
         if (entityClass.getDeclaredField(idFieldName).getType().isAnnotationPresent(REntity.class)) {
             throw new IllegalArgumentException("Field with RId annotation cannot be a type of which class is annotated with REntity.");
@@ -84,11 +88,20 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
-                .intercept(MethodDelegation.to(new AccessorInterceptor(redisson, entityClass, idFieldName, commandExecutor)))
+                .intercept(MethodDelegation.to(new AccessorInterceptor(entityClass, idFieldName)))
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded());
         proxyCache.putIfAbsent(classCache.get(entityClass), entityClass);
+    }
+    
+    private AccessorInterceptor getInterceptor(Object proxy) throws Exception {
+        for (Field field : proxy.getClass().getFields()) {
+            if (field.getType().isAssignableFrom(AccessorInterceptor.class)) {
+                return (AccessorInterceptor) field.get(proxy);
+            }
+        }
+        return null;
     }
 
     public static void unregisterProxy(Class proxy) {

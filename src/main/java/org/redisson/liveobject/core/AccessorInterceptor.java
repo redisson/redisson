@@ -25,19 +25,15 @@ import org.redisson.liveobject.misc.Introspectior;
  */
 public class AccessorInterceptor {
 
-    private final RedissonClient redisson;
+    private RedissonClient redisson;
+    private CommandAsyncExecutor commandExecutor;
     private final Class originalClass;
     private final String idFieldName;
     private final REntity.NamingScheme namingScheme;
-    private final CommandAsyncExecutor commandExecutor;
-    private RMap liveMap;
 
-    public AccessorInterceptor(RedissonClient redisson, Class entityClass,
-            String idFieldName, CommandAsyncExecutor commandExecutor) throws Exception {
-        this.redisson = redisson;
+    public AccessorInterceptor(Class entityClass, String idFieldName) throws Exception {
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
-        this.commandExecutor = commandExecutor;
         this.namingScheme = ((REntity) entityClass.getAnnotation(REntity.class))
                 .namingScheme().newInstance();
     }
@@ -48,7 +44,7 @@ public class AccessorInterceptor {
         if (isGetter(method, idFieldName)) {
             return superMethod.call();
         }
-        initLiveMapIfRequired(getId(me));
+        RMap liveMap = redisson.getMap(getMapKey(getId(me)));
         if (isSetter(method, idFieldName)) {
             superMethod.call();
             try {
@@ -58,7 +54,6 @@ public class AccessorInterceptor {
                     throw e;
                 }
             }
-            liveMap = null;
             return null;
         }
         String fieldName = getFieldName(method);
@@ -69,6 +64,7 @@ public class AccessorInterceptor {
                         .get((Class<Object>) method.getReturnType(), result);
             } else if (result instanceof RedissonReference) {
                 RedissonReference r = ((RedissonReference) result);
+                //TODO: use reflection on redisson object
                 return r.getType()
                         .getConstructor(Codec.class, CommandAsyncExecutor.class, String.class)
                         .newInstance(r.isDefaultCodec()
@@ -87,12 +83,6 @@ public class AccessorInterceptor {
             return liveMap.fastPut(fieldName, args[0]);
         }
         return superMethod.call();
-    }
-
-    private void initLiveMapIfRequired(Object id) {
-        if (liveMap == null) {
-            liveMap = redisson.getMap(getMapKey(id));
-        }
     }
 
     private String getFieldName(Method method) {
@@ -131,6 +121,20 @@ public class AccessorInterceptor {
                 .getOnly()
                 .getName();
         return getFieldValue(o, idName);
+    }
+
+    /**
+     * @param redisson the redisson to set
+     */
+    public void setRedisson(RedissonClient redisson) {
+        this.redisson = redisson;
+    }
+
+    /**
+     * @param commandExecutor the commandExecutor to set
+     */
+    public void setCommandExecutor(CommandAsyncExecutor commandExecutor) {
+        this.commandExecutor = commandExecutor;
     }
 
 }
