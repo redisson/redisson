@@ -1,6 +1,8 @@
 package org.redisson;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.redisson.core.RMap;
@@ -104,6 +106,45 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     }
 
     @REntity
+    public static class TestREntityWithMap implements Comparable<TestREntityWithMap>, Serializable {
+
+        @RId
+        private String name;
+        private Map value;
+
+        public TestREntityWithMap(String name) {
+            this.name = name;
+        }
+
+        public TestREntityWithMap(String name, Map value) {
+            super();
+            this.name = name;
+            this.value = value;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Map getValue() {
+            return value;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public void setValue(Map value) {
+            this.value = value;
+        }
+
+        @Override
+        public int compareTo(TestREntityWithMap o) {
+            return name.compareTo(o.name);
+        }
+    }
+
+    @REntity
     public static class TestREntityIdNested implements Comparable<TestREntityIdNested>, Serializable {
 
         @RId
@@ -203,6 +244,28 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         assertTrue(redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).isExists());
         assertTrue(!redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
         assertEquals("111", redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
+    }
+
+    @Test
+    public void testLiveObjectWithCollection() {
+        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        TestREntityWithMap t = s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2");
+        RMap<String, String> map = redisson.<String, String>getMap("testMap");
+        t.setValue(map);
+        map.put("field", "123");
+        assertEquals("123",
+                s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2")
+                .getValue().get("field"));
+        s.get(TestREntityWithMap.class, "2").getValue().put("field", "333");
+        assertEquals("333",
+                s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2")
+                .getValue().get("field"));
+        HashMap<String, String> map2 = new HashMap<>();
+        map2.put("field", "hello");
+        t.setValue(map2);
+        assertEquals("hello",
+                s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2")
+                .getValue().get("field"));
     }
 
     @Test

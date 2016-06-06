@@ -132,7 +132,7 @@ public class AccessorInterceptor {
             for (Method method : RedissonClient.class.getDeclaredMethods()) {
                 if (method.getName().startsWith("get")
                         && method.getReturnType().isAssignableFrom(rr.getType())
-                        && method.getReturnType().isAssignableFrom(expected)) {
+                        && expected.isAssignableFrom(method.getReturnType())) {
                     if (rr.isDefaultCodec() && method.getParameterCount() == 1) {
                         return (RObject) method.invoke(redisson, rr.getKeyName());
                     } else if (!rr.isDefaultCodec()
