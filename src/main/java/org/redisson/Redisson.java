@@ -96,8 +96,6 @@ public class Redisson implements RedissonClient {
     
     private final Map<Class, Class> liveObjectClassCache
             = PlatformDependent.<Class, Class>newConcurrentHashMap();
-    private final Map<Class, Class> liveObjectProxyCache
-            = PlatformDependent.<Class, Class>newConcurrentHashMap();
     private final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
     private final Config config;
 
@@ -544,12 +542,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RAttachedLiveObjectService getAttachedLiveObjectService() {
-        return new RedissonAttachedLiveObjectService(this, liveObjectClassCache, liveObjectProxyCache, liveObjectDefaultCodecProvider);
+        return new RedissonAttachedLiveObjectService(this, liveObjectClassCache, liveObjectDefaultCodecProvider);
     }
     
     @Override
     public RAttachedLiveObjectService getAttachedLiveObjectService(CodecProvider ProviderCodec) {
-        return new RedissonAttachedLiveObjectService(this, liveObjectClassCache, liveObjectProxyCache, new DefaultCodecProvider());
+        return new RedissonAttachedLiveObjectService(this, liveObjectClassCache, new DefaultCodecProvider());
     }
     
     @Override

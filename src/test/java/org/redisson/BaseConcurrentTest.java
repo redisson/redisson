@@ -102,7 +102,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
 //        });
 
         pool.shutdown();
-        Assert.assertTrue(pool.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 10 : 3, TimeUnit.MINUTES));
+        Assert.assertTrue(pool.awaitTermination(RedissonRuntimeEnvironment.isTravis ? 20 : 3, TimeUnit.MINUTES));
 
         System.out.println(System.currentTimeMillis() - watch);
 

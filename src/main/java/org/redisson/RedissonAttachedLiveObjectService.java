@@ -1,15 +1,22 @@
 package org.redisson;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.description.ByteCodeElement;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
+import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.FieldAccessor;
 import net.bytebuddy.implementation.MethodDelegation;
+import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.matcher.ElementMatchers;
 import org.redisson.core.RObject;
 import org.redisson.liveobject.CodecProvider;
+import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.RAttachedLiveObjectService;
+import org.redisson.liveobject.RLiveObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.core.AccessorInterceptor;
@@ -18,22 +25,21 @@ import org.redisson.liveobject.misc.Introspectior;
 public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectService {
 
     private final Map<Class, Class> classCache;
-    private final Map<Class, Class> proxyCache;
     private final RedissonClient redisson;
 
     private final CodecProvider codecProvider;
-    
-    public RedissonAttachedLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, Map<Class, Class> proxyCache, CodecProvider codecProvider) {
+
+    public RedissonAttachedLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, CodecProvider codecProvider) {
         this.redisson = redisson;
         this.classCache = classCache;
-        this.proxyCache = proxyCache;
         this.codecProvider = codecProvider;
     }
-    
+
     //TODO: Support ID Generator
     @Override
     public <T, K> T get(Class<T> entityClass, K id, long ttl) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        T instance = get(entityClass, id);
+        return instance;
     }
 
     @Override
@@ -61,7 +67,8 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
         if (!entityClass.isAnnotationPresent(REntity.class)) {
             throw new IllegalArgumentException("REntity annotation is missing from class type declaration.");
         }
-        FieldList<FieldDescription.InDefinedShape> fieldsWithRIdAnnotation = Introspectior.getFieldsWithAnnotation(entityClass, RId.class);
+        FieldList<FieldDescription.InDefinedShape> fieldsWithRIdAnnotation
+                = Introspectior.getFieldsWithAnnotation(entityClass, RId.class);
         if (fieldsWithRIdAnnotation.size() == 0) {
             throw new IllegalArgumentException("RId annotation is missing from class field declaration.");
         }
@@ -76,31 +83,33 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
         if (entityClass.getDeclaredField(idFieldName).getType().isAssignableFrom(RObject.class)) {
             throw new IllegalArgumentException("Field with RId annotation cannot be a type of RObject");
         }
-        classCache.putIfAbsent(entityClass, new ByteBuddy()
-                .subclass(entityClass)
+        DynamicType.Builder<T> builder = new ByteBuddy()
+                .subclass(entityClass);
+        for (FieldDescription.InDefinedShape field
+                : Introspectior.getTypeDescription(LiveObjectTemplate.class)
+                .getDeclaredFields()) {
+            builder = builder.define(field);
+        }
+        Class<? extends T> loaded = builder.method(ElementMatchers.isDeclaredBy(
+                Introspectior.getTypeDescription(RLiveObject.class))
+                .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())))
+                .intercept(FieldAccessor.ofBeanProperty())
+                .implement(RLiveObject.class)
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))
+                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RLiveObject.class)))
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
-                .intercept(MethodDelegation.to(new AccessorInterceptor(redisson, codecProvider, entityClass, idFieldName)))
+                .intercept(MethodDelegation.to(
+                                new AccessorInterceptor(redisson, codecProvider, entityClass, idFieldName)))
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
-                .getLoaded());
-        proxyCache.putIfAbsent(classCache.get(entityClass), entityClass);
-    }
-
-    public void unregisterProxy(Class proxy) {
-        Class cls = proxyCache.remove(proxy);
-        if (cls != null) {
-            classCache.remove(cls);
-        }
+                .getLoaded();
+        classCache.putIfAbsent(entityClass, loaded);
     }
 
     public void unregisterClass(Class cls) {
-        Class proxy = classCache.remove(cls);
-        if (proxy != null) {
-            proxyCache.remove(proxy);
-        }
+        classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
     }
 
     /**

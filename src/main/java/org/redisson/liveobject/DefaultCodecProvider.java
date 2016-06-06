@@ -11,7 +11,7 @@ import org.redisson.core.RObject;
  */
 public class DefaultCodecProvider implements CodecProvider {
 
-    public static final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
+    public final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
 
     @Override
     public Codec getCodec(Class<? extends Codec> codecClass) {
