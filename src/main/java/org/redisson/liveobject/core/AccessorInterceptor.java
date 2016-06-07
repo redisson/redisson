@@ -1,5 +1,6 @@
 package org.redisson.liveobject.core;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
@@ -20,8 +21,9 @@ import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.misc.Introspectior;
 
 /**
- * This class is going to be instantiated and becomes a <b>static</b> field of the proxied
- * target class. That is one instance of this class per proxied class.
+ * This class is going to be instantiated and becomes a <b>static</b> field of
+ * the proxied target class. That is one instance of this class per proxied
+ * class.
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
@@ -47,11 +49,10 @@ public class AccessorInterceptor {
     @RuntimeType
     public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod,
             @AllArguments Object[] args, @This Object me) throws Exception {
+        RMap liveMap = getLiveMap(me);
         if (isGetter(method, idFieldName)) {
             return superMethod.call();
         }
-        String id = getMapKey(getId(me));
-        RMap liveMap = redisson.getMap(id, codecProvider.getCodec(codecClass, RedissonMap.class, id));
         if (isSetter(method, idFieldName)) {
             //TODO: distributed locking maybe required.
             try {
@@ -87,6 +88,16 @@ public class AccessorInterceptor {
             return liveMap.put(fieldName, args[0]);
         }
         return superMethod.call();
+    }
+
+    private RMap getLiveMap(Object me) throws Exception {
+        RMap liveMap = (RMap) me.getClass().getField("liveObjectLiveMap").get(me);
+        if (liveMap == null) {
+            String id = getMapKey(getId(me));
+            liveMap = redisson.getMap(id, codecProvider.getCodec(codecClass, RedissonMap.class, id));
+            me.getClass().getField("liveObjectLiveMap").set(me, liveMap);
+        }
+        return liveMap;
     }
 
     private String getFieldName(Method method) {
