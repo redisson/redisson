@@ -4,7 +4,7 @@ Redisson Releases History
 
 ####08-Jun-2016 - version 2.2.15 released  
 Improvement - Performance boost up to 30% for `RSortedSet.add` method  
-Fixed - auth during reconnection (thanks to fransiskusx)
+Fixed - auth during reconnection (thanks to fransiskusx)  
 Fixed - Infinity loop with iterator  
 Fixed - NPE in `RSortedSet`  
 Fixed - `RSortedSet.remove` and `iterator.remove` methods can break elements ordering  
