@@ -2,6 +2,7 @@ package org.redisson;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +20,7 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.WriteRedisConnectionException;
+import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.core.ClusterNode;
@@ -33,6 +35,32 @@ public class RedissonTest {
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
 
+    @Test
+    public void testIterator() {
+        RedissonBaseIterator iter = new RedissonBaseIterator() {
+            int i;
+            @Override
+            ListScanResult iterator(InetSocketAddress client, long nextIterPos) {
+                i++;
+                if (i == 1) {
+                    return new ListScanResult(13L, Collections.emptyList());
+                }
+                if (i == 2) {
+                    return new ListScanResult(0L, Collections.emptyList());
+                }
+                Assert.fail();
+                return null;
+            }
+
+            @Override
+            void remove(Object value) {
+            }
+            
+        };
+        
+        Assert.assertFalse(iter.hasNext());
+    }
+    
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
