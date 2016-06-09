@@ -400,6 +400,16 @@ public class Redisson implements RedissonClient {
     public RRemoteService getRemoteSerivce(String name) {
         return new RedissonRemoteService(this, name);
     }
+    
+    @Override
+    public RRemoteService getRemoteSerivce(Codec codec) {
+        return new RedissonRemoteService(codec, this);
+    }
+    
+    @Override
+    public RRemoteService getRemoteSerivce(String name, Codec codec) {
+        return new RedissonRemoteService(codec, this, name);
+    }
 
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {

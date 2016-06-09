@@ -611,6 +611,14 @@ public interface RedissonClient {
      * @return
      */
     RRemoteService getRemoteSerivce();
+    
+    /**
+     * Returns object for remote operations prefixed with the default name (redisson_remote_service)
+     * and uses provided codec for method arguments and result.
+     * 
+     * @return
+     */
+    RRemoteService getRemoteSerivce(Codec codec);
 
     /**
      * Returns object for remote operations prefixed with the specified name
@@ -619,6 +627,15 @@ public interface RedissonClient {
      * @return
      */
     RRemoteService getRemoteSerivce(String name);
+    
+    /**
+     * Returns object for remote operations prefixed with the specified name
+     * and uses provided codec for method arguments and result.
+     *
+     * @param name The name used as the Redis key prefix for the services
+     * @return
+     */
+    RRemoteService getRemoteSerivce(String name, Codec codec);
 
     /**
      * Return batch object which executes group of
