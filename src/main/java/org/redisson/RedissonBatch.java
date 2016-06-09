@@ -36,6 +36,7 @@ import org.redisson.core.RListAsync;
 import org.redisson.core.RMapAsync;
 import org.redisson.core.RMapCacheAsync;
 import org.redisson.core.RMultimapAsync;
+import org.redisson.core.RMultimapCacheAsync;
 import org.redisson.core.RQueueAsync;
 import org.redisson.core.RScoredSortedSetAsync;
 import org.redisson.core.RScriptAsync;
@@ -260,5 +261,26 @@ public class RedissonBatch implements RBatch {
     public <V> RGeoAsync<V> getGeo(String name, Codec codec) {
         return new RedissonGeo<V>(codec, executorService, name);
     }
+    
+    @Override
+    public <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name) {
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, executorService, name);
+    }
+    
+    @Override
+    public <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name, Codec codec) {
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
+    }
+
+    @Override
+    public <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name) {
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, executorService, name);
+    }
+    
+    @Override
+    public <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name, Codec codec) {
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
+    }
+
 
 }

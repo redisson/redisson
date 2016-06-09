@@ -74,6 +74,29 @@ public interface RBatch {
     <K, V> RMultimapAsync<K, V> getSetMultimap(String name, Codec codec);
     
     /**
+     * Returns Set based Multimap instance by name.
+     * Supports key-entry eviction with a given TTL value.
+     * 
+     * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String)}.</p>
+     * 
+     * @param name
+     * @return
+     */
+    <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name);
+
+    /**
+     * Returns Set based Multimap instance by name
+     * using provided codec for both map keys and values.
+     * Supports key-entry eviction with a given TTL value.
+     * 
+     * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String, Codec)}.</p>
+     * 
+     * @param name
+     * @return
+     */
+    <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name, Codec codec);
+    
+    /**
      * Returns set-based cache instance by <code>name</code>.
      * Uses map (value_hash, value) under the hood for minimal memory consumption.
      * Supports value eviction with a given TTL value.
@@ -171,6 +194,29 @@ public interface RBatch {
      * @return
      */
     <K, V> RMultimapAsync<K, V> getListMultimap(String name, Codec codec);
+    
+    /**
+     * Returns List based Multimap instance by name.
+     * Supports key-entry eviction with a given TTL value.
+     * 
+     * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String)}.</p>
+     * 
+     * @param name
+     * @return
+     */
+    <K, V> RMultimapAsync<K, V> getListMultimapCache(String name);
+    
+    /**
+     * Returns List based Multimap instance by name
+     * using provided codec for both map keys and values.
+     * Supports key-entry eviction with a given TTL value.
+     * 
+     * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String, Codec)}.</p>
+     * 
+     * @param name
+     * @return
+     */
+    <K, V> RMultimapAsync<K, V> getListMultimapCache(String name, Codec codec);
     
     /**
      * Returns map instance by name.
