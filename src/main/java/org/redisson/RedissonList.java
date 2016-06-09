@@ -343,6 +343,19 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
     
     @Override
+    public void fastRemove(int index) {
+        get(fastRemoveAsync(index));
+    }
+    
+    @Override
+    public Future<Void> fastRemoveAsync(int index) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
+                "redis.call('lset', KEYS[1], ARGV[1], 'DELETED_BY_REDISSON');" +
+                "redis.call('lrem', KEYS[1], 1, 'DELETED_BY_REDISSON');",
+                Collections.<Object>singletonList(getName()), index);
+    }
+    
+    @Override
     public int indexOf(Object o) {
         return get(indexOfAsync(o));
     }
