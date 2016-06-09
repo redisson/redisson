@@ -464,12 +464,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Codec unsubscribe(final String channelName) {
+    public Future<Codec> unsubscribe(final String channelName) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return null;
         }
 
+        Promise<Codec> result = newPromise();
         Codec entryCodec = entry.getConnection().getChannels().get(channelName);
         entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
 
@@ -481,13 +482,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                             releaseSubscribeConnection(0, entry);
                         }
                     }
+                    result.setSuccess(entryCodec);
                     return true;
                 }
                 return false;
             }
 
         });
-        return entryCodec;
+        return result;
     }
 
     @Override

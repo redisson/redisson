@@ -180,26 +180,34 @@ public class MasterSlaveEntry {
     }
 
     private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener> listeners) {
-        Codec subscribeCodec = connectionManager.unsubscribe(channelName);
-        if (!listeners.isEmpty()) {
-            Future<PubSubConnectionEntry> future = connectionManager.subscribe(subscribeCodec, channelName, null);
-            future.addListener(new FutureListener<PubSubConnectionEntry>() {
-
-                @Override
-                public void operationComplete(Future<PubSubConnectionEntry> future)
-                        throws Exception {
-                    if (!future.isSuccess()) {
-                        log.error("Can't resubscribe topic channel: " + channelName);
-                        return;
-                    }
-                    PubSubConnectionEntry newEntry = future.getNow();
-                    for (RedisPubSubListener redisPubSubListener : listeners) {
-                        newEntry.addListener(channelName, redisPubSubListener);
-                    }
-                    log.debug("resubscribed listeners for '{}' channel", channelName);
+        Future<Codec> unsubscribeFuture = connectionManager.unsubscribe(channelName);
+        unsubscribeFuture.addListener(new FutureListener<Codec>() {
+            @Override
+            public void operationComplete(Future<Codec> future) throws Exception {
+                if (listeners.isEmpty()) {
+                    return;
                 }
-            });
-        }
+                
+                Codec subscribeCodec = future.getNow();
+                Future<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null);
+                subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
+                    
+                    @Override
+                    public void operationComplete(Future<PubSubConnectionEntry> future)
+                            throws Exception {
+                        if (!future.isSuccess()) {
+                            log.error("Can't resubscribe topic channel: " + channelName);
+                            return;
+                        }
+                        PubSubConnectionEntry newEntry = future.getNow();
+                        for (RedisPubSubListener redisPubSubListener : listeners) {
+                            newEntry.addListener(channelName, redisPubSubListener);
+                        }
+                        log.debug("resubscribed listeners for '{}' channel", channelName);
+                    }
+                });
+            }
+        });
     }
 
     private void reattachPatternPubSubListeners(final String channelName,
