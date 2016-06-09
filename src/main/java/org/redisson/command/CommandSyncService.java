@@ -18,23 +18,13 @@ package org.redisson.command;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import org.redisson.SyncOperation;
-import org.redisson.client.RedisAskException;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisLoadingException;
-import org.redisson.client.RedisMovedException;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.NodeSource;
-import org.redisson.connection.NodeSource.Redirect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 
 /**
  *
@@ -98,70 +88,6 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
     public <T, R> R write(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
         Future<R> res = writeAsync(slot, codec, command, params);
         return get(res);
-    }
-
-    @Override
-    public <R> R write(String key, Codec codec, SyncOperation<R> operation) {
-        int slot = connectionManager.calcSlot(key);
-        return sync(false, codec, new NodeSource(slot), operation, 0);
-    }
-
-    @Override
-    public <R> R read(String key, Codec codec, SyncOperation<R> operation) {
-        int slot = connectionManager.calcSlot(key);
-        return sync(true, codec, new NodeSource(slot), operation, 0);
-    }
-
-    <R> R sync(boolean readOnlyMode, Codec codec, NodeSource source, SyncOperation<R> operation, int attempt) {
-        if (!connectionManager.getShutdownLatch().acquire()) {
-            throw new IllegalStateException("Redisson is shutdown");
-        }
-
-        try {
-            Future<RedisConnection> connectionFuture;
-            if (readOnlyMode) {
-                connectionFuture = connectionManager.connectionReadOp(source, null);
-            } else {
-                connectionFuture = connectionManager.connectionWriteOp(source, null);
-            }
-            connectionFuture.syncUninterruptibly();
-
-            RedisConnection connection = connectionFuture.getNow();
-
-            try {
-                return operation.execute(codec, connection);
-            } catch (RedisMovedException e) {
-                return sync(readOnlyMode, codec, new NodeSource(e.getSlot(), e.getAddr(), Redirect.MOVED), operation, attempt);
-            } catch (RedisAskException e) {
-                return sync(readOnlyMode, codec, new NodeSource(e.getSlot(), e.getAddr(), Redirect.ASK), operation, attempt);
-            } catch (RedisLoadingException e) {
-                return sync(readOnlyMode, codec, source, operation, attempt);
-            } catch (RedisTimeoutException e) {
-                if (attempt == connectionManager.getConfig().getRetryAttempts()) {
-                    throw e;
-                }
-                attempt++;
-                return sync(readOnlyMode, codec, source, operation, attempt);
-            } finally {
-                connectionManager.getShutdownLatch().release();
-                if (readOnlyMode) {
-                    connectionManager.releaseRead(source, connection);
-                } else {
-                    connectionManager.releaseWrite(source, connection);
-                }
-            }
-        } catch (RedisException e) {
-            if (attempt == connectionManager.getConfig().getRetryAttempts()) {
-                throw e;
-            }
-            try {
-                Thread.sleep(connectionManager.getConfig().getRetryInterval());
-            } catch (InterruptedException e1) {
-                Thread.currentThread().interrupt();
-            }
-            attempt++;
-            return sync(readOnlyMode, codec, source, operation, attempt);
-        }
     }
 
     @Override

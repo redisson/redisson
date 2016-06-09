@@ -413,12 +413,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <V> RSortedSet<V> getSortedSet(String name) {
-        return new RedissonSortedSet<V>(commandExecutor, name);
+        return new RedissonSortedSet<V>(commandExecutor, name, this);
     }
 
     @Override
     public <V> RSortedSet<V> getSortedSet(String name, Codec codec) {
-        return new RedissonSortedSet<V>(codec, commandExecutor, name);
+        return new RedissonSortedSet<V>(codec, commandExecutor, name, this);
     }
 
     @Override
