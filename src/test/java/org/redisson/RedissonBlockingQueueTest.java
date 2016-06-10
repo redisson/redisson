@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -20,6 +21,8 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.core.RBlockingQueue;
 
 import io.netty.util.concurrent.Future;
+
+import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonBlockingQueueTest extends BaseTest {
@@ -38,14 +41,68 @@ public class RedissonBlockingQueueTest extends BaseTest {
         final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollTimeout");
         Future<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
         
-        f.await(1, TimeUnit.SECONDS);
+        Assert.assertFalse(f.await(1, TimeUnit.SECONDS));
         runner.stop();
-        
+
+        long start = System.currentTimeMillis();
         assertThat(f.get()).isNull();
+        assertThat(System.currentTimeMillis() - start).isGreaterThan(3800);
     }
     
     @Test
     public void testPollReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
+        RedisProcess runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319");
+        RedissonClient redisson = Redisson.create(config);
+        
+        final AtomicBoolean executed = new AtomicBoolean();
+        
+        Thread t = new Thread() {
+            public void run() {
+                try {
+                    RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+                    long start = System.currentTimeMillis();
+                    Integer res = queue1.poll(10, TimeUnit.SECONDS);
+                    assertThat(System.currentTimeMillis() - start).isGreaterThan(2000);
+                    assertThat(res).isEqualTo(123);
+                    executed.set(true);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            };
+        };
+        
+        t.start();
+        t.join(1000);
+        runner.stop();
+
+        runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
+        
+        Thread.sleep(1000);
+
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        queue1.put(123);
+        
+        t.join();
+        
+        await().atMost(5, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        
+        runner.stop();
+    }
+    
+    @Test
+    public void testPollAsyncReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
                 .port(6319)
                 .nosave()
