@@ -1,6 +1,6 @@
 package org.redisson.liveobject;
 
-import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -24,5 +24,5 @@ public interface RAttachedLiveObjectService extends RLiveObjectService {
      * @return In ATTACHED Mode, this always returns a proxy class. Even it does
      *              not exist in redis.
      */
-    public <T, K> T get(Class<T> entityClass, K id, long timeToLive, TimeUnit timeUnit);
+//    public <T, K> T get(Class<T> entityClass, K id, long timeToLive, TimeUnit timeUnit);
 }

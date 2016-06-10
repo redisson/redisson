@@ -1,7 +1,7 @@
 package org.redisson;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.TimeUnit;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
@@ -10,11 +10,11 @@ import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.matcher.ElementMatchers;
-import org.redisson.core.RExpirable;
-import org.redisson.core.RExpirableAsync;
-import org.redisson.core.RMap;
+//import org.redisson.core.RExpirable;
+//import org.redisson.core.RExpirableAsync;
+//import org.redisson.core.RMap;
 import org.redisson.core.RObject;
-import org.redisson.core.RObjectAsync;
+//import org.redisson.core.RObjectAsync;
 import org.redisson.liveobject.CodecProvider;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.RAttachedLiveObjectService;
@@ -22,7 +22,7 @@ import org.redisson.liveobject.RLiveObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.core.AccessorInterceptor;
-import org.redisson.liveobject.core.ExpirableInterceptor;
+//import org.redisson.liveobject.core.ExpirableInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.misc.Introspectior;
 
@@ -41,15 +41,15 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
 
     //TODO: Support ID Generator
     //TODO: Add ttl renewal functionality
-    @Override
-    public <T, K> T get(Class<T> entityClass, K id, long timeToLive, TimeUnit timeUnit) {
-        T instance = get(entityClass, id);
-        RMap map = ((RLiveObject) instance).getLiveObjectLiveMap();
-        map.put("RLiveObjectDefaultTimeToLiveValue", timeToLive);
-        map.put("RLiveObjectDefaultTimeToLiveUnit", timeUnit.toString());
-        map.expire(timeToLive, timeUnit);
-        return instance;
-    }
+//    @Override
+//    public <T, K> T get(Class<T> entityClass, K id, long timeToLive, TimeUnit timeUnit) {
+//        T instance = get(entityClass, id);
+//        RMap map = ((RLiveObject) instance).getLiveObjectLiveMap();
+//        map.put("RLiveObjectDefaultTimeToLiveValue", timeToLive);
+//        map.put("RLiveObjectDefaultTimeToLiveUnit", timeUnit.toString());
+//        map.expire(timeToLive, timeUnit);
+//        return instance;
+//    }
 
     @Override
     public <T, K> T get(Class<T> entityClass, K id) {
@@ -108,22 +108,24 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
         Class<? extends T> loaded = builder.method(ElementMatchers.isDeclaredBy(
                 Introspectior.getTypeDescription(RLiveObject.class))
                 .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())))
-                .intercept(MethodDelegation.to(new LiveObjectInterceptor(redisson, codecProvider, entityClass, idFieldName))
+                .intercept(MethodDelegation.to(
+                        new LiveObjectInterceptor(redisson, codecProvider, entityClass, idFieldName))
                         .appendParameterBinder(FieldProxy.Binder
-                                .install(LiveObjectInterceptor.Getter.class, LiveObjectInterceptor.Setter.class)))
+                                .install(LiveObjectInterceptor.Getter.class,
+                                        LiveObjectInterceptor.Setter.class)))
                 .implement(RLiveObject.class)
-                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
-                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
-                        .or(ElementMatchers.isDeclaredBy(RObject.class))
-                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
-                .intercept(MethodDelegation.to(ExpirableInterceptor.class))
-                .implement(RExpirable.class)
+//                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
+//                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
+//                        .or(ElementMatchers.isDeclaredBy(RObject.class))
+//                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+//                .intercept(MethodDelegation.to(ExpirableInterceptor.class))
+//                .implement(RExpirable.class)
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RLiveObject.class)))
-                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
-                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
-                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObject.class)))
-                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
+//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
+//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObject.class)))
+//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
