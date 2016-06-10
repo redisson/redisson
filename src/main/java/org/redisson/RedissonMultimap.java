@@ -38,13 +38,9 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.core.RMultimap;
+import org.redisson.misc.Hash;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.base64.Base64;
-import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.Future;
-import net.openhft.hashing.LongHashFunction;
 
 /**
  * @author Nikita Koksharov
@@ -63,16 +59,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     protected String hash(byte[] objectState) {
-        long h1 = LongHashFunction.farmUo().hashBytes(objectState);
-        long h2 = LongHashFunction.xx_r39().hashBytes(objectState);
-
-        ByteBuf buf = Unpooled.buffer((2 * Long.SIZE) / Byte.SIZE).writeLong(h1).writeLong(h2);
-
-        ByteBuf b = Base64.encode(buf);
-        String s = b.toString(CharsetUtil.UTF_8);
-        b.release();
-        buf.release();
-        return s.substring(0, s.length() - 2);
+        return Hash.hashToBase64(objectState);
     }
 
     @Override

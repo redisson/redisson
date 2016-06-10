@@ -74,4 +74,6 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
      */
     void trim(int fromIndex, int toIndex);
 
+    void fastRemove(int index);
+    
 }

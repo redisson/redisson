@@ -93,7 +93,7 @@ public interface ConnectionManager {
 
     Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec);
 
-    Codec unsubscribe(String channelName);
+    Future<Codec> unsubscribe(String channelName);
 
     Codec punsubscribe(String channelName);
 

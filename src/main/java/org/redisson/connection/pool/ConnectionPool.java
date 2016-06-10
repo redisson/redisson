@@ -326,13 +326,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
                             return;
                         }
 
-                        Future<String> f = c.asyncWithTimeout(null, RedisCommands.PING);
-                        f.addListener(new FutureListener<String>() {
+                        final FutureListener<String> pingListener = new FutureListener<String>() {
                             @Override
                             public void operationComplete(Future<String> future) throws Exception {
                                 try {
                                     if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                                            || !entry.isFreezed()) {
+                                        || !entry.isFreezed()) {
                                         return;
                                     }
 
@@ -342,7 +341,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                                         promise.addListener(new FutureListener<Void>() {
                                             @Override
                                             public void operationComplete(Future<Void> future)
-                                                    throws Exception {
+                                                throws Exception {
                                                 if (entry.getNodeType() == NodeType.SLAVE) {
                                                     masterSlaveEntry.slaveUp(entry.getClient().getAddr().getHostName(), entry.getClient().getAddr().getPort(), FreezeReason.RECONNECT);
                                                     log.info("slave {} successfully reconnected", entry.getClient().getAddr());
@@ -365,11 +364,30 @@ abstract class ConnectionPool<T extends RedisConnection> {
                                     c.closeAsync();
                                 }
                             }
-                        });
+                        };
+
+                        if (entry.getConfig().getPassword() != null) {
+                            Future<Void> temp = c.asyncWithTimeout(null, RedisCommands.AUTH, config.getPassword());
+
+                            FutureListener<Void> listener = new FutureListener<Void> () {
+                                @Override public void operationComplete (Future < Void > future)throws Exception {
+                                    ping(c, pingListener);
+                                }
+                            };
+
+                            temp.addListener(listener);
+                        } else {
+                            ping(c, pingListener);
+                        }
                     }
                 });
             }
         }, config.getReconnectionTimeout(), TimeUnit.MILLISECONDS);
+    }
+
+    private void ping(RedisConnection c, final FutureListener<String> pingListener) {
+        Future<String> f = c.asyncWithTimeout(null, RedisCommands.PING);
+        f.addListener(pingListener);
     }
 
     public void returnConnection(ClientConnectionsEntry entry, T connection) {

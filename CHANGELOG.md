@@ -2,6 +2,13 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####08-Jun-2016 - version 2.2.15 released  
+Improvement - Performance boost up to 30% for `RSortedSet.add` method  
+Fixed - auth during reconnection (thanks to fransiskusx)  
+Fixed - Infinity loop with iterator  
+Fixed - NPE in `RSortedSet`  
+Fixed - `RSortedSet.remove` and `iterator.remove` methods can break elements ordering  
+
 ####27-May-2016 - version 2.2.14 released  
 Redisson Team is pleased to announce [Redisson PRO](http://redisson.pro) edition. This version is based on open-source edition and has 24x7 support and some features.  
 

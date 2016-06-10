@@ -158,14 +158,14 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             configMap.put(name, config);
 
             RMap<Object, Object> map = createMap(name);
-            return new RedissonCache(map);
+            return new RedissonCache(redisson, map);
         }
         if (config.getMaxIdleTime() == 0 && config.getTTL() == 0) {
             RMap<Object, Object> map = createMap(name);
-            return new RedissonCache(map);
+            return new RedissonCache(redisson, map);
         }
         RMapCache<Object, Object> map = createMapCache(name);
-        return new RedissonCache(map, config);
+        return new RedissonCache(redisson, map, config);
     }
 
     private RMap<Object, Object> createMap(String name) {

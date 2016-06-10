@@ -27,20 +27,21 @@ import org.redisson.core.RBitSetAsync;
 import org.redisson.core.RBlockingDequeAsync;
 import org.redisson.core.RBlockingQueueAsync;
 import org.redisson.core.RBucketAsync;
-import org.redisson.core.RMapCacheAsync;
 import org.redisson.core.RDequeAsync;
+import org.redisson.core.RGeoAsync;
 import org.redisson.core.RHyperLogLogAsync;
 import org.redisson.core.RKeysAsync;
 import org.redisson.core.RLexSortedSetAsync;
 import org.redisson.core.RListAsync;
-import org.redisson.core.RListMultimap;
 import org.redisson.core.RMapAsync;
+import org.redisson.core.RMapCacheAsync;
+import org.redisson.core.RMultimapAsync;
+import org.redisson.core.RMultimapCacheAsync;
 import org.redisson.core.RQueueAsync;
 import org.redisson.core.RScoredSortedSetAsync;
 import org.redisson.core.RScriptAsync;
 import org.redisson.core.RSetAsync;
 import org.redisson.core.RSetCacheAsync;
-import org.redisson.core.RSetMultimap;
 import org.redisson.core.RTopicAsync;
 
 import io.netty.util.concurrent.Future;
@@ -232,23 +233,53 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
-    public <K, V> RSetMultimap<K, V> getSetMultimap(String name) {
+    public <K, V> RMultimapAsync<K, V> getSetMultimap(String name) {
         return new RedissonSetMultimap<K, V>(executorService, name);
     }
 
     @Override
-    public <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec) {
+    public <K, V> RMultimapAsync<K, V> getSetMultimap(String name, Codec codec) {
         return new RedissonSetMultimap<K, V>(codec, executorService, name);
     }
 
     @Override
-    public <K, V> RListMultimap<K, V> getListMultimap(String name) {
+    public <K, V> RMultimapAsync<K, V> getListMultimap(String name) {
         return new RedissonListMultimap<K, V>(executorService, name);
     }
 
     @Override
-    public <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec) {
+    public <K, V> RMultimapAsync<K, V> getListMultimap(String name, Codec codec) {
         return new RedissonListMultimap<K, V>(codec, executorService, name);
+    }
+
+    @Override
+    public <V> RGeoAsync<V> getGeo(String name) {
+        return new RedissonGeo<V>(executorService, name);
+    }
+    
+    @Override
+    public <V> RGeoAsync<V> getGeo(String name, Codec codec) {
+        return new RedissonGeo<V>(codec, executorService, name);
+    }
+    
+    @Override
+    public <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name) {
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, executorService, name);
+    }
+    
+    @Override
+    public <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name, Codec codec) {
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
+    }
+
+    @Override
+    public <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name) {
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, executorService, name);
+    }
+    
+    @Override
+    public <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name, Codec codec) {
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
     }
 
 

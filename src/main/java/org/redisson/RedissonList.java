@@ -328,8 +328,6 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public V remove(int index) {
-        checkIndex(index);
-
         if (index == 0) {
             Future<V> f = commandExecutor.writeAsync(getName(), codec, LPOP, getName());
             return get(f);
@@ -337,18 +335,26 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
         Future<V> f = commandExecutor.evalWriteAsync(getName(), codec, EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
-                        "local tail = redis.call('lrange', KEYS[1], ARGV[1] + 1, -1);" +
-                        "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +
-                        "if #tail > 0 then " +
-                            "for i=1, #tail, 5000 do "
-                                + "redis.call('rpush', KEYS[1], unpack(tail, i, math.min(i+4999, #tail))); "
-                          + "end "
-                      + "end;" +
-                        "return v",
+                "redis.call('lset', KEYS[1], ARGV[1], 'DELETED_BY_REDISSON');" +
+                "redis.call('lrem', KEYS[1], 1, 'DELETED_BY_REDISSON');" +
+                "return v",
                 Collections.<Object>singletonList(getName()), index);
         return get(f);
     }
-
+    
+    @Override
+    public void fastRemove(int index) {
+        get(fastRemoveAsync(index));
+    }
+    
+    @Override
+    public Future<Void> fastRemoveAsync(int index) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
+                "redis.call('lset', KEYS[1], ARGV[1], 'DELETED_BY_REDISSON');" +
+                "redis.call('lrem', KEYS[1], 1, 'DELETED_BY_REDISSON');",
+                Collections.<Object>singletonList(getName()), index);
+    }
+    
     @Override
     public int indexOf(Object o) {
         return get(indexOfAsync(o));
