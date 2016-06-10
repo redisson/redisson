@@ -1,6 +1,5 @@
 package org.redisson;
 
-import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import net.bytebuddy.ByteBuddy;
@@ -57,9 +56,9 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
         try {
             T instance;
             try {
-                instance = getProxyClass(entityClass).getDeclaredConstructor(id.getClass()).newInstance(id);
-            } catch (NoSuchMethodException exception) {
                 instance = getProxyClass(entityClass).newInstance();
+            } catch (Exception exception) {
+                instance = getProxyClass(entityClass).getDeclaredConstructor(id.getClass()).newInstance(id);
             }
             ((RLiveObject) instance).setLiveObjectId(id);
             return instance;
