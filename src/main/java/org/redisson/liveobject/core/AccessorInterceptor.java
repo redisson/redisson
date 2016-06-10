@@ -3,6 +3,7 @@ package org.redisson.liveobject.core;
 import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
+import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
@@ -37,7 +38,8 @@ public class AccessorInterceptor {
 
     @RuntimeType
     public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod,
-            @AllArguments Object[] args, @This Object me) throws Exception {
+            @AllArguments Object[] args, @This Object me, 
+            @FieldValue("liveObjectLiveMap") RMap liveMap) throws Exception {
         if (isGetter(method, getREntityIdFieldName(me))) {
             return ((RLiveObject) me).getLiveObjectId();
         }
@@ -45,7 +47,6 @@ public class AccessorInterceptor {
             ((RLiveObject) me).setLiveObjectId(args[0]);
             return null;
         }
-        RMap liveMap = ((RLiveObject) me).getLiveObjectLiveMap();
         String fieldName = getFieldName(method);
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
