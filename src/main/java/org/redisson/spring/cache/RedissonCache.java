@@ -167,7 +167,6 @@ public class RedissonCache implements Cache {
     private String getLockName(Object key) {
         try {
             byte[] keyState = redisson.getConfig().getCodec().getMapKeyEncoder().encode(key);
-            Hash.hashToBase64(keyState);
             return "{" + map.getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
         } catch (IOException e) {
             throw new IllegalStateException(e);
