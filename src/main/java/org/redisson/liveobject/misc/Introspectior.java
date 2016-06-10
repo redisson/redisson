@@ -15,15 +15,10 @@ import net.bytebuddy.matcher.ElementMatchers;
  */
 public class Introspectior {
 
-    private static final ConcurrentMap<Class, TypeDescription.ForLoadedType> tCache = PlatformDependent.newConcurrentHashMap();
- 
     public static TypeDescription.ForLoadedType getTypeDescription(Class c) {
-        if (!tCache.containsKey(c)) {
-            return new TypeDescription.ForLoadedType(c);
-        }
-        return tCache.get(c);
+        return new TypeDescription.ForLoadedType(c);
     }
-    
+
     public static MethodDescription getMethodDescription(Class c, String method) {
         if (method == null || method.isEmpty()) {
             return null;
@@ -33,7 +28,7 @@ public class Introspectior {
                 .filter(ElementMatchers.hasMethodName(method))
                 .getOnly();
     }
-    
+
     public static FieldDescription getFieldDescription(Class c, String field) {
         if (field == null || field.isEmpty()) {
             return null;
@@ -43,10 +38,10 @@ public class Introspectior {
                 .filter(ElementMatchers.named(field))
                 .getOnly();
     }
-    
+
     public static FieldList<FieldDescription.InDefinedShape> getFieldsWithAnnotation(Class c, Class<? extends Annotation> a) {
-         return getTypeDescription(c)
-                 .getDeclaredFields()
-                 .filter(ElementMatchers.isAnnotatedWith(a));
+        return getTypeDescription(c)
+                .getDeclaredFields()
+                .filter(ElementMatchers.isAnnotatedWith(a));
     }
 }
