@@ -36,6 +36,10 @@ public class RedissonReference {
 
     /**
      * @return the type
+     * @throws java.lang.Exception - which could be:
+     *     LinkageError - if the linkage fails
+     *     ExceptionInInitializerError - if the initialization provoked by this method fails
+     *     ClassNotFoundException - if the class cannot be located
      */
     public Class getType() throws Exception {
         return Class.forName(type);
@@ -74,6 +78,10 @@ public class RedissonReference {
 
     /**
      * @return the codec
+     * @throws java.lang.Exception - which could be:
+     *     LinkageError - if the linkage fails
+     *     ExceptionInInitializerError - if the initialization provoked by this method fails
+     *     ClassNotFoundException - if the class cannot be located 
      */
     public Class<? extends Codec> getCodecType() throws Exception {
         return (Class<? extends Codec>) (codec == null
