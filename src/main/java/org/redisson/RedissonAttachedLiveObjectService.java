@@ -1,16 +1,19 @@
 package org.redisson;
 
+import java.lang.reflect.Constructor;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
-import net.bytebuddy.implementation.FieldAccessor;
 import net.bytebuddy.implementation.MethodDelegation;
+import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.matcher.ElementMatchers;
 import org.redisson.core.RExpirable;
 import org.redisson.core.RExpirableAsync;
+import org.redisson.core.RMap;
 import org.redisson.core.RObject;
 import org.redisson.core.RObjectAsync;
 import org.redisson.liveobject.CodecProvider;
@@ -21,6 +24,7 @@ import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.ExpirableInterceptor;
+import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.misc.Introspectior;
 
 public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectService {
@@ -38,16 +42,26 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
 
     //TODO: Support ID Generator
     @Override
-    public <T, K> T get(Class<T> entityClass, K id, long ttl) {
+    public <T, K> T get(Class<T> entityClass, K id, long timeToLive, TimeUnit timeUnit) {
         T instance = get(entityClass, id);
+        RMap map = ((RLiveObject) instance).getLiveObjectLiveMap();
+        map.put("RLiveObjectDefaultTimeToLiveValue", timeToLive);
+        map.put("RLiveObjectDefaultTimeToLiveUnit", timeUnit.toString());
+        map.expire(timeToLive, timeUnit);
         return instance;
     }
 
     @Override
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
-            //TODO: support class with no arg constructor
-            return getProxyClass(entityClass).getConstructor(id.getClass()).newInstance(id);
+            T instance;
+            try {
+                instance = getProxyClass(entityClass).getDeclaredConstructor(id.getClass()).newInstance(id);
+            } catch (NoSuchMethodException exception) {
+                instance = getProxyClass(entityClass).newInstance();
+            }
+            ((RLiveObject) instance).setLiveObjectId(id);
+            return instance;
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw new RuntimeException(ex);
@@ -94,13 +108,15 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
         Class<? extends T> loaded = builder.method(ElementMatchers.isDeclaredBy(
                 Introspectior.getTypeDescription(RLiveObject.class))
                 .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())))
-                .intercept(FieldAccessor.ofBeanProperty())
+                .intercept(MethodDelegation.to(new LiveObjectInterceptor(redisson, codecProvider, entityClass, idFieldName))
+                        .appendParameterBinder(FieldProxy.Binder
+                                .install(LiveObjectInterceptor.Getter.class, LiveObjectInterceptor.Setter.class)))
                 .implement(RLiveObject.class)
                 .method(ElementMatchers.isDeclaredBy(RExpirable.class)
                         .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
                         .or(ElementMatchers.isDeclaredBy(RObject.class))
                         .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
-                .intercept(MethodDelegation.to(new ExpirableInterceptor()))
+                .intercept(MethodDelegation.to(ExpirableInterceptor.class))
                 .implement(RExpirable.class)
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RLiveObject.class)))
@@ -112,7 +128,7 @@ public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectSer
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
                 .intercept(MethodDelegation.to(
-                                new AccessorInterceptor(redisson, codecProvider, entityClass, idFieldName)))
+                                new AccessorInterceptor(redisson, codecProvider)))
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();

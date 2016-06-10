@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RObject;
+import org.redisson.liveobject.annotation.REntity;
 
 /**
  *
@@ -16,16 +17,17 @@ public class RedissonReference {
     public RedissonReference() {
     }
 
-    public RedissonReference(Class<? extends RObject> type, String keyName) {
-        this.type = type.getCanonicalName();
-        this.keyName = keyName;
-        this.codec = null;
+    public RedissonReference(Class type, String keyName) {
+        this(type, keyName, null);
     }
 
-    public RedissonReference(Class<? extends RObject> type, String keyName, Codec codec) {
-        this.type = type.getCanonicalName();
+    public RedissonReference(Class type, String keyName, Codec codec) {
+        if (!type.isAnnotationPresent(REntity.class) && !RObject.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject");
+        }
+        this.type = type.getName();
         this.keyName = keyName;
-        this.codec = codec.getClass().getCanonicalName();
+        this.codec = codec != null ? codec.getClass().getCanonicalName() : null;
     }
 
     public boolean isDefaultCodec() {
@@ -35,8 +37,8 @@ public class RedissonReference {
     /**
      * @return the type
      */
-    public Class<? extends RObject> getType() throws Exception {
-        return (Class<? extends RObject>) Class.forName(type);
+    public Class getType() throws Exception {
+        return Class.forName(type);
     }
 
     /**
@@ -49,7 +51,10 @@ public class RedissonReference {
     /**
      * @param type the type to set
      */
-    public void setType(Class<? extends RObject> type) {
+    public void setType(Class type) {
+        if (!type.isAnnotationPresent(REntity.class) && !RObject.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject");
+        }
         this.type = type.getCanonicalName();
     }
 

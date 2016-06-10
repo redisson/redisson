@@ -15,13 +15,19 @@ import org.redisson.codec.JsonJacksonCodec;
 @Target({ElementType.TYPE})
 public @interface REntity {
 
-    
     Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
+
     Class<? extends Codec> codec() default JsonJacksonCodec.class;
-    
+
     public interface NamingScheme {
 
         public String getName(Class cls, String idFieldName, Object id);
+
+        public String resolveClassName(String name);
+
+        public String resolveIdFieldName(String name);
+
+        public Object resolveId(String name);
 
     }
 
@@ -32,6 +38,21 @@ public @interface REntity {
         @Override
         public String getName(Class cls, String idFieldName, Object id) {
             return "redisson_live_object:{class=" + cls.getName() + ", " + idFieldName + "=" + id.toString() + "}";
+        }
+
+        @Override
+        public String resolveClassName(String name) {
+            return name.substring("redisson_live_object:{class=".length(), name.indexOf(","));
+        }
+
+        @Override
+        public String resolveIdFieldName(String name) {
+            return name.substring(name.indexOf(", ") + 2, name.indexOf("=", name.indexOf("=") + 1));
+        }
+
+        @Override
+        public Object resolveId(String name) {
+            return name.substring(name.indexOf("=", name.indexOf("=") + 1) + 1, name.length() - 1);
         }
 
     }

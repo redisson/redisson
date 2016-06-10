@@ -6,7 +6,9 @@ import java.util.Map;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.redisson.core.RMap;
+import org.redisson.core.RObject;
 import org.redisson.liveobject.RAttachedLiveObjectService;
+import org.redisson.liveobject.RLiveObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 
@@ -244,6 +246,9 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         assertTrue(redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).isExists());
         assertTrue(!redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
         assertEquals("111", redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
+        ((RLiveObject) t).getLiveObjectLiveMap().put("value", "555");
+        assertEquals("555", redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
+        assertEquals("3333", ((RObject) t).getName());//field access takes priority over the implemented interface.
     }
 
     @Test

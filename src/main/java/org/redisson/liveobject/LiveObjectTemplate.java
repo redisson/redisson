@@ -6,16 +6,9 @@ import org.redisson.core.RMap;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class LiveObjectTemplate implements RLiveObject {
+public class LiveObjectTemplate {
 
+    private Object liveObjectId;
     private RMap liveObjectLiveMap;
-    
-    /**
-     * @return the liveObjectLiveMap
-     */
-    @Override
-    public RMap getLiveObjectLiveMap() {
-        return liveObjectLiveMap;
-    }
 
 }
