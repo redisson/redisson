@@ -226,9 +226,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                             e = new MasterSlaveEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
 
+                            List<Future<Void>> fs = e.initSlaveBalancer(partition.getFailedSlaveAddresses());
+                            futures.addAll(fs);
                             if (!partition.getSlaveAddresses().isEmpty()) {
-                                List<Future<Void>> fs = e.initSlaveBalancer(partition.getFailedSlaveAddresses());
-                                futures.addAll(fs);
                                 log.info("slaves: {} added for slot ranges: {}", partition.getSlaveAddresses(), partition.getSlotRanges());
                                 if (!partition.getFailedSlaveAddresses().isEmpty()) {
                                     log.warn("slaves: {} is down for slot ranges: {}", partition.getFailedSlaveAddresses(), partition.getSlotRanges());
@@ -403,7 +403,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                     currentPart.addSlaveAddress(uri);
                     entry.slaveUp(uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
-                    log.info("slave {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
+                    log.info("slave: {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
                 }
             });
         }
