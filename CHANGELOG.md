@@ -6,7 +6,7 @@ Redisson Releases History
 Feature - `RGeo`, `RMultimapCache` added to `RBatch`  
 Feature - `fastRemove` and `fastRemoveAsync` methods were added to `RList`  
 Improvement - added Spring 4.3.0 support to RedissonSpringCacheManager  
-Improvement - `RSortedSet` performance boost up to 4 times!  
+Improvement - `RSortedSet` performance boost up to __x4__  
 Improvement - `RList.remove` optimization  
 Improvement - ability to define `Codec` for `RRemoteService`  
 Fixed - cluster state managing with redis masters only  
