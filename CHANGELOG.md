@@ -2,6 +2,16 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####12-Jun-2016 - version 2.2.16 released  
+Feature - `RGeo`, `RMultimapCache` added to `RBatch`  
+Feature - `fastRemove` and `fastRemoveAsync` methods were added to `RList`  
+Improvement - added Spring 4.3.0 support to RedissonSpringCacheManager  
+Improvement - `RSortedSet` performance boost up to 4 times!  
+Improvement - `RList.remove` optimization  
+Improvement - ability to define `Codec` for `RRemoteService`  
+Fixed - cluster state managing with redis masters only  
+Fixed - dead lock during `RLock`, `RSemaphore`, `RReadWriteLock`, `RCountDownLatch` usage under heavy load  
+
 ####08-Jun-2016 - version 2.2.15 released  
 Improvement - Performance boost up to 30% for `RSortedSet.add` method  
 Fixed - auth during reconnection (thanks to fransiskusx)  
