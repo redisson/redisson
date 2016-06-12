@@ -16,9 +16,11 @@
 package org.redisson.spring.cache;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -38,6 +40,8 @@ import org.springframework.cache.support.SimpleValueWrapper;
  */
 public class RedissonCache implements Cache {
 
+    private final ConcurrentMap<Object, Lock> valueLoaderLocks = new ConcurrentHashMap<Object, Lock>();
+    
     private RMapCache<Object, Object> mapCache;
 
     private final RMap<Object, Object> map;
@@ -126,8 +130,6 @@ public class RedissonCache implements Cache {
         return new SimpleValueWrapper(value);
     }
 
-    final Map<Object, Lock> valueLoaderLocks = new ConcurrentHashMap<Object, Lock>();
-    
     public Lock getLock(Object key) {
         Lock lock = valueLoaderLocks.get(key);
         if (lock == null) {
@@ -152,7 +154,14 @@ public class RedissonCache implements Cache {
                     try {
                         value = toStoreValue(valueLoader.call());
                     } catch (Exception ex) {
-                        throw new ValueRetrievalException(key, valueLoader, ex.getCause());                
+                        try {
+                            Class<?> c = Class.forName("org.springframework.cache.Cache$ValueRetrievalException");
+                            Constructor<?> constructor = c.getConstructor(Object.class, Callable.class, Throwable.class);
+                            RuntimeException exception = (RuntimeException) constructor.newInstance(key, valueLoader, ex.getCause());
+                            throw exception;                
+                        } catch (Exception e) {
+                            throw new IllegalStateException(e);
+                        }
                     }
                     map.put(key, value);
                 }
