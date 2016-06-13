@@ -556,8 +556,8 @@ public class Redisson implements RedissonClient {
     }
     
     @Override
-    public RLiveObjectService getLiveObjectService(CodecProvider ProviderCodec) {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, new DefaultCodecProvider());
+    public RLiveObjectService getLiveObjectService(CodecProvider codecProvider) {
+        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider);
     }
     
     @Override
