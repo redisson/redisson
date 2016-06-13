@@ -7,7 +7,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.redisson.core.RMap;
 import org.redisson.core.RObject;
-import org.redisson.liveobject.RAttachedLiveObjectService;
+import org.redisson.liveobject.RLiveObjectService;
 import org.redisson.liveobject.RLiveObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
@@ -234,7 +234,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testBasics() {
-        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        RLiveObjectService s = redisson.getLiveObjectService();
         TestREntity t = s.<TestREntity, String>get(TestREntity.class, "1");
         assertEquals("1", t.getName());
         assertTrue(!redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
@@ -253,7 +253,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithCollection() {
-        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        RLiveObjectService s = redisson.getLiveObjectService();
         TestREntityWithMap t = s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2");
         RMap<String, String> map = redisson.<String, String>getMap("testMap");
         t.setValue(map);
@@ -275,7 +275,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithRObject() {
-        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        RLiveObjectService s = redisson.getLiveObjectService();
         TestREntityWithRMap t = s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "2");
         RMap<String, String> map = redisson.<String, String>getMap("testMap");
         t.setValue(map);
@@ -291,7 +291,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithNestedLiveObjectAsId() {
-        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        RLiveObjectService s = redisson.getLiveObjectService();
         TestREntity t1 = s.<TestREntity, String>get(TestREntity.class, "1");
         try {
             s.<TestREntityIdNested, TestREntity>get(TestREntityIdNested.class, t1);
@@ -302,7 +302,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithNestedLiveObjectAsValue() throws Exception {
-        RAttachedLiveObjectService s = redisson.getAttachedLiveObjectService();
+        RLiveObjectService s = redisson.getLiveObjectService();
         TestREntityWithRMap t1 = s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "111");
         TestREntityValueNested t2 = s.<TestREntityValueNested, String>get(TestREntityValueNested.class, "122");
         RMap<String, String> map = redisson.<String, String>getMap("32123");

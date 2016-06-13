@@ -116,7 +116,7 @@ public class AccessorInterceptor {
         if (type != null) {
             if (type.isAnnotationPresent(REntity.class)) {
                 REntity.NamingScheme ns = type.getAnnotation(REntity.class).namingScheme().newInstance();
-                return (RLiveObject) redisson.getAttachedLiveObjectService(codecProvider).get(type, ns.resolveId(rr.getKeyName()));
+                return (RLiveObject) redisson.getLiveObjectService(codecProvider).get(type, ns.resolveId(rr.getKeyName()));
             }
             for (Method method : RedissonClient.class.getDeclaredMethods()) {
                 if (method.getName().startsWith("get")

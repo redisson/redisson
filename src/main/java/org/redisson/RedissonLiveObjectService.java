@@ -17,7 +17,7 @@ import org.redisson.core.RObject;
 //import org.redisson.core.RObjectAsync;
 import org.redisson.liveobject.CodecProvider;
 import org.redisson.liveobject.LiveObjectTemplate;
-import org.redisson.liveobject.RAttachedLiveObjectService;
+import org.redisson.liveobject.RLiveObjectService;
 import org.redisson.liveobject.RLiveObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
@@ -26,14 +26,14 @@ import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.misc.Introspectior;
 
-public class RedissonAttachedLiveObjectService implements RAttachedLiveObjectService {
+public class RedissonLiveObjectService implements RLiveObjectService {
 
     private final Map<Class, Class> classCache;
     private final RedissonClient redisson;
 
     private final CodecProvider codecProvider;
 
-    public RedissonAttachedLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, CodecProvider codecProvider) {
+    public RedissonLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, CodecProvider codecProvider) {
         this.redisson = redisson;
         this.classCache = classCache;
         this.codecProvider = codecProvider;

@@ -76,7 +76,7 @@ import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 import org.redisson.liveobject.CodecProvider;
 import org.redisson.liveobject.DefaultCodecProvider;
-import org.redisson.liveobject.RAttachedLiveObjectService;
+import org.redisson.liveobject.RLiveObjectService;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
@@ -551,13 +551,13 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public RAttachedLiveObjectService getAttachedLiveObjectService() {
-        return new RedissonAttachedLiveObjectService(this, liveObjectClassCache, liveObjectDefaultCodecProvider);
+    public RLiveObjectService getLiveObjectService() {
+        return new RedissonLiveObjectService(this, liveObjectClassCache, liveObjectDefaultCodecProvider);
     }
     
     @Override
-    public RAttachedLiveObjectService getAttachedLiveObjectService(CodecProvider ProviderCodec) {
-        return new RedissonAttachedLiveObjectService(this, liveObjectClassCache, new DefaultCodecProvider());
+    public RLiveObjectService getLiveObjectService(CodecProvider ProviderCodec) {
+        return new RedissonLiveObjectService(this, liveObjectClassCache, new DefaultCodecProvider());
     }
     
     @Override

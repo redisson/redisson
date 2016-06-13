@@ -60,7 +60,7 @@ import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 import org.redisson.liveobject.CodecProvider;
-import org.redisson.liveobject.RAttachedLiveObjectService;
+import org.redisson.liveobject.RLiveObjectService;
 
 /**
  * Main Redisson interface for access
@@ -664,7 +664,7 @@ public interface RedissonClient {
      * 
      * @return 
      */
-    RAttachedLiveObjectService getAttachedLiveObjectService();
+    RLiveObjectService getLiveObjectService();
     
     /**
      * Returns RedissonAttachedLiveObjectService which can be used to 
@@ -673,7 +673,7 @@ public interface RedissonClient {
      * @param codecProvider the CodecProvider to be used to create the service
      * @return 
      */
-    RAttachedLiveObjectService getAttachedLiveObjectService(CodecProvider codecProvider);
+    RLiveObjectService getLiveObjectService(CodecProvider codecProvider);
     
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server
