@@ -79,6 +79,11 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     public int size() {
         return get(sizeAsync());
     }
+    
+    @Override
+    public int keySize() {
+    	return get(keySizeAsync());
+    }
 
     @Override
     public boolean isEmpty() {

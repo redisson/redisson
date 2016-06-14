@@ -162,6 +162,11 @@ public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
      * vice versa. However, <i>adding</i> to the returned set is not possible.
      */
     Set<K> keySet();
+    
+    /**
+     *  Returns the count of distinct keys in this multimap.
+     */
+    int keySize();
 
     /**
      * Returns a view collection containing the <i>value</i> from each key-value

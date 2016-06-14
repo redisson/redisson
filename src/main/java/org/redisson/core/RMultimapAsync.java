@@ -123,6 +123,14 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
     Future<Collection<V>> removeAllAsync(Object key);
 
     Future<Collection<V>> getAllAsync(K key);
+    
+    
+    /**
+     * Returns the number of key-value pairs in this multimap.
+     *
+     * @return
+     */
+    Future<Integer> keySizeAsync();
 
     /**
      * Removes <code>keys</code> from map by one operation

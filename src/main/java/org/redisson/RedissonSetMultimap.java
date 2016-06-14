@@ -69,6 +69,19 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 Arrays.<Object>asList(getName()));
     }
 
+    public Future<Integer> keySizeAsync() {
+    	return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_INTEGER,
+                "local keys = redis.call('hgetall', KEYS[1]); " +
+                "local size = 0; " +
+                "for i, v in ipairs(keys) do " +
+                    "if i % 2 == 0 then " +
+                        "size = size + 1; " +
+                    "end;" +
+                "end; " +
+                "return size; ",
+                Arrays.<Object>asList(getName()));
+    }
+    
     public Future<Boolean> containsKeyAsync(Object key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
