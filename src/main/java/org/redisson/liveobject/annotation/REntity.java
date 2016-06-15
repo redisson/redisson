@@ -15,11 +15,14 @@
  */
 package org.redisson.liveobject.annotation;
 
+import io.netty.buffer.Unpooled;
+import java.io.IOException;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.handler.State;
 import org.redisson.codec.JsonJacksonCodec;
 
 /**
@@ -46,13 +49,33 @@ public @interface REntity {
 
     }
 
-    public class DefaultNamingScheme implements NamingScheme {
+    public abstract class AbstractNamingScheme implements NamingScheme {
 
-        public static final DefaultNamingScheme INSTANCE = new DefaultNamingScheme();
+        protected final Codec codec;
+
+        public AbstractNamingScheme(Codec codec) {
+            this.codec = codec;
+        }
+
+    }
+
+    public class DefaultNamingScheme extends AbstractNamingScheme implements NamingScheme {
+
+        public static final DefaultNamingScheme INSTANCE = new DefaultNamingScheme(new JsonJacksonCodec());
+        private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+
+        public DefaultNamingScheme(Codec codec) {
+            super(codec);
+        }
 
         @Override
         public String getName(Class cls, String idFieldName, Object id) {
-            return "redisson_live_object:{class=" + cls.getName() + ", " + idFieldName + "=" + id.toString() + "}";
+            try {
+                String encode = bytesToHex(codec.getMapKeyEncoder().encode(id));
+                return "redisson_live_object:{class=" + cls.getName() + ", " + idFieldName + "=" + encode + "}";
+            } catch (IOException ex) {
+                throw new IllegalArgumentException("Unable to encode id [" + id + "] into byte[]", ex);
+            }
         }
 
         @Override
@@ -67,8 +90,32 @@ public @interface REntity {
 
         @Override
         public Object resolveId(String name) {
-            return name.substring(name.indexOf("=", name.indexOf("=") + 1) + 1, name.length() - 1);
+            String decode = name.substring(name.indexOf("=", name.indexOf("=") + 1) + 1, name.length() - 1);
+            try {
+                return codec.getMapKeyDecoder().decode(Unpooled.wrappedBuffer(hexToBytes(decode)), new State(false));
+            } catch (IOException ex) {
+                throw new IllegalStateException("Unable to decode [" + decode + "] into object", ex);
+            }
         }
 
+        public static String bytesToHex(byte[] bytes) {
+            char[] hexChars = new char[bytes.length * 2];
+            for (int j = 0; j < bytes.length; j++) {
+                int v = bytes[j] & 0xFF;
+                hexChars[j * 2] = hexArray[v >>> 4];
+                hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+            }
+            return new String(hexChars);
+        }
+
+        public static byte[] hexToBytes(String s) {
+            int len = s.length();
+            byte[] data = new byte[len / 2];
+            for (int i = 0; i < len; i += 2) {
+                data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                        + Character.digit(s.charAt(i + 1), 16));
+            }
+            return data;
+        }
     }
 }

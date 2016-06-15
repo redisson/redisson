@@ -19,6 +19,7 @@ import io.netty.util.internal.PlatformDependent;
 import java.util.concurrent.ConcurrentMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RObject;
+import org.redisson.liveobject.annotation.REntity;
 
 /**
  *
@@ -41,9 +42,17 @@ public class DefaultCodecProvider implements CodecProvider {
     }
 
     @Override
+    public Codec getCodec(REntity anno, Class cls) {
+        if (!cls.isAnnotationPresent(anno.annotationType())) {
+            throw new IllegalArgumentException("Annotation REntity does not present on type [" + cls.getCanonicalName() + "]");
+        }
+        return getCodec(anno.codec());
+    }
+    
+    @Override
     public Codec getCodec(Class<? extends Codec> codecClass, Class<? extends RObject> rObjectClass, String name) {
         if (rObjectClass.isInterface()) {
-            throw new IllegalArgumentException("Cannot lookup an interface class of RObject " + rObjectClass.getCanonicalName() + ". Concrete class only.");
+            throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
         }
         return getCodec(codecClass);
     }
@@ -59,9 +68,17 @@ public class DefaultCodecProvider implements CodecProvider {
     }
 
     @Override
+    public void registerCodec(REntity anno, Class cls, Codec codec) {
+        if (!cls.isAnnotationPresent(anno.getClass())) {
+            throw new IllegalArgumentException("Annotation REntity does not present on type [" + cls.getCanonicalName() + "]");
+        }
+        registerCodec(anno.codec(), codec);
+    }
+    
+    @Override
     public void registerCodec(Class<? extends Codec> codecClass, Class<? extends RObject> rObjectClass, String name, Codec codec) {
         if (rObjectClass.isInterface()) {
-            throw new IllegalArgumentException("Cannot register an interface class of RObject " + rObjectClass.getCanonicalName() + ". Concrete class only.");
+            throw new IllegalArgumentException("Cannot register an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
         }
         registerCodec(codecClass, codec);
     }

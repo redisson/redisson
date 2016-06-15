@@ -17,6 +17,7 @@ package org.redisson.liveobject;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RObject;
+import org.redisson.liveobject.annotation.REntity;
 
 /**
  *
@@ -25,12 +26,16 @@ import org.redisson.core.RObject;
 public interface CodecProvider {
 
     Codec getCodec(Class<? extends Codec> codecClass);
+    
+    Codec getCodec(REntity anno, Class cls);
 
     Codec getCodec(Class<? extends Codec> codecClass, Class<? extends RObject> rObjectClass, String name);
 
     Codec getCodec(Class<? extends Codec> codecClass, RObject rObject, String name);
 
     void registerCodec(Class<? extends Codec> codecClass, Codec codec);
+    
+    void registerCodec(REntity anno, Class cls, Codec codec);
 
     void registerCodec(Class<? extends Codec> codecClass, Class<? extends RObject> rObjectClass, String name, Codec codec);
 

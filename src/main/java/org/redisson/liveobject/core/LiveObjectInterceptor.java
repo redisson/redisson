@@ -58,9 +58,9 @@ public class LiveObjectInterceptor {
         this.codecProvider = codecProvider;
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
-        REntity anno = ((REntity) entityClass.getAnnotation(REntity.class));
-        this.namingScheme = anno.namingScheme().newInstance();
+        REntity anno = (REntity) entityClass.getAnnotation(REntity.class);
         this.codecClass = anno.codec();
+        this.namingScheme = anno.namingScheme().getDeclaredConstructor(Codec.class).newInstance(codecProvider.getCodec(anno, originalClass));
     }
 
     @RuntimeType
@@ -76,6 +76,9 @@ public class LiveObjectInterceptor {
             @FieldProxy("liveObjectLiveMap") Getter mapGetter
     ) throws Exception {
         if ("setLiveObjectId".equals(method.getName())) {
+            if (args[0].getClass().isArray()) {
+                throw new UnsupportedOperationException("RId value cannot be an array.");
+            }
             //TODO: distributed locking maybe required.
             String idKey = getMapKey(args[0]);
             if (map != null) {

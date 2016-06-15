@@ -1,8 +1,12 @@
 package org.redisson;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.redisson.core.RMap;
@@ -316,4 +320,48 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
                 s.<TestREntityValueNested, String>get(TestREntityValueNested.class, "122")
                 .getValue().getValue().get("field"));
     }
+
+    @REntity
+    public static class TestSerializable {
+
+        @RId
+        private Serializable id;
+
+        private String value;
+
+        public Serializable getId() {
+            return id;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+    }
+
+    @Test
+    public void testSerializerable() {
+        RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+
+        TestSerializable t = liveObjectService.get(TestSerializable.class, "55555");
+        assertTrue(Objects.equals("55555", t.getId()));
+        t = liveObjectService.get(TestSerializable.class, 90909l);
+        assertTrue(Objects.equals(90909l, t.getId()));
+
+        t = liveObjectService.get(TestSerializable.class, Arrays.asList(1, 2, 3, 4));
+        List<Integer> l = new ArrayList();
+        l.addAll(Arrays.asList(1, 2, 3, 4));
+        assertTrue(l.removeAll((List) t.getId()));
+        assertTrue(l.isEmpty());
+        try {
+            liveObjectService.get(TestSerializable.class, new int[]{1, 2, 3, 4, 5});
+        } catch (Exception e) {
+            assertEquals("RId value cannot be an array.", e.getCause().getMessage());
+        }
+    }
+
 }

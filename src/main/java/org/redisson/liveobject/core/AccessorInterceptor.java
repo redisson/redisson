@@ -53,7 +53,7 @@ public class AccessorInterceptor {
 
     @RuntimeType
     public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod,
-            @AllArguments Object[] args, @This Object me, 
+            @AllArguments Object[] args, @This Object me,
             @FieldValue("liveObjectLiveMap") RMap liveMap) throws Exception {
         if (isGetter(method, getREntityIdFieldName(me))) {
             return ((RLiveObject) me).getLiveObjectId();
@@ -73,7 +73,10 @@ public class AccessorInterceptor {
         if (isSetter(method, fieldName)) {
             if (args[0].getClass().getSuperclass().isAnnotationPresent(REntity.class)) {
                 Class<? extends Object> rEntity = args[0].getClass().getSuperclass();
-                REntity.NamingScheme ns = rEntity.getAnnotation(REntity.class).namingScheme().newInstance();
+                REntity anno = rEntity.getAnnotation(REntity.class);
+                REntity.NamingScheme ns = anno.namingScheme()
+                        .getDeclaredConstructor(Codec.class)
+                        .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
                 return liveMap.put(fieldName, new RedissonReference(rEntity, ns.getName(rEntity, getREntityIdFieldName(args[0]), ((RLiveObject) args[0]).getLiveObjectId())));
             } else if (args[0] instanceof RObject) {
                 RObject ar = (RObject) args[0];
@@ -115,7 +118,10 @@ public class AccessorInterceptor {
         Class<? extends Object> type = rr.getType();
         if (type != null) {
             if (type.isAnnotationPresent(REntity.class)) {
-                REntity.NamingScheme ns = type.getAnnotation(REntity.class).namingScheme().newInstance();
+                REntity anno = type.getAnnotation(REntity.class);
+                REntity.NamingScheme ns = anno.namingScheme()
+                        .getDeclaredConstructor(Codec.class)
+                        .newInstance(codecProvider.getCodec(anno, rr.getType()));
                 return (RLiveObject) redisson.getLiveObjectService(codecProvider).get(type, ns.resolveId(rr.getKeyName()));
             }
             for (Method method : RedissonClient.class.getDeclaredMethods()) {
