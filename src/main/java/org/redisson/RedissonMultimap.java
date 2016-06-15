@@ -66,6 +66,11 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     public int size() {
         return get(sizeAsync());
     }
+    
+    @Override
+    public int keySize() {
+    	return get(keySizeAsync());
+    }
 
     @Override
     public boolean isEmpty() {
@@ -237,8 +242,12 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 "return redis.call('persist', KEYS[1]); ",
                 Arrays.<Object>asList(getName()));
     }
-
-
+    
+    public Future<Integer> keySizeAsync() {
+    	return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.HLEN, getName());
+    }
+    
+    
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
         Future<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new ScanCodec(codec, StringCodec.INSTANCE), RedisCommands.HSCAN, getName(), startPos);
         return get(f);

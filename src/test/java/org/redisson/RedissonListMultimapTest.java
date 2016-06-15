@@ -131,6 +131,23 @@ public class RedissonListMultimapTest extends BaseTest {
         assertThat(s).isEmpty();
         assertThat(map.size()).isEqualTo(1);
     }
+    
+    @Test
+    public void testKeySize() {
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        map.put(new SimpleKey("0"), new SimpleValue("1"));
+        map.put(new SimpleKey("0"), new SimpleValue("2"));
+        map.put(new SimpleKey("1"), new SimpleValue("4"));
+
+        assertThat(map.keySize()).isEqualTo(2);
+
+        assertThat(map.fastRemove(new SimpleKey("0"))).isEqualTo(1);
+
+        List<SimpleValue> s = map.get(new SimpleKey("0"));
+        assertThat(s).isEmpty();
+        assertThat(map.size()).isEqualTo(1);
+    }
+    
 
     @Test
     public void testPut() {
