@@ -281,7 +281,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
 
         @Override
         public int size() {
-            return RedissonMultimap.this.size();
+            return RedissonMultimap.this.keySize();
         }
 
         @Override
