@@ -159,4 +159,7 @@ public class JsonJacksonCodec implements Codec {
         return getMapValueEncoder();
     }
 
+    public ObjectMapper getObjectMapper() {
+        return mapObjectMapper;
+    }
 }

@@ -15,9 +15,7 @@
  */
 package org.redisson.liveobject.misc;
 
-import io.netty.util.internal.PlatformDependent;
 import java.lang.annotation.Annotation;
-import java.util.concurrent.ConcurrentMap;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.description.method.MethodDescription;

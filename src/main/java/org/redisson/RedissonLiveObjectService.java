@@ -1,6 +1,13 @@
 package org.redisson;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import java.io.IOException;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import jodd.bean.BeanCopy;
+import jodd.bean.BeanUtil;
 //import java.util.concurrent.TimeUnit;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
@@ -10,6 +17,7 @@ import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.matcher.ElementMatchers;
+import org.redisson.codec.JsonJacksonCodec;
 //import org.redisson.core.RExpirable;
 //import org.redisson.core.RExpirableAsync;
 //import org.redisson.core.RMap;
@@ -30,7 +38,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private final Map<Class, Class> classCache;
     private final RedissonClient redisson;
-
+    private final ObjectMapper objectMapper = JsonJacksonCodec.INSTANCE.getObjectMapper();
     private final CodecProvider codecProvider;
 
     public RedissonLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, CodecProvider codecProvider) {
@@ -50,32 +58,117 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //        map.expire(timeToLive, timeUnit);
 //        return instance;
 //    }
-
+    
     @Override
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
-            T instance;
-            try {
-                instance = getProxyClass(entityClass).newInstance();
-            } catch (Exception exception) {
-                instance = getProxyClass(entityClass).getDeclaredConstructor(id.getClass()).newInstance(id);
-            }
-            ((RLiveObject) instance).setLiveObjectId(id);
-            return instance;
+            return instantiateLiveObject(getProxyClass(entityClass), id);
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw new RuntimeException(ex);
         }
     }
 
-    private <T, K> Class<? extends T> getProxyClass(Class<T> entityClass) throws Exception {
+    @Override
+    public <T> T attach(T detachedObject) {
+        Class<T> entityClass = (Class<T>) detachedObject.getClass();
+        try {
+            Class<? extends T> proxyClass = getProxyClass(entityClass);
+            String idFieldName = getRIdFieldName(detachedObject.getClass());
+            return instantiateLiveObject(proxyClass,
+                    BeanUtil.pojo.getSimpleProperty(detachedObject, idFieldName));
+        } catch (Exception ex) {
+            unregisterClass(entityClass);
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public <T> T merge(T detachedObject) {
+        T attachedObject = attach(detachedObject);
+        copy(detachedObject, attachedObject);
+        return attachedObject;
+    }
+
+    @Override
+    public <T> T persist(T detachedObject) {
+        T attachedObject = attach(detachedObject);
+        if (asLiveObject(attachedObject).isPhantom()) {
+            copy(detachedObject, attachedObject);
+            return attachedObject;
+        }
+        throw new IllegalStateException("This REntity already exists.");
+    }
+
+    @Override
+    public <T> T detach(T attachedObject) {
+        try {
+            //deep copy
+            return objectMapper.<T>convertValue(attachedObject, (Class<T>)attachedObject.getClass().getSuperclass());
+        } catch (Exception ex) {
+            throw new IllegalArgumentException(ex);
+        }
+    }
+
+    @Override
+    public <T> void remove(T attachedObject) {
+        asLiveObject(attachedObject).delete();
+    }
+
+    @Override
+    public <T, K> void remove(Class<T> entityClass, K id) {
+        asLiveObject(get(entityClass, id)).delete();
+    }
+
+    @Override
+    public <T> RLiveObject asLiveObject(T instance) {
+        return (RLiveObject) instance;
+    }
+
+    @Override
+    public <T> boolean isLiveObject(T instance) {
+        return instance instanceof RLiveObject;
+    }
+
+    private <T> void copy(T detachedObject, T attachedObject) {
+        String idFieldName = getRIdFieldName(detachedObject.getClass());
+        BeanCopy.beans(detachedObject, attachedObject)
+                .ignoreNulls(true)
+                .exclude(idFieldName)
+                .copy();
+    }
+    
+    private String getRIdFieldName(Class cls) {
+        return Introspectior.getFieldsWithAnnotation(cls, RId.class)
+                .getOnly()
+                .getName();
+    }
+
+    private <T, K> T instantiateLiveObject(Class<T> proxyClass, K id) throws Exception {
+        T instance = instantiate(proxyClass, id);
+        asLiveObject(instance).setLiveObjectId(id);
+        return instance;
+    }
+
+    private <T, K> T instantiate(Class<T> cls, K id) throws Exception {
+        T instance;
+        try {
+            instance = cls.newInstance();
+        } catch (Exception exception) {
+            instance = cls.getDeclaredConstructor(id.getClass()).newInstance(id);
+        }
+        return instance;
+    }
+    
+    private <T> Class<? extends T> getProxyClass(Class<T> entityClass) throws Exception {
         if (!classCache.containsKey(entityClass)) {
+            validateClass(entityClass);
             registerClass(entityClass);
         }
         return classCache.get(entityClass);
     }
 
-    private <T, K> void registerClass(Class<T> entityClass) throws Exception {
+    private <T> void validateClass(Class<T> entityClass) throws Exception {
         if (entityClass.isAnonymousClass() || entityClass.isLocalClass()) {
             throw new IllegalArgumentException(entityClass.getName() + " is not publically accessable.");
         }
@@ -98,6 +191,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         if (entityClass.getDeclaredField(idFieldName).getType().isAssignableFrom(RObject.class)) {
             throw new IllegalArgumentException("Field with RId annotation cannot be a type of RObject");
         }
+    }
+
+    private <T> void registerClass(Class<T> entityClass) throws Exception {
         DynamicType.Builder<T> builder = new ByteBuddy()
                 .subclass(entityClass);
         for (FieldDescription.InDefinedShape field
@@ -109,23 +205,24 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 Introspectior.getTypeDescription(RLiveObject.class))
                 .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())))
                 .intercept(MethodDelegation.to(
-                        new LiveObjectInterceptor(redisson, codecProvider, entityClass, idFieldName))
+                                new LiveObjectInterceptor(redisson, codecProvider, entityClass,
+                                        getRIdFieldName(entityClass)))
                         .appendParameterBinder(FieldProxy.Binder
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class)))
                 .implement(RLiveObject.class)
-//                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
-//                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
-//                        .or(ElementMatchers.isDeclaredBy(RObject.class))
-//                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
-//                .intercept(MethodDelegation.to(ExpirableInterceptor.class))
-//                .implement(RExpirable.class)
+                //                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
+                //                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
+                //                        .or(ElementMatchers.isDeclaredBy(RObject.class))
+                //                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+                //                .intercept(MethodDelegation.to(ExpirableInterceptor.class))
+                //                .implement(RExpirable.class)
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RLiveObject.class)))
-//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
-//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
-//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObject.class)))
-//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+                        //                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
+                        //                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
+                        //                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObject.class)))
+                        //                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))

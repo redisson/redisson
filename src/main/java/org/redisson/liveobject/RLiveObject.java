@@ -29,13 +29,38 @@ public interface RLiveObject {
 //    public RMap getLiveObjectLiveMap();
 
     /**
-     * @return the liveObjectId
+     * Returns the value of the field that has the RId annotation.
+     * @return liveObjectId
      */
-    public Object getLiveObjectId();
+    Object getLiveObjectId();
 
     /**
+     * Change the value of the field that has the RId annotation. Since the 
+     * liveObjectId is encoded as a part of the name of the underlying RMap,
+     * this action will result in renaming the underlying RMap based on the
+     * naming scheme specified in the REntity annotation of the instance class.
+     * 
      * @param liveObjectId the liveObjectId to set
+     * @see org.redisson.core.RMap
      */
-    public void setLiveObjectId(Object liveObjectId);
+    void setLiveObjectId(Object liveObjectId);
 
+    /**
+     * Returns true if this object holds no other values apart from the field
+     * annotated with RId. This involves in invoking the isExist() method on the
+     * underlying RMap. Since the field with RId annotation is encoded in the
+     * name of the underlying RMap, so to ensure the map exist in redis, set a 
+     * non null value to any of the other fields.
+     * 
+     * @return 
+     * @see org.redisson.core.RMap
+     */
+    boolean isPhantom();
+    
+    /**
+     * Deletes the underlying RMap.
+     * @return 
+     */
+    boolean delete();
+    
 }

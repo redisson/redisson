@@ -343,22 +343,83 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     }
 
+    public static class ObjectId implements Serializable {
+
+        private int id;
+
+        public ObjectId() {
+        }
+
+        public ObjectId(int id) {
+            this.id = id;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof ObjectId)) {
+                return false;
+            }
+            return id == ((ObjectId) obj).id;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 3;
+            hash = 11 * hash + this.id;
+            return hash;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        @Override
+        public String toString() {
+            return "" + id;
+        }
+
+    }
+
     @Test
     public void testSerializerable() {
         RLiveObjectService liveObjectService = redisson.getLiveObjectService();
 
         TestSerializable t = liveObjectService.get(TestSerializable.class, "55555");
         assertTrue(Objects.equals("55555", t.getId()));
+        
         t = liveObjectService.get(TestSerializable.class, 90909l);
         assertTrue(Objects.equals(90909l, t.getId()));
+        
+        t = liveObjectService.get(TestSerializable.class, 90909);
+        assertTrue(Objects.equals(90909, t.getId()));
+        
+        t = liveObjectService.get(TestSerializable.class, new ObjectId(9090909));
+        assertTrue(Objects.equals(new ObjectId(9090909), t.getId()));
+        
+        t = liveObjectService.get(TestSerializable.class, new Byte("0"));
+        assertEquals(new Byte("0"), Byte.valueOf(t.getId().toString()));
+        
+        t = liveObjectService.get(TestSerializable.class, (byte) 90);
+        assertEquals((byte) 90, Byte.parseByte(t.getId().toString()));
 
         t = liveObjectService.get(TestSerializable.class, Arrays.asList(1, 2, 3, 4));
         List<Integer> l = new ArrayList();
         l.addAll(Arrays.asList(1, 2, 3, 4));
         assertTrue(l.removeAll((List) t.getId()));
         assertTrue(l.isEmpty());
+        
         try {
             liveObjectService.get(TestSerializable.class, new int[]{1, 2, 3, 4, 5});
+        } catch (Exception e) {
+            assertEquals("RId value cannot be an array.", e.getCause().getMessage());
+        }
+        
+        try {
+            liveObjectService.get(TestSerializable.class, new byte[]{1, 2, 3, 4, 5});
         } catch (Exception e) {
             assertEquals("RId value cannot be an array.", e.getCause().getMessage());
         }
