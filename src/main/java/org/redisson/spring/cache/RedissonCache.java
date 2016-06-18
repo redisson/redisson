@@ -17,13 +17,8 @@ package org.redisson.spring.cache;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.redisson.RedissonClient;
 import org.redisson.core.RLock;
@@ -40,8 +35,6 @@ import org.springframework.cache.support.SimpleValueWrapper;
  */
 public class RedissonCache implements Cache {
 
-    private final ConcurrentMap<Object, Lock> valueLoaderLocks = new ConcurrentHashMap<Object, Lock>();
-    
     private RMapCache<Object, Object> mapCache;
 
     private final RMap<Object, Object> map;
@@ -130,18 +123,6 @@ public class RedissonCache implements Cache {
         return new SimpleValueWrapper(value);
     }
 
-    public Lock getLock(Object key) {
-        Lock lock = valueLoaderLocks.get(key);
-        if (lock == null) {
-            Lock newlock = new ReentrantLock();
-            lock = valueLoaderLocks.putIfAbsent(key, newlock);
-            if (lock == null) {
-                lock = newlock;
-            }
-        }
-        return lock;
-    }
-    
     public <T> T get(Object key, Callable<T> valueLoader) {
         Object value = map.get(key);
         if (value == null) {

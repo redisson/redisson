@@ -291,8 +291,10 @@ public class MasterSlaveEntry {
                 this.config.getSlaveSubscriptionConnectionMinimumIdleSize(),
                 this.config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, mode);
         if (freezed) {
-            entry.setFreezed(freezed);
-            entry.setFreezeReason(FreezeReason.SYSTEM);
+            synchronized (entry) {
+                entry.setFreezed(freezed);
+                entry.setFreezeReason(FreezeReason.SYSTEM);
+            }
         }
         return slaveBalancer.add(entry);
     }
@@ -350,8 +352,10 @@ public class MasterSlaveEntry {
 
     public void unfreeze() {
         masterEntry.resetFailedAttempts();
-        masterEntry.setFreezed(false);
-        masterEntry.setFreezeReason(null);
+        synchronized (masterEntry) {
+            masterEntry.setFreezed(false);
+            masterEntry.setFreezeReason(null);
+        }
     }
 
     public void shutdownMasterAsync() {
