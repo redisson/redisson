@@ -29,6 +29,7 @@ import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.StatusListener;
+import org.redisson.misc.ReclosableLatch;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -69,7 +70,7 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
 
     @Override
     public Publisher<Integer> addListener(StatusListener listener) {
-        return addListener(new PubSubStatusListener(listener, name));
+        return addListener(new PubSubStatusListener<Object>(listener, name));
     };
 
     @Override
@@ -78,7 +79,7 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
         return addListener(pubSubListener);
     }
 
-    private Publisher<Integer> addListener(final RedisPubSubListener<M> pubSubListener) {
+    private Publisher<Integer> addListener(final RedisPubSubListener<?> pubSubListener) {
         final Promise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
         Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
         future.addListener(new FutureListener<PubSubConnectionEntry>() {
@@ -102,7 +103,9 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
         if (entry == null) {
             return;
         }
-        synchronized (entry) {
+        
+        entry.lock();
+        try {
             if (entry.isActive()) {
                 entry.removeListener(name, listenerId);
                 if (!entry.hasListeners(name)) {
@@ -110,6 +113,8 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
                 }
                 return;
             }
+        } finally {
+            entry.unlock();
         }
 
         // listener has been re-attached

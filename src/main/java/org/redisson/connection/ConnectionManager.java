@@ -91,9 +91,9 @@ public interface ConnectionManager {
 
     PubSubConnectionEntry getPubSubEntry(String channelName);
 
-    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec);
+    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener);
 
-    Future<Codec> unsubscribe(String channelName);
+    Codec unsubscribe(String channelName);
 
     Codec punsubscribe(String channelName);
 

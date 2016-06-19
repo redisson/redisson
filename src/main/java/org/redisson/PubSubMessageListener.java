@@ -26,7 +26,7 @@ import org.redisson.core.MessageListener;
  * @param <K>
  * @param <V>
  */
-public class PubSubMessageListener<V> implements RedisPubSubListener<V> {
+public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
 
     private final MessageListener<V> listener;
     private final String name;
@@ -67,18 +67,18 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<V> {
     }
 
     @Override
-    public void onMessage(String channel, V message) {
+    public void onMessage(String channel, Object message) {
         // could be subscribed to multiple channels
         if (name.equals(channel)) {
-            listener.onMessage(channel, message);
+            listener.onMessage(channel, (V)message);
         }
     }
 
     @Override
-    public void onPatternMessage(String pattern, String channel, V message) {
+    public void onPatternMessage(String pattern, String channel, Object message) {
         // could be subscribed to multiple channels
         if (name.equals(pattern)) {
-            listener.onMessage(channel, message);
+            listener.onMessage(channel, (V)message);
         }
     }
 

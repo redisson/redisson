@@ -23,22 +23,28 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.SubscribeListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
+
+import io.netty.util.concurrent.Future;
 
 public class PubSubConnectionEntry {
 
     public enum Status {ACTIVE, INACTIVE}
 
+    private ReentrantLock lock = new ReentrantLock();
     private volatile Status status = Status.ACTIVE;
     private final Semaphore subscribedChannelsAmount;
     private final RedisPubSubConnection conn;
     private final int subscriptionsPerConnection;
 
+    private final ConcurrentMap<String, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<String, SubscribeListener>();
     private final ConcurrentMap<String, Queue<RedisPubSubListener>> channelListeners = new ConcurrentHashMap<String, Queue<RedisPubSubListener>>();
 
     public PubSubConnectionEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
@@ -57,7 +63,7 @@ public class PubSubConnectionEntry {
         if (result == null) {
             return Collections.emptyList();
         }
-        return new ArrayList<RedisPubSubListener>(result);
+        return result;
     }
 
     public void addListener(String channelName, RedisPubSubListener<?> listener) {
@@ -90,14 +96,15 @@ public class PubSubConnectionEntry {
     }
 
     // TODO optimize
-    public void removeListener(String channelName, int listenerId) {
+    public boolean removeListener(String channelName, int listenerId) {
         Queue<RedisPubSubListener> listeners = channelListeners.get(channelName);
         for (RedisPubSubListener listener : listeners) {
             if (System.identityHashCode(listener) == listenerId) {
                 removeListener(channelName, listener);
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     private void removeListener(String channelName, RedisPubSubListener listener) {
@@ -126,28 +133,45 @@ public class PubSubConnectionEntry {
         conn.psubscribe(codec, pattern);
     }
 
-    public void subscribe(Codec codec, RedisPubSubListener listener, String channel) {
-        addListener(channel, listener);
-        conn.subscribe(codec, channel);
+    private SubscribeListener addSubscribeListener(String channel, PubSubType type) {
+        SubscribeListener subscribeListener = new SubscribeListener(channel, type);
+        SubscribeListener oldSubscribeListener = subscribeChannelListeners.putIfAbsent(channel, subscribeListener);
+        if (oldSubscribeListener != null) {
+            return oldSubscribeListener;
+        } else {
+            conn.addListener(subscribeListener);
+            return subscribeListener;
+        }
     }
 
-    public void unsubscribe(final String channel, RedisPubSubListener listener) {
-        conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
+    public Future<Void> getSubscribeFuture(String channel, PubSubType type) {
+        SubscribeListener listener = subscribeChannelListeners.get(channel);
+        if (listener == null) {
+            listener = addSubscribeListener(channel, type);
+        }
+        return listener.getSuccessFuture();
+    }
+    
+    public void unsubscribe(final String channel, final RedisPubSubListener listener) {
+        conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
                 if (type == PubSubType.UNSUBSCRIBE && channel.equals(ch)) {
                     removeListeners(channel);
+                    listener.onStatus(type, channel);
+                    conn.removeListener(this);
                     return true;
                 }
                 return false;
             }
 
         });
-        conn.addOneShotListener(listener);
         conn.unsubscribe(channel);
     }
 
-    private void removeListeners(String channel) {
+    public void removeListeners(String channel) {
+        SubscribeListener s = subscribeChannelListeners.remove(channel);
+        conn.removeListener(s);
         Queue<RedisPubSubListener> queue = channelListeners.get(channel);
         if (queue != null) {
             synchronized (queue) {
@@ -160,18 +184,19 @@ public class PubSubConnectionEntry {
         subscribedChannelsAmount.release();
     }
 
-    public void punsubscribe(final String channel, RedisPubSubListener listener) {
-        conn.addOneShotListener(new BaseRedisPubSubListener<Object>() {
+    public void punsubscribe(final String channel, final RedisPubSubListener listener) {
+        conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
                 if (type == PubSubType.PUNSUBSCRIBE && channel.equals(ch)) {
                     removeListeners(channel);
+                    listener.onStatus(type, channel);
+                    conn.removeListener(this);
                     return true;
                 }
                 return false;
             }
         });
-        conn.addOneShotListener(listener);
         conn.punsubscribe(channel);
     }
 
@@ -186,6 +211,14 @@ public class PubSubConnectionEntry {
 
     public RedisPubSubConnection getConnection() {
         return conn;
+    }
+    
+    public void lock() {
+        lock.lock();
+    }
+    
+    public void unlock() {
+        lock.unlock();
     }
 
 }

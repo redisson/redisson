@@ -156,24 +156,24 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 RedisPubSubConnection pubsub = future.getNow();
-                pubsub.addListener(new BaseRedisPubSubListener<String>() {
+                pubsub.addListener(new BaseRedisPubSubListener() {
 
                     @Override
-                    public void onMessage(String channel, String msg) {
+                    public void onMessage(String channel, Object msg) {
                         if ("+sentinel".equals(channel)) {
-                            onSentinelAdded(cfg, msg, c);
+                            onSentinelAdded(cfg, (String) msg, c);
                         }
                         if ("+slave".equals(channel)) {
-                            onSlaveAdded(addr, msg);
+                            onSlaveAdded(addr, (String) msg);
                         }
                         if ("+sdown".equals(channel)) {
-                            onNodeDown(addr, msg);
+                            onNodeDown(addr, (String) msg);
                         }
                         if ("-sdown".equals(channel)) {
-                            onNodeUp(addr, msg);
+                            onNodeUp(addr, (String) msg);
                         }
                         if ("+switch-master".equals(channel)) {
-                            onMasterChange(cfg, addr, msg);
+                            onMasterChange(cfg, addr, (String) msg);
                         }
                     }
 

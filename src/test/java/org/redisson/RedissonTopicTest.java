@@ -1,20 +1,34 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.After;
 import org.junit.AfterClass;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.core.BaseStatusListener;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RSet;
 import org.redisson.core.RTopic;
+import org.redisson.core.StatusListener;
+
+import com.jayway.awaitility.Awaitility;
+import com.jayway.awaitility.Duration;
 
 public class RedissonTopicTest {
 
@@ -79,8 +93,124 @@ public class RedissonTopicTest {
         }
 
     }
+    
+    @Test
+    public void testConcurrentTopic() throws Exception {
+        RedissonClient redisson = BaseTest.createInstance();
+        
+        int threads = 30;
+        int loops = 50000;
+        
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        List<Future<?>> futures = new ArrayList<>(); 
+        for (int i = 0; i < threads; i++) {
 
-    @Test(timeout = 300 * 1000)
+            Runnable worker = new Runnable() {
+
+                @Override
+                public void run() {
+                    for (int j = 0; j < loops; j++) {
+                        RTopic<String> t = redisson.getTopic("PUBSUB_" + j);
+                        int listenerId = t.addListener(new StatusListener() {
+                            @Override
+                            public void onUnsubscribe(String channel) {
+                            }
+                            
+                            @Override
+                            public void onSubscribe(String channel) {
+                            }
+                        });
+                        t.publish("message");
+                        t.removeListener(listenerId);
+                    }
+                }
+            };
+            Future<?> s = executor.submit(worker);
+            futures.add(s);
+        }
+        executor.shutdown();
+        Assert.assertTrue(executor.awaitTermination(threads * loops * 1000, TimeUnit.SECONDS));
+
+        for (Future<?> future : futures) {
+            future.get();
+        }
+        
+        redisson.shutdown();
+    }
+
+
+    @Test
+    public void testCommandsOrdering() throws InterruptedException {
+        RedissonClient redisson1 = BaseTest.createInstance();
+        RTopic<Long> topic1 = redisson1.getTopic("topic", LongCodec.INSTANCE);
+        AtomicBoolean stringMessageReceived = new AtomicBoolean();
+        topic1.addListener((channel, msg) -> {
+            assertThat(msg).isEqualTo(123);
+            stringMessageReceived.set(true);
+        });
+        topic1.publish(123L);
+
+        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+
+        redisson1.shutdown();
+    }
+
+    @Test
+    public void testTopicState() throws InterruptedException {
+        RedissonClient redisson = BaseTest.createInstance();
+        
+        RTopic<String> stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
+        for (int i = 0; i < 3; i++) {
+            AtomicBoolean stringMessageReceived = new AtomicBoolean();
+            int listenerId = stringTopic.addListener(new MessageListener<String>() {
+                @Override
+                public void onMessage(String channel, String msg) {
+                    assertThat(msg).isEqualTo("testmsg");
+                    stringMessageReceived.set(true);
+                }
+            });
+            stringTopic.publish("testmsg");
+            
+            Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+            
+            stringTopic.removeListener(listenerId);
+        }
+        
+        redisson.shutdown();
+    }
+    
+    @Test
+    public void testMultiTypeConnection() throws InterruptedException {
+        RedissonClient redisson = BaseTest.createInstance();
+        
+        RTopic<String> stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
+        AtomicBoolean stringMessageReceived = new AtomicBoolean();
+        stringTopic.addListener(new MessageListener<String>() {
+            @Override
+            public void onMessage(String channel, String msg) {
+                assertThat(msg).isEqualTo("testmsg");
+                stringMessageReceived.set(true);
+            }
+        });
+        stringTopic.publish("testmsg");
+        
+        RTopic<Long> longTopic = redisson.getTopic("test2", LongCodec.INSTANCE);
+        AtomicBoolean longMessageReceived = new AtomicBoolean();
+        longTopic.addListener(new MessageListener<Long>() {
+
+            @Override
+            public void onMessage(String channel, Long msg) {
+                assertThat(msg).isEqualTo(1L);
+                longMessageReceived.set(true);
+            }
+        });
+        longTopic.publish(1L);
+        
+        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(longMessageReceived);
+    }
+    
+    @Test
     public void testSyncCommands() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         RTopic<String> topic = redisson.getTopic("system_bus");
@@ -99,7 +229,7 @@ public class RedissonTopicTest {
         redisson.shutdown();
     }
     
-    @Test(timeout = 300 * 1000)
+    @Test
     public void testInnerPublish() throws InterruptedException {
 
         RedissonClient redisson1 = BaseTest.createInstance();
@@ -128,7 +258,7 @@ public class RedissonTopicTest {
         redisson2.shutdown();
     }
 
-    @Test(timeout = 300 * 1000)
+    @Test
     public void testStatus() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         final RTopic<Message> topic1 = redisson.getTopic("topic1");
@@ -156,7 +286,7 @@ public class RedissonTopicTest {
         Assert.assertTrue(l.await(5, TimeUnit.SECONDS));
     }
 
-    @Test(timeout = 300 * 1000)
+    @Test
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -181,7 +311,7 @@ public class RedissonTopicTest {
     }
 
 
-    @Test(timeout = 300 * 1000)
+    @Test
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -208,8 +338,7 @@ public class RedissonTopicTest {
         redisson2.shutdown();
     }
 
-
-    @Test(timeout = 300 * 1000)
+    @Test
     public void test() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(2);
 
@@ -236,7 +365,7 @@ public class RedissonTopicTest {
 
     volatile long counter;
 
-    @Test(timeout = 600 * 1000)
+    @Test
     public void testHeavyLoad() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1000);
 
@@ -268,7 +397,8 @@ public class RedissonTopicTest {
         redisson1.shutdown();
         redisson2.shutdown();
     }
-    @Test(timeout = 300 * 1000)
+    
+    @Test
     public void testListenerRemove() throws InterruptedException {
         RedissonClient redisson1 = BaseTest.createInstance();
         RTopic<Message> topic1 = redisson1.getTopic("topic");

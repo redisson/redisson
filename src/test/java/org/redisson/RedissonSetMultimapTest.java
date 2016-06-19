@@ -139,13 +139,14 @@ public class RedissonSetMultimapTest extends BaseTest {
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("1"), new SimpleValue("3"));
 
-        assertThat(map.size()).isEqualTo(2);
+        assertThat(map.keySize()).isEqualTo(2);
+        assertThat(map.keySet().size()).isEqualTo(2);
 
         map.fastRemove(new SimpleKey("0"));
 
         Set<SimpleValue> s = map.get(new SimpleKey("0"));
         assertThat(s).isEmpty();
-        assertThat(map.size()).isEqualTo(1);
+        assertThat(map.keySize()).isEqualTo(1);
     }
 
     @Test

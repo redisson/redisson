@@ -159,53 +159,53 @@ public class MasterSlaveEntry {
         for (String channelName : redisPubSubConnection.getChannels().keySet()) {
             PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
 
-            synchronized (pubSubEntry) {
+            pubSubEntry.lock();
+            try {
                 pubSubEntry.close();
-
+                
                 Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
                 reattachPubSubListeners(channelName, listeners);
+            } finally {
+                pubSubEntry.unlock();
             }
         }
 
         for (String channelName : redisPubSubConnection.getPatternChannels().keySet()) {
             PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
 
-            synchronized (pubSubEntry) {
+            pubSubEntry.lock();
+            try {
                 pubSubEntry.close();
-
+                
                 Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
                 reattachPatternPubSubListeners(channelName, listeners);
+            } finally {
+                pubSubEntry.unlock();
             }
         }
     }
 
     private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener> listeners) {
-        Future<Codec> unsubscribeFuture = connectionManager.unsubscribe(channelName);
-        unsubscribeFuture.addListener(new FutureListener<Codec>() {
+        Codec subscribeCodec = connectionManager.unsubscribe(channelName);
+        if (listeners.isEmpty()) {
+            return;
+        }
+        
+        Future<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null);
+        subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
+            
             @Override
-            public void operationComplete(Future<Codec> future) throws Exception {
-                if (listeners.isEmpty()) {
+            public void operationComplete(Future<PubSubConnectionEntry> future)
+                    throws Exception {
+                if (!future.isSuccess()) {
+                    log.error("Can't resubscribe topic channel: " + channelName);
                     return;
                 }
-                
-                Codec subscribeCodec = future.getNow();
-                Future<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null);
-                subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
-                    
-                    @Override
-                    public void operationComplete(Future<PubSubConnectionEntry> future)
-                            throws Exception {
-                        if (!future.isSuccess()) {
-                            log.error("Can't resubscribe topic channel: " + channelName);
-                            return;
-                        }
-                        PubSubConnectionEntry newEntry = future.getNow();
-                        for (RedisPubSubListener redisPubSubListener : listeners) {
-                            newEntry.addListener(channelName, redisPubSubListener);
-                        }
-                        log.debug("resubscribed listeners for '{}' channel", channelName);
-                    }
-                });
+                PubSubConnectionEntry newEntry = future.getNow();
+                for (RedisPubSubListener redisPubSubListener : listeners) {
+                    newEntry.addListener(channelName, redisPubSubListener);
+                }
+                log.debug("resubscribed listeners for '{}' channel", channelName);
             }
         });
     }
@@ -214,7 +214,7 @@ public class MasterSlaveEntry {
             final Collection<RedisPubSubListener> listeners) {
         Codec subscribeCodec = connectionManager.punsubscribe(channelName);
         if (!listeners.isEmpty()) {
-            Future<PubSubConnectionEntry> future = connectionManager.psubscribe(channelName, subscribeCodec);
+            Future<PubSubConnectionEntry> future = connectionManager.psubscribe(channelName, subscribeCodec, null);
             future.addListener(new FutureListener<PubSubConnectionEntry>() {
                 @Override
                 public void operationComplete(Future<PubSubConnectionEntry> future)
