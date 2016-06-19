@@ -33,6 +33,7 @@ import org.redisson.liveobject.RLiveObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.liveobject.misc.RedissonObjectFactory;
 
 /**
  * This class is going to be instantiated and becomes a <b>static</b> field of
@@ -66,7 +67,7 @@ public class AccessorInterceptor {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result instanceof RedissonReference) {
-                return createRedissonObject((RedissonReference) result, method.getReturnType());
+                return RedissonObjectFactory.create(redisson, codecProvider, (RedissonReference) result, method.getReturnType());
             }
             return result;
         }
@@ -114,31 +115,4 @@ public class AccessorInterceptor {
                 .getName();
     }
 
-    private Object createRedissonObject(RedissonReference rr, Class expected) throws Exception {
-        Class<? extends Object> type = rr.getType();
-        if (type != null) {
-            if (type.isAnnotationPresent(REntity.class)) {
-                REntity anno = type.getAnnotation(REntity.class);
-                REntity.NamingScheme ns = anno.namingScheme()
-                        .getDeclaredConstructor(Codec.class)
-                        .newInstance(codecProvider.getCodec(anno, rr.getType()));
-                return (RLiveObject) redisson.getLiveObjectService(codecProvider).get(type, ns.resolveId(rr.getKeyName()));
-            }
-            for (Method method : RedissonClient.class.getDeclaredMethods()) {
-                if (method.getName().startsWith("get")
-                        && method.getReturnType().isAssignableFrom(type)
-                        && expected.isAssignableFrom(method.getReturnType())) {
-                    if (rr.isDefaultCodec() && method.getParameterCount() == 1) {
-                        return (RObject) method.invoke(redisson, rr.getKeyName());
-                    } else if (!rr.isDefaultCodec()
-                            && method.getParameterCount() == 2
-                            && String.class.equals(method.getParameterTypes()[0])
-                            && Codec.class.equals(method.getParameterTypes()[1])) {
-                        return (RObject) method.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType()));
-                    }
-                }
-            }
-        }
-        throw new ClassNotFoundException("No RObject is found to match class type of " + rr.getTypeName() + " with codec type of " + rr.getCodecName());
-    }
 }

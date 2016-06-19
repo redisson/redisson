@@ -1,11 +1,7 @@
 package org.redisson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
 //import java.util.concurrent.TimeUnit;
@@ -17,7 +13,6 @@ import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.matcher.ElementMatchers;
-import org.redisson.codec.JsonJacksonCodec;
 //import org.redisson.core.RExpirable;
 //import org.redisson.core.RExpirableAsync;
 //import org.redisson.core.RMap;
@@ -38,8 +33,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private final Map<Class, Class> classCache;
     private final RedissonClient redisson;
-    private final ObjectMapper objectMapper = JsonJacksonCodec.INSTANCE.getObjectMapper();
+//    private final ObjectMapper detachMapper;
+//    private final ObjectMapper attachMapper;
     private final CodecProvider codecProvider;
+//    private final SimpleModule module;
 
     public RedissonLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, CodecProvider codecProvider) {
         this.redisson = redisson;
@@ -74,9 +71,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         Class<T> entityClass = (Class<T>) detachedObject.getClass();
         try {
             Class<? extends T> proxyClass = getProxyClass(entityClass);
-            String idFieldName = getRIdFieldName(detachedObject.getClass());
             return instantiateLiveObject(proxyClass,
-                    BeanUtil.pojo.getSimpleProperty(detachedObject, idFieldName));
+                    BeanUtil.pojo.getSimpleProperty(detachedObject,
+                            getRIdFieldName(detachedObject.getClass())));
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw new RuntimeException(ex);
@@ -103,10 +100,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> T detach(T attachedObject) {
         try {
-            //deep copy
-            return objectMapper.<T>convertValue(attachedObject, (Class<T>)attachedObject.getClass().getSuperclass());
+            T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
+            BeanCopy.beans(attachedObject, detached).declared(false, true).copy();
+            return detached;
         } catch (Exception ex) {
-            throw new IllegalArgumentException(ex);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -137,7 +135,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .exclude(idFieldName)
                 .copy();
     }
-    
+
     private String getRIdFieldName(Class cls) {
         return Introspectior.getFieldsWithAnnotation(cls, RId.class)
                 .getOnly()
@@ -149,17 +147,28 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         asLiveObject(instance).setLiveObjectId(id);
         return instance;
     }
-
-    private <T, K> T instantiate(Class<T> cls, K id) throws Exception {
-        T instance;
-        try {
-            instance = cls.newInstance();
-        } catch (Exception exception) {
-            instance = cls.getDeclaredConstructor(id.getClass()).newInstance(id);
+    
+    private <T, K> T instantiateDetachedObject(Class<T> cls, K id) throws Exception {
+        T instance = instantiate(cls, id);
+        if (BeanUtil.pojo.getSimpleProperty(instance, getRIdFieldName(cls)) == null) {
+            BeanUtil.pojo.setSimpleProperty(instance, getRIdFieldName(cls), id);
         }
         return instance;
     }
     
+    private <T, K> T instantiate(Class<T> cls, K id) throws Exception {
+        try {
+            return cls.newInstance();
+        } catch (Exception exception) {
+            for (Constructor<?> ctor : classCache.containsKey(cls) ? cls.getConstructors() : cls.getDeclaredConstructors()) {
+                if (ctor.getParameterCount() == 1 && ctor.getParameterTypes()[0].isAssignableFrom(id.getClass())) {
+                    return (T) ctor.newInstance(id);
+                }
+            }
+        }
+        throw new NoSuchMethodException("Unable to find constructor matching only the RId field.");
+    }
+
     private <T> Class<? extends T> getProxyClass(Class<T> entityClass) throws Exception {
         if (!classCache.containsKey(entityClass)) {
             validateClass(entityClass);
@@ -201,7 +210,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .getDeclaredFields()) {
             builder = builder.define(field);
         }
-        Class<? extends T> loaded = builder.method(ElementMatchers.isDeclaredBy(
+        
+        Class<? extends T> proxied = builder.method(ElementMatchers.isDeclaredBy(
                 Introspectior.getTypeDescription(RLiveObject.class))
                 .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())))
                 .intercept(MethodDelegation.to(
@@ -211,18 +221,18 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class)))
                 .implement(RLiveObject.class)
-                //                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
-                //                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
-                //                        .or(ElementMatchers.isDeclaredBy(RObject.class))
-                //                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
-                //                .intercept(MethodDelegation.to(ExpirableInterceptor.class))
-                //                .implement(RExpirable.class)
+//                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
+//                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
+//                        .or(ElementMatchers.isDeclaredBy(RObject.class))
+//                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+//                .intercept(MethodDelegation.to(ExpirableInterceptor.class))
+//                .implement(RExpirable.class)
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RLiveObject.class)))
-                        //                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
-                        //                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
-                        //                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObject.class)))
-                        //                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
+//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
+//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObject.class)))
+//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
@@ -231,7 +241,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();
-        classCache.putIfAbsent(entityClass, loaded);
+        classCache.putIfAbsent(entityClass, proxied);
     }
 
     public void unregisterClass(Class cls) {

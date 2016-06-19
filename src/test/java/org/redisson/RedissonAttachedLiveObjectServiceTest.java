@@ -322,12 +322,18 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     }
 
     @REntity
-    public static class TestSerializable {
+    public static class TestClass {
 
+        private String value;
+        private String code;
+        private Object content;
+        
         @RId
         private Serializable id;
 
-        private String value;
+        public TestClass(Serializable id) {
+            this.id = id;
+        }
 
         public Serializable getId() {
             return id;
@@ -339,6 +345,44 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
         public void setValue(String value) {
             this.value = value;
+        }
+
+        public String getCode() {
+            return code;
+        }
+
+        public void setCode(String code) {
+            this.code = code;
+        }
+
+        public Object getContent() {
+            return content;
+        }
+
+        public void setContent(Object content) {
+            this.content = content;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null || !(obj instanceof TestClass) || !this.getClass().equals(obj.getClass())) {
+                return false;
+            }
+            TestClass o = (TestClass) obj;
+            return Objects.equals(this.id, o.id)
+                    && Objects.equals(this.code, o.code)
+                    && Objects.equals(this.value, o.value)
+                    && Objects.equals(this.content, o.content);
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 3;
+            hash = 23 * hash + Objects.hashCode(this.value);
+            hash = 23 * hash + Objects.hashCode(this.code);
+            hash = 23 * hash + Objects.hashCode(this.id);
+            hash = 23 * hash + Objects.hashCode(this.content);
+            return hash;
         }
 
     }
@@ -386,43 +430,93 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testSerializerable() {
-        RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+        RLiveObjectService service = redisson.getLiveObjectService();
 
-        TestSerializable t = liveObjectService.get(TestSerializable.class, "55555");
+        TestClass t = service.get(TestClass.class, "55555");
         assertTrue(Objects.equals("55555", t.getId()));
-        
-        t = liveObjectService.get(TestSerializable.class, 90909l);
+
+        t = service.get(TestClass.class, 90909l);
         assertTrue(Objects.equals(90909l, t.getId()));
-        
-        t = liveObjectService.get(TestSerializable.class, 90909);
+
+        t = service.get(TestClass.class, 90909);
         assertTrue(Objects.equals(90909, t.getId()));
-        
-        t = liveObjectService.get(TestSerializable.class, new ObjectId(9090909));
+
+        t = service.get(TestClass.class, new ObjectId(9090909));
         assertTrue(Objects.equals(new ObjectId(9090909), t.getId()));
-        
-        t = liveObjectService.get(TestSerializable.class, new Byte("0"));
+
+        t = service.get(TestClass.class, new Byte("0"));
         assertEquals(new Byte("0"), Byte.valueOf(t.getId().toString()));
-        
-        t = liveObjectService.get(TestSerializable.class, (byte) 90);
+
+        t = service.get(TestClass.class, (byte) 90);
         assertEquals((byte) 90, Byte.parseByte(t.getId().toString()));
 
-        t = liveObjectService.get(TestSerializable.class, Arrays.asList(1, 2, 3, 4));
+        t = service.get(TestClass.class, Arrays.asList(1, 2, 3, 4));
         List<Integer> l = new ArrayList();
         l.addAll(Arrays.asList(1, 2, 3, 4));
         assertTrue(l.removeAll((List) t.getId()));
         assertTrue(l.isEmpty());
-        
+
         try {
-            liveObjectService.get(TestSerializable.class, new int[]{1, 2, 3, 4, 5});
+            service.get(TestClass.class, new int[]{1, 2, 3, 4, 5});
         } catch (Exception e) {
             assertEquals("RId value cannot be an array.", e.getCause().getMessage());
         }
-        
+
         try {
-            liveObjectService.get(TestSerializable.class, new byte[]{1, 2, 3, 4, 5});
+            service.get(TestClass.class, new byte[]{1, 2, 3, 4, 5});
         } catch (Exception e) {
             assertEquals("RId value cannot be an array.", e.getCause().getMessage());
         }
     }
 
+    @Test
+    public void testPersist() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass ts = new TestClass(new ObjectId(100));
+        ts.setValue("VALUE");
+        TestClass persisted = service.persist(ts);
+        assertEquals(new ObjectId(100), persisted.getId());
+        assertEquals("VALUE", persisted.getValue());
+        try {
+            service.persist(ts);
+        } catch (Exception e) {
+            assertEquals("This REntity already exists.", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testMerge() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass ts = new TestClass(new ObjectId(100));
+        ts.setValue("VALUE");
+        TestClass merged = service.merge(ts);
+        assertEquals(new ObjectId(100), merged.getId());
+        assertEquals("VALUE", merged.getValue());
+        try {
+            service.persist(ts);
+        } catch (Exception e) {
+            assertEquals("This REntity already exists.", e.getMessage());
+        }
+        ts = new TestClass(new ObjectId(100));
+        ts.setCode("CODE");
+        merged = service.merge(ts);
+        assertNull(ts.getValue());
+        assertEquals("VALUE", merged.getValue());
+        assertEquals("CODE", merged.getCode());
+    }
+
+    @Test
+    public void testDetach() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass ts = new TestClass(new ObjectId(100));
+        ts.setValue("VALUE");
+        ts.setCode("CODE");
+        TestClass merged = service.merge(ts);
+        assertEquals("VALUE", merged.getValue());
+        assertEquals("CODE", merged.getCode());
+        TestClass detach = service.detach(merged);
+        assertEquals(ts, detach);
+    }
+    
+    
 }
