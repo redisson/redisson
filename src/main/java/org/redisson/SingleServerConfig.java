@@ -38,7 +38,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * Redis subscription connection maximum pool size
      *
      */
-    private int subscriptionConnectionPoolSize = 25;
+    private int subscriptionConnectionPoolSize = 50;
 
     /**
      * Minimum idle Redis connection amount
@@ -100,7 +100,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Redis subscription-connection pool size limit
-     * Default is 25
+     * Default is 50
      *
      * @param connectionPoolSize
      * @return
