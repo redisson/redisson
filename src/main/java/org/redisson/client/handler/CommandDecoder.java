@@ -71,10 +71,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     // It is not needed to use concurrent map because responses are coming consecutive
     private final Map<String, MultiDecoder<Object>> pubSubMessageDecoders = new HashMap<String, MultiDecoder<Object>>();
-    private final Map<String, CommandData<Object, Object>> pubSubChannels = PlatformDependent.newConcurrentHashMap();
+    private final Map<PubSubKey, CommandData<Object, Object>> pubSubChannels = PlatformDependent.newConcurrentHashMap();
 
     public void addPubSubCommand(String channel, CommandData<Object, Object> data) {
-        pubSubChannels.put(channel, data);
+        String operation = data.getCommand().getName().toLowerCase();
+        pubSubChannels.put(new PubSubKey(channel, operation), data);
     }
 
     @Override
@@ -313,13 +314,15 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             Channel channel, Object result) {
         if (result instanceof PubSubStatusMessage) {
             String channelName = ((PubSubStatusMessage) result).getChannel();
-            CommandData<Object, Object> d = pubSubChannels.get(channelName);
+            String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
+            PubSubKey key = new PubSubKey(channelName, operation);
+            CommandData<Object, Object> d = pubSubChannels.get(key);
             if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(d.getCommand().getName())) {
-                pubSubChannels.remove(channelName);
+                pubSubChannels.remove(key);
                 pubSubMessageDecoders.put(channelName, d.getMessageDecoder());
             }
             if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(d.getCommand().getName())) {
-                pubSubChannels.remove(channelName);
+                pubSubChannels.remove(key);
                 pubSubMessageDecoders.remove(channelName);
             }
         }
@@ -353,9 +356,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts, Channel channel) {
         if (data == null) {
-            if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(parts.get(0))) {
-                String channelName = (String) parts.get(1);
-                CommandData<Object, Object> commandData = pubSubChannels.get(channelName);
+            String command = parts.get(0).toString();
+            if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(command)) {
+                String channelName = parts.get(1).toString();
+                PubSubKey key = new PubSubKey(channelName, command);
+                CommandData<Object, Object> commandData = pubSubChannels.get(key);
                 if (commandData == null) {
                     return null;
                 }

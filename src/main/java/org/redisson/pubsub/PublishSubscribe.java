@@ -23,6 +23,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.PubSubConnectionEntry;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
@@ -38,7 +39,13 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 // just an assertion
                 boolean removed = entries.remove(entryName) == entry;
                 if (removed) {
-                    connectionManager.unsubscribe(channelName).syncUninterruptibly();
+                    PubSubConnectionEntry e = connectionManager.getPubSubEntry(channelName);
+                    e.lock();
+                    try {
+                        connectionManager.unsubscribe(channelName);
+                    } finally {
+                        e.unlock();
+                    }
                 }
             }
         }
@@ -66,7 +73,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 return oldValue.getPromise();
             }
 
-            RedisPubSubListener<Long> listener = createListener(channelName, value);
+            RedisPubSubListener<Object> listener = createListener(channelName, value);
             connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener);
             return newPromise;
         }
@@ -76,16 +83,16 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     protected abstract void onMessage(E value, Long message);
 
-    private RedisPubSubListener<Long> createListener(final String channelName, final E value) {
-        RedisPubSubListener<Long> listener = new BaseRedisPubSubListener<Long>() {
+    private RedisPubSubListener<Object> createListener(final String channelName, final E value) {
+        RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
 
             @Override
-            public void onMessage(String channel, Long message) {
+            public void onMessage(String channel, Object message) {
                 if (!channelName.equals(channel)) {
                     return;
                 }
 
-                PublishSubscribe.this.onMessage(value, message);
+                PublishSubscribe.this.onMessage(value, (Long)message);
             }
 
             @Override

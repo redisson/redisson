@@ -53,7 +53,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
     @Override
     public int addListener(PatternStatusListener listener) {
-        return addListener(new PubSubPatternStatusListener(listener, name));
+        return addListener(new PubSubPatternStatusListener<Object>(listener, name));
     };
 
     @Override
@@ -62,18 +62,10 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
         return addListener(pubSubListener);
     }
 
-    private int addListener(RedisPubSubListener<M> pubSubListener) {
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().psubscribe(name, codec);
+    private int addListener(RedisPubSubListener<?> pubSubListener) {
+        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().psubscribe(name, codec, pubSubListener);
         future.syncUninterruptibly();
-        PubSubConnectionEntry entry = future.getNow();
-        synchronized (entry) {
-            if (entry.isActive()) {
-                entry.addListener(name, pubSubListener);
-                return System.identityHashCode(pubSubListener);
-            }
-        }
-        // entry is inactive trying add again
-        return addListener(pubSubListener);
+        return System.identityHashCode(pubSubListener);
     }
 
     @Override
@@ -82,17 +74,21 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
         if (entry == null) {
             return;
         }
-        synchronized (entry) {
+        
+        entry.lock();
+        try {
             if (entry.isActive()) {
                 entry.removeListener(name, listenerId);
-                if (entry.getListeners(name).isEmpty()) {
+                if (!entry.hasListeners(name)) {
                     commandExecutor.getConnectionManager().punsubscribe(name);
                 }
                 return;
             }
+        } finally {
+            entry.unlock();
         }
 
-        // entry is inactive trying add again
+        // listener has been re-attached
         removeListener(listenerId);
     }
 

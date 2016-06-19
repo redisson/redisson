@@ -72,7 +72,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
     }
 
     private void addListener(final RedisPubSubListener<M> pubSubListener, final Promise<Integer> promise) {
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().psubscribe(name, codec);
+        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().psubscribe(name, codec, pubSubListener);
         future.addListener(new FutureListener<PubSubConnectionEntry>() {
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
@@ -82,12 +82,15 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
                 }
 
                 PubSubConnectionEntry entry = future.getNow();
-                synchronized (entry) {
+                entry.lock();
+                try {
                     if (entry.isActive()) {
                         entry.addListener(name, pubSubListener);
                         promise.setSuccess(pubSubListener.hashCode());
                         return;
                     }
+                } finally {
+                    entry.unlock();
                 }
                 addListener(pubSubListener, promise);
             }
@@ -100,14 +103,18 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
         if (entry == null) {
             return;
         }
-        synchronized (entry) {
+        
+        entry.lock();
+        try {
             if (entry.isActive()) {
                 entry.removeListener(name, listenerId);
-                if (entry.getListeners(name).isEmpty()) {
+                if (!entry.hasListeners(name)) {
                     commandExecutor.getConnectionManager().punsubscribe(name);
                 }
                 return;
             }
+        } finally {
+            entry.unlock();
         }
 
         // entry is inactive trying add again

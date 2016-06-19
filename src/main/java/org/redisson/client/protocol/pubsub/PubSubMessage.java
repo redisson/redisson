@@ -15,12 +15,12 @@
  */
 package org.redisson.client.protocol.pubsub;
 
-public class PubSubMessage<V> implements Message {
+public class PubSubMessage implements Message {
 
     private final String channel;
-    private final V value;
+    private final Object value;
 
-    public PubSubMessage(String channel, V value) {
+    public PubSubMessage(String channel, Object value) {
         super();
         this.channel = channel;
         this.value = value;
@@ -30,7 +30,7 @@ public class PubSubMessage<V> implements Message {
         return channel;
     }
 
-    public V getValue() {
+    public Object getValue() {
         return value;
     }
 

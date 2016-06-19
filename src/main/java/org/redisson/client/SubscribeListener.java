@@ -17,19 +17,31 @@ package org.redisson.client;
 
 import org.redisson.client.protocol.pubsub.PubSubType;
 
-public class BaseRedisPubSubListener implements RedisPubSubListener<Object> {
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.ImmediateEventExecutor;
+import io.netty.util.concurrent.Promise;
 
-    @Override
+public class SubscribeListener extends BaseRedisPubSubListener {
+
+    Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+    String name;
+    PubSubType type;
+
+    public SubscribeListener(String name, PubSubType type) {
+        super();
+        this.name = name;
+        this.type = type;
+    }
+
     public boolean onStatus(PubSubType type, String channel) {
-        return false;
+        if (name.equals(channel) && this.type.equals(type)) {
+            promise.trySuccess(null);
+        }
+        return true;
     }
 
-    @Override
-    public void onMessage(String channel, Object message) {
+    public Future<Void> getSuccessFuture() {
+        return promise;
     }
-
-    @Override
-    public void onPatternMessage(String pattern, String channel, Object message) {
-    }
-
+    
 }

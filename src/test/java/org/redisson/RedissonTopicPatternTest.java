@@ -1,20 +1,25 @@
 package org.redisson;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.After;
 import org.junit.AfterClass;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.core.BasePatternStatusListener;
-import org.redisson.core.MessageListener;
-import org.redisson.core.PatternMessageListener;
+import org.redisson.core.PatternStatusListener;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RTopic;
+import org.redisson.core.StatusListener;
 
 public class RedissonTopicPatternTest {
 
@@ -84,7 +89,7 @@ public class RedissonTopicPatternTest {
         }
     }
 
-    @Test(timeout = 300 * 1000)
+    @Test
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -109,7 +114,7 @@ public class RedissonTopicPatternTest {
         redisson.shutdown();
     }
 
-    @Test(timeout = 300 * 1000)
+    @Test
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
@@ -141,7 +146,7 @@ public class RedissonTopicPatternTest {
         redisson2.shutdown();
     }
 
-    @Test(timeout = 600 * 1000)
+    @Test
     public void test() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(5);
 
@@ -184,7 +189,7 @@ public class RedissonTopicPatternTest {
         redisson2.shutdown();
     }
 
-    @Test(timeout = 300 * 1000)
+    @Test
     public void testListenerRemove() throws InterruptedException {
         RedissonClient redisson1 = BaseTest.createInstance();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
@@ -205,10 +210,55 @@ public class RedissonTopicPatternTest {
         topic1.removeListener(id);
         topic2.publish(new Message("123"));
 
-        Thread.sleep(1000);
-
         redisson1.shutdown();
         redisson2.shutdown();
     }
 
+    @Test
+    public void testConcurrentTopic() throws Exception {
+        Config config = BaseTest.createConfig();
+        config.useSingleServer().setSubscriptionConnectionPoolSize(100);
+        RedissonClient redisson = Redisson.create(config);
+        
+        int threads = 30;
+        int loops = 50000;
+        
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        List<Future<?>> futures = new ArrayList<>(); 
+        for (int i = 0; i < threads; i++) {
+
+            Runnable worker = new Runnable() {
+
+                @Override
+                public void run() {
+                    for (int j = 0; j < loops; j++) {
+                        RPatternTopic<String> t = redisson.getPatternTopic("PUBSUB*");
+                        int listenerId = t.addListener(new PatternStatusListener() {
+                            @Override
+                            public void onPUnsubscribe(String channel) {
+                            }
+                            
+                            @Override
+                            public void onPSubscribe(String channel) {
+                            }
+                        });
+                        redisson.getTopic("PUBSUB_" + j).publish("message");
+                        t.removeListener(listenerId);
+                    }
+                }
+            };
+            Future<?> s = executor.submit(worker);
+            futures.add(s);
+        }
+        executor.shutdown();
+        Assert.assertTrue(executor.awaitTermination(threads * loops * 1000, TimeUnit.SECONDS));
+
+        for (Future<?> future : futures) {
+            future.get();
+        }
+        
+        redisson.shutdown();
+    }
+
+    
 }
