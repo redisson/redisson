@@ -138,7 +138,7 @@ public interface RLiveObjectService {
     <T> void remove(T attachedObject);
 
     /**
-     * Deletes object by class and id including all nested objects
+     * Deletes object by class and id including all nested objects.
      *
      * @param <T> Entity type
      * @param <K> Key type
@@ -148,7 +148,8 @@ public interface RLiveObjectService {
     <T, K> void remove(Class<T> entityClass, K id);
 
     /**
-     *
+     * To cast the instance to RLiveObject instance.
+     * 
      * @param <T>
      * @param instance
      * @return
@@ -156,7 +157,8 @@ public interface RLiveObjectService {
     <T> RLiveObject asLiveObject(T instance);
 
     /**
-     *
+     * Returns true if the instance is a instance of RLiveObject.
+     * 
      * @param <T>
      * @param instance
      * @return
@@ -164,9 +166,26 @@ public interface RLiveObjectService {
     <T> boolean isLiveObject(T instance);
     
     /**
+     * Returns true if the RLiveObject does not yet exist in redis. Also true if
+     * the passed object is not a RLiveObject.
+     * 
+     * @param <T>
+     * @param instance
+     * @return
+     */
+    <T> boolean isPhantom(T instance);
+    
+    /**
      * Pre register the class with the service, registering all the classes on
      * startup can speed up the instance creation. This is <b>NOT</b> mandatory
      * since the class will also be registered lazyly when it first is used.
+     * 
+     * All classed registered with the service is stored in a class cache.
+     * 
+     * The cache is independent between different RedissonClient instances. When
+     * a class is registered in one RLiveObjectService instance it is also
+     * accessible in another RLiveObjectService instance so long as they are 
+     * created by the same RedissonClient instance.
      * 
      * @param cls 
      */
@@ -180,8 +199,29 @@ public interface RLiveObjectService {
      * errors during proxying or creating the object, since those errors are not
      * recoverable.
      * 
+     * All classed registered with the service is stored in a class cache.
+     * 
+     * The cache is independent between different RedissonClient instances. When
+     * a class is registered in one RLiveObjectService instance it is also 
+     * accessible in another RLiveObjectService instance so long as they are 
+     * created by the same RedissonClient instance.
+     * 
      * @param cls It can be either the proxied class or the unproxied conterpart.
      */
     void unregisterClass(Class cls);
     
+    /**
+     * Check if the class is registered in the cache. 
+     * 
+     * All classed registered with the service is stored in a class cache.
+     * 
+     * The cache is independent between different RedissonClient instances. When
+     * a class is registered in one RLiveObjectService instance it is also 
+     * accessible in another RLiveObjectService instance so long as they are 
+     * created by the same RedissonClient instance.
+     * 
+     * @param cls
+     * @return 
+     */
+    boolean isClassRegistered(Class cls);
 }

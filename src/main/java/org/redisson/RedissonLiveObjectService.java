@@ -1,3 +1,18 @@
+/**
+ * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.redisson;
 
 import java.lang.reflect.Constructor;
@@ -143,8 +158,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public void unregisterClass(Class cls) {
-        classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
+    public <T> boolean isPhantom(T instance) {
+        return !(instance instanceof RLiveObject) || asLiveObject(instance).isPhantom();
     }
 
     @Override
@@ -153,6 +168,16 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             validateClass(cls);
             registerClassInternal(cls);
         }
+    }
+    
+    @Override
+    public void unregisterClass(Class cls) {
+        classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
+    }
+
+    @Override
+    public boolean isClassRegistered(Class cls) {
+        return classCache.containsKey(cls) || classCache.containsValue(cls);
     }
     
     private <T> void copy(T detachedObject, T attachedObject) {
@@ -200,7 +225,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         registerClass(entityClass);
         return classCache.get(entityClass);
     }
-
+    
     private <T> void validateClass(Class<T> entityClass) {
         if (entityClass.isAnonymousClass() || entityClass.isLocalClass()) {
             throw new IllegalArgumentException(entityClass.getName() + " is not publically accessable.");
@@ -255,7 +280,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
         Class<? extends T> proxied = builder.method(ElementMatchers.isDeclaredBy(
                 Introspectior.getTypeDescription(RLiveObject.class))
-                .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())))
+                .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())
+                        .or(ElementMatchers.named("isPhantom"))
+                        .or(ElementMatchers.named("delete"))))
                 .intercept(MethodDelegation.to(
                                 new LiveObjectInterceptor(redisson, codecProvider, entityClass,
                                         getRIdFieldName(entityClass)))

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.redisson.core.RMap;
@@ -299,6 +300,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         TestREntity t1 = s.<TestREntity, String>getOrCreate(TestREntity.class, "1");
         try {
             s.<TestREntityIdNested, TestREntity>getOrCreate(TestREntityIdNested.class, t1);
+            fail("Should not be here");
         } catch (Exception e) {
             assertEquals("Field with RId annotation cannot be a type of which class is annotated with REntity.", e.getCause().getMessage());
         }
@@ -327,7 +329,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         private String value;
         private String code;
         private Object content;
-        
+
         @RId
         private Serializable id;
 
@@ -458,12 +460,14 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
 
         try {
             service.getOrCreate(TestClass.class, new int[]{1, 2, 3, 4, 5});
+            fail("Should not be here");
         } catch (Exception e) {
             assertEquals("RId value cannot be an array.", e.getCause().getMessage());
         }
 
         try {
             service.getOrCreate(TestClass.class, new byte[]{1, 2, 3, 4, 5});
+            fail("Should not be here");
         } catch (Exception e) {
             assertEquals("RId value cannot be an array.", e.getCause().getMessage());
         }
@@ -479,6 +483,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         assertEquals("VALUE", persisted.getValue());
         try {
             service.persist(ts);
+            fail("Should not be here");
         } catch (Exception e) {
             assertEquals("This REntity already exists.", e.getMessage());
         }
@@ -517,6 +522,116 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         TestClass detach = service.detach(merged);
         assertEquals(ts, detach);
     }
-    
-    
+
+    @Test
+    public void testIsPhantom() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        assertTrue(service.isPhantom(new Object()));
+        TestClass ts = new TestClass(new ObjectId(100));
+        assertTrue(service.isPhantom(service.get(TestClass.class, new ObjectId(100))));
+        assertTrue(service.isPhantom(ts));
+        ts.setValue("VALUE");
+        ts.setCode("CODE");
+        TestClass persisted = service.persist(ts);
+        assertFalse(service.isPhantom(service.get(TestClass.class, new ObjectId(100))));
+        assertTrue(service.isPhantom(ts));
+        assertFalse(service.isPhantom(persisted));
+    }
+
+    @Test
+    public void testIsLiveObject() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass ts = new TestClass(new ObjectId(100));
+        assertFalse(service.isLiveObject(ts));
+        TestClass persisted = service.persist(ts);
+        assertFalse(service.isLiveObject(ts));
+        assertTrue(service.isLiveObject(persisted));
+    }
+
+    @Test
+    public void testAsLiveObject() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass instance = service.getOrCreate(TestClass.class, new ObjectId(100));
+        RLiveObject liveObject = service.asLiveObject(instance);
+        assertEquals(new ObjectId(100), liveObject.getLiveObjectId());
+        try {
+            service.asLiveObject(new Object());
+            fail("Should not be here");
+        } catch (Exception e) {
+            assertTrue(e instanceof ClassCastException);
+        }
+    }
+
+    @Test
+    public void testClassRegistration() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        service.registerClass(TestClass.class);
+        assertTrue(service.isClassRegistered(TestClass.class));
+        RLiveObjectService newService = redisson.getLiveObjectService();
+        assertTrue(newService.isClassRegistered(TestClass.class));
+        RedissonClient newRedisson = Redisson.create(redisson.getConfig());
+        assertFalse(newRedisson.getLiveObjectService().isClassRegistered(TestClass.class));
+        newRedisson.shutdown(1, 5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testClassUnRegistration() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        service.registerClass(TestClass.class);
+        assertTrue(service.isClassRegistered(TestClass.class));
+        RLiveObjectService newService = redisson.getLiveObjectService();
+        RedissonClient newRedisson = Redisson.create(redisson.getConfig());
+        newRedisson.getLiveObjectService().registerClass(TestClass.class);
+        newService.unregisterClass(TestClass.class);
+        assertFalse(service.isClassRegistered(TestClass.class));
+        assertFalse(newService.isClassRegistered(TestClass.class));
+        assertTrue(newRedisson.getLiveObjectService().isClassRegistered(TestClass.class));
+        assertFalse(service.isClassRegistered(TestClass.class));
+        assertFalse(newService.isClassRegistered(TestClass.class));
+        newRedisson.shutdown(1, 5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testGet() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        assertNull(service.get(TestClass.class, new ObjectId(100)));
+        TestClass ts = new TestClass(new ObjectId(100));
+        TestClass persisted = service.persist(ts);
+        assertNull(service.get(TestClass.class, new ObjectId(100)));
+        persisted.setCode("CODE");
+        assertNotNull(service.get(TestClass.class, new ObjectId(100)));
+    }
+
+    @Test
+    public void testGetOrCreate() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        assertNotNull(service.getOrCreate(TestClass.class, new ObjectId(100)));
+        TestClass ts = new TestClass(new ObjectId(100));
+        TestClass persisted = service.persist(ts);
+        assertNotNull(service.getOrCreate(TestClass.class, new ObjectId(100)));
+        persisted.setCode("CODE");
+        assertNotNull(service.getOrCreate(TestClass.class, new ObjectId(100)));
+    }
+
+    @Test
+    public void testRemoveByInstance() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass ts = new TestClass(new ObjectId(100));
+        ts.setCode("CODE");
+        TestClass persisted = service.persist(ts);
+        assertFalse(service.isPhantom(persisted));
+        service.remove(persisted);
+        assertTrue(service.isPhantom(persisted));
+    }
+
+    @Test
+    public void testRemoveById() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass ts = new TestClass(new ObjectId(100));
+        ts.setCode("CODE");
+        TestClass persisted = service.persist(ts);
+        assertFalse(service.isPhantom(persisted));
+        service.remove(TestClass.class, new ObjectId(100));
+        assertTrue(service.isPhantom(persisted));
+    }
 }
