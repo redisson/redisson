@@ -36,7 +36,7 @@ public class RedissonObjectFactory {
                 REntity.NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, rr.getType()));
-                return (T) redisson.getLiveObjectService(codecProvider).get(type, ns.resolveId(rr.getKeyName()));
+                return (T) redisson.getLiveObjectService(codecProvider).getOrCreate(type, ns.resolveId(rr.getKeyName()));
             }
             for (Method method : RedissonClient.class.getDeclaredMethods()) {
                 if (method.getName().startsWith("get")

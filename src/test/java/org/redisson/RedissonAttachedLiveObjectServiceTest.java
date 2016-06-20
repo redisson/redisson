@@ -239,7 +239,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     @Test
     public void testBasics() {
         RLiveObjectService s = redisson.getLiveObjectService();
-        TestREntity t = s.<TestREntity, String>get(TestREntity.class, "1");
+        TestREntity t = s.<TestREntity, String>getOrCreate(TestREntity.class, "1");
         assertEquals("1", t.getName());
         assertTrue(!redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
         t.setName("3333");
@@ -258,47 +258,47 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     @Test
     public void testLiveObjectWithCollection() {
         RLiveObjectService s = redisson.getLiveObjectService();
-        TestREntityWithMap t = s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2");
+        TestREntityWithMap t = s.<TestREntityWithMap, String>getOrCreate(TestREntityWithMap.class, "2");
         RMap<String, String> map = redisson.<String, String>getMap("testMap");
         t.setValue(map);
         map.put("field", "123");
         assertEquals("123",
-                s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2")
+                s.<TestREntityWithMap, String>getOrCreate(TestREntityWithMap.class, "2")
                 .getValue().get("field"));
-        s.get(TestREntityWithMap.class, "2").getValue().put("field", "333");
+        s.getOrCreate(TestREntityWithMap.class, "2").getValue().put("field", "333");
         assertEquals("333",
-                s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2")
+                s.<TestREntityWithMap, String>getOrCreate(TestREntityWithMap.class, "2")
                 .getValue().get("field"));
         HashMap<String, String> map2 = new HashMap<>();
         map2.put("field", "hello");
         t.setValue(map2);
         assertEquals("hello",
-                s.<TestREntityWithMap, String>get(TestREntityWithMap.class, "2")
+                s.<TestREntityWithMap, String>getOrCreate(TestREntityWithMap.class, "2")
                 .getValue().get("field"));
     }
 
     @Test
     public void testLiveObjectWithRObject() {
         RLiveObjectService s = redisson.getLiveObjectService();
-        TestREntityWithRMap t = s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "2");
+        TestREntityWithRMap t = s.<TestREntityWithRMap, String>getOrCreate(TestREntityWithRMap.class, "2");
         RMap<String, String> map = redisson.<String, String>getMap("testMap");
         t.setValue(map);
         map.put("field", "123");
         assertEquals("123",
-                s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "2")
+                s.<TestREntityWithRMap, String>getOrCreate(TestREntityWithRMap.class, "2")
                 .getValue().get("field"));
-        s.get(TestREntityWithRMap.class, "2").getValue().put("field", "333");
+        s.getOrCreate(TestREntityWithRMap.class, "2").getValue().put("field", "333");
         assertEquals("333",
-                s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "2")
+                s.<TestREntityWithRMap, String>getOrCreate(TestREntityWithRMap.class, "2")
                 .getValue().get("field"));
     }
 
     @Test
     public void testLiveObjectWithNestedLiveObjectAsId() {
         RLiveObjectService s = redisson.getLiveObjectService();
-        TestREntity t1 = s.<TestREntity, String>get(TestREntity.class, "1");
+        TestREntity t1 = s.<TestREntity, String>getOrCreate(TestREntity.class, "1");
         try {
-            s.<TestREntityIdNested, TestREntity>get(TestREntityIdNested.class, t1);
+            s.<TestREntityIdNested, TestREntity>getOrCreate(TestREntityIdNested.class, t1);
         } catch (Exception e) {
             assertEquals("Field with RId annotation cannot be a type of which class is annotated with REntity.", e.getCause().getMessage());
         }
@@ -307,17 +307,17 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     @Test
     public void testLiveObjectWithNestedLiveObjectAsValue() throws Exception {
         RLiveObjectService s = redisson.getLiveObjectService();
-        TestREntityWithRMap t1 = s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "111");
-        TestREntityValueNested t2 = s.<TestREntityValueNested, String>get(TestREntityValueNested.class, "122");
+        TestREntityWithRMap t1 = s.<TestREntityWithRMap, String>getOrCreate(TestREntityWithRMap.class, "111");
+        TestREntityValueNested t2 = s.<TestREntityValueNested, String>getOrCreate(TestREntityValueNested.class, "122");
         RMap<String, String> map = redisson.<String, String>getMap("32123");
         t2.setValue(t1);
         t2.getValue().setValue(map);
         map.put("field", "123");
         assertEquals("123",
-                s.<TestREntityWithRMap, String>get(TestREntityWithRMap.class, "111")
+                s.<TestREntityWithRMap, String>getOrCreate(TestREntityWithRMap.class, "111")
                 .getValue().get("field"));
         assertEquals("123",
-                s.<TestREntityValueNested, String>get(TestREntityValueNested.class, "122")
+                s.<TestREntityValueNested, String>getOrCreate(TestREntityValueNested.class, "122")
                 .getValue().getValue().get("field"));
     }
 
@@ -432,38 +432,38 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     public void testSerializerable() {
         RLiveObjectService service = redisson.getLiveObjectService();
 
-        TestClass t = service.get(TestClass.class, "55555");
+        TestClass t = service.getOrCreate(TestClass.class, "55555");
         assertTrue(Objects.equals("55555", t.getId()));
 
-        t = service.get(TestClass.class, 90909l);
+        t = service.getOrCreate(TestClass.class, 90909l);
         assertTrue(Objects.equals(90909l, t.getId()));
 
-        t = service.get(TestClass.class, 90909);
+        t = service.getOrCreate(TestClass.class, 90909);
         assertTrue(Objects.equals(90909, t.getId()));
 
-        t = service.get(TestClass.class, new ObjectId(9090909));
+        t = service.getOrCreate(TestClass.class, new ObjectId(9090909));
         assertTrue(Objects.equals(new ObjectId(9090909), t.getId()));
 
-        t = service.get(TestClass.class, new Byte("0"));
+        t = service.getOrCreate(TestClass.class, new Byte("0"));
         assertEquals(new Byte("0"), Byte.valueOf(t.getId().toString()));
 
-        t = service.get(TestClass.class, (byte) 90);
+        t = service.getOrCreate(TestClass.class, (byte) 90);
         assertEquals((byte) 90, Byte.parseByte(t.getId().toString()));
 
-        t = service.get(TestClass.class, Arrays.asList(1, 2, 3, 4));
+        t = service.getOrCreate(TestClass.class, Arrays.asList(1, 2, 3, 4));
         List<Integer> l = new ArrayList();
         l.addAll(Arrays.asList(1, 2, 3, 4));
         assertTrue(l.removeAll((List) t.getId()));
         assertTrue(l.isEmpty());
 
         try {
-            service.get(TestClass.class, new int[]{1, 2, 3, 4, 5});
+            service.getOrCreate(TestClass.class, new int[]{1, 2, 3, 4, 5});
         } catch (Exception e) {
             assertEquals("RId value cannot be an array.", e.getCause().getMessage());
         }
 
         try {
-            service.get(TestClass.class, new byte[]{1, 2, 3, 4, 5});
+            service.getOrCreate(TestClass.class, new byte[]{1, 2, 3, 4, 5});
         } catch (Exception e) {
             assertEquals("RId value cannot be an array.", e.getCause().getMessage());
         }
