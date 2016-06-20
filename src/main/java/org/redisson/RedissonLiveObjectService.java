@@ -1,6 +1,7 @@
 package org.redisson;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.Map;
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
@@ -55,9 +56,19 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //        map.expire(timeToLive, timeUnit);
 //        return instance;
 //    }
-    
     @Override
     public <T, K> T get(Class<T> entityClass, K id) {
+        try {
+            T proxied = instantiateLiveObject(getProxyClass(entityClass), id);
+            return asLiveObject(proxied).isPhantom() ? null : proxied;
+        } catch (Exception ex) {
+            unregisterClass(entityClass);
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public <T, K> T getOrCreate(Class<T> entityClass, K id) {
         try {
             return instantiateLiveObject(getProxyClass(entityClass), id);
         } catch (Exception ex) {
@@ -68,6 +79,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> T attach(T detachedObject) {
+        validateDetached(detachedObject);
         Class<T> entityClass = (Class<T>) detachedObject.getClass();
         try {
             Class<? extends T> proxyClass = getProxyClass(entityClass);
@@ -99,6 +111,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> T detach(T attachedObject) {
+        validateAttached(attachedObject);
         try {
             T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
             BeanCopy.beans(attachedObject, detached).declared(false, true).copy();
@@ -110,6 +123,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> void remove(T attachedObject) {
+        validateAttached(attachedObject);
         asLiveObject(attachedObject).delete();
     }
 
@@ -128,6 +142,19 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return instance instanceof RLiveObject;
     }
 
+    @Override
+    public void unregisterClass(Class cls) {
+        classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
+    }
+
+    @Override
+    public void registerClass(Class cls) {
+        if (!classCache.containsKey(cls)) {
+            validateClass(cls);
+            registerClassInternal(cls);
+        }
+    }
+    
     private <T> void copy(T detachedObject, T attachedObject) {
         String idFieldName = getRIdFieldName(detachedObject.getClass());
         BeanCopy.beans(detachedObject, attachedObject)
@@ -147,7 +174,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         asLiveObject(instance).setLiveObjectId(id);
         return instance;
     }
-    
+
     private <T, K> T instantiateDetachedObject(Class<T> cls, K id) throws Exception {
         T instance = instantiate(cls, id);
         if (BeanUtil.pojo.getSimpleProperty(instance, getRIdFieldName(cls)) == null) {
@@ -155,7 +182,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
         return instance;
     }
-    
+
     private <T, K> T instantiate(Class<T> cls, K id) throws Exception {
         try {
             return cls.newInstance();
@@ -169,15 +196,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         throw new NoSuchMethodException("Unable to find constructor matching only the RId field.");
     }
 
-    private <T> Class<? extends T> getProxyClass(Class<T> entityClass) throws Exception {
-        if (!classCache.containsKey(entityClass)) {
-            validateClass(entityClass);
-            registerClass(entityClass);
-        }
+    private <T> Class<? extends T> getProxyClass(Class<T> entityClass) {
+        registerClass(entityClass);
         return classCache.get(entityClass);
     }
 
-    private <T> void validateClass(Class<T> entityClass) throws Exception {
+    private <T> void validateClass(Class<T> entityClass) {
         if (entityClass.isAnonymousClass() || entityClass.isLocalClass()) {
             throw new IllegalArgumentException(entityClass.getName() + " is not publically accessable.");
         }
@@ -192,17 +216,35 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         if (fieldsWithRIdAnnotation.size() > 1) {
             throw new IllegalArgumentException("Only one field with RId annotation is allowed in class field declaration.");
         }
-        FieldDescription.InDefinedShape idField = fieldsWithRIdAnnotation.getOnly();
-        String idFieldName = idField.getName();
-        if (entityClass.getDeclaredField(idFieldName).getType().isAnnotationPresent(REntity.class)) {
+        FieldDescription.InDefinedShape idFieldDescription = fieldsWithRIdAnnotation.getOnly();
+        String idFieldName = idFieldDescription.getName();
+        Field idField = null;
+        try {
+            idField = entityClass.getDeclaredField(idFieldName);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        if (idField.getType().isAnnotationPresent(REntity.class)) {
             throw new IllegalArgumentException("Field with RId annotation cannot be a type of which class is annotated with REntity.");
         }
-        if (entityClass.getDeclaredField(idFieldName).getType().isAssignableFrom(RObject.class)) {
+        if (idField.getType().isAssignableFrom(RObject.class)) {
             throw new IllegalArgumentException("Field with RId annotation cannot be a type of RObject");
         }
     }
 
-    private <T> void registerClass(Class<T> entityClass) throws Exception {
+    private <T> void validateDetached(T detachedObject) {
+        if (detachedObject instanceof RLiveObject) {
+            throw new IllegalArgumentException("The object supplied is already a RLiveObject");
+        }
+    }
+
+    private <T> void validateAttached(T attachedObject) {
+        if (!(attachedObject instanceof RLiveObject)) {
+            throw new IllegalArgumentException("The object supplied is must be a RLiveObject");
+        }
+    }
+    
+    private <T> void registerClassInternal(Class<T> entityClass) {
         DynamicType.Builder<T> builder = new ByteBuddy()
                 .subclass(entityClass);
         for (FieldDescription.InDefinedShape field
@@ -210,7 +252,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .getDeclaredFields()) {
             builder = builder.define(field);
         }
-        
+
         Class<? extends T> proxied = builder.method(ElementMatchers.isDeclaredBy(
                 Introspectior.getTypeDescription(RLiveObject.class))
                 .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())))
@@ -243,16 +285,4 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .getLoaded();
         classCache.putIfAbsent(entityClass, proxied);
     }
-
-    public void unregisterClass(Class cls) {
-        classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
-    }
-
-    /**
-     * @return the codecProvider
-     */
-    public CodecProvider getCodecProvider() {
-        return codecProvider;
-    }
-
 }

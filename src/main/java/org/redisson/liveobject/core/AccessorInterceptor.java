@@ -47,7 +47,7 @@ public class AccessorInterceptor {
     private final RedissonClient redisson;
     private final CodecProvider codecProvider;
 
-    public AccessorInterceptor(RedissonClient redisson, CodecProvider codecProvider) throws Exception {
+    public AccessorInterceptor(RedissonClient redisson, CodecProvider codecProvider) {
         this.redisson = redisson;
         this.codecProvider = codecProvider;
     }

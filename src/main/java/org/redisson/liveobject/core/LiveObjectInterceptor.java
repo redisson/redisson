@@ -53,14 +53,18 @@ public class LiveObjectInterceptor {
     private final REntity.NamingScheme namingScheme;
     private final Class<? extends Codec> codecClass;
 
-    public LiveObjectInterceptor(RedissonClient redisson, CodecProvider codecProvider, Class entityClass, String idFieldName) throws Exception {
+    public LiveObjectInterceptor(RedissonClient redisson, CodecProvider codecProvider, Class entityClass, String idFieldName) {
         this.redisson = redisson;
         this.codecProvider = codecProvider;
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
         REntity anno = (REntity) entityClass.getAnnotation(REntity.class);
         this.codecClass = anno.codec();
-        this.namingScheme = anno.namingScheme().getDeclaredConstructor(Codec.class).newInstance(codecProvider.getCodec(anno, originalClass));
+        try {
+            this.namingScheme = anno.namingScheme().getDeclaredConstructor(Codec.class).newInstance(codecProvider.getCodec(anno, originalClass));
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     @RuntimeType

@@ -43,13 +43,34 @@ public interface RLiveObjectService {
      * @param id identifier
      * @param <T> Entity type
      * @param <K> Key type
-     * @return Always returns a proxy class. Even it does not exist in redis.
+     * @return a proxied object if it exists in redis, or null if not.
      */
     <T, K> T get(Class<T> entityClass, K id);
 
     /**
-     * Returns proxied attached object for the detached object. Discard all the
-     * field values already in the instance.
+     * Find or create the entity from Redis with the id.
+     *
+     * The entityClass should have a field annotated with RId, and the
+     * entityClass itself should have REntity annotated. The type of the RId can
+     * be anything <b>except</b> the followings:
+     * <ol>
+     * <li>An array i.e. byte[], int[], Integer[], etc.</li>
+     * <li>or a RObject i.e. RedissonMap</li>
+     * <li>or a Class with REntity annotation.</li>
+     * </ol>
+     *
+     *
+     * @param entityClass Entity class
+     * @param id identifier
+     * @param <T> Entity type
+     * @param <K> Key type
+     * @return Always returns a proxied object. Even it does not exist in redis.
+     */
+    <T, K> T getOrCreate(Class<T> entityClass, K id);
+
+    /**
+     * Returns proxied object for the detached object. Discard all the
+     * field values already in the detached instance.
      *
      * The class representing this object should have a field annotated with
      * RId, and the object should hold a non null value in that field.
@@ -60,11 +81,12 @@ public interface RLiveObjectService {
      * @param <T> Entity type
      * @param detachedObject
      * @return
+     * @throws IllegalArgumentException if the object is is a RLiveObject instance.
      */
     <T> T attach(T detachedObject);
 
     /**
-     * Returns proxied attached object for the detached object. Transfers all the
+     * Returns proxied object for the detached object. Transfers all the
      * <b>NON NULL</b> field values to the redis server. It does not remove any
      * existing data in redis in case of the field value is null.
      *
@@ -77,6 +99,7 @@ public interface RLiveObjectService {
      * @param <T> Entity type
      * @param detachedObject
      * @return
+     * @throws IllegalArgumentException if the object is is a RLiveObject instance.
      */
     <T> T merge(T detachedObject);
 
@@ -139,4 +162,26 @@ public interface RLiveObjectService {
      * @return
      */
     <T> boolean isLiveObject(T instance);
+    
+    /**
+     * Pre register the class with the service, registering all the classes on
+     * startup can speed up the instance creation. This is <b>NOT</b> mandatory
+     * since the class will also be registered lazyly when it first is used.
+     * 
+     * @param cls 
+     */
+    void registerClass(Class cls);
+    
+    /**
+     * Unregister the class with the service. This is useful after you decide
+     * the class is no longer required. 
+     * 
+     * A class will be automatically unregistered if the service encountered any
+     * errors during proxying or creating the object, since those errors are not
+     * recoverable.
+     * 
+     * @param cls It can be either the proxied class or the unproxied conterpart.
+     */
+    void unregisterClass(Class cls);
+    
 }
