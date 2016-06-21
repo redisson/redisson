@@ -39,13 +39,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 // just an assertion
                 boolean removed = entries.remove(entryName) == entry;
                 if (removed) {
-                    PubSubConnectionEntry e = connectionManager.getPubSubEntry(channelName);
-                    e.lock();
-                    try {
-                        connectionManager.unsubscribe(channelName);
-                    } finally {
-                        e.unlock();
-                    }
+                    connectionManager.unsubscribe(channelName);
                 }
             }
         }
