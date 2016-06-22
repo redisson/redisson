@@ -15,18 +15,26 @@
  */
 package org.redisson.liveobject.resolver;
 
-import java.lang.annotation.Annotation;
 import org.redisson.RedissonClient;
+import org.redisson.liveobject.annotation.RId;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
- * @param <T> Field instance
- * @param <A> Annotation to resolve
+ * @param <A> RId annotation to resolve
  * @param <V> Value type
  */
-public interface Resolver<T, A extends Annotation, V> {
+public interface RIdResolver<A extends RId, V> extends Resolver<Class, A, V>{
 
-    public V resolve(T value, A annotation, RedissonClient redisson);
+    /**
+     * RLiveObjectService instantiate the class and invokes this method to get
+     * a value used as the value for the field with RId annotation. 
+     * 
+     * @param cls the class of the LiveObject.
+     * @param annotation the RId annotation used in the class.
+     * @param redisson
+     * @return resolved RId field value.
+     */
+    public V resolve(Class cls, A annotation, RedissonClient redisson);
 
 }

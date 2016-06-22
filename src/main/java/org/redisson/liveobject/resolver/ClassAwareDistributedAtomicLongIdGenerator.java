@@ -15,18 +15,23 @@
  */
 package org.redisson.liveobject.resolver;
 
-import java.lang.annotation.Annotation;
 import org.redisson.RedissonClient;
+import org.redisson.liveobject.annotation.RId;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
- * @param <T> Field instance
- * @param <A> Annotation to resolve
- * @param <V> Value type
  */
-public interface Resolver<T, A extends Annotation, V> {
+public class ClassAwareDistributedAtomicLongIdGenerator implements RIdResolver<RId, Long> {
 
-    public V resolve(T value, A annotation, RedissonClient redisson);
+    public static final ClassAwareDistributedAtomicLongIdGenerator INSTANCE
+            = new ClassAwareDistributedAtomicLongIdGenerator();
+
+    @Override
+    public Long resolve(Class value, RId id, RedissonClient redisson) {
+        return redisson.getAtomicLong(this.getClass().getCanonicalName()
+                + "{" + value.getCanonicalName() + "}")
+                .incrementAndGet();
+    }
 
 }

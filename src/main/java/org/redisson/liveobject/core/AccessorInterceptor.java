@@ -30,6 +30,7 @@ import org.redisson.core.RMap;
 import org.redisson.core.RObject;
 import org.redisson.liveobject.CodecProvider;
 import org.redisson.liveobject.RLiveObject;
+import org.redisson.liveobject.ResolverProvider;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.misc.Introspectior;
@@ -46,10 +47,12 @@ public class AccessorInterceptor {
 
     private final RedissonClient redisson;
     private final CodecProvider codecProvider;
-
-    public AccessorInterceptor(RedissonClient redisson, CodecProvider codecProvider) {
+    private final ResolverProvider resolverProvider;
+    
+    public AccessorInterceptor(RedissonClient redisson, CodecProvider codecProvider, ResolverProvider resolverProvider) {
         this.redisson = redisson;
         this.codecProvider = codecProvider;
+        this.resolverProvider = resolverProvider;
     }
 
     @RuntimeType
@@ -67,7 +70,7 @@ public class AccessorInterceptor {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result instanceof RedissonReference) {
-                return RedissonObjectFactory.create(redisson, codecProvider, (RedissonReference) result, method.getReturnType());
+                return RedissonObjectFactory.create(redisson, codecProvider, resolverProvider, (RedissonReference) result, method.getReturnType());
             }
             return result;
         }

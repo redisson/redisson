@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.resolver;
+package org.redisson.liveobject;
 
 import java.lang.annotation.Annotation;
-import org.redisson.RedissonClient;
+import org.redisson.liveobject.resolver.Resolver;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
- * @param <T> Field instance
- * @param <A> Annotation to resolve
- * @param <V> Value type
  */
-public interface Resolver<T, A extends Annotation, V> {
+public interface ResolverProvider {
 
-    public V resolve(T value, A annotation, RedissonClient redisson);
-
+    Resolver getResolver(Class cls, Class<? extends Resolver> resolverClass, Annotation anno);
+    void registerResolver(Class cls, Class<? extends Resolver> resolverClass, Resolver resolver);
+    
 }

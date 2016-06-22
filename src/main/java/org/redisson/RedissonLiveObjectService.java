@@ -38,29 +38,30 @@ import org.redisson.liveobject.CodecProvider;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.RLiveObjectService;
 import org.redisson.liveobject.RLiveObject;
+import org.redisson.liveobject.ResolverProvider;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.core.AccessorInterceptor;
 //import org.redisson.liveobject.core.ExpirableInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.liveobject.resolver.RIdResolver;
+import org.redisson.liveobject.resolver.Resolver;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
 
     private final Map<Class, Class> classCache;
     private final RedissonClient redisson;
-//    private final ObjectMapper detachMapper;
-//    private final ObjectMapper attachMapper;
     private final CodecProvider codecProvider;
-//    private final SimpleModule module;
+    private final ResolverProvider resolverProvider;
 
-    public RedissonLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, CodecProvider codecProvider) {
+    public RedissonLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, CodecProvider codecProvider, ResolverProvider resolverProvider) {
         this.redisson = redisson;
         this.classCache = classCache;
         this.codecProvider = codecProvider;
+        this.resolverProvider = resolverProvider;
     }
 
-    //TODO: Support ID Generator
     //TODO: Add ttl renewal functionality
 //    @Override
 //    public <T, K> T get(Class<T> entityClass, K id, long timeToLive, TimeUnit timeUnit) {
@@ -72,10 +73,28 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //        return instance;
 //    }
     @Override
+    public <T> T create(Class<T> entityClass) {
+        try {
+            Class<? extends T> proxyClass = getProxyClass(entityClass);
+            RId annotation = entityClass
+                    .getDeclaredField(getRIdFieldName(entityClass))
+                    .getAnnotation(RId.class);
+            Resolver resolver = resolverProvider.getResolver(entityClass,
+                    annotation.generator(), annotation);
+            Object id = resolver.resolve(entityClass, annotation, redisson);
+            T proxied = instantiateLiveObject(proxyClass, id);
+            return asLiveObject(proxied).isExists() ? null : proxied;
+        } catch (Exception ex) {
+            unregisterClass(entityClass);
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
             T proxied = instantiateLiveObject(getProxyClass(entityClass), id);
-            return asLiveObject(proxied).isExists() ? null : proxied;
+            return asLiveObject(proxied).isExists() ? proxied : null;
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw new RuntimeException(ex);
@@ -117,7 +136,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> T persist(T detachedObject) {
         T attachedObject = attach(detachedObject);
-        if (asLiveObject(attachedObject).isExists()) {
+        if (!asLiveObject(attachedObject).isExists()) {
             copy(detachedObject, attachedObject);
             return attachedObject;
         }
@@ -159,7 +178,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> boolean isExists(T instance) {
-        return !(instance instanceof RLiveObject) || asLiveObject(instance).isExists();
+        return instance instanceof RLiveObject && asLiveObject(instance).isExists();
     }
 
     @Override
@@ -169,7 +188,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             registerClassInternal(cls);
         }
     }
-    
+
     @Override
     public void unregisterClass(Class cls) {
         classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
@@ -179,7 +198,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     public boolean isClassRegistered(Class cls) {
         return classCache.containsKey(cls) || classCache.containsValue(cls);
     }
-    
+
     private <T> void copy(T detachedObject, T attachedObject) {
         String idFieldName = getRIdFieldName(detachedObject.getClass());
         BeanCopy.beans(detachedObject, attachedObject)
@@ -218,14 +237,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 }
             }
         }
-        throw new NoSuchMethodException("Unable to find constructor matching only the RId field.");
+        throw new NoSuchMethodException("Unable to find constructor matching only the RId field type [" + id.getClass().getCanonicalName() + "].");
     }
 
     private <T> Class<? extends T> getProxyClass(Class<T> entityClass) {
         registerClass(entityClass);
         return classCache.get(entityClass);
     }
-    
+
     private <T> void validateClass(Class<T> entityClass) {
         if (entityClass.isAnonymousClass() || entityClass.isLocalClass()) {
             throw new IllegalArgumentException(entityClass.getName() + " is not publically accessable.");
@@ -268,7 +287,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             throw new IllegalArgumentException("The object supplied is must be a RLiveObject");
         }
     }
-    
+
     private <T> void registerClassInternal(Class<T> entityClass) {
         DynamicType.Builder<T> builder = new ByteBuddy()
                 .subclass(entityClass);
@@ -306,7 +325,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
                 .intercept(MethodDelegation.to(
-                                new AccessorInterceptor(redisson, codecProvider)))
+                                new AccessorInterceptor(redisson, codecProvider, resolverProvider)))
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();

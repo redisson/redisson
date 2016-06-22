@@ -80,6 +80,8 @@ import org.redisson.liveobject.RLiveObjectService;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.liveobject.DefaultResolverProvider;
+import org.redisson.liveobject.ResolverProvider;
 
 /**
  * Main infrastructure class allows to get access
@@ -97,6 +99,7 @@ public class Redisson implements RedissonClient {
     private final Map<Class, Class> liveObjectClassCache
             = PlatformDependent.<Class, Class>newConcurrentHashMap();
     private final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
+    private final ResolverProvider liveObjectDefaultResolverProvider = new DefaultResolverProvider();
     private final Config config;
 
     private final UUID id = UUID.randomUUID();
@@ -552,12 +555,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, liveObjectDefaultCodecProvider);
+        return new RedissonLiveObjectService(this, liveObjectClassCache, liveObjectDefaultCodecProvider, liveObjectDefaultResolverProvider);
     }
     
     @Override
-    public RLiveObjectService getLiveObjectService(CodecProvider codecProvider) {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider);
+    public RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider) {
+        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider, resolverProvider);
     }
     
     @Override

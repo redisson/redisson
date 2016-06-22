@@ -19,7 +19,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.redisson.liveobject.resolver.FieldValueAsIdGenerator;
+import org.redisson.liveobject.resolver.RandomUUIDIdStringGenerator;
+import org.redisson.liveobject.resolver.RIdResolver;
 
 /**
  *
@@ -28,5 +29,5 @@ import org.redisson.liveobject.resolver.FieldValueAsIdGenerator;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 public @interface RId {
-    Class generator() default FieldValueAsIdGenerator.class;
+    Class<? extends RIdResolver> generator() default RandomUUIDIdStringGenerator.class;
 }

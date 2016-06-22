@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 import org.junit.Test;
@@ -16,6 +17,8 @@ import org.redisson.liveobject.RLiveObjectService;
 import org.redisson.liveobject.RLiveObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
+import org.redisson.liveobject.resolver.ClassAwareDistributedAtomicLongIdGenerator;
+import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
 
 /**
  *
@@ -526,16 +529,16 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     @Test
     public void testIsPhantom() {
         RLiveObjectService service = redisson.getLiveObjectService();
-        assertTrue(service.isExists(new Object()));
+        assertFalse(service.isExists(new Object()));
         TestClass ts = new TestClass(new ObjectId(100));
-        assertTrue(service.isExists(service.get(TestClass.class, new ObjectId(100))));
-        assertTrue(service.isExists(ts));
+        assertFalse(service.isExists(service.get(TestClass.class, new ObjectId(100))));
+        assertFalse(service.isExists(ts));
         ts.setValue("VALUE");
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
-        assertFalse(service.isExists(service.get(TestClass.class, new ObjectId(100))));
-        assertTrue(service.isExists(ts));
-        assertFalse(service.isExists(persisted));
+        assertTrue(service.isExists(service.get(TestClass.class, new ObjectId(100))));
+        assertFalse(service.isExists(ts));
+        assertTrue(service.isExists(persisted));
     }
 
     @Test
@@ -619,9 +622,9 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
-        assertFalse(service.isExists(persisted));
-        service.delete(persisted);
         assertTrue(service.isExists(persisted));
+        service.delete(persisted);
+        assertFalse(service.isExists(persisted));
     }
 
     @Test
@@ -630,8 +633,90 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
-        assertFalse(service.isExists(persisted));
-        service.delete(TestClass.class, new ObjectId(100));
         assertTrue(service.isExists(persisted));
+        service.delete(TestClass.class, new ObjectId(100));
+        assertFalse(service.isExists(persisted));
+    }
+    
+    @REntity
+    public static class TestGlobalID1 {
+
+        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        private Long name;
+
+        public TestGlobalID1(Long name) {
+            this.name = name;
+        }
+
+        public Long getName() {
+            return name;
+        }
+        
+    }
+    
+    @REntity
+    public static class TestGlobalID2 {
+
+        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        private Long name;
+
+        public TestGlobalID2(Long name) {
+            this.name = name;
+        }
+
+        public Long getName() {
+            return name;
+        }
+        
+    }
+    
+    @REntity
+    public static class TestClassID1 {
+
+        @RId(generator = ClassAwareDistributedAtomicLongIdGenerator.class)
+        private Long name;
+
+        public TestClassID1(Long name) {
+            this.name = name;
+        }
+
+        public Long getName() {
+            return name;
+        }
+        
+    }
+    
+    @REntity
+    public static class TestClassID2 {
+
+        @RId(generator = ClassAwareDistributedAtomicLongIdGenerator.class)
+        private Long name;
+
+        public TestClassID2(Long name) {
+            this.name = name;
+        }
+
+        public Long getName() {
+            return name;
+        }
+        
+    }
+    
+    @Test
+    public void testCreate() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass ts = service.create(TestClass.class);
+        UUID uuid = UUID.fromString(ts.getId().toString());
+        assertEquals(4, uuid.version());
+        TestGlobalID1 tg1 = service.create(TestGlobalID1.class);
+        assertEquals(new Long(1), tg1.getName());
+        TestGlobalID2 tg2 = service.create(TestGlobalID2.class);
+        assertEquals(new Long(2), tg2.getName());
+        TestClassID1 tc1 = service.create(TestClassID1.class);
+        assertEquals(new Long(1), tc1.getName());
+        TestClassID2 tc2 = service.create(TestClassID2.class);
+        assertEquals(new Long(1), tc2.getName());
+        TestGlobalID1 tg3 = service.create(TestGlobalID1.class);
+        assertEquals(new Long(3), tg3.getName());
     }
 }

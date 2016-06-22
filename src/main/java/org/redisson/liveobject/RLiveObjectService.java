@@ -27,6 +27,25 @@ package org.redisson.liveobject;
 public interface RLiveObjectService {
 
     /**
+     * Find or create the entity from Redis with the id.
+     *
+     * The entityClass should have a field annotated with RId, and the
+     * entityClass itself should have REntity annotated. The type of the RId can
+     * be anything <b>except</b> the followings:
+     * <ol>
+     * <li>An array i.e. byte[], int[], Integer[], etc.</li>
+     * <li>or a RObject i.e. RedissonMap</li>
+     * <li>or a Class with REntity annotation.</li>
+     * </ol>
+     *
+     *
+     * @param entityClass Entity class
+     * @param <T> Entity type
+     * @return Always returns a proxied object. Even it does not exist in redis.
+     */
+    <T> T create(Class<T> entityClass);
+
+    /**
      * Finds the entity from Redis with the id.
      *
      * The entityClass should have a field annotated with RId, and the

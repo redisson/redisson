@@ -15,19 +15,22 @@
  */
 package org.redisson.liveobject.resolver;
 
+import org.redisson.RedissonClient;
 import org.redisson.liveobject.annotation.RId;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class FieldValueAsIdGenerator implements Resolver<Object, RId, String>{
+public class DistributedAtomicLongIdGenerator implements RIdResolver<RId, Long> {
 
-    public static final FieldValueAsIdGenerator INSTANCE = new FieldValueAsIdGenerator();
-    
+    public static final DistributedAtomicLongIdGenerator INSTANCE
+            = new DistributedAtomicLongIdGenerator();
+
     @Override
-    public String resolve(Object value, RId index) {
-        return value.toString();
+    public Long resolve(Class value, RId id, RedissonClient redisson) {
+        return redisson.getAtomicLong(this.getClass().getCanonicalName())
+                .incrementAndGet();
     }
-    
+
 }

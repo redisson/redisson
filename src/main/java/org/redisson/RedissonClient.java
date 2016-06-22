@@ -61,6 +61,7 @@ import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 import org.redisson.liveobject.CodecProvider;
 import org.redisson.liveobject.RLiveObjectService;
+import org.redisson.liveobject.ResolverProvider;
 
 /**
  * Main Redisson interface for access
@@ -673,7 +674,7 @@ public interface RedissonClient {
      * @param codecProvider the CodecProvider to be used to create the service
      * @return 
      */
-    RLiveObjectService getLiveObjectService(CodecProvider codecProvider);
+    RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider);
     
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server
