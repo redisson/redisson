@@ -87,14 +87,14 @@ public interface RLiveObjectService {
 
     /**
      * Returns proxied object for the detached object. Transfers all the
-     * <b>NON NULL</b> field values to the redis server. It does not remove any
-     * existing data in redis in case of the field value is null.
-     *
-     * The class representing this object should have a field annotated with
-     * RId, and the object should hold a non null value in that field.
-     *
-     * If this object is not in redis then a new hash key will be created to
-     * store it.
+     * <b>NON NULL</b> field values to the redis server. It does not delete any
+ existing data in redis in case of the field value is null.
+
+ The class representing this object should have a field annotated with
+ RId, and the object should hold a non null value in that field.
+
+ If this object is not in redis then a new hash key will be created to
+ store it.
      *
      * @param <T> Entity type
      * @param detachedObject
@@ -135,7 +135,7 @@ public interface RLiveObjectService {
      * @param <T> Entity type
      * @param attachedObject
      */
-    <T> void remove(T attachedObject);
+    <T> void delete(T attachedObject);
 
     /**
      * Deletes object by class and id including all nested objects.
@@ -145,7 +145,7 @@ public interface RLiveObjectService {
      * @param entityClass
      * @param id
      */
-    <T, K> void remove(Class<T> entityClass, K id);
+    <T, K> void delete(Class<T> entityClass, K id);
 
     /**
      * To cast the instance to RLiveObject instance.
@@ -173,7 +173,7 @@ public interface RLiveObjectService {
      * @param instance
      * @return
      */
-    <T> boolean isPhantom(T instance);
+    <T> boolean isExists(T instance);
     
     /**
      * Pre register the class with the service, registering all the classes on

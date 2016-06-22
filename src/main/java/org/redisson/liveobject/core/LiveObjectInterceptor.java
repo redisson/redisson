@@ -116,7 +116,7 @@ public class LiveObjectInterceptor {
             return map;
         }
 
-        if ("isPhantom".equals(method.getName())) {
+        if ("isExists".equals(method.getName())) {
             return !map.isExists();
         }
         

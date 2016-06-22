@@ -55,7 +55,7 @@ public interface RLiveObject {
      * @return 
      * @see org.redisson.core.RMap
      */
-    boolean isPhantom();
+    boolean isExists();
     
     /**
      * Deletes the underlying RMap.

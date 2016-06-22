@@ -526,16 +526,16 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     @Test
     public void testIsPhantom() {
         RLiveObjectService service = redisson.getLiveObjectService();
-        assertTrue(service.isPhantom(new Object()));
+        assertTrue(service.isExists(new Object()));
         TestClass ts = new TestClass(new ObjectId(100));
-        assertTrue(service.isPhantom(service.get(TestClass.class, new ObjectId(100))));
-        assertTrue(service.isPhantom(ts));
+        assertTrue(service.isExists(service.get(TestClass.class, new ObjectId(100))));
+        assertTrue(service.isExists(ts));
         ts.setValue("VALUE");
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
-        assertFalse(service.isPhantom(service.get(TestClass.class, new ObjectId(100))));
-        assertTrue(service.isPhantom(ts));
-        assertFalse(service.isPhantom(persisted));
+        assertFalse(service.isExists(service.get(TestClass.class, new ObjectId(100))));
+        assertTrue(service.isExists(ts));
+        assertFalse(service.isExists(persisted));
     }
 
     @Test
@@ -619,9 +619,9 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
-        assertFalse(service.isPhantom(persisted));
-        service.remove(persisted);
-        assertTrue(service.isPhantom(persisted));
+        assertFalse(service.isExists(persisted));
+        service.delete(persisted);
+        assertTrue(service.isExists(persisted));
     }
 
     @Test
@@ -630,8 +630,8 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
-        assertFalse(service.isPhantom(persisted));
-        service.remove(TestClass.class, new ObjectId(100));
-        assertTrue(service.isPhantom(persisted));
+        assertFalse(service.isExists(persisted));
+        service.delete(TestClass.class, new ObjectId(100));
+        assertTrue(service.isExists(persisted));
     }
 }

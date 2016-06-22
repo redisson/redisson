@@ -75,7 +75,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
             T proxied = instantiateLiveObject(getProxyClass(entityClass), id);
-            return asLiveObject(proxied).isPhantom() ? null : proxied;
+            return asLiveObject(proxied).isExists() ? null : proxied;
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw new RuntimeException(ex);
@@ -117,7 +117,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> T persist(T detachedObject) {
         T attachedObject = attach(detachedObject);
-        if (asLiveObject(attachedObject).isPhantom()) {
+        if (asLiveObject(attachedObject).isExists()) {
             copy(detachedObject, attachedObject);
             return attachedObject;
         }
@@ -137,13 +137,13 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public <T> void remove(T attachedObject) {
+    public <T> void delete(T attachedObject) {
         validateAttached(attachedObject);
         asLiveObject(attachedObject).delete();
     }
 
     @Override
-    public <T, K> void remove(Class<T> entityClass, K id) {
+    public <T, K> void delete(Class<T> entityClass, K id) {
         asLiveObject(get(entityClass, id)).delete();
     }
 
@@ -158,8 +158,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public <T> boolean isPhantom(T instance) {
-        return !(instance instanceof RLiveObject) || asLiveObject(instance).isPhantom();
+    public <T> boolean isExists(T instance) {
+        return !(instance instanceof RLiveObject) || asLiveObject(instance).isExists();
     }
 
     @Override
