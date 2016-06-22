@@ -35,6 +35,7 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.core.RKeys;
+import org.redisson.core.RType;
 import org.redisson.misc.CompositeIterable;
 
 import io.netty.util.concurrent.Future;
@@ -50,6 +51,16 @@ public class RedissonKeys implements RKeys {
         this.commandExecutor = commandExecutor;
     }
 
+    @Override
+    public RType getType(String key) {
+        return commandExecutor.get(getTypeAsync(key));
+    }
+
+    @Override
+    public Future<RType> getTypeAsync(String key) {
+        return commandExecutor.readAsync(key, RedisCommands.TYPE, key);
+    }
+    
     @Override
     public int getSlot(String key) {
         return commandExecutor.get(getSlotAsync(key));

@@ -11,9 +11,18 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.core.RBucket;
 import org.redisson.core.RMap;
+import org.redisson.core.RType;
 
 public class RedissonKeysTest extends BaseTest {
 
+    @Test
+    public void testType() {
+        redisson.getSet("test").add("1");
+        
+        assertThat(redisson.getKeys().getType("test")).isEqualTo(RType.SET);
+        assertThat(redisson.getKeys().getType("test1")).isNull();
+    }
+    
     @Test
     public void testKeysIterablePattern() {
         redisson.getBucket("test1").set("someValue");

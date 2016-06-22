@@ -22,6 +22,14 @@ import io.netty.util.concurrent.Future;
 public interface RKeysAsync {
 
     /**
+     * Get Redis object type by key
+     * 
+     * @param name
+     * @return
+     */
+    Future<RType> getTypeAsync(String key);
+    
+    /**
      * Get hash slot identifier for key in async mode.
      * Available for cluster nodes only
      *

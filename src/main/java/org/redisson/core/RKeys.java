@@ -20,6 +20,14 @@ import java.util.Collection;
 public interface RKeys extends RKeysAsync {
 
     /**
+     * Get Redis object type by key
+     * 
+     * @param name
+     * @return
+     */
+    RType getType(String key);
+    
+    /**
      * Get hash slot identifier for key.
      * Available for cluster nodes only
      *
