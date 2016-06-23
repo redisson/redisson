@@ -45,6 +45,8 @@ public interface CommandAsyncExecutor {
 
     <T, R> Future<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
 
+    <T, R> Future<R> readAsync(InetSocketAddress client, int slot, Codec codec, RedisCommand<T> command, Object ... params);
+    
     <T, R> Future<R> readAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> Future<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
