@@ -20,6 +20,14 @@ import java.util.Collection;
 public interface RKeys extends RKeysAsync {
 
     /**
+     * Get Redis object type by key
+     * 
+     * @param name
+     * @return
+     */
+    RType getType(String key);
+    
+    /**
      * Get hash slot identifier for key.
      * Available for cluster nodes only
      *
@@ -29,17 +37,42 @@ public interface RKeys extends RKeysAsync {
     int getSlot(String key);
 
     /**
-     * Get all keys by pattern using iterator. Keys traversing with SCAN operation
-     *
+     * Get all keys by pattern using iterator. 
+     * Keys traversed with SCAN operation. Each SCAN operation loads 
+     * up to <b>10</b> keys per request. 
+     * <p/>
      *  Supported glob-style patterns:
+     *  <p/>
      *    h?llo subscribes to hello, hallo and hxllo
+     *    <p/>
      *    h*llo subscribes to hllo and heeeello
+     *    <p/>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
+     * 
+     * @param pattern - match pattern
      * @return
      */
     Iterable<String> getKeysByPattern(String pattern);
 
+    /**
+     * Get all keys by pattern using iterator. 
+     * Keys traversed with SCAN operation. Each SCAN operation loads 
+     * up to <code>count</code> keys per request. 
+     * <p/>
+     *  Supported glob-style patterns:
+     *  <p/>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p/>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p/>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param pattern - match pattern
+     * @param count - keys loaded per request to Redis
+     * @return
+     */
+    Iterable<String> getKeysByPattern(String pattern, int count);
+    
     /**
      * Get all keys using iterator. Keys traversing with SCAN operation
      *

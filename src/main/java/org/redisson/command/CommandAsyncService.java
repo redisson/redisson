@@ -26,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.RedisClientResult;
 import org.redisson.RedissonShutdownException;
@@ -114,6 +113,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         });
         return l.await(timeout, timeoutUnit);
+    }
+    
+    @Override
+    public <T, R> Future<R> readAsync(InetSocketAddress client, int slot, Codec codec, RedisCommand<T> command, Object ... params) {
+        Promise<R> mainPromise = connectionManager.newPromise();
+        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0);
+        return mainPromise;
     }
     
     @Override

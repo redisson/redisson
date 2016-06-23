@@ -35,6 +35,7 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.core.RKeys;
+import org.redisson.core.RType;
 import org.redisson.misc.CompositeIterable;
 
 import io.netty.util.concurrent.Future;
@@ -51,6 +52,16 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
+    public RType getType(String key) {
+        return commandExecutor.get(getTypeAsync(key));
+    }
+
+    @Override
+    public Future<RType> getTypeAsync(String key) {
+        return commandExecutor.readAsync(key, RedisCommands.TYPE, key);
+    }
+    
+    @Override
     public int getSlot(String key) {
         return commandExecutor.get(getSlotAsync(key));
     }
@@ -61,13 +72,17 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Iterable<String> getKeysByPattern(final String pattern) {
+    public Iterable<String> getKeysByPattern(String pattern) {
+        return getKeysByPattern(pattern, 10);
+    }
+    
+    public Iterable<String> getKeysByPattern(final String pattern, final int count) {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
         for (final ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
             Iterable<String> iterable = new Iterable<String>() {
                 @Override
                 public Iterator<String> iterator() {
-                    return createKeysIterator(slot.getStartSlot(), pattern);
+                    return createKeysIterator(slot.getStartSlot(), pattern, count);
                 }
             };
             iterables.add(iterable);
@@ -75,26 +90,27 @@ public class RedissonKeys implements RKeys {
         return new CompositeIterable<String>(iterables);
     }
 
+
     @Override
     public Iterable<String> getKeys() {
         return getKeysByPattern(null);
     }
 
-    private ListScanResult<String> scanIterator(int slot, long startPos, String pattern) {
+    private ListScanResult<String> scanIterator(InetSocketAddress client, int slot, long startPos, String pattern, int count) {
         if (pattern == null) {
-            Future<ListScanResult<String>> f = commandExecutor.writeAsync(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+            Future<ListScanResult<String>> f = commandExecutor.readAsync(client, slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
             return commandExecutor.get(f);
         }
-        Future<ListScanResult<String>> f = commandExecutor.writeAsync(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+        Future<ListScanResult<String>> f = commandExecutor.readAsync(client, slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
         return commandExecutor.get(f);
     }
 
-    private Iterator<String> createKeysIterator(final int slot, final String pattern) {
+    private Iterator<String> createKeysIterator(final int slot, final String pattern, final int count) {
         return new RedissonBaseIterator<String>() {
 
             @Override
             ListScanResult<String> iterator(InetSocketAddress client, long nextIterPos) {
-                return RedissonKeys.this.scanIterator(slot, nextIterPos, pattern);
+                return RedissonKeys.this.scanIterator(client, slot, nextIterPos, pattern, count);
             }
 
             @Override
