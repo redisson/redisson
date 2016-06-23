@@ -28,9 +28,10 @@ import org.redisson.RedissonReference;
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RMap;
 import org.redisson.core.RObject;
-import org.redisson.liveobject.CodecProvider;
+import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.RLiveObject;
-import org.redisson.liveobject.ResolverProvider;
+import org.redisson.liveobject.provider.ResolverProvider;
+import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.misc.Introspectior;
@@ -78,7 +79,7 @@ public class AccessorInterceptor {
             if (args[0].getClass().getSuperclass().isAnnotationPresent(REntity.class)) {
                 Class<? extends Object> rEntity = args[0].getClass().getSuperclass();
                 REntity anno = rEntity.getAnnotation(REntity.class);
-                REntity.NamingScheme ns = anno.namingScheme()
+                NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
                 return liveMap.put(fieldName, new RedissonReference(rEntity, ns.getName(rEntity, getREntityIdFieldName(args[0]), ((RLiveObject) args[0]).getLiveObjectId())));

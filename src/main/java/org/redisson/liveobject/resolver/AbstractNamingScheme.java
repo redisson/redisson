@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject;
+package org.redisson.liveobject.resolver;
 
-import java.lang.annotation.Annotation;
-import org.redisson.liveobject.resolver.Resolver;
+import org.redisson.client.codec.Codec;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public interface ResolverProvider {
+public abstract class AbstractNamingScheme implements NamingScheme {
+    
+    protected final Codec codec;
 
-    Resolver getResolver(Class cls, Class<? extends Resolver> resolverClass, Annotation anno);
-    void registerResolver(Class cls, Class<? extends Resolver> resolverClass, Resolver resolver);
+    public AbstractNamingScheme(Codec codec) {
+        this.codec = codec;
+    }
     
 }

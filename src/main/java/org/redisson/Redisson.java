@@ -74,14 +74,14 @@ import org.redisson.core.RSetMultimap;
 import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
-import org.redisson.liveobject.CodecProvider;
-import org.redisson.liveobject.DefaultCodecProvider;
+import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.liveobject.provider.DefaultCodecProvider;
 import org.redisson.liveobject.RLiveObjectService;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
-import org.redisson.liveobject.DefaultResolverProvider;
-import org.redisson.liveobject.ResolverProvider;
+import org.redisson.liveobject.provider.DefaultResolverProvider;
+import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
  * Main infrastructure class allows to get access

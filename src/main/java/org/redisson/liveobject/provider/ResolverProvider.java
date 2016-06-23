@@ -13,27 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.annotation;
+package org.redisson.liveobject.provider;
 
-import org.redisson.liveobject.resolver.NamingScheme;
-import org.redisson.liveobject.resolver.DefaultNamingScheme;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import org.redisson.client.codec.Codec;
-import org.redisson.codec.JsonJacksonCodec;
+import java.lang.annotation.Annotation;
+import org.redisson.liveobject.resolver.Resolver;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface REntity {
+public interface ResolverProvider {
 
-    Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
-
-    Class<? extends Codec> codec() default JsonJacksonCodec.class;
-
+    Resolver getResolver(Class cls, Class<? extends Resolver> resolverClass, Annotation anno);
+    void registerResolver(Class cls, Class<? extends Resolver> resolverClass, Resolver resolver);
+    
 }

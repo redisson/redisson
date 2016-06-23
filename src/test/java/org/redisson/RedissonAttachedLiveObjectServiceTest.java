@@ -15,9 +15,10 @@ import org.redisson.core.RMap;
 import org.redisson.core.RObject;
 import org.redisson.liveobject.RLiveObjectService;
 import org.redisson.liveobject.RLiveObject;
+import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
-import org.redisson.liveobject.resolver.ClassAwareDistributedAtomicLongIdGenerator;
+import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
 import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
 
 /**
@@ -245,15 +246,15 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         RLiveObjectService s = redisson.getLiveObjectService();
         TestREntity t = s.<TestREntity, String>getOrCreate(TestREntity.class, "1");
         assertEquals("1", t.getName());
-        assertTrue(!redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
+        assertTrue(!redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
         t.setName("3333");
         assertEquals("3333", t.getName());
-        assertTrue(!redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).isExists());
+        assertTrue(!redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).isExists());
         t.setValue("111");
         assertEquals("111", t.getValue());
-        assertTrue(redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).isExists());
-        assertTrue(!redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
-        assertEquals("111", redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
+        assertTrue(redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).isExists());
+        assertTrue(!redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "1")).isExists());
+        assertEquals("111", redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
 //        ((RLiveObject) t).getLiveObjectLiveMap().put("value", "555");
 //        assertEquals("555", redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
 //        assertEquals("3333", ((RObject) t).getName());//field access takes priority over the implemented interface.
@@ -673,7 +674,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class TestClassID1 {
 
-        @RId(generator = ClassAwareDistributedAtomicLongIdGenerator.class)
+        @RId(generator = DistributedAtomicLongIdGenerator.class)
         private Long name;
 
         public TestClassID1(Long name) {
@@ -689,7 +690,7 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class TestClassID2 {
 
-        @RId(generator = ClassAwareDistributedAtomicLongIdGenerator.class)
+        @RId(generator = DistributedAtomicLongIdGenerator.class)
         private Long name;
 
         public TestClassID2(Long name) {

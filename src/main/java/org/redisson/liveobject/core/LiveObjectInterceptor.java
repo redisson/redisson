@@ -27,7 +27,8 @@ import org.redisson.RedissonMap;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RMap;
-import org.redisson.liveobject.CodecProvider;
+import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.annotation.REntity;
 
 /**
@@ -50,7 +51,7 @@ public class LiveObjectInterceptor {
     private final CodecProvider codecProvider;
     private final Class originalClass;
     private final String idFieldName;
-    private final REntity.NamingScheme namingScheme;
+    private final NamingScheme namingScheme;
     private final Class<? extends Codec> codecClass;
 
     public LiveObjectInterceptor(RedissonClient redisson, CodecProvider codecProvider, Class entityClass, String idFieldName) {

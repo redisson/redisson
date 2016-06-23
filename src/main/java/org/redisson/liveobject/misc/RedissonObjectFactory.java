@@ -19,8 +19,9 @@ import java.lang.reflect.Method;
 import org.redisson.RedissonClient;
 import org.redisson.RedissonReference;
 import org.redisson.client.codec.Codec;
-import org.redisson.liveobject.CodecProvider;
-import org.redisson.liveobject.ResolverProvider;
+import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.liveobject.provider.ResolverProvider;
+import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.annotation.REntity;
 
 /**
@@ -34,7 +35,7 @@ public class RedissonObjectFactory {
         if (type != null) {
             if (type.isAnnotationPresent(REntity.class)) {
                 REntity anno = type.getAnnotation(REntity.class);
-                REntity.NamingScheme ns = anno.namingScheme()
+                NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, rr.getType()));
                 return (T) redisson.getLiveObjectService(codecProvider, resolverProvider).getOrCreate(type, ns.resolveId(rr.getKeyName()));
