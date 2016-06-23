@@ -12,13 +12,11 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.redisson.core.RMap;
-import org.redisson.core.RObject;
 import org.redisson.liveobject.RLiveObjectService;
 import org.redisson.liveobject.RLiveObject;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
-import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
 import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
 
 /**
@@ -640,38 +638,6 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
     }
     
     @REntity
-    public static class TestGlobalID1 {
-
-        @RId(generator = DistributedAtomicLongIdGenerator.class)
-        private Long name;
-
-        public TestGlobalID1(Long name) {
-            this.name = name;
-        }
-
-        public Long getName() {
-            return name;
-        }
-        
-    }
-    
-    @REntity
-    public static class TestGlobalID2 {
-
-        @RId(generator = DistributedAtomicLongIdGenerator.class)
-        private Long name;
-
-        public TestGlobalID2(Long name) {
-            this.name = name;
-        }
-
-        public Long getName() {
-            return name;
-        }
-        
-    }
-    
-    @REntity
     public static class TestClassID1 {
 
         @RId(generator = DistributedAtomicLongIdGenerator.class)
@@ -709,15 +675,9 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         TestClass ts = service.create(TestClass.class);
         UUID uuid = UUID.fromString(ts.getId().toString());
         assertEquals(4, uuid.version());
-        TestGlobalID1 tg1 = service.create(TestGlobalID1.class);
-        assertEquals(new Long(1), tg1.getName());
-        TestGlobalID2 tg2 = service.create(TestGlobalID2.class);
-        assertEquals(new Long(2), tg2.getName());
         TestClassID1 tc1 = service.create(TestClassID1.class);
         assertEquals(new Long(1), tc1.getName());
         TestClassID2 tc2 = service.create(TestClassID2.class);
         assertEquals(new Long(1), tc2.getName());
-        TestGlobalID1 tg3 = service.create(TestGlobalID1.class);
-        assertEquals(new Long(3), tg3.getName());
     }
 }

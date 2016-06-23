@@ -28,8 +28,9 @@ public class DistributedAtomicLongIdGenerator implements RIdResolver<RId, Long> 
             = new DistributedAtomicLongIdGenerator();
 
     @Override
-    public Long resolve(Class value, RId id, RedissonClient redisson) {
-        return redisson.getAtomicLong(this.getClass().getCanonicalName())
+    public Long resolve(Class value, RId id, String idFieldName, RedissonClient redisson) {
+        return redisson.getAtomicLong(this.getClass().getCanonicalName()
+                + "{" + value.getCanonicalName() + "}:" + idFieldName)
                 .incrementAndGet();
     }
 

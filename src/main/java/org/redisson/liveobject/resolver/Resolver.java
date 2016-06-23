@@ -27,6 +27,6 @@ import org.redisson.RedissonClient;
  */
 public interface Resolver<T, A extends Annotation, V> {
 
-    public V resolve(T value, A annotation, RedissonClient redisson);
+    public V resolve(T value, A annotation, String idFieldName, RedissonClient redisson);
 
 }

@@ -28,7 +28,7 @@ public class RandomUUIDIdStringGenerator implements RIdResolver<RId, String>{
     public static final RandomUUIDIdStringGenerator INSTANCE = new RandomUUIDIdStringGenerator();
     
     @Override
-    public String resolve(Class value, RId id, RedissonClient redisson) {
+    public String resolve(Class value, RId id, String idFieldName, RedissonClient redisson) {
         return UUID.randomUUID().toString();
     }
     

@@ -45,7 +45,6 @@ import org.redisson.liveobject.core.AccessorInterceptor;
 //import org.redisson.liveobject.core.ExpirableInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.liveobject.resolver.RIdResolver;
 import org.redisson.liveobject.resolver.Resolver;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
@@ -76,12 +75,13 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     public <T> T create(Class<T> entityClass) {
         try {
             Class<? extends T> proxyClass = getProxyClass(entityClass);
+            String idFieldName = getRIdFieldName(entityClass);
             RId annotation = entityClass
-                    .getDeclaredField(getRIdFieldName(entityClass))
+                    .getDeclaredField(idFieldName)
                     .getAnnotation(RId.class);
             Resolver resolver = resolverProvider.getResolver(entityClass,
                     annotation.generator(), annotation);
-            Object id = resolver.resolve(entityClass, annotation, redisson);
+            Object id = resolver.resolve(entityClass, annotation, idFieldName, redisson);
             T proxied = instantiateLiveObject(proxyClass, id);
             return asLiveObject(proxied).isExists() ? null : proxied;
         } catch (Exception ex) {
