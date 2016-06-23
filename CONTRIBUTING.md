@@ -3,10 +3,8 @@ Have at least a local copy of built redis, for more information see [tutorial](h
 
 ## Running the tests ##
 
-```
-bash
+``` bash
 export REDIS_BIN=<path to redis binaries>
-export REDIS_VERSION="$(redis-cli INFO SERVER | sed -n 2p)"
 
 # And finally running the build
 mvn -DargLine="-Xmx2g -DredisBinary=$REDIS_BIN/redis-server -DtravisEnv=true" -Punit-test clean test -e -X
