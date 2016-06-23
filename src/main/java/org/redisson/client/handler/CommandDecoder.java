@@ -210,39 +210,49 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     private void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel) throws IOException {
         int code = in.readByte();
         if (code == '+') {
-            String result = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
-            in.skipBytes(2);
-            
-            handleResult(data, parts, result, false, channel);
-        } else if (code == '-') {
-            String error = in.readBytes(in.bytesBefore((byte) '\r')).toString(CharsetUtil.UTF_8);
-            in.skipBytes(2);
+            ByteBuf rb = in.readBytes(in.bytesBefore((byte) '\r'));
+            try {
+                String result = rb.toString(CharsetUtil.UTF_8);
+                in.skipBytes(2);
 
-            if (error.startsWith("MOVED")) {
-                String[] errorParts = error.split(" ");
-                int slot = Integer.valueOf(errorParts[1]);
-                String addr = errorParts[2];
-                data.tryFailure(new RedisMovedException(slot, addr));
-            } else if (error.startsWith("ASK")) {
-                String[] errorParts = error.split(" ");
-                int slot = Integer.valueOf(errorParts[1]);
-                String addr = errorParts[2];
-                data.tryFailure(new RedisAskException(slot, addr));
-            } else if (error.startsWith("LOADING")) {
-                data.tryFailure(new RedisLoadingException(error
-                        + ". channel: " + channel + " data: " + data));
-            } else if (error.startsWith("OOM")) {
-                data.tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
-                        + ". channel: " + channel + " data: " + data));
-            } else if (error.contains("-OOM ")) {
-                data.tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
-                        + ". channel: " + channel + " data: " + data));
-            } else {
-                if (data != null) {
-                    data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
+                handleResult(data, parts, result, false, channel);
+            } finally {
+                rb.release();
+            }
+        } else if (code == '-') {
+            ByteBuf rb = in.readBytes(in.bytesBefore((byte) '\r'));
+            try {
+                String error = rb.toString(CharsetUtil.UTF_8);
+                in.skipBytes(2);
+
+                if (error.startsWith("MOVED")) {
+                    String[] errorParts = error.split(" ");
+                    int slot = Integer.valueOf(errorParts[1]);
+                    String addr = errorParts[2];
+                    data.tryFailure(new RedisMovedException(slot, addr));
+                } else if (error.startsWith("ASK")) {
+                    String[] errorParts = error.split(" ");
+                    int slot = Integer.valueOf(errorParts[1]);
+                    String addr = errorParts[2];
+                    data.tryFailure(new RedisAskException(slot, addr));
+                } else if (error.startsWith("LOADING")) {
+                    data.tryFailure(new RedisLoadingException(error
+                            + ". channel: " + channel + " data: " + data));
+                } else if (error.startsWith("OOM")) {
+                    data.tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
+                            + ". channel: " + channel + " data: " + data));
+                } else if (error.contains("-OOM ")) {
+                    data.tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
+                            + ". channel: " + channel + " data: " + data));
                 } else {
-                    log.error("Error: {} channel: {} data: {}", error, channel, data);
+                    if (data != null) {
+                        data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
+                    } else {
+                        log.error("Error: {} channel: {} data: {}", error, channel, data);
+                    }
                 }
+            } finally {
+                rb.release();
             }
         } else if (code == ':') {
             Long result = readLong(in);
