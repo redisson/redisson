@@ -93,8 +93,8 @@ public class EvictionScheduler {
 //                            prevDelay = Math.max(minDelay, prevDelay/2);
 //                        }
 
-                        if (sizeHistory.peekFirst() == sizeHistory.peekLast()
-                                && sizeHistory.peekLast() == size) {
+                        if (sizeHistory.peekFirst().intValue() == sizeHistory.peekLast()
+                                && sizeHistory.peekLast().intValue() == size) {
                             if (size == keysLimit) {
                                 delay = Math.max(minDelay, delay/4);
                             }
