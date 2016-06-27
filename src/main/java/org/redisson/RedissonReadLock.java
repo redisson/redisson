@@ -115,7 +115,8 @@ public class RedissonReadLock extends RedissonLock implements RLock {
         throw new UnsupportedOperationException();
     }
 
-    Future<Boolean> forceUnlockAsync() {
+    @Override
+    public Future<Boolean> forceUnlockAsync() {
         Future<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hget', KEYS[1], 'mode') == 'read') then " +
                     "redis.call('del', KEYS[1]); " +

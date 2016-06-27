@@ -114,6 +114,8 @@ public interface RLock extends Lock, RExpirable {
      */
     int getHoldCount();
 
+    Future<Boolean> forceUnlockAsync();
+    
     Future<Void> unlockAsync();
 
     Future<Boolean> tryLockAsync();

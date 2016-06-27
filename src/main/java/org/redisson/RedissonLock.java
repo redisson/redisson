@@ -371,7 +371,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         get(forceUnlockAsync());
     }
 
-    Future<Boolean> forceUnlockAsync() {
+    @Override
+    public Future<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal();
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "

@@ -17,6 +17,7 @@ package org.redisson.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 /**
- * Groups multiple independent locks and handles them as one lock.
+ * Groups multiple independent locks and manages them as one lock.
  *
  * @author Nikita Koksharov
  *
@@ -78,8 +79,9 @@ public class RedissonMultiLock implements Lock {
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
         Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();
 
-        long currentThreadId = Thread.currentThread().getId();
-        lock(promise, 0, leaseTime, unit, locks, currentThreadId);
+        long currentThreadId = Thread.currentThread().getId();            
+        Queue<RLock> lockedLocks = new ConcurrentLinkedQueue<RLock>();
+        lock(promise, 0, leaseTime, unit, locks, currentThreadId, lockedLocks);
 
         promise.sync();
     }
@@ -89,7 +91,8 @@ public class RedissonMultiLock implements Lock {
         lockInterruptibly(-1, null);
     }
 
-    private void lock(final Promise<Void> promise, final long waitTime, final long leaseTime, final TimeUnit unit, final List<RLock> locks, final long currentThreadId) throws InterruptedException {
+    private void lock(final Promise<Void> promise, final long waitTime, final long leaseTime, final TimeUnit unit, 
+                        final List<RLock> locks, final long currentThreadId, final Queue<RLock> lockedLocks) throws InterruptedException {
         final AtomicInteger tryLockRequestsAmount = new AtomicInteger();
         final Map<Future<Boolean>, RLock> tryLockFutures = new HashMap<Future<Boolean>, RLock>(locks.size());
 
@@ -97,11 +100,10 @@ public class RedissonMultiLock implements Lock {
 
             AtomicReference<RLock> lockedLockHolder = new AtomicReference<RLock>();
             AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
-            Queue<RLock> lockedLocks = new ConcurrentLinkedQueue<RLock>();
 
             @Override
             public void operationComplete(final Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
+                if (isLockFailed(future)) {
                     failed.compareAndSet(null, future.cause());
                 }
 
@@ -116,7 +118,7 @@ public class RedissonMultiLock implements Lock {
                 }
 
                 if (tryLockRequestsAmount.decrementAndGet() == 0) {
-                    if (lockedLockHolder.get() == null && failed.get() == null) {
+                    if (isAllLocksAcquired(lockedLockHolder, failed, lockedLocks)) {
                         promise.setSuccess(null);
                         return;
                     }
@@ -141,7 +143,8 @@ public class RedissonMultiLock implements Lock {
             }
 
             protected void tryLockAgain(final Promise<Void> promise, final long waitTime, final long leaseTime,
-                    final TimeUnit unit, final long currentThreadId, final Map<Future<Boolean>, RLock> tryLockFutures) {
+                    final TimeUnit unit, final long currentThreadId, final Map<Future<Boolean>, RLock> tryLockFutures) throws InterruptedException {
+                lockedLocks.clear();
                 if (failed.get() != null) {
                     promise.setFailure(failed.get());
                 } else if (lockedLockHolder.get() != null) {
@@ -154,20 +157,19 @@ public class RedissonMultiLock implements Lock {
                                 return;
                             }
                             
+                            lockedLocks.add(lockedLock);
                             List<RLock> newLocks = new ArrayList<RLock>(tryLockFutures.values());
                             newLocks.remove(lockedLock);
-                            lock(promise, waitTime, leaseTime, unit, newLocks, currentThreadId);
+                            lock(promise, waitTime, leaseTime, unit, newLocks, currentThreadId, lockedLocks);
                         }
                     });
+                } else {
+                    lock(promise, waitTime, leaseTime, unit, locks, currentThreadId, lockedLocks);
                 }
             }
         };
 
         for (RLock lock : locks) {
-            if (lock.isHeldByCurrentThread()) {
-                continue;
-            }
-
             tryLockRequestsAmount.incrementAndGet();
             Future<Boolean> future;
             if (waitTime > 0 || leaseTime > 0) {
@@ -185,23 +187,23 @@ public class RedissonMultiLock implements Lock {
 
     @Override
     public boolean tryLock() {
-        List<Future<Boolean>> tryLockFutures = new ArrayList<Future<Boolean>>(locks.size());
+        Map<RLock, Future<Boolean>> tryLockFutures = new HashMap<RLock, Future<Boolean>>(locks.size());
         for (RLock lock : locks) {
-            tryLockFutures.add(lock.tryLockAsync());
+            tryLockFutures.put(lock, lock.tryLockAsync());
         }
 
         return sync(tryLockFutures);
     }
 
-    private boolean sync(List<Future<Boolean>> tryLockFutures) {
-        for (Future<Boolean> future : tryLockFutures) {
+    protected boolean sync(Map<RLock, Future<Boolean>> tryLockFutures) {
+        for (Future<Boolean> future : tryLockFutures.values()) {
             try {
                 if (!future.syncUninterruptibly().getNow()) {
-                    unlockInner();
+                    unlockInner(tryLockFutures.keySet());
                     return false;
                 }
             } catch (RuntimeException e) {
-                unlockInner();
+                unlockInner(tryLockFutures.keySet());
                 throw e;
             }
         }
@@ -209,7 +211,7 @@ public class RedissonMultiLock implements Lock {
         return true;
     }
 
-    private void unlockInner() {
+    protected void unlockInner(Collection<RLock> locks) {
         List<Future<Void>> futures = new ArrayList<Future<Void>>(locks.size());
         for (RLock lock : locks) {
             futures.add(lock.unlockAsync());
@@ -226,9 +228,9 @@ public class RedissonMultiLock implements Lock {
     }
 
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
-        List<Future<Boolean>> tryLockFutures = new ArrayList<Future<Boolean>>(locks.size());
+        Map<RLock, Future<Boolean>> tryLockFutures = new HashMap<RLock, Future<Boolean>>(locks.size());
         for (RLock lock : locks) {
-            tryLockFutures.add(lock.tryLockAsync(waitTime, leaseTime, unit));
+            tryLockFutures.put(lock, lock.tryLockAsync(waitTime, leaseTime, unit));
         }
 
         return sync(tryLockFutures);
@@ -252,6 +254,14 @@ public class RedissonMultiLock implements Lock {
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException();
+    }
+
+    protected boolean isLockFailed(Future<Boolean> future) {
+        return !future.isSuccess();
+    }
+
+    protected boolean isAllLocksAcquired(AtomicReference<RLock> lockedLockHolder, AtomicReference<Throwable> failed, Queue<RLock> lockedLocks) {
+        return lockedLockHolder.get() == null && failed.get() == null;
     }
 
 }
