@@ -60,7 +60,7 @@ public class RedissonRedLock extends RedissonMultiLock {
         }
         
         if (lockedLocks.size() < minLocksAmount(locks)) {
-            unlock();
+            unlockInner(lockedLocks);
             lockedLocks.clear();
             if (latestException != null) {
                 throw latestException;
