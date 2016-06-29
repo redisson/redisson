@@ -16,6 +16,7 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
@@ -43,6 +44,7 @@ import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import java.util.Map;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.misc.URIBuilder;
 
 public class RedisClient {
 
@@ -53,6 +55,10 @@ public class RedisClient {
     private final long timeout;
     private boolean hasOwnGroup;
 
+    public RedisClient(String address) {
+        this(URIBuilder.create(address).getHost(), URIBuilder.create(address).getPort());
+    }
+    
     public RedisClient(String host, int port) {
         this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60 * 1000);
         hasOwnGroup = true;
