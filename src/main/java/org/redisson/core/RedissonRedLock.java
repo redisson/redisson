@@ -47,7 +47,7 @@ public class RedissonRedLock extends RedissonMultiLock {
     }
     
     protected boolean sync(Map<RLock, Future<Boolean>> tryLockFutures) {
-        Queue<RLock> lockedLocks = new ConcurrentLinkedQueue<RLock>();
+        List<RLock> lockedLocks = new ArrayList<RLock>(tryLockFutures.size());
         RuntimeException latestException = null;
         for (Entry<RLock, Future<Boolean>> entry : tryLockFutures.entrySet()) {
             try {
@@ -61,7 +61,6 @@ public class RedissonRedLock extends RedissonMultiLock {
         
         if (lockedLocks.size() < minLocksAmount(locks)) {
             unlockInner(lockedLocks);
-            lockedLocks.clear();
             if (latestException != null) {
                 throw latestException;
             }

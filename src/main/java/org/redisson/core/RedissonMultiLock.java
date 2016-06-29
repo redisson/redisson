@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -196,16 +197,24 @@ public class RedissonMultiLock implements Lock {
     }
 
     protected boolean sync(Map<RLock, Future<Boolean>> tryLockFutures) {
-        for (Future<Boolean> future : tryLockFutures.values()) {
+        List<RLock> lockedLocks = new ArrayList<RLock>(tryLockFutures.size());
+        RuntimeException latestException = null;
+        for (Entry<RLock, Future<Boolean>> entry : tryLockFutures.entrySet()) {
             try {
-                if (!future.syncUninterruptibly().getNow()) {
-                    unlockInner(tryLockFutures.keySet());
-                    return false;
+                if (entry.getValue().syncUninterruptibly().getNow()) {
+                    lockedLocks.add(entry.getKey());
                 }
             } catch (RuntimeException e) {
-                unlockInner(tryLockFutures.keySet());
-                throw e;
+                latestException = e;
             }
+        }
+        
+        if (lockedLocks.size() < tryLockFutures.size()) {
+            unlockInner(lockedLocks);
+            if (latestException != null) {
+                throw latestException;
+            }
+            return false;
         }
         
         return true;
