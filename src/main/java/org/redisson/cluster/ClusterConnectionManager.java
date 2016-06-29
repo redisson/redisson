@@ -73,11 +73,17 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             Future<RedisConnection> connectionFuture = connect(cfg, addr);
             try {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
-                String nodesValue = connection.sync(RedisCommands.CLUSTER_NODES);
+                List<ClusterNodeInfo> nodes = connection.sync(RedisCommands.CLUSTER_NODES);
                 
-                log.debug("cluster nodes state from {} during startup:\n{}", connection.getRedisClient().getAddr(), nodesValue);
+                if (log.isDebugEnabled()) {
+                    StringBuilder nodesValue = new StringBuilder();
+                    for (ClusterNodeInfo clusterNodeInfo : nodes) {
+                        nodesValue.append(clusterNodeInfo.getNodeInfo()).append("\n");
+                    }
+                    log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
+                }
 
-                Collection<ClusterPartition> partitions = parsePartitions(nodesValue);
+                Collection<ClusterPartition> partitions = parsePartitions(nodes);
                 List<Future<Collection<Future<Void>>>> futures = new ArrayList<Future<Collection<Future<Void>>>>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
@@ -316,10 +322,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, final Iterator<URI> iterator) {
-        Future<String> future = connection.asyncWithTimeout(null, RedisCommands.CLUSTER_NODES);
-        future.addListener(new FutureListener<String>() {
+        Future<List<ClusterNodeInfo>> future = connection.asyncWithTimeout(null, RedisCommands.CLUSTER_NODES);
+        future.addListener(new FutureListener<List<ClusterNodeInfo>>() {
             @Override
-            public void operationComplete(Future<String> future) throws Exception {
+            public void operationComplete(Future<List<ClusterNodeInfo>> future) throws Exception {
                 if (!future.isSuccess()) {
                     log.error("Can't execute CLUSTER_NODES with " + connection.getRedisClient().getAddr(), future.cause());
                     close(connection);
@@ -327,10 +333,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     return;
                 }
 
-                String nodesValue = future.getNow();
-                log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
+                List<ClusterNodeInfo> nodes = future.getNow();
+                if (log.isDebugEnabled()) {
+                    StringBuilder nodesValue = new StringBuilder();
+                    for (ClusterNodeInfo clusterNodeInfo : nodes) {
+                        nodesValue.append(clusterNodeInfo.getNodeInfo()).append("\n");
+                    }
+                    log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
+                }
 
-                Collection<ClusterPartition> newPartitions = parsePartitions(nodesValue);
+                Collection<ClusterPartition> newPartitions = parsePartitions(nodes);
                 checkMasterNodesChange(newPartitions);
                 checkSlaveNodesChange(newPartitions);
                 checkSlotsChange(cfg, newPartitions);
@@ -557,9 +569,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
 
-    private Collection<ClusterPartition> parsePartitions(String nodesValue) {
+    private Collection<ClusterPartition> parsePartitions(List<ClusterNodeInfo> nodes) {
         Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
-        List<ClusterNodeInfo> nodes = parse(nodesValue);
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
             if (clusterNodeInfo.containsFlag(Flag.NOADDR)) {
                 // skip it
@@ -594,46 +605,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
         return partitions.values();
-    }
-
-    private List<ClusterNodeInfo> parse(String nodesResponse) {
-        List<ClusterNodeInfo> nodes = new ArrayList<ClusterNodeInfo>();
-        for (String nodeInfo : nodesResponse.split("\n")) {
-            ClusterNodeInfo node = new ClusterNodeInfo();
-            String[] params = nodeInfo.split(" ");
-
-            String nodeId = params[0];
-            node.setNodeId(nodeId);
-
-            String addr = params[1];
-            node.setAddress(addr);
-
-            String flags = params[2];
-            for (String flag : flags.split(",")) {
-                String flagValue = flag.toUpperCase().replaceAll("\\?", "");
-                node.addFlag(ClusterNodeInfo.Flag.valueOf(flagValue));
-            }
-
-            String slaveOf = params[3];
-            if (!"-".equals(slaveOf)) {
-                node.setSlaveOf(slaveOf);
-            }
-
-            if (params.length > 8) {
-                for (int i = 0; i < params.length - 8; i++) {
-                    String slots = params[i + 8];
-                    String[] parts = slots.split("-");
-
-                    if(parts.length == 1) {
-                        node.addSlotRange(new ClusterSlotRange(Integer.valueOf(parts[0]), Integer.valueOf(parts[0])));
-                    } else if(parts.length == 2) {
-                        node.addSlotRange(new ClusterSlotRange(Integer.valueOf(parts[0]), Integer.valueOf(parts[1])));
-                    }
-                }
-            }
-            nodes.add(node);
-        }
-        return nodes;
     }
 
     @Override
