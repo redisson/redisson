@@ -42,15 +42,6 @@
             </roles>
             <timezone>+4</timezone>
         </developer>
-        <developer>
-            <id>nkls</id>
-            <name>Nick Borbit</name>
-            <email>nborbit@gmail.com</email>
-            <roles>
-                <role>Developer</role>
-            </roles>
-            <timezone>+1</timezone>
-        </developer>
     </developers>
 
     <properties>
