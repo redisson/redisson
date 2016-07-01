@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.netty.util.concurrent.Future;
@@ -70,18 +69,6 @@ public class RedissonRedLock extends RedissonMultiLock {
         return true;
     }
 
-    public void unlock() {
-        List<Future<Boolean>> futures = new ArrayList<Future<Boolean>>(locks.size());
-
-        for (RLock lock : locks) {
-            futures.add(lock.forceUnlockAsync());
-        }
-
-        for (Future<Boolean> future : futures) {
-            future.awaitUninterruptibly();
-        }
-    }
-    
     protected int minLocksAmount(final List<RLock> locks) {
         return locks.size()/2 + 1;
     }
