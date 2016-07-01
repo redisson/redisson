@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,12 +56,25 @@ public class RedisClient {
     private boolean hasOwnGroup;
 
     public RedisClient(String address) {
-        this(URIBuilder.create(address).getHost(), URIBuilder.create(address).getPort());
+        this(URIBuilder.create(address));
+    }
+    
+    public RedisClient(URI address) {
+        this(new NioEventLoopGroup(), address);
+        hasOwnGroup = true;
+    }
+
+    public RedisClient(EventLoopGroup group, URI address) {
+        this(group, address.getHost(), address.getPort());
     }
     
     public RedisClient(String host, int port) {
         this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60 * 1000);
         hasOwnGroup = true;
+    }
+    
+    public RedisClient(EventLoopGroup group, String host, int port) {
+        this(group, NioSocketChannel.class, host, port, 60 * 1000);
     }
 
     public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int timeout) {
@@ -156,6 +169,9 @@ public class RedisClient {
     }
 
     public ChannelGroupFuture shutdownAsync() {
+        for (Channel channel : channels) {
+            RedisConnection.getFrom(channel).setClosed(true);
+        }
         return channels.close();
     }
 
