@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +63,11 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             if (params.length > 8) {
                 for (int i = 0; i < params.length - 8; i++) {
                     String slots = params[i + 8];
-                    String[] parts = slots.split("-");
+                    if (slots.indexOf("-<-") != -1 || slots.indexOf("->-") != -1) {
+                        continue;
+                    }
 
+                    String[] parts = slots.split("-");
                     if(parts.length == 1) {
                         node.addSlotRange(new ClusterSlotRange(Integer.valueOf(parts[0]), Integer.valueOf(parts[0])));
                     } else if(parts.length == 2) {
