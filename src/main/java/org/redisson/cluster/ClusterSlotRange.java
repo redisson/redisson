@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2014 Nikita Koksharov, Nickolay Borbit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,10 @@ public class ClusterSlotRange {
 
     public int getEndSlot() {
         return endSlot;
+    }
+    
+    public int size() {
+        return endSlot - startSlot + 1;
     }
 
     public boolean isOwn(int slot) {
