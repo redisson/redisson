@@ -76,12 +76,17 @@ public class PubSubConnectionEntry {
             }
         }
 
+        boolean deleted = false;
         synchronized (queue) {
             if (channelListeners.get(channelName) != queue) {
-                addListener(channelName, listener);
-                return;
+                deleted = true;
+            } else {
+                queue.add(listener);
             }
-            queue.add(listener);
+        }
+        if (deleted) {
+            addListener(channelName, listener);
+            return;
         }
 
         conn.addListener(listener);
