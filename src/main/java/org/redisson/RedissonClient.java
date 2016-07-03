@@ -60,7 +60,7 @@ import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 import org.redisson.liveobject.provider.CodecProvider;
-import org.redisson.liveobject.RLiveObjectService;
+import org.redisson.api.RLiveObjectService;
 import org.redisson.liveobject.provider.ResolverProvider;
 
 /**

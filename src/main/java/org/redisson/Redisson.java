@@ -76,7 +76,7 @@ import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
 import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.provider.DefaultCodecProvider;
-import org.redisson.liveobject.RLiveObjectService;
+import org.redisson.api.RLiveObjectService;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;

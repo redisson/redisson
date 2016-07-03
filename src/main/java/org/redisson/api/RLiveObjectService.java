@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject;
+package org.redisson.api;
 
 /**
  * The pre-registration of each entity class is not necessary.
@@ -107,13 +107,13 @@ public interface RLiveObjectService {
     /**
      * Returns proxied object for the detached object. Transfers all the
      * <b>NON NULL</b> field values to the redis server. It does not delete any
- existing data in redis in case of the field value is null.
-
- The class representing this object should have a field annotated with
- RId, and the object should hold a non null value in that field.
-
- If this object is not in redis then a new hash key will be created to
- store it.
+     * existing data in redis in case of the field value is null.
+     * 
+     * The class representing this object should have a field annotated with
+     * RId, and the object should hold a non null value in that field.
+     * 
+     * If this object is not in redis then a new hash key will be created to
+     * store it.
      *
      * @param <T> Entity type
      * @param detachedObject
