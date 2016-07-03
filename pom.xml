@@ -3,7 +3,7 @@
 
     <groupId>org.redisson</groupId>
     <artifactId>redisson</artifactId>
-    <version>2.2.17-SNAPSHOT</version>
+    <version>2.2.18-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Redisson</name>
@@ -41,15 +41,6 @@
                 <role>Developer</role>
             </roles>
             <timezone>+4</timezone>
-        </developer>
-        <developer>
-            <id>nkls</id>
-            <name>Nick Borbit</name>
-            <email>nborbit@gmail.com</email>
-            <roles>
-                <role>Developer</role>
-            </roles>
-            <timezone>+1</timezone>
         </developer>
     </developers>
 

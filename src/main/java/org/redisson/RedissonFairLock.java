@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,11 +61,13 @@ public class RedissonFairLock extends RedissonLock implements RLock {
         return PUBSUB.getEntry(getEntryName() + ":" + threadId);
     }
 
+    @Override
     protected Future<RedissonLockEntry> subscribe(long threadId) {
         return PUBSUB.subscribe(getEntryName() + ":" + threadId, 
                 getChannelName() + ":" + getLockName(threadId), commandExecutor.getConnectionManager());
     }
 
+    @Override
     protected void unsubscribe(Future<RedissonLockEntry> future, long threadId) {
         PUBSUB.unsubscribe(future.getNow(), getEntryName() + ":" + threadId, 
                 getChannelName() + ":" + getLockName(threadId), commandExecutor.getConnectionManager());
@@ -212,7 +214,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    Future<Boolean> forceUnlockAsync() {
+    public Future<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal();
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads

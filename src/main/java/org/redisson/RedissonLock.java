@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -371,7 +371,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         get(forceUnlockAsync());
     }
 
-    Future<Boolean> forceUnlockAsync() {
+    @Override
+    public Future<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal();
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "

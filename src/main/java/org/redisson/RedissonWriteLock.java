@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,8 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
         throw new UnsupportedOperationException();
     }
 
-    Future<Boolean> forceUnlockAsync() {
+    @Override
+    public Future<Boolean> forceUnlockAsync() {
         Future<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
               "if (redis.call('hget', KEYS[1], 'mode') == 'write') then " +
                   "redis.call('del', KEYS[1]); " +

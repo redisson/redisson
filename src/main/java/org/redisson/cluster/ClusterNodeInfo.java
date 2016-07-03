@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,17 @@ import java.util.Set;
 
 import org.redisson.misc.URIBuilder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ClusterNodeInfo {
 
     public enum Flag {NOFLAGS, SLAVE, MASTER, MYSELF, FAIL, HANDSHAKE, NOADDR};
 
+    private final String nodeInfo;
+    
     private String nodeId;
     private URI address;
     private final Set<Flag> flags = new HashSet<Flag>();
@@ -32,6 +39,10 @@ public class ClusterNodeInfo {
 
     private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
 
+    public ClusterNodeInfo(String nodeInfo) {
+        this.nodeInfo = nodeInfo;
+    }
+    
     public String getNodeId() {
         return nodeId;
     }
@@ -67,6 +78,10 @@ public class ClusterNodeInfo {
         this.slaveOf = slaveOf;
     }
 
+    public String getNodeInfo() {
+        return nodeInfo;
+    }
+    
     @Override
     public String toString() {
         return "ClusterNodeInfo [nodeId=" + nodeId + ", address=" + address + ", flags=" + flags

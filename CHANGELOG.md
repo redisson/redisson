@@ -2,6 +2,22 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####30-Jun-2016 - version 2.2.17 released  
+Feature - `RMultimap.keySize` method added  
+Feature - `RKeys.getType` method added  
+Feature - `RKeys.getKeysByPattern` method with count param added  
+Improvement - `RedissonMultiLock.lock` method optimization  
+Feature - `RedissonRedLock` implemented  
+Fixed - `RMapCache.delete` doesn't delete redisson__idle__set__  
+Fixed - integer comparison in EvictionScheduler  
+Fixed - ByteBuf leak (thanks to jackygurui)  
+Fixed - `RTopic.addListener` method worked asynchronous sometimes  
+Fixed - ClastCastException occurred if multi-type PubSub channels were used with single connection  
+Fixed - PubSub status message decoding  
+Fixed - RLock.lock can hang in some cases  
+Fixed - PubSub subscription may stuck in some cases  
+Fixed - return value of `RedissonMultimap.keySet.size` method  
+
 ####12-Jun-2016 - version 2.2.16 released  
 Feature - `RGeo`, `RMultimapCache` added to `RBatch`  
 Feature - `fastRemove` and `fastRemoveAsync` methods were added to `RList`  

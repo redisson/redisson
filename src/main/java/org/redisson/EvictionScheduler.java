@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,8 +93,8 @@ public class EvictionScheduler {
 //                            prevDelay = Math.max(minDelay, prevDelay/2);
 //                        }
 
-                        if (sizeHistory.peekFirst() == sizeHistory.peekLast()
-                                && sizeHistory.peekLast() == size) {
+                        if (sizeHistory.peekFirst().intValue() == sizeHistory.peekLast()
+                                && sizeHistory.peekLast().intValue() == size) {
                             if (size == keysLimit) {
                                 delay = Math.max(minDelay, delay/4);
                             }

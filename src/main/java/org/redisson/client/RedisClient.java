@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
@@ -43,6 +44,7 @@ import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import java.util.Map;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.misc.URIBuilder;
 
 public class RedisClient {
 
@@ -53,9 +55,26 @@ public class RedisClient {
     private final long timeout;
     private boolean hasOwnGroup;
 
+    public RedisClient(String address) {
+        this(URIBuilder.create(address));
+    }
+    
+    public RedisClient(URI address) {
+        this(new NioEventLoopGroup(), address);
+        hasOwnGroup = true;
+    }
+
+    public RedisClient(EventLoopGroup group, URI address) {
+        this(group, address.getHost(), address.getPort());
+    }
+    
     public RedisClient(String host, int port) {
         this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60 * 1000);
         hasOwnGroup = true;
+    }
+    
+    public RedisClient(EventLoopGroup group, String host, int port) {
+        this(group, NioSocketChannel.class, host, port, 60 * 1000);
     }
 
     public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int timeout) {
@@ -150,6 +169,9 @@ public class RedisClient {
     }
 
     public ChannelGroupFuture shutdownAsync() {
+        for (Channel channel : channels) {
+            RedisConnection.getFrom(channel).setClosed(true);
+        }
         return channels.close();
     }
 

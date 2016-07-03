@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -554,7 +554,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (scheduledFuture != null) {
                     scheduledFuture.cancel(false);
                 }
-                connectionManager.getShutdownPromise().removeListener(listener);
+
+                synchronized (listener) {
+                    connectionManager.getShutdownPromise().removeListener(listener);
+                }
+
                 // handling cancel operation for commands from skipTimeout collection
                 if ((future.isCancelled() && details.getAttemptPromise().cancel(true)) 
                         || canceledByScheduler.get()) {
@@ -579,7 +583,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         });
         
-        connectionManager.getShutdownPromise().addListener(listener);
+        synchronized (listener) {
+            if (!details.getMainPromise().isDone()) {
+                connectionManager.getShutdownPromise().addListener(listener);
+            }
+        }
     }
 
     private <R, V> void checkConnectionFuture(final NodeSource source,

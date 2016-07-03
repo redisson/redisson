@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,12 +76,17 @@ public class PubSubConnectionEntry {
             }
         }
 
+        boolean deleted = false;
         synchronized (queue) {
             if (channelListeners.get(channelName) != queue) {
-                addListener(channelName, listener);
-                return;
+                deleted = true;
+            } else {
+                queue.add(listener);
             }
-            queue.add(listener);
+        }
+        if (deleted) {
+            addListener(channelName, listener);
+            return;
         }
 
         conn.addListener(listener);

@@ -17,7 +17,7 @@ public class RedissonMultiLockTest {
 
     @Test
     public void testMultiThreads() throws IOException, InterruptedException {
-        RedisProcess redis1 = redisTestMultilockInstance1();
+        RedisProcess redis1 = redisTestMultilockInstance(6320);
         
         Config config1 = new Config();
         config1.useSingleServer().setAddress("127.0.0.1:6320");
@@ -52,28 +52,15 @@ public class RedissonMultiLockTest {
     
     @Test
     public void test() throws IOException, InterruptedException {
-        RedisProcess redis1 = redisTestMultilockInstance1();
-        RedisProcess redis2 = redisTestMultilockInstance2();
-        RedisProcess redis3 = redisTestMultilockInstance3();
+        RedisProcess redis1 = redisTestMultilockInstance(6320);
+        RedisProcess redis2 = redisTestMultilockInstance(6321);
+        RedisProcess redis3 = redisTestMultilockInstance(6322);
 
         NioEventLoopGroup group = new NioEventLoopGroup();
-        Config config1 = new Config();
-        config1.useSingleServer().setAddress("127.0.0.1:6320");
-        config1.setEventLoopGroup(group);
-        RedissonClient client1 = Redisson.create(config1);
-        client1.getKeys().flushdb();
-
-        Config config2 = new Config();
-        config2.useSingleServer().setAddress("127.0.0.1:6321");
-        config2.setEventLoopGroup(group);
-        RedissonClient client2 = Redisson.create(config2);
-        client2.getKeys().flushdb();
-
-        Config config3 = new Config();
-        config3.useSingleServer().setAddress("127.0.0.1:6322");
-        config3.setEventLoopGroup(group);
-        RedissonClient client3 = Redisson.create(config3);
-        client3.getKeys().flushdb();
+        
+        RedissonClient client1 = createClient(group, "127.0.0.1:6320");
+        RedissonClient client2 = createClient(group, "127.0.0.1:6321");
+        RedissonClient client3 = createClient(group, "127.0.0.1:6322");
 
         final RLock lock1 = client1.getLock("lock1");
         final RLock lock2 = client2.getLock("lock2");
@@ -106,28 +93,26 @@ public class RedissonMultiLockTest {
 
         assertThat(redis3.stop()).isEqualTo(0);
     }
+
+    private RedissonClient createClient(String host) {
+        return createClient(null, host);
+    }
+
+    private RedissonClient createClient(NioEventLoopGroup group, String host) {
+        Config config1 = new Config();
+        config1.useSingleServer().setAddress(host);
+        config1.setEventLoopGroup(group);
+        RedissonClient client1 = Redisson.create(config1);
+        client1.getKeys().flushdb();
+        return client1;
+    }
     
-    private RedisProcess redisTestMultilockInstance1() throws IOException, InterruptedException {
+    private RedisProcess redisTestMultilockInstance(int port) throws IOException, InterruptedException {
         return new RedisRunner()
                 .nosave()
                 .randomDir()
-                .port(6320)
+                .port(port)
                 .run();
     }
     
-    private RedisProcess redisTestMultilockInstance2() throws IOException, InterruptedException {
-        return new RedisRunner()
-                .nosave()
-                .randomDir()
-                .port(6321)
-                .run();
-    }
-    
-    private RedisProcess redisTestMultilockInstance3() throws IOException, InterruptedException {
-        return new RedisRunner()
-                .nosave()
-                .randomDir()
-                .port(6322)
-                .run();
-    }
 }

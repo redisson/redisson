@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Nikita Koksharov, Nickolay Borbit
+ * Copyright 2016 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,10 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
         super(name, convertor, encodeParamIndex);
     }
 
+    public RedisStrictCommand(String name, String subName) {
+        super(name, subName);
+    }
+    
     public RedisStrictCommand(String name, String subName, Convertor<T> convertor) {
         super(name, subName, convertor);
     }
