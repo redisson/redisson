@@ -3,11 +3,21 @@ package org.redisson;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import static org.junit.Assert.*;
@@ -16,6 +26,14 @@ import org.redisson.core.RMap;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RLiveObject;
 import org.redisson.core.RAtomicLong;
+import org.redisson.core.RBitSet;
+import org.redisson.core.RBlockingDeque;
+import org.redisson.core.RBlockingQueue;
+import org.redisson.core.RDeque;
+import org.redisson.core.RList;
+import org.redisson.core.RQueue;
+import org.redisson.core.RSet;
+import org.redisson.core.RSortedSet;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
@@ -681,6 +699,187 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertEquals(new Long(1), tc1.getName());
         TestClassID2 tc2 = service.create(TestClassID2.class);
         assertEquals(new Long(1), tc2.getName());
+    }
+    
+    @Test
+    public void testTransformation() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass ts = service.create(TestClass.class);
+        
+        HashMap<String, String> m = new HashMap();
+        ts.setContent(m);
+        assertFalse(HashMap.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RMap.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        HashSet<String> s = new HashSet();
+        ts.setContent(s);
+        assertFalse(HashSet.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RSet.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        BitSet bs = new BitSet();
+        ts.setContent(bs);
+        assertFalse(BitSet.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RBitSet.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        TreeSet<String> ss = new TreeSet();
+        ts.setContent(ss);
+        assertFalse(TreeSet.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RSortedSet.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        ArrayList<String> al = new ArrayList();
+        ts.setContent(al);
+        assertFalse(ArrayList.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RList.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        ConcurrentHashMap<String, String> chm = new ConcurrentHashMap();
+        ts.setContent(chm);
+        assertFalse(ConcurrentHashMap.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RMap.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        ArrayBlockingQueue<String> abq = new ArrayBlockingQueue(10);
+        ts.setContent(abq);
+        assertFalse(ArrayBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        ConcurrentLinkedQueue<String> clq = new ConcurrentLinkedQueue();
+        ts.setContent(clq);
+        assertFalse(ConcurrentLinkedQueue.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RQueue.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        LinkedBlockingDeque<String> lbdq = new LinkedBlockingDeque();
+        ts.setContent(lbdq);
+        assertFalse(LinkedBlockingDeque.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RBlockingDeque.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        LinkedList<String> ll = new LinkedList();
+        ts.setContent(ll);
+        assertFalse(LinkedList.class.isAssignableFrom(ts.getContent().getClass()));
+        assertTrue(RDeque.class.isAssignableFrom(ts.getContent().getClass()));
+        
+    }
+    
+    @REntity(fieldTransformation = REntity.TransformationMode.IMPLEMENTATION_BASED)
+    public static class TestClassNoTransformation {
+
+        private String value;
+        private String code;
+        private Object content;
+
+        @RId
+        private Serializable id;
+
+        public TestClassNoTransformation(Serializable id) {
+            this.id = id;
+        }
+
+        public Serializable getId() {
+            return id;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        public String getCode() {
+            return code;
+        }
+
+        public void setCode(String code) {
+            this.code = code;
+        }
+
+        public Object getContent() {
+            return content;
+        }
+
+        public void setContent(Object content) {
+            this.content = content;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null || !(obj instanceof TestClass) || !this.getClass().equals(obj.getClass())) {
+                return false;
+            }
+            TestClass o = (TestClass) obj;
+            return Objects.equals(this.id, o.id)
+                    && Objects.equals(this.code, o.code)
+                    && Objects.equals(this.value, o.value)
+                    && Objects.equals(this.content, o.content);
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 3;
+            hash = 33 * hash + Objects.hashCode(this.value);
+            hash = 33 * hash + Objects.hashCode(this.code);
+            hash = 33 * hash + Objects.hashCode(this.id);
+            hash = 33 * hash + Objects.hashCode(this.content);
+            return hash;
+        }
+
+    }
+
+    @Test
+    public void testNoTransformation() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClassNoTransformation ts = service.create(TestClassNoTransformation.class);
+        
+        HashMap<String, String> m = new HashMap();
+        ts.setContent(m);
+        assertTrue(HashMap.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RMap.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        HashSet<String> s = new HashSet();
+        ts.setContent(s);
+        assertTrue(HashSet.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RSet.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        BitSet bs = new BitSet();
+        ts.setContent(bs);
+        assertTrue(BitSet.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RBitSet.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        TreeSet<String> ss = new TreeSet();
+        ts.setContent(ss);
+        assertTrue(TreeSet.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RSortedSet.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        ArrayList<String> al = new ArrayList();
+        ts.setContent(al);
+        assertTrue(ArrayList.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RList.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        ConcurrentHashMap<String, String> chm = new ConcurrentHashMap();
+        ts.setContent(chm);
+        assertTrue(ConcurrentHashMap.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RMap.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        ArrayBlockingQueue<String> abq = new ArrayBlockingQueue(10);
+        abq.add("111");
+        ts.setContent(abq);
+        assertTrue(ArrayBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        ConcurrentLinkedQueue<String> clq = new ConcurrentLinkedQueue();
+        ts.setContent(clq);
+        assertTrue(ConcurrentLinkedQueue.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RQueue.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        LinkedBlockingDeque<String> lbdq = new LinkedBlockingDeque();
+        ts.setContent(lbdq);
+        assertTrue(LinkedBlockingDeque.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RBlockingDeque.class.isAssignableFrom(ts.getContent().getClass()));
+        
+        LinkedList<String> ll = new LinkedList();
+        ts.setContent(ll);
+        assertTrue(LinkedList.class.isAssignableFrom(ts.getContent().getClass()));
+        assertFalse(RDeque.class.isAssignableFrom(ts.getContent().getClass()));
+        
     }
     
 }

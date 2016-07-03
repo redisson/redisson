@@ -56,7 +56,7 @@ public class RedissonReference {
      *     ExceptionInInitializerError - if the initialization provoked by this method fails
      *     ClassNotFoundException - if the class cannot be located
      */
-    public Class getType() throws Exception {
+    public Class<?> getType() throws Exception {
         return Class.forName(type);
     }
 
@@ -70,7 +70,7 @@ public class RedissonReference {
     /**
      * @param type the type to set
      */
-    public void setType(Class type) {
+    public void setType(Class<?> type) {
         if (!type.isAnnotationPresent(REntity.class) && !RObject.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject");
         }

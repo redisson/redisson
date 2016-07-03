@@ -89,15 +89,15 @@ public class AccessorInterceptor {
 
     static {
         supportedClassMapping = new LinkedHashMap<Class, Class<? extends RObject>>();
-        supportedClassMapping.put(List.class,           RedissonList.class);
         supportedClassMapping.put(SortedSet.class,      RedissonSortedSet.class);
         supportedClassMapping.put(Set.class,            RedissonSet.class);
         supportedClassMapping.put(ConcurrentMap.class,  RedissonMap.class);
         supportedClassMapping.put(Map.class,            RedissonMap.class);
-        supportedClassMapping.put(BlockingQueue.class,  RedissonBlockingQueue.class);
-        supportedClassMapping.put(Queue.class,          RedissonQueue.class);
         supportedClassMapping.put(BlockingDeque.class,  RedissonBlockingDeque.class);
         supportedClassMapping.put(Deque.class,          RedissonDeque.class);
+        supportedClassMapping.put(BlockingQueue.class,  RedissonBlockingQueue.class);
+        supportedClassMapping.put(Queue.class,          RedissonQueue.class);
+        supportedClassMapping.put(List.class,           RedissonList.class);
         supportedClassMapping.put(BitSet.class,         RedissonBitSet.class);
     }
     
@@ -127,14 +127,17 @@ public class AccessorInterceptor {
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
-                return liveMap.put(fieldName, new RedissonReference(rEntity,
+                liveMap.put(fieldName, new RedissonReference(rEntity,
                         ns.getName(rEntity, getREntityIdFieldName(args[0]),
                                 ((RLiveObject) args[0]).getLiveObjectId())));
+                return me;
             }
             Object arg = args[0];
-            REntity rnAnno = me.getClass().getSuperclass().getAnnotation(REntity.class);
             if (!(arg instanceof RObject)
-                    && TransformationMode.ANNOTATION_BASED.equals(rnAnno.fieldTransformation())) {
+                    && (arg instanceof BitSet || arg instanceof Collection || arg instanceof Map)
+                    && TransformationMode.ANNOTATION_BASED
+                            .equals(me.getClass().getSuperclass()
+                            .getAnnotation(REntity.class).fieldTransformation())) {
                 Class<? extends RObject> mappedClass = getMappedClass(arg);
                 if (mappedClass != null) {
                     Entry<NamingScheme, Codec> entry = getFieldNamingSchemeAndCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
@@ -145,14 +148,12 @@ public class AccessorInterceptor {
                                     entry.getValue());
                     if (obj instanceof RBitSet) {
                         ((RBitSet) obj).set((BitSet) args[0]);
-                        arg = obj;
                     } else if (obj instanceof Collection) {
                         ((Collection) obj).addAll((Collection) arg);
-                        arg = obj;
-                    } else if (obj instanceof Map) {
+                    } else {
                         ((Map) obj).putAll((Map) arg);
-                        arg = obj;
                     }
+                    arg = obj;
                 }
             }
             
@@ -160,10 +161,12 @@ public class AccessorInterceptor {
                 RObject ar = (RObject) arg;
                 Codec codec = ar.getCodec();
                 codecProvider.registerCodec((Class) codec.getClass(), ar, codec);
-                return liveMap.put(fieldName,
+                liveMap.put(fieldName,
                         new RedissonReference(ar.getClass(), ar.getName(), codec));
+                return me;
             }
-            return liveMap.put(fieldName, args[0]);
+            liveMap.put(fieldName, args[0]);
+            return me;
         }
         return superMethod.call();
     }

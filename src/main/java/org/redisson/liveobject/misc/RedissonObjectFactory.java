@@ -16,6 +16,8 @@
 package org.redisson.liveobject.misc;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 import org.redisson.RedissonClient;
 import org.redisson.RedissonReference;
 import org.redisson.client.codec.Codec;
@@ -32,7 +34,7 @@ import org.redisson.liveobject.annotation.REntity;
  */
 public class RedissonObjectFactory {
     
-    public static <T> T create(RedissonClient redisson, CodecProvider codecProvider, ResolverProvider resolverProvider, RedissonReference rr, Class expected) throws Exception {
+    public static <T> T create(RedissonClient redisson, CodecProvider codecProvider, ResolverProvider resolverProvider, RedissonReference rr, Class<?> expected) throws Exception {
         Class<? extends Object> type = rr.getType();
         if (type != null) {
             if (type.isAnnotationPresent(REntity.class)) {
@@ -42,10 +44,12 @@ public class RedissonObjectFactory {
                         .newInstance(codecProvider.getCodec(anno, rr.getType()));
                 return (T) redisson.getLiveObjectService(codecProvider, resolverProvider).getOrCreate(type, ns.resolveId(rr.getKeyName()));
             }
+            List<Class<?>> interfaces = Arrays.asList(rr.getType().getInterfaces());
             for (Method method : RedissonClient.class.getDeclaredMethods()) {
                 if (method.getName().startsWith("get")
                         && method.getReturnType().isAssignableFrom(type)
-                        && expected.isAssignableFrom(method.getReturnType())) {
+                        && expected.isAssignableFrom(method.getReturnType())
+                        && interfaces.contains(method.getReturnType())) {
                     if ((rr.isDefaultCodec() || RBitSet.class.isAssignableFrom(method.getReturnType())) && method.getParameterCount() == 1) {
                         return (T) method.invoke(redisson, rr.getKeyName());
                     } else if (!rr.isDefaultCodec()
@@ -61,9 +65,11 @@ public class RedissonObjectFactory {
     }
     
     public static <T extends RObject, K extends Codec> T create(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws Exception {
+        List<Class<?>> interfaces = Arrays.asList(expectedType.getInterfaces());
         for (Method method : RedissonClient.class.getDeclaredMethods()) {
                 if (method.getName().startsWith("get")
-                        && method.getReturnType().isAssignableFrom(expectedType)) {
+                        && method.getReturnType().isAssignableFrom(expectedType)
+                        && interfaces.contains(method.getReturnType())) {
                     if ((codec == null || RBitSet.class.isAssignableFrom(method.getReturnType())) && method.getParameterCount() == 1) {
                         return (T) method.invoke(redisson, name);
                     } else if (codec != null
