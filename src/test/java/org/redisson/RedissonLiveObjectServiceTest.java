@@ -9,11 +9,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.redisson.core.RMap;
-import org.redisson.liveobject.RLiveObjectService;
-import org.redisson.liveobject.RLiveObject;
+import org.redisson.api.RLiveObjectService;
+import org.redisson.api.RLiveObject;
+import org.redisson.core.RAtomicLong;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
@@ -23,7 +25,7 @@ import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
+public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @REntity
     public static class TestREntity implements Comparable<TestREntity>, Serializable {
@@ -680,4 +682,5 @@ public class RedissonAttachedLiveObjectServiceTest extends BaseTest {
         TestClassID2 tc2 = service.create(TestClassID2.class);
         assertEquals(new Long(1), tc2.getName());
     }
+    
 }
