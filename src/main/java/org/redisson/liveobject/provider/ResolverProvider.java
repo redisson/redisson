@@ -24,7 +24,7 @@ import org.redisson.liveobject.resolver.Resolver;
  */
 public interface ResolverProvider {
 
-    Resolver getResolver(Class cls, Class<? extends Resolver> resolverClass, Annotation anno);
-    void registerResolver(Class cls, Class<? extends Resolver> resolverClass, Resolver resolver);
+    Resolver getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno);
+    void registerResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Resolver resolver);
     
 }

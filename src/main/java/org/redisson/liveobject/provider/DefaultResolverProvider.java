@@ -28,7 +28,7 @@ public class DefaultResolverProvider implements ResolverProvider {
     public final ConcurrentMap<Class<? extends Resolver>, Resolver> providerCache = PlatformDependent.newConcurrentHashMap();
 
     @Override
-    public Resolver getResolver(Class cls, Class<? extends Resolver> resolverClass, Annotation anno) {
+    public Resolver getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno) {
         if (!providerCache.containsKey(resolverClass)) {
             try {
                 providerCache.putIfAbsent(resolverClass, resolverClass.newInstance());
@@ -40,7 +40,7 @@ public class DefaultResolverProvider implements ResolverProvider {
     }
 
     @Override
-    public void registerResolver(Class cls, Class<? extends Resolver> resolverClass, Resolver resolver) {
+    public void registerResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Resolver resolver) {
         providerCache.putIfAbsent(resolverClass, resolver);
     }
     
