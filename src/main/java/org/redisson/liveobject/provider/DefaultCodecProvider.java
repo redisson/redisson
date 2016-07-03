@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RObject;
 import org.redisson.liveobject.annotation.REntity;
+import org.redisson.liveobject.annotation.RObjectField;
 
 /**
  *
@@ -30,7 +31,7 @@ public class DefaultCodecProvider implements CodecProvider {
     public final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
 
     @Override
-    public Codec getCodec(Class<? extends Codec> codecClass) {
+    public <T extends Codec> T getCodec(Class<T> codecClass) {
         if (!codecCache.containsKey(codecClass)) {
             try {
                 codecCache.putIfAbsent(codecClass, codecClass.newInstance());
@@ -38,54 +39,100 @@ public class DefaultCodecProvider implements CodecProvider {
                 throw new RuntimeException(ex);
             }
         }
-        return codecCache.get(codecClass);
+        return (T) codecCache.get(codecClass);
     }
 
     @Override
-    public Codec getCodec(REntity anno, Class cls) {
+    public <T extends Codec> T getCodec(REntity anno, Class<?> cls) {
         if (!cls.isAnnotationPresent(anno.annotationType())) {
             throw new IllegalArgumentException("Annotation REntity does not present on type [" + cls.getCanonicalName() + "]");
         }
-        return getCodec(anno.codec());
+        return this.<T>getCodec((Class<T>) anno.codec());
+    }
+
+    @Override
+    public <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName) {
+        try {
+            if (!cls.getField(fieldName).isAnnotationPresent(anno.getClass())) {
+                throw new IllegalArgumentException("Annotation RObjectField does not present on field " + fieldName + " of type [" + cls.getCanonicalName() + "]");
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+        if (rObjectClass.isInterface()) {
+            throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
+        }
+        return this.<T>getCodec((Class<T>) anno.codec());
     }
     
     @Override
-    public Codec getCodec(Class<? extends Codec> codecClass, Class<? extends RObject> rObjectClass, String name) {
+    public <T extends Codec, K extends RObject> T getCodec(Class<T> codecClass, Class<K> rObjectClass) {
         if (rObjectClass.isInterface()) {
             throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
         }
         return getCodec(codecClass);
     }
-
+    
     @Override
-    public Codec getCodec(Class<? extends Codec> codecClass, RObject rObject, String name) {
-        return getCodec(codecClass, rObject.getClass(), name);
+    public <T extends Codec, K extends RObject> T getCodec(Class<T> codecClass, Class<K> rObjectClass, String name) {
+        if (rObjectClass.isInterface()) {
+            throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
+        }
+        return getCodec(codecClass, rObjectClass);
     }
 
     @Override
-    public void registerCodec(Class<? extends Codec> cls, Codec codec) {
+    public <T extends Codec> T getCodec(Class<T> codecClass, RObject rObject) {
+        return getCodec(codecClass, rObject.getClass(), rObject.getName());
+    }
+
+    @Override
+    public <T extends Codec> void registerCodec(Class<T> cls, T codec) {
+        if (!cls.isInstance(codec)) {
+            throw new IllegalArgumentException("codec is not an instance of the class [" + cls.getCanonicalName() + "]");
+        }
         codecCache.putIfAbsent(cls, codec);
     }
 
     @Override
-    public void registerCodec(REntity anno, Class cls, Codec codec) {
+    public <T extends Codec> void registerCodec(REntity anno, Class<?> cls, T codec) {
         if (!cls.isAnnotationPresent(anno.getClass())) {
             throw new IllegalArgumentException("Annotation REntity does not present on type [" + cls.getCanonicalName() + "]");
         }
-        registerCodec(anno.codec(), codec);
-    }
-    
-    @Override
-    public void registerCodec(Class<? extends Codec> codecClass, Class<? extends RObject> rObjectClass, String name, Codec codec) {
-        if (rObjectClass.isInterface()) {
-            throw new IllegalArgumentException("Cannot register an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
-        }
-        registerCodec(codecClass, codec);
+        registerCodec((Class<Codec>) anno.codec(), codec);
     }
 
     @Override
-    public void registerCodec(Class<? extends Codec> codecClass, RObject rObject, String name, Codec codec) {
-        registerCodec(codecClass, rObject.getClass(), name, codec);
+    public <T extends Codec, K extends RObject> void registerCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, T codec) {
+        try {
+            if (!cls.getField(fieldName).isAnnotationPresent(anno.getClass())) {
+                throw new IllegalArgumentException("Annotation RObjectField does not present on field " + fieldName + " of type [" + cls.getCanonicalName() + "]");
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+        if (rObjectClass.isInterface()) {
+            throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
+        }
+        registerCodec((Class<Codec>) anno.codec(), codec);
+    }
+    
+    @Override
+    public <T extends Codec, K extends RObject> void registerCodec(Class<T> codecClass, Class<K> rObjectClass, T codec) {
+        if (rObjectClass.isInterface()) {
+            throw new IllegalArgumentException("Cannot register an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
+        }
+        registerCodec((Class<Codec>) codecClass, codec);
+    }
+    
+    @Override
+    public <T extends Codec, K extends RObject> void registerCodec(Class<T> codecClass, Class<K> rObjectClass, String name, T codec) {
+        registerCodec(codecClass, rObjectClass, codec);
+    }
+
+    @Override
+    public <T extends Codec> void registerCodec(Class<T> codecClass, RObject rObject, T codec) {
+        registerCodec(codecClass, rObject.getClass(), rObject.getName(), codec);
     }
 
 }

@@ -15,25 +15,54 @@
  */
 package org.redisson.liveobject.core;
 
+import io.netty.util.internal.PlatformDependent;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.AbstractMap;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
 import net.bytebuddy.implementation.bind.annotation.This;
+import org.redisson.RedissonBitSet;
+import org.redisson.RedissonBlockingDeque;
+import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonClient;
+import org.redisson.RedissonDeque;
+import org.redisson.RedissonList;
+import org.redisson.RedissonMap;
+import org.redisson.RedissonQueue;
 import org.redisson.RedissonReference;
+import org.redisson.RedissonSet;
+import org.redisson.RedissonSortedSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.core.RMap;
 import org.redisson.core.RObject;
 import org.redisson.liveobject.provider.CodecProvider;
-import org.redisson.liveobject.RLiveObject;
+import org.redisson.api.RLiveObject;
+import org.redisson.core.RBitSet;
+import org.redisson.core.RObject;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.annotation.REntity;
+import org.redisson.liveobject.annotation.REntity.TransformationMode;
 import org.redisson.liveobject.annotation.RId;
+import org.redisson.liveobject.annotation.RObjectField;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.misc.RedissonObjectFactory;
 
@@ -49,13 +78,29 @@ public class AccessorInterceptor {
     private final RedissonClient redisson;
     private final CodecProvider codecProvider;
     private final ResolverProvider resolverProvider;
-    
+    private final ConcurrentMap<String, NamingScheme> namingSchemeCache = PlatformDependent.newConcurrentHashMap();
+    private static final LinkedHashMap<Class, Class<? extends RObject>> supportedClassMapping;
+
     public AccessorInterceptor(RedissonClient redisson, CodecProvider codecProvider, ResolverProvider resolverProvider) {
         this.redisson = redisson;
         this.codecProvider = codecProvider;
         this.resolverProvider = resolverProvider;
     }
 
+    static {
+        supportedClassMapping = new LinkedHashMap<Class, Class<? extends RObject>>();
+        supportedClassMapping.put(List.class,           RedissonList.class);
+        supportedClassMapping.put(SortedSet.class,      RedissonSortedSet.class);
+        supportedClassMapping.put(Set.class,            RedissonSet.class);
+        supportedClassMapping.put(ConcurrentMap.class,  RedissonMap.class);
+        supportedClassMapping.put(Map.class,            RedissonMap.class);
+        supportedClassMapping.put(BlockingQueue.class,  RedissonBlockingQueue.class);
+        supportedClassMapping.put(Queue.class,          RedissonQueue.class);
+        supportedClassMapping.put(BlockingDeque.class,  RedissonBlockingDeque.class);
+        supportedClassMapping.put(Deque.class,          RedissonDeque.class);
+        supportedClassMapping.put(BitSet.class,         RedissonBitSet.class);
+    }
+    
     @RuntimeType
     public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod,
             @AllArguments Object[] args, @This Object me,
@@ -82,12 +127,41 @@ public class AccessorInterceptor {
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
-                return liveMap.put(fieldName, new RedissonReference(rEntity, ns.getName(rEntity, getREntityIdFieldName(args[0]), ((RLiveObject) args[0]).getLiveObjectId())));
-            } else if (args[0] instanceof RObject) {
-                RObject ar = (RObject) args[0];
+                return liveMap.put(fieldName, new RedissonReference(rEntity,
+                        ns.getName(rEntity, getREntityIdFieldName(args[0]),
+                                ((RLiveObject) args[0]).getLiveObjectId())));
+            }
+            Object arg = args[0];
+            REntity rnAnno = me.getClass().getSuperclass().getAnnotation(REntity.class);
+            if (!(arg instanceof RObject)
+                    && TransformationMode.ANNOTATION_BASED.equals(rnAnno.fieldTransformation())) {
+                Class<? extends RObject> mappedClass = getMappedClass(arg);
+                if (mappedClass != null) {
+                    Entry<NamingScheme, Codec> entry = getFieldNamingSchemeAndCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
+                    RObject obj = RedissonObjectFactory
+                            .create(redisson,
+                                    mappedClass,
+                                    entry.getKey().getName(mappedClass, fieldName, arg),
+                                    entry.getValue());
+                    if (obj instanceof RBitSet) {
+                        ((RBitSet) obj).set((BitSet) args[0]);
+                        arg = obj;
+                    } else if (obj instanceof Collection) {
+                        ((Collection) obj).addAll((Collection) arg);
+                        arg = obj;
+                    } else if (obj instanceof Map) {
+                        ((Map) obj).putAll((Map) arg);
+                        arg = obj;
+                    }
+                }
+            }
+            
+            if (arg instanceof RObject) {
+                RObject ar = (RObject) arg;
                 Codec codec = ar.getCodec();
-                codecProvider.registerCodec(codec.getClass(), ar, fieldName, codec);
-                return liveMap.put(fieldName, new RedissonReference(ar.getClass(), ar.getName(), codec));
+                codecProvider.registerCodec((Class) codec.getClass(), ar, codec);
+                return liveMap.put(fieldName,
+                        new RedissonReference(ar.getClass(), ar.getName(), codec));
             }
             return liveMap.put(fieldName, args[0]);
         }
@@ -108,6 +182,33 @@ public class AccessorInterceptor {
                 && method.getName().endsWith(getFieldNameSuffix(fieldName));
     }
 
+    /**
+     * WARNING: rEntity has to be the class of @This object.
+     */
+    private Entry<NamingScheme, Codec> getFieldNamingSchemeAndCodec(Class<?> rEntity, Class<? extends RObject> rObjectClass, String fieldName) throws Exception {
+        Codec c;
+        Field field = rEntity.getDeclaredField(fieldName);
+        if (field.isAnnotationPresent(RObjectField.class)) {
+            RObjectField anno = field.getAnnotation(RObjectField.class);
+            c = codecProvider.getCodec(anno, rEntity, rObjectClass, fieldName);
+            if (!namingSchemeCache.containsKey(fieldName)) {
+                namingSchemeCache.putIfAbsent(fieldName, anno.namingScheme()
+                        .getDeclaredConstructor(Codec.class)
+                        .newInstance(c));
+            }
+        } else {
+            REntity anno = rEntity.getAnnotation(REntity.class);
+            c = codecProvider.getCodec(anno, (Class) rEntity);
+            if (!namingSchemeCache.containsKey(fieldName)) {
+                namingSchemeCache.putIfAbsent(fieldName, anno.namingScheme()
+                        .getDeclaredConstructor(Codec.class)
+                        .newInstance(c));
+            }
+        }
+        AbstractMap.SimpleImmutableEntry entry = new AbstractMap.SimpleImmutableEntry(namingSchemeCache.get(fieldName), c);
+        return entry;
+    }
+    
     private static String getFieldNameSuffix(String fieldName) {
         return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }
@@ -119,4 +220,13 @@ public class AccessorInterceptor {
                 .getName();
     }
 
+    private static Class<? extends RObject> getMappedClass(Object obj) {
+        for (Entry<Class, Class<? extends RObject>> entrySet : supportedClassMapping.entrySet()) {
+            if (entrySet.getKey().isInstance(obj)) {
+                return entrySet.getValue();
+            }
+        }
+        return null;
+    }
+    
 }

@@ -29,17 +29,11 @@ import org.redisson.codec.JsonJacksonCodec;
  * @author Rui Gu (https://github.com/jackygurui)
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface REntity {
+@Target({ElementType.FIELD})
+public @interface RObjectField{
 
-    public enum TransformationMode {
-        IMPLEMENTATION_BASED, ANNOTATION_BASED
-    }
-    
     Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
 
     Class<? extends Codec> codec() default JsonJacksonCodec.class;
-
-    TransformationMode fieldTransformation() default TransformationMode.ANNOTATION_BASED;
     
 }

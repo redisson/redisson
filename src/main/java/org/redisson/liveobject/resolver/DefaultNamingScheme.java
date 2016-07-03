@@ -20,13 +20,16 @@ import java.io.IOException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.liveobject.annotation.REntity;
+import org.redisson.liveobject.annotation.RId;
+import org.redisson.liveobject.misc.Introspectior;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class DefaultNamingScheme extends AbstractNamingScheme implements NamingScheme {
-    
+
     public static final DefaultNamingScheme INSTANCE = new DefaultNamingScheme(new JsonJacksonCodec());
     private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -35,12 +38,17 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     }
 
     @Override
-    public String getName(Class cls, String idFieldName, Object id) {
+    public String getName(Class cls, String fieldName, Object fieldValue) {
         try {
-            String encode = bytesToHex(codec.getMapKeyEncoder().encode(id));
-            return "redisson_live_object:{class=" + cls.getName() + ", " + idFieldName + "=" + encode + "}";
+            String encode = bytesToHex(codec.getMapKeyEncoder().encode(fieldValue));
+            if (Introspectior.getTypeDescription(cls).getDeclaredAnnotations().isAnnotationPresent(REntity.class)
+                    && Introspectior.getFieldsWithAnnotation(cls, RId.class).getOnly().getName().equals(fieldName)) {
+                return "redisson_live_object:{class=" + cls.getName() + ", " + fieldName + "=" + encode + "}";
+            } else {
+                return "redisson_live_object_field:{class=" + cls.getName() + ", " + fieldName + "=" + encode + "}";
+            }
         } catch (IOException ex) {
-            throw new IllegalArgumentException("Unable to encode id [" + id + "] into byte[]", ex);
+            throw new IllegalArgumentException("Unable to encode \"" + fieldName + "\" [" + fieldValue + "] into byte[]", ex);
         }
     }
 
@@ -82,5 +90,5 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
         }
         return data;
     }
-    
+
 }

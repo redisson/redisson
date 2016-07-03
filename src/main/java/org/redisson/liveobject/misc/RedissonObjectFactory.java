@@ -19,6 +19,8 @@ import java.lang.reflect.Method;
 import org.redisson.RedissonClient;
 import org.redisson.RedissonReference;
 import org.redisson.client.codec.Codec;
+import org.redisson.core.RBitSet;
+import org.redisson.core.RObject;
 import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
@@ -44,7 +46,7 @@ public class RedissonObjectFactory {
                 if (method.getName().startsWith("get")
                         && method.getReturnType().isAssignableFrom(type)
                         && expected.isAssignableFrom(method.getReturnType())) {
-                    if (rr.isDefaultCodec() && method.getParameterCount() == 1) {
+                    if ((rr.isDefaultCodec() || RBitSet.class.isAssignableFrom(method.getReturnType())) && method.getParameterCount() == 1) {
                         return (T) method.invoke(redisson, rr.getKeyName());
                     } else if (!rr.isDefaultCodec()
                             && method.getParameterCount() == 2
@@ -57,4 +59,22 @@ public class RedissonObjectFactory {
         }
         throw new ClassNotFoundException("No RObject is found to match class type of " + rr.getTypeName() + " with codec type of " + rr.getCodecName());
     }
+    
+    public static <T extends RObject, K extends Codec> T create(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws Exception {
+        for (Method method : RedissonClient.class.getDeclaredMethods()) {
+                if (method.getName().startsWith("get")
+                        && method.getReturnType().isAssignableFrom(expectedType)) {
+                    if ((codec == null || RBitSet.class.isAssignableFrom(method.getReturnType())) && method.getParameterCount() == 1) {
+                        return (T) method.invoke(redisson, name);
+                    } else if (codec != null
+                            && method.getParameterCount() == 2
+                            && String.class.equals(method.getParameterTypes()[0])
+                            && Codec.class.equals(method.getParameterTypes()[1])) {
+                        return (T) method.invoke(redisson, name, codec);
+                    }
+                }
+            }
+        throw new ClassNotFoundException("No RObject is found to match class type of " + (expectedType != null ? expectedType.getName() : "null") + " with codec type of " + (codec != null ? codec.getClass().getName() : "null"));
+    }
+    
 }

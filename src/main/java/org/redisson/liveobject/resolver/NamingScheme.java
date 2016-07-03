@@ -21,7 +21,7 @@ package org.redisson.liveobject.resolver;
  */
 public interface NamingScheme {
 
-    public String getName(Class cls, String idFieldName, Object id);
+    public String getName(Class cls, String fieldName, Object fieldValue);
 
     public String resolveClassName(String name);
 
