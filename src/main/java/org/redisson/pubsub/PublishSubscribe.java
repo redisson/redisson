@@ -16,6 +16,7 @@
 package org.redisson.pubsub;
 
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Semaphore;
 
 import org.redisson.PubSubEntry;
 import org.redisson.client.BaseRedisPubSubListener;
@@ -23,7 +24,6 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.PubSubConnectionEntry;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
@@ -34,15 +34,16 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
     private final ConcurrentMap<String, E> entries = PlatformDependent.newConcurrentHashMap();
 
     public void unsubscribe(E entry, String entryName, String channelName, ConnectionManager connectionManager) {
-        synchronized (this) {
-            if (entry.release() == 0) {
-                // just an assertion
-                boolean removed = entries.remove(entryName) == entry;
-                if (removed) {
-                    connectionManager.unsubscribe(channelName);
-                }
+        Semaphore semaphore = connectionManager.getSemaphore(channelName);
+        semaphore.acquireUninterruptibly();
+        if (entry.release() == 0) {
+            // just an assertion
+            boolean removed = entries.remove(entryName) == entry;
+            if (removed) {
+                connectionManager.unsubscribe(channelName, semaphore);
             }
         }
+        semaphore.release();
     }
 
     public E getEntry(String entryName) {
@@ -50,27 +51,29 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
     }
 
     public Future<E> subscribe(String entryName, String channelName, ConnectionManager connectionManager) {
-        synchronized (this) {
+        Semaphore semaphore = connectionManager.getSemaphore(channelName);
+        semaphore.acquireUninterruptibly();
             E entry = entries.get(entryName);
             if (entry != null) {
                 entry.aquire();
+                semaphore.release();
                 return entry.getPromise();
             }
-
+            
             Promise<E> newPromise = connectionManager.newPromise();
             E value = createEntry(newPromise);
             value.aquire();
-
+            
             E oldValue = entries.putIfAbsent(entryName, value);
             if (oldValue != null) {
                 oldValue.aquire();
+                semaphore.release();
                 return oldValue.getPromise();
             }
-
+            
             RedisPubSubListener<Object> listener = createListener(channelName, value);
-            connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener);
+            connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener, semaphore);
             return newPromise;
-        }
     }
 
     protected abstract E createEntry(Promise<E> newPromise);

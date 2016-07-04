@@ -15,15 +15,13 @@
  */
 package org.redisson.connection;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubConnection;
@@ -38,11 +36,8 @@ public class PubSubConnectionEntry {
 
     public enum Status {ACTIVE, INACTIVE}
 
-    private ReentrantLock lock = new ReentrantLock();
-    private volatile Status status = Status.ACTIVE;
-    private final Semaphore subscribedChannelsAmount;
+    private final AtomicInteger subscribedChannelsAmount;
     private final RedisPubSubConnection conn;
-    private final int subscriptionsPerConnection;
 
     private final ConcurrentMap<String, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<String, SubscribeListener>();
     private final ConcurrentMap<String, Queue<RedisPubSubListener>> channelListeners = new ConcurrentHashMap<String, Queue<RedisPubSubListener>>();
@@ -50,8 +45,7 @@ public class PubSubConnectionEntry {
     public PubSubConnectionEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
         super();
         this.conn = conn;
-        this.subscriptionsPerConnection = subscriptionsPerConnection;
-        this.subscribedChannelsAmount = new Semaphore(subscriptionsPerConnection);
+        this.subscribedChannelsAmount = new AtomicInteger(subscriptionsPerConnection);
     }
 
     public boolean hasListeners(String channelName) {
@@ -92,14 +86,6 @@ public class PubSubConnectionEntry {
         conn.addListener(listener);
     }
 
-    public boolean isActive() {
-        return status == Status.ACTIVE;
-    }
-
-    public void close() {
-        status = Status.INACTIVE;
-    }
-
     // TODO optimize
     public boolean removeListener(String channelName, int listenerId) {
         Queue<RedisPubSubListener> listeners = channelListeners.get(channelName);
@@ -122,12 +108,21 @@ public class PubSubConnectionEntry {
         conn.removeListener(listener);
     }
 
-    public boolean tryAcquire() {
-        return subscribedChannelsAmount.tryAcquire();
+    public int tryAcquire() {
+        while (true) {
+            int value = subscribedChannelsAmount.get();
+            if (value == 0) {
+                return -1;
+            }
+            
+            if (subscribedChannelsAmount.compareAndSet(value, value - 1)) {
+                return value - 1;
+            }
+        }
     }
 
-    public void release() {
-        subscribedChannelsAmount.release();
+    public int release() {
+        return subscribedChannelsAmount.incrementAndGet();
     }
 
     public void subscribe(Codec codec, String channelName) {
@@ -162,9 +157,11 @@ public class PubSubConnectionEntry {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
                 if (type == PubSubType.UNSUBSCRIBE && channel.equals(ch)) {
-                    removeListeners(channel);
-                    listener.onStatus(type, channel);
                     conn.removeListener(this);
+                    removeListeners(channel);
+                    if (listener != null) {
+                        listener.onStatus(type, channel);
+                    }
                     return true;
                 }
                 return false;
@@ -186,7 +183,6 @@ public class PubSubConnectionEntry {
                 conn.removeListener(listener);
             }
         }
-        subscribedChannelsAmount.release();
     }
 
     public void punsubscribe(final String channel, final RedisPubSubListener listener) {
@@ -194,9 +190,11 @@ public class PubSubConnectionEntry {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
                 if (type == PubSubType.PUNSUBSCRIBE && channel.equals(ch)) {
-                    removeListeners(channel);
-                    listener.onStatus(type, channel);
                     conn.removeListener(this);
+                    removeListeners(channel);
+                    if (listener != null) {
+                        listener.onStatus(type, channel);
+                    }
                     return true;
                 }
                 return false;
@@ -205,25 +203,8 @@ public class PubSubConnectionEntry {
         conn.punsubscribe(channel);
     }
 
-
-    public boolean tryClose() {
-        if (subscribedChannelsAmount.tryAcquire(subscriptionsPerConnection)) {
-            close();
-            return true;
-        }
-        return false;
-    }
-
     public RedisPubSubConnection getConnection() {
         return conn;
-    }
-    
-    public void lock() {
-        lock.lock();
-    }
-    
-    public void unlock() {
-        lock.unlock();
     }
 
 }

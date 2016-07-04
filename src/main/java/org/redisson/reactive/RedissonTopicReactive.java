@@ -17,6 +17,7 @@ package org.redisson.reactive;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 import org.reactivestreams.Publisher;
 import org.redisson.PubSubMessageListener;
@@ -99,26 +100,21 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
 
     @Override
     public void removeListener(int listenerId) {
+        Semaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        semaphore.acquireUninterruptibly();
+        
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {
+            semaphore.release();
             return;
         }
-        
-        entry.lock();
-        try {
-            if (entry.isActive()) {
-                entry.removeListener(name, listenerId);
-                if (!entry.hasListeners(name)) {
-                    commandExecutor.getConnectionManager().unsubscribe(name);
-                }
-                return;
-            }
-        } finally {
-            entry.unlock();
-        }
 
-        // listener has been re-attached
-        removeListener(listenerId);
+        entry.removeListener(name, listenerId);
+        if (!entry.hasListeners(name)) {
+            commandExecutor.getConnectionManager().unsubscribe(name, semaphore);
+        } else {
+            semaphore.release();
+        }
     }
 
 
