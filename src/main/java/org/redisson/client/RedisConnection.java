@@ -122,8 +122,7 @@ public class RedisConnection implements RedisCommands {
         });
         
         try {
-            // TODO change connectTimeout to timeout
-            if (!l.await(redisClient.getTimeout(), TimeUnit.MILLISECONDS)) {
+            if (!l.await(redisClient.getCommandTimeout(), TimeUnit.MILLISECONDS)) {
                 Promise<R> promise = (Promise<R>)future;
                 RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
                 promise.setFailure(ex);
@@ -143,8 +142,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T> T sync(RedisStrictCommand<T> command, Object ... params) {
-        Future<T> r = async(null, command, params);
-        return await(r);
+        return sync(null, command, params);
     }
 
     public <T, R> ChannelFuture send(CommandData<T, R> data) {
@@ -156,29 +154,37 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Future<R> r = async(encoder, command, params);
-        return await(r);
+        Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+        send(new CommandData<T, R>(promise, encoder, command, params));
+        return await(promise);
     }
 
     public <T, R> Future<R> async(RedisCommand<T> command, Object ... params) {
         return async(null, command, params);
     }
-
-    public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
-        send(new CommandData<T, R>(promise, encoder, command, params));
-        return promise;
+    
+    public <T, R> Future<R> async(long timeout, RedisCommand<T> command, Object ... params) {
+        return async(null, command, params);
     }
 
-    public <T, R> Future<R> asyncWithTimeout(Codec encoder, RedisCommand<T> command, Object ... params) {
+    public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
+        return async(-1, encoder, command, params);
+    }
+
+    public <T, R> Future<R> async(long timeout, Codec encoder, RedisCommand<T> command, Object ... params) {
         final Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+        if (timeout == -1) {
+            timeout = redisClient.getCommandTimeout();
+        }
+        
         final ScheduledFuture<?> scheduledFuture = redisClient.getBootstrap().group().next().schedule(new Runnable() {
             @Override
             public void run() {
                 RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
                 promise.tryFailure(ex);
             }
-        }, redisClient.getTimeout(), TimeUnit.MILLISECONDS);
+        }, timeout, TimeUnit.MILLISECONDS);
+        
         promise.addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {

@@ -46,13 +46,19 @@ import java.util.Map;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.misc.URIBuilder;
 
+/**
+ * Low-level Redis client
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisClient {
 
     private final Bootstrap bootstrap;
     private final InetSocketAddress addr;
     private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
-    private final long timeout;
+    private final long commandTimeout;
     private boolean hasOwnGroup;
 
     public RedisClient(String address) {
@@ -69,15 +75,19 @@ public class RedisClient {
     }
     
     public RedisClient(String host, int port) {
-        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 60 * 1000);
+        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 3000);
         hasOwnGroup = true;
     }
     
     public RedisClient(EventLoopGroup group, String host, int port) {
-        this(group, NioSocketChannel.class, host, port, 60 * 1000);
+        this(group, NioSocketChannel.class, host, port, 3000);
     }
 
-    public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int timeout) {
+    public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int connectTimeout) {
+        this(group, socketChannelClass, host, port, connectTimeout, 3000);
+    }
+    
+    public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int connectTimeout, int commandTimeout) {
         addr = new InetSocketAddress(host, port);
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
         bootstrap.handler(new ChannelInitializer<Channel>() {
@@ -91,16 +101,17 @@ public class RedisClient {
             }
         });
 
-        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout);
-        this.timeout = timeout;
+        bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeout);
+        this.commandTimeout = commandTimeout;
     }
+
 
     public InetSocketAddress getAddr() {
         return addr;
     }
 
-    long getTimeout() {
-        return timeout;
+    public long getCommandTimeout() {
+        return commandTimeout;
     }
 
     public Bootstrap getBootstrap() {
