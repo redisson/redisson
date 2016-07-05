@@ -138,7 +138,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public Future<Long> getCountAsync() {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
     }
 
     @Override

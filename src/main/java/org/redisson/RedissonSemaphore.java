@@ -434,7 +434,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public int availablePermits() {
-        Long res = commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
+        Long res = commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
         return res.intValue();
     }
 
