@@ -200,7 +200,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 final RedisConnection connection = future.getNow();
-                Future<Map<String, String>> clusterFuture = connection.asyncWithTimeout(null, RedisCommands.CLUSTER_INFO);
+                Future<Map<String, String>> clusterFuture = connection.async(RedisCommands.CLUSTER_INFO);
                 clusterFuture.addListener(new FutureListener<Map<String, String>>() {
 
                     @Override
@@ -322,7 +322,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, final Iterator<URI> iterator) {
-        Future<List<ClusterNodeInfo>> future = connection.asyncWithTimeout(null, RedisCommands.CLUSTER_NODES);
+        Future<List<ClusterNodeInfo>> future = connection.async(RedisCommands.CLUSTER_NODES);
         future.addListener(new FutureListener<List<ClusterNodeInfo>>() {
             @Override
             public void operationComplete(Future<List<ClusterNodeInfo>> future) throws Exception {
