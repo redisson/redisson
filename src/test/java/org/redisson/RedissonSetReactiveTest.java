@@ -64,9 +64,9 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
         sync(set.add(2));
         sync(set.add(3));
 
-        MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
-        MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
-        MatcherAssert.assertThat(sync(set.removeRandom()), Matchers.isOneOf(1, 2, 3));
+        MatcherAssert.assertThat(sync(set.random()), Matchers.isOneOf(1, 2, 3));
+        MatcherAssert.assertThat(sync(set.random()), Matchers.isOneOf(1, 2, 3));
+        MatcherAssert.assertThat(sync(set.random()), Matchers.isOneOf(1, 2, 3));
         Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2, 3));
     }
 
