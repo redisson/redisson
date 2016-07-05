@@ -1,13 +1,18 @@
 package org.redisson;
 
+import static com.jayway.awaitility.Awaitility.await;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -15,7 +20,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.core.BasePatternStatusListener;
+import org.redisson.core.MessageListener;
+import org.redisson.core.PatternMessageListener;
 import org.redisson.core.PatternStatusListener;
 import org.redisson.core.RPatternTopic;
 import org.redisson.core.RTopic;
@@ -260,5 +268,45 @@ public class RedissonTopicPatternTest {
         redisson.shutdown();
     }
 
+    @Test
+    public void testReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
+        RedisProcess runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6319");
+        RedissonClient redisson = Redisson.create(config);
+        
+        final AtomicBoolean executed = new AtomicBoolean();
+        
+        RPatternTopic<Integer> topic = redisson.getPatternTopic("topic*");
+        topic.addListener(new PatternMessageListener<Integer>() {
+            @Override
+            public void onMessage(String pattern, String channel, Integer msg) {
+                if (msg == 1) {
+                    executed.set(true);
+                }
+            }
+        });
+        
+        runner.stop();
+
+        runner = new RedisRunner()
+                .port(6319)
+                .nosave()
+                .randomDir()
+                .run();
+        
+        Thread.sleep(1000);
+
+        redisson.getTopic("topic1").publish(1);
+        
+        await().atMost(5, TimeUnit.SECONDS).untilTrue(executed);
+        
+        runner.stop();
+    }
     
 }
