@@ -53,9 +53,9 @@ public class RedissonSetTest extends BaseTest {
         set.add(2);
         set.add(3);
 
-        assertThat(set.removeRandom()).isIn(1, 2, 3);
-        assertThat(set.removeRandom()).isIn(1, 2, 3);
-        assertThat(set.removeRandom()).isIn(1, 2, 3);
+        assertThat(set.random()).isIn(1, 2, 3);
+        assertThat(set.random()).isIn(1, 2, 3);
+        assertThat(set.random()).isIn(1, 2, 3);
         assertThat(set).containsOnly(1, 2, 3);
     }
 
