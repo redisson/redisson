@@ -34,6 +34,13 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
     V removeRandom();
 
     /**
+     * Returns random element from set
+     *
+     * @return
+     */
+    V random();
+
+    /**
      * Move a member from this set to the given destination set in.
      *
      * @param destination the destination set
