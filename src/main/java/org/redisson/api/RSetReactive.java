@@ -37,6 +37,14 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
     Publisher<V> removeRandom();
 
     /**
+     * Returns random element from set
+     * in async mode
+     *
+     * @return
+     */
+    Publisher<V> random();
+
+    /**
      * Move a member from this set to the given destination set in async mode.
      *
      * @param destination the destination set

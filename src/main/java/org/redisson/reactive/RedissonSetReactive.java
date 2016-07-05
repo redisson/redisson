@@ -81,6 +81,11 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
+    public Publisher<V> random() {
+        return reactive(instance.randomAsync());
+    }
+
+    @Override
     public Publisher<Boolean> remove(Object o) {
         return reactive(instance.removeAsync(o));
     }
