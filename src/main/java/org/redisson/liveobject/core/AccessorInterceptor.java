@@ -121,6 +121,7 @@ public class AccessorInterceptor {
             return result;
         }
         if (isSetter(method, fieldName)) {
+            Class idFieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
             if (args[0].getClass().getSuperclass().isAnnotationPresent(REntity.class)) {
                 Class<? extends Object> rEntity = args[0].getClass().getSuperclass();
                 REntity anno = rEntity.getAnnotation(REntity.class);
@@ -128,7 +129,7 @@ public class AccessorInterceptor {
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
                 liveMap.put(fieldName, new RedissonReference(rEntity,
-                        ns.getName(rEntity, getREntityIdFieldName(args[0]),
+                        ns.getName(rEntity, idFieldType, getREntityIdFieldName(args[0]),
                                 ((RLiveObject) args[0]).getLiveObjectId())));
                 return me;
             }
@@ -144,7 +145,13 @@ public class AccessorInterceptor {
                     RObject obj = RedissonObjectFactory
                             .create(redisson,
                                     mappedClass,
-                                    entry.getKey().getName(mappedClass, fieldName, arg),
+                                    entry.getKey().getFieldReferenceName(me.getClass().getSuperclass(),
+                                            idFieldType,
+                                            getREntityIdFieldName(me),
+                                            ((RLiveObject) me).getLiveObjectId(),
+                                            mappedClass,
+                                            fieldName,
+                                            arg),
                                     entry.getValue());
                     if (obj instanceof RBitSet) {
                         ((RBitSet) obj).set((BitSet) args[0]);

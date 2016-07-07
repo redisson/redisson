@@ -51,6 +51,7 @@ public class LiveObjectInterceptor {
     private final CodecProvider codecProvider;
     private final Class originalClass;
     private final String idFieldName;
+    private final Class idFieldType;
     private final NamingScheme namingScheme;
     private final Class<? extends Codec> codecClass;
 
@@ -63,6 +64,7 @@ public class LiveObjectInterceptor {
         this.codecClass = anno.codec();
         try {
             this.namingScheme = anno.namingScheme().getDeclaredConstructor(Codec.class).newInstance(codecProvider.getCodec(anno, originalClass));
+            this.idFieldType = originalClass.getDeclaredField(idFieldName).getType();
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
@@ -129,7 +131,7 @@ public class LiveObjectInterceptor {
     }
 
     private String getMapKey(Object id) {
-        return namingScheme.getName(originalClass, idFieldName, id);
+        return namingScheme.getName(originalClass, idFieldType, idFieldName, id);
     }
 
 }

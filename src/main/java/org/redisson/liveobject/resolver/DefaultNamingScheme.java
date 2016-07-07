@@ -15,14 +15,12 @@
  */
 package org.redisson.liveobject.resolver;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.codec.JsonJacksonCodec;
-import org.redisson.liveobject.annotation.REntity;
-import org.redisson.liveobject.annotation.RId;
-import org.redisson.liveobject.misc.Introspectior;
 
 /**
  *
@@ -38,15 +36,20 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     }
 
     @Override
-    public String getName(Class cls, String fieldName, Object fieldValue) {
+    public String getName(Class entityClass, Class idFieldClass, String idFieldName, Object idValue) {
         try {
-            String encode = bytesToHex(codec.getMapKeyEncoder().encode(fieldValue));
-            if (Introspectior.getTypeDescription(cls).getDeclaredAnnotations().isAnnotationPresent(REntity.class)
-                    && Introspectior.getFieldsWithAnnotation(cls, RId.class).getOnly().getName().equals(fieldName)) {
-                return "redisson_live_object:{class=" + cls.getName() + ", " + fieldName + "=" + encode + "}";
-            } else {
-                return "redisson_live_object_field:{class=" + cls.getName() + ", " + fieldName + "=" + encode + "}";
-            }
+            String encode = bytesToHex(codec.getMapKeyEncoder().encode(idValue));
+            return "redisson_live_object:{"+ encode + "}:" + entityClass.getName() + ":" + idFieldName + ":" + idFieldClass.getName();
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Unable to encode \"" + idFieldName + "\" [" + idValue + "] into byte[]", ex);
+        }
+    }
+
+    @Override
+    public String getFieldReferenceName(Class entityClass, Class idFieldClass, String idFieldName, Object idValue, Class cls, String fieldName, Object fieldValue) {
+        try {
+            String encode = bytesToHex(codec.getMapKeyEncoder().encode(idValue));
+            return "redisson_live_object_field:{" + encode + "}:" + entityClass.getName() + ":" + fieldName + ":" + cls.getName();
         } catch (IOException ex) {
             throw new IllegalArgumentException("Unable to encode \"" + fieldName + "\" [" + fieldValue + "] into byte[]", ex);
         }
@@ -54,21 +57,25 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
 
     @Override
     public String resolveClassName(String name) {
-        return name.substring("redisson_live_object:{class=".length(), name.indexOf(","));
+        return name.substring(name.lastIndexOf("}:") + 2, name.indexOf(":"));
     }
 
     @Override
     public String resolveIdFieldName(String name) {
-        return name.substring(name.indexOf(", ") + 2, name.indexOf("=", name.indexOf("=") + 1));
+        String s = name.substring(0, name.lastIndexOf(":"));
+        return s.substring(s.lastIndexOf(":") + 1);
     }
 
     @Override
     public Object resolveId(String name) {
-        String decode = name.substring(name.indexOf("=", name.indexOf("=") + 1) + 1, name.length() - 1);
+        String decode = name.substring(name.indexOf("{") + 1, name.indexOf("}"));
+        ByteBuf b = Unpooled.wrappedBuffer(hexToBytes(decode));
         try {
-            return codec.getMapKeyDecoder().decode(Unpooled.wrappedBuffer(hexToBytes(decode)), new State(false));
+            return codec.getMapKeyDecoder().decode(b, new State(false));
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to decode [" + decode + "] into object", ex);
+        } finally {
+            b.release();
         }
     }
 
