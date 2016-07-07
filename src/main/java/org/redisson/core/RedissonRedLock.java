@@ -74,6 +74,11 @@ public class RedissonRedLock extends RedissonMultiLock {
     }
 
     @Override
+    public void unlock() {
+        unlockInner(locks);
+    }
+
+    @Override
     protected boolean isLockFailed(Future<Boolean> future) {
         return false;
     }
