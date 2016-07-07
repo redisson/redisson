@@ -37,6 +37,7 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 
@@ -79,7 +80,7 @@ public class CommandBatchService extends CommandReactiveService {
 
     private final AtomicInteger index = new AtomicInteger();
 
-    private ConcurrentMap<Integer, Entry> commands = PlatformDependent.newConcurrentHashMap();
+    private ConcurrentMap<MasterSlaveEntry, Entry> commands = PlatformDependent.newConcurrentHashMap();
 
     private volatile boolean executed;
 
@@ -93,10 +94,10 @@ public class CommandBatchService extends CommandReactiveService {
         if (executed) {
             throw new IllegalStateException("Batch already has been executed!");
         }
-        Entry entry = commands.get(nodeSource.getSlot());
+        Entry entry = commands.get(nodeSource.getEntry());
         if (entry == null) {
             entry = new Entry();
-            Entry oldEntry = commands.putIfAbsent(nodeSource.getSlot(), entry);
+            Entry oldEntry = commands.putIfAbsent(nodeSource.getEntry(), entry);
             if (oldEntry != null) {
                 entry = oldEntry;
             }
@@ -133,7 +134,7 @@ public class CommandBatchService extends CommandReactiveService {
         });
 
         AtomicInteger slots = new AtomicInteger(commands.size());
-        for (java.util.Map.Entry<Integer, Entry> e : commands.entrySet()) {
+        for (java.util.Map.Entry<MasterSlaveEntry, Entry> e : commands.entrySet()) {
             execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0);
         }
         return voidPromise;
@@ -175,7 +176,7 @@ public class CommandBatchService extends CommandReactiveService {
         });
 
         AtomicInteger slots = new AtomicInteger(commands.size());
-        for (java.util.Map.Entry<Integer, Entry> e : commands.entrySet()) {
+        for (java.util.Map.Entry<MasterSlaveEntry, Entry> e : commands.entrySet()) {
             execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0);
         }
         return promise;

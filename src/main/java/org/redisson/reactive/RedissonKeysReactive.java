@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
@@ -30,6 +31,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandReactiveService;
+import org.redisson.connection.MasterSlaveEntry;
 
 import reactor.rx.Stream;
 import reactor.rx.Streams;
@@ -55,8 +57,8 @@ public class RedissonKeysReactive implements RKeysReactive {
     @Override
     public Publisher<String> getKeysByPattern(final String pattern) {
         List<Publisher<String>> publishers = new ArrayList<Publisher<String>>();
-        for (ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
-            publishers.add(createKeysIterator(slot.getStartSlot(), pattern));
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            publishers.add(createKeysIterator(entry, pattern));
         }
         return Streams.merge(publishers);
     }
@@ -66,14 +68,14 @@ public class RedissonKeysReactive implements RKeysReactive {
         return getKeysByPattern(null);
     }
 
-    private Publisher<ListScanResult<String>> scanIterator(int slot, long startPos, String pattern) {
+    private Publisher<ListScanResult<String>> scanIterator(MasterSlaveEntry entry, long startPos, String pattern) {
         if (pattern == null) {
-            return commandExecutor.writeReactive(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
+            return commandExecutor.writeReactive(entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
         }
-        return commandExecutor.writeReactive(slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+        return commandExecutor.writeReactive(entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
     }
 
-    private Publisher<String> createKeysIterator(final int slot, final String pattern) {
+    private Publisher<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern) {
         return new Stream<String>() {
 
             @Override
@@ -94,7 +96,7 @@ public class RedissonKeysReactive implements RKeysReactive {
 
                     protected void nextValues() {
                         final ReactiveSubscription<String> m = this;
-                        scanIterator(slot, nextIterPos, pattern).subscribe(new Subscriber<ListScanResult<String>>() {
+                        scanIterator(entry, nextIterPos, pattern).subscribe(new Subscriber<ListScanResult<String>>() {
 
                             @Override
                             public void onSubscribe(Subscription s) {

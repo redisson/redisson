@@ -15,21 +15,10 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-
-import org.redisson.client.codec.Codec;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -39,11 +28,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
+import java.io.IOException;
 
 /**
  *
@@ -141,22 +134,22 @@ public class JsonJacksonCodec implements Codec {
 
     @Override
     public Decoder<Object> getMapKeyDecoder() {
-        return getMapValueDecoder();
+        return decoder;
     }
 
     @Override
     public Encoder getMapKeyEncoder() {
-        return getMapValueEncoder();
+        return encoder;
     }
 
     @Override
     public Decoder<Object> getValueDecoder() {
-        return getMapValueDecoder();
+        return decoder;
     }
 
     @Override
     public Encoder getValueEncoder() {
-        return getMapValueEncoder();
+        return encoder;
     }
 
     public ObjectMapper getObjectMapper() {

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
@@ -80,7 +79,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
                         connectionFuture.addListener(new FutureListener<RedisConnection>() {
                             @Override
                             public void operationComplete(Future<RedisConnection> future) throws Exception {
-                                Future<String> r = c.async(RedisCommands.PING);
+                                Future<String> r = c.async(connectionManager.getConfig().getPingTimeout(), RedisCommands.PING);
                                 result.put(c, r);
                                 latch.countDown();
                             }
@@ -94,7 +93,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
         long time = System.currentTimeMillis();
         try {
-            latch.await(connectionManager.getConfig().getConnectTimeout(), TimeUnit.MILLISECONDS);
+            latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -110,7 +109,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         boolean res = true;
         for (Entry<RedisConnection, Future<String>> entry : result.entrySet()) {
             Future<String> f = entry.getValue();
-            f.awaitUninterruptibly(connectionManager.getConfig().getPingTimeout(), TimeUnit.MILLISECONDS);
+            f.awaitUninterruptibly();
             if (!"PONG".equals(f.getNow())) {
                 res = false;
             }

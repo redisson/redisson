@@ -24,6 +24,7 @@ import org.redisson.SlotCallback;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.reactive.NettyFuturePublisher;
 
 import io.netty.util.concurrent.Future;
@@ -79,8 +80,8 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
-    public <T, R> Publisher<R> writeReactive(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> f = writeAsync(slot, codec, command, params);
+    public <T, R> Publisher<R> writeReactive(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
+        Future<R> f = writeAsync(entry, codec, command, params);
         return new NettyFuturePublisher<R>(f);
     }
 

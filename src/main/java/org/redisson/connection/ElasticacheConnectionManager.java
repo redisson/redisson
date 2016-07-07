@@ -141,7 +141,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
                             log.debug("Current master {} unchanged", master);
                         } else if (Role.master.equals(role) && !master.equals(addr) && currentMaster.compareAndSet(master, addr)) {
                             log.info("Master has changed from {} to {}", master, addr);
-                            changeMaster(singleSlotRange, addr.getHost(), addr.getPort());
+                            changeMaster(singleSlotRange.getStartSlot(), addr.getHost(), addr.getPort());
                             break;
                         }
                     }

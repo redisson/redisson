@@ -18,6 +18,7 @@ package org.redisson.connection;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -61,12 +62,16 @@ public class MasterSlaveEntry {
     final ConnectionManager connectionManager;
 
     final MasterConnectionPool writeConnectionHolder;
-    final Set<ClusterSlotRange> slotRanges;
+    final Set<Integer> slots = new HashSet<Integer>();
 
     final AtomicBoolean active = new AtomicBoolean(true);
 
     public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
-        this.slotRanges = slotRanges;
+        for (ClusterSlotRange clusterSlotRange : slotRanges) {
+            for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
+                slots.add(i);
+            }
+        }
         this.connectionManager = connectionManager;
         this.config = config;
 
@@ -405,16 +410,16 @@ public class MasterSlaveEntry {
         slaveBalancer.shutdown();
     }
 
-    public void addSlotRange(ClusterSlotRange range) {
-        slotRanges.add(range);
+    public void addSlotRange(Integer range) {
+        slots.add(range);
     }
 
-    public void removeSlotRange(ClusterSlotRange range) {
-        slotRanges.remove(range);
+    public void removeSlotRange(Integer range) {
+        slots.remove(range);
     }
 
-    public Set<ClusterSlotRange> getSlotRanges() {
-        return slotRanges;
+    public Set<Integer> getSlotRanges() {
+        return slots;
     }
 
 }

@@ -26,7 +26,18 @@ public class NodeSource {
     private final Integer slot;
     private final InetSocketAddress addr;
     private final Redirect redirect;
+    private MasterSlaveEntry entry;
 
+    public NodeSource(MasterSlaveEntry entry) {
+        this(null, null, null);
+        this.entry = entry;
+    }
+
+    public NodeSource(MasterSlaveEntry entry, InetSocketAddress addr) {
+        this(null, addr, null);
+        this.entry = entry;
+    }
+    
     public NodeSource(Integer slot) {
         this(slot, null, null);
     }
@@ -41,6 +52,10 @@ public class NodeSource {
         this.redirect = redirect;
     }
 
+    public MasterSlaveEntry getEntry() {
+        return entry;
+    }
+    
     public Redirect getRedirect() {
         return redirect;
     }
