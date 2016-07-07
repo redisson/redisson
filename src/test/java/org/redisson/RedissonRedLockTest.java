@@ -43,13 +43,6 @@ public class RedissonRedLockTest {
             public void run() {
                 RedissonMultiLock lock = new RedissonRedLock(lock1, lock2, lock3);
                 lock.lock();
-                
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                }
-                
-                lock.unlock();
             };
         };
         t.start();
@@ -92,13 +85,14 @@ public class RedissonRedLockTest {
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
                 }
-                
                 lock.unlock();
             };
         };
         t.start();
         t.join(1000);
 
+        lock3.delete();
+        
         RedissonMultiLock lock = new RedissonRedLock(lock1, lock2, lock3);
         lock.lock();
         lock.unlock();
