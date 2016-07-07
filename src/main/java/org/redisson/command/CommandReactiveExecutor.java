@@ -24,6 +24,7 @@ import org.redisson.SlotCallback;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 
 import io.netty.util.concurrent.Future;
 
@@ -47,7 +48,7 @@ public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
     <T, R> Publisher<R> readRandomReactive(RedisCommand<T> command, Object ... params);
 
-    <T, R> Publisher<R> writeReactive(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
+    <T, R> Publisher<R> writeReactive(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T> Publisher<Void> writeAllReactive(RedisCommand<T> command, Object ... params);
 

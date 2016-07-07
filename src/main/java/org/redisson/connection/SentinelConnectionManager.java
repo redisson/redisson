@@ -218,7 +218,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() == ReadMode.SLAVE) {
-                Future<Void> future = getEntry(singleSlotRange).addSlave(ip, Integer.valueOf(port));
+                Future<Void> future = getEntry(singleSlotRange.getStartSlot()).addSlave(ip, Integer.valueOf(port));
                 future.addListener(new FutureListener<Void>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {
@@ -228,7 +228,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             return;
                         }
 
-                        if (getEntry(singleSlotRange).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+                        if (getEntry(singleSlotRange.getStartSlot()).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
                             String slaveAddr = ip + ":" + port;
                             log.info("slave: {} added", slaveAddr);
                         }
@@ -265,7 +265,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String ip = parts[2];
                 String port = parts[3];
 
-                MasterSlaveEntry entry = getEntry(singleSlotRange);
+                MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
                 if (entry.getFreezeReason() != FreezeReason.MANAGER) {
                     entry.freeze();
                     String addr = ip + ":" + port;
@@ -279,7 +279,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private void slaveDown(String ip, String port) {
         if (config.getReadMode() == ReadMode.SLAVE) {
-            slaveDown(singleSlotRange, ip, Integer.valueOf(port), FreezeReason.MANAGER);
+            getEntry(singleSlotRange.getStartSlot()).slaveDown(ip, Integer.valueOf(port), FreezeReason.MANAGER);
         }
 
         log.warn("slave: {}:{} has down", ip, port);
@@ -299,7 +299,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String port = parts[3];
 
                 String masterAddr = ip + ":" + port;
-                MasterSlaveEntry entry = getEntry(singleSlotRange);
+                MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
                 if (entry.isFreezed()
                         && entry.getClient().getAddr().equals(new InetSocketAddress(ip, Integer.valueOf(port)))) {
                     entry.unfreeze();
@@ -318,7 +318,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
 
-        if (getEntry(singleSlotRange).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+        if (getEntry(singleSlotRange.getStartSlot()).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
             String slaveAddr = ip + ":" + port;
             log.info("slave: {} has up", slaveAddr);
         }
@@ -336,8 +336,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String newMaster = ip + ":" + port;
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
-                    changeMaster(singleSlotRange, ip, Integer.valueOf(port));
-                    log.info("master has changed from {} to {}", current, newMaster);
+                    changeMaster(singleSlotRange.getStartSlot(), ip, Integer.valueOf(port));
+                    log.info("master {} changed to {}", current, newMaster);
                 }
             }
         } else {

@@ -30,6 +30,8 @@ public class ClusterPartition {
     private URI masterAddress;
     private final Set<URI> slaveAddresses = new HashSet<URI>();
     private final Set<URI> failedSlaves = new HashSet<URI>();
+    
+    private final Set<Integer> slots = new HashSet<Integer>();
     private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
 
     public ClusterPartition(String nodeId) {
@@ -48,14 +50,35 @@ public class ClusterPartition {
         return masterFail;
     }
 
+    public void addSlots(Set<Integer> slots) {
+        this.slots.addAll(slots);
+    }
+
+    public void removeSlots(Set<Integer> slots) {
+        this.slots.removeAll(slots);
+    }
+
     public void addSlotRanges(Set<ClusterSlotRange> ranges) {
+        for (ClusterSlotRange clusterSlotRange : ranges) {
+            for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
+                slots.add(i);
+            }
+        }
         slotRanges.addAll(ranges);
     }
     public void removeSlotRanges(Set<ClusterSlotRange> ranges) {
+        for (ClusterSlotRange clusterSlotRange : ranges) {
+            for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
+                slots.remove(i);
+            }
+        }
         slotRanges.removeAll(ranges);
     }
     public Set<ClusterSlotRange> getSlotRanges() {
         return slotRanges;
+    }
+    public Set<Integer> getSlots() {
+        return slots;
     }
 
     public InetSocketAddress getMasterAddr() {
@@ -91,6 +114,31 @@ public class ClusterPartition {
     public void removeSlaveAddress(URI uri) {
         slaveAddresses.remove(uri);
         failedSlaves.remove(uri);
+    }
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((nodeId == null) ? 0 : nodeId.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ClusterPartition other = (ClusterPartition) obj;
+        if (nodeId == null) {
+            if (other.nodeId != null)
+                return false;
+        } else if (!nodeId.equals(other.nodeId))
+            return false;
+        return true;
     }
 
     @Override

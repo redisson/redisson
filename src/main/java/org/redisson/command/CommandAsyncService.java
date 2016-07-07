@@ -43,8 +43,8 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.slf4j.Logger;
@@ -116,9 +116,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
     
     @Override
-    public <T, R> Future<R> readAsync(InetSocketAddress client, int slot, Codec codec, RedisCommand<T> command, Object ... params) {
+    public <T, R> Future<R> readAsync(InetSocketAddress client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
-        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0);
+        async(true, new NodeSource(entry, client), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
     
@@ -133,9 +133,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public <T, R> Future<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params) {
         final Promise<Collection<R>> mainPromise = connectionManager.newPromise();
+        final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         Promise<R> promise = new DefaultPromise<R>() {
             List<R> results = new ArrayList<R>();
-            AtomicInteger counter = new AtomicInteger(connectionManager.getEntries().keySet().size());
+            AtomicInteger counter = new AtomicInteger(nodes.size());
             @Override
             public Promise<R> setSuccess(R result) {
                 if (result instanceof Collection) {
@@ -163,8 +164,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         };
 
-        for (ClusterSlotRange slot : connectionManager.getEntries().keySet()) {
-            async(true, new NodeSource(slot.getStartSlot()), connectionManager.getCodec(), command, params, promise, 0);
+        for (MasterSlaveEntry entry : nodes) {
+            async(true, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
     }
@@ -172,25 +173,25 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
-        final List<ClusterSlotRange> slots = new ArrayList<ClusterSlotRange>(connectionManager.getEntries().keySet());
-        Collections.shuffle(slots);
+        final List<MasterSlaveEntry> nodes = new ArrayList<MasterSlaveEntry>(connectionManager.getEntrySet());
+        Collections.shuffle(nodes);
 
-        retryReadRandomAsync(command, mainPromise, slots, params);
+        retryReadRandomAsync(command, mainPromise, nodes, params);
         return mainPromise;
     }
 
     private <R, T> void retryReadRandomAsync(final RedisCommand<T> command, final Promise<R> mainPromise,
-            final List<ClusterSlotRange> slots, final Object... params) {
+            final List<MasterSlaveEntry> nodes, final Object... params) {
         final Promise<R> attemptPromise = connectionManager.newPromise();
         attemptPromise.addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
                 if (future.isSuccess()) {
                     if (future.getNow() == null) {
-                        if (slots.isEmpty()) {
+                        if (nodes.isEmpty()) {
                             mainPromise.setSuccess(null);
                         } else {
-                            retryReadRandomAsync(command, mainPromise, slots, params);
+                            retryReadRandomAsync(command, mainPromise, nodes, params);
                         }
                     } else {
                         mainPromise.setSuccess(future.getNow());
@@ -201,8 +202,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         });
 
-        ClusterSlotRange slot = slots.remove(0);
-        async(true, new NodeSource(slot.getStartSlot()), connectionManager.getCodec(), command, params, attemptPromise, 0);
+        MasterSlaveEntry entry = nodes.remove(0);
+        async(true, new NodeSource(entry), connectionManager.getCodec(), command, params, attemptPromise, 0);
     }
 
     @Override
@@ -222,9 +223,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private <T, R> Future<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
-        final Set<ClusterSlotRange> slots = connectionManager.getEntries().keySet();
+        final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         Promise<T> promise = new DefaultPromise<T>() {
-            AtomicInteger counter = new AtomicInteger(slots.size());
+            AtomicInteger counter = new AtomicInteger(nodes.size());
             @Override
             public Promise<T> setSuccess(T result) {
                 if (callback != null) {
@@ -246,8 +247,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 return this;
             }
         };
-        for (ClusterSlotRange slot : slots) {
-            async(readOnlyMode, new NodeSource(slot.getStartSlot()), connectionManager.getCodec(), command, params, promise, 0);
+        for (MasterSlaveEntry entry : nodes) {
+            async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
     }
@@ -260,10 +261,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private NodeSource getNodeSource(String key) {
         int slot = connectionManager.calcSlot(key);
-        if (slot != 0) {
-            return new NodeSource(slot);
-        }
-        return NodeSource.ZERO;
+        MasterSlaveEntry entry = connectionManager.getEntry(slot);
+        return new NodeSource(entry);
     }
 
     @Override
@@ -274,12 +273,26 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
+    public <T, R> Future<R> readAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
+        Promise<R> mainPromise = connectionManager.newPromise();
+        async(true, new NodeSource(entry), codec, command, params, mainPromise, 0);
+        return mainPromise;
+    }
+    
     public <T, R> Future<R> readAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
         async(true, new NodeSource(slot), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
+    @Override
+    public <T, R> Future<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
+        Promise<R> mainPromise = connectionManager.newPromise();
+        async(false, new NodeSource(entry), codec, command, params, mainPromise, 0);
+        return mainPromise;
+    }
+
+    
     @Override
     public <T, R> Future<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
         Promise<R> mainPromise = connectionManager.newPromise();
@@ -299,6 +312,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <T, R> Future<R> evalReadAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalAsync(new NodeSource(entry), true, codec, evalCommandType, script, keys, params);
+    }
+    
+    @Override
     public <T, R> Future<R> evalReadAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(new NodeSource(slot), true, codec, evalCommandType, script, keys, params);
     }
@@ -315,6 +333,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return evalAsync(source, false, codec, evalCommandType, script, keys, params);
     }
 
+    public <T, R> Future<R> evalWriteAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        return evalAsync(new NodeSource(entry), false, codec, evalCommandType, script, keys, params);
+    }
+    
     public <T, R> Future<R> evalWriteAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(new NodeSource(slot), false, codec, evalCommandType, script, keys, params);
     }
@@ -327,8 +349,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     public <T, R> Future<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
+        final Set<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         Promise<T> promise = new DefaultPromise<T>() {
-            AtomicInteger counter = new AtomicInteger(connectionManager.getEntries().keySet().size());
+            AtomicInteger counter = new AtomicInteger(entries.size());
             @Override
             public Promise<T> setSuccess(T result) {
                 callback.onSlotResult(result);
@@ -351,8 +374,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         args.add(keys.size());
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
-        for (ClusterSlotRange slot : connectionManager.getEntries().keySet()) {
-            async(readOnlyMode, new NodeSource(slot.getStartSlot()), connectionManager.getCodec(), command, args.toArray(), promise, 0);
+        for (MasterSlaveEntry entry : entries) {
+            async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, args.toArray(), promise, 0);
         }
         return mainPromise;
     }

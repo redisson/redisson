@@ -88,7 +88,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
                     if (!now.getHostAddress().equals(master.getHostAddress())) {
                         log.info("Detected DNS change. {} has changed from {} to {}", cfg.getAddress().getHost(), master.getHostAddress(), now.getHostAddress());
                         if (currentMaster.compareAndSet(master, now)) {
-                            changeMaster(singleSlotRange, cfg.getAddress().getHost(), cfg.getAddress().getPort());
+                            changeMaster(singleSlotRange.getStartSlot(), cfg.getAddress().getHost(), cfg.getAddress().getPort());
                             log.info("Master has been changed");
                         }
                     }
