@@ -104,7 +104,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public static final int MAX_SLOT = 16384;
 
-    protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT);
+    protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT-1);
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -126,7 +126,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected boolean isClusterMode;
 
-    private final Map<ClusterSlotRange, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
+    private final Map<Integer, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
     private final Promise<Boolean> shutdownPromise;
 
@@ -190,11 +190,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return codec;
     }
 
-    @Override
-    public Map<ClusterSlotRange, MasterSlaveEntry> getEntries() {
-        return entries;
+    public Set<MasterSlaveEntry> getEntrySet() {
+        return new HashSet<MasterSlaveEntry>(entries.values());
     }
-
+    
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
@@ -236,7 +235,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else {
             entry = createMasterSlaveEntry(config, slots);
         }
-        addEntry(singleSlotRange, entry);
+        
+        for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
+            addEntry(slot, entry);
+        }
     }
 
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
@@ -296,7 +298,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public int calcSlot(String key) {
-        return 0;
+        return singleSlotRange.getStartSlot();
     }
 
     @Override
@@ -623,7 +625,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public MasterSlaveEntry getEntry(InetSocketAddress addr) {
         // TODO optimize
-        for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : entries.entrySet()) {
+        for (Entry<Integer, MasterSlaveEntry> entry : entries.entrySet()) {
             if (entry.getValue().getClient().getAddr().equals(addr)) {
                 return entry.getValue();
             }
@@ -631,43 +633,45 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return null;
     }
 
-    protected MasterSlaveEntry getEntry(ClusterSlotRange slotRange) {
-        return entries.get(slotRange);
+    public MasterSlaveEntry getEntry(int slot) {
+        return entries.get(slot);
     }
-
-    protected MasterSlaveEntry getEntry(int slot) {
-        // TODO optimize
-        for (Entry<ClusterSlotRange, MasterSlaveEntry> entry : entries.entrySet()) {
-            if (entry.getKey().isOwn(slot)) {
-                return entry.getValue();
-            }
-        }
-        return null;
-    }
-
+    
     protected void slaveDown(ClusterSlotRange slotRange, String host, int port, FreezeReason freezeReason) {
-        getEntry(slotRange).slaveDown(host, port, freezeReason);
+        getEntry(slotRange.getStartSlot()).slaveDown(host, port, freezeReason);
     }
 
-    protected void changeMaster(ClusterSlotRange slotRange, String host, int port) {
-        getEntry(slotRange).changeMaster(host, port);
+    protected void changeMaster(int slot, String host, int port) {
+        getEntry(slot).changeMaster(host, port);
     }
 
-    protected void addEntry(ClusterSlotRange slotRange, MasterSlaveEntry entry) {
-        entries.put(slotRange, entry);
+    protected void addEntry(Integer slot, MasterSlaveEntry entry) {
+        entries.put(slot, entry);
     }
 
-    protected MasterSlaveEntry removeMaster(ClusterSlotRange slotRange) {
-        return entries.remove(slotRange);
+    protected MasterSlaveEntry removeMaster(Integer slot) {
+        return entries.remove(slot);
     }
 
     @Override
     public Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
-        MasterSlaveEntry e = getEntry(source, command);
-        return e.connectionWriteOp();
+        MasterSlaveEntry entry = source.getEntry();
+        if (entry == null) {
+            entry = getEntry(source);
+        }
+        return entry.connectionWriteOp();
     }
 
     private MasterSlaveEntry getEntry(NodeSource source) {
+        // workaround for slots in migration state
+        if (source.getRedirect() != null) {
+            MasterSlaveEntry e = getEntry(source.getAddr());
+            if (e == null) {
+                throw new RedisNodeNotFoundException("No node for slot: " + source.getAddr());
+            }
+            return e;
+        }
+        
         MasterSlaveEntry e = getEntry(source.getSlot());
         if (e == null) {
             throw new RedisNodeNotFoundException("No node with slot: " + source.getSlot());
@@ -675,21 +679,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return e;
     }
 
-    private MasterSlaveEntry getEntry(NodeSource source, RedisCommand<?> command) {
-        MasterSlaveEntry e = getEntry(source.getSlot());
-        if (e == null) {
-            throw new RedisNodeNotFoundException("No node for slot: " + source.getSlot() + " and command " + command);
-        }
-        return e;
-    }
-
     @Override
     public Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
-        MasterSlaveEntry e = getEntry(source, command);
-        if (source.getAddr() != null) {
-            return e.connectionReadOp(source.getAddr());
+        MasterSlaveEntry entry = source.getEntry();
+        if (entry == null && source.getSlot() != null) {
+            entry = getEntry(source.getSlot());
         }
-        return e.connectionReadOp();
+        if (source.getAddr() != null) {
+            return entry.connectionReadOp(source.getAddr());
+        }
+        return entry.connectionReadOp();
     }
 
     Future<RedisPubSubConnection> nextPubSubConnection(int slot) {
@@ -702,12 +701,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void releaseWrite(NodeSource source, RedisConnection connection) {
-        getEntry(source).releaseWrite(connection);
+        MasterSlaveEntry entry = source.getEntry();
+        if (entry == null) {
+            entry = getEntry(source);
+        }
+        entry.releaseWrite(connection);
     }
 
     @Override
     public void releaseRead(NodeSource source, RedisConnection connection) {
-        getEntry(source).releaseRead(connection);
+        MasterSlaveEntry entry = source.getEntry();
+        if (entry == null) {
+            entry = getEntry(source);
+        }
+        entry.releaseRead(connection);
     }
 
     @Override

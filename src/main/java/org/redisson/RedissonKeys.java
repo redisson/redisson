@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,9 +32,9 @@ import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.core.RKeys;
 import org.redisson.core.RType;
 import org.redisson.misc.CompositeIterable;
@@ -78,11 +79,11 @@ public class RedissonKeys implements RKeys {
     
     public Iterable<String> getKeysByPattern(final String pattern, final int count) {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
-        for (final ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
+        for (final MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
             Iterable<String> iterable = new Iterable<String>() {
                 @Override
                 public Iterator<String> iterator() {
-                    return createKeysIterator(slot.getStartSlot(), pattern, count);
+                    return createKeysIterator(entry, pattern, count);
                 }
             };
             iterables.add(iterable);
@@ -96,21 +97,21 @@ public class RedissonKeys implements RKeys {
         return getKeysByPattern(null);
     }
 
-    private ListScanResult<String> scanIterator(InetSocketAddress client, int slot, long startPos, String pattern, int count) {
+    private ListScanResult<String> scanIterator(InetSocketAddress client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
         if (pattern == null) {
-            Future<ListScanResult<String>> f = commandExecutor.readAsync(client, slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
+            Future<ListScanResult<String>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
             return commandExecutor.get(f);
         }
-        Future<ListScanResult<String>> f = commandExecutor.readAsync(client, slot, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
+        Future<ListScanResult<String>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
         return commandExecutor.get(f);
     }
 
-    private Iterator<String> createKeysIterator(final int slot, final String pattern, final int count) {
+    private Iterator<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern, final int count) {
         return new RedissonBaseIterator<String>() {
 
             @Override
             ListScanResult<String> iterator(InetSocketAddress client, long nextIterPos) {
-                return RedissonKeys.this.scanIterator(client, slot, nextIterPos, pattern, count);
+                return RedissonKeys.this.scanIterator(client, entry, nextIterPos, pattern, count);
             }
 
             @Override
@@ -160,7 +161,8 @@ public class RedissonKeys implements RKeys {
         final Promise<Long> result = commandExecutor.getConnectionManager().newPromise();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
-        final AtomicLong executed = new AtomicLong(commandExecutor.getConnectionManager().getEntries().size());
+        Set<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
+        final AtomicLong executed = new AtomicLong(entries.size());
         final FutureListener<Long> listener = new FutureListener<Long>() {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
@@ -174,8 +176,8 @@ public class RedissonKeys implements RKeys {
             }
         };
 
-        for (ClusterSlotRange slot : commandExecutor.getConnectionManager().getEntries().keySet()) {
-            Future<Collection<String>> findFuture = commandExecutor.readAsync(slot.getStartSlot(), null, RedisCommands.KEYS, pattern);
+        for (MasterSlaveEntry entry : entries) {
+            Future<Collection<String>> findFuture = commandExecutor.readAsync(entry, null, RedisCommands.KEYS, pattern);
             findFuture.addListener(new FutureListener<Collection<String>>() {
                 @Override
                 public void operationComplete(Future<Collection<String>> future) throws Exception {
@@ -211,18 +213,16 @@ public class RedissonKeys implements RKeys {
             return commandExecutor.writeAsync(null, RedisCommands.DEL, keys);
         }
 
-        Map<ClusterSlotRange, List<String>> range2key = new HashMap<ClusterSlotRange, List<String>>();
+        Map<MasterSlaveEntry, List<String>> range2key = new HashMap<MasterSlaveEntry, List<String>>();
         for (String key : keys) {
             int slot = commandExecutor.getConnectionManager().calcSlot(key);
-            for (ClusterSlotRange range : commandExecutor.getConnectionManager().getEntries().keySet()) {
-                if (range.isOwn(slot)) {
-                    List<String> list = range2key.get(range);
-                    if (list == null) {
-                        list = new ArrayList<String>();
-                        range2key.put(range, list);
-                    }
-                    list.add(key);
+            for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+                List<String> list = range2key.get(entry);
+                if (list == null) {
+                    list = new ArrayList<String>();
+                    range2key.put(entry, list);
                 }
+                list.add(key);
             }
         }
 
@@ -246,11 +246,11 @@ public class RedissonKeys implements RKeys {
             }
         };
 
-        for (Entry<ClusterSlotRange, List<String>> entry : range2key.entrySet()) {
+        for (Entry<MasterSlaveEntry, List<String>> entry : range2key.entrySet()) {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             for (String key : entry.getValue()) {
-                executorService.writeAsync(entry.getKey().getStartSlot(), null, RedisCommands.DEL, key);
+                executorService.writeAsync(entry.getKey(), null, RedisCommands.DEL, key);
             }
 
             Future<List<?>> future = executorService.executeAsync();
