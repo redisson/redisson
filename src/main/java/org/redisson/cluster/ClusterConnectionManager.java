@@ -588,14 +588,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 currentPartition.addSlots(addedSlots);
                 
                 MasterSlaveEntry entry = getEntry(currentPartition.getMasterAddr());
-                
+
                 for (Integer slot : addedSlots) {
                     entry.addSlotRange(slot);
                     addEntry(slot, entry);
                     lastPartitions.put(slot, currentPartition);
                 }
                 if (!addedSlots.isEmpty()) {
-                    log.info("{} slots added to {}", addedSlots.size(), entry.getClient().getAddr());
+                    log.info("{} slots added to {}", addedSlots.size(), currentPartition.getMasterAddr());
                 }
 
                 Set<Integer> removedSlots = new HashSet<Integer>(currentPartition.getSlots());
@@ -609,7 +609,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 currentPartition.removeSlots(removedSlots);
 
                 if (!removedSlots.isEmpty()) {
-                    log.info("{} slots removed from {}", removedSlots.size(), entry.getClient().getAddr());
+                    log.info("{} slots removed from {}", removedSlots.size(), currentPartition.getMasterAddr());
                 }
                 break;
             }
