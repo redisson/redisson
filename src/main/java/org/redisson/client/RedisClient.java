@@ -75,16 +75,16 @@ public class RedisClient {
     }
     
     public RedisClient(String host, int port) {
-        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 3000);
+        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 10000);
         hasOwnGroup = true;
     }
     
     public RedisClient(EventLoopGroup group, String host, int port) {
-        this(group, NioSocketChannel.class, host, port, 3000);
+        this(group, NioSocketChannel.class, host, port, 10000);
     }
 
     public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int connectTimeout) {
-        this(group, socketChannelClass, host, port, connectTimeout, 3000);
+        this(group, socketChannelClass, host, port, connectTimeout, 10000);
     }
     
     public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int connectTimeout, int commandTimeout) {
