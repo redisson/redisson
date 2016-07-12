@@ -165,8 +165,7 @@ public class RedissonTest {
         final AtomicInteger disconnectCounter = new AtomicInteger();
 
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319").setFailedAttempts(1).setRetryAttempts(1)
-        .setConnectionMinimumIdleSize(0);
+        config.useSingleServer().setAddress("127.0.0.1:6319");
 
         RedissonClient r = Redisson.create(config);
 
@@ -189,7 +188,7 @@ public class RedissonTest {
 
         r.getBucket("1").get();
         Assert.assertEquals(0, p.stop());
-
+        
         try {
             r.getBucket("1").get();
         } catch (Exception e) {
@@ -203,7 +202,7 @@ public class RedissonTest {
 
         Assert.assertEquals(0, p.stop());
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(2));
+        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
         await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
     }
 
