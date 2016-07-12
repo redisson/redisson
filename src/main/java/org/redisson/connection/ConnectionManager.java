@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,8 @@ import io.netty.util.concurrent.Promise;
  *
  */
 public interface ConnectionManager {
+    
+    URI getLastClusterNode();
 
     boolean isClusterMode();
 

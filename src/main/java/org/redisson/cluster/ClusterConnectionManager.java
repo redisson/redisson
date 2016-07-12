@@ -64,6 +64,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private final Map<Integer, ClusterPartition> lastPartitions = PlatformDependent.newConcurrentHashMap();
 
     private ScheduledFuture<?> monitorFuture;
+    
+    private volatile URI lastClusterNode;
 
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         super(config);
@@ -87,6 +89,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
                 }
 
+                lastClusterNode = addr;
+                
                 Collection<ClusterPartition> partitions = parsePartitions(nodes);
                 List<Future<Collection<Future<Void>>>> futures = new ArrayList<Future<Collection<Future<Void>>>>();
                 for (ClusterPartition partition : partitions) {
@@ -321,7 +325,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             scheduleClusterChangeCheck(cfg, null);
             return;
         }
-        URI uri = iterator.next();
+        final URI uri = iterator.next();
         Future<RedisConnection> connectionFuture = connect(cfg, uri);
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
@@ -333,12 +337,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 RedisConnection connection = future.getNow();
-                updateClusterState(cfg, connection, iterator);
+                updateClusterState(cfg, connection, iterator, uri);
             }
         });
     }
 
-    private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, final Iterator<URI> iterator) {
+    private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, final Iterator<URI> iterator, final URI uri) {
         Future<List<ClusterNodeInfo>> future = connection.async(RedisCommands.CLUSTER_NODES);
         future.addListener(new FutureListener<List<ClusterNodeInfo>>() {
             @Override
@@ -350,6 +354,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     return;
                 }
 
+                lastClusterNode = uri;
+                
                 List<ClusterNodeInfo> nodes = future.getNow();
                 final StringBuilder nodesValue = new StringBuilder();
                 if (log.isDebugEnabled()) {
@@ -684,5 +690,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private HashSet<ClusterPartition> getLastPartitions() {
         return new HashSet<ClusterPartition>(lastPartitions.values());
     }
+    
+    @Override
+    public URI getLastClusterNode() {
+        return lastClusterNode;
+    }
+    
+    @Override
+    public boolean isClusterMode() {
+        return true;
+    }
+    
 }
 
