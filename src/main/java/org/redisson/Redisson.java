@@ -37,7 +37,7 @@ import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
-import org.redisson.core.ClusterNode;
+import org.redisson.core.ClusterNodesGroup;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
 import org.redisson.core.RAtomicDouble;
@@ -563,11 +563,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public NodesGroup<ClusterNode> getClusterNodesGroup() {
-        if (!config.isClusterConfig()) {
+    public ClusterNodesGroup getClusterNodesGroup() {
+        if (!connectionManager.isClusterMode()) {
             throw new IllegalStateException("Redisson is not in cluster mode!");
         }
-        return new RedisNodes<ClusterNode>(connectionManager);
+        return new RedisClusterNodes(connectionManager);
     }
 
     @Override

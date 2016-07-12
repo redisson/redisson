@@ -294,7 +294,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public NodesGroup<ClusterNode> getClusterNodesGroup() {
-        if (!config.isClusterConfig()) {
+        if (!connectionManager.isClusterMode()) {
             throw new IllegalStateException("Redisson not in cluster mode!");
         }
         return new RedisNodes<ClusterNode>(connectionManager);

@@ -124,8 +124,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected MasterSlaveServersConfig config;
 
-    protected boolean isClusterMode;
-
     private final Map<Integer, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
     private final Promise<Boolean> shutdownPromise;
@@ -169,11 +167,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         this.codec = cfg.getCodec();
         this.shutdownPromise = newPromise();
-        this.isClusterMode = cfg.isClusterConfig();
     }
 
     public boolean isClusterMode() {
-        return isClusterMode;
+        return false;
     }
 
     public IdleConnectionWatcher getConnectionWatcher() {
@@ -802,5 +799,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
         }
+    }
+    
+    public URI getLastClusterNode() {
+        return null;
     }
 }
