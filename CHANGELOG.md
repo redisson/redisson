@@ -4,7 +4,7 @@ Redisson Releases History
 
 ####13-Jul-2016 - version 2.2.19 released  
 Feature - `RSetReactive.readIntersection`, `RSetReactive.diff` and `RSetReactive.intersection` added  
-Fixed - cluster commands handling regression  
+Fixed - cluster commands handling regression (regression since 2.2.18)
 
 ####13-Jul-2016 - version 2.2.18 released  
 Feature - `RSet.randomAsync` and `RSet.random` commands added (thanks to dcheckoway)  
