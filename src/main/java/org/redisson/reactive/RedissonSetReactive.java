@@ -119,6 +119,22 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
+    public Publisher<Long> intersection(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SINTERSTORE, args.toArray());
+    }
+    
+    @Override
+    public Publisher<Long> diff(String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SDIFFSTORE, args.toArray());
+    }
+    
+    @Override
     public Publisher<Long> union(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());
