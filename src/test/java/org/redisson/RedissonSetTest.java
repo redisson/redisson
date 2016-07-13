@@ -47,6 +47,19 @@ public class RedissonSetTest extends BaseTest {
     }
 
     @Test
+    public void testRandom() {
+        RSet<Integer> set = redisson.getSet("simple");
+        set.add(1);
+        set.add(2);
+        set.add(3);
+
+        assertThat(set.random()).isIn(1, 2, 3);
+        assertThat(set.random()).isIn(1, 2, 3);
+        assertThat(set.random()).isIn(1, 2, 3);
+        assertThat(set).containsOnly(1, 2, 3);
+    }
+
+    @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);

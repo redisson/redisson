@@ -58,6 +58,19 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
     }
 
     @Test
+    public void testRandom() {
+        RSetReactive<Integer> set = redisson.getSet("simple");
+        sync(set.add(1));
+        sync(set.add(2));
+        sync(set.add(3));
+
+        MatcherAssert.assertThat(sync(set.random()), Matchers.isOneOf(1, 2, 3));
+        MatcherAssert.assertThat(sync(set.random()), Matchers.isOneOf(1, 2, 3));
+        MatcherAssert.assertThat(sync(set.random()), Matchers.isOneOf(1, 2, 3));
+        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2, 3));
+    }
+
+    @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
