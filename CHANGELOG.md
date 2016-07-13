@@ -2,6 +2,19 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####13-Jul-2016 - version 2.2.18 released  
+Feature - `RSet.randomAsync` and `RSet.random` commands added (thanks to dcheckoway)  
+Feature - commandTimeout param added to RedisClient  
+Feature - `JsonJacksonMapValueCodec` basic typed map value codec added (thanks to andrejserafim)  
+Improvement - PubSub management has been reimplemented this resolves some issues with RLock, RSemaphore objects  
+Fixed - disconnected pubsub connection leads to missed response for unsubscribe/punsubscribe operations  
+Fixed - cluster slot changes discovery  
+Fixed - execute all lock, semaphore and countdownlatch commands on master node  
+Fixed - shutdown listeners added during blocking operations usage weren't removing in some cases  
+Fixed - response parsing of cluster nodes command  
+Fixed - Connections weren't closing during `RedisClient` shutdown  
+Fixed - `RedissonRedLock.unlock`  
+
 ####30-Jun-2016 - version 2.2.17 released  
 Feature - `RMultimap.keySize` method added  
 Feature - `RKeys.getType` method added  
