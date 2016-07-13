@@ -133,14 +133,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> Future<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params) {
         final Promise<Collection<R>> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
-        Promise<R> promise = connectionManager.newPromise();
         final List<R> results = new ArrayList<R>();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
-        promise.addListener(new FutureListener<R>() {
+        FutureListener<R> listener = new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
                 if (!future.isSuccess()) {
-                    mainPromise.setFailure(future.cause());
+                    mainPromise.tryFailure(future.cause());
                     return;
                 }
                 
@@ -160,9 +159,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     mainPromise.setSuccess(results);
                 }
             }
-        });
+        };
 
         for (MasterSlaveEntry entry : nodes) {
+            Promise<R> promise = connectionManager.newPromise();
+            promise.addListener(listener);
             async(true, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
@@ -222,13 +223,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private <T, R> Future<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
-        Promise<T> promise = connectionManager.newPromise();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
-        promise.addListener(new FutureListener<T>() {
+        FutureListener<T> listener = new FutureListener<T>() {
             @Override
             public void operationComplete(Future<T> future) throws Exception {
                 if (!future.isSuccess()) {
-                    mainPromise.setFailure(future.cause());
+                    mainPromise.tryFailure(future.cause());
                     return;
                 }
 
@@ -243,9 +243,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     }
                 }
             }
-        });
+        };
 
         for (MasterSlaveEntry entry : nodes) {
+            Promise<T> promise = connectionManager.newPromise();
+            promise.addListener(listener);
             async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
@@ -348,14 +350,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> Future<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> entries = connectionManager.getEntrySet();
-        Promise<T> promise = connectionManager.newPromise();
         final AtomicInteger counter = new AtomicInteger(entries.size());
-        promise.addListener(new FutureListener<T>() {
+        FutureListener<T> listener = new FutureListener<T>() {
 
             @Override
             public void operationComplete(Future<T> future) throws Exception {
                 if (!future.isSuccess()) {
-                    mainPromise.setFailure(future.cause());
+                    mainPromise.tryFailure(future.cause());
                     return;
                 }
 
@@ -365,7 +366,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     mainPromise.setSuccess(callback.onFinish());
                 }
             }
-        });
+        };
 
         List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
         args.add(script);
@@ -373,6 +374,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
         for (MasterSlaveEntry entry : entries) {
+            Promise<T> promise = connectionManager.newPromise();
+            promise.addListener(listener);
             async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, args.toArray(), promise, 0);
         }
         return mainPromise;
