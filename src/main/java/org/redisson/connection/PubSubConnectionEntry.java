@@ -171,7 +171,8 @@ public class PubSubConnectionEntry {
         conn.unsubscribe(channel);
     }
 
-    public void removeListeners(String channel) {
+    private void removeListeners(String channel) {
+        conn.removeDisconnectListener(channel);
         SubscribeListener s = subscribeChannelListeners.remove(channel);
         conn.removeListener(s);
         Queue<RedisPubSubListener> queue = channelListeners.get(channel);
