@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,7 +62,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final Map<URI, RedisConnection> nodeConnections = PlatformDependent.newConcurrentHashMap();
 
-    private final Map<Integer, ClusterPartition> lastPartitions = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<Integer, ClusterPartition> lastPartitions = PlatformDependent.newConcurrentHashMap();
 
     private ScheduledFuture<?> monitorFuture;
     
