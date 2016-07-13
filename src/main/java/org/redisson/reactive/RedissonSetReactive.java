@@ -119,6 +119,11 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
+    public Publisher<Set<V>> readIntersection(String... names) {
+        return reactive(instance.readIntersectionAsync(names));
+    }
+    
+    @Override
     public Publisher<Long> intersection(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());

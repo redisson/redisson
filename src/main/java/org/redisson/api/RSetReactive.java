@@ -90,4 +90,13 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      */
     Publisher<Long> intersection(String... names);
 
+    /**
+     * Intersection sets specified by name with current set.
+     * Without current set state change.
+     *
+     * @param names
+     * @return
+     */
+    Publisher<Set<V>> readIntersection(String... names);
+
 }
