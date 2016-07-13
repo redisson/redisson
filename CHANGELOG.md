@@ -2,6 +2,10 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####13-Jul-2016 - version 2.2.19 released  
+Feature - `RSetReactive.readIntersection`, `RSetReactive.diff` and `RSetReactive.intersection` added  
+Fixed - cluster commands handling regression  
+
 ####13-Jul-2016 - version 2.2.18 released  
 Feature - `RSet.randomAsync` and `RSet.random` commands added (thanks to dcheckoway)  
 Feature - commandTimeout param added to RedisClient  
