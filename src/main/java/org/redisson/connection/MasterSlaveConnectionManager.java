@@ -139,14 +139,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final Semaphore[] locks = new Semaphore[50];
     
     private final Semaphore freePubSubLock = new Semaphore(1);
+    
+    {
+        for (int i = 0; i < locks.length; i++) {
+            locks[i] = new Semaphore(1);
+        }
+    }
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         this(config);
         init(cfg);
-
-        for (int i = 0; i < locks.length; i++) {
-            locks[i] = new Semaphore(1);
-        }
     }
 
     public MasterSlaveConnectionManager(Config cfg) {
