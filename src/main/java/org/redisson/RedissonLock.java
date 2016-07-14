@@ -77,6 +77,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     String getChannelName() {
+        if (getName().contains("{")) {
+            return "redisson_lock__channel:" + getName();
+        }
         return "redisson_lock__channel__{" + getName() + "}";
     }
 
