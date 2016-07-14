@@ -52,7 +52,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         pubSubConnectionPool = new PubSubConnectionPool(config, connectionManager, entry);
     }
 
-    public Future<Void> add(ClientConnectionsEntry entry) {
+    public Future<Void> add(final ClientConnectionsEntry entry) {
         final Promise<Void> result = connectionManager.newPromise();
         FutureListener<Void> listener = new FutureListener<Void>() {
             AtomicInteger counter = new AtomicInteger(2);
