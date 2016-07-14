@@ -162,10 +162,10 @@ public class RedissonRemoteServiceTest extends BaseTest {
     
     @Test
     public void testAsync() throws InterruptedException {
-        RedissonClient r1 = Redisson.create();
+        RedissonClient r1 = createInstance();
         r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
         
-        RedissonClient r2 = Redisson.create();
+        RedissonClient r2 = createInstance();
         RemoteInterfaceAsync ri = r2.getRemoteSerivce().get(RemoteInterfaceAsync.class);
         
         Future<Void> f = ri.voidMethod("someName", 100L);
@@ -182,8 +182,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
     public void testExecutorsAmountConcurrency() throws InterruptedException {
 
         // Redisson server and client
-        final RedissonClient server = Redisson.create();
-        final RedissonClient client = Redisson.create();
+        final RedissonClient server = createInstance();
+        final RedissonClient client = createInstance();
 
         final int serverAmount = 1;
         final int clientAmount = 10;
@@ -262,10 +262,10 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test(expected = RemoteServiceTimeoutException.class)
     public void testTimeout() throws InterruptedException {
-        RedissonClient r1 = Redisson.create();
+        RedissonClient r1 = createInstance();
         r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
         
-        RedissonClient r2 = Redisson.create();
+        RedissonClient r2 = createInstance();
         RemoteInterface ri = r2.getRemoteSerivce().get(RemoteInterface.class, 1, TimeUnit.SECONDS);
         
         try {
@@ -278,10 +278,10 @@ public class RedissonRemoteServiceTest extends BaseTest {
     
     @Test
     public void testInvocations() {
-        RedissonClient r1 = Redisson.create();
+        RedissonClient r1 = createInstance();
         r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
         
-        RedissonClient r2 = Redisson.create();
+        RedissonClient r2 = createInstance();
         RemoteInterface ri = r2.getRemoteSerivce().get(RemoteInterface.class);
         
         ri.voidMethod("someName", 100L);
@@ -308,8 +308,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test
     public void testInvocationWithServiceName() {
-        RedissonClient server = Redisson.create();
-        RedissonClient client = Redisson.create();
+        RedissonClient server = createInstance();
+        RedissonClient client = createInstance();
 
         server.getRemoteSerivce("MyServiceNamespace").register(RemoteInterface.class, new RemoteImpl());
 
@@ -339,7 +339,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test
     public void testProxyToStringEqualsAndHashCode() {
-        RedissonClient client = Redisson.create();
+        RedissonClient client = createInstance();
         try {
             RemoteInterface service = client.getRemoteSerivce().get(RemoteInterface.class);
 
@@ -435,8 +435,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test
     public void testNoAckWithResultInvocations() throws InterruptedException {
-        RedissonClient server = Redisson.create();
-        RedissonClient client = Redisson.create();
+        RedissonClient server = createInstance();
+        RedissonClient client = createInstance();
         try {
             server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
 
@@ -476,8 +476,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test
     public void testAckWithoutResultInvocations() throws InterruptedException {
-        RedissonClient server = Redisson.create();
-        RedissonClient client = Redisson.create();
+        RedissonClient server = createInstance();
+        RedissonClient client = createInstance();
         try {
             server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
 
@@ -525,8 +525,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     @Test
     public void testNoAckWithoutResultInvocations() throws InterruptedException {
-        RedissonClient server = Redisson.create();
-        RedissonClient client = Redisson.create();
+        RedissonClient server = createInstance();
+        RedissonClient client = createInstance();
         try {
             server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
 

@@ -11,9 +11,9 @@ import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.Redisson;
 import org.redisson.RedissonClient;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -90,7 +90,7 @@ public class RedissonSpringCacheTest {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
-            return Redisson.create();
+            return BaseTest.createInstance();
         }
 
         @Bean
@@ -109,7 +109,7 @@ public class RedissonSpringCacheTest {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
-            return Redisson.create();
+            return BaseTest.createInstance();
         }
 
         @Bean

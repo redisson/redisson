@@ -255,7 +255,7 @@ public class RedissonTest {
 
     @Test
     public void testSingleConfig() throws IOException {
-        RedissonClient r = Redisson.create();
+        RedissonClient r = BaseTest.createInstance();
         String t = r.getConfig().toJSON();
         Config c = Config.fromJSON(t);
         assertThat(c.toJSON()).isEqualTo(t);
