@@ -2,6 +2,12 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####14-Jul-2016 - version 2.2.20 released  
+Fixed - NPE during pubsub re-subscription (regression since 2.2.18)  
+Fixed - `RSortedSet` doesn't work in cluster mode (regression since 2.2.16)  
+Fixed - PubSub connection pool initialization in cluster mode  
+Fixed - NPE during pubsub usage in cluster mode (regression since 2.2.18)  
+
 ####13-Jul-2016 - version 2.2.19 released  
 Feature - `RSetReactive.readIntersection`, `RSetReactive.diff` and `RSetReactive.intersection` added  
 Fixed - cluster commands handling regression (regression since 2.2.18)
