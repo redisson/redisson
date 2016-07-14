@@ -61,6 +61,10 @@ public class PubSubConnectionEntry {
     }
 
     public void addListener(String channelName, RedisPubSubListener<?> listener) {
+        if (listener == null) {
+            return;
+        }
+        
         Queue<RedisPubSubListener> queue = channelListeners.get(channelName);
         if (queue == null) {
             queue = new ConcurrentLinkedQueue<RedisPubSubListener>();
