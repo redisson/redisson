@@ -70,7 +70,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         super(config);
-        connectListener = new ClusterConnectionListener(cfg.getReadMode() == ReadMode.SLAVE);
+        connectListener = new ClusterConnectionListener(cfg.getReadMode() != ReadMode.MASTER);
 
         this.config = create(cfg);
         init(this.config);
