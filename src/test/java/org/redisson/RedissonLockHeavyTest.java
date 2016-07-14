@@ -56,7 +56,6 @@ public class RedissonLockHeavyTest extends BaseTest {
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
-                            semaphore.expire(30, TimeUnit.SECONDS);
                         } finally {
                             lock.unlock();
                         }
