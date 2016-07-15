@@ -2,6 +2,9 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####15-Jul-2016 - version 2.2.21 released  
+Fixed - `RLock`, `RReadWriteLock`, `RSemaphore` and `RCountDownLatch` can blocks forever under some conditions  
+
 ####14-Jul-2016 - version 2.2.20 released  
 Fixed - NPE during pubsub re-subscription (regression since 2.2.18)  
 Fixed - `RSortedSet` doesn't work in cluster mode (regression since 2.2.16)  
