@@ -143,18 +143,18 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
 
     @Override
     public boolean isLocked() {
-        String res = commandExecutor.read(getName(), StringCodec.INSTANCE, RedisCommands.HGET, getName(), "mode");
+        String res = commandExecutor.write(getName(), StringCodec.INSTANCE, RedisCommands.HGET, getName(), "mode");
         return "write".equals(res);
     }
 
     @Override
     public boolean isHeldByCurrentThread() {
-        return commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(Thread.currentThread().getId()));
+        return commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(Thread.currentThread().getId()));
     }
 
     @Override
     public int getHoldCount() {
-        Long res = commandExecutor.read(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName(Thread.currentThread().getId()));
+        Long res = commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName(Thread.currentThread().getId()));
         if (res == null) {
             return 0;
         }
