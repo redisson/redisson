@@ -225,7 +225,6 @@ public class RedissonTopicPatternTest {
     @Test
     public void testConcurrentTopic() throws Exception {
         Config config = BaseTest.createConfig();
-        config.useSingleServer().setSubscriptionConnectionPoolSize(100);
         RedissonClient redisson = Redisson.create(config);
         
         int threads = 30;
