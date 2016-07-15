@@ -346,9 +346,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 @Override
                 public void operationComplete(Future<Void> future) throws Exception {
                     promise.setSuccess(сonnEntry);
+                    lock.release();
                 }
             });
-            lock.release();
             return;
         }
 
@@ -374,9 +374,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 @Override
                 public void operationComplete(Future<Void> future) throws Exception {
                     promise.setSuccess(oldEntry);
+                    lock.release();
                 }
             });
-            lock.release();
             return;
         }
         
@@ -433,9 +433,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                         @Override
                         public void operationComplete(Future<Void> future) throws Exception {
                             promise.setSuccess(oldEntry);
+                            lock.release();
                         }
                     });
-                    lock.release();
                     return;
                 }
                 
@@ -469,7 +469,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         
         Codec entryCodec = entry.getConnection().getChannels().get(channelName);
-        freePubSubLock.acquireUninterruptibly();
         entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
             
             @Override
@@ -479,7 +478,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     if (entry.release() == 1) {
                         freePubSubConnections.add(entry);
                     }
-                    freePubSubLock.release();
                     
                     lock.release();
                     return true;
@@ -513,7 +511,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         
         Codec entryCodec = entry.getConnection().getPatternChannels().get(channelName);
-        freePubSubLock.acquireUninterruptibly();
         entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
             
             @Override
@@ -523,7 +520,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     if (entry.release() == 1) {
                         freePubSubConnections.add(entry);
                     }
-                    freePubSubLock.release();
                     
                     lock.release();
                     return true;

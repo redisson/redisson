@@ -39,11 +39,13 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         if (entry.release() == 0) {
             // just an assertion
             boolean removed = entries.remove(entryName) == entry;
-            if (removed) {
-                connectionManager.unsubscribe(channelName, semaphore);
+            if (!removed) {
+                throw new IllegalStateException();
             }
+            connectionManager.unsubscribe(channelName, semaphore);
+        } else {
+            semaphore.release();
         }
-        semaphore.release();
     }
 
     public E getEntry(String entryName) {
