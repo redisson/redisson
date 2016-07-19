@@ -49,7 +49,7 @@ public class RedisConnection implements RedisCommands {
     private long lastUsageTime;
 
     private final Future<?> acquireFuture = ImmediateEventExecutor.INSTANCE.newSucceededFuture(this);
-
+    
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
         this.redisClient = redisClient;
@@ -235,4 +235,7 @@ public class RedisConnection implements RedisCommands {
         return acquireFuture;
     }
 
+    public void onDisconnect() {
+    }
+    
 }

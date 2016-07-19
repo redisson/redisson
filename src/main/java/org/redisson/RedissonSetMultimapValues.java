@@ -195,6 +195,16 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
+    public V random() {
+        return get(randomAsync());
+    }
+
+    @Override
+    public Future<V> randomAsync() {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SRANDMEMBER_SINGLE, getName());
+    }
+
+    @Override
     public Future<Boolean> removeAsync(Object o) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_CONTAINS_VALUE,
                 "local expireDate = 92233720368547758; " +

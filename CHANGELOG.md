@@ -2,6 +2,32 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####15-Jul-2016 - version 2.2.21 released  
+Fixed - `RLock`, `RReadWriteLock`, `RSemaphore` and `RCountDownLatch` can blocks forever under some conditions  
+
+####14-Jul-2016 - version 2.2.20 released  
+Fixed - NPE during pubsub re-subscription (regression since 2.2.18)  
+Fixed - `RSortedSet` doesn't work in cluster mode (regression since 2.2.16)  
+Fixed - PubSub connection pool initialization in cluster mode  
+Fixed - NPE during pubsub usage in cluster mode (regression since 2.2.18)  
+
+####13-Jul-2016 - version 2.2.19 released  
+Feature - `RSetReactive.readIntersection`, `RSetReactive.diff` and `RSetReactive.intersection` added  
+Fixed - cluster commands handling regression (regression since 2.2.18)
+
+####13-Jul-2016 - version 2.2.18 released  
+Feature - `RSet.randomAsync` and `RSet.random` commands added (thanks to dcheckoway)  
+Feature - commandTimeout param added to RedisClient  
+Feature - `JsonJacksonMapValueCodec` basic typed map value codec added (thanks to andrejserafim)  
+Improvement - PubSub management has been reimplemented this resolves some issues with RLock, RSemaphore objects  
+Fixed - disconnected pubsub connection leads to missed response for unsubscribe/punsubscribe operations  
+Fixed - cluster slot changes discovery  
+Fixed - execute all lock, semaphore and countdownlatch commands on master node  
+Fixed - shutdown listeners added during blocking operations usage weren't removing in some cases  
+Fixed - response parsing of cluster nodes command  
+Fixed - Connections weren't closing during `RedisClient` shutdown  
+Fixed - `RedissonRedLock.unlock`  
+
 ####30-Jun-2016 - version 2.2.17 released  
 Feature - `RMultimap.keySize` method added  
 Feature - `RKeys.getType` method added  

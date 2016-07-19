@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.core.ClusterNode;
+import org.redisson.core.ClusterNodesGroup;
 import org.redisson.core.Node;
 import org.redisson.core.NodesGroup;
 import org.redisson.core.RAtomicDouble;
@@ -718,7 +719,7 @@ public interface RedissonClient {
      *
      * @return
      */
-    NodesGroup<ClusterNode> getClusterNodesGroup();
+    ClusterNodesGroup getClusterNodesGroup();
 
     /**
      * Returns {@code true} if this Redisson instance has been shut down.

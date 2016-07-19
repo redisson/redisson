@@ -40,7 +40,7 @@ public class ConnectionEventsHub {
     }
 
     public void fireConnect(InetSocketAddress addr) {
-        if (listenersMap.isEmpty() || maps.get(addr) == Status.CONNECTED) {
+        if (maps.get(addr) == Status.CONNECTED) {
             return;
         }
 
@@ -53,7 +53,7 @@ public class ConnectionEventsHub {
     }
 
     public void fireDisconnect(InetSocketAddress addr) {
-        if (listenersMap.isEmpty() || maps.get(addr) == Status.DISCONNECTED) {
+        if (maps.get(addr) == Status.DISCONNECTED) {
             return;
         }
 

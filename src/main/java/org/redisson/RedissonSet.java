@@ -145,6 +145,16 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
     }
 
     @Override
+    public V random() {
+        return get(randomAsync());
+    }
+
+    @Override
+    public Future<V> randomAsync() {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SRANDMEMBER_SINGLE, getName());
+    }
+
+    @Override
     public Future<Boolean> removeAsync(Object o) {
         return commandExecutor.writeAsync(getName(o), codec, RedisCommands.SREM_SINGLE, getName(o), o);
     }

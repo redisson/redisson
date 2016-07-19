@@ -37,6 +37,14 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
     Future<V> removeRandomAsync();
 
     /**
+     * Returns random element from set
+     * in async mode
+     *
+     * @return
+     */
+    Future<V> randomAsync();
+
+    /**
      * Move a member from this set to the given destination set in async mode.
      *
      * @param destination the destination set

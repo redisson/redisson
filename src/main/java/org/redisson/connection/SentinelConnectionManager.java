@@ -217,7 +217,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             final String slaveAddr = ip + ":" + port;
 
             // to avoid addition twice
-            if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() == ReadMode.SLAVE) {
+            if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() != ReadMode.MASTER) {
                 Future<Void> future = getEntry(singleSlotRange.getStartSlot()).addSlave(ip, Integer.valueOf(port));
                 future.addListener(new FutureListener<Void>() {
                     @Override
@@ -278,11 +278,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(String ip, String port) {
-        if (config.getReadMode() == ReadMode.SLAVE) {
-            getEntry(singleSlotRange.getStartSlot()).slaveDown(ip, Integer.valueOf(port), FreezeReason.MANAGER);
+        if (config.getReadMode() == ReadMode.MASTER) {
+            log.warn("slave: {}:{} has down", ip, port);
+        } else {
+            MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
+            if (entry.slaveDown(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+                log.warn("slave: {}:{} has down", ip, port);
+            }
         }
-
-        log.warn("slave: {}:{} has down", ip, port);
     }
 
     private void onNodeUp(URI addr, String msg) {

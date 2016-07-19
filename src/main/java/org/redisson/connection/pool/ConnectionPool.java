@@ -153,12 +153,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        StringBuilder errorMsg;
-        if (connectionManager.isClusterMode()) {
-            errorMsg = new StringBuilder("Connection pool exhausted! for slots: " + masterSlaveEntry.getSlotRanges());
-        } else {
-            errorMsg = new StringBuilder("Connection pool exhausted! ");
-        }
+        StringBuilder errorMsg = new StringBuilder(getClass().getSimpleName() + " exhausted! ");
         if (!freezed.isEmpty()) {
             errorMsg.append(" Disconnected hosts: " + freezed);
         }

@@ -37,6 +37,14 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
     Publisher<V> removeRandom();
 
     /**
+     * Returns random element from set
+     * in async mode
+     *
+     * @return
+     */
+    Publisher<V> random();
+
+    /**
      * Move a member from this set to the given destination set in async mode.
      *
      * @param destination the destination set
@@ -63,4 +71,32 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * @return
      */
     Publisher<Set<V>> readUnion(String... names);
+    
+    /**
+     * Diff sets specified by name and write to current set.
+     * If current set already exists, it is overwritten.
+     *
+     * @param names
+     * @return
+     */
+    Publisher<Long> diff(String... names);
+    
+    /**
+     * Intersection sets specified by name and write to current set.
+     * If current set already exists, it is overwritten.
+     *
+     * @param names
+     * @return
+     */
+    Publisher<Long> intersection(String... names);
+
+    /**
+     * Intersection sets specified by name with current set.
+     * Without current set state change.
+     *
+     * @param names
+     * @return
+     */
+    Publisher<Set<V>> readIntersection(String... names);
+
 }

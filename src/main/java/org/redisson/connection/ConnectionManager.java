@@ -16,8 +16,10 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.MasterSlaveServersConfig;
@@ -41,9 +43,13 @@ import io.netty.util.concurrent.Promise;
  *
  */
 public interface ConnectionManager {
+    
+    URI getLastClusterNode();
 
     boolean isClusterMode();
 
+    Semaphore getSemaphore(String channelName);
+    
     <R> Future<R> newSucceededFuture(R value);
 
     ConnectionEventsHub getConnectionEventsHub();
@@ -52,8 +58,10 @@ public interface ConnectionManager {
 
     boolean isShuttingDown();
 
-    Promise<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener);
+    Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener);
 
+    Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, final RedisPubSubListener<?> listener, Semaphore semaphore);
+    
     ConnectionInitializer getConnectListener();
 
     IdleConnectionWatcher getConnectionWatcher();
@@ -93,11 +101,17 @@ public interface ConnectionManager {
     PubSubConnectionEntry getPubSubEntry(String channelName);
 
     Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener);
+    
+    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener, Semaphore semaphore);
 
+    Codec unsubscribe(final String channelName, Semaphore lock);
+    
     Codec unsubscribe(String channelName);
 
     Codec punsubscribe(String channelName);
 
+    Codec punsubscribe(final String channelName, Semaphore lock);
+    
     void shutdown();
 
     void shutdown(long quietPeriod, long timeout, TimeUnit unit);

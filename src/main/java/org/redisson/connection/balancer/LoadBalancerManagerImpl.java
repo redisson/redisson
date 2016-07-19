@@ -17,6 +17,7 @@ package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 public class LoadBalancerManagerImpl implements LoadBalancerManager {
@@ -41,25 +43,37 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
 
     private final ConnectionManager connectionManager;
     private final Map<InetSocketAddress, ClientConnectionsEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
-    private final PubSubConnectionPool pubSubEntries;
-    private final SlaveConnectionPool entries;
+    private final PubSubConnectionPool pubSubConnectionPool;
+    private final SlaveConnectionPool slaveConnectionPool;
 
     public LoadBalancerManagerImpl(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry entry) {
         this.connectionManager = connectionManager;
-        entries = new SlaveConnectionPool(config, connectionManager, entry);
-        pubSubEntries = new PubSubConnectionPool(config, connectionManager, entry);
+        slaveConnectionPool = new SlaveConnectionPool(config, connectionManager, entry);
+        pubSubConnectionPool = new PubSubConnectionPool(config, connectionManager, entry);
     }
 
     public Future<Void> add(final ClientConnectionsEntry entry) {
-        Future<Void> f = entries.add(entry);
-        f.addListener(new FutureListener<Void>() {
+        final Promise<Void> result = connectionManager.newPromise();
+        FutureListener<Void> listener = new FutureListener<Void>() {
+            AtomicInteger counter = new AtomicInteger(2);
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
-                addr2Entry.put(entry.getClient().getAddr(), entry);
-                pubSubEntries.add(entry);
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                if (counter.decrementAndGet() == 0) {
+                    addr2Entry.put(entry.getClient().getAddr(), entry);
+                    result.setSuccess(null);
+                }
             }
-        });
-        return f;
+        };
+
+        Future<Void> slaveFuture = slaveConnectionPool.add(entry);
+        slaveFuture.addListener(listener);
+        Future<Void> pubSubFuture = pubSubConnectionPool.add(entry);
+        pubSubFuture.addListener(listener);
+        return result;
     }
 
     public int getAvailableClients() {
@@ -123,30 +137,30 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
     }
 
     public Future<RedisPubSubConnection> nextPubSubConnection() {
-        return pubSubEntries.get();
+        return pubSubConnectionPool.get();
     }
 
     public Future<RedisConnection> getConnection(InetSocketAddress addr) {
         ClientConnectionsEntry entry = addr2Entry.get(addr);
         if (entry != null) {
-            return entries.get(entry);
+            return slaveConnectionPool.get(entry);
         }
         RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr);
         return connectionManager.newFailedFuture(exception);
     }
 
     public Future<RedisConnection> nextConnection() {
-        return entries.get();
+        return slaveConnectionPool.get();
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
         ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
-        pubSubEntries.returnConnection(entry, connection);
+        pubSubConnectionPool.returnConnection(entry, connection);
     }
 
     public void returnConnection(RedisConnection connection) {
         ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
-        entries.returnConnection(entry, connection);
+        slaveConnectionPool.returnConnection(entry, connection);
     }
 
     public void shutdown() {

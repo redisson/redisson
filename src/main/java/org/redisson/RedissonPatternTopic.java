@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
@@ -70,26 +71,21 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
     @Override
     public void removeListener(int listenerId) {
+        Semaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        semaphore.acquireUninterruptibly();
+
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {
+            semaphore.release();
             return;
         }
         
-        entry.lock();
-        try {
-            if (entry.isActive()) {
-                entry.removeListener(name, listenerId);
-                if (!entry.hasListeners(name)) {
-                    commandExecutor.getConnectionManager().punsubscribe(name);
-                }
-                return;
-            }
-        } finally {
-            entry.unlock();
+        entry.removeListener(name, listenerId);
+        if (!entry.hasListeners(name)) {
+            commandExecutor.getConnectionManager().punsubscribe(name, semaphore);
+        } else {
+            semaphore.release();
         }
-
-        // listener has been re-attached
-        removeListener(listenerId);
     }
 
     @Override

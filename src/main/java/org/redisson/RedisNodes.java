@@ -38,7 +38,7 @@ import io.netty.util.concurrent.Promise;
 
 public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
-    private final ConnectionManager connectionManager;
+    final ConnectionManager connectionManager;
 
     public RedisNodes(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;

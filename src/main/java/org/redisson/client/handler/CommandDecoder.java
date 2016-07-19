@@ -38,6 +38,7 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
+import org.redisson.client.protocol.decoder.SlotsDecoder;
 import org.redisson.client.protocol.pubsub.Message;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
@@ -94,6 +95,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
                     if (cmd.getCommand().getReplayMultiDecoder() != null 
                             && (NestedMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())
+                                    || SlotsDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())
                                     || ListMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass()))) {
                         makeCheckpoint = false;
                     }

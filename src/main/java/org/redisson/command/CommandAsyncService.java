@@ -55,7 +55,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
@@ -134,11 +133,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> Future<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params) {
         final Promise<Collection<R>> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
-        Promise<R> promise = new DefaultPromise<R>() {
-            List<R> results = new ArrayList<R>();
-            AtomicInteger counter = new AtomicInteger(nodes.size());
+        final List<R> results = new ArrayList<R>();
+        final AtomicInteger counter = new AtomicInteger(nodes.size());
+        FutureListener<R> listener = new FutureListener<R>() {
             @Override
-            public Promise<R> setSuccess(R result) {
+            public void operationComplete(Future<R> future) throws Exception {
+                if (!future.isSuccess()) {
+                    mainPromise.tryFailure(future.cause());
+                    return;
+                }
+                
+                R result = future.getNow();
                 if (result instanceof Collection) {
                     synchronized (results) {
                         results.addAll((Collection)result);
@@ -148,23 +153,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         results.add(result);
                     }
                 }
-
+                
                 if (counter.decrementAndGet() == 0
-                      && !mainPromise.isDone()) {
+                        && !mainPromise.isDone()) {
                     mainPromise.setSuccess(results);
                 }
-                return this;
             }
-
-            @Override
-            public Promise<R> setFailure(Throwable cause) {
-                mainPromise.setFailure(cause);
-                return this;
-            }
-
         };
 
         for (MasterSlaveEntry entry : nodes) {
+            Promise<R> promise = connectionManager.newPromise();
+            promise.addListener(listener);
             async(true, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
@@ -224,12 +223,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private <T, R> Future<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
-        Promise<T> promise = new DefaultPromise<T>() {
-            AtomicInteger counter = new AtomicInteger(nodes.size());
+        final AtomicInteger counter = new AtomicInteger(nodes.size());
+        FutureListener<T> listener = new FutureListener<T>() {
             @Override
-            public Promise<T> setSuccess(T result) {
+            public void operationComplete(Future<T> future) throws Exception {
+                if (!future.isSuccess()) {
+                    mainPromise.tryFailure(future.cause());
+                    return;
+                }
+
                 if (callback != null) {
-                    callback.onSlotResult(result);
+                    callback.onSlotResult(future.getNow());
                 }
                 if (counter.decrementAndGet() == 0) {
                     if (callback != null) {
@@ -238,16 +242,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         mainPromise.setSuccess(null);
                     }
                 }
-                return this;
-            }
-
-            @Override
-            public Promise<T> setFailure(Throwable cause) {
-                mainPromise.setFailure(cause);
-                return this;
             }
         };
+
         for (MasterSlaveEntry entry : nodes) {
+            Promise<T> promise = connectionManager.newPromise();
+            promise.addListener(listener);
             async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
@@ -350,22 +350,21 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> Future<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
         final Promise<R> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> entries = connectionManager.getEntrySet();
-        Promise<T> promise = new DefaultPromise<T>() {
-            AtomicInteger counter = new AtomicInteger(entries.size());
+        final AtomicInteger counter = new AtomicInteger(entries.size());
+        FutureListener<T> listener = new FutureListener<T>() {
+
             @Override
-            public Promise<T> setSuccess(T result) {
-                callback.onSlotResult(result);
+            public void operationComplete(Future<T> future) throws Exception {
+                if (!future.isSuccess()) {
+                    mainPromise.tryFailure(future.cause());
+                    return;
+                }
+
+                callback.onSlotResult(future.getNow());
                 if (counter.decrementAndGet() == 0
                       && !mainPromise.isDone()) {
                     mainPromise.setSuccess(callback.onFinish());
                 }
-                return this;
-            }
-
-            @Override
-            public Promise<T> setFailure(Throwable cause) {
-                mainPromise.setFailure(cause);
-                return this;
             }
         };
 
@@ -375,6 +374,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
         for (MasterSlaveEntry entry : entries) {
+            Promise<T> promise = connectionManager.newPromise();
+            promise.addListener(listener);
             async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, args.toArray(), promise, 0);
         }
         return mainPromise;
@@ -478,28 +479,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
         details.setTimeout(timeout);
 
-        if (connectionFuture.isDone()) {
-            checkConnectionFuture(source, details);
-        } else {
-            connectionFuture.addListener(new FutureListener<RedisConnection>() {
-                @Override
-                public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                    checkConnectionFuture(source, details);
-                }
-            });
-        }
+        connectionFuture.addListener(new FutureListener<RedisConnection>() {
+            @Override
+            public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
+                checkConnectionFuture(source, details);
+            }
+        });
 
-        if (attemptPromise.isDone()) {
-            checkAttemptFuture(source, details, attemptPromise);
-        } else {
-            attemptPromise.addListener(new FutureListener<R>() {
+        attemptPromise.addListener(new FutureListener<R>() {
 
-                @Override
-                public void operationComplete(Future<R> future) throws Exception {
-                    checkAttemptFuture(source, details, future);
-                }
-            });
-        }
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                checkAttemptFuture(source, details, future);
+            }
+        });
     }
 
     private <V, R> void checkWriteFuture(final AsyncDetails<V, R> details, final RedisConnection connection) {
@@ -644,32 +637,24 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             details.setWriteFuture(future);
         }
 
-        if (details.getWriteFuture().isDone()) {
-            checkWriteFuture(details, connection);
-        } else {
-            details.getWriteFuture().addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    checkWriteFuture(details, connection);
-                }
-            });
-        }
+        details.getWriteFuture().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                checkWriteFuture(details, connection);
+            }
+        });
 
         releaseConnection(source, details.getConnectionFuture(), details.isReadOnlyMode(), details.getAttemptPromise(), details);
     }
 
     protected <V, R> void releaseConnection(final NodeSource source, final Future<RedisConnection> connectionFuture,
                             final boolean isReadOnly, Promise<R> attemptPromise, final AsyncDetails<V, R> details) {
-        if (attemptPromise.isDone()) {
-            releaseConnection(isReadOnly, source, connectionFuture, details);
-        } else {
-            attemptPromise.addListener(new FutureListener<R>() {
-                @Override
-                public void operationComplete(io.netty.util.concurrent.Future<R> future) throws Exception {
-                    releaseConnection(isReadOnly, source, connectionFuture, details);
-                }
-            });
-        }
+        attemptPromise.addListener(new FutureListener<R>() {
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<R> future) throws Exception {
+                releaseConnection(isReadOnly, source, connectionFuture, details);
+            }
+        });
     }
 
     private <V, R> void releaseConnection(boolean isReadOnly, NodeSource source, Future<RedisConnection> connectionFuture, AsyncDetails<V, R> details) {

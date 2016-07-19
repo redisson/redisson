@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.MasterSlaveServersConfig;
@@ -162,41 +163,31 @@ public class MasterSlaveEntry {
     
     private void reattachPubSub(RedisPubSubConnection redisPubSubConnection) {
         for (String channelName : redisPubSubConnection.getChannels().keySet()) {
-            PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
+            Semaphore semaphore = connectionManager.getSemaphore(channelName);
+            semaphore.acquireUninterruptibly();
 
-            pubSubEntry.lock();
-            try {
-                pubSubEntry.close();
-                
-                Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
-                reattachPubSubListeners(channelName, listeners);
-            } finally {
-                pubSubEntry.unlock();
-            }
+            PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
+            Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
+            reattachPubSubListeners(channelName, listeners, semaphore);
         }
 
         for (String channelName : redisPubSubConnection.getPatternChannels().keySet()) {
-            PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
+            Semaphore semaphore = connectionManager.getSemaphore(channelName);
+            semaphore.acquireUninterruptibly();
 
-            pubSubEntry.lock();
-            try {
-                pubSubEntry.close();
-                
-                Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
-                reattachPatternPubSubListeners(channelName, listeners);
-            } finally {
-                pubSubEntry.unlock();
-            }
+            PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
+            Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
+            reattachPatternPubSubListeners(channelName, listeners, semaphore);
         }
     }
 
-    private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener> listeners) {
+    private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener> listeners, Semaphore semaphore) {
         Codec subscribeCodec = connectionManager.unsubscribe(channelName);
         if (listeners.isEmpty()) {
             return;
         }
         
-        Future<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null);
+        Future<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null, semaphore);
         subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
             
             @Override
@@ -216,10 +207,10 @@ public class MasterSlaveEntry {
     }
 
     private void reattachPatternPubSubListeners(final String channelName,
-            final Collection<RedisPubSubListener> listeners) {
+            final Collection<RedisPubSubListener> listeners, Semaphore semaphore) {
         Codec subscribeCodec = connectionManager.punsubscribe(channelName);
         if (!listeners.isEmpty()) {
-            Future<PubSubConnectionEntry> future = connectionManager.psubscribe(channelName, subscribeCodec, null);
+            Future<PubSubConnectionEntry> future = connectionManager.psubscribe(channelName, subscribeCodec, null, semaphore);
             future.addListener(new FutureListener<PubSubConnectionEntry>() {
                 @Override
                 public void operationComplete(Future<PubSubConnectionEntry> future)
