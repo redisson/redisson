@@ -1,13 +1,11 @@
 package org.redisson;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+/**
+ *
+ * @author Rui Gu (https://github.com/jackygurui)
+ */
 public class RedissonRuntimeEnvironment {
 
     public static final boolean isTravis = "true".equalsIgnoreCase(System.getProperty("travisEnv"));

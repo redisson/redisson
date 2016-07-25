@@ -15,6 +15,8 @@
  */
 package org.redisson.core;
 
+import org.redisson.client.codec.Codec;
+
 /**
  * Base interface for all Redisson objects
  *
@@ -76,4 +78,10 @@ public interface RObject extends RObjectAsync {
      */
     boolean isExists();
 
+    /**
+     * Returns the underlying Codec used by this RObject
+     * 
+     * @return 
+     */
+    Codec getCodec();
 }

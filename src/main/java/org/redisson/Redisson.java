@@ -74,8 +74,14 @@ import org.redisson.core.RSetMultimap;
 import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
+import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.liveobject.provider.DefaultCodecProvider;
+import org.redisson.api.RLiveObjectService;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.internal.PlatformDependent;
+import org.redisson.liveobject.provider.DefaultResolverProvider;
+import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
  * Main infrastructure class allows to get access
@@ -89,6 +95,11 @@ public class Redisson implements RedissonClient {
     private final EvictionScheduler evictionScheduler;
     private final CommandExecutor commandExecutor;
     private final ConnectionManager connectionManager;
+    
+    private final Map<Class, Class> liveObjectClassCache
+            = PlatformDependent.<Class, Class>newConcurrentHashMap();
+    private final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
+    private final ResolverProvider liveObjectDefaultResolverProvider = new DefaultResolverProvider();
     private final Config config;
 
     private final UUID id = UUID.randomUUID();
@@ -392,6 +403,7 @@ public class Redisson implements RedissonClient {
         return new RedissonScript(commandExecutor);
     }
 
+    @Override
     public RRemoteService getRemoteSerivce() {
         return new RedissonRemoteService(this);
     }
@@ -541,6 +553,16 @@ public class Redisson implements RedissonClient {
         return new RedissonBatch(evictionScheduler, connectionManager);
     }
 
+    @Override
+    public RLiveObjectService getLiveObjectService() {
+        return new RedissonLiveObjectService(this, liveObjectClassCache, liveObjectDefaultCodecProvider, liveObjectDefaultResolverProvider);
+    }
+    
+    @Override
+    public RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider) {
+        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider, resolverProvider);
+    }
+    
     @Override
     public void shutdown() {
         connectionManager.shutdown();

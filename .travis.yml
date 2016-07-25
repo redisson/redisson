@@ -26,6 +26,7 @@ env:
         - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonAtomicDoubleTest
         - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonAtomicLongReactiveTest
         - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonAtomicLongTest
+        - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonLiveObjectServiceTest
         - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBatchTest
         - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBitSetReactiveTest
         - REDIS_VERSION=3.2.0 REDISSON_TEST=org.redisson.RedissonBitSetTest
@@ -88,6 +89,7 @@ env:
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonAtomicDoubleTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonAtomicLongReactiveTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonAtomicLongTest
+        - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonLiveObjectServiceTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonBatchTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonBitSetReactiveTest
         - REDIS_VERSION=3.0.7 REDISSON_TEST=org.redisson.RedissonBitSetTest
@@ -149,6 +151,7 @@ env:
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonAtomicDoubleTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonAtomicLongReactiveTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonAtomicLongTest
+        - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonLiveObjectServiceTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonBatchTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonBitSetReactiveTest
         - REDIS_VERSION=2.8.24 REDISSON_TEST=org.redisson.RedissonBitSetTest

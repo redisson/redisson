@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandExecutor;
 import org.redisson.core.ClusterNode;
 import org.redisson.core.ClusterNodesGroup;
 import org.redisson.core.Node;
@@ -59,6 +60,9 @@ import org.redisson.core.RSetMultimap;
 import org.redisson.core.RSetMultimapCache;
 import org.redisson.core.RSortedSet;
 import org.redisson.core.RTopic;
+import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.api.RLiveObjectService;
+import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
  * Main Redisson interface for access
@@ -656,6 +660,23 @@ public interface RedissonClient {
      */
     RKeys getKeys();
 
+    /**
+     * Returns RedissonAttachedLiveObjectService which can be used to 
+     * retrieve live REntity(s)
+     * 
+     * @return 
+     */
+    RLiveObjectService getLiveObjectService();
+    
+    /**
+     * Returns RedissonAttachedLiveObjectService which can be used to 
+     * retrieve live REntity(s)
+     * 
+     * @param codecProvider the CodecProvider to be used to create the service
+     * @return 
+     */
+    RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider);
+    
     /**
      * Shuts down Redisson instance <b>NOT</b> Redis server
      * 
