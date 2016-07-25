@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 
 import org.junit.Test;
-import org.redisson.core.RAtomicDouble;
+import org.redisson.api.RAtomicDouble;
 
 public class RedissonAtomicDoubleTest extends BaseTest {
 

@@ -16,10 +16,10 @@
 package org.redisson.connection;
 
 import org.redisson.MasterSlaveServersConfig;
+import org.redisson.api.NodeType;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.core.NodeType;
 
 import io.netty.util.concurrent.Promise;
 

@@ -22,14 +22,14 @@ import java.util.concurrent.Semaphore;
 import org.reactivestreams.Publisher;
 import org.redisson.PubSubMessageListener;
 import org.redisson.PubSubStatusListener;
+import org.redisson.api.MessageListener;
 import org.redisson.api.RTopicReactive;
+import org.redisson.api.StatusListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
-import org.redisson.core.MessageListener;
-import org.redisson.core.StatusListener;
 import org.redisson.misc.ReclosableLatch;
 
 import io.netty.util.concurrent.Future;

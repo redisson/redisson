@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
-import org.redisson.core.RListMultimap;
+import org.redisson.api.RListMultimap;
 
 public class RedissonListMultimapTest extends BaseTest {
 

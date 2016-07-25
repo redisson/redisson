@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.redisson.api.RScoredSortedSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.codec.StringCodec;
@@ -37,7 +38,6 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RScoredSortedSet;
 
 import io.netty.util.concurrent.Future;
 

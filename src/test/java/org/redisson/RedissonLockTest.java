@@ -9,7 +9,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RLock;
+import org.redisson.api.RLock;
 
 public class RedissonLockTest extends BaseConcurrentTest {
 

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.redisson.api.RBucket;
+import org.redisson.api.RBuckets;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DelegateDecoderCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -31,8 +33,6 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
-import org.redisson.core.RBucket;
-import org.redisson.core.RBuckets;
 
 import io.netty.util.concurrent.Future;
 

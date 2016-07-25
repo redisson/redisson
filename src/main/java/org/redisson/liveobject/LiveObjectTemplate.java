@@ -15,7 +15,7 @@
  */
 package org.redisson.liveobject;
 
-import org.redisson.core.RMap;
+import org.redisson.api.RMap;
 
 /**
  *

@@ -10,10 +10,10 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 
 import org.junit.Test;
-import org.redisson.core.GeoEntry;
-import org.redisson.core.GeoPosition;
-import org.redisson.core.GeoUnit;
-import org.redisson.core.RGeo;
+import org.redisson.api.GeoEntry;
+import org.redisson.api.GeoPosition;
+import org.redisson.api.GeoUnit;
+import org.redisson.api.RGeo;
 
 public class RedissonGeoTest extends BaseTest {
 

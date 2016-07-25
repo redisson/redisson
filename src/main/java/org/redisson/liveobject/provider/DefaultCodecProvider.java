@@ -18,7 +18,7 @@ package org.redisson.liveobject.provider;
 import io.netty.util.internal.PlatformDependent;
 import java.util.concurrent.ConcurrentMap;
 import org.redisson.client.codec.Codec;
-import org.redisson.core.RObject;
+import org.redisson.api.RObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RObjectField;
 

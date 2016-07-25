@@ -15,10 +15,10 @@
  */
 package org.redisson;
 
+import org.redisson.api.MessageListener;
+import org.redisson.api.PatternMessageListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.core.MessageListener;
-import org.redisson.core.PatternMessageListener;
 
 /**
  *

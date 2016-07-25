@@ -19,10 +19,10 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RCountDownLatch;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RCountDownLatch;
 import org.redisson.pubsub.CountDownLatchPubSub;
 
 import io.netty.util.concurrent.Future;

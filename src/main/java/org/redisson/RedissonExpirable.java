@@ -18,11 +18,11 @@ package org.redisson;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RExpirable;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RExpirable;
 
 import io.netty.util.concurrent.Future;
 

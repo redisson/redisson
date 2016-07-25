@@ -7,11 +7,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.redisson.api.RCountDownLatch;
+import org.redisson.api.RLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
-import org.redisson.core.RCountDownLatch;
-import org.redisson.core.RLock;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;

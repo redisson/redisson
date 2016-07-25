@@ -18,10 +18,10 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.Predicate;
+import org.redisson.api.RMap;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
-import org.redisson.core.Predicate;
-import org.redisson.core.RMap;
 
 import io.netty.util.concurrent.Future;
 

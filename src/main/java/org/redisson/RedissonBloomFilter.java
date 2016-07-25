@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.api.RBloomFilter;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
@@ -33,7 +34,6 @@ import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.command.CommandBatchService;
 import org.redisson.command.CommandExecutor;
-import org.redisson.core.RBloomFilter;
 
 import io.netty.util.concurrent.Future;
 import net.openhft.hashing.LongHashFunction;

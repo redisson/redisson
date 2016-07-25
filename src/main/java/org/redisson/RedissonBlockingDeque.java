@@ -20,10 +20,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RBlockingDeque;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RBlockingDeque;
 
 import io.netty.util.concurrent.Future;
 

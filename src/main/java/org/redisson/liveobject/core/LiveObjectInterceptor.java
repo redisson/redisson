@@ -26,7 +26,7 @@ import org.redisson.RedissonClient;
 import org.redisson.RedissonMap;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
-import org.redisson.core.RMap;
+import org.redisson.api.RMap;
 import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.annotation.REntity;

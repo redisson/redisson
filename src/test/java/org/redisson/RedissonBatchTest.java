@@ -11,12 +11,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RBatch;
+import org.redisson.api.RListAsync;
+import org.redisson.api.RScript;
+import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.core.RBatch;
-import org.redisson.core.RListAsync;
-import org.redisson.core.RScript;
-import org.redisson.core.RScript.Mode;
 
 import io.netty.util.concurrent.Future;
 

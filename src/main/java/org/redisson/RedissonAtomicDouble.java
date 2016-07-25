@@ -18,13 +18,13 @@ package org.redisson;
 import java.math.BigDecimal;
 import java.util.Collections;
 
+import org.redisson.api.RAtomicDouble;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.SingleConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RAtomicDouble;
 
 import io.netty.util.concurrent.Future;
 

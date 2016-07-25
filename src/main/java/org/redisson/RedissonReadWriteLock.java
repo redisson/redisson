@@ -18,9 +18,9 @@ package org.redisson;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 
+import org.redisson.api.RLock;
+import org.redisson.api.RReadWriteLock;
 import org.redisson.command.CommandExecutor;
-import org.redisson.core.RLock;
-import org.redisson.core.RReadWriteLock;
 
 /**
  * A {@code ReadWriteLock} maintains a pair of associated {@link

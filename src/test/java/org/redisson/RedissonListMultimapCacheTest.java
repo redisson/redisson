@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.redisson.core.RMultimapCache;
+import org.redisson.api.RMultimapCache;
 
 public class RedissonListMultimapCacheTest extends BaseTest {
 

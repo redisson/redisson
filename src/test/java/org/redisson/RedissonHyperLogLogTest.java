@@ -2,7 +2,7 @@ package org.redisson;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RHyperLogLog;
+import org.redisson.api.RHyperLogLog;
 
 public class RedissonHyperLogLogTest extends BaseTest {
 

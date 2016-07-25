@@ -9,8 +9,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RLock;
-import org.redisson.core.RReadWriteLock;
+import org.redisson.api.RLock;
+import org.redisson.api.RReadWriteLock;
+
 import static org.assertj.core.api.Assertions.*;
 
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {

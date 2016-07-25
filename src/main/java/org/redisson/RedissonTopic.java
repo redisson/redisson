@@ -19,15 +19,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import org.redisson.api.MessageListener;
+import org.redisson.api.RTopic;
+import org.redisson.api.StatusListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.PubSubConnectionEntry;
-import org.redisson.core.MessageListener;
-import org.redisson.core.RTopic;
-import org.redisson.core.StatusListener;
 
 import io.netty.util.concurrent.Future;
 

@@ -15,8 +15,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RSetCache;
 import org.redisson.codec.MsgPackJacksonCodec;
-import org.redisson.core.RSetCache;
 
 public class RedissonSetCacheTest extends BaseTest {
 

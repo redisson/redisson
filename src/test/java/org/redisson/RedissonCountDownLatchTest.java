@@ -6,7 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RCountDownLatch;
+import org.redisson.api.RCountDownLatch;
+
 import static org.assertj.core.api.Assertions.*;
 
 public class RedissonCountDownLatchTest extends BaseTest {

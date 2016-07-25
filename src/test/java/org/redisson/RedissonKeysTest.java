@@ -9,9 +9,9 @@ import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBucket;
-import org.redisson.core.RMap;
-import org.redisson.core.RType;
+import org.redisson.api.RBucket;
+import org.redisson.api.RMap;
+import org.redisson.api.RType;
 
 public class RedissonKeysTest extends BaseTest {
 

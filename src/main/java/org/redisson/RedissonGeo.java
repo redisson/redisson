@@ -21,6 +21,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.api.GeoEntry;
+import org.redisson.api.GeoPosition;
+import org.redisson.api.GeoUnit;
+import org.redisson.api.RGeo;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.GeoEntryCodec;
 import org.redisson.client.codec.ScoredCodec;
@@ -36,10 +40,6 @@ import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.FlatNestedMultiDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
-import org.redisson.core.GeoEntry;
-import org.redisson.core.GeoPosition;
-import org.redisson.core.GeoUnit;
-import org.redisson.core.RGeo;
 
 import io.netty.util.concurrent.Future;
 

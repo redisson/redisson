@@ -8,7 +8,7 @@ import java.util.Queue;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RQueue;
+import org.redisson.api.RQueue;
 
 public class RedissonQueueTest extends BaseTest {
 

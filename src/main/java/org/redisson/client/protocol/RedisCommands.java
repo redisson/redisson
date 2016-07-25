@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.redisson.api.RType;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.convertor.BitSetReplayConvertor;
 import org.redisson.client.protocol.convertor.BitsSizeReplayConvertor;
@@ -60,7 +61,6 @@ import org.redisson.client.protocol.decoder.StringMapDataDecoder;
 import org.redisson.client.protocol.decoder.StringReplayDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
-import org.redisson.core.RType;
 
 public interface RedisCommands {
 

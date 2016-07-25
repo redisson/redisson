@@ -16,9 +16,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RMapCache;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
-import org.redisson.core.RMapCache;
 
 import io.netty.util.concurrent.Future;
 

@@ -23,14 +23,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 
+import org.redisson.api.Node;
+import org.redisson.api.NodeType;
+import org.redisson.api.NodesGroup;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.RedisClientEntry;
-import org.redisson.core.Node;
-import org.redisson.core.NodeType;
-import org.redisson.core.NodesGroup;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;

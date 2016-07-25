@@ -22,9 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.redisson.RedissonClient;
+import org.redisson.api.RMap;
+import org.redisson.api.RMapCache;
 import org.redisson.client.codec.Codec;
-import org.redisson.core.RMap;
-import org.redisson.core.RMapCache;
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.Cache;

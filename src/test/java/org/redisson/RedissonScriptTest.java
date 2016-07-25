@@ -9,9 +9,9 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RScript;
+import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
-import org.redisson.core.RScript;
-import org.redisson.core.RScript.Mode;
 
 public class RedissonScriptTest extends BaseTest {
 

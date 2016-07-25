@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.redisson.api.RDeque;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -25,7 +26,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListFirstObjectDecoder;
-import org.redisson.core.RDeque;
 
 import io.netty.util.concurrent.Future;
 

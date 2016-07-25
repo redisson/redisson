@@ -15,11 +15,11 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RLexSortedSet;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RSortedSet;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.core.RLexSortedSet;
-import org.redisson.core.RScoredSortedSet;
-import org.redisson.core.RSortedSet;
 
 import io.netty.util.concurrent.Future;
 import org.junit.Assume;

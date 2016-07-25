@@ -12,7 +12,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.redisson.core.RCountDownLatch;
+import org.redisson.api.RCountDownLatch;
 
 public class RedissonCountDownLatchConcurrentTest {
     

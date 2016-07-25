@@ -18,9 +18,9 @@ package org.redisson.client.protocol.decoder;
 import java.io.IOException;
 import java.util.List;
 
+import org.redisson.api.GeoPosition;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
-import org.redisson.core.GeoPosition;
 
 import io.netty.buffer.ByteBuf;
 

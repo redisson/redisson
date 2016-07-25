@@ -21,13 +21,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.core.BasePatternStatusListener;
-import org.redisson.core.MessageListener;
-import org.redisson.core.PatternMessageListener;
-import org.redisson.core.PatternStatusListener;
-import org.redisson.core.RPatternTopic;
-import org.redisson.core.RTopic;
-import org.redisson.core.StatusListener;
+import org.redisson.api.BasePatternStatusListener;
+import org.redisson.api.MessageListener;
+import org.redisson.api.PatternMessageListener;
+import org.redisson.api.PatternStatusListener;
+import org.redisson.api.RPatternTopic;
+import org.redisson.api.RTopic;
+import org.redisson.api.StatusListener;
 
 public class RedissonTopicPatternTest {
 

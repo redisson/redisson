@@ -3,6 +3,7 @@ package org.redisson;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.JsonJacksonMapValueCodec;
 import org.redisson.codec.CborJacksonCodec;
@@ -13,7 +14,6 @@ import org.redisson.codec.LZ4Codec;
 import org.redisson.codec.MsgPackJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.codec.SnappyCodec;
-import org.redisson.core.RMap;
 
 import java.util.ArrayList;
 import java.util.Arrays;

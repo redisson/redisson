@@ -11,7 +11,7 @@ import static com.jayway.awaitility.Awaitility.*;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RLock;
+import org.redisson.api.RLock;
 
 public class RedissonFairLockTest extends BaseConcurrentTest {
 

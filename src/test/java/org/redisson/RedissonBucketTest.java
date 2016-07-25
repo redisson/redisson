@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBucket;
+import org.redisson.api.RBucket;
 
 public class RedissonBucketTest extends BaseTest {
 

@@ -15,9 +15,9 @@
  */
 package org.redisson;
 
+import org.redisson.api.ClusterNode;
+import org.redisson.api.ClusterNodesGroup;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.core.ClusterNode;
-import org.redisson.core.ClusterNodesGroup;
 
 public class RedisClusterNodes extends RedisNodes<ClusterNode> implements ClusterNodesGroup {
 

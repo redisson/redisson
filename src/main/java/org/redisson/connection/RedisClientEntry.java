@@ -16,11 +16,12 @@
 package org.redisson.connection;
 
 import io.netty.util.concurrent.Promise;
+
+import org.redisson.api.ClusterNode;
+import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.core.ClusterNode;
-import org.redisson.core.NodeType;
 
 import java.net.InetSocketAddress;
 import java.util.Map;

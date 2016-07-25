@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.MasterSlaveServersConfig;
 import org.redisson.ReadMode;
+import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -38,7 +39,6 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.balancer.LoadBalancerManagerImpl;
 import org.redisson.connection.pool.MasterConnectionPool;
-import org.redisson.core.NodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

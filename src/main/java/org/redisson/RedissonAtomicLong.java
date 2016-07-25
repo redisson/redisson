@@ -17,13 +17,13 @@ package org.redisson;
 
 import java.util.Collections;
 
+import org.redisson.api.RAtomicLong;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.SingleConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RAtomicLong;
 
 import io.netty.util.concurrent.Future;
 

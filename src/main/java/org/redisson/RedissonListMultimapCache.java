@@ -21,10 +21,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RListMultimapCache;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RListMultimapCache;
 
 import io.netty.util.concurrent.Future;
 

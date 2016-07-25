@@ -28,13 +28,13 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
+import org.redisson.api.RBucket;
+import org.redisson.api.RLock;
+import org.redisson.api.RSortedSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
-import org.redisson.core.RBucket;
-import org.redisson.core.RLock;
-import org.redisson.core.RSortedSet;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;

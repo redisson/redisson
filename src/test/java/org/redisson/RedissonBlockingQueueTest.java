@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.core.RBlockingQueue;
+import org.redisson.api.RBlockingQueue;
 
 import io.netty.util.concurrent.Future;
 

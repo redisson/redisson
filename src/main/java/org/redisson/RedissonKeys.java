@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.RKeys;
+import org.redisson.api.RType;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -35,8 +37,6 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.core.RKeys;
-import org.redisson.core.RType;
 import org.redisson.misc.CompositeIterable;
 
 import io.netty.util.concurrent.Future;

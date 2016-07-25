@@ -1,5 +1,12 @@
 package org.redisson;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,33 +17,29 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-import static org.junit.Assert.*;
+
 import org.junit.Test;
-import org.redisson.core.RMap;
-import org.redisson.api.RLiveObjectService;
+import org.redisson.api.RBitSet;
+import org.redisson.api.RBlockingDeque;
+import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RDeque;
+import org.redisson.api.RList;
 import org.redisson.api.RLiveObject;
-import org.redisson.core.RAtomicLong;
-import org.redisson.core.RBitSet;
-import org.redisson.core.RBlockingDeque;
-import org.redisson.core.RBlockingQueue;
-import org.redisson.core.RDeque;
-import org.redisson.core.RList;
-import org.redisson.core.RQueue;
-import org.redisson.core.RSet;
-import org.redisson.core.RSortedSet;
-import org.redisson.liveobject.resolver.DefaultNamingScheme;
+import org.redisson.api.RLiveObjectService;
+import org.redisson.api.RMap;
+import org.redisson.api.RQueue;
+import org.redisson.api.RSet;
+import org.redisson.api.RSortedSet;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.RId;
+import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
 
 /**

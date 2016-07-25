@@ -25,12 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.redisson.api.RListMultimap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RListMultimap;
 
 import io.netty.util.concurrent.Future;
 

@@ -19,13 +19,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import org.redisson.api.PatternMessageListener;
+import org.redisson.api.PatternStatusListener;
+import org.redisson.api.RPatternTopic;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
-import org.redisson.core.PatternMessageListener;
-import org.redisson.core.PatternStatusListener;
-import org.redisson.core.RPatternTopic;
 
 import io.netty.util.concurrent.Future;
 

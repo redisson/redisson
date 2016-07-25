@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RBucket;
+import org.redisson.api.RBucket;
 
 public class RedissonBucketsTest extends BaseTest {
 

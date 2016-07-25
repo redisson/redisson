@@ -1,7 +1,8 @@
 package org.redisson;
 
 import org.junit.Test;
-import org.redisson.core.RBloomFilter;
+import org.redisson.api.RBloomFilter;
+
 import static org.assertj.core.api.Assertions.*;
 
 public class RedissonBloomFilterTest extends BaseTest {

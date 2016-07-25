@@ -15,10 +15,10 @@
  */
 package org.redisson.remote;
 
-import org.redisson.core.RemoteInvocationOptions;
-
 import java.io.Serializable;
 import java.util.Arrays;
+
+import org.redisson.api.RemoteInvocationOptions;
 
 public class RemoteServiceRequest implements Serializable {
 

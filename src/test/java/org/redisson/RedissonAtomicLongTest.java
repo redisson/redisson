@@ -2,7 +2,7 @@ package org.redisson;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RAtomicLong;
+import org.redisson.api.RAtomicLong;
 
 public class RedissonAtomicLongTest extends BaseTest {
 

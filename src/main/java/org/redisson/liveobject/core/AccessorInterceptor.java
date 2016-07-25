@@ -15,7 +15,6 @@
  */
 package org.redisson.liveobject.core;
 
-import io.netty.util.internal.PlatformDependent;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.AbstractMap;
@@ -33,12 +32,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import net.bytebuddy.implementation.bind.annotation.AllArguments;
-import net.bytebuddy.implementation.bind.annotation.FieldValue;
-import net.bytebuddy.implementation.bind.annotation.Origin;
-import net.bytebuddy.implementation.bind.annotation.RuntimeType;
-import net.bytebuddy.implementation.bind.annotation.SuperCall;
-import net.bytebuddy.implementation.bind.annotation.This;
+
 import org.redisson.RedissonBitSet;
 import org.redisson.RedissonBlockingDeque;
 import org.redisson.RedissonBlockingQueue;
@@ -50,21 +44,28 @@ import org.redisson.RedissonQueue;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonSet;
 import org.redisson.RedissonSortedSet;
-import org.redisson.client.codec.Codec;
-import org.redisson.core.RMap;
-import org.redisson.core.RObject;
-import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.api.RLiveObject;
-import org.redisson.core.RBitSet;
-import org.redisson.core.RObject;
-import org.redisson.liveobject.provider.ResolverProvider;
-import org.redisson.liveobject.resolver.NamingScheme;
+import org.redisson.client.codec.Codec;
+import org.redisson.api.RBitSet;
+import org.redisson.api.RMap;
+import org.redisson.api.RObject;
 import org.redisson.liveobject.annotation.REntity;
 import org.redisson.liveobject.annotation.REntity.TransformationMode;
 import org.redisson.liveobject.annotation.RId;
 import org.redisson.liveobject.annotation.RObjectField;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.misc.RedissonObjectFactory;
+import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.liveobject.provider.ResolverProvider;
+import org.redisson.liveobject.resolver.NamingScheme;
+
+import io.netty.util.internal.PlatformDependent;
+import net.bytebuddy.implementation.bind.annotation.AllArguments;
+import net.bytebuddy.implementation.bind.annotation.FieldValue;
+import net.bytebuddy.implementation.bind.annotation.Origin;
+import net.bytebuddy.implementation.bind.annotation.RuntimeType;
+import net.bytebuddy.implementation.bind.annotation.SuperCall;
+import net.bytebuddy.implementation.bind.annotation.This;
 
 /**
  * This class is going to be instantiated and becomes a <b>static</b> field of

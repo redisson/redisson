@@ -12,8 +12,8 @@ import java.util.ListIterator;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RList;
 import org.redisson.client.RedisException;
-import org.redisson.core.RList;
 
 public class RedissonListTest extends BaseTest {
 

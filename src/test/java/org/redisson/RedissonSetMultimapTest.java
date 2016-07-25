@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.redisson.core.RSetMultimap;
+import org.redisson.api.RSetMultimap;
 
 public class RedissonSetMultimapTest extends BaseTest {
 

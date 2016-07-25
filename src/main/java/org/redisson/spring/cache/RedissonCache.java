@@ -21,9 +21,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonClient;
-import org.redisson.core.RLock;
-import org.redisson.core.RMap;
-import org.redisson.core.RMapCache;
+import org.redisson.api.RLock;
+import org.redisson.api.RMap;
+import org.redisson.api.RMapCache;
 import org.redisson.misc.Hash;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;

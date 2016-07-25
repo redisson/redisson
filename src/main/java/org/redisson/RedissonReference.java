@@ -16,7 +16,7 @@
 package org.redisson;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.core.RObject;
+import org.redisson.api.RObject;
 import org.redisson.liveobject.annotation.REntity;
 
 /**

@@ -17,10 +17,10 @@ package org.redisson;
 
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RObject;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RObject;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;

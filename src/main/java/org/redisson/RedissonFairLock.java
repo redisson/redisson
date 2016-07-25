@@ -20,11 +20,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
+import org.redisson.api.RLock;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandExecutor;
-import org.redisson.core.RLock;
 import org.redisson.pubsub.LockPubSub;
 
 import io.netty.util.concurrent.Future;

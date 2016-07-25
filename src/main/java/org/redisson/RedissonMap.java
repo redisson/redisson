@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.redisson.api.Predicate;
+import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
@@ -43,8 +45,6 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
-import org.redisson.core.Predicate;
-import org.redisson.core.RMap;
 
 import io.netty.util.concurrent.Future;
 

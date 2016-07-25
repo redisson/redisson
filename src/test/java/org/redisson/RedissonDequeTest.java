@@ -8,7 +8,7 @@ import java.util.Deque;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RDeque;
+import org.redisson.api.RDeque;
 
 public class RedissonDequeTest extends BaseTest {
 

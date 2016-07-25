@@ -12,8 +12,8 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RSet;
-import org.redisson.core.RSetCache;
+import org.redisson.api.RSet;
+import org.redisson.api.RSetCache;
 
 import io.netty.util.concurrent.Future;
 

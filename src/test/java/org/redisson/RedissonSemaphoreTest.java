@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Assume;
 
 import org.junit.Test;
-import org.redisson.core.RSemaphore;
+import org.redisson.api.RSemaphore;
 
 public class RedissonSemaphoreTest extends BaseConcurrentTest {
 

@@ -21,12 +21,12 @@ import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.redisson.SlotCallback;
+import org.redisson.api.RScript;
 import org.redisson.api.RScriptReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
-import org.redisson.core.RScript;
 
 public class RedissonScriptReactive implements RScriptReactive {
 

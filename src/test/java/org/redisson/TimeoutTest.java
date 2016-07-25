@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
-import org.redisson.core.MessageListener;
-import org.redisson.core.RMap;
-import org.redisson.core.RTopic;
+import org.redisson.api.MessageListener;
+import org.redisson.api.RMap;
+import org.redisson.api.RTopic;
 
 public class TimeoutTest extends BaseTest {
 

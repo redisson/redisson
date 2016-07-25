@@ -20,10 +20,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.redisson.api.RHyperLogLog;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.core.RHyperLogLog;
 
 import io.netty.util.concurrent.Future;
 

@@ -21,11 +21,11 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
 
+import org.redisson.api.RBitSet;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.core.RBitSet;
 
 import io.netty.util.concurrent.Future;
 

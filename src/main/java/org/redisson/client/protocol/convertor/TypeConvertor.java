@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.convertor;
 
-import org.redisson.core.RType;
+import org.redisson.api.RType;
 
 public class TypeConvertor extends SingleConvertor<RType> {
 

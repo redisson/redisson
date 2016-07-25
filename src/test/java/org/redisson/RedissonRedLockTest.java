@@ -6,13 +6,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RLock;
-import org.redisson.core.RedissonMultiLock;
-import org.redisson.core.RedissonRedLock;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonMultiLock;
+import org.redisson.api.RedissonRedLock;
+
 import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 

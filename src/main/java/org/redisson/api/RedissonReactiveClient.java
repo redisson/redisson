@@ -19,9 +19,6 @@ import java.util.List;
 
 import org.redisson.Config;
 import org.redisson.client.codec.Codec;
-import org.redisson.core.ClusterNode;
-import org.redisson.core.Node;
-import org.redisson.core.NodesGroup;
 
 /**
  * Main Redisson interface for access

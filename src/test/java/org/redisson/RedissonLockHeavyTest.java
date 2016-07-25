@@ -12,9 +12,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.redisson.core.RBucket;
-import org.redisson.core.RLock;
-import org.redisson.core.RSemaphore;
+import org.redisson.api.RBucket;
+import org.redisson.api.RLock;
+import org.redisson.api.RSemaphore;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)

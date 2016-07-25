@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
-import org.redisson.core.PatternMessageListener;
-import org.redisson.core.PatternStatusListener;
 
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
@@ -44,7 +42,7 @@ public interface RPatternTopicReactive<M> {
      *
      * @param listener
      * @return locally unique listener id
-     * @see org.redisson.core.MessageListener
+     * @see org.redisson.api.MessageListener
      */
     Publisher<Integer> addListener(PatternMessageListener<M> listener);
 
@@ -53,7 +51,7 @@ public interface RPatternTopicReactive<M> {
      *
      * @param listener
      * @return
-     * @see org.redisson.core.StatusListener
+     * @see org.redisson.api.StatusListener
      */
     Publisher<Integer> addListener(PatternStatusListener listener);
 

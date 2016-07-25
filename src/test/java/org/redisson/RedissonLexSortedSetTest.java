@@ -6,7 +6,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.core.RLexSortedSet;
+import org.redisson.api.RLexSortedSet;
 
 public class RedissonLexSortedSetTest extends BaseTest {
 

@@ -22,13 +22,13 @@ import java.util.concurrent.Semaphore;
 import org.reactivestreams.Publisher;
 import org.redisson.PubSubPatternMessageListener;
 import org.redisson.PubSubPatternStatusListener;
+import org.redisson.api.PatternMessageListener;
+import org.redisson.api.PatternStatusListener;
 import org.redisson.api.RPatternTopicReactive;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
-import org.redisson.core.PatternMessageListener;
-import org.redisson.core.PatternStatusListener;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
