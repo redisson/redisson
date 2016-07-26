@@ -15,7 +15,6 @@
  */
 package org.redisson.config;
 
-import org.redisson.ReadMode;
 import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 

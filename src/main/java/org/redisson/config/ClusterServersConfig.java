@@ -19,7 +19,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.redisson.ReadMode;
 import org.redisson.misc.URIBuilder;
 
 public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterServersConfig> {
@@ -77,7 +76,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     }
 
     /**
-     * Use {@link #setReadMode(org.redisson.BaseMasterSlaveServersConfig.ReadMode)}
+     * Use {@link #setReadMode(org.redisson.config.BaseMasterSlaveServersConfig.ReadMode)}
      *
      * @param readFromSlaves
      * @return

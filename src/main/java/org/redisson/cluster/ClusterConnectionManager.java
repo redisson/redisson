@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.ReadMode;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
@@ -41,6 +40,7 @@ import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.config.ClusterServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.MasterSlaveConnectionManager;

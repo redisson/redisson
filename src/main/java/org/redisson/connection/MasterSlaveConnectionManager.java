@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.ReadMode;
 import org.redisson.Version;
 import org.redisson.api.NodeType;
 import org.redisson.client.BaseRedisPubSubListener;
@@ -47,6 +46,7 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.slf4j.Logger;
