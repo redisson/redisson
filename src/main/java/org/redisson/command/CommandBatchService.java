@@ -16,9 +16,10 @@
 package org.redisson.command;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,11 +55,11 @@ public class CommandBatchService extends CommandReactiveService {
 
     public static class Entry {
 
-        Queue<BatchCommandData<?, ?>> commands = PlatformDependent.newMpscQueue();
+        Collection<BatchCommandData<?, ?>> commands = new ConcurrentLinkedQueue<BatchCommandData<?,?>>();
 
         volatile boolean readOnlyMode = true;
 
-        public Queue<BatchCommandData<?, ?>> getCommands() {
+        public Collection<BatchCommandData<?, ?>> getCommands() {
             return commands;
         }
 
