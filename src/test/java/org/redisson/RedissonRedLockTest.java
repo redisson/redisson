@@ -13,6 +13,7 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonMultiLock;
 import org.redisson.api.RedissonRedLock;
+import org.redisson.config.Config;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;

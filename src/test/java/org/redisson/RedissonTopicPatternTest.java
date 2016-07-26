@@ -28,6 +28,7 @@ import org.redisson.api.PatternStatusListener;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RTopic;
 import org.redisson.api.StatusListener;
+import org.redisson.config.Config;
 
 public class RedissonTopicPatternTest {
 

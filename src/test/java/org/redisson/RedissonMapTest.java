@@ -22,6 +22,7 @@ import org.redisson.api.Predicate;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.config.Config;
 
 import io.netty.util.concurrent.Future;
 

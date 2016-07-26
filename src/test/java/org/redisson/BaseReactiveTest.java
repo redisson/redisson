@@ -11,6 +11,7 @@ import org.reactivestreams.Publisher;
 import org.redisson.api.RCollectionReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.config.Config;
 
 import reactor.rx.Promise;
 import reactor.rx.Streams;

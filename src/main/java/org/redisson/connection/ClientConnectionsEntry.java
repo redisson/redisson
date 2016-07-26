@@ -19,12 +19,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.MasterSlaveServersConfig;
 import org.redisson.api.NodeType;
 import org.redisson.client.ReconnectListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

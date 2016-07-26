@@ -26,19 +26,6 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.cluster.ClusterConnectionManager;
-import org.redisson.command.CommandExecutor;
-import org.redisson.command.CommandSyncService;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.ElasticacheConnectionManager;
-import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.SentinelConnectionManager;
-import org.redisson.connection.SingleConnectionManager;
-import org.redisson.liveobject.provider.CodecProvider;
-import org.redisson.liveobject.provider.DefaultCodecProvider;
 import org.redisson.api.ClusterNodesGroup;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
@@ -77,11 +64,21 @@ import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetMultimapCache;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RTopic;
+import org.redisson.api.RedissonReactiveClient;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandSyncService;
+import org.redisson.config.Config;
+import org.redisson.config.ConfigSupport;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.liveobject.provider.DefaultCodecProvider;
+import org.redisson.liveobject.provider.DefaultResolverProvider;
+import org.redisson.liveobject.provider.ResolverProvider;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
-import org.redisson.liveobject.provider.DefaultResolverProvider;
-import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
  * Main infrastructure class allows to get access
@@ -108,44 +105,9 @@ public class Redisson implements RedissonClient {
         this.config = config;
         Config configCopy = new Config(config);
         
-        if (configCopy.getMasterSlaveServersConfig() != null) {
-            validate(configCopy.getMasterSlaveServersConfig());
-            connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
-        } else if (configCopy.getSingleServerConfig() != null) {
-            validate(configCopy.getSingleServerConfig());
-            connectionManager = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
-        } else if (configCopy.getSentinelServersConfig() != null) {
-            validate(configCopy.getSentinelServersConfig());
-            connectionManager = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
-        } else if (configCopy.getClusterServersConfig() != null) {
-            validate(configCopy.getClusterServersConfig());
-            connectionManager = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
-        } else if (configCopy.getElasticacheServersConfig() != null) {
-            validate(configCopy.getElasticacheServersConfig());
-            connectionManager = new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy);
-        } else {
-            throw new IllegalArgumentException("server(s) address(es) not defined!");
-        }
+        connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandSyncService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
-    }
-
-    private void validate(SingleServerConfig config) {
-        if (config.getConnectionPoolSize() < config.getConnectionMinimumIdleSize()) {
-            throw new IllegalArgumentException("connectionPoolSize can't be lower than connectionMinimumIdleSize");
-        }
-    }
-
-    private void validate(BaseMasterSlaveServersConfig<?> config) {
-        if (config.getSlaveConnectionPoolSize() < config.getSlaveConnectionMinimumIdleSize()) {
-            throw new IllegalArgumentException("slaveConnectionPoolSize can't be lower than slaveConnectionMinimumIdleSize");
-        }
-        if (config.getMasterConnectionPoolSize() < config.getMasterConnectionMinimumIdleSize()) {
-            throw new IllegalArgumentException("masterConnectionPoolSize can't be lower than masterConnectionMinimumIdleSize");
-        }
-        if (config.getSlaveSubscriptionConnectionPoolSize() < config.getSlaveSubscriptionConnectionMinimumIdleSize()) {
-            throw new IllegalArgumentException("slaveSubscriptionConnectionMinimumIdleSize can't be lower than slaveSubscriptionConnectionPoolSize");
-        }
     }
 
     /**

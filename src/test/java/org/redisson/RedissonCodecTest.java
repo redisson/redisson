@@ -14,6 +14,7 @@ import org.redisson.codec.LZ4Codec;
 import org.redisson.codec.MsgPackJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.codec.SnappyCodec;
+import org.redisson.config.Config;
 
 import java.util.ArrayList;
 import java.util.Arrays;

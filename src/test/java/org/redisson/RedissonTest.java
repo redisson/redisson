@@ -25,6 +25,7 @@ import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.codec.SerializationCodec;
+import org.redisson.config.Config;
 import org.redisson.connection.ConnectionListener;
 
 import static com.jayway.awaitility.Awaitility.await;

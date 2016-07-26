@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.redisson.MasterSlaveServersConfig;
 import org.redisson.ReadMode;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
@@ -35,6 +34,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.balancer.LoadBalancerManagerImpl;

@@ -17,8 +17,8 @@ package org.redisson.api;
 
 import java.util.List;
 
-import org.redisson.Config;
 import org.redisson.client.codec.Codec;
+import org.redisson.config.Config;
 
 /**
  * Main Redisson interface for access

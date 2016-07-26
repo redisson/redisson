@@ -15,8 +15,8 @@
  */
 package org.redisson.connection.pool;
 
-import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.ClientConnectionsEntry;

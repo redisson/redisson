@@ -31,6 +31,7 @@ import org.redisson.api.RTopic;
 import org.redisson.api.StatusListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.config.Config;
 
 import com.jayway.awaitility.Awaitility;
 import com.jayway.awaitility.Duration;

@@ -21,15 +21,15 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.BaseMasterSlaveServersConfig;
-import org.redisson.Config;
-import org.redisson.ElasticacheServersConfig;
-import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.config.BaseMasterSlaveServersConfig;
+import org.redisson.config.Config;
+import org.redisson.config.ElasticacheServersConfig;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

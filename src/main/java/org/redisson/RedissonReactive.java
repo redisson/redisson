@@ -27,12 +27,12 @@ import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
-import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RDequeReactive;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
 import org.redisson.api.RListReactive;
+import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RPatternTopicReactive;
 import org.redisson.api.RQueueReactive;
@@ -44,24 +44,21 @@ import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.command.CommandReactiveService;
+import org.redisson.config.Config;
+import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.ElasticacheConnectionManager;
-import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.SentinelConnectionManager;
-import org.redisson.connection.SingleConnectionManager;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
 import org.redisson.reactive.RedissonBlockingQueueReactive;
 import org.redisson.reactive.RedissonBucketReactive;
-import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonDequeReactive;
 import org.redisson.reactive.RedissonHyperLogLogReactive;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.redisson.reactive.RedissonLexSortedSetReactive;
 import org.redisson.reactive.RedissonListReactive;
+import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonMapReactive;
 import org.redisson.reactive.RedissonPatternTopicReactive;
 import org.redisson.reactive.RedissonQueueReactive;
@@ -90,19 +87,8 @@ public class RedissonReactive implements RedissonReactiveClient {
     RedissonReactive(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
-        if (configCopy.getMasterSlaveServersConfig() != null) {
-            connectionManager = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
-        } else if (configCopy.getSingleServerConfig() != null) {
-            connectionManager = new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
-        } else if (configCopy.getSentinelServersConfig() != null) {
-            connectionManager = new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
-        } else if (configCopy.getClusterServersConfig() != null) {
-            connectionManager = new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
-        } else if (configCopy.getElasticacheServersConfig() != null) {
-            connectionManager = new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy);
-        } else {
-            throw new IllegalArgumentException("server(s) address(es) not defined!");
-        }
+        
+        connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
     }

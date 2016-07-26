@@ -19,12 +19,12 @@ import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.MasterSlaveServersConfig;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SinglePubSubConnectionPool;
 

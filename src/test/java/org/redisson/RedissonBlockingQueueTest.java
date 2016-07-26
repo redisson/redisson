@@ -19,6 +19,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBlockingQueue;
+import org.redisson.config.Config;
 
 import io.netty.util.concurrent.Future;
 

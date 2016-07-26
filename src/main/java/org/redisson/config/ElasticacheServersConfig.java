@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.config;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -21,25 +21,37 @@ import java.util.List;
 
 import org.redisson.misc.URIBuilder;
 
-public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterServersConfig> {
+/**
+ * Configuration for an AWS ElastiCache replication group. A replication group is composed
+ * of a single master endpoint and multiple read slaves.
+ *
+ * @author Steve Ungerer
+ */
+public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<ElasticacheServersConfig> {
 
     /**
-     * Redis cluster node urls list
+     * Replication group node urls list
      */
     private List<URI> nodeAddresses = new ArrayList<URI>();
 
     /**
-     * Redis cluster scan interval in milliseconds
+     * Replication group scan interval in milliseconds
      */
     private int scanInterval = 1000;
 
-    public ClusterServersConfig() {
+    /**
+     * Database index used for Redis connection
+     */
+    private int database = 0;
+
+    public ElasticacheServersConfig() {
     }
 
-    ClusterServersConfig(ClusterServersConfig config) {
+    ElasticacheServersConfig(ElasticacheServersConfig config) {
         super(config);
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
+        setDatabase(config.getDatabase());
     }
 
     /**
@@ -48,7 +60,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      * @param addresses in <code>host:port</code> format
      * @return
      */
-    public ClusterServersConfig addNodeAddress(String ... addresses) {
+    public ElasticacheServersConfig addNodeAddress(String ... addresses) {
         for (String address : addresses) {
             nodeAddresses.add(URIBuilder.create(address));
         }
@@ -65,30 +77,28 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         return scanInterval;
     }
     /**
-     * Redis cluster scan interval in milliseconds
+     * Elasticache node scan interval in milliseconds
      *
      * @param scanInterval in milliseconds
      * @return
      */
-    public ClusterServersConfig setScanInterval(int scanInterval) {
+    public ElasticacheServersConfig setScanInterval(int scanInterval) {
         this.scanInterval = scanInterval;
         return this;
     }
 
     /**
-     * Use {@link #setReadMode(org.redisson.BaseMasterSlaveServersConfig.ReadMode)}
+     * Database index used for Redis connection
+     * Default is <code>0</code>
      *
-     * @param readFromSlaves
-     * @return
+     * @param database
      */
-    @Deprecated
-    public ClusterServersConfig setReadFromSlaves(boolean readFromSlaves) {
-        ReadMode readMode = ReadMode.MASTER;
-        if (readFromSlaves) {
-            readMode = ReadMode.SLAVE;
-        }
-        setReadMode(readMode);
+    public ElasticacheServersConfig setDatabase(int database) {
+        this.database = database;
         return this;
+    }
+    public int getDatabase() {
+        return database;
     }
 
 }

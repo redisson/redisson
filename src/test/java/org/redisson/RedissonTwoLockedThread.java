@@ -12,6 +12,7 @@ import org.redisson.api.RLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
+import org.redisson.config.Config;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;

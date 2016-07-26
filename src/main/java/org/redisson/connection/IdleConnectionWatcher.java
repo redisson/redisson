@@ -21,8 +21,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.MasterSlaveServersConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

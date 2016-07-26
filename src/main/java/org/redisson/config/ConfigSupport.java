@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.config;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,6 +24,12 @@ import java.net.URL;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.cluster.ClusterConnectionManager;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ElasticacheConnectionManager;
+import org.redisson.connection.MasterSlaveConnectionManager;
+import org.redisson.connection.SentinelConnectionManager;
+import org.redisson.connection.SingleConnectionManager;
 import org.redisson.connection.balancer.LoadBalancer;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
@@ -149,7 +155,46 @@ public class ConfigSupport {
     public String toYAML(Config config) throws IOException {
         return yamlMapper.writeValueAsString(config);
     }
+    
+    public static ConnectionManager createConnectionManager(Config configCopy) {
+        if (configCopy.getMasterSlaveServersConfig() != null) {
+            validate(configCopy.getMasterSlaveServersConfig());
+            return new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
+        } else if (configCopy.getSingleServerConfig() != null) {
+            validate(configCopy.getSingleServerConfig());
+            return new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
+        } else if (configCopy.getSentinelServersConfig() != null) {
+            validate(configCopy.getSentinelServersConfig());
+            return new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
+        } else if (configCopy.getClusterServersConfig() != null) {
+            validate(configCopy.getClusterServersConfig());
+            return new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
+        } else if (configCopy.getElasticacheServersConfig() != null) {
+            validate(configCopy.getElasticacheServersConfig());
+            return new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy);
+        } else {
+            throw new IllegalArgumentException("server(s) address(es) not defined!");
+        }
+        
+    }
 
+    private static void validate(SingleServerConfig config) {
+        if (config.getConnectionPoolSize() < config.getConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("connectionPoolSize can't be lower than connectionMinimumIdleSize");
+        }
+    }
+    
+    private static void validate(BaseMasterSlaveServersConfig<?> config) {
+        if (config.getSlaveConnectionPoolSize() < config.getSlaveConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("slaveConnectionPoolSize can't be lower than slaveConnectionMinimumIdleSize");
+        }
+        if (config.getMasterConnectionPoolSize() < config.getMasterConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("masterConnectionPoolSize can't be lower than masterConnectionMinimumIdleSize");
+        }
+        if (config.getSlaveSubscriptionConnectionPoolSize() < config.getSlaveSubscriptionConnectionMinimumIdleSize()) {
+            throw new IllegalArgumentException("slaveSubscriptionConnectionMinimumIdleSize can't be lower than slaveSubscriptionConnectionPoolSize");
+        }
+    }
 
     private ObjectMapper createMapper(JsonFactory mapping) {
         ObjectMapper mapper = new ObjectMapper(mapping);

@@ -15,11 +15,11 @@
  */
 package org.redisson.cluster;
 
-import org.redisson.MasterSlaveServersConfig;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.DefaultConnectionListener;
 import org.redisson.connection.FutureConnectionListener;
 
