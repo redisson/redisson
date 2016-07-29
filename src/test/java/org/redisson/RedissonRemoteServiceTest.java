@@ -69,6 +69,12 @@ public class RedissonRemoteServiceTest extends BaseTest {
         
         Future<Long> resultMethod(Long value);
         
+        Future<Void> errorMethod();
+        
+        Future<Void> errorMethodWithCause();
+        
+        Future<Void> timeoutMethod();
+        
     }
     
     @RRemoteAsync(RemoteInterface.class)
@@ -467,6 +473,47 @@ public class RedissonRemoteServiceTest extends BaseTest {
                 Assert.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
             } catch (Exception e) {
                 assertThat(e).isInstanceOf(RemoteServiceTimeoutException.class);
+            }
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
+
+    @Test
+    public void testNoAckWithResultInvocationsAsync() throws InterruptedException, ExecutionException {
+        RedissonClient server = createInstance();
+        RedissonClient client = createInstance();
+        try {
+            server.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl());
+
+            // no ack but an execution timeout of 1 second
+            RemoteInvocationOptions options = RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.SECONDS);
+            RemoteInterfaceAsync service = client.getRemoteSerivce().get(RemoteInterfaceAsync.class, options);
+
+            service.voidMethod("noAck", 100L).get();
+            assertThat(service.resultMethod(21L).get()).isEqualTo(42);
+
+            try {
+                service.errorMethod().get();
+                Assert.fail();
+            } catch (Exception e) {
+                assertThat(e.getCause().getMessage()).isEqualTo("Checking error throw");
+            }
+
+            try {
+                service.errorMethodWithCause().get();
+                Assert.fail();
+            } catch (Exception e) {
+                assertThat(e.getCause().getCause()).isInstanceOf(ArithmeticException.class);
+                assertThat(e.getCause().getCause().getMessage()).isEqualTo("/ by zero");
+            }
+
+            try {
+                service.timeoutMethod().get();
+                Assert.fail("noAck option should still wait for the server to return a response and throw if the execution timeout is exceeded");
+            } catch (Exception e) {
+                assertThat(e.getCause()).isInstanceOf(RemoteServiceTimeoutException.class);
             }
         } finally {
             client.shutdown();
