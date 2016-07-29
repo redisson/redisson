@@ -17,8 +17,6 @@ Licensed under the Apache License 2.0.
 
 Welcome to support chat - [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-##Please take part in [Redisson survey](https://ru.surveymonkey.com/r/LP7RG8Q)
-####Try [Redisson PRO](http://redisson.pro) edition
 
 Features
 ================================
@@ -83,12 +81,12 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.21</version>
+       <version>2.2.22</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.21'
+    compile 'org.redisson:redisson:2.2.22'
 
 ### Supported by
 

@@ -2,6 +2,9 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####26-Jul-2016 - version 2.2.22 released  
+Fixed -  java.lang.UnsupportedOperationException during command batch usage with netty 4.0.38 and higher  
+
 ####15-Jul-2016 - version 2.2.21 released  
 Fixed - `RLock`, `RReadWriteLock`, `RSemaphore` and `RCountDownLatch` can blocks forever under some conditions  
 
