@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -27,6 +28,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.command.CommandExecutor;
+import org.redisson.misc.PromiseDelegator;
 import org.redisson.core.RBatch;
 import org.redisson.core.RBlockingQueue;
 import org.redisson.core.RBlockingQueueAsync;
@@ -68,23 +71,25 @@ public class RedissonRemoteService implements RRemoteService {
     private final Codec codec;
     private final Redisson redisson;
     private final String name;
+    private final CommandExecutor commandExecutor;
     
-    public RedissonRemoteService(Redisson redisson) {
-        this(redisson, "redisson_remote_service");
+    public RedissonRemoteService(Redisson redisson, CommandExecutor commandExecutor) {
+        this(redisson, "redisson_remote_service", commandExecutor);
     }
 
-    public RedissonRemoteService(Redisson redisson, String name) {
-        this(null, redisson, name);
+    public RedissonRemoteService(Redisson redisson, String name, CommandExecutor commandExecutor) {
+        this(null, redisson, name, commandExecutor);
     }
     
-    public RedissonRemoteService(Codec codec, Redisson redisson) {
-        this(codec, redisson, "redisson_remote_service");
+    public RedissonRemoteService(Codec codec, Redisson redisson, CommandExecutor commandExecutor) {
+        this(codec, redisson, "redisson_remote_service", commandExecutor);
     }
 
-    public RedissonRemoteService(Codec codec, Redisson redisson, String name) {
+    public RedissonRemoteService(Codec codec, Redisson redisson, String name, CommandExecutor commandExecutor) {
         this.codec = codec;
         this.redisson = redisson;
         this.name = name;
+        this.commandExecutor = commandExecutor;
     }
 
     @Override
@@ -117,6 +122,14 @@ public class RedissonRemoteService implements RRemoteService {
             return codec;
         }
         return redisson.getConfig().getCodec();
+    }
+    
+    private byte[] encode(Object obj) {
+        try {
+            return getCodec().getValueEncoder().encode(obj);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     private <T> void subscribe(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue) {
@@ -159,7 +172,7 @@ public class RedissonRemoteService implements RRemoteService {
                             + "return 1;"
                            + "end;"
                            + "return 0;", RScript.ReturnType.BOOLEAN, Arrays.<Object>asList(ackName, responseName), 
-                               getCodec().getValueEncoder().encode(new RemoteServiceAck()), 
+                               encode(new RemoteServiceAck()), 
                                request.getOptions().getAckTimeoutInMillis());
                     
                     ackClientsFuture.addListener(new FutureListener<Boolean>() {
@@ -290,25 +303,49 @@ public class RedissonRemoteService implements RRemoteService {
                 }
 
                 final String requestId = generateRequestId();
-                final Promise<Object> result = ImmediateEventExecutor.INSTANCE.newPromise();
 
-                String requestQueueName = name + ":{" + interfaceName + "}";
-                RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
+                final String requestQueueName = name + ":{" + interfaceName + "}";
+                final String responseName = name + ":{" + interfaceName + "}:" + requestId;
+                final String ackName = getAckName(remoteInterface.getName(), requestId);
+                
+                final RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
                 final RemoteServiceRequest request = new RemoteServiceRequest(requestId,
                         method.getName(), args, optionsCopy, System.currentTimeMillis());
+
+                final Promise<Object> result = new PromiseDelegator<Object>(ImmediateEventExecutor.INSTANCE.newPromise()) {
+                    @Override
+                    public boolean cancel(boolean mayInterruptIfRunning) {
+                        if (optionsCopy.isAckExpected()) {
+                            Future<Boolean> future = redisson.getScript().evalAsync(responseName, Mode.READ_WRITE, LongCodec.INSTANCE, 
+                                    "if redis.call('setnx', KEYS[1], 1) == 1 then "
+                                            + "redis.call('pexpire', KEYS[1], ARGV[2]);"
+                                            + "redis.call('lrem', KEYS[3], 1, ARGV[1]);"
+                                            + "redis.call('pexpire', KEYS[2], ARGV[2]);"
+                                            + "return 1;"
+                                            + "end;"
+                                            + "return 0;", RScript.ReturnType.BOOLEAN, Arrays.<Object>asList(ackName, responseName, requestQueueName), 
+                                            encode(request), 
+                                            request.getOptions().getAckTimeoutInMillis());
+                            
+                            return commandExecutor.get(future);
+                        }
+                        
+                        return requestQueue.remove(request);
+                    }
+                };
+                
                 Future<Boolean> addFuture = requestQueue.addAsync(request);
                 addFuture.addListener(new FutureListener<Boolean>() {
 
                     @Override
                     public void operationComplete(Future<Boolean> future) throws Exception {
                         if (!future.isSuccess()) {
-                            result.setFailure(future.cause());
+                            result.tryFailure(future.cause());
                             return;
                         }
                         
                         final RBlockingQueue<? extends RRemoteServiceResponse> responseQueue;
                         if (optionsCopy.isAckExpected() || optionsCopy.isResultExpected()) {
-                            String responseName = name + ":{" + interfaceName + "}:" + requestId;
                             responseQueue = redisson.getBlockingQueue(responseName, getCodec());
                         } else {
                             responseQueue = null;
@@ -320,26 +357,25 @@ public class RedissonRemoteService implements RRemoteService {
                                 @Override
                                 public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
                                     if (!future.isSuccess()) {
-                                        result.setFailure(future.cause());
+                                        result.tryFailure(future.cause());
                                         return;
                                     }
                                     
                                     RemoteServiceAck ack = future.getNow();
                                     if (ack == null) {
-                                        final String ackName = getAckName(remoteInterface.getName(), request.getRequestId());
                                         Future<RemoteServiceAck> ackFutureAttempt = tryPollAckAgainAsync(optionsCopy, responseQueue, ackName);
                                         ackFutureAttempt.addListener(new FutureListener<RemoteServiceAck>() {
                                             
                                             @Override
                                             public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
                                                 if (!future.isSuccess()) {
-                                                    result.setFailure(future.cause());
+                                                    result.tryFailure(future.cause());
                                                     return;
                                                 }
                                                 
                                                 if (future.getNow() == null) {
                                                     Exception ex = new RemoteServiceAckTimeoutException("No ACK response after " + optionsCopy.getAckTimeoutInMillis() + "ms for request: " + request);
-                                                    result.setFailure(ex);
+                                                    result.tryFailure(ex);
                                                     return;
                                                 }
                                                 
@@ -353,9 +389,7 @@ public class RedissonRemoteService implements RRemoteService {
 
                             });
                         } else {
-                            if (optionsCopy.isResultExpected()) {
-                                invokeAsync(optionsCopy, result, request, responseQueue);
-                            }
+                            invokeAsync(optionsCopy, result, request, responseQueue);
                         }
                     }
                 });
@@ -376,7 +410,7 @@ public class RedissonRemoteService implements RRemoteService {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
                 
@@ -397,21 +431,22 @@ public class RedissonRemoteService implements RRemoteService {
                 public void operationComplete(Future<RemoteServiceResponse> future)
                         throws Exception {
                     if (!future.isSuccess()) {
-                        result.setFailure(future.cause());
+                        result.tryFailure(future.cause());
                         return;
                     }
                     
                     if (future.getNow() == null) {
                         RemoteServiceTimeoutException e = new RemoteServiceTimeoutException("No response after " + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + request);
-                        result.setFailure(e);
+                        result.tryFailure(e);
                         return;
                     }
                     
                     if (future.getNow().getError() != null) {
-                        result.setFailure(future.getNow().getError());
+                        result.tryFailure(future.getNow().getError());
+                        return;
                     }
                     
-                    result.setSuccess(future.getNow().getResult());
+                    result.trySuccess(future.getNow().getResult());
                 }
             });
         }
