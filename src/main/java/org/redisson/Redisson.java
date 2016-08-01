@@ -367,22 +367,22 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RRemoteService getRemoteSerivce() {
-        return new RedissonRemoteService(this);
+        return new RedissonRemoteService(this, commandExecutor);
     }
 
     @Override
     public RRemoteService getRemoteSerivce(String name) {
-        return new RedissonRemoteService(this, name);
+        return new RedissonRemoteService(this, name, commandExecutor);
     }
     
     @Override
     public RRemoteService getRemoteSerivce(Codec codec) {
-        return new RedissonRemoteService(codec, this);
+        return new RedissonRemoteService(codec, this, commandExecutor);
     }
     
     @Override
     public RRemoteService getRemoteSerivce(String name, Codec codec) {
-        return new RedissonRemoteService(codec, this, name);
+        return new RedissonRemoteService(codec, this, name, commandExecutor);
     }
 
     @Override
