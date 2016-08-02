@@ -101,7 +101,7 @@ public class Redisson implements RedissonClient {
 
     protected final UUID id = UUID.randomUUID();
 
-    Redisson(Config config) {
+    protected Redisson(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
         
