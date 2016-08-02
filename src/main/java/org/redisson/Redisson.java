@@ -89,19 +89,19 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class Redisson implements RedissonClient {
 
-    private final EvictionScheduler evictionScheduler;
-    private final CommandExecutor commandExecutor;
-    private final ConnectionManager connectionManager;
+    protected final EvictionScheduler evictionScheduler;
+    protected final CommandExecutor commandExecutor;
+    protected final ConnectionManager connectionManager;
     
-    private final Map<Class, Class> liveObjectClassCache
+    protected final Map<Class, Class> liveObjectClassCache
             = PlatformDependent.<Class, Class>newConcurrentHashMap();
-    private final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
-    private final ResolverProvider liveObjectDefaultResolverProvider = new DefaultResolverProvider();
-    private final Config config;
+    protected final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
+    protected final ResolverProvider liveObjectDefaultResolverProvider = new DefaultResolverProvider();
+    protected final Config config;
 
-    private final UUID id = UUID.randomUUID();
+    protected final UUID id = UUID.randomUUID();
 
-    Redisson(Config config) {
+    protected Redisson(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
         
