@@ -116,13 +116,16 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 } else {
                     decode(in, cmd, null, ctx.channel());
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 cmd.tryFailure(e);
             }
         } else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData)data;
-
-            decodeCommandBatch(ctx, in, data, commands);
+            try {
+                decodeCommandBatch(ctx, in, data, commands);
+            } catch (Exception e) {
+                commands.getPromise().tryFailure(e);
+            }
             return;
         }
         
