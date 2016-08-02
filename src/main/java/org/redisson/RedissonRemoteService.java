@@ -336,8 +336,7 @@ public class RedissonRemoteService implements RRemoteService {
                     }
                 };
                 
-                Future<Boolean> addFuture = addAsync(requestQueue, request);
-                result.setAddFuture(addFuture);
+                Future<Boolean> addFuture = addAsync(requestQueue, request, result);
                 addFuture.addListener(new FutureListener<Boolean>() {
 
                     @Override
@@ -598,7 +597,9 @@ public class RedissonRemoteService implements RRemoteService {
         return batch.executeAsync();
     }
 
-    protected Future<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return requestQueue.addAsync(request);
+    protected Future<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request, RemotePromise<Object> result) {
+        Future<Boolean> future = requestQueue.addAsync(request);
+        result.setAddFuture(future);
+        return future;
     }
 }

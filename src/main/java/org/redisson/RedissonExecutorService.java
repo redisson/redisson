@@ -144,7 +144,7 @@ public class RedissonExecutorService implements RExecutorService {
     public void shutdown() {
         commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "if redis.call('exists', KEYS[2]) == 0 then "
-                     + "if redis.call('get', KEYS[1]) == 0 or redis.call('exists', KEYS[1]) == 0 then "
+                     + "if redis.call('get', KEYS[1]) == '0' or redis.call('exists', KEYS[1]) == 0 then "
                         + "redis.call('set', KEYS[2], ARGV[2]);"
                         + "redis.call('publish', KEYS[3], ARGV[2]);"
                      + "else "
@@ -220,7 +220,8 @@ public class RedissonExecutorService implements RExecutorService {
 
     private <T> void check(RemotePromise<T> promise) {
         io.netty.util.concurrent.Future<Boolean> addFuture = promise.getAddFuture();
-        Boolean res = addFuture.awaitUninterruptibly().getNow();
+        addFuture.syncUninterruptibly();
+        Boolean res = addFuture.getNow();
         if (!res) {
             throw new RejectedExecutionException("Task rejected. ExecutorService is in shutdown state");
         }

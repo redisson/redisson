@@ -28,6 +28,8 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.remote.RemoteServiceRequest;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
 public class ExecutorRemoteService extends RedissonRemoteService {
 
@@ -44,8 +46,9 @@ public class ExecutorRemoteService extends RedissonRemoteService {
 
     @Override
     protected Future<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue,
-            RemoteServiceRequest request) {
-        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+            RemoteServiceRequest request, RemotePromise<Object> result) {
+        final Promise<Boolean> promise = commandExecutor.getConnectionManager().newPromise();
+        Future<Boolean> future = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[2]) == 0 then "
                     + "redis.call('rpush', KEYS[3], ARGV[1]); "
                     + "redis.call('incr', KEYS[1]);"
@@ -54,6 +57,27 @@ public class ExecutorRemoteService extends RedissonRemoteService {
                 + "return 0;", 
                 Arrays.<Object>asList(tasksCounter.getName(), status.getName(), requestQueue.getName()),
                 encode(request));
+        
+        result.setAddFuture(future);
+        
+        future.addListener(new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(Future<Boolean> future) throws Exception {
+                if (!future.isSuccess()) {
+                    promise.setFailure(future.cause());
+                    return;
+                }
+
+                if (!future.getNow()) {
+                    promise.cancel(true);
+                    return;
+                }
+                
+                promise.setSuccess(true);
+            }
+        });
+        
+        return promise;
     }
 
 }
