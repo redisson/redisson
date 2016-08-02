@@ -13,26 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.codec;
+package org.redisson.api;
 
-import org.msgpack.jackson.dataformat.MessagePackFactory;
+import java.util.concurrent.ExecutorService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+public interface RExecutorService extends ExecutorService {
 
-/**
- * MsgPack binary codec
- *
- * @author Nikita Koksharov
- *
- */
-public class MsgPackJacksonCodec extends JsonJacksonCodec {
-
-    public MsgPackJacksonCodec() {
-        super(new ObjectMapper(new MessagePackFactory()));
-    }
+    String getName();
     
-    public MsgPackJacksonCodec(ClassLoader classLoader) {
-        super(createObjectMapper(classLoader, new ObjectMapper(new MessagePackFactory())));
-    }
+    boolean delete();
+    
+    void register();
     
 }

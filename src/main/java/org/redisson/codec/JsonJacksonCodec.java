@@ -15,6 +15,13 @@
  */
 package org.redisson.codec;
 
+import java.io.IOException;
+
+import org.redisson.client.codec.Codec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
@@ -29,14 +36,10 @@ import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
-
-import java.io.IOException;
 
 /**
  *
@@ -56,11 +59,7 @@ public class JsonJacksonCodec implements Codec {
         
     }
     
-    private final ObjectMapper mapObjectMapper = initObjectMapper();
-
-    protected ObjectMapper initObjectMapper() {
-        return new ObjectMapper();
-    }
+    private final ObjectMapper mapObjectMapper;
 
     private final Encoder encoder = new Encoder() {
         @Override
@@ -75,8 +74,23 @@ public class JsonJacksonCodec implements Codec {
             return mapObjectMapper.readValue(new ByteBufInputStream(buf), Object.class);
         }
     };
-
+    
     public JsonJacksonCodec() {
+        this(new ObjectMapper());
+    }
+    
+    public JsonJacksonCodec(ClassLoader classLoader) {
+        this(createObjectMapper(classLoader, new ObjectMapper()));
+    }
+    
+    protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
+        TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);
+        om.setTypeFactory(tf);
+        return om;
+    }
+
+    public JsonJacksonCodec(ObjectMapper mapObjectMapper) {
+        this.mapObjectMapper = mapObjectMapper;
         init(mapObjectMapper);
         // type info inclusion
         TypeResolverBuilder<?> mapTyper = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
@@ -107,6 +121,13 @@ public class JsonJacksonCodec implements Codec {
         mapTyper.init(JsonTypeInfo.Id.CLASS, null);
         mapTyper.inclusion(JsonTypeInfo.As.PROPERTY);
         mapObjectMapper.setDefaultTyping(mapTyper);
+        
+        // warm up codec
+        try {
+            mapObjectMapper.readValue("1".getBytes(), Object.class);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     protected void init(ObjectMapper objectMapper) {

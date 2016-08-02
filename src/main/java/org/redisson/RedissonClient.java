@@ -39,6 +39,7 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RDeque;
+import org.redisson.api.RExecutorService;
 import org.redisson.api.RGeo;
 import org.redisson.api.RHyperLogLog;
 import org.redisson.api.RKeys;
@@ -611,6 +612,8 @@ public interface RedissonClient {
      */
     RScript getScript();
 
+    RExecutorService getExecutorService();
+    
     /**
      * Returns object for remote operations prefixed with the default name (redisson_remote_service)
      * 

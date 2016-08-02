@@ -13,26 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.codec;
+package org.redisson.executor;
 
-import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.redisson.misc.PromiseDelegator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
-/**
- * MsgPack binary codec
- *
- * @author Nikita Koksharov
- *
- */
-public class MsgPackJacksonCodec extends JsonJacksonCodec {
+public class RemotePromise<T> extends PromiseDelegator<T> {
 
-    public MsgPackJacksonCodec() {
-        super(new ObjectMapper(new MessagePackFactory()));
+    private Future<Boolean> addFuture;
+    
+    public RemotePromise(Promise<T> promise) {
+        super(promise);
     }
     
-    public MsgPackJacksonCodec(ClassLoader classLoader) {
-        super(createObjectMapper(classLoader, new ObjectMapper(new MessagePackFactory())));
+    public void setAddFuture(Future<Boolean> addFuture) {
+        this.addFuture = addFuture;
     }
     
+    public Future<Boolean> getAddFuture() {
+        return addFuture;
+    }
+
 }

@@ -37,7 +37,8 @@ public class JsonJacksonMapValueCodec<T> extends JsonJacksonCodec {
 
     public JsonJacksonMapValueCodec(TypeReference<T> typeReference) {
         this.typeReference = typeReference;
-        this.mapper = initObjectMapper();
+        this.mapper = new ObjectMapper();
+        init(this.mapper);
     }
 
     @Override

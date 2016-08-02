@@ -50,9 +50,13 @@ public class StringCodec implements Codec {
     public StringCodec() {
         this(CharsetUtil.UTF_8);
     }
+    
+    public StringCodec(ClassLoader classLoader) {
+        this();
+    }
 
     public StringCodec(String charsetName) {
-	this(Charset.forName(charsetName));
+        this(Charset.forName(charsetName));
     }
 
     public StringCodec(Charset charset) {

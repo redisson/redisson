@@ -48,9 +48,11 @@ public class KryoCodec implements Codec {
 
         private final Queue<Kryo> objects = new ConcurrentLinkedQueue<Kryo>();
         private final List<Class<?>> classes;
+        private final ClassLoader classLoader;
 
-        public KryoPoolImpl(List<Class<?>> classes) {
+        public KryoPoolImpl(List<Class<?>> classes, ClassLoader classLoader) {
             this.classes = classes;
+            this.classLoader = classLoader;
         }
 
         public Kryo get() {
@@ -72,6 +74,9 @@ public class KryoCodec implements Codec {
          */
         protected Kryo createInstance() {
             Kryo kryo = new Kryo();
+            if (classLoader != null) {
+                kryo.setClassLoader(classLoader);
+            }
             kryo.setReferences(false);
             for (Class<?> clazz : classes) {
                 kryo.register(clazz);
@@ -139,13 +144,20 @@ public class KryoCodec implements Codec {
     };
 
     public KryoCodec() {
-        this(new KryoPoolImpl(Collections.<Class<?>>emptyList()));
+        this(Collections.<Class<?>>emptyList());
     }
 
+    public KryoCodec(ClassLoader classLoader) {
+        this(Collections.<Class<?>>emptyList(), classLoader);
+    }
+    
     public KryoCodec(List<Class<?>> classes) {
-        this(new KryoPoolImpl(classes));
+        this(classes, null);
     }
 
+    public KryoCodec(List<Class<?>> classes, ClassLoader classLoader) {
+        this(new KryoPoolImpl(classes, classLoader));
+    }
 
     public KryoCodec(KryoPool kryoPool) {
         this.kryoPool = kryoPool;

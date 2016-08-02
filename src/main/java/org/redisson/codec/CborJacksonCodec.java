@@ -24,8 +24,13 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
  * @date 2015-10-16
  */
 public class CborJacksonCodec extends JsonJacksonCodec {
-    @Override
-    protected ObjectMapper initObjectMapper() {
-        return new ObjectMapper(new CBORFactory());
+    
+    public CborJacksonCodec() {
+        super(new ObjectMapper(new CBORFactory()));
     }
+    
+    public CborJacksonCodec(ClassLoader classLoader) {
+        super(createObjectMapper(classLoader, new ObjectMapper(new CBORFactory())));
+    }
+    
 }

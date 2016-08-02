@@ -13,26 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.codec;
+package org.redisson.executor;
 
-import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.redisson.remote.RRemoteAsync;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.util.concurrent.Future;
 
-/**
- * MsgPack binary codec
- *
- * @author Nikita Koksharov
- *
- */
-public class MsgPackJacksonCodec extends JsonJacksonCodec {
+@RRemoteAsync(RemoteExecutorService.class)
+public interface RemoteExecutorServiceAsync {
 
-    public MsgPackJacksonCodec() {
-        super(new ObjectMapper(new MessagePackFactory()));
-    }
+    <T> Future<T> execute(String className, byte[] classBody, byte[] state);
     
-    public MsgPackJacksonCodec(ClassLoader classLoader) {
-        super(createObjectMapper(classLoader, new ObjectMapper(new MessagePackFactory())));
-    }
+    Future<Void> executeVoid(String className, byte[] classBody, byte[] state);
     
 }

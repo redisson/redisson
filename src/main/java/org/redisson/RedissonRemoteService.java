@@ -31,10 +31,12 @@ import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBlockingQueueAsync;
 import org.redisson.api.RRemoteService;
 import org.redisson.api.RScript;
-import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.RScript.Mode;
+import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.command.CommandExecutor;
+import org.redisson.executor.RemotePromise;
 import org.redisson.remote.RRemoteAsync;
 import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceAck;
@@ -67,9 +69,9 @@ public class RedissonRemoteService implements RRemoteService {
     private final Map<RemoteServiceKey, RemoteServiceMethod> beans = PlatformDependent.newConcurrentHashMap();
     
     private final Codec codec;
-    private final Redisson redisson;
-    private final String name;
-    private final CommandExecutor commandExecutor;
+    protected final Redisson redisson;
+    protected final String name;
+    protected final CommandExecutor commandExecutor;
     
     public RedissonRemoteService(Redisson redisson, CommandExecutor commandExecutor) {
         this(redisson, "redisson_remote_service", commandExecutor);
@@ -122,7 +124,7 @@ public class RedissonRemoteService implements RRemoteService {
         return redisson.getConfig().getCodec();
     }
 
-    private byte[] encode(Object obj) {
+    protected byte[] encode(Object obj) {
         try {
             return getCodec().getValueEncoder().encode(obj);
         } catch (IOException e) {
@@ -247,6 +249,7 @@ public class RedissonRemoteService implements RRemoteService {
                 .expectResultWithin(executionTimeout, executionTimeUnit));
     }
 
+    @Override
     public <T> T get(Class<T> remoteInterface, long executionTimeout, TimeUnit executionTimeUnit,
                      long ackTimeout, TimeUnit ackTimeUnit) {
         return get(remoteInterface, RemoteInvocationOptions.defaults()
@@ -254,6 +257,7 @@ public class RedissonRemoteService implements RRemoteService {
                 .expectResultWithin(executionTimeout, executionTimeUnit));
     }
 
+    @Override
     public <T> T get(Class<T> remoteInterface, RemoteInvocationOptions options) {
         for (Annotation annotation : remoteInterface.getAnnotations()) {
             if (annotation.annotationType() == RRemoteAsync.class) {
@@ -310,7 +314,7 @@ public class RedissonRemoteService implements RRemoteService {
                 final RemoteServiceRequest request = new RemoteServiceRequest(requestId,
                         method.getName(), args, optionsCopy, System.currentTimeMillis());
 
-                final Promise<Object> result = new PromiseDelegator<Object>(ImmediateEventExecutor.INSTANCE.newPromise()) {
+                final RemotePromise<Object> result = new RemotePromise<Object>(ImmediateEventExecutor.INSTANCE.newPromise()) {
                     @Override
                     public boolean cancel(boolean mayInterruptIfRunning) {
                         if (optionsCopy.isAckExpected()) {
@@ -332,7 +336,8 @@ public class RedissonRemoteService implements RRemoteService {
                     }
                 };
                 
-                Future<Boolean> addFuture = requestQueue.addAsync(request);
+                Future<Boolean> addFuture = addAsync(requestQueue, request);
+                result.setAddFuture(addFuture);
                 addFuture.addListener(new FutureListener<Boolean>() {
 
                     @Override
@@ -587,9 +592,13 @@ public class RedissonRemoteService implements RRemoteService {
 
     private <T extends RRemoteServiceResponse> Future<List<?>> send(long timeout, String responseName, T response) {
         RBatch batch = redisson.createBatch();
-        RBlockingQueueAsync<T> queue = batch.getBlockingQueue(responseName);
+        RBlockingQueueAsync<T> queue = batch.getBlockingQueue(responseName, getCodec());
         queue.putAsync(response);
         queue.expireAsync(timeout, TimeUnit.MILLISECONDS);
         return batch.executeAsync();
+    }
+
+    protected Future<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        return requestQueue.addAsync(request);
     }
 }

@@ -39,7 +39,13 @@ public class SerializationCodec implements Codec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             try {
-                ObjectInputStream inputStream = new ObjectInputStream(new ByteBufInputStream(buf));
+                ByteBufInputStream in = new ByteBufInputStream(buf);
+                ObjectInputStream inputStream;
+                if (classLoader != null) {
+                    inputStream = new CustomObjectInputStream(classLoader, in);
+                } else {
+                    inputStream = new ObjectInputStream(in);
+                }
                 return inputStream.readObject();
             } catch (IOException e) {
                 throw e;
@@ -60,7 +66,17 @@ public class SerializationCodec implements Codec {
             return result.toByteArray();
         }
     };
+    
+    private final ClassLoader classLoader;
 
+    public SerializationCodec() {
+        this(null);
+    }
+    
+    public SerializationCodec(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
+    
     @Override
     public Decoder<Object> getMapValueDecoder() {
         return getValueDecoder();

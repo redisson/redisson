@@ -45,6 +45,16 @@ public class FstCodec implements Codec {
     public FstCodec() {
         this(FSTConfiguration.createDefaultConfiguration());
     }
+    
+    public FstCodec(ClassLoader classLoader) {
+        this(createConfig(classLoader));
+    }
+
+    private static FSTConfiguration createConfig(ClassLoader classLoader) {
+        FSTConfiguration def = FSTConfiguration.createDefaultConfiguration();
+        def.setClassLoader(classLoader);
+        return def;
+    }
 
     public FstCodec(FSTConfiguration fstConfiguration) {
         config = fstConfiguration;

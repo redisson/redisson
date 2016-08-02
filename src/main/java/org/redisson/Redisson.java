@@ -40,6 +40,7 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RDeque;
+import org.redisson.api.RExecutorService;
 import org.redisson.api.RGeo;
 import org.redisson.api.RHyperLogLog;
 import org.redisson.api.RKeys;
@@ -67,6 +68,7 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.codec.SerializationCodec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
@@ -365,6 +367,15 @@ public class Redisson implements RedissonClient {
         return new RedissonScript(commandExecutor);
     }
 
+    @Override
+    public RExecutorService getExecutorService() {
+        return new RedissonExecutorService(new SerializationCodec(), commandExecutor, this);
+    }
+
+    public RExecutorService getExecutorService(String name) {
+        return new RedissonExecutorService(new SerializationCodec(), commandExecutor, this, name);
+    }
+    
     @Override
     public RRemoteService getRemoteSerivce() {
         return new RedissonRemoteService(this, commandExecutor);
