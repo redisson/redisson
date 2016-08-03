@@ -1,7 +1,10 @@
 package org.redisson.executor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -10,40 +13,29 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.BaseTest;
-import org.redisson.Redisson;
-import org.redisson.RedissonClient;
+import org.redisson.RedissonNode;
 import org.redisson.api.RExecutorService;
 import org.redisson.config.Config;
-
-import static org.assertj.core.api.Assertions.*;
+import org.redisson.config.RedissonNodeConfig;
 
 public class RedissonExecutorServiceTest extends BaseTest {
 
-    private static RedissonClient redissonClient;
-    
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         BaseTest.beforeClass();
         
         Config config = createConfig();
-        redissonClient = Redisson.create(config);
-        redissonClient.getExecutorService().registerExecutors(1);
-    }
-    
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        BaseTest.afterClass();
-        
-        redissonClient.shutdown();
+        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+        nodeConfig.setExecutors(Collections.singletonMap("test", 1));
+        RedissonNode.start(nodeConfig);
     }
     
     @Test
     public void testMultipleTasks() throws InterruptedException, ExecutionException, TimeoutException {
-        RExecutorService e = redisson.getExecutorService();
+        RExecutorService e = redisson.getExecutorService("test");
         e.execute(new RunnableTask());
         Future<?> f = e.submit(new RunnableTask2());
         f.get();
@@ -77,7 +69,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @Test(expected = RejectedExecutionException.class)
     public void testRejectExecute() throws InterruptedException, ExecutionException {
-        RExecutorService e = redisson.getExecutorService();
+        RExecutorService e = redisson.getExecutorService("test");
         e.execute(new RunnableTask());
         Future<?> f1 = e.submit(new RunnableTask2());
         Future<String> f2 = e.submit(new CallableTask());
@@ -93,7 +85,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @Test(expected = RejectedExecutionException.class)
     public void testRejectSubmitRunnable() throws InterruptedException, ExecutionException {
-        RExecutorService e = redisson.getExecutorService();
+        RExecutorService e = redisson.getExecutorService("test");
         e.execute(new RunnableTask());
         Future<?> f1 = e.submit(new RunnableTask2());
         Future<String> f2 = e.submit(new CallableTask());
@@ -109,7 +101,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
 
     @Test(expected = RejectedExecutionException.class)
     public void testRejectSubmitCallable() throws InterruptedException, ExecutionException {
-        RExecutorService e = redisson.getExecutorService();
+        RExecutorService e = redisson.getExecutorService("test");
         e.execute(new RunnableTask());
         Future<?> f1 = e.submit(new RunnableTask2());
         Future<String> f2 = e.submit(new CallableTask());
@@ -125,7 +117,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @Test(expected = RejectedExecutionException.class)
     public void testEmptyRejectSubmitRunnable() throws InterruptedException, ExecutionException {
-        RExecutorService e = redisson.getExecutorService();
+        RExecutorService e = redisson.getExecutorService("test");
         e.shutdown();
         
         assertThat(e.isShutdown()).isTrue();
@@ -135,7 +127,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @Test
     public void testShutdown() throws InterruptedException {
-        RExecutorService e = redisson.getExecutorService();
+        RExecutorService e = redisson.getExecutorService("test");
         assertThat(e.isShutdown()).isFalse();
         assertThat(e.isTerminated()).isFalse();
         e.execute(new RunnableTask());
@@ -147,7 +139,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @Test
     public void testShutdownEmpty() throws InterruptedException {
-        RExecutorService e = redisson.getExecutorService();
+        RExecutorService e = redisson.getExecutorService("test");
         assertThat(e.isShutdown()).isFalse();
         assertThat(e.isTerminated()).isFalse();
         e.shutdown();
@@ -159,7 +151,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     @Test
     public void testResetShutdownState() throws InterruptedException, ExecutionException {
         for (int i = 0; i < 100; i++) {
-            RExecutorService e = redisson.getExecutorService();
+            RExecutorService e = redisson.getExecutorService("test");
             e.execute(new RunnableTask());
             assertThat(e.isShutdown()).isFalse();
             e.shutdown();
@@ -176,10 +168,10 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @Test
     public void testRedissonInjected() throws InterruptedException, ExecutionException {
-        Future<Long> s1 = redisson.getExecutorService().submit(new CallableRedissonTask(1L));
-        Future<Long> s2 = redisson.getExecutorService().submit(new CallableRedissonTask(2L));
-        Future<Long> s3 = redisson.getExecutorService().submit(new CallableRedissonTask(30L));
-        Future<Void> s4 = (Future<Void>) redisson.getExecutorService().submit(new RunnableRedissonTask());
+        Future<Long> s1 = redisson.getExecutorService("test").submit(new CallableRedissonTask(1L));
+        Future<Long> s2 = redisson.getExecutorService("test").submit(new CallableRedissonTask(2L));
+        Future<Long> s3 = redisson.getExecutorService("test").submit(new CallableRedissonTask(30L));
+        Future<Void> s4 = (Future<Void>) redisson.getExecutorService("test").submit(new RunnableRedissonTask());
         
         List<Long> results = Arrays.asList(s1.get(), s2.get(), s3.get());
         assertThat(results).containsOnlyOnce(33L);
@@ -190,7 +182,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @Test(expected = IllegalArgumentException.class)
     public void testAnonymousRunnable() {
-        redisson.getExecutorService().submit(new Runnable() {
+        redisson.getExecutorService("test").submit(new Runnable() {
             @Override
             public void run() {
             }
@@ -199,7 +191,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @Test(expected = IllegalArgumentException.class)
     public void testAnonymousCallable() {
-        redisson.getExecutorService().submit(new Callable<Object>() {
+        redisson.getExecutorService("test").submit(new Callable<Object>() {
             @Override
             public Object call() throws Exception {
                 return null;
@@ -209,7 +201,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testAnonymousRunnableExecute() {
-        redisson.getExecutorService().execute(new Runnable() {
+        redisson.getExecutorService("test").execute(new Runnable() {
             @Override
             public void run() {
             }

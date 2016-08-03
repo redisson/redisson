@@ -85,10 +85,7 @@ public class RedissonExecutorService implements RExecutorService {
     private final Map<Class<?>, byte[]> class2bytes = PlatformDependent.newConcurrentHashMap();
 
     private final String name;
-    
-    public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson) {
-        this(codec, commandExecutor, redisson, "redisson_default_executor");
-    }
+    private final String requestQueueName;
     
     public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, String name) {
         super();
@@ -98,7 +95,8 @@ public class RedissonExecutorService implements RExecutorService {
         this.name = name;
         this.redisson = redisson;
         
-        String objectName = "{" + name + ":"+ RemoteExecutorService.class.getName() + "}";
+        requestQueueName = "{" + name + ":"+ RemoteExecutorService.class.getName() + "}";
+        String objectName = requestQueueName;
         tasksCounter = redisson.getAtomicLong(objectName + ":counter");
         status = redisson.getBucket(objectName + ":status");
         topic = redisson.getTopic(objectName + ":topic");
@@ -114,9 +112,7 @@ public class RedissonExecutorService implements RExecutorService {
     
     @Override
     public void registerExecutors(int executors) {
-        String objectName = "{" + name + ":"+ RemoteExecutorService.class.getName() + "}";
-        
-        RemoteExecutorServiceImpl service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, objectName);
+        RemoteExecutorServiceImpl service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, requestQueueName);
         service.setStatusName(status.getName());
         service.setTasksCounterName(tasksCounter.getName());
         service.setTopicName(topic.getChannelNames().get(0));
@@ -198,7 +194,7 @@ public class RedissonExecutorService implements RExecutorService {
     
     @Override
     public boolean delete() {
-        return keys.delete(status.getName(), tasksCounter.getName()) > 0;
+        return keys.delete(requestQueueName, status.getName(), tasksCounter.getName()) > 0;
     }
     
     @Override

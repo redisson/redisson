@@ -108,48 +108,48 @@ public class ConfigSupport {
     private final ObjectMapper jsonMapper = createMapper(null);
     private final ObjectMapper yamlMapper = createMapper(new YAMLFactory());
 
-    public Config fromJSON(String content) throws IOException {
-        return jsonMapper.readValue(content, Config.class);
+    public <T> T fromJSON(String content, Class<T> configType) throws IOException {
+        return jsonMapper.readValue(content, configType);
     }
 
-    public Config fromJSON(File file) throws IOException {
-        return jsonMapper.readValue(file, Config.class);
+    public <T> T fromJSON(File file, Class<T> configType) throws IOException {
+        return jsonMapper.readValue(file, configType);
     }
 
-    public Config fromJSON(URL url) throws IOException {
-        return jsonMapper.readValue(url, Config.class);
+    public <T> T fromJSON(URL url, Class<T> configType) throws IOException {
+        return jsonMapper.readValue(url, configType);
     }
 
-    public Config fromJSON(Reader reader) throws IOException {
-        return jsonMapper.readValue(reader, Config.class);
+    public <T> T fromJSON(Reader reader, Class<T> configType) throws IOException {
+        return jsonMapper.readValue(reader, configType);
     }
 
-    public Config fromJSON(InputStream inputStream) throws IOException {
-        return jsonMapper.readValue(inputStream, Config.class);
+    public <T> T fromJSON(InputStream inputStream, Class<T> configType) throws IOException {
+        return jsonMapper.readValue(inputStream, configType);
     }
 
     public String toJSON(Config config) throws IOException {
         return jsonMapper.writeValueAsString(config);
     }
 
-    public Config fromYAML(String content) throws IOException {
-        return yamlMapper.readValue(content, Config.class);
+    public <T> T fromYAML(String content, Class<T> configType) throws IOException {
+        return yamlMapper.readValue(content, configType);
     }
 
-    public Config fromYAML(File file) throws IOException {
-        return yamlMapper.readValue(file, Config.class);
+    public <T> T fromYAML(File file, Class<T> configType) throws IOException {
+        return yamlMapper.readValue(file, configType);
     }
 
-    public Config fromYAML(URL url) throws IOException {
-        return yamlMapper.readValue(url, Config.class);
+    public <T> T fromYAML(URL url, Class<T> configType) throws IOException {
+        return yamlMapper.readValue(url, configType);
     }
 
-    public Config fromYAML(Reader reader) throws IOException {
-        return yamlMapper.readValue(reader, Config.class);
+    public <T> T fromYAML(Reader reader, Class<T> configType) throws IOException {
+        return yamlMapper.readValue(reader, configType);
     }
 
-    public Config fromYAML(InputStream inputStream) throws IOException {
-        return yamlMapper.readValue(inputStream, Config.class);
+    public <T> T fromYAML(InputStream inputStream, Class<T> configType) throws IOException {
+        return yamlMapper.readValue(inputStream, configType);
     }
 
     public String toYAML(Config config) throws IOException {
@@ -175,7 +175,6 @@ public class ConfigSupport {
         } else {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
-        
     }
 
     private static void validate(SingleServerConfig config) {

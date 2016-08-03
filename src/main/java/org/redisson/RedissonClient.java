@@ -20,11 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandExecutor;
-import org.redisson.config.Config;
-import org.redisson.liveobject.provider.CodecProvider;
-import org.redisson.api.ClusterNode;
 import org.redisson.api.ClusterNodesGroup;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
@@ -64,6 +59,9 @@ import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetMultimapCache;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RTopic;
+import org.redisson.client.codec.Codec;
+import org.redisson.config.Config;
+import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
@@ -612,7 +610,21 @@ public interface RedissonClient {
      */
     RScript getScript();
 
-    RExecutorService getExecutorService();
+    /**
+     * Returns ExecutorService by name
+     * using <b>SerializationCodec</b> codec for task serialization and response/request
+     * 
+     * @return
+     */
+    RExecutorService getExecutorService(String name);
+
+    /**
+     * Returns ExecutorService by name 
+     * using provided codec for task serialization and response/request
+     * 
+     * @return
+     */
+    RExecutorService getExecutorService(Codec codec, String name);
     
     /**
      * Returns object for remote operations prefixed with the default name (redisson_remote_service)

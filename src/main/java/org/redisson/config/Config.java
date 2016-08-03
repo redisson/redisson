@@ -379,7 +379,7 @@ public class Config {
      */
     public static Config fromJSON(String content) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(content);
+        return support.fromJSON(content, Config.class);
     }
 
     /**
@@ -391,7 +391,7 @@ public class Config {
      */
     public static Config fromJSON(InputStream inputStream) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(inputStream);
+        return support.fromJSON(inputStream, Config.class);
     }
 
     /**
@@ -403,7 +403,7 @@ public class Config {
      */
     public static Config fromJSON(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(file);
+        return support.fromJSON(file, Config.class);
     }
 
     /**
@@ -415,7 +415,7 @@ public class Config {
      */
     public static Config fromJSON(URL url) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(url);
+        return support.fromJSON(url, Config.class);
     }
 
     /**
@@ -427,7 +427,7 @@ public class Config {
      */
     public static Config fromJSON(Reader reader) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(reader);
+        return support.fromJSON(reader, Config.class);
     }
 
     /**
@@ -450,7 +450,7 @@ public class Config {
      */
     public static Config fromYAML(String content) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromYAML(content);
+        return support.fromYAML(content, Config.class);
     }
 
     /**
@@ -462,7 +462,7 @@ public class Config {
      */
     public static Config fromYAML(InputStream inputStream) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromYAML(inputStream);
+        return support.fromYAML(inputStream, Config.class);
     }
 
     /**
@@ -474,7 +474,7 @@ public class Config {
      */
     public static Config fromYAML(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromYAML(file);
+        return support.fromYAML(file, Config.class);
     }
 
     /**
@@ -486,7 +486,7 @@ public class Config {
      */
     public static Config fromYAML(URL url) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromYAML(url);
+        return support.fromYAML(url, Config.class);
     }
 
     /**
@@ -498,7 +498,7 @@ public class Config {
      */
     public static Config fromYAML(Reader reader) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromYAML(reader);
+        return support.fromYAML(reader, Config.class);
     }
 
     /**

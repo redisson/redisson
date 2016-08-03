@@ -368,12 +368,13 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public RExecutorService getExecutorService() {
-        return new RedissonExecutorService(new SerializationCodec(), commandExecutor, this);
-    }
-
     public RExecutorService getExecutorService(String name) {
         return new RedissonExecutorService(new SerializationCodec(), commandExecutor, this, name);
+    }
+    
+    @Override
+    public RExecutorService getExecutorService(Codec codec, String name) {
+        return new RedissonExecutorService(codec, commandExecutor, this, name);
     }
     
     @Override

@@ -24,10 +24,25 @@ import java.util.concurrent.ExecutorService;
  */
 public interface RExecutorService extends ExecutorService {
 
+    /**
+     * Returns executor name
+     * 
+     * @return
+     */
     String getName();
     
+    /**
+     * Deletes executor request queue and state objects
+     * 
+     * @return <code>true</code> if any of objects were deleted
+     */
     boolean delete();
     
+    /**
+     * Register executor worker
+     * 
+     * @param executors - workers amount
+     */
     void registerExecutors(int executors);
     
 }
