@@ -146,7 +146,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return newSucceededFuture(connection);
         }
 
-        RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getConnectTimeout());
+        RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
         final Promise<RedisConnection> result = newPromise();
         Future<RedisConnection> future = client.connectAsync();
         future.addListener(new FutureListener<RedisConnection>() {

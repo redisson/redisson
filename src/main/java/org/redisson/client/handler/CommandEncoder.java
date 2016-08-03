@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
@@ -57,44 +58,59 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
     private static final Map<Long, byte[]> longCache = new HashMap<Long, byte[]>();
     
     @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        try {
+            super.write(ctx, msg, promise);
+        } catch (Exception e) {
+            promise.tryFailure(e);
+            throw e;
+        }
+    }
+    
+    @Override
     protected void encode(ChannelHandlerContext ctx, CommandData<?, ?> msg, ByteBuf out) throws Exception {
-        out.writeByte(ARGS_PREFIX);
-        int len = 1 + msg.getParams().length;
-        if (msg.getCommand().getSubName() != null) {
-            len++;
-        }
-        out.writeBytes(convert(len));
-        out.writeBytes(CRLF);
-
-        writeArgument(out, msg.getCommand().getName().getBytes("UTF-8"));
-        if (msg.getCommand().getSubName() != null) {
-            writeArgument(out, msg.getCommand().getSubName().getBytes("UTF-8"));
-        }
-        int i = 1;
-        for (Object param : msg.getParams()) {
-            Encoder encoder = paramsEncoder;
-            if (msg.getCommand().getInParamType().size() == 1) {
-                if (msg.getCommand().getInParamIndex() == i
-                        && msg.getCommand().getInParamType().get(0) == ValueType.OBJECT) {
-                    encoder = msg.getCodec().getValueEncoder();
-                } else if (msg.getCommand().getInParamIndex() <= i
-                        && msg.getCommand().getInParamType().get(0) != ValueType.OBJECT) {
-                    encoder = selectEncoder(msg, i - msg.getCommand().getInParamIndex());
-                }
-            } else {
-                if (msg.getCommand().getInParamIndex() <= i) {
-                    int paramNum = i - msg.getCommand().getInParamIndex();
-                    encoder = selectEncoder(msg, paramNum);
-                }
+        try {
+            out.writeByte(ARGS_PREFIX);
+            int len = 1 + msg.getParams().length;
+            if (msg.getCommand().getSubName() != null) {
+                len++;
             }
-
-            writeArgument(out, encoder.encode(param));
-
-            i++;
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("channel: {} message: {}", ctx.channel(), out.toString(CharsetUtil.UTF_8));
+            out.writeBytes(convert(len));
+            out.writeBytes(CRLF);
+            
+            writeArgument(out, msg.getCommand().getName().getBytes("UTF-8"));
+            if (msg.getCommand().getSubName() != null) {
+                writeArgument(out, msg.getCommand().getSubName().getBytes("UTF-8"));
+            }
+            int i = 1;
+            for (Object param : msg.getParams()) {
+                Encoder encoder = paramsEncoder;
+                if (msg.getCommand().getInParamType().size() == 1) {
+                    if (msg.getCommand().getInParamIndex() == i
+                            && msg.getCommand().getInParamType().get(0) == ValueType.OBJECT) {
+                        encoder = msg.getCodec().getValueEncoder();
+                    } else if (msg.getCommand().getInParamIndex() <= i
+                            && msg.getCommand().getInParamType().get(0) != ValueType.OBJECT) {
+                        encoder = selectEncoder(msg, i - msg.getCommand().getInParamIndex());
+                    }
+                } else {
+                    if (msg.getCommand().getInParamIndex() <= i) {
+                        int paramNum = i - msg.getCommand().getInParamIndex();
+                        encoder = selectEncoder(msg, paramNum);
+                    }
+                }
+                
+                writeArgument(out, encoder.encode(param));
+                
+                i++;
+            }
+            
+            if (log.isTraceEnabled()) {
+                log.trace("channel: {} message: {}", ctx.channel(), out.toString(CharsetUtil.UTF_8));
+            }
+        } catch (Exception e) {
+            msg.getPromise().tryFailure(e);
+            throw e;
         }
     }
 

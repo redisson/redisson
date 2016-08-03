@@ -284,7 +284,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public RedisClient createClient(NodeType type, String host, int port) {
-        RedisClient client = createClient(host, port, config.getConnectTimeout());
+        RedisClient client = createClient(host, port, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
         clients.add(new RedisClientEntry(client, this, type));
         return client;
     }
@@ -295,8 +295,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RedisClient createClient(String host, int port, int timeout) {
-        return new RedisClient(group, socketChannelClass, host, port, timeout);
+    public RedisClient createClient(String host, int port, int timeout, int commandTimeout) {
+        return new RedisClient(group, socketChannelClass, host, port, timeout, commandTimeout);
     }
 
     @Override

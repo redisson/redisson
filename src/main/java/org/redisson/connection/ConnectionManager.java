@@ -92,7 +92,7 @@ public interface ConnectionManager {
 
     Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    RedisClient createClient(String host, int port, int timeout);
+    RedisClient createClient(String host, int port, int timeout, int commandTimeout);
 
     RedisClient createClient(NodeType type, String host, int port);
 
