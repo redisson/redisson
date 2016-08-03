@@ -511,15 +511,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         int timeoutTime = connectionManager.getConfig().getTimeout();
         if (QueueCommand.TIMEOUTLESS_COMMANDS.contains(details.getCommand().getName())) {
-            // add 1.5 second due to issue https://github.com/antirez/redis/issues/874
-            timeoutTime += Math.max(0, 1500 - timeoutTime);
-
             Integer popTimeout = Integer.valueOf(details.getParams()[details.getParams().length - 1].toString());
             handleBlockingOperations(details, connection, popTimeout);
             if (popTimeout == 0) {
                 return;
             }
             timeoutTime += popTimeout*1000;
+            // add 1 second due to issue https://github.com/antirez/redis/issues/874
+            timeoutTime += 1000;
         }
 
         final int timeoutAmount = timeoutTime;
