@@ -102,9 +102,10 @@ public class RedissonExecutorService implements RExecutorService {
         asyncServiceWithoutResult = remoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
     }
     
-    public void register() {
-        redisson.getRemoteSerivce(name, codec).register(RemoteExecutorService.class, 
-                                                new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, name));
+    @Override
+    public void registerExecutors(int executors) {
+        RemoteExecutorService service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, name);
+        redisson.getRemoteSerivce(name, codec).register(RemoteExecutorService.class, service, executors);
     }
 
     @Override
@@ -155,10 +156,12 @@ public class RedissonExecutorService implements RExecutorService {
                 SHUTDOWN_STATE, TERMINATED_STATE);
     }
 
+    @Override
     public String getName() {
         return name;
     }
     
+    @Override
     public boolean delete() {
         return keys.delete(status.getName(), tasksCounter.getName()) > 0;
     }
@@ -361,7 +364,7 @@ public class RedissonExecutorService implements RExecutorService {
         return null;
     }
 
-
+    @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
         try {
@@ -371,12 +374,14 @@ public class RedissonExecutorService implements RExecutorService {
         }
     }
 
+    @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks,
                            long timeout, TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
         return doInvokeAny(tasks, true, unit.toMillis(timeout));
     }
 
+    @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
         if (tasks == null) {
             throw new NullPointerException();
@@ -407,6 +412,7 @@ public class RedissonExecutorService implements RExecutorService {
         }
     }
 
+    @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
                                          long timeout, TimeUnit unit) throws InterruptedException {
         if (tasks == null || unit == null) {

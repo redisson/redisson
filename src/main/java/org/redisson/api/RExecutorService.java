@@ -23,6 +23,6 @@ public interface RExecutorService extends ExecutorService {
     
     boolean delete();
     
-    void register();
+    void registerExecutors(int executors);
     
 }
