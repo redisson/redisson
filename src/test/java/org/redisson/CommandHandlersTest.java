@@ -2,7 +2,7 @@ package org.redisson;
 
 import org.junit.Test;
 import org.redisson.client.RedisException;
-import org.redisson.Config;
+import org.redisson.config.Config;
 
 public class CommandHandlersTest extends BaseTest {
 
