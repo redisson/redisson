@@ -107,7 +107,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         if (connection != null) {
             return connection;
         }
-        RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getConnectTimeout());
+        RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
         try {
             connection = client.connect();
             Promise<RedisConnection> future = newPromise();
