@@ -163,7 +163,7 @@ public class RedissonRemoteService implements RRemoteService {
 
                 // send the ack only if expected
                 if (request.getOptions().isAckExpected()) {
-                    String ackName = getAckName(remoteInterface.getName(), request.getRequestId());
+                    String ackName = getAckName(remoteInterface, request.getRequestId());
                     Future<Boolean> ackClientsFuture = redisson.getScript().evalAsync(responseName, Mode.READ_WRITE, LongCodec.INSTANCE, 
                             "if redis.call('setnx', KEYS[1], 1) == 1 then "
                             + "redis.call('pexpire', KEYS[1], ARGV[2]);"
@@ -275,14 +275,14 @@ public class RedissonRemoteService implements RRemoteService {
                         throw new IllegalArgumentException(m.getReturnType().getClass() + " isn't allowed as return type");
                     }
                 }
-                return async(remoteInterface, options, syncInterface.getName());
+                return async(remoteInterface, options, syncInterface);
             }
         }
         
         return sync(remoteInterface, options);
     }
     
-    private <T> T async(final Class<T> remoteInterface, final RemoteInvocationOptions options, final String interfaceName) {
+    private <T> T async(final Class<T> remoteInterface, final RemoteInvocationOptions options, final Class<?> syncInterface) {
         // local copy of the options, to prevent mutation
         final RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
         final String toString = getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + generateRequestId();
@@ -306,9 +306,9 @@ public class RedissonRemoteService implements RRemoteService {
 
                 final String requestId = generateRequestId();
 
-                final String requestQueueName = name + ":{" + interfaceName + "}";
-                final String responseName = name + ":{" + interfaceName + "}:" + requestId;
-                final String ackName = getAckName(remoteInterface.getName(), requestId);
+                final String requestQueueName = name + ":{" + syncInterface.getName() + "}";
+                final String responseName = name + ":{" + syncInterface.getName() + "}:" + requestId;
+                final String ackName = getAckName(syncInterface, requestId);
                 
                 final RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
                 final RemoteServiceRequest request = new RemoteServiceRequest(requestId,
@@ -454,7 +454,7 @@ public class RedissonRemoteService implements RRemoteService {
         }
     }
 
-    private <T> T sync(Class<T> remoteInterface, final RemoteInvocationOptions options) {
+    private <T> T sync(final Class<T> remoteInterface, final RemoteInvocationOptions options) {
         final String interfaceName = remoteInterface.getName();
         // local copy of the options, to prevent mutation
         final RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
@@ -489,7 +489,7 @@ public class RedissonRemoteService implements RRemoteService {
 
                 // poll for the ack only if expected
                 if (optionsCopy.isAckExpected()) {
-                    String ackName = getAckName(interfaceName, requestId);
+                    String ackName = getAckName(remoteInterface, requestId);
                     RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
                     if (ack == null) {
                         ack = tryPollAckAgain(optionsCopy, responseQueue, ackName);
@@ -519,8 +519,8 @@ public class RedissonRemoteService implements RRemoteService {
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[]{remoteInterface}, handler);
     }
 
-    private String getAckName(String interfaceName, String requestId) {
-        return name + ":{" + interfaceName + "}:" + requestId + ":ack";
+    private String getAckName(Class<?> remoteInterface, String requestId) {
+        return name + ":{" + remoteInterface.getName() + "}:" + requestId + ":ack";
     }
 
     private RemoteServiceAck tryPollAckAgain(RemoteInvocationOptions optionsCopy,
