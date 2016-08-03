@@ -18,6 +18,8 @@ package org.redisson;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,9 +41,9 @@ import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBucket;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RKeys;
-import org.redisson.api.RRemoteService;
 import org.redisson.api.RTopic;
 import org.redisson.api.RemoteInvocationOptions;
+import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -57,6 +59,11 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonExecutorService implements RExecutorService {
 
     public static final int SHUTDOWN_STATE = 1;
@@ -97,24 +104,52 @@ public class RedissonExecutorService implements RExecutorService {
         topic = redisson.getTopic(objectName + ":topic");
         keys = redisson.getKeys();
         
-        RRemoteService remoteService = new ExecutorRemoteService(codec, redisson, name, commandExecutor);
+        ExecutorRemoteService remoteService = new ExecutorRemoteService(codec, redisson, name, commandExecutor);
+        remoteService.setTasksCounterName(tasksCounter.getName());
+        remoteService.setStatusName(status.getName());
+        
         asyncService = remoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck());
         asyncServiceWithoutResult = remoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
     }
     
     @Override
     public void registerExecutors(int executors) {
-        RemoteExecutorService service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, name);
+        String objectName = name + ":{"+ RemoteExecutorService.class.getName() + "}";
+        
+        RemoteExecutorServiceImpl service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, objectName);
+        service.setStatusName(status.getName());
+        service.setTasksCounterName(tasksCounter.getName());
+        service.setTopicName(topic.getChannelNames().get(0));
+        
         redisson.getRemoteSerivce(name, codec).register(RemoteExecutorService.class, service, executors);
     }
 
     @Override
     public void execute(Runnable task) {
+        check(task);
         byte[] classBody = getClassBody(task);
+        byte[] state = encode(task);
+        RemotePromise<Void> promise = (RemotePromise<Void>)asyncServiceWithoutResult.executeVoid(task.getClass().getName(), classBody, state);
+        execute(promise);
+    }
+    
+    private byte[] encode(Object task) {
+        // erase RedissonClient field to avoid its serialization
+        Field[] fields = task.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            if (RedissonClient.class.isAssignableFrom(field.getType())
+                    && field.isAnnotationPresent(RInject.class)) {
+                field.setAccessible(true);
+                try {
+                    field.set(task, null);
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        
         try {
-            byte[] state = codec.getValueEncoder().encode(task);
-            RemotePromise<Void> promise = (RemotePromise<Void>)asyncServiceWithoutResult.executeVoid(task.getClass().getName(), classBody, state);
-            check(promise);
+            return codec.getValueEncoder().encode(task);
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
@@ -210,18 +245,24 @@ public class RedissonExecutorService implements RExecutorService {
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
+        check(task);
         byte[] classBody = getClassBody(task);
-        try {
-            byte[] state = codec.getValueEncoder().encode(task);
-            RemotePromise<T> promise = (RemotePromise<T>)asyncService.execute(task.getClass().getName(), classBody, state);
-            check(promise);
-            return promise;
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
+        byte[] state = encode(task);
+        RemotePromise<T> promise = (RemotePromise<T>)asyncService.execute(task.getClass().getName(), classBody, state);
+        execute(promise);
+        return promise;
+    }
+    
+    private void check(Object task) {
+        if (task.getClass().isAnonymousClass()) {
+            throw new IllegalArgumentException("Task can't be created using anonymous class");
+        }
+        if (!Serializable.class.isAssignableFrom(task.getClass())) {
+            throw new IllegalArgumentException("Task class should implement Serializable interface");
         }
     }
 
-    private <T> void check(RemotePromise<T> promise) {
+    private <T> void execute(RemotePromise<T> promise) {
         io.netty.util.concurrent.Future<Boolean> addFuture = promise.getAddFuture();
         addFuture.syncUninterruptibly();
         Boolean res = addFuture.getNow();
@@ -249,15 +290,12 @@ public class RedissonExecutorService implements RExecutorService {
 
     @Override
     public Future<?> submit(Runnable task) {
+        check(task);
         byte[] classBody = getClassBody(task);
-        try {
-            byte[] state = codec.getValueEncoder().encode(task);
-            RemotePromise<Void> promise = (RemotePromise<Void>) asyncService.executeVoid(task.getClass().getName(), classBody, state);
-            check(promise);
-            return promise;
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        byte[] state = encode(task);
+        RemotePromise<Void> promise = (RemotePromise<Void>) asyncService.executeVoid(task.getClass().getName(), classBody, state);
+        execute(promise);
+        return promise;
     }
 
     private <T> T doInvokeAny(Collection<? extends Callable<T>> tasks,

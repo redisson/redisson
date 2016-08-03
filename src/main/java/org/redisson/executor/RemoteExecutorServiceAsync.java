@@ -19,6 +19,11 @@ import org.redisson.remote.RRemoteAsync;
 
 import io.netty.util.concurrent.Future;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 @RRemoteAsync(RemoteExecutorService.class)
 public interface RemoteExecutorServiceAsync {
 

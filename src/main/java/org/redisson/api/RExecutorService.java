@@ -17,6 +17,11 @@ package org.redisson.api;
 
 import java.util.concurrent.ExecutorService;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RExecutorService extends ExecutorService {
 
     String getName();

@@ -68,7 +68,7 @@ public class RedissonRemoteService implements RRemoteService {
     
     private final Map<RemoteServiceKey, RemoteServiceMethod> beans = PlatformDependent.newConcurrentHashMap();
     
-    private final Codec codec;
+    protected final Codec codec;
     protected final Redisson redisson;
     protected final String name;
     protected final CommandExecutor commandExecutor;

@@ -20,6 +20,11 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ClassLoaderDelegator extends ClassLoader {
 
     private final ThreadLocal<ClassLoader> threadLocalClassLoader = new ThreadLocal<ClassLoader>();

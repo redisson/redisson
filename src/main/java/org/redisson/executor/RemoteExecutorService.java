@@ -15,6 +15,11 @@
  */
 package org.redisson.executor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RemoteExecutorService {
 
     Object execute(String className, byte[] classBody, byte[] state);

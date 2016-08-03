@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.executor;
+package org.redisson.api.annotation;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RedissonClassLoader extends ClassLoader {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
+public @interface RInject {
 
-    public RedissonClassLoader(ClassLoader parent) {
-        super(parent);
-    }
-
-    public void loadClass(String name, byte[] body) {
-        defineClass(name, body, 0, body.length);
-    }
-    
 }

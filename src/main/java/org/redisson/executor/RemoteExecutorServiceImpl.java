@@ -15,14 +15,14 @@
  */
 package org.redisson.executor;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 import org.redisson.RedissonClient;
 import org.redisson.RedissonExecutorService;
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RBucket;
-import org.redisson.api.RTopic;
+import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -31,6 +31,11 @@ import org.redisson.command.CommandExecutor;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RemoteExecutorServiceImpl implements RemoteExecutorService {
 
     private final ClassLoaderDelegator classLoader = new ClassLoaderDelegator();
@@ -39,23 +44,33 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService {
     private final String name;
     private final CommandExecutor commandExecutor;
 
-    private final RAtomicLong tasksCounter;
-    private final RBucket<Integer> status;
-    private final RTopic<Integer> topic;
+    private final RedissonClient redisson;
+    private String tasksCounterName;
+    private String statusName;
+    private String topicName;
     
     public RemoteExecutorServiceImpl(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
         this.commandExecutor = commandExecutor;
-        
-        this.name = name + ":{"+ RemoteExecutorService.class.getName() + "}";
-        tasksCounter = redisson.getAtomicLong(this.name + ":counter");
-        status = redisson.getBucket(this.name + ":status");
-        topic = redisson.getTopic(this.name + ":topic");
+        this.name = name;
+        this.redisson = redisson;
         
         try {
             this.codec = codec.getClass().getConstructor(ClassLoader.class).newInstance(classLoader);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+    
+    public void setTasksCounterName(String tasksCounterName) {
+        this.tasksCounterName = tasksCounterName;
+    }
+    
+    public void setStatusName(String statusName) {
+        this.statusName = statusName;
+    }
+    
+    public void setTopicName(String topicName) {
+        this.topicName = topicName;
     }
 
     @Override
@@ -68,7 +83,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService {
             cl.loadClass(className, classBody);
             classLoader.setCurrentClassLoader(cl);
             
-            Callable<?> callable = (Callable<?>) codec.getValueDecoder().decode(buf, null);
+            Callable<?> callable = decode(buf);
             return callable.call();
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
@@ -78,6 +93,23 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService {
         }
     }
 
+    private <T> T decode(ByteBuf buf) throws IOException {
+        T task = (T) codec.getValueDecoder().decode(buf, null);
+        Field[] fields = task.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            if (RedissonClient.class.isAssignableFrom(field.getType())
+                    && field.isAnnotationPresent(RInject.class)) {
+                field.setAccessible(true);
+                try {
+                    field.set(task, redisson);
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+        return task;
+    }
+    
     @Override
     public void executeVoid(String className, byte[] classBody, byte[] state) {
         ByteBuf buf = null;
@@ -88,7 +120,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService {
             cl.loadClass(className, classBody);
             classLoader.setCurrentClassLoader(cl);
         
-            Runnable runnable = (Runnable) codec.getValueDecoder().decode(buf, null);
+            Runnable runnable = decode(buf);
             runnable.run();
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
@@ -106,7 +138,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService {
                     + "redis.call('set', KEYS[2], ARGV[2]);"
                     + "redis.call('publish', KEYS[3], ARGV[2]);"
                 + "end;",  
-                Arrays.<Object>asList(tasksCounter.getName(), status.getName(), topic.getChannelNames().get(0)),
+                Arrays.<Object>asList(tasksCounterName, statusName, topicName),
                 RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
 

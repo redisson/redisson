@@ -19,7 +19,6 @@ import java.util.Arrays;
 
 import org.redisson.Redisson;
 import org.redisson.RedissonRemoteService;
-import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -31,17 +30,26 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ExecutorRemoteService extends RedissonRemoteService {
 
-    private final RAtomicLong tasksCounter;
-    private final RAtomicLong status;
+    private String tasksCounterName;
+    private String statusName;
     
     public ExecutorRemoteService(Codec codec, Redisson redisson, String name, CommandExecutor commandExecutor) {
         super(codec, redisson, name, commandExecutor);
-        
-        String objectName = name + ":{"+ RemoteExecutorService.class.getName() + "}";
-        tasksCounter = redisson.getAtomicLong(objectName + ":counter");
-        status = redisson.getAtomicLong(objectName + ":status");
+    }
+    
+    public void setStatusName(String statusName) {
+        this.statusName = statusName;
+    }
+    
+    public void setTasksCounterName(String tasksCounterName) {
+        this.tasksCounterName = tasksCounterName;
     }
 
     @Override
@@ -55,7 +63,7 @@ public class ExecutorRemoteService extends RedissonRemoteService {
                     + "return 1;"
                 + "end;"
                 + "return 0;", 
-                Arrays.<Object>asList(tasksCounter.getName(), status.getName(), requestQueue.getName()),
+                Arrays.<Object>asList(tasksCounterName, statusName, requestQueue.getName()),
                 encode(request));
         
         result.setAddFuture(future);

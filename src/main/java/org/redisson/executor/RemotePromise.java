@@ -20,6 +20,11 @@ import org.redisson.misc.PromiseDelegator;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RemotePromise<T> extends PromiseDelegator<T> {
 
     private Future<Boolean> addFuture;
