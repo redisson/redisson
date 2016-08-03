@@ -98,7 +98,7 @@ public class RedissonExecutorService implements RExecutorService {
         this.name = name;
         this.redisson = redisson;
         
-        String objectName = name + ":{"+ RemoteExecutorService.class.getName() + "}";
+        String objectName = "{" + name + ":"+ RemoteExecutorService.class.getName() + "}";
         tasksCounter = redisson.getAtomicLong(objectName + ":counter");
         status = redisson.getBucket(objectName + ":status");
         topic = redisson.getTopic(objectName + ":topic");
@@ -114,7 +114,7 @@ public class RedissonExecutorService implements RExecutorService {
     
     @Override
     public void registerExecutors(int executors) {
-        String objectName = name + ":{"+ RemoteExecutorService.class.getName() + "}";
+        String objectName = "{" + name + ":"+ RemoteExecutorService.class.getName() + "}";
         
         RemoteExecutorServiceImpl service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, objectName);
         service.setStatusName(status.getName());
