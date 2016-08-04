@@ -61,7 +61,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
     public Future<E> subscribe(final String entryName, final String channelName, final ConnectionManager connectionManager) {
         final AtomicReference<Runnable> listenerHolder = new AtomicReference<Runnable>();
         final AsyncSemaphore semaphore = connectionManager.getSemaphore(channelName);
-        final Promise<E> newPromise = new PromiseDelegator<E>(connectionManager.newPromise()) {
+        final Promise<E> newPromise = new PromiseDelegator<E>(connectionManager.<E>newPromise()) {
             @Override
             public boolean cancel(boolean mayInterruptIfRunning) {
                 return semaphore.remove(listenerHolder.get());
