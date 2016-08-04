@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.ClusterNodesGroup;
@@ -95,8 +96,7 @@ public class Redisson implements RedissonClient {
     protected final CommandExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
     
-    protected final Map<Class, Class> liveObjectClassCache
-            = PlatformDependent.<Class, Class>newConcurrentHashMap();
+    protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = PlatformDependent.newConcurrentHashMap();
     protected final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
     protected final ResolverProvider liveObjectDefaultResolverProvider = new DefaultResolverProvider();
     protected final Config config;

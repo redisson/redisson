@@ -17,7 +17,7 @@ package org.redisson;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
@@ -45,12 +45,12 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
 
-    private final Map<Class, Class> classCache;
+    private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
     private final CodecProvider codecProvider;
     private final ResolverProvider resolverProvider;
 
-    public RedissonLiveObjectService(RedissonClient redisson, Map<Class, Class> classCache, CodecProvider codecProvider, ResolverProvider resolverProvider) {
+    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, CodecProvider codecProvider, ResolverProvider resolverProvider) {
         this.redisson = redisson;
         this.classCache = classCache;
         this.codecProvider = codecProvider;
@@ -228,7 +228,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             return cls.newInstance();
         } catch (Exception exception) {
             for (Constructor<?> ctor : classCache.containsKey(cls) ? cls.getConstructors() : cls.getDeclaredConstructors()) {
-                if (ctor.getParameterCount() == 1 && ctor.getParameterTypes()[0].isAssignableFrom(id.getClass())) {
+                if (ctor.getParameterTypes().length == 1 && ctor.getParameterTypes()[0].isAssignableFrom(id.getClass())) {
                     return (T) ctor.newInstance(id);
                 }
             }
@@ -238,7 +238,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private <T> Class<? extends T> getProxyClass(Class<T> entityClass) {
         registerClass(entityClass);
-        return classCache.get(entityClass);
+        return (Class<? extends T>) classCache.get(entityClass);
     }
 
     private <T> void validateClass(Class<T> entityClass) {

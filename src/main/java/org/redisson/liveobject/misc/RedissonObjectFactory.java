@@ -50,10 +50,10 @@ public class RedissonObjectFactory {
                         && method.getReturnType().isAssignableFrom(type)
                         && expected.isAssignableFrom(method.getReturnType())
                         && interfaces.contains(method.getReturnType())) {
-                    if ((rr.isDefaultCodec() || RBitSet.class.isAssignableFrom(method.getReturnType())) && method.getParameterCount() == 1) {
+                    if ((rr.isDefaultCodec() || RBitSet.class.isAssignableFrom(method.getReturnType())) && method.getParameterTypes().length == 1) {
                         return (T) method.invoke(redisson, rr.getKeyName());
                     } else if (!rr.isDefaultCodec()
-                            && method.getParameterCount() == 2
+                            && method.getParameterTypes().length == 2
                             && String.class.equals(method.getParameterTypes()[0])
                             && Codec.class.equals(method.getParameterTypes()[1])) {
                         return (T) method.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType()));
@@ -70,10 +70,10 @@ public class RedissonObjectFactory {
                 if (method.getName().startsWith("get")
                         && method.getReturnType().isAssignableFrom(expectedType)
                         && interfaces.contains(method.getReturnType())) {
-                    if ((codec == null || RBitSet.class.isAssignableFrom(method.getReturnType())) && method.getParameterCount() == 1) {
+                    if ((codec == null || RBitSet.class.isAssignableFrom(method.getReturnType())) && method.getParameterTypes().length == 1) {
                         return (T) method.invoke(redisson, name);
                     } else if (codec != null
-                            && method.getParameterCount() == 2
+                            && method.getParameterTypes().length == 2
                             && String.class.equals(method.getParameterTypes()[0])
                             && Codec.class.equals(method.getParameterTypes()[1])) {
                         return (T) method.invoke(redisson, name, codec);
