@@ -65,7 +65,12 @@ public class AsyncSemaphore {
         
         if (run) {
             listener.run();
-            return;
+        }
+    }
+    
+    public boolean remove(Runnable listener) {
+        synchronized (this) {
+            return listeners.remove(listener);
         }
     }
 

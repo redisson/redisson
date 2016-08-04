@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.FixMethodOrder;
@@ -68,5 +69,46 @@ public class RedissonLockHeavyTest extends BaseTest {
         executor.awaitTermination(threads * loops, TimeUnit.SECONDS);
 
     }
+    
+    @Test
+    public void tryLockUnlockRLock() throws Exception {
+        for (int i = 0; i < threads; i++) {
+
+            Runnable worker = new Runnable() {
+
+                @Override
+                public void run() {
+                    for (int j = 0; j < loops; j++) {
+                        RLock lock = redisson.getLock("RLOCK_" + j);
+                        try {
+                            if (lock.tryLock(ThreadLocalRandom.current().nextInt(10), TimeUnit.MILLISECONDS)) {
+                                try {
+                                    RBucket<String> bucket = redisson.getBucket("RBUCKET_" + j);
+                                    bucket.set("TEST", 30, TimeUnit.SECONDS);
+                                    RSemaphore semaphore = redisson.getSemaphore("SEMAPHORE_" + j);
+                                    semaphore.release();
+                                    try {
+                                        semaphore.acquire();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                } finally {
+                                    lock.unlock();
+                                }
+                            }
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            };
+            executor.execute(worker);
+        }
+        executor.shutdown();
+        executor.awaitTermination(threads * loops, TimeUnit.SECONDS);
+
+    }
+
 
 }
