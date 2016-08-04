@@ -19,7 +19,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.MasterSlaveServersConfig;
@@ -30,6 +29,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.core.NodeType;
 import org.redisson.misc.InfinitySemaphoreLatch;
+import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.Timeout;
@@ -48,7 +48,7 @@ public interface ConnectionManager {
 
     boolean isClusterMode();
 
-    Semaphore getSemaphore(String channelName);
+    AsyncSemaphore getSemaphore(String channelName);
     
     <R> Future<R> newSucceededFuture(R value);
 
@@ -60,7 +60,7 @@ public interface ConnectionManager {
 
     Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener);
 
-    Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, final RedisPubSubListener<?> listener, Semaphore semaphore);
+    Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener, AsyncSemaphore semaphore);
     
     ConnectionInitializer getConnectListener();
 
@@ -102,15 +102,15 @@ public interface ConnectionManager {
 
     Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener);
     
-    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener, Semaphore semaphore);
+    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener, AsyncSemaphore semaphore);
 
-    Codec unsubscribe(final String channelName, Semaphore lock);
+    Codec unsubscribe(String channelName, AsyncSemaphore lock);
     
     Codec unsubscribe(String channelName);
 
     Codec punsubscribe(String channelName);
 
-    Codec punsubscribe(final String channelName, Semaphore lock);
+    Codec punsubscribe(String channelName, AsyncSemaphore lock);
     
     void shutdown();
 

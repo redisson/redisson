@@ -17,17 +17,16 @@ package org.redisson;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.RTopic;
 import org.redisson.core.StatusListener;
+import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.util.concurrent.Future;
 
@@ -87,7 +86,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public void removeListener(int listenerId) {
-        Semaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
         semaphore.acquireUninterruptibly();
         
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);

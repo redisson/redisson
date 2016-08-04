@@ -17,7 +17,6 @@ package org.redisson.reactive;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 import org.reactivestreams.Publisher;
 import org.redisson.PubSubMessageListener;
@@ -30,7 +29,7 @@ import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.core.MessageListener;
 import org.redisson.core.StatusListener;
-import org.redisson.misc.ReclosableLatch;
+import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -100,7 +99,7 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
 
     @Override
     public void removeListener(int listenerId) {
-        Semaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
         semaphore.acquireUninterruptibly();
         
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
