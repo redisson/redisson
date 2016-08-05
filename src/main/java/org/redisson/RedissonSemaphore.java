@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -45,20 +44,14 @@ import io.netty.util.concurrent.ScheduledFuture;
  */
 public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
-    final UUID id;
-
-    private static final SemaphorePubSub PUBSUB = new SemaphorePubSub();
+    private final SemaphorePubSub semaphorePubSub;
 
     final CommandExecutor commandExecutor;
 
-    protected RedissonSemaphore(CommandExecutor commandExecutor, String name, UUID id) {
+    protected RedissonSemaphore(CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.id = id;
-    }
-
-    private String getEntryName() {
-        return id + ":" + getName();
+        this.semaphorePubSub = semaphorePubSub;
     }
 
     String getChannelName() {
@@ -375,15 +368,15 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     
     private RedissonLockEntry getEntry() {
-        return PUBSUB.getEntry(getEntryName());
+        return semaphorePubSub.getEntry(getName());
     }
 
     private Future<RedissonLockEntry> subscribe() {
-        return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
+        return semaphorePubSub.subscribe(getName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 
     private void unsubscribe(Future<RedissonLockEntry> future) {
-        PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
+        semaphorePubSub.unsubscribe(future.getNow(), getName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 
     @Override

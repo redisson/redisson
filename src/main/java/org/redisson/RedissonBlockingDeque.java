@@ -26,6 +26,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingDeque}.
@@ -50,8 +52,19 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     }
 
     @Override
-    public Future<Boolean> putAsync(V e) {
-        return offerAsync(e);
+    public Future<Void> putAsync(V e) {
+        final Promise<Void> result = commandExecutor.getConnectionManager().newPromise();
+        offerAsync(e).addListener(new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(Future<Boolean> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.setFailure(future.cause());
+                    return; 
+                }
+                result.setSuccess(null);
+            }
+        });
+        return result;
     }
 
     /*
@@ -60,7 +73,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
      */
     @Override
     public void put(V e) throws InterruptedException {
-        offer(e);
+        get(putAsync(e));
     }
 
     @Override

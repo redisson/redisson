@@ -330,14 +330,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(retainAllAsync(c));
     }
     
-    private byte[] encode(V value) {
-        try {
-            return codec.getValueEncoder().encode(value);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
         if (c.isEmpty()) {

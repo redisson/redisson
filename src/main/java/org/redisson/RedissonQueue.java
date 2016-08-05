@@ -43,7 +43,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
     @Override
     public boolean offer(V e) {
-        return add(e);
+        return get(offerAsync(e));
     }
 
     @Override

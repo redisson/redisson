@@ -53,6 +53,6 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
 
     Future<V> takeAsync();
 
-    Future<Boolean> putAsync(V e);
+    Future<Void> putAsync(V e);
 
 }

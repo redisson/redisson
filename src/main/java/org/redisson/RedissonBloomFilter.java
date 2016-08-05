@@ -167,16 +167,6 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         }
     }
 
-    private byte[] encode(T object) {
-        byte[] state = null;
-        try {
-            state = codec.getValueEncoder().encode(object);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-        return state;
-    }
-
     private void addConfigCheck(int hashIterations, long size, CommandBatchService executorService) {
         executorService.evalReadAsync(getConfigName(), codec, RedisCommands.EVAL_VOID,
                 "local size = redis.call('hget', KEYS[1], 'size');" +

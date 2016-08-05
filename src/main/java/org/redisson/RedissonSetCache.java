@@ -209,14 +209,6 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, objectState);
     }
 
-    private byte[] encode(V value) {
-        try {
-            return codec.getValueEncoder().encode(value);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
     @Override
     public Future<Boolean> addAsync(V value) {
         return addAsync(value, 92233720368547758L - System.currentTimeMillis(), TimeUnit.MILLISECONDS);

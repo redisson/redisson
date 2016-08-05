@@ -79,6 +79,7 @@ import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.provider.DefaultCodecProvider;
 import org.redisson.liveobject.provider.DefaultResolverProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
+import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
@@ -100,6 +101,7 @@ public class Redisson implements RedissonClient {
     protected final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
     protected final ResolverProvider liveObjectDefaultResolverProvider = new DefaultResolverProvider();
     protected final Config config;
+    protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
     protected final UUID id = UUID.randomUUID();
 
@@ -504,7 +506,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RSemaphore getSemaphore(String name) {
-        return new RedissonSemaphore(commandExecutor, name, id);
+        return new RedissonSemaphore(commandExecutor, name, semaphorePubSub);
     }
 
     @Override

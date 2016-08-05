@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RObject;
@@ -131,6 +132,14 @@ abstract class RedissonObject implements RObject {
     @Override
     public Codec getCodec() {
         return codec;
+    }
+    
+    protected byte[] encode(Object value) {
+        try {
+            return codec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
 }
