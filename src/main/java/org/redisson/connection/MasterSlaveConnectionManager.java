@@ -421,7 +421,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private void connect(final Codec codec, final String channelName, final RedisPubSubListener<?> listener,
             final Promise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
-        final int slot = 0;
+        final int slot = calcSlot(channelName);
         Future<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
         connFuture.addListener(new FutureListener<RedisPubSubConnection>() {
 
