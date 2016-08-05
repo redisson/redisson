@@ -266,14 +266,16 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         final long threadId = Thread.currentThread().getId();
         Future<RedissonLockEntry> future = subscribe(threadId);
         if (!await(future, time, TimeUnit.MILLISECONDS)) {
-            future.addListener(new FutureListener<RedissonLockEntry>() {
-                @Override
-                public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
-                    if (future.isSuccess()) {
-                        unsubscribe(future, threadId);
+            if (!future.cancel(false)) {
+                future.addListener(new FutureListener<RedissonLockEntry>() {
+                    @Override
+                    public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
+                        if (future.isSuccess()) {
+                            unsubscribe(future, threadId);
+                        }
                     }
-                }
-            });
+                });
+            }
             return false;
         }
 
@@ -639,6 +641,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         @Override
                         public void run() {
                             if (!subscribeFuture.isDone()) {
+                                subscribeFuture.cancel(false);
                                 result.trySuccess(false);
                             }
                         }

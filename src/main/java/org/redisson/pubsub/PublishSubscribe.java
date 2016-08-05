@@ -16,7 +16,7 @@
 package org.redisson.pubsub;
 
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.PubSubEntry;
 import org.redisson.client.BaseRedisPubSubListener;
@@ -24,6 +24,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.misc.PromiseDelegator;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
@@ -33,49 +34,71 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     private final ConcurrentMap<String, E> entries = PlatformDependent.newConcurrentHashMap();
 
-    public void unsubscribe(E entry, String entryName, String channelName, ConnectionManager connectionManager) {
-        Semaphore semaphore = connectionManager.getSemaphore(channelName);
-        semaphore.acquireUninterruptibly();
-        if (entry.release() == 0) {
-            // just an assertion
-            boolean removed = entries.remove(entryName) == entry;
-            if (!removed) {
-                throw new IllegalStateException();
+    public void unsubscribe(final E entry, final String entryName, final String channelName, final ConnectionManager connectionManager) {
+        final AsyncSemaphore semaphore = connectionManager.getSemaphore(channelName);
+        semaphore.acquire(new Runnable() {
+            @Override
+            public void run() {
+                if (entry.release() == 0) {
+                    // just an assertion
+                    boolean removed = entries.remove(entryName) == entry;
+                    if (!removed) {
+                        throw new IllegalStateException();
+                    }
+                    connectionManager.unsubscribe(channelName, semaphore);
+                } else {
+                    semaphore.release();
+                }
             }
-            connectionManager.unsubscribe(channelName, semaphore);
-        } else {
-            semaphore.release();
-        }
+        });
+
     }
 
     public E getEntry(String entryName) {
         return entries.get(entryName);
     }
 
-    public Future<E> subscribe(String entryName, String channelName, ConnectionManager connectionManager) {
-        Semaphore semaphore = connectionManager.getSemaphore(channelName);
-        semaphore.acquireUninterruptibly();
-            E entry = entries.get(entryName);
-            if (entry != null) {
-                entry.aquire();
-                semaphore.release();
-                return entry.getPromise();
+    public Future<E> subscribe(final String entryName, final String channelName, final ConnectionManager connectionManager) {
+        final AtomicReference<Runnable> listenerHolder = new AtomicReference<Runnable>();
+        final AsyncSemaphore semaphore = connectionManager.getSemaphore(channelName);
+        final Promise<E> newPromise = new PromiseDelegator<E>(connectionManager.<E>newPromise()) {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+                return semaphore.remove(listenerHolder.get());
             }
-            
-            Promise<E> newPromise = connectionManager.newPromise();
-            E value = createEntry(newPromise);
-            value.aquire();
-            
-            E oldValue = entries.putIfAbsent(entryName, value);
-            if (oldValue != null) {
-                oldValue.aquire();
-                semaphore.release();
-                return oldValue.getPromise();
+        };
+
+        Runnable listener = new Runnable() {
+
+            @Override
+            public void run() {
+                E entry = entries.get(entryName);
+                if (entry != null) {
+                    entry.aquire();
+                    semaphore.release();
+                    entry.getPromise().addListener(new TransferListener<E>(newPromise));
+                    return;
+                }
+                
+                E value = createEntry(newPromise);
+                value.aquire();
+                
+                E oldValue = entries.putIfAbsent(entryName, value);
+                if (oldValue != null) {
+                    oldValue.aquire();
+                    semaphore.release();
+                    oldValue.getPromise().addListener(new TransferListener<E>(newPromise));
+                    return;
+                }
+                
+                RedisPubSubListener<Object> listener = createListener(channelName, value);
+                connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener, semaphore);
             }
-            
-            RedisPubSubListener<Object> listener = createListener(channelName, value);
-            connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener, semaphore);
-            return newPromise;
+        };
+        semaphore.acquire(listener);
+        listenerHolder.set(listener);
+        
+        return newPromise;
     }
 
     protected abstract E createEntry(Promise<E> newPromise);
