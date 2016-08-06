@@ -15,8 +15,10 @@
  */
 package org.redisson;
 
+import java.awt.*;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -122,7 +124,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         long threadId = Thread.currentThread().getId();
         Future<RedissonLockEntry> future = subscribe(threadId);
         get(future);
-
+        Random random = new Random();
         try {
             while (true) {
                 ttl = tryAcquire(leaseTime, unit);
@@ -137,6 +139,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 } else {
                     getEntry(threadId).getLatch().acquire();
                 }
+                // try again after delaying a very small random time
+                Thread.currentThread().sleep(random.nextInt(5));//毫秒
             }
         } finally {
             unsubscribe(future, threadId);
