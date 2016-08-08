@@ -2,6 +2,10 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####08-Aug-2016 - version 2.2.24 released
+Fixed - PubSub connection in cluster mode should be connected to node according slot derived from channel name  
+Fixed - `RLock.tryLock` could block forever under some conditions  
+
 ####04-Aug-2016 - version 2.2.23 released
 Improvement - `Future.cancel` method handling for RemoteService async call  
 Fixed - unable to redefine RedisClient command execution timeout  
