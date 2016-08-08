@@ -82,12 +82,12 @@ import io.netty.util.concurrent.Future;
  */
 public class RedissonReactive implements RedissonReactiveClient {
 
-    private final EvictionScheduler evictionScheduler;
-    private final CommandReactiveService commandExecutor;
-    private final ConnectionManager connectionManager;
-    private final Config config;
+    protected final EvictionScheduler evictionScheduler;
+    protected final CommandReactiveService commandExecutor;
+    protected final ConnectionManager connectionManager;
+    protected final Config config;
 
-    RedissonReactive(Config config) {
+    protected RedissonReactive(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
         if (configCopy.getMasterSlaveServersConfig() != null) {
