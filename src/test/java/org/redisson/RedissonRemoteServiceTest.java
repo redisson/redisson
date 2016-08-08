@@ -1,6 +1,18 @@
 package org.redisson;
 
-import io.netty.handler.codec.EncoderException;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.Serializable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RemoteInvocationOptions;
@@ -10,15 +22,7 @@ import org.redisson.remote.RRemoteAsync;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.redisson.remote.RemoteServiceTimeoutException;
 
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.Serializable;
 import io.netty.util.concurrent.Future;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRemoteServiceTest extends BaseTest {
 
@@ -183,6 +187,29 @@ public class RedissonRemoteServiceTest extends BaseTest {
         r1.shutdown();
         r2.shutdown();
     }
+    
+    @Test
+    public void testExecutorAsync() throws InterruptedException {
+        RedissonClient r1 = createInstance();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl(), 1, executor);
+        
+        RedissonClient r2 = createInstance();
+        RemoteInterfaceAsync ri = r2.getRemoteSerivce().get(RemoteInterfaceAsync.class);
+        
+        Future<Void> f = ri.voidMethod("someName", 100L);
+        f.sync();
+        Future<Long> resFuture = ri.resultMethod(100L);
+        resFuture.sync();
+        assertThat(resFuture.getNow()).isEqualTo(200);
+
+        r1.shutdown();
+        r2.shutdown();
+        
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+    }
+
 
     @Test
     public void testExecutorsAmountConcurrency() throws InterruptedException {

@@ -23,6 +23,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -98,8 +99,12 @@ public class RedissonRemoteService implements RRemoteService {
     }
     
     @Override
-    public <T> void register(Class<T> remoteInterface, T object, int executorsAmount) {
-        if (executorsAmount < 1) {
+    public <T> void register(Class<T> remoteInterface, T object, int workersAmount) {
+        register(remoteInterface, object, workersAmount, null);
+    }
+    
+    public <T> void register(Class<T> remoteInterface, T object, int workersAmount, Executor executor) {
+        if (workersAmount < 1) {
             throw new IllegalArgumentException("executorsAmount can't be lower than 1");
         }
         for (Method method : remoteInterface.getMethods()) {
@@ -110,10 +115,10 @@ public class RedissonRemoteService implements RRemoteService {
             }
         }
         
-        for (int i = 0; i < executorsAmount; i++) {
+        for (int i = 0; i < workersAmount; i++) {
             String requestQueueName = getRequestQueueName(remoteInterface);
             RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
-            subscribe(remoteInterface, requestQueue);
+            subscribe(remoteInterface, requestQueue, executor);
         }
     }
 
@@ -144,7 +149,7 @@ public class RedissonRemoteService implements RRemoteService {
         }
     }
 
-    private <T> void subscribe(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue) {
+    private <T> void subscribe(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue, final Executor executor) {
         Future<RemoteServiceRequest> take = requestQueue.takeAsync();
         take.addListener(new FutureListener<RemoteServiceRequest>() {
             @Override
@@ -154,7 +159,7 @@ public class RedissonRemoteService implements RRemoteService {
                         return;
                     }
                     // re-subscribe after a failed takeAsync
-                    subscribe(remoteInterface, requestQueue);
+                    subscribe(remoteInterface, requestQueue, executor);
                     return;
                 }
 
@@ -166,7 +171,7 @@ public class RedissonRemoteService implements RRemoteService {
                 if (request.getOptions().isAckExpected() && System.currentTimeMillis() - request.getDate() > request.getOptions().getAckTimeoutInMillis()) {
                     log.debug("request: {} has been skipped due to ackTimeout");
                     // re-subscribe after a skipped ackTimeout
-                    subscribe(remoteInterface, requestQueue);
+                    subscribe(remoteInterface, requestQueue, executor);
                     return;
                 }
                 
@@ -196,27 +201,46 @@ public class RedissonRemoteService implements RRemoteService {
                                     return;
                                 }
                                 // re-subscribe after a failed send (ack)
-                                subscribe(remoteInterface, requestQueue);
+                                subscribe(remoteInterface, requestQueue, executor);
                                 return;
                             }
 
                             if (!future.getNow()) {
-                                subscribe(remoteInterface, requestQueue);
+                                subscribe(remoteInterface, requestQueue, executor);
                                 return;
                             }
-                            
-                            invokeMethod(remoteInterface, requestQueue, request, method, responseName);
+
+                            if (executor != null) {
+                                executor.execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor);
+                                    }
+                                });
+                            } else {
+                                invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor);
+                            }
                         }
                     });
                 } else {
-                    invokeMethod(remoteInterface, requestQueue, request, method, responseName);
+                    if (executor != null) {
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor);
+                            }
+                        });
+                    } else {
+                        invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor);
+                    }
                 }
             }
 
         });
     }
 
-    private <T> void invokeMethod(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue, final RemoteServiceRequest request, RemoteServiceMethod method, String responseName) {
+    private <T> void invokeMethod(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue, 
+            final RemoteServiceRequest request, RemoteServiceMethod method, String responseName, final Executor executor) {
         final AtomicReference<RemoteServiceResponse> responseHolder = new AtomicReference<RemoteServiceResponse>();
         try {
             Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
@@ -241,12 +265,12 @@ public class RedissonRemoteService implements RRemoteService {
                         }
                     }
                     // re-subscribe anyways (fail or success) after the send (response)
-                    subscribe(remoteInterface, requestQueue);
+                    subscribe(remoteInterface, requestQueue, executor);
                 }
             });
         } else {
             // re-subscribe anyways after the method invocation
-            subscribe(remoteInterface, requestQueue);
+            subscribe(remoteInterface, requestQueue, executor);
         }
     }
 
