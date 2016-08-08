@@ -124,7 +124,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         long threadId = Thread.currentThread().getId();
         Future<RedissonLockEntry> future = subscribe(threadId);
         get(future);
-        Random random = new Random();
         try {
             while (true) {
                 ttl = tryAcquire(leaseTime, unit);
@@ -139,8 +138,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 } else {
                     getEntry(threadId).getLatch().acquire();
                 }
-                // try again after delaying a very small random time
-                Thread.currentThread().sleep(random.nextInt(5));//毫秒
             }
         } finally {
             unsubscribe(future, threadId);
