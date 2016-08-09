@@ -140,6 +140,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> containsAllAsync(Collection<?> c) {
+        if (c.isEmpty()) {
+            return newSucceededFuture(true);
+        }
+
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local items = redis.call('lrange', KEYS[1], 0, -1) " +
                 "for i=1, #items do " +
@@ -220,6 +224,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> removeAllAsync(Collection<?> c) {
+        if (c.isEmpty()) {
+            return newSucceededFuture(false);
+        }
+
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                         "local v = 0 " +
                         "for i = 1, #ARGV, 1 do "
@@ -242,6 +250,10 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public Future<Boolean> retainAllAsync(Collection<?> c) {
+        if (c.isEmpty()) {
+            return deleteAsync();
+        }
+
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
                 "local changed = 0 " +
                 "local items = redis.call('lrange', KEYS[1], 0, -1) "
