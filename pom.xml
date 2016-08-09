@@ -2,14 +2,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.redisson</groupId>
-    <artifactId>redisson</artifactId>
-    <version>2.2.24-SNAPSHOT</version>
-    <packaging>bundle</packaging>
+    <artifactId>redisson-parent</artifactId>
+    <version>2.3.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
     <name>Redisson</name>
     <description>Distributed and scalable Java data structures on top of Redis. Advanced Redis client.</description>
     <inceptionYear>2014</inceptionYear>
-    <url>https://github.com/mrniko/redisson</url>
+    <url>http://redisson.org</url>
+
+    <organization>
+       <name>The Redisson Project</name>
+       <url>http://redisson.org/</url>
+    </organization>
 
     <scm>
         <url>scm:git:git@github.com:mrniko/redisson.git</url>
@@ -21,7 +26,6 @@
     <prerequisites>
         <maven>3.0.5</maven>
     </prerequisites>
-
 
     <licenses>
         <license>
@@ -35,7 +39,7 @@
         <developer>
             <id>mrniko</id>
             <name>Nikita Koksharov</name>
-            <email>abracham.mitchell@gmail.com</email>
+            <email>nkoksharov@redisson.org</email>
             <roles>
                 <role>Architect</role>
                 <role>Developer</role>
@@ -44,12 +48,10 @@
         </developer>
     </developers>
 
-    <properties>
-        <maven.test.skip>true</maven.test.skip>
-        <source.version>1.6</source.version>
-        <test.source.version>1.8</test.source.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <modules>
+        <module>redisson</module>
+        <module>redisson-all</module>
+    </modules>
 
     <profiles>
         <profile>
@@ -64,6 +66,33 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${maven-source-plugin.version}</version>
+                        <executions>
+                          <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                              <goal>jar-no-fork</goal>
+                            </goals>
+                            <configuration>
+                              <archive>
+                                <manifest>
+                                  <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                  <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                                </manifest>
+                                <manifestEntries>
+                                  <Implementation-Build>${implementation.build}</Implementation-Build>
+                                  <Implementation-Build-Date>${maven.build.timestamp}</Implementation-Build-Date>
+                                  <X-Compile-Source-JDK>${javac.src.version}</X-Compile-Source-JDK>
+                                  <X-Compile-Target-JDK>${javac.target.version}</X-Compile-Target-JDK>
+                                </manifestEntries>
+                              </archive>
+                            </configuration>
+                          </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
                         <version>1.6</version>
                         <executions>
@@ -76,6 +105,11 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <plugin>
+                        <groupId>net.ju-n.maven.plugins</groupId>
+                        <artifactId>checksum-maven-plugin</artifactId>
+                        <version>1.3</version>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -87,339 +121,30 @@
         </profile>
     </profiles>
 
-    <dependencies>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport-native-epoll</artifactId>
-            <version>4.0.39.Final</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-common</artifactId>
-            <version>4.0.39.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec</artifactId>
-            <version>4.0.39.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-buffer</artifactId>
-            <version>4.0.39.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport</artifactId>
-            <version>4.0.39.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-handler</artifactId>
-            <version>4.0.39.Final</version>
-        </dependency>
 
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-stream</artifactId>
-            <version>2.0.8.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.4.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.jayway.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>1.7.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-library</artifactId>
-            <version>1.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.12</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>net.jpountz.lz4</groupId>
-            <artifactId>lz4</artifactId>
-            <version>1.3.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.msgpack</groupId>
-            <artifactId>jackson-dataformat-msgpack</artifactId>
-            <version>0.8.7</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.xerial.snappy</groupId>
-            <artifactId>snappy-java</artifactId>
-            <version>1.1.2.6</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>de.ruedigermoeller</groupId>
-            <artifactId>fst</artifactId>
-            <version>2.47</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.esotericsoftware</groupId>
-            <artifactId>kryo</artifactId>
-            <version>3.0.3</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.21</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.6.5</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.6.5</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.6.5</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-cbor</artifactId>
-            <version>2.6.5</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-smile</artifactId>
-            <version>2.6.5</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-avro</artifactId>
-            <version>2.6.5</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.openhft</groupId>
-            <artifactId>zero-allocation-hashing</artifactId>
-            <version>0.5</version>
-        </dependency>
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>1.3.19</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jodd</groupId>
-            <artifactId>jodd-bean</artifactId>
-            <version>3.7.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>[3.1,)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context-support</artifactId>
-            <version>[3.1,)</version>
-            <scope>provided</scope>
-        </dependency>
-
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>versions-maven-plugin</artifactId>
-                <version>2.2</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-eclipse-plugin</artifactId>
-                <version>2.10</version>
-                <configuration>
-                    <downloadSources>true</downloadSources>
-                    <forceRecheck>true</forceRecheck>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.6</version>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>pmd</goal>
-                            <goal>cpd</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <linkXref>true</linkXref>
-                    <minimumTokens>100</minimumTokens>
-                    <targetJdk>${source.version}</targetJdk>
-                    <verbose>true</verbose>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.17</version>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>checkstyle</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <consoleOutput>true</consoleOutput>
-                    <enableRSS>false</enableRSS>
-                    <configLocation>/checkstyle.xml</configLocation>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
-                <configuration>
-                    <source>${source.version}</source>
-                    <target>${source.version}</target>
-                    <optimize>true</optimize>
-                    <showDeprecations>true</showDeprecations>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>default-testCompile</id>
-                        <phase>process-test-sources</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <fork>true</fork>
-                            <source>${test.source.version}</source>
-                            <target>${test.source.version}</target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
-                <configuration>
-                    <properties>
-                        <property>
-                            <name>listener</name>
-                            <value>org.redisson.RedissonTestRunListener</value>
-                        </property>
-                    </properties>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>3.0.1</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                        <DynamicImport-Package>*</DynamicImport-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <version>2.11</version>
-                <configuration>
-                    <basedir>${basedir}</basedir>
-                    <header>${basedir}/header.txt</header>
-                    <quiet>false</quiet>
-                    <failIfMissing>true</failIfMissing>
-                    <aggregate>false</aggregate>
-                    <includes>
-                        <include>src/main/java/org/redisson/</include>
-                    </includes>
-                    <excludes>
-                        <exclude>target/**</exclude>
-                    </excludes>
-                    <useDefaultExcludes>true</useDefaultExcludes>
-                    <mapping>
-                        <java>JAVADOC_STYLE</java>
-                    </mapping>
-                    <strictCheck>true</strictCheck>
-                    <useDefaultMapping>true</useDefaultMapping>
-                    <encoding>UTF-8</encoding>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+  <build>
+      <directory>target</directory>
+      <outputDirectory>${basedir}/target/classes</outputDirectory>
+      <finalName>${project.artifactId}-${project.version}</finalName>
+      <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
+      <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
+      <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
+      <pluginManagement>
+        <plugins>	
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>2.5</version>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.maven.scm</groupId>
+                <artifactId>maven-scm-provider-gitexe</artifactId>
+                <version>1.9.5</version>
+              </dependency>
+            </dependencies>
+          </plugin>
         </plugins>
-    </build>
+      </pluginManagement>
+  </build>
 
 </project>
