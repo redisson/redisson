@@ -45,7 +45,6 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.ConnectionManager;
@@ -98,8 +97,8 @@ public class RedissonExecutorService implements RExecutorService {
         requestQueueName = "{" + name + ":"+ RemoteExecutorService.class.getName() + "}";
         String objectName = requestQueueName;
         tasksCounter = redisson.getAtomicLong(objectName + ":counter");
-        status = redisson.getBucket(objectName + ":status");
-        topic = redisson.getTopic(objectName + ":topic");
+        status = redisson.getBucket(objectName + ":status", codec);
+        topic = redisson.getTopic(objectName + ":topic", codec);
         keys = redisson.getKeys();
         
         ExecutorRemoteService remoteService = new ExecutorRemoteService(codec, redisson, name, commandExecutor);
@@ -174,7 +173,7 @@ public class RedissonExecutorService implements RExecutorService {
 
     @Override
     public void shutdown() {
-        commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        commandExecutor.evalWrite(getName(), codec, RedisCommands.EVAL_VOID_WITH_VALUES_6,
                 "if redis.call('exists', KEYS[2]) == 0 then "
                      + "if redis.call('get', KEYS[1]) == '0' or redis.call('exists', KEYS[1]) == 0 then "
                         + "redis.call('set', KEYS[2], ARGV[2]);"

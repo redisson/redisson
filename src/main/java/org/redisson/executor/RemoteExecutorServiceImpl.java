@@ -24,7 +24,6 @@ import org.redisson.RedissonClient;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 
@@ -133,7 +132,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService {
     private void finish() {
         classLoader.clearCurrentClassLoader();
 
-        commandExecutor.evalWrite(name, LongCodec.INSTANCE, RedisCommands.EVAL_VOID, 
+        commandExecutor.evalWrite(name, codec, RedisCommands.EVAL_VOID_WITH_VALUES_6, 
                 "if redis.call('decr', KEYS[1]) == 0 and redis.call('get', KEYS[2]) == ARGV[1] then "
                     + "redis.call('set', KEYS[2], ARGV[2]);"
                     + "redis.call('publish', KEYS[3], ARGV[2]);"
