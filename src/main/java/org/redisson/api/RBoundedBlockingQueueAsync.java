@@ -15,23 +15,19 @@
  */
 package org.redisson.api;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import io.netty.util.concurrent.Future;
 
 /**
- * {@link java.util.Queue} backed by Redis
+ * Bounded {@link BlockingQueue} backed by Redis
  *
  * @author Nikita Koksharov
- *
  * @param <V> the type of elements held in this collection
  */
-public interface RQueueAsync<V> extends RCollectionAsync<V> {
+public interface RBoundedBlockingQueueAsync<V> extends RBlockingQueueAsync<V> {
 
-    Future<V> peekAsync();
-
-    Future<V> pollAsync();
-
-    Future<Boolean> offerAsync(V e);
-
-    Future<V> pollLastAndOfferFirstToAsync(String queueName);
+    Future<Boolean> offerAsync(V e, long timeout, TimeUnit unit);
 
 }

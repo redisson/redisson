@@ -108,11 +108,6 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     @Override
-    public Future<V> pollLastAndOfferFirstToAsync(RQueue<V> queue) {
-        return pollLastAndOfferFirstToAsync(queue.getName());
-    }
-
-    @Override
     public V pollLastAndOfferFirstTo(RQueue<V> queue) {
         return pollLastAndOfferFirstTo(queue.getName());
     }

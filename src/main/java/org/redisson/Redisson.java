@@ -37,6 +37,7 @@ import org.redisson.api.RBitSet;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBloomFilter;
+import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RCountDownLatch;
@@ -462,6 +463,16 @@ public class Redisson implements RedissonClient {
     @Override
     public <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
         return new RedissonBlockingQueue<V>(codec, commandExecutor, name);
+    }
+    
+    @Override
+    public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name) {
+        return new RedissonBoundedBlockingQueue<V>(semaphorePubSub, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name, Codec codec) {
+        return new RedissonBoundedBlockingQueue<V>(semaphorePubSub, codec, commandExecutor, name);
     }
 
     @Override

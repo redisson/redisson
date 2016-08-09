@@ -30,6 +30,7 @@ import org.redisson.api.RBitSet;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBloomFilter;
+import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RCountDownLatch;
@@ -483,7 +484,7 @@ public interface RedissonClient {
     <M> RPatternTopic<M> getPatternTopic(String pattern, Codec codec);
 
     /**
-     * Returns queue instance by name.
+     * Returns unbounded queue instance by name.
      *
      * @param name of queue
      * @return
@@ -491,7 +492,7 @@ public interface RedissonClient {
     <V> RQueue<V> getQueue(String name);
 
     /**
-     * Returns queue instance by name
+     * Returns unbounded queue instance by name
      * using provided codec for queue objects.
      *
      * @param name of queue
@@ -501,7 +502,7 @@ public interface RedissonClient {
     <V> RQueue<V> getQueue(String name, Codec codec);
 
     /**
-     * Returns blocking queue instance by name.
+     * Returns unbounded blocking queue instance by name.
      *
      * @param name of queue
      * @return
@@ -509,7 +510,7 @@ public interface RedissonClient {
     <V> RBlockingQueue<V> getBlockingQueue(String name);
 
     /**
-     * Returns blocking queue instance by name
+     * Returns unbounded blocking queue instance by name
      * using provided codec for queue objects.
      *
      * @param name of queue
@@ -519,7 +520,25 @@ public interface RedissonClient {
     <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec);
 
     /**
-     * Returns deque instance by name.
+     * Returns bounded blocking queue instance by name.
+     *
+     * @param name of queue
+     * @return
+     */
+    <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name);
+
+    /**
+     * Returns bounded blocking queue instance by name
+     * using provided codec for queue objects.
+     *
+     * @param name of queue
+     * @param queue objects codec
+     * @return
+     */
+    <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name, Codec codec);
+
+    /**
+     * Returns unbounded deque instance by name.
      *
      * @param name of deque
      * @return
@@ -527,7 +546,7 @@ public interface RedissonClient {
     <V> RDeque<V> getDeque(String name);
 
     /**
-     * Returns deque instance by name
+     * Returns unbounded deque instance by name
      * using provided codec for deque objects.
      *
      * @param name of deque
@@ -537,7 +556,7 @@ public interface RedissonClient {
     <V> RDeque<V> getDeque(String name, Codec codec);
 
     /**
-     * Returns blocking deque instance by name.
+     * Returns unbounded blocking deque instance by name.
      *
      * @param name of deque
      * @return
@@ -545,7 +564,7 @@ public interface RedissonClient {
     <V> RBlockingDeque<V> getBlockingDeque(String name);
 
     /**
-     * Returns blocking deque instance by name
+     * Returns unbounded blocking deque instance by name
      * using provided codec for deque objects.
      *
      * @param name of deque
