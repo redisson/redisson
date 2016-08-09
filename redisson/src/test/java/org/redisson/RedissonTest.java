@@ -21,6 +21,7 @@ import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -104,7 +105,7 @@ public class RedissonTest {
         private String field;
     }
 
-    @Test(expected = WriteRedisConnectionException.class)
+    @Test(expected = RedisException.class)
     public void testSer() {
         Config config = new Config();
         config.useSingleServer().setAddress("127.0.0.1:6379");
