@@ -15,8 +15,10 @@
  */
 package org.redisson;
 
+import java.awt.*;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -122,7 +124,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         long threadId = Thread.currentThread().getId();
         Future<RedissonLockEntry> future = subscribe(threadId);
         get(future);
-
         try {
             while (true) {
                 ttl = tryAcquire(leaseTime, unit);
