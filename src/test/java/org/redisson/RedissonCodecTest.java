@@ -13,6 +13,7 @@ import org.redisson.codec.KryoCodec;
 import org.redisson.codec.LZ4Codec;
 import org.redisson.codec.MsgPackJacksonCodec;
 import org.redisson.codec.SerializationCodec;
+import org.redisson.codec.SmileJacksonCodec;
 import org.redisson.codec.SnappyCodec;
 import org.redisson.config.Config;
 
@@ -26,6 +27,8 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonCodecTest extends BaseTest {
+    private Codec avroCodec = new SmileJacksonCodec();
+    private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
     private Codec kryoCodec = new KryoCodec();
     private Codec jsonCodec = new JsonJacksonCodec();
@@ -54,11 +57,29 @@ public class RedissonCodecTest extends BaseTest {
 
         test();
     }
-
+    
     @Test
     public void testMsgPack() {
         Config config = createConfig();
         config.setCodec(msgPackCodec);
+        redisson = Redisson.create(config);
+
+        test();
+    }
+    
+    @Test
+    public void testSmile() {
+        Config config = createConfig();
+        config.setCodec(smileCodec);
+        redisson = Redisson.create(config);
+
+        test();
+    }
+
+    @Test
+    public void testAvro() {
+        Config config = createConfig();
+        config.setCodec(avroCodec);
         redisson = Redisson.create(config);
 
         test();

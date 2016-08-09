@@ -124,7 +124,8 @@ public class JsonJacksonCodec implements Codec {
         
         // warm up codec
         try {
-            mapObjectMapper.readValue("1".getBytes(), Object.class);
+            byte[] s = mapObjectMapper.writeValueAsBytes(1);
+            mapObjectMapper.readValue(s, Object.class);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
