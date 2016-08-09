@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -39,10 +40,17 @@ public interface RExecutorService extends ExecutorService {
     boolean delete();
     
     /**
-     * Register executor worker
+     * Register workers using netty thread-pool to execute each task
      * 
-     * @param executors - workers amount
+     * @param workers - workers amount
      */
-    void registerExecutors(int executors);
-    
+    void registerWorkers(int workers);
+
+    /**
+     * Register workers using custom executor to execute each task
+     * 
+     * @param workers - workers amount
+     */
+    void registerWorkers(int workers, Executor executor);
+
 }

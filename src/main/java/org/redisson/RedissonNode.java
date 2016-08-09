@@ -18,6 +18,10 @@ package org.redisson;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map.Entry;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.config.RedissonNodeConfig;
 import org.slf4j.Logger;
@@ -50,8 +54,8 @@ public class RedissonNode {
             }
         }
         
-        if (config.getExecutors().isEmpty()) {
-            throw new IllegalArgumentException("Executor settings are empty");
+        if (config.getExecutorServiceWorkers().isEmpty()) {
+            throw new IllegalArgumentException("Executor service workers are empty");
         }
         
         start(config);
@@ -59,10 +63,21 @@ public class RedissonNode {
 
     public static void start(RedissonNodeConfig config) {
         final RedissonClient redisson = Redisson.create(config);
-        for (Entry<String, Integer> entry : config.getExecutors().entrySet()) {
+        final ExecutorService executor;
+        if (config.getExecutorServiceThreads() != -1) {
+            if (config.getExecutorServiceThreads() == 0) {
+                executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+            } else {
+                executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads());
+            }
+        } else {
+            executor = null;
+        }
+        
+        for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();
             int workers = entry.getValue();
-            redisson.getExecutorService(name).registerExecutors(workers);
+            redisson.getExecutorService(name).registerWorkers(workers, executor);
             log.info("{} worker(s) for '{}' ExecutorService registered", workers, name);
         }
         
@@ -70,6 +85,17 @@ public class RedissonNode {
             @Override
             public void run() {
                 redisson.shutdown();
+                if (executor != null) {
+                    log.info("Worker executor is being shutdown...");
+                    executor.shutdown();
+                    try {
+                        if (executor.awaitTermination(5, TimeUnit.MINUTES)) {
+                            log.info("Worker executor has been shutdown successfully");
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
             }
         });
         

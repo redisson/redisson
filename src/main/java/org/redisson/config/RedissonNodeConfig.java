@@ -27,7 +27,8 @@ import java.util.Map;
  */
 public class RedissonNodeConfig extends Config {
 
-    private Map<String, Integer> executors = new HashMap<String, Integer>();
+    private int executorServiceThreads = -1;
+    private Map<String, Integer> executorServiceWorkers = new HashMap<String, Integer>();
     
     public RedissonNodeConfig() {
         super();
@@ -37,13 +38,20 @@ public class RedissonNodeConfig extends Config {
         super(oldConf);
     }
 
-    public RedissonNodeConfig setExecutors(Map<String, Integer> executors) {
-        this.executors = executors;
+    public RedissonNodeConfig setExecutorServiceThreads(int executorThreads) {
+        this.executorServiceThreads = executorThreads;
         return this;
     }
+    public int getExecutorServiceThreads() {
+        return executorServiceThreads;
+    }
     
-    public Map<String, Integer> getExecutors() {
-        return executors;
+    public RedissonNodeConfig setExecutorServiceWorkers(Map<String, Integer> workers) {
+        this.executorServiceWorkers = workers;
+        return this;
+    }
+    public Map<String, Integer> getExecutorServiceWorkers() {
+        return executorServiceWorkers;
     }
     
     public static RedissonNodeConfig fromJSON(File file) throws IOException {

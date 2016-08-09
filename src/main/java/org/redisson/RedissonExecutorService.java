@@ -30,6 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -110,13 +111,18 @@ public class RedissonExecutorService implements RExecutorService {
     }
     
     @Override
-    public void registerExecutors(int executors) {
+    public void registerWorkers(int executors) {
+        registerWorkers(executors, null);
+    }
+    
+    @Override
+    public void registerWorkers(int executors, Executor executor) {
         RemoteExecutorServiceImpl service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, requestQueueName);
         service.setStatusName(status.getName());
         service.setTasksCounterName(tasksCounter.getName());
         service.setTopicName(topic.getChannelNames().get(0));
         
-        redisson.getRemoteSerivce(name, codec).register(RemoteExecutorService.class, service, executors);
+        redisson.getRemoteSerivce(name, codec).register(RemoteExecutorService.class, service, executors, executor);
     }
 
     @Override
