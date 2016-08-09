@@ -54,26 +54,24 @@ public class RedissonNode {
             }
         }
         
-        if (config.getExecutorServiceWorkers().isEmpty()) {
-            throw new IllegalArgumentException("Executor service workers are empty");
-        }
-        
         start(config);
     }
 
     public static void start(RedissonNodeConfig config) {
-        final RedissonClient redisson = Redisson.create(config);
+        if (config.getExecutorServiceWorkers().isEmpty()) {
+            throw new IllegalArgumentException("Executor service workers are empty");
+        }
+        
         final ExecutorService executor;
-        if (config.getExecutorServiceThreads() != -1) {
-            if (config.getExecutorServiceThreads() == 0) {
-                executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
-            } else {
-                executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads());
-            }
+        if (config.getExecutorServiceThreads() == 0) {
+            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+        } else if (config.getExecutorServiceThreads() > 0) {
+            executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads());
         } else {
             executor = null;
         }
         
+        final RedissonClient redisson = Redisson.create(config);
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();
             int workers = entry.getValue();
