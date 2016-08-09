@@ -29,7 +29,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
-        nodeConfig.setExecutors(Collections.singletonMap("test", 1));
+        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
         RedissonNode.start(nodeConfig);
     }
     
