@@ -13,6 +13,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.BaseTest;
@@ -23,6 +24,8 @@ import org.redisson.config.RedissonNodeConfig;
 
 public class RedissonExecutorServiceTest extends BaseTest {
 
+    private static RedissonNode node;
+    
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         BaseTest.beforeClass();
@@ -30,7 +33,15 @@ public class RedissonExecutorServiceTest extends BaseTest {
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
-        RedissonNode.start(nodeConfig);
+        node = RedissonNode.create(nodeConfig);
+        node.start();
+    }
+    
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        BaseTest.afterClass();
+        
+        node.shutdown();
     }
     
     @Test

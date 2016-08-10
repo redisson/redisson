@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class RedissonNodeConfig extends Config {
 
-    private int executorServiceThreads = -1;
+    private int executorServiceThreads = 0;
     private Map<String, Integer> executorServiceWorkers = new HashMap<String, Integer>();
     
     public RedissonNodeConfig() {
@@ -37,7 +37,27 @@ public class RedissonNodeConfig extends Config {
     public RedissonNodeConfig(Config oldConf) {
         super(oldConf);
     }
+    
+    public RedissonNodeConfig(RedissonNodeConfig oldConf) {
+        super(oldConf);
+        this.executorServiceThreads = oldConf.executorServiceThreads;
+        this.executorServiceWorkers = new HashMap<String, Integer>(oldConf.executorServiceWorkers);
+    }
 
+    /**
+     * Executor service threads amount between all workers.
+     * <p>
+     * <code>-1</code> - use netty thread pool
+     * <p>
+     * <code>0</code> - create separate thread executor with <code>(current_processors_amount * 2)</code> threads
+     * <p>
+     * <code>n</code> - create separate thread executor with <code>(n)</code> threads
+     * <p>
+     * Default is <code>0</code>.
+     * 
+     * @param executorThreads
+     * @return
+     */
     public RedissonNodeConfig setExecutorServiceThreads(int executorThreads) {
         this.executorServiceThreads = executorThreads;
         return this;
@@ -46,6 +66,12 @@ public class RedissonNodeConfig extends Config {
         return executorServiceThreads;
     }
     
+    /**
+     * Executor service workers amount per service name 
+     * 
+     * @param workers
+     * @return
+     */
     public RedissonNodeConfig setExecutorServiceWorkers(Map<String, Integer> workers) {
         this.executorServiceWorkers = workers;
         return this;
@@ -54,11 +80,25 @@ public class RedissonNodeConfig extends Config {
         return executorServiceWorkers;
     }
     
+    /**
+     * Read config object stored in JSON format from <code>File</code>
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
     public static RedissonNodeConfig fromJSON(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(file, RedissonNodeConfig.class);
     }
-    
+
+    /**
+     * Read config object stored in YAML format from <code>File</code>
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
     public static RedissonNodeConfig fromYAML(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromYAML(file, RedissonNodeConfig.class);
