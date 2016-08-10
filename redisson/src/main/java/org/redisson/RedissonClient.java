@@ -15,9 +15,6 @@
  */
 package org.redisson;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.ClusterNodesGroup;
@@ -172,30 +169,6 @@ public interface RedissonClient {
      * @return
      */
     RBuckets getBuckets(Codec codec);
-
-    /**
-     * Use {@link RBuckets#find(String)}
-     */
-    @Deprecated
-    <V> List<RBucket<V>> findBuckets(String pattern);
-
-    /**
-     * Use {@link RBuckets#get(String...)}
-     */
-    @Deprecated
-    <V> Map<String, V> loadBucketValues(Collection<String> keys);
-
-    /**
-     * Use {@link RBuckets#get(String...)}
-     */
-    @Deprecated
-    <V> Map<String, V> loadBucketValues(String ... keys);
-
-    /**
-     * Use {@link RBuckets#set(Map)}
-     */
-    @Deprecated
-    void saveBuckets(Map<String, ?> buckets);
 
     /**
      * Returns HyperLogLog instance by name.

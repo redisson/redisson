@@ -15,14 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -69,7 +61,6 @@ import org.redisson.api.RSortedSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.command.CommandSyncService;
@@ -82,7 +73,6 @@ import org.redisson.liveobject.provider.DefaultResolverProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.pubsub.SemaphorePubSub;
 
-import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -192,64 +182,6 @@ public class Redisson implements RedissonClient {
         return new RedissonBuckets(this, codec, commandExecutor);
     }
     
-    @Override
-    public <V> List<RBucket<V>> findBuckets(String pattern) {
-        Collection<String> keys = commandExecutor.get(commandExecutor.<List<String>, String>readAllAsync(RedisCommands.KEYS, pattern));
-        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
-        for (String key : keys) {
-            if(key == null) {
-                continue;
-            }
-            buckets.add(this.<V>getBucket(key));
-        }
-        return buckets;
-    }
-
-    @Override
-    public <V> Map<String, V> loadBucketValues(Collection<String> keys) {
-        return loadBucketValues(keys.toArray(new String[keys.size()]));
-    }
-
-    @Override
-    public <V> Map<String, V> loadBucketValues(String ... keys) {
-        if (keys.length == 0) {
-            return Collections.emptyMap();
-        }
-
-        Future<List<Object>> future = commandExecutor.readAsync(keys[0], RedisCommands.MGET, keys);
-        List<Object> values = commandExecutor.get(future);
-        Map<String, V> result = new HashMap<String, V>(values.size());
-        int index = 0;
-        for (Object value : values) {
-            if(value == null) {
-                index++;
-                continue;
-            }
-            result.put(keys[index], (V)value);
-            index++;
-        }
-        return result;
-    }
-
-    @Override
-    public void saveBuckets(Map<String, ?> buckets) {
-        if (buckets.isEmpty()) {
-            return;
-        }
-
-        List<Object> params = new ArrayList<Object>(buckets.size());
-        for (Entry<String, ?> entry : buckets.entrySet()) {
-            params.add(entry.getKey());
-            try {
-                params.add(config.getCodec().getValueEncoder().encode(entry.getValue()));
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
-
-        commandExecutor.write(params.get(0).toString(), RedisCommands.MSET, params.toArray());
-    }
-
     @Override
     public <V> RHyperLogLog<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLog<V>(commandExecutor, name);
