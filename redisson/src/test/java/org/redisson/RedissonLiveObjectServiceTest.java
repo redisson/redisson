@@ -37,8 +37,8 @@ import org.redisson.api.RMap;
 import org.redisson.api.RQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RSortedSet;
-import org.redisson.liveobject.annotation.REntity;
-import org.redisson.liveobject.annotation.RId;
+import org.redisson.api.annotation.REntity;
+import org.redisson.api.annotation.RId;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
 

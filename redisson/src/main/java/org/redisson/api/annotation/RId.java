@@ -13,33 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.annotation;
+package org.redisson.api.annotation;
 
-import org.redisson.liveobject.resolver.NamingScheme;
-import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.redisson.client.codec.Codec;
-import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.liveobject.resolver.RandomUUIDIdStringGenerator;
+import org.redisson.liveobject.resolver.RIdResolver;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface REntity {
-
-    public enum TransformationMode {
-        IMPLEMENTATION_BASED, ANNOTATION_BASED
-    }
-    
-    Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
-
-    Class<? extends Codec> codec() default JsonJacksonCodec.class;
-
-    TransformationMode fieldTransformation() default TransformationMode.ANNOTATION_BASED;
-    
+@Target({ElementType.FIELD})
+public @interface RId {
+    Class<? extends RIdResolver> generator() default RandomUUIDIdStringGenerator.class;
 }

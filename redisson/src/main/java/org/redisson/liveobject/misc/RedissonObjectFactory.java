@@ -23,10 +23,10 @@ import org.redisson.RedissonReference;
 import org.redisson.client.codec.Codec;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RObject;
+import org.redisson.api.annotation.REntity;
 import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
-import org.redisson.liveobject.annotation.REntity;
 
 /**
  *
