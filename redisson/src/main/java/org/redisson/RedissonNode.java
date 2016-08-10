@@ -73,8 +73,11 @@ public class RedissonNode {
         });
     }
     
+    /**
+     * Shutdown Redisson node instance
+     * 
+     */
     public void shutdown() {
-        redisson.shutdown();
         if (executor != null) {
             log.info("Worker executor is being shutdown...");
             executor.shutdown();
@@ -86,8 +89,12 @@ public class RedissonNode {
                 Thread.currentThread().interrupt();
             }
         }
+        redisson.shutdown();
     }
     
+    /**
+     * Start Redisson node instance
+     */
     public void start() {
         if (config.getExecutorServiceThreads() == 0) {
             executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
@@ -106,6 +113,12 @@ public class RedissonNode {
         log.info("Redisson node started!");
     }
 
+    /**
+     * Create Redisson node instance with provided config
+     *
+     * @param config
+     * @return RedissonNode instance
+     */
     public static RedissonNode create(RedissonNodeConfig config) {
         if (config.getExecutorServiceWorkers().isEmpty()) {
             throw new IllegalArgumentException("Executor service workers are empty");

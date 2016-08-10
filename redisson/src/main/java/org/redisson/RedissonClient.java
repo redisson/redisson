@@ -686,7 +686,7 @@ public interface RedissonClient {
     RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider);
     
     /**
-     * Shuts down Redisson instance <b>NOT</b> Redis server
+     * Shutdown Redisson instance but <b>NOT</b> Redis server
      * 
      * This equates to invoke shutdown(2, 15, TimeUnit.SECONDS);
      */
