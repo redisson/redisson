@@ -28,6 +28,31 @@ import io.netty.util.concurrent.Future;
  */
 public interface RBoundedBlockingQueueAsync<V> extends RBlockingQueueAsync<V> {
 
+    /**
+     * Sets queue capacity only if it is not set before.
+     *
+     * @param capacity - queue capacity
+     * @return <code>true</code> if capacity set successfully
+     *         <code>false</code> if capacity already set
+     */
+    Future<Boolean> trySetCapacityAsync(int capacity);
+
+    /**
+     * Inserts the specified element into this queue, waiting up to the
+     * specified wait time if necessary for space to become available.
+     *
+     * @param e the element to add
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return {@code true} if successful, or {@code false} if
+     *         the specified waiting time elapses before space is available
+     * @throws InterruptedException if interrupted while waiting
+     * @throws ClassCastException if the class of the specified element
+     *         prevents it from being added to this queue
+     * @throws NullPointerException if the specified element is null
+     */
     Future<Boolean> offerAsync(V e, long timeout, TimeUnit unit);
 
 }

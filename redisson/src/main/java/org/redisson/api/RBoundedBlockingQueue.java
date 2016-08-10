@@ -17,8 +17,6 @@ package org.redisson.api;
 
 import java.util.concurrent.BlockingQueue;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Bounded {@link BlockingQueue} backed by Redis
  *
@@ -27,8 +25,13 @@ import io.netty.util.concurrent.Future;
  */
 public interface RBoundedBlockingQueue<V> extends RBlockingQueue<V>, RBoundedBlockingQueueAsync<V> {
 
-    Future<Boolean> trySetCapacityAsync(int capacity);
-    
+    /**
+     * Sets queue capacity only if it is not set before.
+     *
+     * @param capacity - queue capacity
+     * @return <code>true</code> if capacity set successfully
+     *         <code>false</code> if capacity already set
+     */
     boolean trySetCapacity(int capacity);
     
 }
