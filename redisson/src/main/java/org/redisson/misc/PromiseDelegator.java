@@ -23,13 +23,17 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
-public class PromiseDelegator<T> implements Promise<T> {
+public class PromiseDelegator<T> implements RPromise<T> {
 
     private final Promise<T> promise;
     
     public PromiseDelegator(Promise<T> promise) {
         super();
         this.promise = promise;
+    }
+    
+    public Promise<T> getInnerPromise() {
+        return promise;
     }
 
     public Promise<T> setSuccess(T result) {

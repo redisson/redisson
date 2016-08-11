@@ -20,29 +20,27 @@ import java.util.Map;
 
 import org.redisson.client.protocol.ScoredEntry;
 
-import io.netty.util.concurrent.Future;
-
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
 
-    Future<V> pollLastAsync();
+    RFuture<V> pollLastAsync();
 
-    Future<V> pollFirstAsync();
+    RFuture<V> pollFirstAsync();
 
-    Future<V> firstAsync();
+    RFuture<V> firstAsync();
 
-    Future<V> lastAsync();
+    RFuture<V> lastAsync();
 
-    Future<Long> addAllAsync(Map<V, Double> objects);
+    RFuture<Long> addAllAsync(Map<V, Double> objects);
 
-    Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    RFuture<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
-    Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
+    RFuture<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 
-    Future<Integer> rankAsync(V o);
+    RFuture<Integer> rankAsync(V o);
     
-    Future<Integer> revRankAsync(V o);
+    RFuture<Integer> revRankAsync(V o);
 
-    Future<Double> getScoreAsync(V o);
+    RFuture<Double> getScoreAsync(V o);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.
@@ -51,7 +49,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
      * @param object
      * @return <code>true</code> if element has added and <code>false</code> if not.
      */
-    Future<Boolean> addAsync(double score, V object);
+    RFuture<Boolean> addAsync(double score, V object);
 
     /**
      * Adds element to this set only if has not been added before.
@@ -62,39 +60,39 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
      * @param object
      * @return <code>true</code> if element has added and <code>false</code> if not.
      */
-    Future<Boolean> tryAddAsync(double score, V object);
+    RFuture<Boolean> tryAddAsync(double score, V object);
 
-    Future<Boolean> removeAsync(V object);
+    RFuture<Boolean> removeAsync(V object);
 
-    Future<Integer> sizeAsync();
+    RFuture<Integer> sizeAsync();
 
-    Future<Boolean> containsAsync(Object o);
+    RFuture<Boolean> containsAsync(Object o);
 
-    Future<Boolean> containsAllAsync(Collection<?> c);
+    RFuture<Boolean> containsAllAsync(Collection<?> c);
 
-    Future<Boolean> removeAllAsync(Collection<?> c);
+    RFuture<Boolean> removeAllAsync(Collection<?> c);
 
-    Future<Boolean> retainAllAsync(Collection<?> c);
+    RFuture<Boolean> retainAllAsync(Collection<?> c);
 
-    Future<Double> addScoreAsync(V object, Number value);
+    RFuture<Double> addScoreAsync(V object, Number value);
 
-    Future<Collection<V>> valueRangeAsync(int startIndex, int endIndex);
+    RFuture<Collection<V>> valueRangeAsync(int startIndex, int endIndex);
 
-    Future<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex);
+    RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex);
 
-    Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
-    Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    RFuture<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
-    Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
-    Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
+    RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
-    Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
+    RFuture<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
-    Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
+    RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
-    Future<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
+    RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**
      * Returns the number of elements with a score between <code>startScore</code> and <code>endScore</code>.
@@ -105,13 +103,13 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
      * @param endScoreInclusive
      * @return
      */
-    Future<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    RFuture<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
     
     /**
      * Read all values at once.
      * 
      * @return
      */
-    Future<Collection<V>> readAllAsync();
+    RFuture<Collection<V>> readAllAsync();
     
 }

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RSetMultimap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -55,7 +56,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         super(codec, connectionManager, name);
     }
 
-    public Future<Integer> sizeAsync() {
+    public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "local keys = redis.call('hgetall', KEYS[1]); " +
                 "local size = 0; " +
@@ -71,7 +72,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
 
     
     
-    public Future<Boolean> containsKeyAsync(Object key) {
+    public RFuture<Boolean> containsKeyAsync(Object key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -83,7 +84,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         }
     }
 
-    public Future<Boolean> containsValueAsync(Object value) {
+    public RFuture<Boolean> containsValueAsync(Object value) {
         try {
             byte[] valueState = codec.getMapValueEncoder().encode(value);
 
@@ -104,7 +105,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         }
     }
 
-    public Future<Boolean> containsEntryAsync(Object key, Object value) {
+    public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -117,7 +118,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         }
     }
 
-    public Future<Boolean> putAsync(K key, V value) {
+    public RFuture<Boolean> putAsync(K key, V value) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -133,7 +134,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         }
     }
 
-    public Future<Boolean> removeAsync(Object key, Object value) {
+    public RFuture<Boolean> removeAsync(Object key, Object value) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -152,7 +153,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         }
     }
 
-    public Future<Boolean> putAllAsync(K key, Iterable<? extends V> values) {
+    public RFuture<Boolean> putAllAsync(K key, Iterable<? extends V> values) {
         try {
             List<Object> params = new ArrayList<Object>();
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
@@ -192,7 +193,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         return (Set<V>) super.getAll(key);
     }
 
-    public Future<Collection<V>> getAllAsync(K key) {
+    public RFuture<Collection<V>> getAllAsync(K key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -209,7 +210,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         return (Set<V>) get(removeAllAsync(key));
     }
 
-    public Future<Collection<V>> removeAllAsync(Object key) {
+    public RFuture<Collection<V>> removeAllAsync(Object key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -249,7 +250,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         return new RedissonSetMultimapIterator<K, V, Map.Entry<K, V>>(RedissonSetMultimap.this, commandExecutor, codec);
     }
 
-    public Future<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values) {
+    public RFuture<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values) {
         try {
             List<Object> params = new ArrayList<Object>();
             byte[] keyState = codec.getMapKeyEncoder().encode(key);

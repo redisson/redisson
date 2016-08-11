@@ -20,11 +20,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.pubsub.SemaphorePubSub;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * 
@@ -54,7 +53,7 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
         this.value = value;
     }
 
-    public Future<Boolean> tryAcquireAsync(int permits) {
+    public RFuture<Boolean> tryAcquireAsync(int permits) {
         List<Object> params;
         if (values != null) {
             params = new ArrayList<Object>(values.size() + 1);

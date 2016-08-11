@@ -24,6 +24,7 @@ import java.util.Map;
 import org.redisson.api.GeoEntry;
 import org.redisson.api.GeoPosition;
 import org.redisson.api.GeoUnit;
+import org.redisson.api.RFuture;
 import org.redisson.api.RGeo;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.GeoEntryCodec;
@@ -31,18 +32,23 @@ import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.FlatNestedMultiDecoder;
 import org.redisson.client.protocol.decoder.GeoDistanceDecoder;
 import org.redisson.client.protocol.decoder.GeoMapReplayDecoder;
 import org.redisson.client.protocol.decoder.GeoPositionDecoder;
 import org.redisson.client.protocol.decoder.GeoPositionMapDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
-import org.redisson.client.protocol.decoder.FlatNestedMultiDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 
-import io.netty.util.concurrent.Future;
-
+/**
+ * Geospatial items holder
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V>
+ */
 public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
 
     MultiDecoder<Map<Object, Object>> postitionDecoder;
@@ -61,7 +67,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
 
     @Override
-    public Future<Long> addAsync(double longitude, double latitude, V member) {
+    public RFuture<Long> addAsync(double longitude, double latitude, V member) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEOADD, getName(), convert(longitude), convert(latitude), member);
     }
 
@@ -80,7 +86,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
 
     @Override
-    public Future<Long> addAsync(GeoEntry... entries) {
+    public RFuture<Long> addAsync(GeoEntry... entries) {
         List<Object> params = new ArrayList<Object>(entries.length + 1);
         params.add(getName());
         for (GeoEntry entry : entries) {
@@ -97,7 +103,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<Double> distAsync(V firstMember, V secondMember, GeoUnit geoUnit) {
+    public RFuture<Double> distAsync(V firstMember, V secondMember, GeoUnit geoUnit) {
         return commandExecutor.readAsync(getName(), new ScoredCodec(codec), RedisCommands.GEODIST, getName(), firstMember, secondMember, geoUnit);
     }
     
@@ -107,7 +113,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<Map<V, String>> hashAsync(V... members) {
+    public RFuture<Map<V, String>> hashAsync(V... members) {
         List<Object> params = new ArrayList<Object>(members.length + 1);
         params.add(getName());
         params.addAll(Arrays.asList(members));
@@ -121,7 +127,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<Map<V, GeoPosition>> posAsync(V... members) {
+    public RFuture<Map<V, GeoPosition>> posAsync(V... members) {
         List<Object> params = new ArrayList<Object>(members.length + 1);
         params.add(getName());
         params.addAll(Arrays.asList(members));
@@ -137,7 +143,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
+    public RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUS, getName(), convert(longitude), convert(latitude), radius, geoUnit);
     }
     
@@ -147,7 +153,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
+    public RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUS", distanceDecoder);
         return commandExecutor.readAsync(getName(), codec, command, getName(), convert(longitude), convert(latitude), radius, geoUnit, "WITHDIST");
     }
@@ -158,7 +164,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
+    public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit) {
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUS", postitionDecoder);
         return commandExecutor.readAsync(getName(), codec, command, getName(), convert(longitude), convert(latitude), radius, geoUnit, "WITHCOORD");
     }
@@ -169,7 +175,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit) {
+    public RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER, getName(), member, radius, geoUnit);
     }
     
@@ -179,7 +185,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit) {
+    public RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit) {
         RedisCommand command = new RedisCommand("GEORADIUSBYMEMBER", distanceDecoder, 2);
         return commandExecutor.readAsync(getName(), codec, command, getName(), member, radius, geoUnit, "WITHDIST");
     }
@@ -190,7 +196,7 @@ public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
     }
     
     @Override
-    public Future<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit) {
+    public RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit) {
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUSBYMEMBER", postitionDecoder, 2);
         return commandExecutor.readAsync(getName(), codec, command, getName(), member, radius, geoUnit, "WITHCOORD");
     }

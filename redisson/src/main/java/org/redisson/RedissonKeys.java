@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
 import org.redisson.api.RType;
 import org.redisson.client.RedisException;
@@ -38,6 +39,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompositeIterable;
+import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -58,7 +60,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<RType> getTypeAsync(String key) {
+    public RFuture<RType> getTypeAsync(String key) {
         return commandExecutor.readAsync(key, RedisCommands.TYPE, key);
     }
     
@@ -68,7 +70,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<Integer> getSlotAsync(String key) {
+    public RFuture<Integer> getSlotAsync(String key) {
         return commandExecutor.readAsync(null, RedisCommands.KEYSLOT, key);
     }
 
@@ -99,10 +101,10 @@ public class RedissonKeys implements RKeys {
 
     private ListScanResult<String> scanIterator(InetSocketAddress client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
         if (pattern == null) {
-            Future<ListScanResult<String>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
+            RFuture<ListScanResult<String>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
             return commandExecutor.get(f);
         }
-        Future<ListScanResult<String>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
+        RFuture<ListScanResult<String>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
         return commandExecutor.get(f);
     }
 
@@ -128,7 +130,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<String> randomKeyAsync() {
+    public RFuture<String> randomKeyAsync() {
         return commandExecutor.readRandomAsync(RedisCommands.RANDOM_KEY);
     }
 
@@ -138,7 +140,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<Collection<String>> findKeysByPatternAsync(String pattern) {
+    public RFuture<Collection<String>> findKeysByPatternAsync(String pattern) {
         return commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
     }
 
@@ -148,7 +150,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<Long> deleteByPatternAsync(String pattern) {
+    public RFuture<Long> deleteByPatternAsync(String pattern) {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {
             return commandExecutor.evalWriteAsync((String)null, null, RedisCommands.EVAL_LONG, "local keys = redis.call('keys', ARGV[1]) "
                               + "local n = 0 "
@@ -158,7 +160,7 @@ public class RedissonKeys implements RKeys {
                           + "return n;",Collections.emptyList(), pattern);
         }
 
-        final Promise<Long> result = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
         Set<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
@@ -177,7 +179,7 @@ public class RedissonKeys implements RKeys {
         };
 
         for (MasterSlaveEntry entry : entries) {
-            Future<Collection<String>> findFuture = commandExecutor.readAsync(entry, null, RedisCommands.KEYS, pattern);
+            RFuture<Collection<String>> findFuture = commandExecutor.readAsync(entry, null, RedisCommands.KEYS, pattern);
             findFuture.addListener(new FutureListener<Collection<String>>() {
                 @Override
                 public void operationComplete(Future<Collection<String>> future) throws Exception {
@@ -193,7 +195,7 @@ public class RedissonKeys implements RKeys {
                         return;
                     }
 
-                    Future<Long> deleteFuture = deleteAsync(keys.toArray(new String[keys.size()]));
+                    RFuture<Long> deleteFuture = deleteAsync(keys.toArray(new String[keys.size()]));
                     deleteFuture.addListener(listener);
                 }
             });
@@ -208,7 +210,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<Long> deleteAsync(String ... keys) {
+    public RFuture<Long> deleteAsync(String ... keys) {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {
             return commandExecutor.writeAsync(null, RedisCommands.DEL, keys);
         }
@@ -226,7 +228,7 @@ public class RedissonKeys implements RKeys {
             }
         }
 
-        final Promise<Long> result = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
         final AtomicLong executed = new AtomicLong(range2key.size());
@@ -266,7 +268,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<Long> countAsync() {
+    public RFuture<Long> countAsync() {
         return commandExecutor.readAllAsync(RedisCommands.DBSIZE, new SlotCallback<Long, Long>() {
             AtomicLong results = new AtomicLong();
             @Override
@@ -287,7 +289,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<Void> flushdbAsync() {
+    public RFuture<Void> flushdbAsync() {
         return commandExecutor.writeAllAsync(RedisCommands.FLUSHDB);
     }
 
@@ -297,7 +299,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Future<Void> flushallAsync() {
+    public RFuture<Void> flushallAsync() {
         return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL);
     }
 

@@ -25,6 +25,7 @@ import org.redisson.api.RBlockingDequeAsync;
 import org.redisson.api.RBlockingQueueAsync;
 import org.redisson.api.RBucketAsync;
 import org.redisson.api.RDequeAsync;
+import org.redisson.api.RFuture;
 import org.redisson.api.RGeoAsync;
 import org.redisson.api.RHyperLogLogAsync;
 import org.redisson.api.RKeysAsync;
@@ -228,7 +229,7 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
-    public Future<List<?>> executeAsync() {
+    public RFuture<List<?>> executeAsync() {
         return executorService.executeAsync();
     }
 

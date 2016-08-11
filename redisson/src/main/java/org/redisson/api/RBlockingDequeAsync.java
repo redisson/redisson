@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Async interface for {@link BlockingDeque} backed by Redis
  *
@@ -41,7 +39,7 @@ public interface RBlockingDequeAsync<V> extends RDequeAsync<V>, RBlockingQueueAs
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    Future<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 
     /**
      * Retrieves and removes first available tail element of <b>any</b> queue in async mode,
@@ -56,17 +54,17 @@ public interface RBlockingDequeAsync<V> extends RDequeAsync<V>, RBlockingQueueAs
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    Future<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 
-    Future<Void> putFirstAsync(V e);
+    RFuture<Void> putFirstAsync(V e);
 
-    Future<Void> putLastAsync(V e);
+    RFuture<Void> putLastAsync(V e);
 
-    Future<V> pollLastAsync(long timeout, TimeUnit unit);
+    RFuture<V> pollLastAsync(long timeout, TimeUnit unit);
 
-    Future<V> takeLastAsync();
+    RFuture<V> takeLastAsync();
 
-    Future<V> pollFirstAsync(long timeout, TimeUnit unit);
+    RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
-    Future<V> takeFirstAsync();
+    RFuture<V> takeFirstAsync();
 }

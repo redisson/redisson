@@ -17,8 +17,6 @@ package org.redisson.api;
 
 import java.util.Set;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Async set functions
  *
@@ -34,7 +32,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      *
      * @return
      */
-    Future<V> removeRandomAsync();
+    RFuture<V> removeRandomAsync();
 
     /**
      * Returns random element from set
@@ -42,7 +40,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      *
      * @return
      */
-    Future<V> randomAsync();
+    RFuture<V> randomAsync();
 
     /**
      * Move a member from this set to the given destination set in async mode.
@@ -52,14 +50,14 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * @return true if the element is moved, false if the element is not a
      * member of this set or no operation was performed
      */
-    Future<Boolean> moveAsync(String destination, V member);
+    RFuture<Boolean> moveAsync(String destination, V member);
 
     /**
      * Read all elements at once
      *
      * @return
      */
-    Future<Set<V>> readAllAsync();
+    RFuture<Set<V>> readAllAsync();
 
     /**
      * Union sets specified by name and write to current set.
@@ -68,7 +66,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * @param names
      * @return
      */
-    Future<Integer> unionAsync(String... keys);
+    RFuture<Integer> unionAsync(String... keys);
 
     /**
      * Union sets specified by name with current set.
@@ -77,7 +75,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * @param names
      * @return
      */
-    Future<Set<V>> readUnionAsync(String... keys);
+    RFuture<Set<V>> readUnionAsync(String... keys);
 
     /**
      * Diff sets specified by name and write to current set.
@@ -86,7 +84,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * @param names
      * @return
      */
-    Future<Integer> diffAsync(String... keys);
+    RFuture<Integer> diffAsync(String... keys);
 
     /**
      * Diff sets specified by name with current set.
@@ -95,7 +93,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * @param names
      * @return
      */
-    Future<Set<V>> readDiffAsync(String... keys);
+    RFuture<Set<V>> readDiffAsync(String... keys);
 
     /**
      * Intersection sets specified by name and write to current set.
@@ -104,7 +102,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * @param names
      * @return
      */
-    Future<Integer> intersectionAsync(String... keys);
+    RFuture<Integer> intersectionAsync(String... keys);
 
     /**
      * Intersection sets specified by name with current set.
@@ -113,6 +111,6 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * @param names
      * @return
      */
-    Future<Set<V>> readIntersectionAsync(String... keys);
+    RFuture<Set<V>> readIntersectionAsync(String... keys);
     
 }

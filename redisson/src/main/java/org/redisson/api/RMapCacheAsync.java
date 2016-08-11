@@ -17,8 +17,6 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * <p>Async interface for map-based cache with ability to set TTL for each entry via
  * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)}
@@ -56,7 +54,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @param unit
      * @return previous associated value
      */
-    Future<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit unit);
+    RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit unit);
 
     /**
      * If the specified key is not already associated
@@ -82,7 +80,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      *
      * @return previous associated value
      */
-    Future<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Stores value mapped by key with specified time to live.
@@ -97,7 +95,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @param unit
      * @return previous associated value
      */
-    Future<V> putAsync(K key, V value, long ttl, TimeUnit unit);
+    RFuture<V> putAsync(K key, V value, long ttl, TimeUnit unit);
 
     /**
      * Stores value mapped by key with specified time to live and max idle time.
@@ -120,7 +118,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      *
      * @return previous associated value
      */
-    Future<V> putAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    RFuture<V> putAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Stores value mapped by key with specified time to live.
@@ -139,7 +137,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @param unit
      * @return previous associated value
      */
-    Future<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit unit);
+    RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit unit);
 
     /**
      * Stores value mapped by key with specified time to live and max idle time.
@@ -165,7 +163,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
 
      * @return previous associated value
      */
-    Future<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Returns the number of entries in cache.
@@ -174,5 +172,5 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      *
      */
     @Override
-    Future<Integer> sizeAsync();
+    RFuture<Integer> sizeAsync();
 }

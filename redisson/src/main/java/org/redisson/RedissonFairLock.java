@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -74,7 +75,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    <T> Future<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
+    <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
         long threadWaitTime = 5000;
 
@@ -214,7 +215,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    public Future<Boolean> forceUnlockAsync() {
+    public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal();
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads

@@ -17,8 +17,6 @@ package org.redisson.api;
 
 import java.util.BitSet;
 
-import io.netty.util.concurrent.Future;
-
 /**
  *
  * @author Nikita Koksharov
@@ -26,38 +24,38 @@ import io.netty.util.concurrent.Future;
  */
 public interface RBitSetAsync extends RExpirableAsync {
 
-    Future<byte[]> toByteArrayAsync();
+    RFuture<byte[]> toByteArrayAsync();
 
-    Future<Long> lengthAsync();
+    RFuture<Long> lengthAsync();
 
-    Future<Void> setAsync(long fromIndex, long toIndex, boolean value);
+    RFuture<Void> setAsync(long fromIndex, long toIndex, boolean value);
 
-    Future<Void> clearAsync(long fromIndex, long toIndex);
+    RFuture<Void> clearAsync(long fromIndex, long toIndex);
 
-    Future<Void> setAsync(BitSet bs);
+    RFuture<Void> setAsync(BitSet bs);
 
-    Future<Void> notAsync();
+    RFuture<Void> notAsync();
 
-    Future<Void> setAsync(long fromIndex, long toIndex);
+    RFuture<Void> setAsync(long fromIndex, long toIndex);
 
-    Future<Integer> sizeAsync();
+    RFuture<Integer> sizeAsync();
 
-    Future<Boolean> getAsync(long bitIndex);
+    RFuture<Boolean> getAsync(long bitIndex);
 
-    Future<Void> setAsync(long bitIndex);
+    RFuture<Void> setAsync(long bitIndex);
 
-    Future<Void> setAsync(long bitIndex, boolean value);
+    RFuture<Void> setAsync(long bitIndex, boolean value);
 
-    Future<Long> cardinalityAsync();
+    RFuture<Long> cardinalityAsync();
 
-    Future<Void> clearAsync(long bitIndex);
+    RFuture<Void> clearAsync(long bitIndex);
 
-    Future<Void> clearAsync();
+    RFuture<Void> clearAsync();
 
-    Future<Void> orAsync(String... bitSetNames);
+    RFuture<Void> orAsync(String... bitSetNames);
 
-    Future<Void> andAsync(String... bitSetNames);
+    RFuture<Void> andAsync(String... bitSetNames);
 
-    Future<Void> xorAsync(String... bitSetNames);
+    RFuture<Void> xorAsync(String... bitSetNames);
 
 }

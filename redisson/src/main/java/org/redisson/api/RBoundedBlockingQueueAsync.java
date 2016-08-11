@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Bounded {@link BlockingQueue} backed by Redis
  *
@@ -35,7 +33,7 @@ public interface RBoundedBlockingQueueAsync<V> extends RBlockingQueueAsync<V> {
      * @return <code>true</code> if capacity set successfully
      *         <code>false</code> if capacity already set
      */
-    Future<Boolean> trySetCapacityAsync(int capacity);
+    RFuture<Boolean> trySetCapacityAsync(int capacity);
 
     /**
      * Inserts the specified element into this queue, waiting up to the
@@ -53,6 +51,6 @@ public interface RBoundedBlockingQueueAsync<V> extends RBlockingQueueAsync<V> {
      *         prevents it from being added to this queue
      * @throws NullPointerException if the specified element is null
      */
-    Future<Boolean> offerAsync(V e, long timeout, TimeUnit unit);
+    RFuture<Boolean> offerAsync(V e, long timeout, TimeUnit unit);
 
 }

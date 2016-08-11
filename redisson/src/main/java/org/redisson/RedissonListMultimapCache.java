@@ -21,12 +21,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RListMultimapCache;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * @author Nikita Koksharov
@@ -50,7 +49,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
     }
 
-    public Future<Boolean> containsKeyAsync(Object key) {
+    public RFuture<Boolean> containsKeyAsync(Object key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -83,7 +82,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     }
 
 
-    public Future<Boolean> containsValueAsync(Object value) {
+    public RFuture<Boolean> containsValueAsync(Object value) {
         try {
             byte[] valueState = codec.getMapValueEncoder().encode(value);
 
@@ -116,7 +115,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         }
     }
 
-    public Future<Boolean> containsEntryAsync(Object key, Object value) {
+    public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -158,7 +157,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         }
     }
 
-    public Future<Collection<V>> getAllAsync(K key) {
+    public RFuture<Collection<V>> getAllAsync(K key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -181,7 +180,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
 
     }
 
-    public Future<Collection<V>> removeAllAsync(Object key) {
+    public RFuture<Collection<V>> removeAllAsync(Object key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -205,27 +204,27 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     }
     
     @Override
-    public Future<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
         return baseCache.expireKeyAsync(key, timeToLive, timeUnit);
     }
 
     @Override
-    public Future<Boolean> deleteAsync() {
+    public RFuture<Boolean> deleteAsync() {
         return baseCache.deleteAsync();
     }
 
     @Override
-    public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return baseCache.expireAsync(timeToLive, timeUnit);
     }
 
     @Override
-    public Future<Boolean> expireAtAsync(long timestamp) {
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
         return baseCache.expireAtAsync(timestamp);
     }
 
     @Override
-    public Future<Boolean> clearExpireAsync() {
+    public RFuture<Boolean> clearExpireAsync() {
         return baseCache.clearExpireAsync();
     }
     

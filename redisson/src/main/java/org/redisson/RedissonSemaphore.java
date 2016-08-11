@@ -22,11 +22,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RSemaphore;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.RPromise;
 import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.util.concurrent.Future;
@@ -93,13 +95,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
     
     @Override
-    public Future<Void> acquireAsync() {
+    public RFuture<Void> acquireAsync() {
         return acquireAsync(1);
     }
     
     @Override
-    public Future<Void> acquireAsync(final int permits) {
-        final Promise<Void> result = newPromise();
+    public RFuture<Void> acquireAsync(final int permits) {
+        final RPromise<Void> result = newPromise();
         Future<Boolean> tryAcquireFuture = tryAcquireAsync(permits);
         tryAcquireFuture.addListener(new FutureListener<Boolean>() {
             @Override
@@ -249,12 +251,12 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
     
     @Override
-    public Future<Boolean> tryAcquireAsync() {
+    public RFuture<Boolean> tryAcquireAsync() {
         return tryAcquireAsync(1);
     }
     
     @Override
-    public Future<Boolean> tryAcquireAsync(int permits) {
+    public RFuture<Boolean> tryAcquireAsync(int permits) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
@@ -270,7 +272,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     @Override
-    public Future<Boolean> tryAcquireAsync(long waitTime, TimeUnit unit) {
+    public RFuture<Boolean> tryAcquireAsync(long waitTime, TimeUnit unit) {
         return tryAcquireAsync(1, waitTime, unit);
     }
     
@@ -311,8 +313,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     @Override
-    public Future<Boolean> tryAcquireAsync(final int permits, long waitTime, TimeUnit unit) {
-        final Promise<Boolean> result = newPromise();
+    public RFuture<Boolean> tryAcquireAsync(final int permits, long waitTime, TimeUnit unit) {
+        final RPromise<Boolean> result = newPromise();
         final AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
         Future<Boolean> tryAcquireFuture = tryAcquireAsync(permits);
         tryAcquireFuture.addListener(new FutureListener<Boolean>() {
@@ -402,12 +404,12 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
     
     @Override
-    public Future<Void> releaseAsync() {
+    public RFuture<Void> releaseAsync() {
         return releaseAsync(1);
     }
     
     @Override
-    public Future<Void> releaseAsync(int permits) {
+    public RFuture<Void> releaseAsync(int permits) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
@@ -444,7 +446,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
     
     @Override
-    public Future<Void> setPermitsAsync(int permits) {
+    public RFuture<Void> setPermitsAsync(int permits) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false or value == 0) then "

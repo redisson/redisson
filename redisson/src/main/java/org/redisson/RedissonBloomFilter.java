@@ -15,13 +15,13 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.redisson.api.RBloomFilter;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
@@ -189,7 +189,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     @Override
-    public Future<Boolean> deleteAsync() {
+    public RFuture<Boolean> deleteAsync() {
         return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), getConfigName());
     }
 

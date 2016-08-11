@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Base interface for all Redisson objects
  *
@@ -34,7 +32,7 @@ public interface RObjectAsync {
      * @param database - destination database
      * @return
      */
-    Future<Void> migrateAsync(String host, int port, int database);
+    RFuture<Void> migrateAsync(String host, int port, int database);
 
     /**
      * Move object to another database in async mode
@@ -42,14 +40,14 @@ public interface RObjectAsync {
      * @param database
      * @return <code>true</code> if key was moved <code>false</code> if not
      */
-    Future<Boolean> moveAsync(int database);
+    RFuture<Boolean> moveAsync(int database);
 
     /**
      * Delete object in async mode
      *
      * @return <code>true</code> if object was deleted <code>false</code> if not
      */
-    Future<Boolean> deleteAsync();
+    RFuture<Boolean> deleteAsync();
 
     /**
      * Rename current object key to <code>newName</code>
@@ -58,7 +56,7 @@ public interface RObjectAsync {
      * @param newName
      * @return
      */
-    Future<Void> renameAsync(String newName);
+    RFuture<Void> renameAsync(String newName);
 
     /**
      * Rename current object key to <code>newName</code>
@@ -67,13 +65,13 @@ public interface RObjectAsync {
      * @param newName
      * @return
      */
-    Future<Boolean> renamenxAsync(String newName);
+    RFuture<Boolean> renamenxAsync(String newName);
 
     /**
      * Check object existence in async mode.
      *
      * @return <code>true</code> if object exists and <code>false</code> otherwise
      */
-    Future<Boolean> isExistsAsync();
+    RFuture<Boolean> isExistsAsync();
 
 }

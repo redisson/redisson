@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisLoadingException;
@@ -41,6 +42,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
+import org.redisson.misc.RPromise;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -116,7 +118,7 @@ public class CommandBatchService extends CommandReactiveService {
         return get(executeAsync());
     }
 
-    public Future<Void> executeAsyncVoid() {
+    public RFuture<Void> executeAsyncVoid() {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
@@ -126,7 +128,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
         executed = true;
 
-        Promise<Void> voidPromise = connectionManager.newPromise();
+        RPromise<Void> voidPromise = connectionManager.newPromise();
         voidPromise.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
@@ -141,7 +143,7 @@ public class CommandBatchService extends CommandReactiveService {
         return voidPromise;
     }
 
-    public Future<List<?>> executeAsync() {
+    public RFuture<List<?>> executeAsync() {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
@@ -152,7 +154,7 @@ public class CommandBatchService extends CommandReactiveService {
         executed = true;
 
         Promise<Void> voidPromise = connectionManager.newPromise();
-        final Promise<List<?>> promise = connectionManager.newPromise();
+        final RPromise<List<?>> promise = connectionManager.newPromise();
         voidPromise.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {

@@ -17,8 +17,6 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import io.netty.util.concurrent.Future;
-
 public interface RCollectionAsync<V> extends RExpirableAsync {
 
     /**
@@ -30,7 +28,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
      * @param c collection containing elements to be retained in this collection
      * @return <tt>true</tt> if this collection changed as a result of the call
      */
-    Future<Boolean> retainAllAsync(Collection<?> c);
+    RFuture<Boolean> retainAllAsync(Collection<?> c);
 
     /**
      * Removes all of this collection's elements that are also contained in the
@@ -42,7 +40,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
      * @return <tt>true</tt> if this collection changed as a result of the
      *         call
      */
-    Future<Boolean> removeAllAsync(Collection<?> c);
+    RFuture<Boolean> removeAllAsync(Collection<?> c);
 
     /**
      * Returns <tt>true</tt> if this collection contains the specified element.
@@ -54,7 +52,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
      * @return <tt>true</tt> if this collection contains the specified
      *         element
      */
-    Future<Boolean> containsAsync(Object o);
+    RFuture<Boolean> containsAsync(Object o);
 
     /**
      * Returns <tt>true</tt> if this collection contains all of the elements
@@ -64,7 +62,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
      * @return <tt>true</tt> if this collection contains all of the elements
      *         in the specified collection
      */
-    Future<Boolean> containsAllAsync(Collection<?> c);
+    RFuture<Boolean> containsAllAsync(Collection<?> c);
 
     /**
      * Removes a single instance of the specified element from this
@@ -78,17 +76,17 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
      * @param o element to be removed from this collection, if present
      * @return <tt>true</tt> if an element was removed as a result of this call
      */
-    Future<Boolean> removeAsync(Object o);
+    RFuture<Boolean> removeAsync(Object o);
 
     /**
      * Returns the number of elements in this collection.
      *
      * @return
      */
-    Future<Integer> sizeAsync();
+    RFuture<Integer> sizeAsync();
 
-    Future<Boolean> addAsync(V e);
+    RFuture<Boolean> addAsync(V e);
 
-    Future<Boolean> addAllAsync(Collection<? extends V> c);
+    RFuture<Boolean> addAllAsync(Collection<? extends V> c);
 
 }

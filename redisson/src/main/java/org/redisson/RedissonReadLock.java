@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -52,7 +53,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     }
 
     @Override
-    <T> Future<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
+    <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, command,
@@ -116,8 +117,8 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     }
 
     @Override
-    public Future<Boolean> forceUnlockAsync() {
-        Future<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    public RFuture<Boolean> forceUnlockAsync() {
+        RFuture<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hget', KEYS[1], 'mode') == 'read') then " +
                     "redis.call('del', KEYS[1]); " +
                     "redis.call('publish', KEYS[2], ARGV[1]); " +

@@ -16,8 +16,6 @@
 package org.redisson.api;
 
 import java.util.Collection;
-
-import io.netty.util.concurrent.Future;
 /**
  * Base asynchronous MultiMap interface. A collection that maps multiple values per one key.
  *
@@ -34,25 +32,25 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      *
      * @return
      */
-    Future<Integer> sizeAsync();
+    RFuture<Integer> sizeAsync();
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the key {@code key}.
      */
-    Future<Boolean> containsKeyAsync(Object key);
+    RFuture<Boolean> containsKeyAsync(Object key);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the value {@code value}.
      */
-    Future<Boolean> containsValueAsync(Object value);
+    RFuture<Boolean> containsValueAsync(Object value);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the key {@code key} and the value {@code value}.
      */
-    Future<Boolean> containsEntryAsync(Object key, Object value);
+    RFuture<Boolean> containsEntryAsync(Object key, Object value);
 
     /**
      * Stores a key-value pair in this multimap.
@@ -66,7 +64,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      *     {@code false} if the multimap already contained the key-value pair and
      *     doesn't allow duplicates
      */
-    Future<Boolean> putAsync(K key, V value);
+    RFuture<Boolean> putAsync(K key, V value);
 
     /**
      * Removes a single key-value pair with the key {@code key} and the value
@@ -76,7 +74,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      *
      * @return {@code true} if the multimap changed
      */
-    Future<Boolean> removeAsync(Object key, Object value);
+    RFuture<Boolean> removeAsync(Object key, Object value);
 
     // Bulk Operations
 
@@ -93,7 +91,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      *
      * @return {@code true} if the multimap changed
      */
-    Future<Boolean> putAllAsync(K key, Iterable<? extends V> values);
+    RFuture<Boolean> putAllAsync(K key, Iterable<? extends V> values);
 
     /**
      * Stores a collection of values with the same key, replacing any existing
@@ -107,7 +105,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      *     <i>may</i> be modifiable, but updating it will have no effect on the
      *     multimap.
      */
-    Future<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values);
+    RFuture<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values);
 
     /**
      * Removes all values associated with the key {@code key}.
@@ -120,9 +118,9 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      *     collection <i>may</i> be modifiable, but updating it will have no
      *     effect on the multimap.
      */
-    Future<Collection<V>> removeAllAsync(Object key);
+    RFuture<Collection<V>> removeAllAsync(Object key);
 
-    Future<Collection<V>> getAllAsync(K key);
+    RFuture<Collection<V>> getAllAsync(K key);
     
     
     /**
@@ -130,7 +128,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      *
      * @return
      */
-    Future<Integer> keySizeAsync();
+    RFuture<Integer> keySizeAsync();
 
     /**
      * Removes <code>keys</code> from map by one operation
@@ -141,7 +139,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      * @param keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Future<Long> fastRemoveAsync(K ... keys);
+    RFuture<Long> fastRemoveAsync(K ... keys);
 
 
 }

@@ -21,34 +21,32 @@ import org.redisson.api.RScript.Mode;
 import org.redisson.api.RScript.ReturnType;
 import org.redisson.client.codec.Codec;
 
-import io.netty.util.concurrent.Future;
-
 public interface RScriptAsync {
 
-    Future<Void> scriptFlushAsync();
+    RFuture<Void> scriptFlushAsync();
 
-    <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    <R> RFuture<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Future<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    <R> RFuture<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType);
+    <R> RFuture<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType);
 
-    <R> Future<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
+    <R> RFuture<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
 
-    <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+    <R> RFuture<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Future<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+    <R> RFuture<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
     
-    <R> Future<R> evalAsync(String key, Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+    <R> RFuture<R> evalAsync(String key, Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType);
+    <R> RFuture<R> evalAsync(Mode mode, String luaScript, ReturnType returnType);
 
-    <R> Future<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType);
+    <R> RFuture<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType);
 
-    Future<String> scriptLoadAsync(String luaScript);
+    RFuture<String> scriptLoadAsync(String luaScript);
 
-    Future<List<Boolean>> scriptExistsAsync(String ... shaDigests);
+    RFuture<List<Boolean>> scriptExistsAsync(String ... shaDigests);
 
-    Future<Void> scriptKillAsync();
+    RFuture<Void> scriptKillAsync();
 
 }

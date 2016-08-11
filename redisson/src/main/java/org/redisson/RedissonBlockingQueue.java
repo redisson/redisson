@@ -22,15 +22,16 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
+import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
@@ -52,8 +53,8 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
-    public Future<Void> putAsync(V e) {
-        final Promise<Void> result = commandExecutor.getConnectionManager().newPromise();
+    public RFuture<Void> putAsync(V e) {
+        final RPromise<Void> result = commandExecutor.getConnectionManager().newPromise();
         offerAsync(e).addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
@@ -82,7 +83,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
-    public Future<V> takeAsync() {
+    public RFuture<V> takeAsync() {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), 0);
     }
 
@@ -97,7 +98,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
-    public Future<V> pollAsync(long timeout, TimeUnit unit) {
+    public RFuture<V> pollAsync(long timeout, TimeUnit unit) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
     }
 
@@ -126,7 +127,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
      * @see org.redisson.core.RBlockingQueueAsync#pollFromAnyAsync(long, java.util.concurrent.TimeUnit, java.lang.String[])
      */
     @Override
-    public Future<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+    public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
         List<Object> params = new ArrayList<Object>(queueNames.length + 1);
         params.add(getName());
         for (Object name : queueNames) {
@@ -137,7 +138,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
-    public Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
+    public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
     }
 
@@ -158,7 +159,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
-    public Future<Integer> drainToAsync(Collection<? super V> c) {
+    public RFuture<Integer> drainToAsync(Collection<? super V> c) {
         if (c == null) {
             throw new NullPointerException();
         }
@@ -179,7 +180,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
-    public Future<Integer> drainToAsync(Collection<? super V> c, int maxElements) {
+    public RFuture<Integer> drainToAsync(Collection<? super V> c, int maxElements) {
         if (c == null) {
             throw new NullPointerException();
         }

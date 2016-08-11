@@ -20,8 +20,6 @@ import java.util.List;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Interface for using pipeline feature.
  * <p/>
@@ -361,6 +359,6 @@ public interface RBatch {
      *
      * @return List with result object for each command
      */
-    Future<List<?>> executeAsync();
+    RFuture<List<?>> executeAsync();
 
 }

@@ -19,11 +19,10 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBucket;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
@@ -41,7 +40,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
-    public Future<Boolean> compareAndSetAsync(V expect, V update) {
+    public RFuture<Boolean> compareAndSetAsync(V expect, V update) {
         if (expect == null && update == null) {
             return trySetAsync(null);
         }
@@ -75,7 +74,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
-    public Future<V> getAndSetAsync(V newValue) {
+    public RFuture<V> getAndSetAsync(V newValue) {
         if (newValue == null) {
             return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
                     "local v = redis.call('get', KEYS[1]); "
@@ -93,7 +92,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
-    public Future<V> getAsync() {
+    public RFuture<V> getAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.GET, getName());
     }
 
@@ -103,7 +102,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
-    public Future<Void> setAsync(V value) {
+    public RFuture<Void> setAsync(V value) {
         if (value == null) {
             return commandExecutor.writeAsync(getName(), RedisCommands.DEL_VOID, getName());
         }
@@ -117,7 +116,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
-    public Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
         if (value == null) {
             throw new IllegalArgumentException("Value can't be null");
         }
@@ -126,7 +125,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
-    public Future<Boolean> trySetAsync(V value) {
+    public RFuture<Boolean> trySetAsync(V value) {
         if (value == null) {
             return commandExecutor.readAsync(getName(), codec, RedisCommands.NOT_EXISTS, getName());
         }
@@ -135,7 +134,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
-    public Future<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
         if (value == null) {
             throw new IllegalArgumentException("Value can't be null");
         }

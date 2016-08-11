@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
  *
@@ -38,7 +36,7 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      *
      * <p>If the current count equals zero then nothing happens.
      */
-    Future<Void> countDownAsync();
+    RFuture<Void> countDownAsync();
 
     /**
      * Returns the current count.
@@ -47,7 +45,7 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      *
      * @return the current count
      */
-    Future<Long> getCountAsync();
+    RFuture<Long> getCountAsync();
 
     /**
      * Sets new count value only if previous count already has reached zero
@@ -58,6 +56,6 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      * @return <code>true</code> if new count setted
      *         <code>false</code> if previous count has not reached zero
      */
-    Future<Boolean> trySetCountAsync(long count);
+    RFuture<Boolean> trySetCountAsync(long count);
 
 }

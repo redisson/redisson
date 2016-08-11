@@ -15,9 +15,8 @@
  */
 package org.redisson.executor;
 
+import org.redisson.api.RFuture;
 import org.redisson.remote.RRemoteAsync;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * 
@@ -27,8 +26,8 @@ import io.netty.util.concurrent.Future;
 @RRemoteAsync(RemoteExecutorService.class)
 public interface RemoteExecutorServiceAsync {
 
-    <T> Future<T> execute(String className, byte[] classBody, byte[] state);
+    <T> RFuture<T> execute(String className, byte[] classBody, byte[] state);
     
-    Future<Void> executeVoid(String className, byte[] classBody, byte[] state);
+    RFuture<Void> executeVoid(String className, byte[] classBody, byte[] state);
     
 }

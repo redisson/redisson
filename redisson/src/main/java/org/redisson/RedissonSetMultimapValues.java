@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -37,8 +38,6 @@ import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Set based Multimap Cache values holder
@@ -70,7 +69,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Integer> sizeAsync() {
+    public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, EVAL_SIZE,
                       "local expireDate = 92233720368547758; " +
                       "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); "
@@ -95,7 +94,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Boolean> containsAsync(Object o) {
+    public RFuture<Boolean> containsAsync(Object o) {
         return commandExecutor.evalReadAsync(getName(), codec, EVAL_CONTAINS_VALUE,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); "
@@ -110,7 +109,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        Future<ListScanResult<V>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_SSCAN,
+        RFuture<ListScanResult<V>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_SSCAN,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
               + "if expireDateScore ~= false then "
@@ -143,7 +142,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Set<V>> readAllAsync() {
+    public RFuture<Set<V>> readAllAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, EVAL_READALL,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); "
@@ -180,7 +179,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Boolean> addAsync(V e) {
+    public RFuture<Boolean> addAsync(V e) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD_SINGLE, getName(), e);
     }
 
@@ -190,7 +189,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<V> removeRandomAsync() {
+    public RFuture<V> removeRandomAsync() {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SPOP_SINGLE, getName());
     }
 
@@ -200,12 +199,12 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<V> randomAsync() {
+    public RFuture<V> randomAsync() {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SRANDMEMBER_SINGLE, getName());
     }
 
     @Override
-    public Future<Boolean> removeAsync(Object o) {
+    public RFuture<Boolean> removeAsync(Object o) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_CONTAINS_VALUE,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); "
@@ -225,7 +224,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Boolean> moveAsync(String destination, V member) {
+    public RFuture<Boolean> moveAsync(String destination, V member) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SMOVE, getName(), destination, member);
     }
 
@@ -240,7 +239,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Boolean> containsAllAsync(Collection<?> c) {
+    public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
@@ -281,7 +280,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Boolean> addAllAsync(Collection<? extends V> c) {
+    public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
@@ -294,7 +293,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Boolean> retainAllAsync(Collection<?> c) {
+    public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
@@ -338,7 +337,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Boolean> removeAllAsync(Collection<?> c) {
+    public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
@@ -379,7 +378,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Integer> unionAsync(String... names) {
+    public RFuture<Integer> unionAsync(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(names));
@@ -392,7 +391,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Set<V>> readUnionAsync(String... names) {
+    public RFuture<Set<V>> readUnionAsync(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(names));
@@ -410,7 +409,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Integer> diffAsync(String... names) {
+    public RFuture<Integer> diffAsync(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(names));
@@ -423,7 +422,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Set<V>> readDiffAsync(String... names) {
+    public RFuture<Set<V>> readDiffAsync(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(names));
@@ -436,7 +435,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Integer> intersectionAsync(String... names) {
+    public RFuture<Integer> intersectionAsync(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(names));
@@ -449,7 +448,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public Future<Set<V>> readIntersectionAsync(String... names) {
+    public RFuture<Set<V>> readIntersectionAsync(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(names));

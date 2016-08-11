@@ -18,14 +18,13 @@ package org.redisson;
 import java.util.Collections;
 
 import org.redisson.api.RAtomicLong;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.SingleConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
@@ -45,7 +44,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> addAndGetAsync(long delta) {
+    public RFuture<Long> addAndGetAsync(long delta) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getName(), delta);
     }
 
@@ -55,7 +54,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Boolean> compareAndSetAsync(long expect, long update) {
+    public RFuture<Boolean> compareAndSetAsync(long expect, long update) {
         return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local currValue = redis.call('get', KEYS[1]); "
                   + "if currValue == ARGV[1] "
@@ -74,7 +73,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> decrementAndGetAsync() {
+    public RFuture<Long> decrementAndGetAsync() {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.DECR, getName());
     }
 
@@ -84,7 +83,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> getAsync() {
+    public RFuture<Long> getAsync() {
         return addAndGetAsync(0);
     }
 
@@ -94,7 +93,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> getAndAddAsync(final long delta) {
+    public RFuture<Long> getAndAddAsync(final long delta) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("INCRBY", new SingleConvertor<Long>() {
             @Override
             public Long convert(Object obj) {
@@ -110,7 +109,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> getAndSetAsync(long newValue) {
+    public RFuture<Long> getAndSetAsync(long newValue) {
         return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GETSET, getName(), newValue);
     }
 
@@ -120,7 +119,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> incrementAndGetAsync() {
+    public RFuture<Long> incrementAndGetAsync() {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.INCR, getName());
     }
 
@@ -130,7 +129,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> getAndIncrementAsync() {
+    public RFuture<Long> getAndIncrementAsync() {
         return getAndAddAsync(1);
     }
 
@@ -140,7 +139,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Long> getAndDecrementAsync() {
+    public RFuture<Long> getAndDecrementAsync() {
         return getAndAddAsync(-1);
     }
 
@@ -150,7 +149,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
     }
 
     @Override
-    public Future<Void> setAsync(long newValue) {
+    public RFuture<Void> setAsync(long newValue) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SET, getName(), newValue);
     }
 

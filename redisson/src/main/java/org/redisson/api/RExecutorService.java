@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 /**

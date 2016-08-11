@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.redisson.RedisClientResult;
 import org.redisson.RedissonShutdownException;
 import org.redisson.SlotCallback;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
@@ -47,6 +48,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
+import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,23 +127,23 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
     
     @Override
-    public <T, R> Future<R> readAsync(InetSocketAddress client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> readAsync(InetSocketAddress client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         async(true, new NodeSource(entry, client), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
     
     @Override
-    public <T, R> Future<R> readAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> readAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         int slot = connectionManager.calcSlot(key);
         async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
     @Override
-    public <T, R> Future<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params) {
-        final Promise<Collection<R>> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params) {
+        final RPromise<Collection<R>> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final List<R> results = new ArrayList<R>();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
@@ -180,8 +182,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> Future<R> readRandomAsync(RedisCommand<T> command, Object ... params) {
-        final Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> readRandomAsync(RedisCommand<T> command, Object ... params) {
+        final RPromise<R> mainPromise = connectionManager.newPromise();
         final List<MasterSlaveEntry> nodes = new ArrayList<MasterSlaveEntry>(connectionManager.getEntrySet());
         Collections.shuffle(nodes);
 
@@ -191,7 +193,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private <R, T> void retryReadRandomAsync(final RedisCommand<T> command, final Promise<R> mainPromise,
             final List<MasterSlaveEntry> nodes, final Object... params) {
-        final Promise<R> attemptPromise = connectionManager.newPromise();
+        final RPromise<R> attemptPromise = connectionManager.newPromise();
         attemptPromise.addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
@@ -216,22 +218,22 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T> Future<Void> writeAllAsync(RedisCommand<T> command, Object ... params) {
+    public <T> RFuture<Void> writeAllAsync(RedisCommand<T> command, Object ... params) {
         return writeAllAsync(command, null, params);
     }
 
     @Override
-    public <R, T> Future<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
+    public <R, T> RFuture<R> writeAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
         return allAsync(false, command, callback, params);
     }
 
     @Override
-    public <R, T> Future<R> readAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
+    public <R, T> RFuture<R> readAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
         return allAsync(true, command, callback, params);
     }
 
-    private <T, R> Future<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object ... params) {
-        final Promise<R> mainPromise = connectionManager.newPromise();
+    private <T, R> RFuture<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object ... params) {
+        final RPromise<R> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
         FutureListener<T> listener = new FutureListener<T>() {
@@ -276,89 +278,89 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> Future<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         NodeSource source = getNodeSource(key);
         async(true, source, codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
-    public <T, R> Future<R> readAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> readAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         async(true, new NodeSource(entry), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
     
-    public <T, R> Future<R> readAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> readAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         async(true, new NodeSource(slot), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
     @Override
-    public <T, R> Future<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         async(false, new NodeSource(entry), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
     
     @Override
-    public <T, R> Future<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         async(false, new NodeSource(slot), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
     @Override
-    public <T, R> Future<R> readAsync(String key, RedisCommand<T> command, Object ... params) {
+    public <T, R> RFuture<R> readAsync(String key, RedisCommand<T> command, Object ... params) {
         return readAsync(key, connectionManager.getCodec(), command, params);
     }
 
     @Override
-    public <T, R> Future<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> RFuture<R> evalReadAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         NodeSource source = getNodeSource(key);
         return evalAsync(source, true, codec, evalCommandType, script, keys, params);
     }
 
     @Override
-    public <T, R> Future<R> evalReadAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> RFuture<R> evalReadAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(new NodeSource(entry), true, codec, evalCommandType, script, keys, params);
     }
     
     @Override
-    public <T, R> Future<R> evalReadAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> RFuture<R> evalReadAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(new NodeSource(slot), true, codec, evalCommandType, script, keys, params);
     }
 
     @Override
-    public <T, R> Future<R> evalReadAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> RFuture<R> evalReadAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         int slot = connectionManager.calcSlot(key);
         return evalAsync(new NodeSource(slot, client), true, codec, evalCommandType, script, keys, params);
     }
 
     @Override
-    public <T, R> Future<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> RFuture<R> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         NodeSource source = getNodeSource(key);
         return evalAsync(source, false, codec, evalCommandType, script, keys, params);
     }
 
-    public <T, R> Future<R> evalWriteAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> RFuture<R> evalWriteAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(new NodeSource(entry), false, codec, evalCommandType, script, keys, params);
     }
     
-    public <T, R> Future<R> evalWriteAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> RFuture<R> evalWriteAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         return evalAsync(new NodeSource(slot), false, codec, evalCommandType, script, keys, params);
     }
 
 
     @Override
-    public <T, R> Future<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
+    public <T, R> RFuture<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
         return evalAllAsync(false, command, callback, script, keys, params);
     }
 
-    public <T, R> Future<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
-        final Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
+        final RPromise<R> mainPromise = connectionManager.newPromise();
         final Set<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(entries.size());
         FutureListener<T> listener = new FutureListener<T>() {
@@ -391,8 +393,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    private <T, R> Future<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    private <T, R> RFuture<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
         args.add(script);
         args.add(keys.size());
@@ -403,13 +405,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> Future<R> writeAsync(String key, RedisCommand<T> command, Object ... params) {
+    public <T, R> RFuture<R> writeAsync(String key, RedisCommand<T> command, Object ... params) {
         return writeAsync(key, connectionManager.getCodec(), command, params);
     }
 
     @Override
-    public <T, R> Future<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Promise<R> mainPromise = connectionManager.newPromise();
+    public <T, R> RFuture<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
         NodeSource source = getNodeSource(key);
         async(false, source, codec, command, params, mainPromise, 0);
         return mainPromise;
@@ -652,7 +654,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                             final boolean isReadOnly, Promise<R> attemptPromise, final AsyncDetails<V, R> details) {
         attemptPromise.addListener(new FutureListener<R>() {
             @Override
-            public void operationComplete(io.netty.util.concurrent.Future<R> future) throws Exception {
+            public void operationComplete(Future<R> future) throws Exception {
                 releaseConnection(isReadOnly, source, connectionFuture, details);
             }
         });

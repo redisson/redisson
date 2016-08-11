@@ -17,8 +17,6 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import io.netty.util.concurrent.Future;
-
 public interface RMultimapCacheAsync<K, V> extends RMultimapAsync<K, V> {
 
     /**
@@ -30,6 +28,6 @@ public interface RMultimapCacheAsync<K, V> extends RMultimapAsync<K, V> {
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if key exists and the timeout was set and <code>false</code> if key not exists
      */
-    Future<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit);
+    RFuture<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit);
     
 }

@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * {@link java.util.Queue} backed by Redis
  *
@@ -26,12 +24,12 @@ import io.netty.util.concurrent.Future;
  */
 public interface RQueueAsync<V> extends RCollectionAsync<V> {
 
-    Future<V> peekAsync();
+    RFuture<V> peekAsync();
 
-    Future<V> pollAsync();
+    RFuture<V> pollAsync();
 
-    Future<Boolean> offerAsync(V e);
+    RFuture<Boolean> offerAsync(V e);
 
-    Future<V> pollLastAndOfferFirstToAsync(String queueName);
+    RFuture<V> pollLastAndOfferFirstToAsync(String queueName);
 
 }

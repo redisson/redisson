@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RCountDownLatch;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -115,7 +116,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     @Override
-    public Future<Void> countDownAsync() {
+    public RFuture<Void> countDownAsync() {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
@@ -137,7 +138,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     @Override
-    public Future<Long> getCountAsync() {
+    public RFuture<Long> getCountAsync() {
         return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
     }
 
@@ -147,7 +148,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     @Override
-    public Future<Boolean> trySetCountAsync(long count) {
+    public RFuture<Boolean> trySetCountAsync(long count) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[1]) == 0 then "
                     + "redis.call('set', KEYS[1], ARGV[2]); "
@@ -160,7 +161,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     @Override
-    public Future<Boolean> deleteAsync() {
+    public RFuture<Boolean> deleteAsync() {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1]) == 1 then "
                     + "redis.call('publish', KEYS[2], ARGV[1]); "

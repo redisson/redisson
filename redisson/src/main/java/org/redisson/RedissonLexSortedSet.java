@@ -19,12 +19,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RLexSortedSet;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implements RLexSortedSet {
 
@@ -53,12 +52,12 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Future<Integer> removeRangeHeadAsync(String toElement, boolean toInclusive) {
+    public RFuture<Integer> removeRangeHeadAsync(String toElement, boolean toInclusive) {
         return removeRangeHeadByLexAsync(toElement, toInclusive);
     }
     
     @Override
-    public Future<Integer> removeRangeHeadByLexAsync(String toElement, boolean toInclusive) {
+    public RFuture<Integer> removeRangeHeadByLexAsync(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), "-", toValue);
     }
@@ -74,24 +73,24 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Future<Integer> removeRangeTailAsync(String fromElement, boolean fromInclusive) {
+    public RFuture<Integer> removeRangeTailAsync(String fromElement, boolean fromInclusive) {
         return removeRangeTailByLexAsync(fromElement, fromInclusive);
     }
     
     @Override
-    public Future<Integer> removeRangeTailByLexAsync(String fromElement, boolean fromInclusive) {
+    public RFuture<Integer> removeRangeTailByLexAsync(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, "+");
     }
 
     @Override
-    public Future<Integer> removeRangeAsync(String fromElement, boolean fromInclusive, String toElement,
+    public RFuture<Integer> removeRangeAsync(String fromElement, boolean fromInclusive, String toElement,
             boolean toInclusive) {
         return removeRangeByLexAsync(fromElement, fromInclusive, toElement, toInclusive);
     }
     
     @Override
-    public Future<Integer> removeRangeByLexAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
+    public RFuture<Integer> removeRangeByLexAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
@@ -119,12 +118,12 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Future<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive) {
+    public RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive) {
         return lexRangeHeadAsync(toElement, toInclusive);
     }
     
     @Override
-    public Future<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive) {
+    public RFuture<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue);
     }
@@ -140,24 +139,24 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Future<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive) {
+    public RFuture<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive) {
         return lexRangeTailAsync(fromElement, fromInclusive);
     }
     
     @Override
-    public Future<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive) {
+    public RFuture<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+");
     }
 
     @Override
-    public Future<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement,
+    public RFuture<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement,
             boolean toInclusive) {
         return lexRangeAsync(fromElement, fromInclusive, toElement, toInclusive);
     }
 
     @Override
-    public Future<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
+    public RFuture<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
@@ -186,12 +185,12 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Future<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive, int offset, int count) {
+    public RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive, int offset, int count) {
         return lexRangeHeadAsync(toElement, toInclusive, offset, count);
     }
     
     @Override
-    public Future<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive, int offset, int count) {
+    public RFuture<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive, int offset, int count) {
         String toValue = value(toElement, toInclusive);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue, "LIMIT", offset, count);
     }
@@ -207,24 +206,24 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Future<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count) {
+    public RFuture<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count) {
         return lexRangeTailAsync(fromElement, fromInclusive, offset, count);
     }
     
     @Override
-    public Future<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count) {
+    public RFuture<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count) {
         String fromValue = value(fromElement, fromInclusive);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+", "LIMIT", offset, count);
     }
 
     @Override
-    public Future<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement,
+    public RFuture<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement,
             boolean toInclusive, int offset, int count) {
         return lexRangeAsync(fromElement, fromInclusive, toElement, toInclusive, offset, count);
     }
     
     @Override
-    public Future<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count) {
+    public RFuture<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count) {
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
@@ -242,12 +241,12 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
     
     @Override
-    public Future<Integer> countTailAsync(String fromElement, boolean fromInclusive) {
+    public RFuture<Integer> countTailAsync(String fromElement, boolean fromInclusive) {
         return lexCountTailAsync(fromElement, fromInclusive);
     }
 
     @Override
-    public Future<Integer> lexCountTailAsync(String fromElement, boolean fromInclusive) {
+    public RFuture<Integer> lexCountTailAsync(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
 
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
@@ -264,12 +263,12 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
     
     @Override
-    public Future<Integer> countHeadAsync(String toElement, boolean toInclusive) {
+    public RFuture<Integer> countHeadAsync(String toElement, boolean toInclusive) {
         return lexCountHeadAsync(toElement, toInclusive);
     }
 
     @Override
-    public Future<Integer> lexCountHeadAsync(String toElement, boolean toInclusive) {
+    public RFuture<Integer> lexCountHeadAsync(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
 
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
@@ -286,13 +285,13 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Future<Integer> countAsync(String fromElement, boolean fromInclusive, String toElement,
+    public RFuture<Integer> countAsync(String fromElement, boolean fromInclusive, String toElement,
             boolean toInclusive) {
         return lexCountAsync(fromElement, fromInclusive, toElement, toInclusive);
     }
     
     @Override
-    public Future<Integer> lexCountAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
+    public RFuture<Integer> lexCountAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
 
@@ -310,12 +309,12 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
 
     @Override
-    public Future<Boolean> addAsync(String e) {
+    public RFuture<Boolean> addAsync(String e) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZADD_BOOL_RAW, getName(), 0, e);
     }
 
     @Override
-    public Future<Boolean> addAllAsync(Collection<? extends String> c) {
+    public RFuture<Boolean> addAllAsync(Collection<? extends String> c) {
         if (c.isEmpty()) {
             return newSucceededFuture(false);
         }
@@ -343,7 +342,7 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
     
     @Override
-    public Future<Collection<String>> rangeAsync(int startIndex, int endIndex) {
+    public RFuture<Collection<String>> rangeAsync(int startIndex, int endIndex) {
         return valueRangeAsync(startIndex, endIndex);
     }
     

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.redisson.api.Predicate;
+import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
@@ -45,8 +46,6 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
@@ -79,7 +78,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Integer> sizeAsync() {
+    public RFuture<Integer> sizeAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.HLEN, getName());
     }
 
@@ -94,7 +93,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Boolean> containsKeyAsync(Object key) {
+    public RFuture<Boolean> containsKeyAsync(Object key) {
         return commandExecutor.readAsync(getName(key), codec, RedisCommands.HEXISTS, getName(key), key);
     }
 
@@ -104,7 +103,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Boolean> containsValueAsync(Object value) {
+    public RFuture<Boolean> containsValueAsync(Object value) {
         return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local s = redis.call('hvals', KEYS[1]);" +
                         "for i = 1, #s, 1 do "
@@ -122,7 +121,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Map<K, V>> getAllAsync(Set<K> keys) {
+    public RFuture<Map<K, V>> getAllAsync(Set<K> keys) {
         if (keys.size() == 0) {
             return newSucceededFuture(Collections.<K, V>emptyMap());
         }
@@ -154,7 +153,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Void> putAllAsync(Map<? extends K, ? extends V> map) {
+    public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) {
         if (map.isEmpty()) {
             return newSucceededFuture(null);
         }
@@ -195,7 +194,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Set<K>> readAllKeySetAsync() {
+    public RFuture<Set<K>> readAllKeySetAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.HKEYS, getName());
     }
 
@@ -205,7 +204,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Collection<V>> readAllValuesAsync() {
+    public RFuture<Collection<V>> readAllValuesAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.HVALS, getName());
     }
 
@@ -215,7 +214,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Set<Entry<K, V>>> readAllEntrySetAsync() {
+    public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.HGETALL_ENTRY, getName());
     }
 
@@ -225,7 +224,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<V> putIfAbsentAsync(K key, V value) {
+    public RFuture<V> putIfAbsentAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT,
                  "if redis.call('hsetnx', KEYS[1], ARGV[1], ARGV[2]) == 1 then "
                     + "return nil "
@@ -241,7 +240,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Boolean> fastPutIfAbsentAsync(K key, V value) {
+    public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value) {
         return commandExecutor.writeAsync(getName(key), codec, RedisCommands.HSETNX, getName(key), key, value);
     }
 
@@ -251,7 +250,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Long> removeAsync(Object key, Object value) {
+    public RFuture<Long> removeAsync(Object key, Object value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REMOVE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                         + "return redis.call('hdel', KEYS[1], ARGV[1]) "
@@ -267,7 +266,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Boolean> replaceAsync(K key, V oldValue, V newValue) {
+    public RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue) {
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REPLACE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); "
@@ -284,7 +283,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<V> replaceAsync(K key, V value) {
+    public RFuture<V> replaceAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REPLACE,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
                     + "local v = redis.call('hget', KEYS[1], ARGV[1]); "
@@ -297,7 +296,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<V> getAsync(K key) {
+    public RFuture<V> getAsync(K key) {
         return commandExecutor.readAsync(getName(key), codec, RedisCommands.HGET, getName(key), key);
     }
     
@@ -306,7 +305,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
     
     @Override
-    public Future<V> putAsync(K key, V value) {
+    public RFuture<V> putAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
@@ -316,7 +315,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
 
     @Override
-    public Future<V> removeAsync(K key) {
+    public RFuture<V> removeAsync(K key) {
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REMOVE,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('hdel', KEYS[1], ARGV[1]); "
@@ -325,7 +324,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Boolean> fastPutAsync(K key, V value) {
+    public RFuture<Boolean> fastPutAsync(K key, V value) {
         return commandExecutor.writeAsync(getName(key), codec, RedisCommands.HSET, getName(key), key, value);
     }
 
@@ -335,7 +334,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<Long> fastRemoveAsync(K ... keys) {
+    public RFuture<Long> fastRemoveAsync(K ... keys) {
         if (keys == null || keys.length == 0) {
             return newSucceededFuture(0L);
         }
@@ -352,7 +351,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
-        Future<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
+        RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
             = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.HSCAN, name, startPos);
         return get(f);
     }
@@ -425,7 +424,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Future<V> addAndGetAsync(K key, Number value) {
+    public RFuture<V> addAndGetAsync(K key, Number value) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             return commandExecutor.writeAsync(getName(key), StringCodec.INSTANCE,

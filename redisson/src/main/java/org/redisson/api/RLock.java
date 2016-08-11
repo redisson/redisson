@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
  * Implements reentrant lock.
@@ -114,18 +112,18 @@ public interface RLock extends Lock, RExpirable {
      */
     int getHoldCount();
 
-    Future<Boolean> forceUnlockAsync();
+    RFuture<Boolean> forceUnlockAsync();
     
-    Future<Void> unlockAsync();
+    RFuture<Void> unlockAsync();
 
-    Future<Boolean> tryLockAsync();
+    RFuture<Boolean> tryLockAsync();
 
-    Future<Void> lockAsync();
+    RFuture<Void> lockAsync();
 
-    Future<Void> lockAsync(long leaseTime, TimeUnit unit);
+    RFuture<Void> lockAsync(long leaseTime, TimeUnit unit);
 
-    Future<Boolean> tryLockAsync(long waitTime, TimeUnit unit);
+    RFuture<Boolean> tryLockAsync(long waitTime, TimeUnit unit);
 
-    Future<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit);
+    RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit);
 
 }

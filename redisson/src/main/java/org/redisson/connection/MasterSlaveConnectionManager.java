@@ -28,11 +28,11 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.Version;
 import org.redisson.api.NodeType;
+import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -49,6 +49,9 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonFuture;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.TransferListener;
 import org.slf4j.Logger;
@@ -140,7 +143,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final AsyncSemaphore[] locks = new AsyncSemaphore[50];
     
-    private final Semaphore freePubSubLock = new Semaphore(1);
+    private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
     
     {
         for (int i = 0; i < locks.length; i++) {
@@ -313,7 +316,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public Future<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?> listener) {
-        final AsyncSemaphore lock = locks[Math.abs(channelName.hashCode() % locks.length)];
+        final AsyncSemaphore lock = getSemaphore(channelName);
         final Promise<PubSubConnectionEntry> result = newPromise();
         lock.acquire(new Runnable() {
             @Override
@@ -332,7 +335,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     public Future<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener) {
-        final AsyncSemaphore lock = locks[Math.abs(channelName.hashCode() % locks.length)];
+        final AsyncSemaphore lock = getSemaphore(channelName);
         final Promise<PubSubConnectionEntry> result = newPromise();
         lock.acquire(new Runnable() {
             @Override
@@ -355,7 +358,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     private void subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener, 
-            final Promise<PubSubConnectionEntry> promise, PubSubType type, final AsyncSemaphore lock) {
+            final Promise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
         final PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
             сonnEntry.addListener(channelName, listener);
@@ -369,54 +372,63 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return;
         }
 
-        freePubSubLock.acquireUninterruptibly();
-        final PubSubConnectionEntry freeEntry = freePubSubConnections.peek();
-        if (freeEntry == null) {
-            connect(codec, channelName, listener, promise, type, lock);
-            return;
-        }
-        
-        int remainFreeAmount = freeEntry.tryAcquire();
-        if (remainFreeAmount == -1) {
-            throw new IllegalStateException();
-        }
-        
-        final PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, freeEntry);
-        if (oldEntry != null) {
-            freeEntry.release();
-            freePubSubLock.release();
-            
-            oldEntry.addListener(channelName, listener);
-            oldEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
-                @Override
-                public void operationComplete(Future<Void> future) throws Exception {
-                    lock.release();
-                    promise.trySuccess(oldEntry);
-                }
-            });
-            return;
-        }
-        
-        if (remainFreeAmount == 0) {
-            freePubSubConnections.poll();
-        }
-        freePubSubLock.release();
-        
-        freeEntry.addListener(channelName, listener);
-        freeEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
+        freePubSubLock.acquire(new Runnable() {
+
             @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                lock.release();
-                promise.trySuccess(freeEntry);
+            public void run() {
+                if (promise.isDone()) {
+                    return;
+                }
+                
+                final PubSubConnectionEntry freeEntry = freePubSubConnections.peek();
+                if (freeEntry == null) {
+                    connect(codec, channelName, listener, promise, type, lock);
+                    return;
+                }
+                
+                int remainFreeAmount = freeEntry.tryAcquire();
+                if (remainFreeAmount == -1) {
+                    throw new IllegalStateException();
+                }
+                
+                final PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, freeEntry);
+                if (oldEntry != null) {
+                    freeEntry.release();
+                    freePubSubLock.release();
+                    
+                    oldEntry.addListener(channelName, listener);
+                    oldEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
+                        @Override
+                        public void operationComplete(Future<Void> future) throws Exception {
+                            lock.release();
+                            promise.trySuccess(oldEntry);
+                        }
+                    });
+                    return;
+                }
+                
+                if (remainFreeAmount == 0) {
+                    freePubSubConnections.poll();
+                }
+                freePubSubLock.release();
+                
+                freeEntry.addListener(channelName, listener);
+                freeEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
+                    @Override
+                    public void operationComplete(Future<Void> future) throws Exception {
+                        lock.release();
+                        promise.trySuccess(freeEntry);
+                    }
+                });
+                
+                if (PubSubType.PSUBSCRIBE == type) {
+                    freeEntry.psubscribe(codec, channelName);
+                } else {
+                    freeEntry.subscribe(codec, channelName);
+                }
             }
+            
         });
-        
-        
-        if (PubSubType.PSUBSCRIBE == type) {
-            freeEntry.psubscribe(codec, channelName);
-        } else {
-            freeEntry.subscribe(codec, channelName);
-        }
     }
 
     private void connect(final Codec codec, final String channelName, final RedisPubSubListener<?> listener,
@@ -692,18 +704,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public <R> Promise<R> newPromise() {
-        return ImmediateEventExecutor.INSTANCE.newPromise();
+    public <R> RPromise<R> newPromise() {
+        return new RedissonPromise<R>(ImmediateEventExecutor.INSTANCE.<R>newPromise());
     }
 
     @Override
-    public <R> Future<R> newSucceededFuture(R value) {
-        return ImmediateEventExecutor.INSTANCE.newSucceededFuture(value);
+    public <R> RFuture<R> newSucceededFuture(R value) {
+        return new RedissonFuture<R>(ImmediateEventExecutor.INSTANCE.<R>newSucceededFuture(value));
     }
 
     @Override
-    public <R> Future<R> newFailedFuture(Throwable cause) {
-        return ImmediateEventExecutor.INSTANCE.newFailedFuture(cause);
+    public <R> RFuture<R> newFailedFuture(Throwable cause) {
+        return new RedissonFuture<R>(ImmediateEventExecutor.INSTANCE.<R>newFailedFuture(cause));
     }
 
     @Override

@@ -17,8 +17,6 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import io.netty.util.concurrent.Future;
-
 public interface RKeysAsync {
 
     /**
@@ -27,7 +25,7 @@ public interface RKeysAsync {
      * @param name
      * @return
      */
-    Future<RType> getTypeAsync(String key);
+    RFuture<RType> getTypeAsync(String key);
     
     /**
      * Get hash slot identifier for key in async mode.
@@ -36,14 +34,14 @@ public interface RKeysAsync {
      * @param key
      * @return
      */
-    Future<Integer> getSlotAsync(String key);
+    RFuture<Integer> getSlotAsync(String key);
 
     /**
      * Get random key in async mode
      *
      * @return
      */
-    Future<String> randomKeyAsync();
+    RFuture<String> randomKeyAsync();
 
     /**
      * Find keys by key search pattern in async mode
@@ -56,7 +54,7 @@ public interface RKeysAsync {
      * @param pattern
      * @return
      */
-    Future<Collection<String>> findKeysByPatternAsync(String pattern);
+    RFuture<Collection<String>> findKeysByPatternAsync(String pattern);
 
     /**
      * Delete multiple objects by a key pattern.
@@ -71,7 +69,7 @@ public interface RKeysAsync {
      * @param pattern
      * @return number of removed keys
      */
-    Future<Long> deleteByPatternAsync(String pattern);
+    RFuture<Long> deleteByPatternAsync(String pattern);
 
     /**
      * Delete multiple objects by name
@@ -79,23 +77,23 @@ public interface RKeysAsync {
      * @param keys - object names
      * @return number of removed keys
      */
-    Future<Long> deleteAsync(String ... keys);
+    RFuture<Long> deleteAsync(String ... keys);
 
     /**
      * Returns the number of keys in the currently-selected database in async mode
      *
      * @return
      */
-    Future<Long> countAsync();
+    RFuture<Long> countAsync();
 
     /**
      * Delete all keys of currently selected database
      */
-    Future<Void> flushdbAsync();
+    RFuture<Void> flushdbAsync();
 
     /**
      * Delete all keys of all existing databases
      */
-    Future<Void> flushallAsync();
+    RFuture<Void> flushallAsync();
 
 }

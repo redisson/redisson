@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.redisson.api.MessageListener;
+import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.StatusListener;
 import org.redisson.client.RedisPubSubListener;
@@ -63,7 +64,7 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
 
     @Override
-    public Future<Long> publishAsync(M message) {
+    public RFuture<Long> publishAsync(M message) {
         return commandExecutor.writeAsync(name, codec, RedisCommands.PUBLISH, name, message);
     }
 

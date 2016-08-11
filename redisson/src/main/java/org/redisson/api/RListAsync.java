@@ -19,8 +19,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.RandomAccess;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Async list functions
  *
@@ -37,7 +35,7 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      * @param element
      * @return new list size
      */
-    Future<Integer> addAfterAsync(V elementToFind, V element);
+    RFuture<Integer> addAfterAsync(V elementToFind, V element);
     
     /**
      * Add <code>element</code> before <code>elementToFind</code>
@@ -46,13 +44,13 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      * @param element
      * @return new list size
      */
-    Future<Integer> addBeforeAsync(V elementToFind, V element);
+    RFuture<Integer> addBeforeAsync(V elementToFind, V element);
     
-    Future<Boolean> addAllAsync(int index, Collection<? extends V> coll);
+    RFuture<Boolean> addAllAsync(int index, Collection<? extends V> coll);
 
-    Future<Integer> lastIndexOfAsync(Object o);
+    RFuture<Integer> lastIndexOfAsync(Object o);
 
-    Future<Integer> indexOfAsync(Object o);
+    RFuture<Integer> indexOfAsync(Object o);
 
     /**
      * Set <code>element</code> at <code>index</code>.
@@ -62,18 +60,18 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      * @param index
      * @param element
      */
-    Future<Void> fastSetAsync(int index, V element);
+    RFuture<Void> fastSetAsync(int index, V element);
 
-    Future<V> setAsync(int index, V element);
+    RFuture<V> setAsync(int index, V element);
 
-    Future<V> getAsync(int index);
+    RFuture<V> getAsync(int index);
 
     /**
      * Read all elements at once
      *
      * @return
      */
-    Future<List<V>> readAllAsync();
+    RFuture<List<V>> readAllAsync();
 
     /**
      * Trim list and remains elements only in specified range
@@ -83,8 +81,8 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      * @param toIndex
      * @return
      */
-    Future<Void> trimAsync(int fromIndex, int toIndex);
+    RFuture<Void> trimAsync(int fromIndex, int toIndex);
 
-    Future<Void> fastRemoveAsync(int index);
+    RFuture<Void> fastRemoveAsync(int index);
     
 }

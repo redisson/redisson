@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.redisson.api.RLock;
 
 import io.netty.util.concurrent.Future;
 

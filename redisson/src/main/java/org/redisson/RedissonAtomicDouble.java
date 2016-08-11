@@ -19,14 +19,13 @@ import java.math.BigDecimal;
 import java.util.Collections;
 
 import org.redisson.api.RAtomicDouble;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.SingleConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
@@ -46,7 +45,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Double> addAndGetAsync(double delta) {
+    public RFuture<Double> addAndGetAsync(double delta) {
         if (delta == 0) {
             return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.INCRBYFLOAT, getName(), 0);
         }
@@ -59,7 +58,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Boolean> compareAndSetAsync(double expect, double update) {
+    public RFuture<Boolean> compareAndSetAsync(double expect, double update) {
         return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if tonumber(redis.call('get', KEYS[1])) == tonumber(ARGV[1]) then "
                      + "redis.call('set', KEYS[1], ARGV[2]); "
@@ -75,7 +74,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Double> decrementAndGetAsync() {
+    public RFuture<Double> decrementAndGetAsync() {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.DECR, getName());
     }
 
@@ -85,7 +84,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Double> getAsync() {
+    public RFuture<Double> getAsync() {
         return addAndGetAsync(0);
     }
 
@@ -95,7 +94,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Double> getAndAddAsync(final double delta) {
+    public RFuture<Double> getAndAddAsync(final double delta) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, new RedisStrictCommand<Double>("INCRBYFLOAT", new SingleConvertor<Double>() {
             @Override
             public Double convert(Object obj) {
@@ -111,7 +110,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Double> getAndSetAsync(double newValue) {
+    public RFuture<Double> getAndSetAsync(double newValue) {
         return commandExecutor.writeAsync(getName(), DoubleCodec.INSTANCE, RedisCommands.GETSET, getName(), BigDecimal.valueOf(newValue).toPlainString());
     }
 
@@ -121,7 +120,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Double> incrementAndGetAsync() {
+    public RFuture<Double> incrementAndGetAsync() {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.INCRBYFLOAT, getName(), 1);
     }
 
@@ -131,7 +130,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Double> getAndIncrementAsync() {
+    public RFuture<Double> getAndIncrementAsync() {
         return getAndAddAsync(1);
     }
 
@@ -141,7 +140,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Double> getAndDecrementAsync() {
+    public RFuture<Double> getAndDecrementAsync() {
         return getAndAddAsync(-1);
     }
 
@@ -151,7 +150,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     }
 
     @Override
-    public Future<Void> setAsync(double newValue) {
+    public RFuture<Void> setAsync(double newValue) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SET, getName(), BigDecimal.valueOf(newValue));
     }
 

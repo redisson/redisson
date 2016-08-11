@@ -47,8 +47,6 @@ public class RedissonNodeConfig extends Config {
     /**
      * Executor service threads amount between all workers.
      * <p>
-     * <code>-1</code> - use netty thread pool
-     * <p>
      * <code>0</code> - create separate thread executor with <code>(current_processors_amount * 2)</code> threads
      * <p>
      * <code>n</code> - create separate thread executor with <code>(n)</code> threads

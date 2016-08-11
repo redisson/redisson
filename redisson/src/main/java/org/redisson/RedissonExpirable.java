@@ -19,12 +19,11 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RExpirable;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
@@ -42,7 +41,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     @Override
-    public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIRE, getName(), timeUnit.toMillis(timeToLive));
     }
 
@@ -52,7 +51,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     @Override
-    public Future<Boolean> expireAtAsync(long timestamp) {
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PEXPIREAT, getName(), timestamp);
     }
 
@@ -62,7 +61,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     @Override
-    public Future<Boolean> expireAtAsync(Date timestamp) {
+    public RFuture<Boolean> expireAtAsync(Date timestamp) {
         return expireAtAsync(timestamp.getTime());
     }
 
@@ -72,7 +71,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     @Override
-    public Future<Boolean> clearExpireAsync() {
+    public RFuture<Boolean> clearExpireAsync() {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.PERSIST, getName());
     }
 
@@ -82,7 +81,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     }
 
     @Override
-    public Future<Long> remainTimeToLiveAsync() {
+    public RFuture<Long> remainTimeToLiveAsync() {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.PTTL, getName());
     }
 

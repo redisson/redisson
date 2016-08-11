@@ -29,16 +29,16 @@ import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
 import org.redisson.api.RBucket;
+import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RSortedSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.RPromise;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 
 /**
  *
@@ -271,8 +271,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
     }
 
-    public Future<Boolean> addAsync(final V value) {
-        final Promise<Boolean> promise = newPromise();
+    public RFuture<Boolean> addAsync(final V value) {
+        final RPromise<Boolean> promise = newPromise();
         commandExecutor.getConnectionManager().getGroup().execute(new Runnable() {
             public void run() {
                 try {
@@ -287,9 +287,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     @Override
-    public Future<Boolean> removeAsync(final V value) {
+    public RFuture<Boolean> removeAsync(final V value) {
         EventLoopGroup group = commandExecutor.getConnectionManager().getGroup();
-        final Promise<Boolean> promise = newPromise();
+        final RPromise<Boolean> promise = newPromise();
 
         group.execute(new Runnable() {
             @Override

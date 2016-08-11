@@ -16,9 +16,8 @@
 package org.redisson.api;
 
 import java.util.Collection;
-import java.util.concurrent.*;
-
-import io.netty.util.concurrent.Future;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link BlockingQueue} backed by Redis
@@ -41,7 +40,7 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    Future<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 
     /**
      * Removes at most the given number of available elements from
@@ -66,7 +65,7 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    Future<Integer> drainToAsync(Collection<? super V> c, int maxElements);
+    RFuture<Integer> drainToAsync(Collection<? super V> c, int maxElements);
 
     /**
      * Removes all available elements from this queue and adds them
@@ -91,9 +90,9 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    Future<Integer> drainToAsync(Collection<? super V> c);
+    RFuture<Integer> drainToAsync(Collection<? super V> c);
 
-    Future<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit);
+    RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit);
 
     /**
      * Retrieves and removes the head of this queue in async mode, waiting up to the
@@ -107,7 +106,7 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    Future<V> pollAsync(long timeout, TimeUnit unit);
+    RFuture<V> pollAsync(long timeout, TimeUnit unit);
 
     /**
      * Retrieves and removes the head of this queue in async mode, waiting if necessary
@@ -116,7 +115,7 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      * @return the head of this queue
      * @throws InterruptedException if interrupted while waiting
      */
-    Future<V> takeAsync();
+    RFuture<V> takeAsync();
 
     /**
      * Inserts the specified element into this queue in async mode, waiting if necessary
@@ -130,6 +129,6 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
-    Future<Void> putAsync(V e);
+    RFuture<Void> putAsync(V e);
 
 }

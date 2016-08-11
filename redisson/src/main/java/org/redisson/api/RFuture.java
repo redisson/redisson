@@ -15,26 +15,15 @@
  */
 package org.redisson.api;
 
-public interface RAtomicLongAsync extends RExpirableAsync {
+import io.netty.util.concurrent.Future;
 
-    RFuture<Boolean> compareAndSetAsync(long expect, long update);
-
-    RFuture<Long> addAndGetAsync(long delta);
-
-    RFuture<Long> decrementAndGetAsync();
-
-    RFuture<Long> getAsync();
-
-    RFuture<Long> getAndAddAsync(long delta);
-
-    RFuture<Long> getAndSetAsync(long newValue);
-
-    RFuture<Long> incrementAndGetAsync();
-
-    RFuture<Long> getAndIncrementAsync();
-
-    RFuture<Long> getAndDecrementAsync();
-
-    RFuture<Void> setAsync(long newValue);
+/**
+ * Represents the result of an asynchronous computation
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V>
+ */
+public interface RFuture<V> extends Future<V> {
 
 }

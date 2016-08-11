@@ -25,14 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RListMultimap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * @author Nikita Koksharov
@@ -52,7 +51,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         super(codec, connectionManager, name);
     }
 
-    public Future<Integer> sizeAsync() {
+    public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "local keys = redis.call('hgetall', KEYS[1]); " +
                 "local size = 0; " +
@@ -68,7 +67,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
     
     
 
-    public Future<Boolean> containsKeyAsync(Object key) {
+    public RFuture<Boolean> containsKeyAsync(Object key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -80,7 +79,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         }
     }
 
-    public Future<Boolean> containsValueAsync(Object value) {
+    public RFuture<Boolean> containsValueAsync(Object value) {
         try {
             byte[] valueState = codec.getMapValueEncoder().encode(value);
 
@@ -110,7 +109,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return get(containsEntryAsync(key, value));
     }
 
-    public Future<Boolean> containsEntryAsync(Object key, Object value) {
+    public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -137,7 +136,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return get(putAsync(key, value));
     }
 
-    public Future<Boolean> putAsync(K key, V value) {
+    public RFuture<Boolean> putAsync(K key, V value) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -154,7 +153,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         }
     }
 
-    public Future<Boolean> removeAsync(Object key, Object value) {
+    public RFuture<Boolean> removeAsync(Object key, Object value) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -173,7 +172,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         }
     }
 
-    public Future<Boolean> putAllAsync(K key, Iterable<? extends V> values) {
+    public RFuture<Boolean> putAllAsync(K key, Iterable<? extends V> values) {
         try {
             List<Object> params = new ArrayList<Object>();
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
@@ -214,7 +213,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return (List<V>) get(getAllAsync(key));
     }
 
-    public Future<Collection<V>> getAllAsync(K key) {
+    public RFuture<Collection<V>> getAllAsync(K key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -231,7 +230,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return (List<V>) get(removeAllAsync(key));
     }
 
-    public Future<Collection<V>> removeAllAsync(Object key) {
+    public RFuture<Collection<V>> removeAllAsync(Object key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
             String keyHash = hash(keyState);
@@ -253,7 +252,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return (List<V>) get(replaceValuesAsync(key, values));
     }
 
-    public Future<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values) {
+    public RFuture<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values) {
         try {
             List<Object> params = new ArrayList<Object>();
             byte[] keyState = codec.getMapKeyEncoder().encode(key);

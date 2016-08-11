@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * {@link java.util.Deque} backed by Redis
  *
@@ -26,34 +24,34 @@ import io.netty.util.concurrent.Future;
  */
 public interface RDequeAsync<V> extends RQueueAsync<V> {
 
-    Future<Boolean> removeLastOccurrenceAsync(Object o);
+    RFuture<Boolean> removeLastOccurrenceAsync(Object o);
 
-    Future<V> removeLastAsync();
+    RFuture<V> removeLastAsync();
 
-    Future<V> removeFirstAsync();
+    RFuture<V> removeFirstAsync();
 
-    Future<Boolean> removeFirstOccurrenceAsync(Object o);
+    RFuture<Boolean> removeFirstOccurrenceAsync(Object o);
 
-    Future<Void> pushAsync(V e);
+    RFuture<Void> pushAsync(V e);
 
-    Future<V> popAsync();
+    RFuture<V> popAsync();
 
-    Future<V> pollLastAsync();
+    RFuture<V> pollLastAsync();
 
-    Future<V> pollFirstAsync();
+    RFuture<V> pollFirstAsync();
 
-    Future<V> peekLastAsync();
+    RFuture<V> peekLastAsync();
 
-    Future<V> peekFirstAsync();
+    RFuture<V> peekFirstAsync();
 
-    Future<Boolean> offerLastAsync(V e);
+    RFuture<Boolean> offerLastAsync(V e);
 
-    Future<V> getLastAsync();
+    RFuture<V> getLastAsync();
 
-    Future<Void> addLastAsync(V e);
+    RFuture<Void> addLastAsync(V e);
 
-    Future<Void> addFirstAsync(V e);
+    RFuture<Void> addFirstAsync(V e);
 
-    Future<Boolean> offerFirstAsync(V e);
+    RFuture<Boolean> offerFirstAsync(V e);
 
 }

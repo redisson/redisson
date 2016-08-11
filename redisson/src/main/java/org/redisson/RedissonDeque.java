@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.redisson.api.RDeque;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -26,8 +27,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListFirstObjectDecoder;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -56,7 +55,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<Void> addFirstAsync(V e) {
+    public RFuture<Void> addFirstAsync(V e) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_VOID, getName(), e);
     }
 
@@ -66,7 +65,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<Void> addLastAsync(V e) {
+    public RFuture<Void> addLastAsync(V e) {
         return commandExecutor.writeAsync(getName(), codec, RPUSH_VOID, getName(), e);
     }
 
@@ -108,7 +107,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<V> getLastAsync() {
+    public RFuture<V> getLastAsync() {
         return commandExecutor.readAsync(getName(), codec, LRANGE_SINGLE, getName(), -1, -1);
     }
 
@@ -127,12 +126,12 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<Boolean> offerFirstAsync(V e) {
+    public RFuture<Boolean> offerFirstAsync(V e) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_BOOLEAN, getName(), e);
     }
 
     @Override
-    public Future<Boolean> offerLastAsync(V e) {
+    public RFuture<Boolean> offerLastAsync(V e) {
         return offerAsync(e);
     }
 
@@ -142,7 +141,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<V> peekFirstAsync() {
+    public RFuture<V> peekFirstAsync() {
         return getAsync(0);
     }
 
@@ -152,7 +151,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<V> peekLastAsync() {
+    public RFuture<V> peekLastAsync() {
         return getLastAsync();
     }
 
@@ -162,7 +161,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<V> pollFirstAsync() {
+    public RFuture<V> pollFirstAsync() {
         return pollAsync();
     }
 
@@ -172,7 +171,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<V> pollLastAsync() {
+    public RFuture<V> pollLastAsync() {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
     }
 
@@ -183,7 +182,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<V> popAsync() {
+    public RFuture<V> popAsync() {
         return pollAsync();
     }
 
@@ -193,7 +192,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<Void> pushAsync(V e) {
+    public RFuture<Void> pushAsync(V e) {
         return addFirstAsync(e);
     }
 
@@ -203,7 +202,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<Boolean> removeFirstOccurrenceAsync(Object o) {
+    public RFuture<Boolean> removeFirstOccurrenceAsync(Object o) {
         return removeAsync(o, 1);
     }
 
@@ -213,12 +212,12 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<V> removeFirstAsync() {
+    public RFuture<V> removeFirstAsync() {
         return pollAsync();
     }
 
     @Override
-    public Future<V> removeLastAsync() {
+    public RFuture<V> removeLastAsync() {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
     }
 
@@ -232,7 +231,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     }
 
     @Override
-    public Future<Boolean> removeLastOccurrenceAsync(Object o) {
+    public RFuture<Boolean> removeLastOccurrenceAsync(Object o) {
         return removeAsync(o, -1);
     }
 

@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RMultimap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -152,7 +153,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
-    public Future<Long> fastRemoveAsync(K ... keys) {
+    public RFuture<Long> fastRemoveAsync(K ... keys) {
         if (keys == null || keys.length == 0) {
             return newSucceededFuture(0L);
         }
@@ -182,7 +183,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
     
     @Override
-    public Future<Boolean> deleteAsync() {
+    public RFuture<Boolean> deleteAsync() {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN_AMOUNT,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "local keys = {KEYS[1]}; " +
@@ -202,7 +203,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
-    public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
@@ -216,7 +217,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
-    public Future<Boolean> expireAtAsync(long timestamp) {
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
@@ -230,7 +231,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
-    public Future<Boolean> clearExpireAsync() {
+    public RFuture<Boolean> clearExpireAsync() {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
@@ -243,7 +244,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 Arrays.<Object>asList(getName()));
     }
     
-    public Future<Integer> keySizeAsync() {
+    public RFuture<Integer> keySizeAsync() {
     	return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.HLEN, getName());
     }
     

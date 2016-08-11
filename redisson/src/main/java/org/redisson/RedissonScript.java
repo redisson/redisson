@@ -19,13 +19,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RScript;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonScript implements RScript {
 
@@ -45,7 +44,7 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public Future<String> scriptLoadAsync(String luaScript) {
+    public RFuture<String> scriptLoadAsync(String luaScript) {
         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
             volatile String result;
             @Override
@@ -60,7 +59,7 @@ public class RedissonScript implements RScript {
         }, luaScript);
     }
 
-    public Future<String> scriptLoadAsync(String key, String luaScript) {
+    public RFuture<String> scriptLoadAsync(String key, String luaScript) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_LOAD, luaScript);
     }
 
@@ -94,17 +93,17 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> RFuture<R> evalAsync(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
         return evalAsync(null, mode, commandExecutor.getConnectionManager().getCodec(), luaScript, returnType, keys, values);
     }
 
     @Override
-    public <R> Future<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> RFuture<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
         return evalAsync(null, mode, codec, luaScript, returnType, keys, values);
     }
 
     @Override
-    public <R> Future<R> evalAsync(String key, Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> RFuture<R> evalAsync(String key, Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
         if (mode == Mode.READ_ONLY) {
             return commandExecutor.evalReadAsync(key, codec, returnType.getCommand(), luaScript, keys, values);
         }
@@ -145,16 +144,16 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> RFuture<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
         return evalShaAsync(null, mode, commandExecutor.getConnectionManager().getCodec(), shaDigest, returnType, keys, values);
     }
 
     @Override
-    public <R> Future<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> RFuture<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
         return evalShaAsync(null, mode, codec, shaDigest, returnType, keys, values);
     }
 
-    public <R> Future<R> evalShaAsync(String key, Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
+    public <R> RFuture<R> evalShaAsync(String key, Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
         if (mode == Mode.READ_ONLY) {
             return commandExecutor.evalReadAsync(key, codec, command, shaDigest, keys, values);
@@ -172,11 +171,11 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public Future<Void> scriptKillAsync() {
+    public RFuture<Void> scriptKillAsync() {
         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_KILL);
     }
 
-    public Future<Void> scriptKillAsync(String key) {
+    public RFuture<Void> scriptKillAsync(String key) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_KILL);
     }
 
@@ -186,7 +185,7 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public Future<List<Boolean>> scriptExistsAsync(final String ... shaDigests) {
+    public RFuture<List<Boolean>> scriptExistsAsync(final String ... shaDigests) {
          return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
             volatile List<Boolean> result = new ArrayList<Boolean>(shaDigests.length);
             @Override
@@ -210,7 +209,7 @@ public class RedissonScript implements RScript {
         return commandExecutor.get(scriptExistsAsync(key, shaDigests));
     }
 
-    public Future<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests) {
+    public RFuture<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_EXISTS, shaDigests);
     }
 
@@ -224,32 +223,32 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public Future<Void> scriptFlushAsync() {
+    public RFuture<Void> scriptFlushAsync() {
         return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_FLUSH);
     }
 
 //    @Override
-    public Future<Void> scriptFlushAsync(String key) {
+    public RFuture<Void> scriptFlushAsync(String key) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_FLUSH);
     }
 
     @Override
-    public <R> Future<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType) {
+    public <R> RFuture<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType) {
         return evalShaAsync(null, mode, commandExecutor.getConnectionManager().getCodec(), shaDigest, returnType, Collections.emptyList());
     }
 
     @Override
-    public <R> Future<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType) {
+    public <R> RFuture<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType) {
         return evalShaAsync(null, mode, codec, shaDigest, returnType, Collections.emptyList());
     }
 
     @Override
-    public <R> Future<R> evalAsync(Mode mode, String luaScript, ReturnType returnType) {
+    public <R> RFuture<R> evalAsync(Mode mode, String luaScript, ReturnType returnType) {
         return evalAsync(null, mode, commandExecutor.getConnectionManager().getCodec(), luaScript, returnType, Collections.emptyList());
     }
 
     @Override
-    public <R> Future<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType) {
+    public <R> RFuture<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType) {
         return evalAsync(null, mode, codec, luaScript, returnType, Collections.emptyList());
     }
 

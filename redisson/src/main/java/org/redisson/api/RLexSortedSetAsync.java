@@ -17,130 +17,128 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import io.netty.util.concurrent.Future;
-
 public interface RLexSortedSetAsync extends RCollectionAsync<String> {
 
-    Future<String> pollLastAsync();
+    RFuture<String> pollLastAsync();
 
-    Future<String> pollFirstAsync();
+    RFuture<String> pollFirstAsync();
 
-    Future<String> firstAsync();
+    RFuture<String> firstAsync();
 
-    Future<String> lastAsync();
+    RFuture<String> lastAsync();
     
     /**
      * Read all values at once.
      * 
      * @return
      */
-    Future<Collection<String>> readAllAsync();
+    RFuture<Collection<String>> readAllAsync();
     
-    Future<Integer> removeRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    RFuture<Integer> removeRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#removeRangeAsync(String, boolean, String, boolean)}
      */
     @Deprecated
-    Future<Integer> removeRangeByLexAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    RFuture<Integer> removeRangeByLexAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Future<Integer> removeRangeTailAsync(String fromElement, boolean fromInclusive);
+    RFuture<Integer> removeRangeTailAsync(String fromElement, boolean fromInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#removeRangeTailAsync(String, boolean, String, boolean)}
      */
     @Deprecated
-    Future<Integer> removeRangeTailByLexAsync(String fromElement, boolean fromInclusive);
+    RFuture<Integer> removeRangeTailByLexAsync(String fromElement, boolean fromInclusive);
 
-    Future<Integer> removeRangeHeadAsync(String toElement, boolean toInclusive);
+    RFuture<Integer> removeRangeHeadAsync(String toElement, boolean toInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#removeRangeHeadAsync(String, boolean)}
      */
     @Deprecated
-    Future<Integer> removeRangeHeadByLexAsync(String toElement, boolean toInclusive);
+    RFuture<Integer> removeRangeHeadByLexAsync(String toElement, boolean toInclusive);
 
-    Future<Integer> countTailAsync(String fromElement, boolean fromInclusive);
+    RFuture<Integer> countTailAsync(String fromElement, boolean fromInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#countTailAsync(String, boolean)}
      */
     @Deprecated
-    Future<Integer> lexCountTailAsync(String fromElement, boolean fromInclusive);
+    RFuture<Integer> lexCountTailAsync(String fromElement, boolean fromInclusive);
 
-    Future<Integer> countHeadAsync(String toElement, boolean toInclusive);
+    RFuture<Integer> countHeadAsync(String toElement, boolean toInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#countHeadAsync(String, boolean)}
      */
     @Deprecated
-    Future<Integer> lexCountHeadAsync(String toElement, boolean toInclusive);
+    RFuture<Integer> lexCountHeadAsync(String toElement, boolean toInclusive);
 
-    Future<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive);
+    RFuture<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#rangeTailAsync(String, boolean)}
      */
     @Deprecated
-    Future<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive);
+    RFuture<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive);
 
-    Future<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive);
+    RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#rangeHeadAsync(String, boolean)}
      */
     @Deprecated
-    Future<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive);
+    RFuture<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive);
 
-    Future<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    RFuture<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#rangeAsync(String, boolean, String, boolean)}
      */
     @Deprecated
-    Future<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    RFuture<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Future<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count);
+    RFuture<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count);
     
     /**
      * Use {@link RLexSortedSetAsync#rangeTailAsync(String, boolean, int, int)}
      */
     @Deprecated
-    Future<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count);
+    RFuture<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count);
 
-    Future<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive, int offset, int count);
+    RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive, int offset, int count);
 
     /**
      * Use {@link RLexSortedSetAsync#rangeHeadAsync(String, boolean, int, int)}
      */
     @Deprecated
-    Future<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive, int offset, int count);
+    RFuture<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive, int offset, int count);
 
-    Future<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
+    RFuture<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
     /**
      * Use {@link RLexSortedSetAsync#rangeAsync(String, boolean, String, boolean, int, int)}
      */
     @Deprecated
-    Future<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
+    RFuture<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
-    Future<Integer> countAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    RFuture<Integer> countAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     /**
      * Use {@link RLexSortedSetAsync#countAsync(String, boolean, String, boolean)}
      */
     @Deprecated
-    Future<Integer> lexCountAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    RFuture<Integer> lexCountAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Future<Integer> rankAsync(String o);
+    RFuture<Integer> rankAsync(String o);
 
-    Future<Collection<String>> rangeAsync(int startIndex, int endIndex);
+    RFuture<Collection<String>> rangeAsync(int startIndex, int endIndex);
 
     /**
      * Use {@link RLexSortedSetAsync#rangeAsync(int, int)}
      */
     @Deprecated
-    Future<Collection<String>> valueRangeAsync(int startIndex, int endIndex);
+    RFuture<Collection<String>> valueRangeAsync(int startIndex, int endIndex);
     
     /**
      * Returns rank of value, with the scores ordered from high to low.
@@ -148,6 +146,6 @@ public interface RLexSortedSetAsync extends RCollectionAsync<String> {
      * @param o
      * @return rank or <code>null</code> if value does not exist
      */
-    Future<Integer> revRankAsync(String o);
+    RFuture<Integer> revRankAsync(String o);
 
 }

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScoredCodec;
@@ -57,7 +58,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
     
     @Override
-    public Future<Collection<V>> readAllAsync() {
+    public RFuture<Collection<V>> readAllAsync() {
         return valueRangeAsync(0, -1);
     }
     
@@ -72,16 +73,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<V> pollFirstAsync() {
+    public RFuture<V> pollFirstAsync() {
         return poll(0);
     }
 
     @Override
-    public Future<V> pollLastAsync() {
+    public RFuture<V> pollLastAsync() {
         return poll(-1);
     }
 
-    private Future<V> poll(int index) {
+    private RFuture<V> poll(int index) {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('zrange', KEYS[1], ARGV[1], ARGV[2]); "
                 + "if v[1] ~= nil then "
@@ -108,7 +109,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<V> firstAsync() {
+    public RFuture<V> firstAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), 0, 0);
     }
 
@@ -118,12 +119,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<V> lastAsync() {
+    public RFuture<V> lastAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), -1, -1);
     }
 
     @Override
-    public Future<Boolean> addAsync(double score, V object) {
+    public RFuture<Boolean> addAsync(double score, V object) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), BigDecimal.valueOf(score).toPlainString(), object);
     }
 
@@ -133,7 +134,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Long> addAllAsync(Map<V, Double> objects) {
+    public RFuture<Long> addAllAsync(Map<V, Double> objects) {
         if (objects.isEmpty()) {
             return newSucceededFuture(0L);
         }
@@ -152,7 +153,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Boolean> tryAddAsync(double score, V object) {
+    public RFuture<Boolean> tryAddAsync(double score, V object) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_NX_BOOL, getName(), "NX", BigDecimal.valueOf(score).toPlainString(), object);
     }
 
@@ -167,7 +168,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Integer> removeRangeByRankAsync(int startIndex, int endIndex) {
+    public RFuture<Integer> removeRangeByRankAsync(int startIndex, int endIndex) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
     }
 
@@ -177,7 +178,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+    public RFuture<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
@@ -202,7 +203,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Boolean> removeAsync(Object object) {
+    public RFuture<Boolean> removeAsync(Object object) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREM, getName(), object);
     }
 
@@ -217,7 +218,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Integer> sizeAsync() {
+    public RFuture<Integer> sizeAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZCARD_INT, getName());
     }
 
@@ -227,7 +228,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Boolean> containsAsync(Object o) {
+    public RFuture<Boolean> containsAsync(Object o) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZSCORE_CONTAINS, getName(), o);
     }
 
@@ -237,7 +238,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Double> getScoreAsync(V o) {
+    public RFuture<Double> getScoreAsync(V o) {
         return commandExecutor.readAsync(getName(), new ScoredCodec(codec), RedisCommands.ZSCORE, getName(), o);
     }
 
@@ -247,7 +248,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Integer> rankAsync(V o) {
+    public RFuture<Integer> rankAsync(V o) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANK_INT, getName(), o);
     }
 
@@ -291,7 +292,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Boolean> containsAllAsync(Collection<?> c) {
+    public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
             return newSucceededFuture(true);
         }
@@ -308,7 +309,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Boolean> removeAllAsync(Collection<?> c) {
+    public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
             return newSucceededFuture(false);
         }
@@ -331,7 +332,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
     
     @Override
-    public Future<Boolean> retainAllAsync(Collection<?> c) {
+    public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
             return deleteAsync();
         }
@@ -357,7 +358,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Double> addScoreAsync(V object, Number value) {
+    public RFuture<Double> addScoreAsync(V object, Number value) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZINCRBY,
                                    getName(), new BigDecimal(value.toString()).toPlainString(), object);
     }
@@ -368,7 +369,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Collection<V>> valueRangeAsync(int startIndex, int endIndex) {
+    public RFuture<Collection<V>> valueRangeAsync(int startIndex, int endIndex) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE, getName(), startIndex, endIndex);
     }
 
@@ -378,7 +379,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex) {
+    public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
     }
 
@@ -388,7 +389,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+    public RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_LIST, getName(), startValue, endValue);
@@ -401,7 +402,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore,
+    public RFuture<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore,
             boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
@@ -415,7 +416,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+    public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES");
@@ -427,7 +428,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+    public RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_LIST, getName(), startValue, endValue, "LIMIT", offset, count);
@@ -439,7 +440,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+    public RFuture<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE, getName(), endValue, startValue, "LIMIT", offset, count);
@@ -456,21 +457,21 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Future<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+    public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
     @Override
-    public Future<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+    public RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY, getName(), endValue, startValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
     @Override
-    public Future<Integer> revRankAsync(V o) {
+    public RFuture<Integer> revRankAsync(V o) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANK_INT, getName(), o);
     }
 
@@ -483,7 +484,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(countAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
     }
     
-    public Future<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+    public RFuture<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZCOUNT, getName(), startValue, endValue);

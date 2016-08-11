@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Async set functions
  *
@@ -41,7 +39,7 @@ public interface RSetCacheAsync<V> extends RCollectionAsync<V> {
      * @return <code>true</code> if value has been added. <code>false</code>
      *          if value already been in collection.
      */
-    Future<Boolean> addAsync(V value, long ttl, TimeUnit unit);
+    RFuture<Boolean> addAsync(V value, long ttl, TimeUnit unit);
 
     /**
      * Returns the number of elements in cache.
@@ -50,13 +48,13 @@ public interface RSetCacheAsync<V> extends RCollectionAsync<V> {
      *
      */
     @Override
-    Future<Integer> sizeAsync();
+    RFuture<Integer> sizeAsync();
 
     /**
      * Read all elements at once
      *
      * @return
      */
-    Future<Set<V>> readAllAsync();
+    RFuture<Set<V>> readAllAsync();
 
 }

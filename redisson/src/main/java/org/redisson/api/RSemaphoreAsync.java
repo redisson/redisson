@@ -17,8 +17,6 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.Semaphore}.
  * <p/>
@@ -43,7 +41,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * @return {@code true} if a permit was acquired and {@code false}
      *         otherwise
      */
-    Future<Boolean> tryAcquireAsync();
+    RFuture<Boolean> tryAcquireAsync();
     
     /**
      * Acquires the given number of permits only if all are available at the
@@ -60,7 +58,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * @return {@code true} if a permit was acquired and {@code false}
      *         otherwise
      */
-    Future<Boolean> tryAcquireAsync(int permits);
+    RFuture<Boolean> tryAcquireAsync(int permits);
 
     /**
      * Acquires a permit from this semaphore.
@@ -69,7 +67,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * reducing the number of available permits by one.
      *
      */
-    Future<Void> acquireAsync();
+    RFuture<Void> acquireAsync();
 
     /**
      * Acquires the given number of permits, if they are available,
@@ -79,7 +77,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * @param permits the number of permits to acquire
      * @throws IllegalArgumentException if {@code permits} is negative
      */
-    Future<Void> acquireAsync(int permits);
+    RFuture<Void> acquireAsync(int permits);
 
     /**
      * Releases a permit, returning it to the semaphore.
@@ -93,7 +91,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * Correct usage of a semaphore is established by programming convention
      * in the application.
      */
-    Future<Void> releaseAsync();
+    RFuture<Void> releaseAsync();
 
     /**
      * Releases the given number of permits, returning them to the semaphore.
@@ -107,7 +105,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * Correct usage of a semaphore is established by programming convention
      * in the application.
      */
-    Future<Void> releaseAsync(int permits);
+    RFuture<Void> releaseAsync(int permits);
 
     /**
      * Sets new number of permits.
@@ -115,7 +113,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * @param count - number of times {@link #countDown} must be invoked
      *        before threads can pass through {@link #await}
      */
-    Future<Void> setPermitsAsync(int permits);
+    RFuture<Void> setPermitsAsync(int permits);
 
     /**
      * <p>Acquires a permit, if one is available and returns immediately,
@@ -133,7 +131,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    Future<Boolean> tryAcquireAsync(long waitTime, TimeUnit unit);
+    RFuture<Boolean> tryAcquireAsync(long waitTime, TimeUnit unit);
     
     /**
      * Acquires the given number of permits only if all are available
@@ -156,6 +154,6 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      *         if the waiting time elapsed before a permit was acquired
      * @throws InterruptedException if the current thread is interrupted
      */
-    Future<Boolean> tryAcquireAsync(int permits, long waitTime, TimeUnit unit);
+    RFuture<Boolean> tryAcquireAsync(int permits, long waitTime, TimeUnit unit);
 
 }

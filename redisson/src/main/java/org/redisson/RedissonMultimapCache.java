@@ -18,15 +18,14 @@ package org.redisson;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonMultimapCache<K> {
 
@@ -44,7 +43,7 @@ public class RedissonMultimapCache<K> {
         this.timeoutSetName = timeoutSetName;
     }
 
-    public Future<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
         long ttlTimeout = System.currentTimeMillis() + timeUnit.toMillis(timeToLive);
 
         return commandExecutor.evalWriteAsync(name, codec, EVAL_EXPIRE_KEY,
@@ -61,7 +60,7 @@ public class RedissonMultimapCache<K> {
             Arrays.<Object>asList(name, timeoutSetName), ttlTimeout, key);
     }
     
-    public Future<Boolean> deleteAsync() {
+    public RFuture<Boolean> deleteAsync() {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN_AMOUNT,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "local keys = {KEYS[1], KEYS[2]}; " +
@@ -80,7 +79,7 @@ public class RedissonMultimapCache<K> {
                 Arrays.<Object>asList(name, timeoutSetName));
     }
 
-    public Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); " +
                 "local entries = redis.call('hgetall', KEYS[1]); " +
@@ -95,7 +94,7 @@ public class RedissonMultimapCache<K> {
                 Arrays.<Object>asList(name, timeoutSetName), timeUnit.toMillis(timeToLive));
     }
 
-    public Future<Boolean> expireAtAsync(long timestamp) {
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
                 "local entries = redis.call('hgetall', KEYS[1]); " +
@@ -110,7 +109,7 @@ public class RedissonMultimapCache<K> {
                 Arrays.<Object>asList(name, timeoutSetName), timestamp);
     }
 
-    public Future<Boolean> clearExpireAsync() {
+    public RFuture<Boolean> clearExpireAsync() {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('zrem', KEYS[2], 'redisson__expiretag'); " +
                 "local entries = redis.call('hgetall', KEYS[1]); " +

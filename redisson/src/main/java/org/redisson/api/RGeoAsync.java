@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.List;
 import java.util.Map;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -36,7 +34,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * not including elements already existing for which 
      * the score was updated
      */
-    Future<Long> addAsync(double longitude, double latitude, V member);
+    RFuture<Long> addAsync(double longitude, double latitude, V member);
 
     /**
      * Adds geospatial members.
@@ -46,7 +44,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * not including elements already existing for which 
      * the score was updated
      */
-    Future<Long> addAsync(GeoEntry... entries);
+    RFuture<Long> addAsync(GeoEntry... entries);
 
     /**
      * Returns distance between members in <code>GeoUnit</code> units.
@@ -58,7 +56,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param geoUnit
      * @return
      */
-    Future<Double> distAsync(V firstMember, V secondMember, GeoUnit geoUnit);
+    RFuture<Double> distAsync(V firstMember, V secondMember, GeoUnit geoUnit);
     
     /**
      * Returns 11 characters Geohash string mapped by defined member.
@@ -66,7 +64,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param members
      * @return
      */
-    Future<Map<V, String>> hashAsync(V... members);
+    RFuture<Map<V, String>> hashAsync(V... members);
 
     /**
      * Returns geo-position mapped by defined member.
@@ -74,7 +72,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param members
      * @return
      */
-    Future<Map<V, GeoPosition>> posAsync(V... members);
+    RFuture<Map<V, GeoPosition>> posAsync(V... members);
     
     /**
      * Returns the members of a sorted set, which are within the 
@@ -88,7 +86,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param geoUnit
      * @return
      */
-    Future<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
+    RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
  
     /**
      * Returns the distance mapped by member, distance between member and the location. 
@@ -103,7 +101,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param geoUnit
      * @return
      */
-    Future<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
+    RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
      * Returns the geo-position mapped by member. 
@@ -118,7 +116,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param geoUnit
      * @return
      */
-    Future<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
+    RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
     
     /**
      * Returns the members of a sorted set, which are within the 
@@ -132,7 +130,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param geoUnit
      * @return
      */
-    Future<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit);
+    RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit);
     
     /**
      * Returns the distance mapped by member, distance between member and the defined member location. 
@@ -147,7 +145,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param geoUnit
      * @return
      */
-    Future<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit);
+    RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit);
 
     /**
      * Returns the geo-position mapped by member. 
@@ -162,6 +160,6 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * @param geoUnit
      * @return
      */
-    Future<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit);
+    RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit);
     
 }

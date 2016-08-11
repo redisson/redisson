@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
  *
@@ -30,8 +28,8 @@ public interface RTopicAsync<M> {
      * Publish the message to all subscribers of this topic asynchronously
      *
      * @param message
-     * @return the <code>Future</code> object with number of clients that received the message
+     * @return the <code>RFuture</code> object with number of clients that received the message
      */
-    Future<Long> publishAsync(M message);
+    RFuture<Long> publishAsync(M message);
 
 }

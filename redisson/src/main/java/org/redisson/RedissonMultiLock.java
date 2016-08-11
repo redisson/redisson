@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +30,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
-import org.redisson.RedissonLock;
+import org.redisson.api.RLock;
+import org.redisson.misc.RedissonFuture;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -178,6 +180,13 @@ public class RedissonMultiLock implements Lock {
             } else {
                 future = ((RedissonLock)lock).tryLockAsync(currentThreadId);
             }
+            
+            if (future instanceof RedissonPromise) {
+                future = ((RedissonPromise<Boolean>)future).getInnerPromise();
+            } else if (future instanceof RedissonFuture) {
+                future = ((RedissonFuture<Boolean>)future).getInnerFuture();
+            }
+            
             tryLockFutures.put(future, lock);
         }
 

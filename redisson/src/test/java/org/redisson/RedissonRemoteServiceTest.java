@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.codec.FstCodec;
 import org.redisson.codec.SerializationCodec;
@@ -69,35 +70,35 @@ public class RedissonRemoteServiceTest extends BaseTest {
     @RRemoteAsync(RemoteInterface.class)
     public interface RemoteInterfaceAsync {
         
-        Future<Void> cancelMethod();
+        RFuture<Void> cancelMethod();
         
-        Future<Void> voidMethod(String name, Long param);
+        RFuture<Void> voidMethod(String name, Long param);
         
-        Future<Long> resultMethod(Long value);
+        RFuture<Long> resultMethod(Long value);
         
-        Future<Void> errorMethod();
+        RFuture<Void> errorMethod();
         
-        Future<Void> errorMethodWithCause();
+        RFuture<Void> errorMethodWithCause();
         
-        Future<Void> timeoutMethod();
+        RFuture<Void> timeoutMethod();
         
     }
     
     @RRemoteAsync(RemoteInterface.class)
     public interface RemoteInterfaceWrongMethodAsync {
         
-        Future<Void> voidMethod1(String name, Long param);
+        RFuture<Void> voidMethod1(String name, Long param);
         
-        Future<Long> resultMethod(Long value);
+        RFuture<Long> resultMethod(Long value);
         
     }
     
     @RRemoteAsync(RemoteInterface.class)
     public interface RemoteInterfaceWrongParamsAsync {
         
-        Future<Void> voidMethod(Long param, String name);
+        RFuture<Void> voidMethod(Long param, String name);
         
-        Future<Long> resultMethod(Long value);
+        RFuture<Long> resultMethod(Long value);
         
     }
 

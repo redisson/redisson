@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.api.RBatch;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBlockingQueueAsync;
+import org.redisson.api.RFuture;
 import org.redisson.api.RRemoteService;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.codec.Codec;
@@ -346,7 +347,7 @@ public class RedissonRemoteService implements RRemoteService {
                     } catch (SecurityException e) {
                         throw new IllegalArgumentException(e);
                     }
-                    if (!m.getReturnType().getClass().isInstance(Future.class)) {
+                    if (!m.getReturnType().getClass().isInstance(RFuture.class)) {
                         throw new IllegalArgumentException(
                                 m.getReturnType().getClass() + " isn't allowed as return type");
                     }
@@ -376,7 +377,7 @@ public class RedissonRemoteService implements RRemoteService {
                 }
 
                 if (!optionsCopy.isResultExpected() && !(method.getReturnType().equals(Void.class)
-                        || method.getReturnType().equals(Void.TYPE) || method.getReturnType().equals(Future.class))) {
+                        || method.getReturnType().equals(Void.TYPE) || method.getReturnType().equals(RFuture.class))) {
                     throw new IllegalArgumentException("The noResult option only supports void return value");
                 }
 

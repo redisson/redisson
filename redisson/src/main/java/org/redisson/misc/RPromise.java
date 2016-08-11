@@ -13,28 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.misc;
 
-public interface RAtomicLongAsync extends RExpirableAsync {
+import org.redisson.api.RFuture;
 
-    RFuture<Boolean> compareAndSetAsync(long expect, long update);
+import io.netty.util.concurrent.Promise;
 
-    RFuture<Long> addAndGetAsync(long delta);
-
-    RFuture<Long> decrementAndGetAsync();
-
-    RFuture<Long> getAsync();
-
-    RFuture<Long> getAndAddAsync(long delta);
-
-    RFuture<Long> getAndSetAsync(long newValue);
-
-    RFuture<Long> incrementAndGetAsync();
-
-    RFuture<Long> getAndIncrementAsync();
-
-    RFuture<Long> getAndDecrementAsync();
-
-    RFuture<Void> setAsync(long newValue);
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T>
+ */
+public interface RPromise<T> extends Promise<T>, RFuture<T> {
 
 }

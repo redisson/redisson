@@ -20,12 +20,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RHyperLogLog;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
@@ -63,12 +62,12 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
     }
 
     @Override
-    public Future<Boolean> addAsync(V obj) {
+    public RFuture<Boolean> addAsync(V obj) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, getName(), obj);
     }
 
     @Override
-    public Future<Boolean> addAllAsync(Collection<V> objects) {
+    public RFuture<Boolean> addAllAsync(Collection<V> objects) {
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
         args.addAll(objects);
@@ -76,12 +75,12 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
     }
 
     @Override
-    public Future<Long> countAsync() {
+    public RFuture<Long> countAsync() {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFCOUNT, getName());
     }
 
     @Override
-    public Future<Long> countWithAsync(String... otherLogNames) {
+    public RFuture<Long> countWithAsync(String... otherLogNames) {
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));
@@ -89,7 +88,7 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
     }
 
     @Override
-    public Future<Void> mergeWithAsync(String... otherLogNames) {
+    public RFuture<Void> mergeWithAsync(String... otherLogNames) {
         List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(otherLogNames));

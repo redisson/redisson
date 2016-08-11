@@ -22,13 +22,17 @@ import java.util.Collections;
 import java.util.List;
 
 import org.redisson.api.RBitSet;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 
-import io.netty.util.concurrent.Future;
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     public RedissonBitSet(CommandAsyncExecutor connectionManager, String name) {
@@ -51,7 +55,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Boolean> getAsync(long bitIndex) {
+    public RFuture<Boolean> getAsync(long bitIndex) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.GETBIT, getName(), bitIndex);
     }
 
@@ -76,7 +80,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Void> setAsync(long bitIndex, boolean value) {
+    public RFuture<Void> setAsync(long bitIndex, boolean value) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), bitIndex, value ? 1 : 0);
     }
 
@@ -86,7 +90,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<byte[]> toByteArrayAsync() {
+    public RFuture<byte[]> toByteArrayAsync() {
         return commandExecutor.readAsync(getName(), ByteArrayCodec.INSTANCE, RedisCommands.GET, getName());
     }
 
@@ -135,7 +139,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         get(notAsync());
     }
 
-    private Future<Void> opAsync(String op, String... bitSetNames) {
+    private RFuture<Void> opAsync(String op, String... bitSetNames) {
         List<Object> params = new ArrayList<Object>(bitSetNames.length + 3);
         params.add(op);
         params.add(getName());
@@ -178,7 +182,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Long> lengthAsync() {
+    public RFuture<Long> lengthAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LONG,
                 "local fromBit = redis.call('bitpos', KEYS[1], 1, -1);"
                 + "local toBit = 8*(fromBit/8 + 1) - fromBit % 8;"
@@ -192,7 +196,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Void> setAsync(long fromIndex, long toIndex, boolean value) {
+    public RFuture<Void> setAsync(long fromIndex, long toIndex, boolean value) {
         if (value) {
             return setAsync(fromIndex, toIndex);
         }
@@ -200,7 +204,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Void> clearAsync(long fromIndex, long toIndex) {
+    public RFuture<Void> clearAsync(long fromIndex, long toIndex) {
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
         for (long i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), i, 0);
@@ -209,17 +213,17 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Void> setAsync(BitSet bs) {
+    public RFuture<Void> setAsync(BitSet bs) {
         return commandExecutor.writeAsync(getName(), ByteArrayCodec.INSTANCE, RedisCommands.SET, getName(), toByteArrayReverse(bs));
     }
 
     @Override
-    public Future<Void> notAsync() {
+    public RFuture<Void> notAsync() {
         return opAsync("NOT");
     }
 
     @Override
-    public Future<Void> setAsync(long fromIndex, long toIndex) {
+    public RFuture<Void> setAsync(long fromIndex, long toIndex) {
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
         for (long i = fromIndex; i < toIndex; i++) {
             executorService.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), i, 1);
@@ -228,42 +232,42 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public Future<Integer> sizeAsync() {
+    public RFuture<Integer> sizeAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.BITS_SIZE, getName());
     }
 
     @Override
-    public Future<Void> setAsync(long bitIndex) {
+    public RFuture<Void> setAsync(long bitIndex) {
         return setAsync(bitIndex, true);
     }
 
     @Override
-    public Future<Long> cardinalityAsync() {
+    public RFuture<Long> cardinalityAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.BITCOUNT, getName());
     }
 
     @Override
-    public Future<Void> clearAsync(long bitIndex) {
+    public RFuture<Void> clearAsync(long bitIndex) {
         return setAsync(bitIndex, false);
     }
 
     @Override
-    public Future<Void> clearAsync() {
+    public RFuture<Void> clearAsync() {
         return commandExecutor.writeAsync(getName(), RedisCommands.DEL_VOID, getName());
     }
 
     @Override
-    public Future<Void> orAsync(String... bitSetNames) {
+    public RFuture<Void> orAsync(String... bitSetNames) {
         return opAsync("OR", bitSetNames);
     }
 
     @Override
-    public Future<Void> andAsync(String... bitSetNames) {
+    public RFuture<Void> andAsync(String... bitSetNames) {
         return opAsync("AND", bitSetNames);
     }
 
     @Override
-    public Future<Void> xorAsync(String... bitSetNames) {
+    public RFuture<Void> xorAsync(String... bitSetNames) {
         return opAsync("XOR", bitSetNames);
     }
 

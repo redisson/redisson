@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.NodeType;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
@@ -29,13 +30,13 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.InfinitySemaphoreLatch;
+import org.redisson.misc.RPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 
 /**
  *
@@ -50,7 +51,7 @@ public interface ConnectionManager {
 
     AsyncSemaphore getSemaphore(String channelName);
     
-    <R> Future<R> newSucceededFuture(R value);
+    <R> RFuture<R> newSucceededFuture(R value);
 
     ConnectionEventsHub getConnectionEventsHub();
 
@@ -66,7 +67,7 @@ public interface ConnectionManager {
 
     IdleConnectionWatcher getConnectionWatcher();
 
-    <R> Future<R> newFailedFuture(Throwable cause);
+    <R> RFuture<R> newFailedFuture(Throwable cause);
 
     Collection<RedisClientEntry> getClients();
 
@@ -82,7 +83,7 @@ public interface ConnectionManager {
     
     MasterSlaveEntry getEntry(int slot);
     
-    <R> Promise<R> newPromise();
+    <R> RPromise<R> newPromise();
 
     void releaseRead(NodeSource source, RedisConnection connection);
 

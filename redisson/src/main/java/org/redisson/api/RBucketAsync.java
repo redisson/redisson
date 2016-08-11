@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import io.netty.util.concurrent.Future;
-
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -28,18 +26,18 @@ import java.util.concurrent.TimeUnit;
  */
 public interface RBucketAsync<V> extends RExpirableAsync {
 
-    Future<V> getAsync();
+    RFuture<V> getAsync();
 
-    Future<Boolean> trySetAsync(V value);
+    RFuture<Boolean> trySetAsync(V value);
 
-    Future<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
+    RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
 
-    Future<Boolean> compareAndSetAsync(V expect, V update);
+    RFuture<Boolean> compareAndSetAsync(V expect, V update);
 
-    Future<V> getAndSetAsync(V newValue);
+    RFuture<V> getAndSetAsync(V newValue);
 
-    Future<Void> setAsync(V value);
+    RFuture<Void> setAsync(V value);
 
-    Future<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
+    RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
 
 }

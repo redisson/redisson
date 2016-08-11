@@ -17,12 +17,11 @@ package org.redisson;
 
 import java.util.NoSuchElementException;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RQueue;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -47,7 +46,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     @Override
-    public Future<Boolean> offerAsync(V e) {
+    public RFuture<Boolean> offerAsync(V e) {
         return addAsync(e);
     }
 
@@ -73,7 +72,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     @Override
-    public Future<V> pollAsync() {
+    public RFuture<V> pollAsync() {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPOP, getName());
     }
 
@@ -88,7 +87,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     @Override
-    public Future<V> peekAsync() {
+    public RFuture<V> peekAsync() {
         return getAsync(0);
     }
 
@@ -103,7 +102,7 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     }
 
     @Override
-    public Future<V> pollLastAndOfferFirstToAsync(String queueName) {
+    public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOPLPUSH, getName(), queueName);
     }
 

@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Base async interface for all Redisson objects
  * which supports expiration (TTL)
@@ -37,7 +35,7 @@ public interface RExpirableAsync extends RObjectAsync {
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Future<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit);
+    RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit);
 
     /**
      * Set an expire date for object in async mode. When expire date comes
@@ -46,7 +44,7 @@ public interface RExpirableAsync extends RObjectAsync {
      * @param timestamp - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Future<Boolean> expireAtAsync(Date timestamp);
+    RFuture<Boolean> expireAtAsync(Date timestamp);
 
     /**
      * Set an expire date for object in async mode. When expire date comes
@@ -55,7 +53,7 @@ public interface RExpirableAsync extends RObjectAsync {
      * @param timestamp - expire date in seconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Future<Boolean> expireAtAsync(long timestamp);
+    RFuture<Boolean> expireAtAsync(long timestamp);
 
     /**
      * Clear an expire timeout or expire date for object in async mode.
@@ -63,13 +61,13 @@ public interface RExpirableAsync extends RObjectAsync {
      *
      * @return <code>true</code> if the timeout was cleared and <code>false</code> if not
      */
-    Future<Boolean> clearExpireAsync();
+    RFuture<Boolean> clearExpireAsync();
 
     /**
      * Get remaining time to live of object in seconds.
      *
      * @return <code>-1</code> if object does not exist or time in seconds
      */
-    Future<Long> remainTimeToLiveAsync();
+    RFuture<Long> remainTimeToLiveAsync();
 
 }
