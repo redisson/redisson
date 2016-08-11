@@ -30,7 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -106,7 +106,7 @@ public class RedissonExecutorService implements RExecutorService {
         remoteService.setTasksCounterName(tasksCounter.getName());
         remoteService.setStatusName(status.getName());
         
-        asyncService = remoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck());
+        asyncService = remoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().expectResultWithin(Integer.MAX_VALUE * 2));
         asyncServiceWithoutResult = remoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
     }
     
@@ -116,7 +116,7 @@ public class RedissonExecutorService implements RExecutorService {
     }
     
     @Override
-    public void registerWorkers(int executors, Executor executor) {
+    public void registerWorkers(int executors, ExecutorService executor) {
         RemoteExecutorServiceImpl service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, requestQueueName);
         service.setStatusName(status.getName());
         service.setTasksCounterName(tasksCounter.getName());

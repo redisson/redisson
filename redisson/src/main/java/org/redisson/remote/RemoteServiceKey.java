@@ -15,6 +15,11 @@
  */
 package org.redisson.remote;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RemoteServiceKey {
 
     private final Class<?> serviceInterface;

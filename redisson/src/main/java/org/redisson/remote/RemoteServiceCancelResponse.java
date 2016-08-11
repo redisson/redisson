@@ -22,6 +22,8 @@ import java.io.Serializable;
  * @author Nikita Koksharov
  *
  */
-public interface RRemoteServiceResponse extends Serializable {
+public class RemoteServiceCancelResponse implements RRemoteServiceResponse, Serializable {
+
+    private static final long serialVersionUID = -4356901222132702182L;
 
 }

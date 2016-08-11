@@ -17,6 +17,11 @@ package org.redisson.remote;
 
 import java.lang.reflect.Method;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RemoteServiceMethod {
 
     private final Object bean;

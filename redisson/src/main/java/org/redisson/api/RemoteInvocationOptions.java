@@ -82,7 +82,7 @@ public class RemoteInvocationOptions implements Serializable {
     public static RemoteInvocationOptions defaults() {
         return new RemoteInvocationOptions()
                 .expectAckWithin(1, TimeUnit.SECONDS)
-                .expectResultWithin(20, TimeUnit.SECONDS);
+                .expectResultWithin(30, TimeUnit.SECONDS);
     }
 
     public Long getAckTimeoutInMillis() {

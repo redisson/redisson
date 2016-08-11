@@ -62,10 +62,6 @@ public class RedisConnection implements RedisCommands {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
     }
 
-    public void removeCurrentCommand() {
-        channel.attr(CommandsQueue.CURRENT_COMMAND).remove();
-    }
-    
     public CommandData getCurrentCommand() {
         QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).get();
         if (command instanceof CommandData) {

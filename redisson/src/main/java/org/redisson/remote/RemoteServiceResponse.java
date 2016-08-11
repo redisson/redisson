@@ -17,8 +17,15 @@ package org.redisson.remote;
 
 import java.io.Serializable;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RemoteServiceResponse implements RRemoteServiceResponse, Serializable {
 
+    private static final long serialVersionUID = -1958922748139674253L;
+    
     private Object result;
     private Throwable error;
     

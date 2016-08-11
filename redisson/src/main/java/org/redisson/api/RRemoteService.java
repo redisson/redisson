@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -83,7 +84,7 @@ public interface RRemoteService {
      * @param object
      * @param workersAmount
      */
-    <T> void register(Class<T> remoteInterface, T object, int workersAmount, Executor executor);
+    <T> void register(Class<T> remoteInterface, T object, int workersAmount, ExecutorService executor);
     
     /**
      * Get remote service object for remote invocations.

@@ -25,4 +25,6 @@ import java.io.Serializable;
  */
 public class RemoteServiceAck implements RRemoteServiceResponse, Serializable {
 
+    private static final long serialVersionUID = -6332680404562746984L;
+
 }

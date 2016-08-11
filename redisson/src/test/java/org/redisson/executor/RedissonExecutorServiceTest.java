@@ -59,7 +59,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         String invokeResult = e.invokeAny(Arrays.asList(new CallableTask(), new CallableTask(), new CallableTask()));
         assertThat(invokeResult).isEqualTo(CallableTask.RESULT);
         
-        String a = e.invokeAny(Arrays.asList(new CallableTask(), new CallableTask(), new CallableTask()), 1, TimeUnit.SECONDS);
+        String a = e.invokeAny(Arrays.asList(new CallableTask(), new CallableTask(), new CallableTask()), 5, TimeUnit.SECONDS);
         assertThat(a).isEqualTo(CallableTask.RESULT);
         
         List<CallableTask> invokeAllParams = Arrays.asList(new CallableTask(), new CallableTask(), new CallableTask());
@@ -70,7 +70,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         }
 
         List<CallableTask> invokeAllParams1 = Arrays.asList(new CallableTask(), new CallableTask(), new CallableTask());
-        List<Future<String>> allResult1 = e.invokeAll(invokeAllParams1, 1, TimeUnit.SECONDS);
+        List<Future<String>> allResult1 = e.invokeAll(invokeAllParams1, 5, TimeUnit.SECONDS);
         assertThat(allResult1).hasSize(invokeAllParams.size());
         for (Future<String> future : allResult1) {
             assertThat(future.get()).isEqualTo(CallableTask.RESULT);
@@ -161,13 +161,13 @@ public class RedissonExecutorServiceTest extends BaseTest {
 
     @Test
     public void testResetShutdownState() throws InterruptedException, ExecutionException {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             RExecutorService e = redisson.getExecutorService("test");
             e.execute(new RunnableTask());
             assertThat(e.isShutdown()).isFalse();
             e.shutdown();
             assertThat(e.isShutdown()).isTrue();
-            assertThat(e.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(e.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
             assertThat(e.isTerminated()).isTrue();
             assertThat(e.delete()).isTrue();
             assertThat(e.isShutdown()).isFalse();

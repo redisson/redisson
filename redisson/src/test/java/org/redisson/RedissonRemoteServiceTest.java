@@ -69,6 +69,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
     @RRemoteAsync(RemoteInterface.class)
     public interface RemoteInterfaceAsync {
         
+        Future<Void> cancelMethod();
+        
         Future<Void> voidMethod(String name, Long param);
         
         Future<Long> resultMethod(Long value);
@@ -102,6 +104,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
     
     public interface RemoteInterface {
         
+        void cancelMethod() throws InterruptedException;
+        
         void voidMethod(String name, Long param);
 
         Long resultMethod(Long value);
@@ -120,6 +124,27 @@ public class RedissonRemoteServiceTest extends BaseTest {
     
     public class RemoteImpl implements RemoteInterface {
 
+        private AtomicInteger iterations;
+        
+        public RemoteImpl() {
+        }
+        
+        public RemoteImpl(AtomicInteger iterations) {
+            super();
+            this.iterations = iterations;
+        }
+
+        @Override
+        public void cancelMethod() throws InterruptedException {
+            for (long i = 0; i < Long.MAX_VALUE; i++) {
+                iterations.incrementAndGet();
+                if (Thread.interrupted()) {
+                    System.out.println("interrupted! " + i);
+                    return;
+                }
+            }
+        }
+        
         @Override
         public void voidMethod(String name, Long param) {
             System.out.println(name + " " + param);
@@ -159,6 +184,31 @@ public class RedissonRemoteServiceTest extends BaseTest {
             return pojo;
         }
     }
+    
+    @Test
+    public void testCancelAsync() throws InterruptedException {
+        RedissonClient r1 = createInstance();
+        AtomicInteger iterations = new AtomicInteger();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        r1.getKeys().flushall();
+        r1.getRemoteSerivce().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
+        
+        RedissonClient r2 = createInstance();
+        RemoteInterfaceAsync ri = r2.getRemoteSerivce().get(RemoteInterfaceAsync.class);
+        
+        Future<Void> f = ri.cancelMethod();
+        Thread.sleep(500);
+        assertThat(f.cancel(true)).isTrue();
+        
+        executor.shutdown();
+        r1.shutdown();
+        r2.shutdown();
+        
+        assertThat(iterations.get()).isLessThan(Integer.MAX_VALUE / 2);
+        
+        assertThat(executor.awaitTermination(1, TimeUnit.SECONDS)).isTrue();
+    }
+
     
     @Test(expected = IllegalArgumentException.class)
     public void testWrongMethodAsync() throws InterruptedException {

@@ -89,16 +89,26 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 l.countDown();
             }
         });
-        try {
-            l.await();
-        } catch (InterruptedException e) {
+        
+        boolean interrupted = false;
+        while (!future.isDone()) {
+            try {
+                l.await();
+            } catch (InterruptedException e) {
+                interrupted = true;
+            }
+        }
+        
+        if (interrupted) {
             Thread.currentThread().interrupt();
         }
+
         // commented out due to blocking issues up to 200 ms per minute for each thread
         // future.awaitUninterruptibly();
         if (future.isSuccess()) {
             return future.getNow();
         }
+
         throw convertException(future);
     }
 
@@ -509,9 +519,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         details.getTimeout().cancel();
 
-        int timeoutTime = connectionManager.getConfig().getTimeout();
+        long timeoutTime = connectionManager.getConfig().getTimeout();
         if (QueueCommand.TIMEOUTLESS_COMMANDS.contains(details.getCommand().getName())) {
-            Integer popTimeout = Integer.valueOf(details.getParams()[details.getParams().length - 1].toString());
+            Long popTimeout = Long.valueOf(details.getParams()[details.getParams().length - 1].toString());
             handleBlockingOperations(details, connection, popTimeout);
             if (popTimeout == 0) {
                 return;
@@ -521,7 +531,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             timeoutTime += 1000;
         }
 
-        final int timeoutAmount = timeoutTime;
+        final long timeoutAmount = timeoutTime;
         TimerTask timeoutTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -535,7 +545,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.setTimeout(timeout);
     }
 
-    private <R, V> void handleBlockingOperations(final AsyncDetails<V, R> details, final RedisConnection connection, Integer popTimeout) {
+    private <R, V> void handleBlockingOperations(final AsyncDetails<V, R> details, final RedisConnection connection, Long popTimeout) {
         final FutureListener<Boolean> listener = new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
@@ -551,7 +561,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             scheduledFuture = connectionManager.getGroup().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    // there is no re-connection was made
+                    // re-connection wasn't made
                     // and connection is still active
                     if (orignalChannel == connection.getChannel() 
                             && connection.isActive()) {
@@ -586,17 +596,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 
                 if (future.cause() instanceof RedissonShutdownException) {
                     details.getAttemptPromise().tryFailure(future.cause());
-                }
-            }
-        });
-        
-        details.getAttemptPromise().addListener(new FutureListener<R>() {
-            @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                if (future.isCancelled()) {
-                    // command should be removed due to 
-                    // ConnectionWatchdog blockingQueue reconnection logic
-                    connection.removeCurrentCommand();
                 }
             }
         });
@@ -717,7 +716,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
                 ((RedisClientResult)res).setRedisClient(addr);
             }
-            details.getMainPromise().setSuccess(res);
+            details.getMainPromise().trySuccess(res);
         } else {
             details.getMainPromise().tryFailure(future.cause());
         }

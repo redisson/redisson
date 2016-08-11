@@ -160,7 +160,8 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private void reattachBlockingQueue(RedisConnection connection, final CommandData<?, ?> commandData) {
         if (commandData == null 
-                || !commandData.isBlockingCommand()) {
+                || !commandData.isBlockingCommand()
+                    || commandData.getPromise().isDone()) {
             return;
         }
 

@@ -51,6 +51,6 @@ public interface RExecutorService extends ExecutorService {
      * 
      * @param workers - workers amount
      */
-    void registerWorkers(int workers, Executor executor);
+    void registerWorkers(int workers, ExecutorService executor);
 
 }

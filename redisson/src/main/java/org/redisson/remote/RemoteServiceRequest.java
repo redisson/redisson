@@ -20,8 +20,15 @@ import java.util.Arrays;
 
 import org.redisson.api.RemoteInvocationOptions;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RemoteServiceRequest implements Serializable {
 
+    private static final long serialVersionUID = -1711385312384040075L;
+    
     private String requestId;
     private String methodName;
     private Object[] args;

@@ -22,6 +22,22 @@ import java.io.Serializable;
  * @author Nikita Koksharov
  *
  */
-public interface RRemoteServiceResponse extends Serializable {
+public class RemoteServiceCancelRequest implements Serializable {
 
+    private static final long serialVersionUID = -4800574267648904260L;
+
+    private boolean mayInterruptIfRunning;
+    
+    public RemoteServiceCancelRequest() {
+    }
+
+    public RemoteServiceCancelRequest(boolean mayInterruptIfRunning) {
+        super();
+        this.mayInterruptIfRunning = mayInterruptIfRunning;
+    }
+    
+    public boolean isMayInterruptIfRunning() {
+        return mayInterruptIfRunning;
+    }
+    
 }

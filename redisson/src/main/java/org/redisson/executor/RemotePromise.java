@@ -40,5 +40,9 @@ public class RemotePromise<T> extends PromiseDelegator<T> {
     public Future<Boolean> getAddFuture() {
         return addFuture;
     }
+    
+    public void doCancel() {
+        super.cancel(true);
+    }
 
 }

@@ -20,13 +20,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.util.concurrent.Future;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonQueueSemaphore extends RedissonSemaphore {
 
     private String queueName;
