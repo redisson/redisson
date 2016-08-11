@@ -144,7 +144,9 @@
                 </executions>
                   <configuration>
                     <includeDependencySources>true</includeDependencySources>
+<!--
                     <additionalparam>-Xdoclint:none</additionalparam>
+-->
                   </configuration>
             </plugin>
 
