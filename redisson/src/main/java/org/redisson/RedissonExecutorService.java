@@ -280,7 +280,7 @@ public class RedissonExecutorService implements RExecutorService {
         return result;
     }
 
-    private <T> void addListener(RemotePromise<T> result) {
+    private <T> void addListener(final RemotePromise<T> result) {
         result.getAddFuture().addListener(new FutureListener<Boolean>() {
 
             @Override
