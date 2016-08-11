@@ -139,7 +139,7 @@ public class ClientConnectionsEntry {
     }
 
     public Future<RedisConnection> connect() {
-        final Promise<RedisConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
+        final Promise<RedisConnection> connectionFuture = connectionManager.newPromise();
         Future<RedisConnection> future = client.connectAsync();
         future.addListener(new FutureListener<RedisConnection>() {
             @Override
@@ -192,7 +192,7 @@ public class ClientConnectionsEntry {
     }
 
     public Future<RedisPubSubConnection> connectPubSub() {
-        final Promise<RedisPubSubConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
+        final Promise<RedisPubSubConnection> connectionFuture = connectionManager.newPromise();
         Future<RedisPubSubConnection> future = client.connectPubSubAsync();
         future.addListener(new FutureListener<RedisPubSubConnection>() {
             @Override

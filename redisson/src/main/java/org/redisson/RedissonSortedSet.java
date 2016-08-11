@@ -289,7 +289,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     @Override
     public Future<Boolean> removeAsync(final V value) {
         EventLoopGroup group = commandExecutor.getConnectionManager().getGroup();
-        final Promise<Boolean> promise = group.next().newPromise();
+        final Promise<Boolean> promise = newPromise();
 
         group.execute(new Runnable() {
             @Override

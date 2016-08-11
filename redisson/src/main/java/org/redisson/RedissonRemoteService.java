@@ -658,7 +658,7 @@ public class RedissonRemoteService implements RRemoteService {
     private Future<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
             final RBlockingQueue<RemoteServiceAck> responseQueue, String ackName)
             throws InterruptedException {
-        final Promise<RemoteServiceAck> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+        final Promise<RemoteServiceAck> promise = commandExecutor.getConnectionManager().newPromise();
         Future<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
