@@ -41,6 +41,7 @@ import org.redisson.api.MessageListener;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBucket;
 import org.redisson.api.RExecutorService;
+import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
 import org.redisson.api.RTopic;
 import org.redisson.api.RemoteInvocationOptions;
@@ -54,6 +55,7 @@ import org.redisson.executor.RemoteExecutorService;
 import org.redisson.executor.RemoteExecutorServiceAsync;
 import org.redisson.executor.RemoteExecutorServiceImpl;
 import org.redisson.executor.RemotePromise;
+import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
@@ -199,7 +201,25 @@ public class RedissonExecutorService implements RExecutorService {
     
     @Override
     public boolean delete() {
-        return keys.delete(requestQueueName, status.getName(), tasksCounter.getName()) > 0;
+        return commandExecutor.get(deleteAsync());
+    }
+    
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        final RPromise<Boolean> result = connectionManager.newPromise();
+        RFuture<Long> deleteFuture = keys.deleteAsync(requestQueueName, status.getName(), tasksCounter.getName());
+        deleteFuture.addListener(new FutureListener<Long>() {
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<Long> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                result.trySuccess(future.getNow() > 0);
+            }
+        });
+        return result;
     }
     
     @Override
@@ -246,12 +266,36 @@ public class RedissonExecutorService implements RExecutorService {
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
+        RemotePromise<T> promise = (RemotePromise<T>) submitAsync(task);
+        execute(promise);
+        return promise;
+    }
+    
+    public <T> RFuture<T> submitAsync(Callable<T> task) {
         check(task);
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
-        RemotePromise<T> promise = (RemotePromise<T>)asyncService.execute(task.getClass().getName(), classBody, state);
-        execute(promise);
-        return promise;
+        RemotePromise<T> result = (RemotePromise<T>) asyncService.execute(task.getClass().getName(), classBody, state);
+        addListener(result);
+        return result;
+    }
+
+    private <T> void addListener(RemotePromise<T> result) {
+        result.getAddFuture().addListener(new FutureListener<Boolean>() {
+
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<Boolean> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                if (!future.getNow()) {
+                    result.tryFailure(new RejectedExecutionException("Task rejected. ExecutorService is in shutdown state"));
+                }
+                
+            }
+        });
     }
     
     private void check(Object task) {
@@ -291,12 +335,19 @@ public class RedissonExecutorService implements RExecutorService {
 
     @Override
     public Future<?> submit(Runnable task) {
+        RemotePromise<Void> promise = (RemotePromise<Void>) submitAsync(task);
+        execute(promise);
+        return promise;
+    }
+    
+    @Override
+    public RFuture<?> submitAsync(Runnable task) {
         check(task);
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
-        RemotePromise<Void> promise = (RemotePromise<Void>) asyncService.executeVoid(task.getClass().getName(), classBody, state);
-        execute(promise);
-        return promise;
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncService.executeVoid(task.getClass().getName(), classBody, state);
+        addListener(result);
+        return result;
     }
 
     private <T> T doInvokeAny(Collection<? extends Callable<T>> tasks,

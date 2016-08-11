@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Callable;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.ExecutorService}
@@ -23,34 +23,29 @@ import java.util.concurrent.ExecutorService;
  * @author Nikita Koksharov
  *
  */
-public interface RExecutorService extends ExecutorService, RExecutorServiceAsync {
+public interface RExecutorServiceAsync {
 
-    /**
-     * Returns executor name
-     * 
-     * @return
-     */
-    String getName();
-    
     /**
      * Deletes executor request queue and state objects
      * 
      * @return <code>true</code> if any of objects were deleted
      */
-    boolean delete();
+    RFuture<Boolean> deleteAsync();
+
+    /**
+     * Submit task for execution
+     * 
+     * @param task
+     * @return
+     */
+    <T> RFuture<T> submitAsync(Callable<T> task);
+
+    /**
+     * Submit task for execution
+     * 
+     * @param task
+     * @return
+     */
+    RFuture<?> submitAsync(Runnable task);
     
-    /**
-     * Register workers using netty thread-pool to execute each task
-     * 
-     * @param workers - workers amount
-     */
-    void registerWorkers(int workers);
-
-    /**
-     * Register workers using custom executor to execute each task
-     * 
-     * @param workers - workers amount
-     */
-    void registerWorkers(int workers, ExecutorService executor);
-
 }
