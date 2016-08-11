@@ -273,7 +273,7 @@ public class RedissonRemoteService implements RRemoteService {
     private <T> void invokeMethod(final Class<T> remoteInterface,
             final RBlockingQueue<RemoteServiceRequest> requestQueue, final RemoteServiceRequest request,
             RemoteServiceMethod method, String responseName, final ExecutorService executor,
-            Future<RemoteServiceCancelRequest> cancelRequestFuture, AtomicReference<RRemoteServiceResponse> responseHolder) {
+            Future<RemoteServiceCancelRequest> cancelRequestFuture, final AtomicReference<RRemoteServiceResponse> responseHolder) {
         try {
             Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
 
@@ -454,7 +454,7 @@ public class RedissonRemoteService implements RRemoteService {
                         }
 
                         if (optionsCopy.isAckExpected()) {
-                            RBlockingQueue<RemoteServiceAck> responseQueue = redisson.getBlockingQueue(responseName, getCodec());
+                            final RBlockingQueue<RemoteServiceAck> responseQueue = redisson.getBlockingQueue(responseName, getCodec());
                             Future<RemoteServiceAck> ackFuture = responseQueue.pollAsync(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
                             ackFuture.addListener(new FutureListener<RemoteServiceAck>() {
                                 @Override

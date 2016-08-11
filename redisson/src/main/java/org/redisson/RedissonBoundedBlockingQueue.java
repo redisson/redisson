@@ -137,6 +137,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
         final Promise<V> result = new PromiseDelegator<V>(commandExecutor.getConnectionManager().<V>newPromise()) {
             @Override
             public boolean cancel(boolean mayInterruptIfRunning) {
+                super.cancel(mayInterruptIfRunning);
                 return takeFuture.cancel(mayInterruptIfRunning);
             };
         };
@@ -145,14 +146,14 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
             @Override
             public void operationComplete(Future<V> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
                 
                 createSemaphore(null).releaseAsync().addListener(new FutureListener<Void>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {
-                        result.setSuccess(takeFuture.getNow());
+                        result.trySuccess(takeFuture.getNow());
                     }
                 });
             }
