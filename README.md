@@ -59,10 +59,10 @@ Features
 * Thread-safe implementation  
 * All commands executes in an atomic way  
 * Lua scripting  
-* [Spring cache](http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html) integration  
+* [Spring cache](https://github.com/mrniko/redisson/wiki/10.-additional-features/#104-spring-cache-integration) integration  
 * Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
-* Supports [Remote services](https://github.com/mrniko/redisson/wiki/6.-distributed-objects#69-remote-service)
+* Supports [Remote services](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#91-remote-service)
 * Supports Android platform  
 * Supports auto-reconnect  
 * Supports failed to send command auto-retry  
