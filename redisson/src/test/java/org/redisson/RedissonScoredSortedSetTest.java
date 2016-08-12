@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.RLexSortedSet;
 import org.redisson.api.RScoredSortedSet;
@@ -22,7 +23,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
 
 import io.netty.util.concurrent.Future;
-import org.junit.Assume;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
@@ -572,7 +572,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add("d");
         set.add("e");
 
-        Collection<String> r = set.lexRange("b", true, "e", false, 1, 2);
+        Collection<String> r = set.range("b", true, "e", false, 1, 2);
         String[] a = r.toArray(new String[0]);
         Assert.assertArrayEquals(new String[]{"c", "d"}, a);
     }

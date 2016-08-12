@@ -114,13 +114,7 @@ public class Config {
         return useClusterServers(new ClusterServersConfig());
     }
 
-    /**
-     * Init cluster servers configuration by config object.
-     *
-     * @return
-     */
-    @Deprecated
-    public ClusterServersConfig useClusterServers(ClusterServersConfig config) {
+    ClusterServersConfig useClusterServers(ClusterServersConfig config) {
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
         checkSingleServerConfig();
@@ -149,13 +143,7 @@ public class Config {
         return useElasticacheServers(new ElasticacheServersConfig());
     }
 
-    /**
-     * Init AWS Elasticache servers configuration by config object.
-     *
-     * @return
-     */
-    @Deprecated
-    public ElasticacheServersConfig useElasticacheServers(ElasticacheServersConfig config) {
+    ElasticacheServersConfig useElasticacheServers(ElasticacheServersConfig config) {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
@@ -184,13 +172,7 @@ public class Config {
         return useSingleServer(new SingleServerConfig());
     }
 
-    /**
-     * Init single server configuration by config object.
-     *
-     * @return
-     */
-    @Deprecated
-    public SingleServerConfig useSingleServer(SingleServerConfig config) {
+    SingleServerConfig useSingleServer(SingleServerConfig config) {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();

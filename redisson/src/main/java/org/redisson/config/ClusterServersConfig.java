@@ -75,20 +75,4 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         return this;
     }
 
-    /**
-     * Use {@link #setReadMode(org.redisson.config.BaseMasterSlaveServersConfig.ReadMode)}
-     *
-     * @param readFromSlaves
-     * @return
-     */
-    @Deprecated
-    public ClusterServersConfig setReadFromSlaves(boolean readFromSlaves) {
-        ReadMode readMode = ReadMode.MASTER;
-        if (readFromSlaves) {
-            readMode = ReadMode.SLAVE;
-        }
-        setReadMode(readMode);
-        return this;
-    }
-
 }

@@ -24,13 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.redisson.api.Predicate;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
@@ -357,68 +355,6 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public Iterator<Map.Entry<K, V>> entryIterator() {
-        return new RedissonMapIterator<K, V, Map.Entry<K, V>>(this);
-    }
-
-    @Override
-    public Iterator<V> valueIterator() {
-        return new RedissonMapIterator<K, V, V>(this) {
-            @Override
-            V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (V) entry.getValue().getObj();
-            }
-        };
-    }
-
-    @Override
-    public Iterator<K> keyIterator() {
-        return new RedissonMapIterator<K, V, K>(this) {
-            @Override
-            K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (K) entry.getKey().getObj();
-            }
-        };
-    }
-
-
-    @Override
-    public Map<K, V> filterKeys(Predicate<K> predicate) {
-        Map<K, V> result = new HashMap<K, V>();
-        for (Iterator<Map.Entry<K, V>> iterator = entryIterator(); iterator.hasNext();) {
-            Map.Entry<K, V> entry = iterator.next();
-            if (predicate.apply(entry.getKey())) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public Map<K, V> filterValues(Predicate<V> predicate) {
-        Map<K, V> result = new HashMap<K, V>();
-        for (Iterator<Map.Entry<K, V>> iterator = entryIterator(); iterator.hasNext();) {
-            Map.Entry<K, V> entry = iterator.next();
-            if (predicate.apply(entry.getValue())) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public Map<K, V> filterEntries(Predicate<Map.Entry<K, V>> predicate) {
-        Map<K, V> result = new HashMap<K, V>();
-        for (Iterator<Map.Entry<K, V>> iterator = entryIterator(); iterator.hasNext();) {
-            Map.Entry<K, V> entry = iterator.next();
-            if (predicate.apply(entry)) {
-                result.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return result;
-    }
-
-    @Override
     public V addAndGet(K key, Number value) {
         return get(addAndGetAsync(key, value));
     }
@@ -482,7 +418,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         @Override
         public Iterator<K> iterator() {
-            return RedissonMap.this.keyIterator();
+            return new RedissonMapIterator<K, V, K>(RedissonMap.this) {
+                @Override
+                K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                    return (K) entry.getKey().getObj();
+                }
+            };
         }
 
         @Override
@@ -511,7 +452,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         @Override
         public Iterator<V> iterator() {
-            return valueIterator();
+            return new RedissonMapIterator<K, V, V>(RedissonMap.this) {
+                @Override
+                V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                    return (V) entry.getValue().getObj();
+                }
+            };
         }
 
         @Override
@@ -534,7 +480,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
 
         public final Iterator<Map.Entry<K,V>> iterator() {
-            return entryIterator();
+            return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this);
         }
 
         public final boolean contains(Object o) {

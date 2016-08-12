@@ -16,7 +16,6 @@
 package org.redisson.api;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -57,42 +56,6 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @return
      */
     Map<K, V> getAll(Set<K> keys);
-
-    /**
-     * Returns a map slice containing the mappings in whose <code>Map.Entry&lt;K, V&gt; entries</code>
-     * satisfy a predicate. This operation traverses all map entries with small memory footprint.
-     *
-     * The returned map is <b>NOT</b> backed by the original map.
-     *
-     * @param predicate
-     * @return
-     */
-    @Deprecated
-    Map<K, V> filterEntries(Predicate<Map.Entry<K, V>> predicate);
-
-    /**
-     * Returns a map slice containing the mappings in whose <code>values</code>
-     * satisfy a predicate. Traverses all map entries with small memory footprint.
-     *
-     * The returned map is <b>NOT</b> backed by the original map.
-     *
-     * @param predicate
-     * @return
-     */
-    @Deprecated
-    Map<K, V> filterValues(Predicate<V> predicate);
-
-    /**
-     * Returns a map slice containing the mappings in whose <code>keys</code>
-     * satisfy a predicate. Traverses all map entries with small memory footprint.
-     *
-     * The returned map is <b>NOT</b> backed by the original map.
-     *
-     * @param predicate
-     * @return
-     */
-    @Deprecated
-    Map<K, V> filterKeys(Predicate<K> predicate);
 
     /**
      * Removes <code>keys</code> from map by one operation
@@ -142,24 +105,24 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Set<Entry<K, V>> readAllEntrySet();
 
     /**
-     * Use {@link #entrySet().iterator()}
-     *
+     * Returns key set. 
+     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllKeySet()} does.
      */
-    @Deprecated
-    Iterator<Map.Entry<K, V>> entryIterator();
+    @Override
+    Set<K> keySet();
 
     /**
-     * Use {@link #keySet().iterator()}
-     *
+     * Returns values collections. 
+     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllValues()} does.
      */
-    @Deprecated
-    Iterator<K> keyIterator();
+    @Override
+    Collection<V> values();
 
     /**
-     * Use {@link #values().iterator()}
-     *
+     * Returns values collections. 
+     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllEntrySet()} does.
      */
-    @Deprecated
-    Iterator<V> valueIterator();
-
+    @Override
+    Set<java.util.Map.Entry<K, V>> entrySet();
+    
 }

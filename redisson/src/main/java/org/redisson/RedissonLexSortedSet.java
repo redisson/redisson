@@ -33,271 +33,151 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
 
     @Override
     public int removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
-        return removeRangeByLex(fromElement, fromInclusive, toElement, toInclusive);
-    }
-    
-    @Override
-    public int removeRangeByLex(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         return get(removeRangeAsync(fromElement, fromInclusive, toElement, toInclusive));
     }
-
+    
     @Override
     public int removeRangeHead(String toElement, boolean toInclusive) {
-        return removeRangeHeadByLex(toElement, toInclusive);
-    }
-    
-    @Override
-    public int removeRangeHeadByLex(String toElement, boolean toInclusive) {
         return get(removeRangeHeadAsync(toElement, toInclusive));
     }
-
-    @Override
-    public RFuture<Integer> removeRangeHeadAsync(String toElement, boolean toInclusive) {
-        return removeRangeHeadByLexAsync(toElement, toInclusive);
-    }
     
     @Override
-    public RFuture<Integer> removeRangeHeadByLexAsync(String toElement, boolean toInclusive) {
+    public RFuture<Integer> removeRangeHeadAsync(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), "-", toValue);
     }
     
     @Override
     public int removeRangeTail(String fromElement, boolean fromInclusive) {
-        return removeRangeTailByLex(fromElement, fromInclusive);
-    }
-
-    @Override
-    public int removeRangeTailByLex(String fromElement, boolean fromInclusive) {
         return get(removeRangeTailAsync(fromElement, fromInclusive));
     }
 
     @Override
     public RFuture<Integer> removeRangeTailAsync(String fromElement, boolean fromInclusive) {
-        return removeRangeTailByLexAsync(fromElement, fromInclusive);
-    }
-    
-    @Override
-    public RFuture<Integer> removeRangeTailByLexAsync(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, "+");
     }
-
+    
     @Override
     public RFuture<Integer> removeRangeAsync(String fromElement, boolean fromInclusive, String toElement,
             boolean toInclusive) {
-        return removeRangeByLexAsync(fromElement, fromInclusive, toElement, toInclusive);
-    }
-    
-    @Override
-    public RFuture<Integer> removeRangeByLexAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
-
+        
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREMRANGEBYLEX, getName(), fromValue, toValue);
     }
-
+    
     @Override
     public Collection<String> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
-        return lexRange(fromElement, fromInclusive, toElement, toInclusive);
-    }
-    
-    @Override
-    public Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         return get(rangeAsync(fromElement, fromInclusive, toElement, toInclusive));
     }
-
+    
     @Override
     public Collection<String> rangeHead(String toElement, boolean toInclusive) {
-        return lexRangeHead(toElement, toInclusive);
-    }
-    
-    @Override
-    public Collection<String> lexRangeHead(String toElement, boolean toInclusive) {
         return get(rangeHeadAsync(toElement, toInclusive));
     }
-
-    @Override
-    public RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive) {
-        return lexRangeHeadAsync(toElement, toInclusive);
-    }
     
     @Override
-    public RFuture<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive) {
+    public RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue);
     }
     
     @Override
     public Collection<String> rangeTail(String fromElement, boolean fromInclusive) {
-        return lexRangeTail(fromElement, fromInclusive);
-    }
-
-    @Override
-    public Collection<String> lexRangeTail(String fromElement, boolean fromInclusive) {
         return get(rangeTailAsync(fromElement, fromInclusive));
     }
 
     @Override
     public RFuture<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive) {
-        return lexRangeTailAsync(fromElement, fromInclusive);
-    }
-    
-    @Override
-    public RFuture<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+");
     }
-
+    
     @Override
     public RFuture<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement,
             boolean toInclusive) {
-        return lexRangeAsync(fromElement, fromInclusive, toElement, toInclusive);
-    }
-
-    @Override
-    public RFuture<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
-
+        
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue);
     }
 
     @Override
     public Collection<String> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive,
             int offset, int count) {
-        return lexRange(fromElement, fromInclusive, toElement, toInclusive, offset, count);
-    }
-    
-    @Override
-    public Collection<String> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count) {
         return get(rangeAsync(fromElement, fromInclusive, toElement, toInclusive, offset, count));
     }
-
+    
     @Override
     public Collection<String> rangeHead(String toElement, boolean toInclusive, int offset, int count) {
-        return lexRangeHead(toElement, toInclusive, offset, count);
-    }
-    
-    @Override
-    public Collection<String> lexRangeHead(String toElement, boolean toInclusive, int offset, int count) {
         return get(rangeHeadAsync(toElement, toInclusive, offset, count));
     }
-
-    @Override
-    public RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive, int offset, int count) {
-        return lexRangeHeadAsync(toElement, toInclusive, offset, count);
-    }
     
     @Override
-    public RFuture<Collection<String>> lexRangeHeadAsync(String toElement, boolean toInclusive, int offset, int count) {
+    public RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive, int offset, int count) {
         String toValue = value(toElement, toInclusive);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), "-", toValue, "LIMIT", offset, count);
     }
 
     @Override
     public Collection<String> rangeTail(String fromElement, boolean fromInclusive, int offset, int count) {
-        return lexRangeTail(fromElement, fromInclusive, offset, count);
-    }
-    
-    @Override
-    public Collection<String> lexRangeTail(String fromElement, boolean fromInclusive, int offset, int count) {
         return get(rangeTailAsync(fromElement, fromInclusive, offset, count));
     }
-
-    @Override
-    public RFuture<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count) {
-        return lexRangeTailAsync(fromElement, fromInclusive, offset, count);
-    }
     
     @Override
-    public RFuture<Collection<String>> lexRangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count) {
+    public RFuture<Collection<String>> rangeTailAsync(String fromElement, boolean fromInclusive, int offset, int count) {
         String fromValue = value(fromElement, fromInclusive);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, "+", "LIMIT", offset, count);
     }
-
+    
     @Override
     public RFuture<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement,
             boolean toInclusive, int offset, int count) {
-        return lexRangeAsync(fromElement, fromInclusive, toElement, toInclusive, offset, count);
-    }
-    
-    @Override
-    public RFuture<Collection<String>> lexRangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count) {
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
-
+        
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZRANGEBYLEX, getName(), fromValue, toValue, "LIMIT", offset, count);
     }
     
     @Override
     public int countTail(String fromElement, boolean fromInclusive) {
-        return lexCountTail(fromElement, fromInclusive);
-    }
-
-    @Override
-    public int lexCountTail(String fromElement, boolean fromInclusive) {
         return get(countTailAsync(fromElement, fromInclusive));
     }
     
     @Override
     public RFuture<Integer> countTailAsync(String fromElement, boolean fromInclusive) {
-        return lexCountTailAsync(fromElement, fromInclusive);
-    }
-
-    @Override
-    public RFuture<Integer> lexCountTailAsync(String fromElement, boolean fromInclusive) {
         String fromValue = value(fromElement, fromInclusive);
-
+        
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), fromValue, "+");
     }
-    
+
     @Override
     public int countHead(String toElement, boolean toInclusive) {
-        return lexCountHead(toElement, toInclusive);
-    }
-
-    @Override
-    public int lexCountHead(String toElement, boolean toInclusive) {
         return get(countHeadAsync(toElement, toInclusive));
     }
-    
+
     @Override
     public RFuture<Integer> countHeadAsync(String toElement, boolean toInclusive) {
-        return lexCountHeadAsync(toElement, toInclusive);
-    }
-
-    @Override
-    public RFuture<Integer> lexCountHeadAsync(String toElement, boolean toInclusive) {
         String toValue = value(toElement, toInclusive);
-
+        
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), "-", toValue);
     }
 
     @Override
     public int count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
-        return lexCount(fromElement, fromInclusive, toElement, toInclusive);
-    }
-    
-    @Override
-    public int lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         return get(countAsync(fromElement, fromInclusive, toElement, toInclusive));
     }
-
+    
     @Override
     public RFuture<Integer> countAsync(String fromElement, boolean fromInclusive, String toElement,
             boolean toInclusive) {
-        return lexCountAsync(fromElement, fromInclusive, toElement, toInclusive);
-    }
-    
-    @Override
-    public RFuture<Integer> lexCountAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive) {
         String fromValue = value(fromElement, fromInclusive);
         String toValue = value(toElement, toInclusive);
-
+        
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getName(), fromValue, toValue);
     }
-
+    
     private String value(String fromElement, boolean fromInclusive) {
         String fromValue = fromElement.toString();
         if (fromInclusive) {

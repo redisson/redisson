@@ -14,11 +14,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.api.Predicate;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
@@ -184,22 +181,6 @@ public class RedissonMapTest extends BaseTest {
         Map<String, Integer> expectedMap = new HashMap<String, Integer>();
         expectedMap.put("B", 200);
         expectedMap.put("C", 300);
-        assertThat(filtered).isEqualTo(expectedMap);
-    }
-
-    @Test
-    public void testFilterKeys() {
-        RMap<Integer, Integer> map = redisson.getMap("filterKeys");
-        map.put(1, 100);
-        map.put(2, 200);
-        map.put(3, 300);
-        map.put(4, 400);
-
-        Map<Integer, Integer> filtered = map.filterKeys(input -> input >= 2 && input <= 3);
-
-        Map<Integer, Integer> expectedMap = new HashMap<Integer, Integer>();
-        expectedMap.put(2, 200);
-        expectedMap.put(3, 300);
         assertThat(filtered).isEqualTo(expectedMap);
     }
 
@@ -661,7 +642,7 @@ public class RedissonMapTest extends BaseTest {
 
         Collection<Integer> keys = map.keySet();
         assertThat(keys).containsOnly(1, 3, 4, 7);
-        for (Iterator<Integer> iterator = map.keyIterator(); iterator.hasNext();) {
+        for (Iterator<Integer> iterator = map.keySet().iterator(); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!keys.remove(value)) {
                 Assert.fail();
@@ -681,7 +662,7 @@ public class RedissonMapTest extends BaseTest {
 
         Collection<Integer> values = map.values();
         assertThat(values).containsOnly(0, 5, 6, 8);
-        for (Iterator<Integer> iterator = map.valueIterator(); iterator.hasNext();) {
+        for (Iterator<Integer> iterator = map.values().iterator(); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!values.remove(value)) {
                 Assert.fail();
