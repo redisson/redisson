@@ -324,7 +324,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
             s.<TestREntityIdNested, TestREntity>getOrCreate(TestREntityIdNested.class, t1);
             fail("Should not be here");
         } catch (Exception e) {
-            assertEquals("Field with RId annotation cannot be a type of which class is annotated with REntity.", e.getCause().getMessage());
+            assertEquals("Field with RId annotation cannot be a type of which class is annotated with REntity.", e.getMessage());
         }
     }
 
@@ -484,14 +484,14 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
             service.getOrCreate(TestClass.class, new int[]{1, 2, 3, 4, 5});
             fail("Should not be here");
         } catch (Exception e) {
-            assertEquals("RId value cannot be an array.", e.getCause().getMessage());
+            assertEquals("RId value cannot be an array.", e.getMessage());
         }
 
         try {
             service.getOrCreate(TestClass.class, new byte[]{1, 2, 3, 4, 5});
             fail("Should not be here");
         } catch (Exception e) {
-            assertEquals("RId value cannot be an array.", e.getCause().getMessage());
+            assertEquals("RId value cannot be an array.", e.getMessage());
         }
     }
 
@@ -656,7 +656,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         service.delete(TestClass.class, new ObjectId(100));
         assertFalse(service.isExists(persisted));
     }
-    
+
     @REntity
     public static class TestClassID1 {
 
@@ -670,9 +670,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         public Long getName() {
             return name;
         }
-        
+
     }
-    
+
     @REntity
     public static class TestClassID2 {
 
@@ -686,9 +686,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         public Long getName() {
             return name;
         }
-        
+
     }
-    
+
     @Test
     public void testCreate() {
         RLiveObjectService service = redisson.getLiveObjectService();
@@ -700,64 +700,64 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         TestClassID2 tc2 = service.create(TestClassID2.class);
         assertEquals(new Long(1), tc2.getName());
     }
-    
+
     @Test
     public void testTransformation() {
         RLiveObjectService service = redisson.getLiveObjectService();
         TestClass ts = service.create(TestClass.class);
-        
+
         HashMap<String, String> m = new HashMap();
         ts.setContent(m);
         assertFalse(HashMap.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RMap.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         HashSet<String> s = new HashSet();
         ts.setContent(s);
         assertFalse(HashSet.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RSet.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         BitSet bs = new BitSet();
         ts.setContent(bs);
         assertFalse(BitSet.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RBitSet.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         TreeSet<String> ss = new TreeSet();
         ts.setContent(ss);
         assertFalse(TreeSet.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RSortedSet.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         ArrayList<String> al = new ArrayList();
         ts.setContent(al);
         assertFalse(ArrayList.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RList.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         ConcurrentHashMap<String, String> chm = new ConcurrentHashMap();
         ts.setContent(chm);
         assertFalse(ConcurrentHashMap.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RMap.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         ArrayBlockingQueue<String> abq = new ArrayBlockingQueue(10);
         ts.setContent(abq);
         assertFalse(ArrayBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         ConcurrentLinkedQueue<String> clq = new ConcurrentLinkedQueue();
         ts.setContent(clq);
         assertFalse(ConcurrentLinkedQueue.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RQueue.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         LinkedBlockingDeque<String> lbdq = new LinkedBlockingDeque();
         ts.setContent(lbdq);
         assertFalse(LinkedBlockingDeque.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RBlockingDeque.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         LinkedList<String> ll = new LinkedList();
         ts.setContent(ll);
         assertFalse(LinkedList.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RDeque.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
     }
-    
+
     @REntity(fieldTransformation = REntity.TransformationMode.IMPLEMENTATION_BASED)
     public static class TestClassNoTransformation {
 
@@ -828,58 +828,105 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     public void testNoTransformation() {
         RLiveObjectService service = redisson.getLiveObjectService();
         TestClassNoTransformation ts = service.create(TestClassNoTransformation.class);
-        
+
         HashMap<String, String> m = new HashMap();
         ts.setContent(m);
         assertTrue(HashMap.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RMap.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         HashSet<String> s = new HashSet();
         ts.setContent(s);
         assertTrue(HashSet.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RSet.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         BitSet bs = new BitSet();
         ts.setContent(bs);
         assertTrue(BitSet.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RBitSet.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         TreeSet<String> ss = new TreeSet();
         ts.setContent(ss);
         assertTrue(TreeSet.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RSortedSet.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         ArrayList<String> al = new ArrayList();
         ts.setContent(al);
         assertTrue(ArrayList.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RList.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         ConcurrentHashMap<String, String> chm = new ConcurrentHashMap();
         ts.setContent(chm);
         assertTrue(ConcurrentHashMap.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RMap.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         ArrayBlockingQueue<String> abq = new ArrayBlockingQueue(10);
         abq.add("111");
         ts.setContent(abq);
         assertTrue(ArrayBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         ConcurrentLinkedQueue<String> clq = new ConcurrentLinkedQueue();
         ts.setContent(clq);
         assertTrue(ConcurrentLinkedQueue.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RQueue.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         LinkedBlockingDeque<String> lbdq = new LinkedBlockingDeque();
         ts.setContent(lbdq);
         assertTrue(LinkedBlockingDeque.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RBlockingDeque.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
         LinkedList<String> ll = new LinkedList();
         ts.setContent(ll);
         assertTrue(LinkedList.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RDeque.class.isAssignableFrom(ts.getContent().getClass()));
-        
+
     }
-    
+
+    @REntity
+    public static class MyObject implements Serializable {
+
+        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        private Long id;
+
+        private Long myId;
+        private String name;
+
+        public MyObject() {
+        }
+
+        public MyObject(Long myId) {
+            super();
+            this.myId = myId;
+        }
+
+        public Long getMyId() {
+            return myId;
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+    }
+
+    @Test
+    public void test() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+
+        MyObject object = new MyObject(20L);
+        try {
+            service.attach(object);
+        } catch (Exception e) {
+            assertEquals("Non-null value is required for the field with RId annotation.", e.getMessage());
+        }
+    }
+
 }
