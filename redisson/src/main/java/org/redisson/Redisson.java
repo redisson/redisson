@@ -61,7 +61,6 @@ import org.redisson.api.RSortedSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.SerializationCodec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
@@ -304,7 +303,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RExecutorService getExecutorService(String name) {
-        return new RedissonExecutorService(new SerializationCodec(), commandExecutor, this, name);
+        return new RedissonExecutorService(connectionManager.getCodec(), commandExecutor, this, name);
     }
     
     @Override

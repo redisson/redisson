@@ -604,7 +604,6 @@ public interface RedissonClient {
 
     /**
      * Returns ExecutorService by name
-     * using <b>SerializationCodec</b> codec for task serialization and response/request
      * 
      * @return
      */
@@ -612,7 +611,7 @@ public interface RedissonClient {
 
     /**
      * Returns ExecutorService by name 
-     * using provided codec for task serialization and response/request
+     * using provided codec for task, response and request serialization
      * 
      * @return
      */
