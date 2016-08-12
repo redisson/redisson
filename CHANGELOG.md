@@ -2,6 +2,21 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####08-Aug-2016 - version 2.2.24 released
+Fixed - PubSub connection in cluster mode should be connected to node according slot derived from channel name  
+Fixed - `RLock.tryLock` could block forever under some conditions  
+
+####04-Aug-2016 - version 2.2.23 released
+Improvement - `Future.cancel` method handling for RemoteService async call  
+Fixed - unable to redefine RedisClient command execution timeout  
+Fixed - exception occured in CommandEncoder leads to reponse timeout exception  
+Fixed - exception occured in CommandDecoder leads to reponse timeout exception  
+Fixed - BLPOP timeout calculation fixed  
+Fixed - object used in RemoteService to prevent race-condition during ack receiving should be created per request  
+
+####26-Jul-2016 - version 2.2.22 released  
+Fixed -  java.lang.UnsupportedOperationException during command batch usage with netty 4.0.38 and higher  
+
 ####15-Jul-2016 - version 2.2.21 released  
 Fixed - `RLock`, `RReadWriteLock`, `RSemaphore` and `RCountDownLatch` can blocks forever under some conditions  
 

@@ -1,13 +1,13 @@
-/.classpath
-/.project
-/.settings/org.eclipse.jdt.core.prefs
+.classpath
+.project
+.settings
 
-/.idea
-/*.iml
+.idea
+*.iml
 
-/target
+target
 
-/*.cmd
+*.cmd
 
 nb-configuration.xml
 
