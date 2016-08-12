@@ -35,9 +35,8 @@ Features
     3. automatic new slave servers discovery
     4. automatic slave servers offline/online discovery  
     5. automatic sentinel servers discovery  
-* Master with Slave servers mode: read data using slave servers, write data using master server
-* Single server mode: read and write data using single server
-* Lua scripting  
+* Master with Slave servers mode
+* Single server mode
 * Distributed implementation of `java.util.BitSet`  
 * Distributed implementation of `java.util.List`  
 * Distributed implementation of `java.util.Set` with TTL support for each entry
@@ -59,6 +58,7 @@ Features
 * Asynchronous connection pool  
 * Thread-safe implementation  
 * All commands executes in an atomic way  
+* Lua scripting  
 * [Spring cache](http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html) integration  
 * Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
