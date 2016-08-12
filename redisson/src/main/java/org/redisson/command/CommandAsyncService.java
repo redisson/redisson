@@ -556,13 +556,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         };
         
         final AtomicBoolean canceledByScheduler = new AtomicBoolean();
-        final ScheduledFuture<?> scheduledFuture;
+        final Timeout scheduledFuture;
         if (popTimeout != 0) {
             // to handle cases when connection has been lost
             final Channel orignalChannel = connection.getChannel();
-            scheduledFuture = connectionManager.getGroup().schedule(new Runnable() {
+            scheduledFuture = connectionManager.newTimeout(new TimerTask() {
                 @Override
-                public void run() {
+                public void run(Timeout timeout) throws Exception {
                     // re-connection wasn't made
                     // and connection is still active
                     if (orignalChannel == connection.getChannel() 
@@ -582,7 +582,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
                 if (scheduledFuture != null) {
-                    scheduledFuture.cancel(false);
+                    scheduledFuture.cancel();
                 }
 
                 synchronized (listener) {

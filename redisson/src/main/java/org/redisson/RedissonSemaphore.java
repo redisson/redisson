@@ -31,10 +31,11 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.pubsub.SemaphorePubSub;
 
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
-import io.netty.util.concurrent.ScheduledFuture;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.Semaphore}.
@@ -165,13 +166,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                         tryAcquireAsync(time, permits, subscribeFuture, result);
                     } else {
                         final AtomicBoolean executed = new AtomicBoolean();
-                        final AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<ScheduledFuture<?>>();
+                        final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
                         final Runnable listener = new Runnable() {
                             @Override
                             public void run() {
                                 executed.set(true);
                                 if (futureRef.get() != null) {
-                                    futureRef.get().cancel(false);
+                                    futureRef.get().cancel();
                                 }
                                 long elapsed = System.currentTimeMillis() - current;
                                 time.addAndGet(-elapsed);
@@ -183,14 +184,14 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
                         long t = time.get();
                         if (!executed.get()) {
-                            ScheduledFuture<?> scheduledFuture = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+                            Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                                 @Override
-                                public void run() {
+                                public void run(Timeout timeout) throws Exception {
                                     synchronized (entry) {
                                         if (entry.removeListener(listener)) {
                                             long elapsed = System.currentTimeMillis() - current;
                                             time.addAndGet(-elapsed);
-
+                                            
                                             tryAcquireAsync(time, permits, subscribeFuture, result);
                                         }
                                     }
@@ -331,7 +332,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 }
                 
                 final long current = System.currentTimeMillis();
-                final AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<ScheduledFuture<?>>();
+                final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
                 final Future<RedissonLockEntry> subscribeFuture = subscribe();
                 subscribeFuture.addListener(new FutureListener<RedissonLockEntry>() {
                     @Override
@@ -342,7 +343,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                         }
                         
                         if (futureRef.get() != null) {
-                            futureRef.get().cancel(false);
+                            futureRef.get().cancel();
                         }
 
                         long elapsed = System.currentTimeMillis() - current;
@@ -359,9 +360,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 });
                 
                 if (!subscribeFuture.isDone()) {
-                    ScheduledFuture<?> scheduledFuture = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+                    Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                         @Override
-                        public void run() {
+                        public void run(Timeout timeout) throws Exception {
                             if (!subscribeFuture.isDone()) {
                                 result.trySuccess(false);
                             }

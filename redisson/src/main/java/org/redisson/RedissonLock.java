@@ -41,7 +41,6 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
-import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -540,12 +539,12 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     if (entry.getLatch().tryAcquire()) {
                         lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
                     } else {
-                        final AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<ScheduledFuture<?>>();
+                        final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
                         final Runnable listener = new Runnable() {
                             @Override
                             public void run() {
                                 if (futureRef.get() != null) {
-                                    futureRef.get().cancel(false);
+                                    futureRef.get().cancel();
                                 }
                                 lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
                             }
@@ -554,9 +553,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         entry.addListener(listener);
 
                         if (ttl >= 0) {
-                            ScheduledFuture<?> scheduledFuture = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+                            Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                                 @Override
-                                public void run() {
+                                public void run(Timeout timeout) throws Exception {
                                     synchronized (entry) {
                                         if (entry.removeListener(listener)) {
                                             lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
@@ -615,7 +614,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 }
 
                 final long current = System.currentTimeMillis();
-                final AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<ScheduledFuture<?>>();
+                final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
                 final Future<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
                 subscribeFuture.addListener(new FutureListener<RedissonLockEntry>() {
                     @Override
@@ -626,7 +625,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         }
 
                         if (futureRef.get() != null) {
-                            futureRef.get().cancel(false);
+                            futureRef.get().cancel();
                         }
 
                         long elapsed = System.currentTimeMillis() - current;
@@ -642,9 +641,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     }
                 });
                 if (!subscribeFuture.isDone()) {
-                    ScheduledFuture<?> scheduledFuture = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+                    Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                         @Override
-                        public void run() {
+                        public void run(Timeout timeout) throws Exception {
                             if (!subscribeFuture.isDone()) {
                                 subscribeFuture.cancel(false);
                                 result.trySuccess(false);
@@ -694,13 +693,13 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
                     } else {
                         final AtomicBoolean executed = new AtomicBoolean();
-                        final AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<ScheduledFuture<?>>();
+                        final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
                         final Runnable listener = new Runnable() {
                             @Override
                             public void run() {
                                 executed.set(true);
                                 if (futureRef.get() != null) {
-                                    futureRef.get().cancel(false);
+                                    futureRef.get().cancel();
                                 }
                                 long elapsed = System.currentTimeMillis() - current;
                                 time.addAndGet(-elapsed);
@@ -715,14 +714,14 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                             t = ttl;
                         }
                         if (!executed.get()) {
-                            ScheduledFuture<?> scheduledFuture = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+                            Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                                 @Override
-                                public void run() {
+                                public void run(Timeout timeout) throws Exception {
                                     synchronized (entry) {
                                         if (entry.removeListener(listener)) {
                                             long elapsed = System.currentTimeMillis() - current;
                                             time.addAndGet(-elapsed);
-
+                                            
                                             tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
                                         }
                                     }
