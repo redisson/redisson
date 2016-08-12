@@ -17,8 +17,6 @@ package org.redisson.api.listener;
 
 import java.util.EventListener;
 
-import org.redisson.api.RTopic;
-
 /**
  * Listener for Redis PubSub channel status changes
  *

@@ -58,6 +58,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class RemoteInvocationOptions implements Serializable {
 
+    private static final long serialVersionUID = -7715968073286484802L;
+    
     private Long ackTimeoutInMillis;
     private Long executionTimeoutInMillis;
 

@@ -208,7 +208,7 @@ public interface RLiveObjectService {
      * 
      * @param cls 
      */
-    void registerClass(Class cls);
+    void registerClass(Class<?> cls);
     
     /**
      * Unregister the class with the service. This is useful after you decide
@@ -227,7 +227,7 @@ public interface RLiveObjectService {
      * 
      * @param cls It can be either the proxied class or the unproxied conterpart.
      */
-    void unregisterClass(Class cls);
+    void unregisterClass(Class<?> cls);
     
     /**
      * Check if the class is registered in the cache. 
@@ -242,5 +242,5 @@ public interface RLiveObjectService {
      * @param cls
      * @return 
      */
-    boolean isClassRegistered(Class cls);
+    boolean isClassRegistered(Class<?> cls);
 }

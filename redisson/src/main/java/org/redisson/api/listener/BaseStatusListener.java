@@ -15,8 +15,6 @@
  */
 package org.redisson.api.listener;
 
-import org.redisson.api.RTopic;
-
 /**
  * Base status listener for Redis PubSub channel status changes
  *

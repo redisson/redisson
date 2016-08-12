@@ -35,8 +35,6 @@ import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * @author Nikita Koksharov
  *
