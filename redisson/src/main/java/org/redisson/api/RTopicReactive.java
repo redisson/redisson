@@ -18,6 +18,8 @@ package org.redisson.api;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
+import org.redisson.api.listener.MessageListener;
+import org.redisson.api.listener.StatusListener;
 
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.

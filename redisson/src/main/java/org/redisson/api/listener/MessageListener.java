@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.listener;
 
 import java.util.EventListener;
+
+import org.redisson.api.RTopic;
 
 /**
  * Listener for Redis messages published via RTopic Redisson object
@@ -26,13 +28,13 @@ import java.util.EventListener;
  *
  * @see org.redisson.api.RTopic
  */
-public interface PatternMessageListener<M> extends EventListener {
+public interface MessageListener<M> extends EventListener {
 
     /**
      * Invokes on every message in topic
      *
      * @param msg topic message
      */
-    void onMessage(String pattern, String channel, M msg);
+    void onMessage(String channel, M msg);
 
 }

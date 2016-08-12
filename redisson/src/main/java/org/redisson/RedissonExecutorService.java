@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.api.MessageListener;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBucket;
 import org.redisson.api.RExecutorService;
@@ -46,6 +45,7 @@ import org.redisson.api.RKeys;
 import org.redisson.api.RTopic;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RInject;
+import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;

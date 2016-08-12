@@ -18,10 +18,10 @@ package org.redisson;
 import java.util.Collections;
 import java.util.List;
 
-import org.redisson.api.MessageListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
-import org.redisson.api.StatusListener;
+import org.redisson.api.listener.MessageListener;
+import org.redisson.api.listener.StatusListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;

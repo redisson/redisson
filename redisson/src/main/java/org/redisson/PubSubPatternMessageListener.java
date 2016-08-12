@@ -15,8 +15,8 @@
  */
 package org.redisson;
 
-import org.redisson.api.MessageListener;
-import org.redisson.api.PatternMessageListener;
+import org.redisson.api.listener.MessageListener;
+import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 

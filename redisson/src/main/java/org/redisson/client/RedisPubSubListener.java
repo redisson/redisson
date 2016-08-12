@@ -15,7 +15,7 @@
  */
 package org.redisson.client;
 
-import org.redisson.api.MessageListener;
+import org.redisson.api.listener.MessageListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
 public interface RedisPubSubListener<V> extends MessageListener<V> {

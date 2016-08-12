@@ -18,9 +18,9 @@ package org.redisson;
 import java.util.Collections;
 import java.util.List;
 
-import org.redisson.api.PatternMessageListener;
-import org.redisson.api.PatternStatusListener;
 import org.redisson.api.RPatternTopic;
+import org.redisson.api.listener.PatternMessageListener;
+import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;

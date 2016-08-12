@@ -17,6 +17,9 @@ package org.redisson.api;
 
 import java.util.List;
 
+import org.redisson.api.listener.MessageListener;
+import org.redisson.api.listener.StatusListener;
+
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
  *
@@ -48,7 +51,7 @@ public interface RTopic<M> extends RTopicAsync<M> {
      *
      * @param listener
      * @return locally unique listener id
-     * @see org.redisson.api.MessageListener
+     * @see org.redisson.api.listener.MessageListener
      */
     int addListener(MessageListener<M> listener);
 
@@ -57,7 +60,7 @@ public interface RTopic<M> extends RTopicAsync<M> {
      *
      * @param listener
      * @return
-     * @see org.redisson.api.StatusListener
+     * @see org.redisson.api.listener.StatusListener
      */
     int addListener(StatusListener listener);
 
