@@ -1,7 +1,6 @@
 package org.redisson;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -12,8 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RBlockingQueueReactive;
@@ -84,7 +81,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
         sync(queue2.put(6));
 
         sync(queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS));
-        MatcherAssert.assertThat(sync(queue2), Matchers.contains(3, 4, 5, 6));
+        assertThat(sync(queue2)).containsExactly(3, 4, 5, 6);
     }
 
     @Test
@@ -97,7 +94,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
         //MatcherAssert.assertThat(queue, Matchers.contains(1, 2, 3, 4));
         Assert.assertEquals((Integer) 1, sync(queue.poll()));
-        MatcherAssert.assertThat(sync(queue), Matchers.contains(2, 3, 4));
+        assertThat(sync(queue)).containsExactly(2, 3, 4);
         Assert.assertEquals((Integer) 2, sync(queue.peek()));
     }
 
@@ -112,7 +109,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
         sync(queue.poll());
         sync(queue.poll());
 
-        MatcherAssert.assertThat(sync(queue), Matchers.contains(3, 4));
+        assertThat(sync(queue)).containsExactly(3, 4);
         sync(queue.poll());
         sync(queue.poll());
 
@@ -165,7 +162,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
             count++;
         }
 
-        assertThat(counter.get(), equalTo(total));
+        assertThat(counter.get()).isEqualTo(total);
     }
 
     @Test
@@ -177,7 +174,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
         ArrayList<Object> dst = new ArrayList<Object>();
         sync(queue1.drainTo(dst));
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains(1, 2L, "e"));
+        assertThat(dst).containsExactly(1, 2L, "e");
         Assert.assertEquals(0, sync(queue1.size()).intValue());
     }
 
@@ -190,13 +187,11 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
         ArrayList<Object> dst = new ArrayList<Object>();
         sync(queue1.drainTo(dst, 2));
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains(1, 2L));
+        assertThat(dst).containsExactly(1, 2L);
         Assert.assertEquals(1, sync(queue1.size()).intValue());
 
         dst.clear();
         sync(queue1.drainTo(dst, 2));
-        MatcherAssert.assertThat(dst, Matchers.<Object>contains("e"));
-
-
+        assertThat(dst).containsExactly("e");
     }
 }

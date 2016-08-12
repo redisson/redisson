@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RMapCacheReactive;
@@ -241,7 +239,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
         joinMap.put(6, "6");
         sync(map.putAll(joinMap));
 
-        MatcherAssert.assertThat(toIterable(map.keyIterator()), Matchers.containsInAnyOrder(1, 2, 3, 4, 5, 6));
+        assertThat(toIterable(map.keyIterator())).containsOnly(1, 2, 3, 4, 5, 6);
     }
 
     @Test

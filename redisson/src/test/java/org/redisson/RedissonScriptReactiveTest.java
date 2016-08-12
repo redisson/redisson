@@ -1,10 +1,10 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Collections;
 import java.util.List;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RScript;
@@ -17,7 +17,7 @@ public class RedissonScriptReactiveTest extends BaseReactiveTest {
     public void testEval() {
         RScriptReactive script = redisson.getScript();
         List<Object> res = sync(script.<List<Object>>eval(RScript.Mode.READ_ONLY, "return {1,2,3.3333,'\"foo\"',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList()));
-        MatcherAssert.assertThat(res, Matchers.<Object>contains(1L, 2L, 3L, "foo"));
+        assertThat(res).containsExactly(1L, 2L, 3L, "foo");
     }
 
     @Test

@@ -11,8 +11,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RSetCacheReactive;
@@ -47,7 +45,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
     public void testAddExpire() throws InterruptedException, ExecutionException {
         RSetCacheReactive<String> set = redisson.getSetCache("simple3");
         sync(set.add("123", 1, TimeUnit.SECONDS));
-        Assert.assertThat(sync(set), Matchers.contains("123"));
+        assertThat(sync(set)).containsOnly("123");
 
         Thread.sleep(1000);
 
@@ -94,14 +92,14 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
         Assert.assertTrue(sync(set.remove(1)));
         Assert.assertFalse(sync(set.contains(1)));
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(3, 7));
+        assertThat(sync(set)).contains(3, 7);
 
         Assert.assertFalse(sync(set.remove(1)));
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(3, 7));
+        assertThat(sync(set)).contains(3, 7);
 
         Assert.assertTrue(sync(set.remove(3)));
         Assert.assertFalse(sync(set.contains(3)));
-        Assert.assertThat(sync(set), Matchers.contains(7));
+        assertThat(sync(set)).contains(7);
         Assert.assertEquals(1, sync(set.size()).intValue());
     }
 
@@ -140,7 +138,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
         }
 
         Assert.assertTrue(sync(set.retainAll(Arrays.asList(1, 2))));
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2));
+        assertThat(sync(set)).contains(1, 2);
         Assert.assertEquals(2, sync(set.size()).intValue());
     }
 
@@ -222,7 +220,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
         sync(set.add(2));
 
         Assert.assertFalse(sync(set.retainAll(Arrays.asList(1, 2)))); // nothing changed
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2));
+        assertThat(sync(set)).contains(1, 2);
     }
 
     @Test

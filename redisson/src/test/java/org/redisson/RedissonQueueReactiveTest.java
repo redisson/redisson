@@ -1,7 +1,7 @@
 package org.redisson;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RQueueReactive;
@@ -16,9 +16,9 @@ public class RedissonQueueReactiveTest extends BaseReactiveTest {
         sync(queue.add(3));
         sync(queue.offer(4));
 
-        MatcherAssert.assertThat(sync(queue), Matchers.contains(1, 2, 3, 4));
+        assertThat(sync(queue)).containsExactly(1, 2, 3, 4);
         Assert.assertEquals((Integer)1, sync(queue.poll()));
-        MatcherAssert.assertThat(sync(queue), Matchers.contains(2, 3, 4));
+        assertThat(sync(queue)).containsExactly(2, 3, 4);
         Assert.assertEquals((Integer)2, sync(queue.peek()));
     }
 
@@ -33,7 +33,7 @@ public class RedissonQueueReactiveTest extends BaseReactiveTest {
         sync(queue.poll());
         sync(queue.poll());
 
-        MatcherAssert.assertThat(sync(queue), Matchers.contains(3, 4));
+        assertThat(sync(queue)).containsExactly(3, 4);
         sync(queue.poll());
         sync(queue.poll());
 
