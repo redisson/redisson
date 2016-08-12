@@ -197,7 +197,7 @@ public interface RLiveObjectService {
     /**
      * Pre register the class with the service, registering all the classes on
      * startup can speed up the instance creation. This is <b>NOT</b> mandatory
-     * since the class will also be registered lazyly when it first is used.
+     * since the class will also be registered lazily when it is first used.
      * 
      * All classed registered with the service is stored in a class cache.
      * 
