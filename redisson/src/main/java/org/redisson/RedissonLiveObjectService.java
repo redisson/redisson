@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RObject;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RId;
 import org.redisson.liveobject.LiveObjectTemplate;

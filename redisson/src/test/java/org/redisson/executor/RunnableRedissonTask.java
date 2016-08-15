@@ -1,6 +1,6 @@
 package org.redisson.executor;
 
-import org.redisson.RedissonClient;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 
 public class RunnableRedissonTask implements Runnable {

@@ -14,7 +14,7 @@ import org.junit.runners.Parameterized;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.RedissonClient;
+import org.redisson.api.RedissonClient;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;

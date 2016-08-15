@@ -22,11 +22,12 @@ import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.This;
-import org.redisson.RedissonClient;
+
 import org.redisson.RedissonMap;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.resolver.NamingScheme;

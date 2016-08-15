@@ -61,8 +61,10 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.socket.oio.OioSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -175,6 +177,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = NioSocketChannel.class;
+//            if (cfg.getEventLoopGroup() == null) {
+//                this.group = new OioEventLoopGroup(cfg.getThreads());
+//            } else {
+//                this.group = cfg.getEventLoopGroup();
+//            }
+//
+//            this.socketChannelClass = OioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
         this.shutdownPromise = newPromise();

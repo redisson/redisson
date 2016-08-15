@@ -37,6 +37,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.RQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RSortedSet;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RId;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;

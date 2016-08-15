@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBoundedBlockingQueue;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.config.Config;
 

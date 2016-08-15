@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.listener.MessageListener;

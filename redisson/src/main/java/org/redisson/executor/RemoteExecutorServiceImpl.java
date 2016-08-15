@@ -20,8 +20,8 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-import org.redisson.RedissonClient;
 import org.redisson.RedissonExecutorService;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;

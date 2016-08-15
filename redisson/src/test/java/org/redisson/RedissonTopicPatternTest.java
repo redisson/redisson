@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RTopic;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BasePatternStatusListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.PatternMessageListener;

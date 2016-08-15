@@ -16,7 +16,8 @@
 package org.redisson.liveobject.resolver;
 
 import java.lang.annotation.Annotation;
-import org.redisson.RedissonClient;
+
+import org.redisson.api.RedissonClient;
 
 /**
  *

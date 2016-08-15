@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
+import org.redisson.api.RedissonClient;
 
 public abstract class BaseConcurrentTest extends BaseTest {
 

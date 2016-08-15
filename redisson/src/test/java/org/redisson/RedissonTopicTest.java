@@ -26,6 +26,7 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;

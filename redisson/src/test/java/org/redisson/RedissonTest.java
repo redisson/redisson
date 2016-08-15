@@ -20,6 +20,7 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisOutOfMemoryException;

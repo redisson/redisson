@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.codec.FstCodec;
 import org.redisson.codec.SerializationCodec;
