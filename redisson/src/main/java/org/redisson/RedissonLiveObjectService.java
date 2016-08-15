@@ -82,7 +82,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             return asLiveObject(proxied).isExists() ? null : proxied;
         } catch (Exception ex) {
             unregisterClass(entityClass);
-            throw new RuntimeException(ex);
+            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
         }
     }
 
@@ -93,7 +93,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             return asLiveObject(proxied).isExists() ? proxied : null;
         } catch (Exception ex) {
             unregisterClass(entityClass);
-            throw new RuntimeException(ex);
+            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
         }
     }
 
@@ -103,7 +103,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             return instantiateLiveObject(getProxyClass(entityClass), id);
         } catch (Exception ex) {
             unregisterClass(entityClass);
-            throw new RuntimeException(ex);
+            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
         }
     }
 
@@ -118,7 +118,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                             getRIdFieldName(detachedObject.getClass())));
         } catch (Exception ex) {
             unregisterClass(entityClass);
-            throw new RuntimeException(ex);
+            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
         }
     }
 
@@ -147,7 +147,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             BeanCopy.beans(attachedObject, detached).declared(false, true).copy();
             return detached;
         } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
         }
     }
 
@@ -210,6 +210,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     private <T, K> T instantiateLiveObject(Class<T> proxyClass, K id) throws Exception {
+        if (id == null) {
+            throw new IllegalStateException("Non-null value is required for the field with RId annotation.");
+        }
         T instance = instantiate(proxyClass, id);
         asLiveObject(instance).setLiveObjectId(id);
         return instance;
