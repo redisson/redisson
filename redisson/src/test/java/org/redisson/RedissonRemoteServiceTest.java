@@ -139,7 +139,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         public void cancelMethod() throws InterruptedException {
             for (long i = 0; i < Long.MAX_VALUE; i++) {
                 iterations.incrementAndGet();
-                if (Thread.interrupted()) {
+                if (Thread.currentThread().isInterrupted()) {
                     System.out.println("interrupted! " + i);
                     return;
                 }

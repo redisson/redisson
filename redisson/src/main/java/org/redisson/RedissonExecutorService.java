@@ -107,11 +107,6 @@ public class RedissonExecutorService implements RExecutorService {
     }
     
     @Override
-    public void registerWorkers(int executors) {
-        registerWorkers(executors, null);
-    }
-    
-    @Override
     public void registerWorkers(int executors, ExecutorService executor) {
         RemoteExecutorServiceImpl service = new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, requestQueueName);
         service.setStatusName(statusName);

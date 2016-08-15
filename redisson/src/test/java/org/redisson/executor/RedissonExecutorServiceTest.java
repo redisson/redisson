@@ -191,6 +191,12 @@ public class RedissonExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("runnableCounter").get()).isEqualTo(100L);
     }
     
+    @Test
+    public void testParameterizedTask() throws InterruptedException, ExecutionException {
+        Future<String> future = redisson.getExecutorService("test").submit(new ParameterizedTask("testparam"));
+        assertThat(future.get()).isEqualTo("testparam");
+    }
+    
     @Test(expected = IllegalArgumentException.class)
     public void testAnonymousRunnable() {
         redisson.getExecutorService("test").submit(new Runnable() {

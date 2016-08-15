@@ -40,13 +40,6 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     boolean delete();
     
     /**
-     * Register workers using netty thread-pool to execute each task
-     * 
-     * @param workers - workers amount
-     */
-    void registerWorkers(int workers);
-
-    /**
      * Register workers using custom executor to execute each task
      * 
      * @param workers - workers amount
