@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 
+import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.connection.ConnectionManager;
@@ -201,6 +202,7 @@ public class ConfigSupport {
         mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);
         mapper.addMixIn(Codec.class, ClassMixIn.class);
+        mapper.addMixIn(RedissonNodeInitializer.class, ClassMixIn.class);
         mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
