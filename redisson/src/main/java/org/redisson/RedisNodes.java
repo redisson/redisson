@@ -17,10 +17,10 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.redisson.api.Node;
@@ -65,7 +65,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     @Override
     public boolean pingAll() {
         List<RedisClientEntry> clients = new ArrayList<RedisClientEntry>(connectionManager.getClients());
-        final Map<RedisConnection, Future<String>> result = new HashMap<RedisConnection, Future<String>>(clients.size());
+        final Map<RedisConnection, Future<String>> result = new ConcurrentHashMap<RedisConnection, Future<String>>(clients.size());
         final CountDownLatch latch = new CountDownLatch(clients.size());
         for (RedisClientEntry entry : clients) {
             Future<RedisConnection> f = entry.getClient().connectAsync();
