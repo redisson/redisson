@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.RedissonNode;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -26,7 +28,8 @@ public interface RedissonNodeInitializer {
      * Invoked during Redisson Node startup
      * 
      * @param redisson
+     * @param redissonNode
      */
-    void onStartup(RedissonClient redisson);
+    void onStartup(RedissonClient redisson, RedissonNode redissonNode);
     
 }

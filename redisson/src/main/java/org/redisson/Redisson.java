@@ -104,6 +104,10 @@ public class Redisson implements RedissonClient {
         commandExecutor = new CommandSyncService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
     }
+    
+    ConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
 
     /**
      * Create sync/async Redisson instance with default config
