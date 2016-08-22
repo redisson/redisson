@@ -17,8 +17,8 @@ package org.redisson.executor;
 
 import java.util.Arrays;
 
+import org.redisson.BaseRemoteService;
 import org.redisson.RedissonExecutorService;
-import org.redisson.RedissonRemoteService;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -37,7 +37,7 @@ import io.netty.util.concurrent.Promise;
  * @author Nikita Koksharov
  *
  */
-public class ExecutorRemoteService extends RedissonRemoteService {
+public class ExecutorRemoteService extends BaseRemoteService {
 
     protected String terminationTopicName;
     protected String tasksCounterName;
