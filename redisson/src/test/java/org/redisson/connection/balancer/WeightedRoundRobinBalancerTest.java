@@ -46,7 +46,7 @@ public class WeightedRoundRobinBalancerTest {
             slave.stop();
 
             RedissonClient clientCopy = client;
-            await().atMost(5, TimeUnit.SECONDS).until(() -> assertThat(clientCopy.getBucket("key").get()).isNull());
+            assertThat(clientCopy.getBucket("key").get()).isNull();
         } finally {
             if (master != null) {
                 master.stop();

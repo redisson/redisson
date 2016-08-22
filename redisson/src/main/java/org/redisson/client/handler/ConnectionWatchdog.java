@@ -79,6 +79,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     
     private void reconnect(final RedisConnection connection, final int attempts){
         int timeout = 2 << attempts;
+        if (bootstrap.group().isShuttingDown()) {
+            return;
+        }
+        
         timer.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
