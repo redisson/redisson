@@ -60,7 +60,6 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
-import io.netty.util.concurrent.ScheduledFuture;
 
 /**
  *
@@ -494,12 +493,51 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                checkConnectionFuture(source, details);
+                if (connFuture.isCancelled()) {
+                    return;
+                }
+
+                if (!connFuture.isSuccess()) {
+                    connectionManager.getShutdownLatch().release();
+                    details.setException(convertException(connFuture));
+                    return;
+                }
+
+                if (details.getAttemptPromise().isDone() || details.getMainPromise().isDone()) {
+                    releaseConnection(source, connFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
+                    return;
+                }
+                
+                final RedisConnection connection = connFuture.getNow();
+                if (details.getSource().getRedirect() == Redirect.ASK) {
+                    List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
+                    Promise<Void> promise = connectionManager.newPromise();
+                    list.add(new CommandData<Void, Void>(promise, details.getCodec(), RedisCommands.ASKING, new Object[] {}));
+                    list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
+                    Promise<Void> main = connectionManager.newPromise();
+                    ChannelFuture future = connection.send(new CommandsData(main, list));
+                    details.setWriteFuture(future);
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("aquired connection for command {} and params {} from slot {} using node {}",
+                                details.getCommand(), Arrays.toString(details.getParams()), details.getSource(), connection.getRedisClient().getAddr());
+                    }
+                    ChannelFuture future = connection.send(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
+                    details.setWriteFuture(future);
+                }
+                
+                details.getWriteFuture().addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        checkWriteFuture(details, connection);
+                    }
+                });
+
+                releaseConnection(source, connFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
             }
         });
 
         attemptPromise.addListener(new FutureListener<R>() {
-
             @Override
             public void operationComplete(Future<R> future) throws Exception {
                 checkAttemptFuture(source, details, future);
@@ -592,7 +630,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 // handling cancel operation for commands from skipTimeout collection
                 if ((future.isCancelled() && details.getAttemptPromise().cancel(true)) 
                         || canceledByScheduler.get()) {
-                    connection.forceReconnectAsync();
+                    connection.forceFastReconnectAsync();
                     return;
                 }
                 
@@ -609,74 +647,29 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
-    private <R, V> void checkConnectionFuture(final NodeSource source,
-            final AsyncDetails<V, R> details) {
-        if (details.getAttemptPromise().isDone() || details.getMainPromise().isCancelled() || details.getConnectionFuture().isCancelled()) {
-            return;
-        }
-
-        if (!details.getConnectionFuture().isSuccess()) {
-            connectionManager.getShutdownLatch().release();
-            details.setException(convertException(details.getConnectionFuture()));
-            return;
-        }
-
-        final RedisConnection connection = details.getConnectionFuture().getNow();
-
-        if (details.getSource().getRedirect() == Redirect.ASK) {
-            List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
-            Promise<Void> promise = connectionManager.newPromise();
-            list.add(new CommandData<Void, Void>(promise, details.getCodec(), RedisCommands.ASKING, new Object[] {}));
-            list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
-            Promise<Void> main = connectionManager.newPromise();
-            ChannelFuture future = connection.send(new CommandsData(main, list));
-            details.setWriteFuture(future);
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("aquired connection for command {} and params {} from slot {} using node {}",
-                        details.getCommand(), Arrays.toString(details.getParams()), details.getSource(), connection.getRedisClient().getAddr());
-            }
-            ChannelFuture future = connection.send(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
-            details.setWriteFuture(future);
-        }
-
-        details.getWriteFuture().addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                checkWriteFuture(details, connection);
-            }
-        });
-
-        releaseConnection(source, details.getConnectionFuture(), details.isReadOnlyMode(), details.getAttemptPromise(), details);
-    }
-
     protected <V, R> void releaseConnection(final NodeSource source, final Future<RedisConnection> connectionFuture,
                             final boolean isReadOnly, Promise<R> attemptPromise, final AsyncDetails<V, R> details) {
         attemptPromise.addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {
-                releaseConnection(isReadOnly, source, connectionFuture, details);
+                if (!connectionFuture.isSuccess()) {
+                    return;
+                }
+                
+                RedisConnection connection = connectionFuture.getNow();
+                connectionManager.getShutdownLatch().release();
+                if (isReadOnly) {
+                    connectionManager.releaseRead(source, connection);
+                } else {
+                    connectionManager.releaseWrite(source, connection);
+                }
+                
+                if (log.isDebugEnabled()) {
+                    log.debug("connection released for command {} and params {} from slot {} using connection {}",
+                            details.getCommand(), Arrays.toString(details.getParams()), details.getSource(), connection);
+                }
             }
         });
-    }
-
-    private <V, R> void releaseConnection(boolean isReadOnly, NodeSource source, Future<RedisConnection> connectionFuture, AsyncDetails<V, R> details) {
-        if (!connectionFuture.isSuccess()) {
-            return;
-        }
-
-        RedisConnection connection = connectionFuture.getNow();
-        connectionManager.getShutdownLatch().release();
-        if (isReadOnly) {
-            connectionManager.releaseRead(source, connection);
-        } else {
-            connectionManager.releaseWrite(source, connection);
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("connection released for command {} and params {} from slot {} using node {}",
-                    details.getCommand(), Arrays.toString(details.getParams()), details.getSource(), connection.getRedisClient().getAddr());
-        }
     }
 
     private <R, V> void checkAttemptFuture(final NodeSource source, final AsyncDetails<V, R> details,

@@ -13,32 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.listener;
+package org.redisson.api;
 
-import java.util.EventListener;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * Listener for Redis PubSub channel status changes
- *
+ * Distributed implementation of {@link java.util.concurrent.ScheduledExecutorService}
+ * 
  * @author Nikita Koksharov
  *
- * @see org.redisson.api.RTopic
  */
-public interface StatusListener extends EventListener {
+public interface RScheduledExecutorService extends RExecutorService, ScheduledExecutorService, RScheduledExecutorServiceAsync {
 
     /**
-     * Executes then Redisson successfully subscribed to channel.
-     * Invoked during re-connection
+     * Cancels scheduled task by id
      * 
-     * @param channel
-     */
-    void onSubscribe(String channel);
-
-    /**
-     * Executes then Redisson successfully unsubscribed from channel.
+     * @see RScheduledFuture#getTaskId()
      * 
-     * @param channel
+     * @param taskId 
+     * @return
      */
-    void onUnsubscribe(String channel);
-
+    boolean cancelScheduledTask(String taskId);
+    
 }

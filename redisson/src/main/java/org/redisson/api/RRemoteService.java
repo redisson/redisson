@@ -81,9 +81,10 @@ public interface RRemoteService {
      * 
      * @param remoteInterface
      * @param object
-     * @param workersAmount
+     * @param workers
+     * @param executor
      */
-    <T> void register(Class<T> remoteInterface, T object, int workersAmount, ExecutorService executor);
+    <T> void register(Class<T> remoteInterface, T object, int workers, ExecutorService executor);
     
     /**
      * Get remote service object for remote invocations.

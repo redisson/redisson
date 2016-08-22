@@ -39,6 +39,10 @@ public class RemoteServiceRequest implements Serializable {
     public RemoteServiceRequest() {
     }
     
+    public RemoteServiceRequest(String requestId) {
+        this.requestId = requestId;
+    }
+    
     public RemoteServiceRequest(String requestId, String methodName, Object[] args, RemoteInvocationOptions options, long date) {
         super();
         this.requestId = requestId;

@@ -563,19 +563,19 @@ public interface RedissonClient {
     RScript getScript();
 
     /**
-     * Returns ExecutorService by name
+     * Returns ScheduledExecutorService by name
      * 
      * @return
      */
-    RExecutorService getExecutorService(String name);
+    RScheduledExecutorService getExecutorService(String name);
 
     /**
-     * Returns ExecutorService by name 
+     * Returns ScheduledExecutorService by name 
      * using provided codec for task, response and request serialization
      * 
      * @return
      */
-    RExecutorService getExecutorService(Codec codec, String name);
+    RScheduledExecutorService getExecutorService(Codec codec, String name);
     
     /**
      * Returns object for remote operations prefixed with the default name (redisson_remote_service)

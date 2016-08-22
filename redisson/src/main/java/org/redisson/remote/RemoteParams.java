@@ -13,32 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.listener;
-
-import java.util.EventListener;
+package org.redisson.remote;
 
 /**
- * Listener for Redis PubSub channel status changes
- *
+ * 
  * @author Nikita Koksharov
  *
- * @see org.redisson.api.RTopic
  */
-public interface StatusListener extends EventListener {
+public interface RemoteParams {
 
-    /**
-     * Executes then Redisson successfully subscribed to channel.
-     * Invoked during re-connection
-     * 
-     * @param channel
-     */
-    void onSubscribe(String channel);
-
-    /**
-     * Executes then Redisson successfully unsubscribed from channel.
-     * 
-     * @param channel
-     */
-    void onUnsubscribe(String channel);
-
+    void setRequestId(String id);
+    
 }

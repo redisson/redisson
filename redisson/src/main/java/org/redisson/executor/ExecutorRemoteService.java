@@ -17,9 +17,11 @@ package org.redisson.executor;
 
 import java.util.Arrays;
 
-import org.redisson.Redisson;
+import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonRemoteService;
 import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -37,11 +39,16 @@ import io.netty.util.concurrent.Promise;
  */
 public class ExecutorRemoteService extends RedissonRemoteService {
 
-    private String tasksCounterName;
-    private String statusName;
+    protected String terminationTopicName;
+    protected String tasksCounterName;
+    protected String statusName;
     
-    public ExecutorRemoteService(Codec codec, Redisson redisson, String name, CommandExecutor commandExecutor) {
+    public ExecutorRemoteService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
         super(codec, redisson, name, commandExecutor);
+    }
+    
+    public void setTerminationTopicName(String terminationTopicName) {
+        this.terminationTopicName = terminationTopicName;
     }
     
     public void setStatusName(String statusName) {
@@ -53,19 +60,10 @@ public class ExecutorRemoteService extends RedissonRemoteService {
     }
 
     @Override
-    protected Future<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue,
+    protected final Future<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue,
             RemoteServiceRequest request, RemotePromise<Object> result) {
         final Promise<Boolean> promise = commandExecutor.getConnectionManager().newPromise();
-        Future<Boolean> future = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "if redis.call('exists', KEYS[2]) == 0 then "
-                    + "redis.call('rpush', KEYS[3], ARGV[1]); "
-                    + "redis.call('incr', KEYS[1]);"
-                    + "return 1;"
-                + "end;"
-                + "return 0;", 
-                Arrays.<Object>asList(tasksCounterName, statusName, requestQueue.getName()),
-                encode(request));
-        
+        Future<Boolean> future = addAsync(requestQueue, request);
         result.setAddFuture(future);
         
         future.addListener(new FutureListener<Boolean>() {
@@ -86,6 +84,38 @@ public class ExecutorRemoteService extends RedissonRemoteService {
         });
         
         return promise;
+    }
+
+    protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "if redis.call('exists', KEYS[2]) == 0 then "
+                    + "redis.call('rpush', KEYS[3], ARGV[1]); "
+                    + "redis.call('incr', KEYS[1]);"
+                    + "return 1;"
+                + "end;"
+                + "return 0;", 
+                Arrays.<Object>asList(tasksCounterName, statusName, requestQueue.getName()),
+                encode(request));
+    }
+    
+    @Override
+    protected boolean remove(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        byte[] encodedRequest = encode(request);
+        
+        return commandExecutor.evalWrite(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                    "if redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
+                      + "if redis.call('decr', KEYS[2]) == 0 then "
+                          + "redis.call('del', KEYS[2]);"
+                          + "if redis.call('get', KEYS[3]) == ARGV[2] then "
+                           + "redis.call('set', KEYS[3], ARGV[3]);"
+                           + "redis.call('publish', KEYS[4], ARGV[3]);"
+                          + "end;"
+                      + "end;"
+                      + "return 1;"
+                  + "end;"
+                  + "return 0;",
+              Arrays.<Object>asList(requestQueue.getName(), tasksCounterName, statusName, terminationTopicName), 
+              encodedRequest, RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
 
 }

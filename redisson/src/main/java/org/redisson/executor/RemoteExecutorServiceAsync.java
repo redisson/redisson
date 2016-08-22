@@ -16,7 +16,7 @@
 package org.redisson.executor;
 
 import org.redisson.api.RFuture;
-import org.redisson.remote.RRemoteAsync;
+import org.redisson.api.annotation.RRemoteAsync;
 
 /**
  * 
@@ -26,8 +26,16 @@ import org.redisson.remote.RRemoteAsync;
 @RRemoteAsync(RemoteExecutorService.class)
 public interface RemoteExecutorServiceAsync {
 
-    <T> RFuture<T> execute(String className, byte[] classBody, byte[] state);
+    <T> RFuture<T> executeCallable(String className, byte[] classBody, byte[] state);
     
-    RFuture<Void> executeVoid(String className, byte[] classBody, byte[] state);
+    RFuture<Void> executeRunnable(String className, byte[] classBody, byte[] state);
+    
+    <T> RFuture<T> scheduleCallable(String className, byte[] classBody, byte[] state, long startTime);
+    
+    RFuture<Void> scheduleRunnable(String className, byte[] classBody, byte[] state, long startTime);
+    
+    RFuture<Void> scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period);
+    
+    RFuture<Void> scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay);
     
 }

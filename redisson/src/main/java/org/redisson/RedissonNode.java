@@ -28,6 +28,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.RedissonThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,9 +131,9 @@ public class RedissonNode {
      */
     public void start() {
         if (config.getExecutorServiceThreads() == 0) {
-            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2, new RedissonThreadFactory());
         } else if (config.getExecutorServiceThreads() > 0) {
-            executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads());
+            executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads(), new RedissonThreadFactory());
         }
 
         redisson = Redisson.create(config);

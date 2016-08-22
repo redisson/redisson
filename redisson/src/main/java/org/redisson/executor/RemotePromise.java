@@ -27,16 +27,23 @@ import io.netty.util.concurrent.Promise;
  */
 public class RemotePromise<T> extends PromiseDelegator<T> {
 
+    private String requestId;
     private Future<Boolean> addFuture;
     
     public RemotePromise(Promise<T> promise) {
         super(promise);
     }
     
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
+    }
+    public String getRequestId() {
+        return requestId;
+    }
+    
     public void setAddFuture(Future<Boolean> addFuture) {
         this.addFuture = addFuture;
     }
-    
     public Future<Boolean> getAddFuture() {
         return addFuture;
     }

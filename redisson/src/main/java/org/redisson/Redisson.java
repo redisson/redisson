@@ -34,7 +34,6 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RDeque;
-import org.redisson.api.RExecutorService;
 import org.redisson.api.RGeo;
 import org.redisson.api.RHyperLogLog;
 import org.redisson.api.RKeys;
@@ -50,6 +49,7 @@ import org.redisson.api.RPatternTopic;
 import org.redisson.api.RQueue;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RRemoteService;
+import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RScript;
 import org.redisson.api.RSemaphore;
@@ -307,12 +307,12 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public RExecutorService getExecutorService(String name) {
+    public RScheduledExecutorService getExecutorService(String name) {
         return new RedissonExecutorService(connectionManager.getCodec(), commandExecutor, this, name);
     }
     
     @Override
-    public RExecutorService getExecutorService(Codec codec, String name) {
+    public RScheduledExecutorService getExecutorService(Codec codec, String name) {
         return new RedissonExecutorService(codec, commandExecutor, this, name);
     }
     
