@@ -13,6 +13,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.BaseTest;
+import org.redisson.CronSchedule;
 import org.redisson.RedissonNode;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScheduledFuture;
@@ -41,6 +42,14 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         node.shutdown();
     }
 
+    @Test
+    public void testCronExpression() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        executor.schedule(new ScheduledRunnableTask("executed"), CronSchedule.of("0/2 * * * * ?”"));
+        Thread.sleep(4000);
+        assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(2);
+    }
+    
     @Test
     public void testCancel() throws InterruptedException, ExecutionException {
         RScheduledExecutorService executor = redisson.getExecutorService("test");

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -537,6 +538,29 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new RedissonScheduledFuture<Void>(result, startTime);
     }
 
+    @Override
+    public RScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule) {
+        RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(task, cronSchedule);
+        execute((RemotePromise<?>)future.getInnerFuture());
+        return future;
+    }
+    
+    @Override
+    public RScheduledFuture<?> scheduleAsync(Runnable task, CronSchedule cronSchedule) {
+        check(task);
+        byte[] classBody = getClassBody(task);
+        byte[] state = encode(task);
+        final Date startDate = cronSchedule.getExpression().getNextValidTimeAfter(new Date());
+        long startTime = startDate.getTime();
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(task.getClass().getName(), classBody, state, startTime, cronSchedule.getExpression().getCronExpression());
+        addListener(result);
+        return new RedissonScheduledFuture<Void>(result, startTime) {
+            public long getDelay(TimeUnit unit) {
+                return unit.convert(startDate.getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+            };
+        };
+    }
+    
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithFixedDelayAsync(task, initialDelay, delay, unit);

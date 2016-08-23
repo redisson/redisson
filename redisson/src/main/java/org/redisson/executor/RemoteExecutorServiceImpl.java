@@ -18,9 +18,11 @@ package org.redisson.executor;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.Callable;
 
 import org.redisson.RedissonExecutorService;
+import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RInject;
@@ -95,8 +97,27 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
     @Override
     public void scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period) {
         long newStartTime = System.currentTimeMillis() + period;
-        asyncScheduledServiceAtFixed().scheduleAtFixedRate(className, classBody, state, newStartTime, period);
-        executeRunnable(className, classBody, state);
+        RFuture<Void> future = asyncScheduledServiceAtFixed().scheduleAtFixedRate(className, classBody, state, newStartTime, period);
+        try {
+            executeRunnable(className, classBody, state);
+        } catch (Exception e) {
+            // cancel task if it throws an exception
+            future.cancel(true);
+            throw new RuntimeException(e);
+        }
+    }
+    
+    @Override
+    public void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression) {
+        Date nextStartDate = new CronExpression(cronExpression).getNextValidTimeAfter(new Date());
+        RFuture<Void> future = asyncScheduledServiceAtFixed().schedule(className, classBody, state, nextStartDate.getTime(), cronExpression);
+        try {
+            executeRunnable(className, classBody, state);
+        } catch (Exception e) {
+            // cancel task if it throws an exception
+            future.cancel(true);
+            throw new RuntimeException(e);
+        }
     }
 
     /**

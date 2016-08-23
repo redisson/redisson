@@ -16,6 +16,9 @@
 package org.redisson.api;
 
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+
+import org.redisson.CronSchedule;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.ScheduledExecutorService}
@@ -34,5 +37,20 @@ public interface RScheduledExecutorService extends RExecutorService, ScheduledEx
      * @return
      */
     boolean cancelScheduledTask(String taskId);
+    
+    /**
+     * Creates and executes a periodic action with cron schedule object.
+     * If any execution of the task
+     * encounters an exception, subsequent executions are suppressed.
+     * Otherwise, the task will only terminate via cancellation or
+     * termination of the executor.  If any execution of this task
+     * takes longer than its period, then subsequent executions
+     * may start late, but will not concurrently execute.
+     *
+     * @param command the task to execute
+     * @param cron schedule object
+     * @return
+     */
+    ScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule);
     
 }

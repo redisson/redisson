@@ -34,4 +34,6 @@ public interface RemoteExecutorService {
     
     void scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay);
     
+    void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression);
+    
 }
