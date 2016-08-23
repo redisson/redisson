@@ -33,7 +33,7 @@ public interface RExecutorServiceAsync {
     RFuture<Boolean> deleteAsync();
 
     /**
-     * Submit task for execution
+     * Submit task for execution in async mode with listeners support 
      * 
      * @param task
      * @return
@@ -41,7 +41,7 @@ public interface RExecutorServiceAsync {
     <T> RFuture<T> submitAsync(Callable<T> task);
 
     /**
-     * Submit task for execution
+     * Submit task for execution in async mode with listeners support
      * 
      * @param task
      * @return

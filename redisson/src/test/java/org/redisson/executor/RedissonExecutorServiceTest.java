@@ -7,9 +7,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -19,6 +21,7 @@ import org.junit.Test;
 import org.redisson.BaseTest;
 import org.redisson.RedissonNode;
 import org.redisson.api.RExecutorService;
+import org.redisson.api.RScheduledExecutorService;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 
@@ -42,6 +45,27 @@ public class RedissonExecutorServiceTest extends BaseTest {
         BaseTest.afterClass();
         
         node.shutdown();
+    }
+    
+    private void cancel(ScheduledFuture<?> future1) throws InterruptedException, ExecutionException {
+        assertThat(future1.cancel(true)).isTrue();
+        boolean canceled = false;
+        try {
+            future1.get();
+        } catch (CancellationException e) {
+            canceled = true;
+        }
+        assertThat(canceled).isTrue();
+    }
+    
+    @Test
+    public void testShutdownWithCancelAndOfflineExecutor() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test2");
+        ScheduledFuture<?> future1 = executor.schedule(new RunnableRedissonTask("executed1"), 1, TimeUnit.SECONDS);
+        cancel(future1);
+        Thread.sleep(2000);
+        assertThat(redisson.getAtomicLong("executed1").isExists()).isFalse();
+        assertThat(executor.delete()).isFalse();
     }
     
     @Test
@@ -182,13 +206,19 @@ public class RedissonExecutorServiceTest extends BaseTest {
         Future<Long> s1 = redisson.getExecutorService("test").submit(new CallableRedissonTask(1L));
         Future<Long> s2 = redisson.getExecutorService("test").submit(new CallableRedissonTask(2L));
         Future<Long> s3 = redisson.getExecutorService("test").submit(new CallableRedissonTask(30L));
-        Future<Void> s4 = (Future<Void>) redisson.getExecutorService("test").submit(new RunnableRedissonTask());
+        Future<Void> s4 = (Future<Void>) redisson.getExecutorService("test").submit(new RunnableRedissonTask("runnableCounter"));
         
         List<Long> results = Arrays.asList(s1.get(), s2.get(), s3.get());
         assertThat(results).containsOnlyOnce(33L);
         
         s4.get();
         assertThat(redisson.getAtomicLong("runnableCounter").get()).isEqualTo(100L);
+    }
+    
+    @Test
+    public void testParameterizedTask() throws InterruptedException, ExecutionException {
+        Future<String> future = redisson.getExecutorService("test").submit(new ParameterizedTask("testparam"));
+        assertThat(future.get()).isEqualTo("testparam");
     }
     
     @Test(expected = IllegalArgumentException.class)

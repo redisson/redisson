@@ -117,7 +117,6 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
 
         Map<InetSocketAddress, WeightEntry> weightsCopy = new HashMap<InetSocketAddress, WeightEntry>(weights);
 
-        List<ClientConnectionsEntry> clientsCopy = new ArrayList<ClientConnectionsEntry>();
 
         synchronized (this) {
             for (Iterator<WeightEntry> iterator = weightsCopy.values().iterator(); iterator.hasNext();) {
@@ -136,15 +135,18 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
                 weightsCopy = weights;
             }
 
+            List<ClientConnectionsEntry> clientsCopy = findClients(clients, weightsCopy);
 
-            for (InetSocketAddress addr : weightsCopy.keySet()) {
-                for (ClientConnectionsEntry clientConnectionsEntry : clients) {
-                    if (clientConnectionsEntry.getClient().getAddr().equals(addr)
-                            && !clientConnectionsEntry.isFreezed()) {
-                        clientsCopy.add(clientConnectionsEntry);
-                        break;
-                    }
+            // If there are no connections available to servers that have a weight counter
+            // remaining, then reset the weight counters and find a connection again. In the worst
+            // case, there should always be a connection to the master.
+            if (clientsCopy.isEmpty()) {
+                for (WeightEntry entry : weights.values()) {
+                    entry.resetWeightCounter();
                 }
+
+                weightsCopy = weights;
+                clientsCopy = findClients(clients, weightsCopy);
             }
 
             int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
@@ -153,6 +155,20 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
             weightEntry.decWeightCounter();
             return entry;
         }
+    }
+
+    private List<ClientConnectionsEntry> findClients(List<ClientConnectionsEntry> clients, Map<InetSocketAddress, WeightEntry> weightsCopy) {
+        List<ClientConnectionsEntry> clientsCopy = new ArrayList<ClientConnectionsEntry>();
+        for (InetSocketAddress addr : weightsCopy.keySet()) {
+            for (ClientConnectionsEntry clientConnectionsEntry : clients) {
+                if (clientConnectionsEntry.getClient().getAddr().equals(addr)
+                        && !clientConnectionsEntry.isFreezed()) {
+                    clientsCopy.add(clientConnectionsEntry);
+                    break;
+                }
+            }
+        }
+        return clientsCopy;
     }
 
 }

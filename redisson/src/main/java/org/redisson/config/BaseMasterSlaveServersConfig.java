@@ -43,7 +43,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'slave' node maximum connection pool size for <b>each</b> slave node
      */
-    private int slaveConnectionPoolSize = 100;
+    private int slaveConnectionPoolSize = 250;
 
     /**
      * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
@@ -53,7 +53,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'master' node maximum connection pool size
      */
-    private int masterConnectionPoolSize = 100;
+    private int masterConnectionPoolSize = 250;
 
     private ReadMode readMode = ReadMode.SLAVE;
 
@@ -75,7 +75,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'slave' servers connection pool size for <b>each</b> slave node.
      * <p/>
-     * Default is <code>100</code>
+     * Default is <code>250</code>
      * <p/>
      * @see #setSlaveConnectionMinimumIdleSize(int)
      *
@@ -93,7 +93,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'master' server connection pool size.
      * <p/>
-     * Default is <code>100</code>
+     * Default is <code>250</code>
      *
      * @see #setMasterConnectionMinimumIdleSize(int)
      *

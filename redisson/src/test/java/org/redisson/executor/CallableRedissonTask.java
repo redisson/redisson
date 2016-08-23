@@ -3,7 +3,7 @@ package org.redisson.executor;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 
-import org.redisson.RedissonClient;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 
 public class CallableRedissonTask implements Callable<Long>, Serializable {

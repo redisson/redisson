@@ -175,6 +175,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = NioSocketChannel.class;
+//            if (cfg.getEventLoopGroup() == null) {
+//                this.group = new OioEventLoopGroup(cfg.getThreads());
+//            } else {
+//                this.group = cfg.getEventLoopGroup();
+//            }
+//
+//            this.socketChannelClass = OioSocketChannel.class;
         }
         this.codec = cfg.getCodec();
         this.shutdownPromise = newPromise();
@@ -301,7 +308,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public RedisClient createClient(String host, int port, int timeout, int commandTimeout) {
-        return new RedisClient(group, socketChannelClass, host, port, timeout, commandTimeout);
+        return new RedisClient(timer, group, socketChannelClass, host, port, timeout, commandTimeout);
     }
 
     @Override

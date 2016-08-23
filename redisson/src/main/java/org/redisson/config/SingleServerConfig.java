@@ -48,7 +48,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Redis connection maximum pool size
      */
-    private int connectionPoolSize = 100;
+    private int connectionPoolSize = 250;
 
     /**
      * Database index used for Redis connection
@@ -86,7 +86,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Redis connection pool size
-     * Default is 100
+     * Default is 250
      *
      * @param connectionPoolSize
      */

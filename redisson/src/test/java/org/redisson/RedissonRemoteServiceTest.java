@@ -16,10 +16,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
+import org.redisson.api.annotation.RRemoteAsync;
 import org.redisson.codec.FstCodec;
 import org.redisson.codec.SerializationCodec;
-import org.redisson.remote.RRemoteAsync;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.redisson.remote.RemoteServiceTimeoutException;
 
@@ -139,7 +140,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         public void cancelMethod() throws InterruptedException {
             for (long i = 0; i < Long.MAX_VALUE; i++) {
                 iterations.incrementAndGet();
-                if (Thread.interrupted()) {
+                if (Thread.currentThread().isInterrupted()) {
                     System.out.println("interrupted! " + i);
                     return;
                 }

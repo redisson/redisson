@@ -22,8 +22,18 @@ package org.redisson.executor;
  */
 public interface RemoteExecutorService {
 
-    Object execute(String className, byte[] classBody, byte[] state);
+    Object executeCallable(String className, byte[] classBody, byte[] state);
  
-    void executeVoid(String className, byte[] classBody, byte[] state);
+    void executeRunnable(String className, byte[] classBody, byte[] state);
+    
+    Object scheduleCallable(String className, byte[] classBody, byte[] state, long startTime);
+    
+    void scheduleRunnable(String className, byte[] classBody, byte[] state, long startTime);
+    
+    void scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period);
+    
+    void scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay);
+    
+    void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression);
     
 }

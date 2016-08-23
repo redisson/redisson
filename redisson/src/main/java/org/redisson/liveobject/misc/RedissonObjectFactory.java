@@ -18,11 +18,12 @@ package org.redisson.liveobject.misc;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
-import org.redisson.RedissonClient;
+
 import org.redisson.RedissonReference;
 import org.redisson.client.codec.Codec;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RObject;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.liveobject.provider.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;

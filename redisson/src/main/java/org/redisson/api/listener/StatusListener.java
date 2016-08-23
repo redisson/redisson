@@ -26,8 +26,19 @@ import java.util.EventListener;
  */
 public interface StatusListener extends EventListener {
 
+    /**
+     * Executes then Redisson successfully subscribed to channel.
+     * Invoked during re-connection
+     * 
+     * @param channel
+     */
     void onSubscribe(String channel);
 
+    /**
+     * Executes then Redisson successfully unsubscribed from channel.
+     * 
+     * @param channel
+     */
     void onUnsubscribe(String channel);
 
 }

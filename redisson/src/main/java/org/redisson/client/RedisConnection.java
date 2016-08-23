@@ -42,6 +42,7 @@ public class RedisConnection implements RedisCommands {
 
     final RedisClient redisClient;
 
+    private volatile boolean fastReconnect;
     private volatile boolean closed;
     volatile Channel channel;
 
@@ -204,7 +205,16 @@ public class RedisConnection implements RedisCommands {
         return closed;
     }
 
-    public ChannelFuture forceReconnectAsync() {
+    public boolean isFastReconnect() {
+        return fastReconnect;
+    }
+    
+    public void clearFastReconnect() {
+        fastReconnect = false;
+    }
+    
+    public ChannelFuture forceFastReconnectAsync() {
+        fastReconnect = true;
         return channel.close();
     }
 

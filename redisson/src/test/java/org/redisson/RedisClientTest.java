@@ -1,7 +1,8 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +13,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -24,17 +29,9 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
-import java.io.IOException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 
 public class RedisClientTest {
 
@@ -109,7 +106,7 @@ public class RedisClientTest {
 
     @Test
     public void test() throws InterruptedException {
-        RedisClient c = new RedisClient(new NioEventLoopGroup(), NioSocketChannel.class, "localhost", 6379, 3000, 10000);
+        RedisClient c = new RedisClient("localhost", 6379);
         final RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
@@ -131,7 +128,7 @@ public class RedisClientTest {
 
     @Test
     public void testPipeline() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient(new NioEventLoopGroup(), NioSocketChannel.class, "localhost", 6379, 3000, 10000);
+        RedisClient c = new RedisClient("localhost", 6379);
         RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);

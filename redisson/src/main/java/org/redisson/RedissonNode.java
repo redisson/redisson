@@ -17,14 +17,24 @@ package org.redisson;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisConnection;
 import org.redisson.config.RedissonNodeConfig;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.RedissonThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.netty.buffer.ByteBufUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * 
@@ -38,9 +48,32 @@ public class RedissonNode {
     private ExecutorService executor;
     private RedissonClient redisson;
     private final RedissonNodeConfig config;
+    private final String id;
+    private InetSocketAddress remoteAddress;
+    private InetSocketAddress localAddress;
     
     private RedissonNode(RedissonNodeConfig config) {
         this.config = new RedissonNodeConfig(config);
+        this.id = generateId();
+    }
+    
+    public InetSocketAddress getLocalAddress() {
+        return localAddress;
+    }
+    
+    public InetSocketAddress getRemoteAddress() {
+        return remoteAddress;
+    }
+    
+    public String getId() {
+        return id;
+    }
+    
+    private String generateId() {
+        byte[] id = new byte[8];
+        // TODO JDK UPGRADE replace to native ThreadLocalRandom
+        ThreadLocalRandom.current().nextBytes(id);
+        return ByteBufUtil.hexDump(id);
     }
 
     public static void main(String[] args) {
@@ -90,6 +123,7 @@ public class RedissonNode {
             }
         }
         redisson.shutdown();
+        log.info("Redisson node has been shutdown successfully");
     }
     
     /**
@@ -97,12 +131,19 @@ public class RedissonNode {
      */
     public void start() {
         if (config.getExecutorServiceThreads() == 0) {
-            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2, new RedissonThreadFactory());
         } else if (config.getExecutorServiceThreads() > 0) {
-            executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads());
+            executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads(), new RedissonThreadFactory());
         }
 
         redisson = Redisson.create(config);
+        
+        retrieveAdresses();
+        
+        if (config.getRedissonNodeInitializer() != null) {
+            config.getRedissonNodeInitializer().onStartup(redisson, this);
+        }
+        
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();
             int workers = entry.getValue();
@@ -111,6 +152,30 @@ public class RedissonNode {
         }
 
         log.info("Redisson node started!");
+    }
+
+    private void retrieveAdresses() {
+        ConnectionManager connectionManager = ((Redisson)redisson).getConnectionManager();
+        for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
+            Future<RedisConnection> readFuture = entry.connectionReadOp();
+            if (readFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout()) 
+                    && readFuture.isSuccess()) {
+                RedisConnection connection = readFuture.getNow();
+                entry.releaseRead(connection);
+                remoteAddress = (InetSocketAddress) connection.getChannel().remoteAddress();
+                localAddress = (InetSocketAddress) connection.getChannel().localAddress();
+                return;
+            }
+            Future<RedisConnection> writeFuture = entry.connectionWriteOp();
+            if (writeFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout())
+                    && writeFuture.isSuccess()) {
+                RedisConnection connection = writeFuture.getNow();
+                entry.releaseWrite(connection);
+                remoteAddress = (InetSocketAddress) connection.getChannel().remoteAddress();
+                localAddress = (InetSocketAddress) connection.getChannel().localAddress();
+                return;
+            }
+        }
     }
 
     /**

@@ -11,6 +11,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
 import static com.jayway.awaitility.Awaitility.await;

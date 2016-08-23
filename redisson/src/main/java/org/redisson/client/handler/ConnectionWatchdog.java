@@ -32,8 +32,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.util.Timeout;
+import io.netty.util.Timer;
+import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
@@ -43,13 +45,15 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    private final Timer timer;
     private final Bootstrap bootstrap;
     private final ChannelGroup channels;
     private static final int BACKOFF_CAP = 12;
 
-    public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels) {
+    public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels, Timer timer) {
         this.bootstrap = bootstrap;
         this.channels  = channels;
+        this.timer = timer;
     }
 
     @Override
@@ -63,23 +67,32 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         connection.onDisconnect();
         if (!connection.isClosed()) {
-            EventLoopGroup group = ctx.channel().eventLoop().parent();
-            reconnect(group, connection);
+            if (connection.isFastReconnect()) {
+                tryReconnect(connection, 1);
+                connection.clearFastReconnect();
+            } else {
+                reconnect(connection, 1);
+            }
         }
         ctx.fireChannelInactive();
     }
-
-    private void reconnect(final EventLoopGroup group, final RedisConnection connection){
-        group.schedule(new Runnable() {
+    
+    private void reconnect(final RedisConnection connection, final int attempts){
+        int timeout = 2 << attempts;
+        if (bootstrap.group().isShuttingDown()) {
+            return;
+        }
+        
+        timer.newTimeout(new TimerTask() {
             @Override
-            public void run() {
-                tryReconnect(group, connection, 1);
+            public void run(Timeout timeout) throws Exception {
+                tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1));
             }
-        }, 100, TimeUnit.MILLISECONDS);
+        }, timeout, TimeUnit.MILLISECONDS);
     }
 
-    private void tryReconnect(final EventLoopGroup group, final RedisConnection connection, final int attempts) {
-        if (connection.isClosed() || group.isShuttingDown()) {
+    private void tryReconnect(final RedisConnection connection, final int nextAttempt) {
+        if (connection.isClosed() || bootstrap.group().isShuttingDown()) {
             return;
         }
 
@@ -89,7 +102,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
-                if (connection.isClosed() || group.isShuttingDown()) {
+                if (connection.isClosed() || bootstrap.group().isShuttingDown()) {
                     return;
                 }
 
@@ -103,13 +116,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                     log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), e);
                 }
 
-                int timeout = 2 << attempts;
-                group.schedule(new Runnable() {
-                    @Override
-                    public void run() {
-                        tryReconnect(group, connection, Math.min(BACKOFF_CAP, attempts + 1));
-                    }
-                }, timeout, TimeUnit.MILLISECONDS);
+                reconnect(connection, nextAttempt);
             }
         });
     }

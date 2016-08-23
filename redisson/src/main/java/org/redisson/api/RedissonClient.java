@@ -13,50 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.ClusterNodesGroup;
-import org.redisson.api.Node;
-import org.redisson.api.NodesGroup;
-import org.redisson.api.RAtomicDouble;
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RBatch;
-import org.redisson.api.RBitSet;
-import org.redisson.api.RBlockingDeque;
-import org.redisson.api.RBlockingQueue;
-import org.redisson.api.RBloomFilter;
-import org.redisson.api.RBoundedBlockingQueue;
-import org.redisson.api.RBucket;
-import org.redisson.api.RBuckets;
-import org.redisson.api.RCountDownLatch;
-import org.redisson.api.RDeque;
-import org.redisson.api.RExecutorService;
-import org.redisson.api.RGeo;
-import org.redisson.api.RHyperLogLog;
-import org.redisson.api.RKeys;
-import org.redisson.api.RLexSortedSet;
-import org.redisson.api.RList;
-import org.redisson.api.RListMultimap;
-import org.redisson.api.RListMultimapCache;
-import org.redisson.api.RLiveObjectService;
-import org.redisson.api.RLock;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RPatternTopic;
-import org.redisson.api.RQueue;
-import org.redisson.api.RReadWriteLock;
-import org.redisson.api.RRemoteService;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RScript;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RSet;
-import org.redisson.api.RSetCache;
-import org.redisson.api.RSetMultimap;
-import org.redisson.api.RSetMultimapCache;
-import org.redisson.api.RSortedSet;
-import org.redisson.api.RTopic;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 import org.redisson.liveobject.provider.CodecProvider;
@@ -603,19 +563,19 @@ public interface RedissonClient {
     RScript getScript();
 
     /**
-     * Returns ExecutorService by name
+     * Returns ScheduledExecutorService by name
      * 
      * @return
      */
-    RExecutorService getExecutorService(String name);
+    RScheduledExecutorService getExecutorService(String name);
 
     /**
-     * Returns ExecutorService by name 
+     * Returns ScheduledExecutorService by name 
      * using provided codec for task, response and request serialization
      * 
      * @return
      */
-    RExecutorService getExecutorService(Codec codec, String name);
+    RScheduledExecutorService getExecutorService(Codec codec, String name);
     
     /**
      * Returns object for remote operations prefixed with the default name (redisson_remote_service)

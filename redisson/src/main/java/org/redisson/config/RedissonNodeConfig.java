@@ -20,13 +20,16 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.redisson.api.RedissonNodeInitializer;
+
 /**
  * 
  * @author Nikita Koksharov
  *
  */
 public class RedissonNodeConfig extends Config {
-
+    
+    private RedissonNodeInitializer redissonNodeInitializer;
     private int executorServiceThreads = 0;
     private Map<String, Integer> executorServiceWorkers = new HashMap<String, Integer>();
     
@@ -42,10 +45,11 @@ public class RedissonNodeConfig extends Config {
         super(oldConf);
         this.executorServiceThreads = oldConf.executorServiceThreads;
         this.executorServiceWorkers = new HashMap<String, Integer>(oldConf.executorServiceWorkers);
+        this.redissonNodeInitializer = oldConf.redissonNodeInitializer;
     }
 
     /**
-     * Executor service threads amount between all workers.
+     * Executor service threads amount shared between all workers.
      * <p>
      * <code>0</code> - create separate thread executor with <code>(current_processors_amount * 2)</code> threads
      * <p>
@@ -78,6 +82,21 @@ public class RedissonNodeConfig extends Config {
         return executorServiceWorkers;
     }
     
+    public RedissonNodeInitializer getRedissonNodeInitializer() {
+        return redissonNodeInitializer;
+    }
+
+    /**
+     * Redisson node initializer
+     * 
+     * @param redissonNodeInitializer
+     * @return
+     */
+    public RedissonNodeConfig setRedissonNodeInitializer(RedissonNodeInitializer redissonNodeInitializer) {
+        this.redissonNodeInitializer = redissonNodeInitializer;
+        return this;
+    }
+
     /**
      * Read config object stored in JSON format from <code>File</code>
      *

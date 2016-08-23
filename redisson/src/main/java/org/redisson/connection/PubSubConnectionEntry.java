@@ -40,7 +40,7 @@ public class PubSubConnectionEntry {
     private final RedisPubSubConnection conn;
 
     private final ConcurrentMap<String, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<String, SubscribeListener>();
-    private final ConcurrentMap<String, Queue<RedisPubSubListener>> channelListeners = new ConcurrentHashMap<String, Queue<RedisPubSubListener>>();
+    private final ConcurrentMap<String, Queue<RedisPubSubListener<?>>> channelListeners = new ConcurrentHashMap<String, Queue<RedisPubSubListener<?>>>();
 
     public PubSubConnectionEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
         super();
@@ -52,8 +52,8 @@ public class PubSubConnectionEntry {
         return channelListeners.containsKey(channelName);
     }
 
-    public Collection<RedisPubSubListener> getListeners(String channelName) {
-        Collection<RedisPubSubListener> result = channelListeners.get(channelName);
+    public Collection<RedisPubSubListener<?>> getListeners(String channelName) {
+        Collection<RedisPubSubListener<?>> result = channelListeners.get(channelName);
         if (result == null) {
             return Collections.emptyList();
         }
@@ -65,10 +65,10 @@ public class PubSubConnectionEntry {
             return;
         }
         
-        Queue<RedisPubSubListener> queue = channelListeners.get(channelName);
+        Queue<RedisPubSubListener<?>> queue = channelListeners.get(channelName);
         if (queue == null) {
-            queue = new ConcurrentLinkedQueue<RedisPubSubListener>();
-            Queue<RedisPubSubListener> oldQueue = channelListeners.putIfAbsent(channelName, queue);
+            queue = new ConcurrentLinkedQueue<RedisPubSubListener<?>>();
+            Queue<RedisPubSubListener<?>> oldQueue = channelListeners.putIfAbsent(channelName, queue);
             if (oldQueue != null) {
                 queue = oldQueue;
             }
@@ -92,8 +92,8 @@ public class PubSubConnectionEntry {
 
     // TODO optimize
     public boolean removeListener(String channelName, int listenerId) {
-        Queue<RedisPubSubListener> listeners = channelListeners.get(channelName);
-        for (RedisPubSubListener listener : listeners) {
+        Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
+        for (RedisPubSubListener<?> listener : listeners) {
             if (System.identityHashCode(listener) == listenerId) {
                 removeListener(channelName, listener);
                 return true;
@@ -102,8 +102,8 @@ public class PubSubConnectionEntry {
         return false;
     }
 
-    private void removeListener(String channelName, RedisPubSubListener listener) {
-        Queue<RedisPubSubListener> queue = channelListeners.get(channelName);
+    private void removeListener(String channelName, RedisPubSubListener<?> listener) {
+        Queue<RedisPubSubListener<?>> queue = channelListeners.get(channelName);
         synchronized (queue) {
             if (queue.remove(listener) && queue.isEmpty()) {
                 channelListeners.remove(channelName);
@@ -156,7 +156,7 @@ public class PubSubConnectionEntry {
         return listener.getSuccessFuture();
     }
     
-    public void unsubscribe(final String channel, final RedisPubSubListener listener) {
+    public void unsubscribe(final String channel, final RedisPubSubListener<?> listener) {
         conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, String ch) {
@@ -179,18 +179,18 @@ public class PubSubConnectionEntry {
         conn.removeDisconnectListener(channel);
         SubscribeListener s = subscribeChannelListeners.remove(channel);
         conn.removeListener(s);
-        Queue<RedisPubSubListener> queue = channelListeners.get(channel);
+        Queue<RedisPubSubListener<?>> queue = channelListeners.get(channel);
         if (queue != null) {
             synchronized (queue) {
                 channelListeners.remove(channel);
             }
-            for (RedisPubSubListener listener : queue) {
+            for (RedisPubSubListener<?> listener : queue) {
                 conn.removeListener(listener);
             }
         }
     }
 
-    public void punsubscribe(final String channel, final RedisPubSubListener listener) {
+    public void punsubscribe(final String channel, final RedisPubSubListener<?> listener) {
         conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, String ch) {

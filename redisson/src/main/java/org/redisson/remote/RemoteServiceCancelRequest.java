@@ -26,14 +26,24 @@ public class RemoteServiceCancelRequest implements Serializable {
 
     private static final long serialVersionUID = -4800574267648904260L;
 
+    private String responseId;
     private boolean mayInterruptIfRunning;
     
     public RemoteServiceCancelRequest() {
     }
 
     public RemoteServiceCancelRequest(boolean mayInterruptIfRunning) {
+        this(mayInterruptIfRunning, null);
+    }
+    
+    public RemoteServiceCancelRequest(boolean mayInterruptIfRunning, String responseId) {
         super();
         this.mayInterruptIfRunning = mayInterruptIfRunning;
+        this.responseId = responseId;
+    }
+    
+    public String getResponseId() {
+        return responseId;
     }
     
     public boolean isMayInterruptIfRunning() {

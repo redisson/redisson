@@ -13,6 +13,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RSortedSet;
+import org.redisson.api.RedissonClient;
 
 public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 

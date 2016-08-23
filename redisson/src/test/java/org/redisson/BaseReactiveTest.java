@@ -89,18 +89,8 @@ public abstract class BaseReactiveTest {
         return val;
     }
 
-    public static Config createConfig() {
-        String redisAddress = System.getProperty("redisAddress");
-        if (redisAddress == null) {
-            redisAddress = "127.0.0.1:6379";
-        }
-        Config config = new Config();
-        config.useSingleServer().setAddress(redisAddress);
-        return config;
-    }
-
     public static RedissonReactiveClient createInstance() {
-        Config config = createConfig();
+        Config config = BaseTest.createConfig();
         return Redisson.createReactive(config);
     }
 

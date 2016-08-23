@@ -15,7 +15,7 @@
  */
 package org.redisson.liveobject.resolver;
 
-import org.redisson.RedissonClient;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RId;
 
 /**

@@ -17,12 +17,15 @@ package org.redisson.client;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Map;
 
+import org.redisson.client.handler.CommandBatchEncoder;
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
-import org.redisson.client.handler.CommandBatchEncoder;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.handler.ConnectionWatchdog;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.misc.URIBuilder;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -37,14 +40,13 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
-import java.util.Map;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.misc.URIBuilder;
 
 /**
  * Low-level Redis client
@@ -59,6 +61,7 @@ public class RedisClient {
     private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     private final long commandTimeout;
+    private Timer timer;
     private boolean hasOwnGroup;
 
     public RedisClient(String address) {
@@ -66,34 +69,31 @@ public class RedisClient {
     }
     
     public RedisClient(URI address) {
-        this(new NioEventLoopGroup(), address);
+        this(new HashedWheelTimer(), new NioEventLoopGroup(), address);
         hasOwnGroup = true;
     }
 
-    public RedisClient(EventLoopGroup group, URI address) {
-        this(group, address.getHost(), address.getPort());
+    public RedisClient(Timer timer, EventLoopGroup group, URI address) {
+        this(timer, group, address.getHost(), address.getPort());
     }
     
     public RedisClient(String host, int port) {
-        this(new NioEventLoopGroup(), NioSocketChannel.class, host, port, 10000);
+        this(new HashedWheelTimer(), new NioEventLoopGroup(), NioSocketChannel.class, host, port, 10000, 10000);
         hasOwnGroup = true;
     }
     
-    public RedisClient(EventLoopGroup group, String host, int port) {
-        this(group, NioSocketChannel.class, host, port, 10000);
+    public RedisClient(Timer timer, EventLoopGroup group, String host, int port) {
+        this(timer, group, NioSocketChannel.class, host, port, 10000, 10000);
     }
 
-    public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int connectTimeout) {
-        this(group, socketChannelClass, host, port, connectTimeout, 10000);
-    }
-    
-    public RedisClient(EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, int connectTimeout, int commandTimeout) {
+    public RedisClient(final Timer timer, EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, 
+                        int connectTimeout, int commandTimeout) {
         addr = new InetSocketAddress(host, port);
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
         bootstrap.handler(new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel ch) throws Exception {
-                ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels),
+                ch.pipeline().addFirst(new ConnectionWatchdog(bootstrap, channels, timer),
                     CommandEncoder.INSTANCE,
                     CommandBatchEncoder.INSTANCE,
                     new CommandsQueue(),
@@ -175,6 +175,7 @@ public class RedisClient {
     public void shutdown() {
         shutdownAsync().syncUninterruptibly();
         if (hasOwnGroup) {
+            timer.stop();
             bootstrap.group().shutdownGracefully();
         }
     }
