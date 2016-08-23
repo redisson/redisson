@@ -19,7 +19,8 @@ import org.redisson.api.RScheduledExecutorService;
 import org.redisson.executor.CronExpression;
 
 /**
- * Cron expression object used in {@link RScheduledExecutorService}
+ * Cron expression object used in {@link RScheduledExecutorService}.
+ * Fully compatible with quartz cron expression.
  * 
  * @see RScheduledExecutorService#schedule(Runnable, CronSchedule)
  * 
@@ -64,11 +65,20 @@ public class CronSchedule {
 
     /**
      * Creates cron expression which schedule task execution
-     * every given days of the week at the given time
+     * every given days of the week at the given time.
+     * Use Calendar object constants to define day.
+     * 
+     * @see Calendar#SUNDAY
+     * @see Calendar#MONDAY
+     * @see Calendar#TUESDAY
+     * @see Calendar#WEDNESDAY
+     * @see Calendar#THURSDAY
+     * @see Calendar#FRIDAY
+     * @see Calendar#SATURDAY 
      * 
      * @param hour
      * @param minute
-     * @param daysOfWeek
+     * @param daysOfWeek - Calendar object constants
      * @return
      */
     public static CronSchedule weeklyOnDayAndHourAndMinute(int hour, int minute, Integer... daysOfWeek) {
