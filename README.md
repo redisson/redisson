@@ -81,12 +81,16 @@ Include the following to your dependency list:
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.24</version>
+       <version>2.3.0</version>
     </dependency>
 
 ### Gradle
 
-    compile 'org.redisson:redisson:2.2.24'
+    compile 'org.redisson:redisson:2.3.0'
+
+### Downloads
+   
+[Redisson node 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.3.0&e=jar)
 
 ### Supported by
 
