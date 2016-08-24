@@ -35,21 +35,23 @@ Features
     3. automatic new slave servers discovery
     4. automatic slave servers offline/online discovery  
     5. automatic sentinel servers discovery  
-* Master with Slave servers mode
-* Single server mode
-* Over 30+ data structures and services  
+* Master with Slave servers mode  
+* Single server mode  
 * Asynchronous interface for each object  
 * Asynchronous connection pool  
 * Thread-safe implementation  
-* All commands execute in an atomic way  
 * Lua scripting  
+* [Distributed objects](https://github.com/mrniko/redisson/wiki/6.-Distributed-objects)
+* [Distributed collections](https://github.com/mrniko/redisson/wiki/7.-Distributed-collections)
+* [Distributed locks and synchronizers](https://github.com/mrniko/redisson/wiki/8.-Distributed-locks-and-synchronizers)
 * [Spring cache](https://github.com/mrniko/redisson/wiki/10.-additional-features/#104-spring-cache-integration) integration  
-* Supports [Reactive Streams](http://www.reactive-streams.org)
-* Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
-* Implements [Remote service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#91-remote-service)
-* Implements [Executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-executor-service)
-* Implements [Scheduled executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)
-* Implements [Live Object service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service)
+* [Hibernate](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
+* [Reactive Streams](https://github.com/mrniko/redisson/wiki/3.-operations-execution#32-reactive-way)
+* [Redis pipelining](https://github.com/mrniko/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)  
+* [Remote service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#91-remote-service)
+* [Executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-executor-service)
+* [Scheduled executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)
+* [Live Object service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service)
 * Supports Android platform  
 * Supports auto-reconnect  
 * Supports failed to send command auto-retry  
