@@ -45,7 +45,7 @@ Features
 * [Executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-executor-service)
 * [Scheduled executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)
 * [Live Object service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service)
-* [Spring cache](https://github.com/mrniko/redisson/wiki/10.-additional-features/#104-spring-cache-integration) integration  
+* [Spring cache](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) integration  
 * [Hibernate](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
 * [Reactive Streams](https://github.com/mrniko/redisson/wiki/3.-operations-execution#32-reactive-way)
 * [Redis pipelining](https://github.com/mrniko/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)  
