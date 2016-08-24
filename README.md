@@ -37,32 +37,19 @@ Features
     5. automatic sentinel servers discovery  
 * Master with Slave servers mode
 * Single server mode
-* Distributed implementation of `java.util.BitSet`  
-* Distributed implementation of `java.util.List`  
-* Distributed implementation of `java.util.Set` with TTL support for each entry
-* Distributed implementation of `java.util.SortedSet`  
-* Distributed implementation of `java.util.Queue`  
-* Distributed implementation of `java.util.concurrent.BlockingQueue`  
-* Distributed implementation of `java.util.Deque`  
-* Distributed implementation of `java.util.concurrent.BlockingDeque`  
-* Distributed implementation of `java.util.Map` with TTL support for each entry 
-* Distributed implementation of `java.util.concurrent.ConcurrentMap` with TTL support for each entry 
-* Distributed implementation of reentrant `java.util.concurrent.locks.Lock` with TTL support  
-* Distributed implementation of reentrant `java.util.concurrent.locks.ReadWriteLock` with TTL support  
-* Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
-* Distributed alternative to the `java.util.concurrent.CountDownLatch`  
-* Distributed alternative to the `java.util.concurrent.Semaphore`  
-* Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
-* Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
+* Over 30+ data structures and services  
 * Asynchronous interface for each object  
 * Asynchronous connection pool  
 * Thread-safe implementation  
-* All commands executes in an atomic way  
+* All commands execute in an atomic way  
 * Lua scripting  
 * [Spring cache](https://github.com/mrniko/redisson/wiki/10.-additional-features/#104-spring-cache-integration) integration  
 * Supports [Reactive Streams](http://www.reactive-streams.org)
 * Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
-* Supports [Remote services](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#91-remote-service)
+* Implements [Remote service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#91-remote-service)
+* Implements [Executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-executor-service)
+* Implements [Scheduled executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)
+* Implements [Live Object service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service)
 * Supports Android platform  
 * Supports auto-reconnect  
 * Supports failed to send command auto-retry  
