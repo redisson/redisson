@@ -57,11 +57,6 @@ public class RedissonPromise<T> implements RPromise<T> {
     }
 
     @Override
-    public boolean isCancellable() {
-        return promise.isCancellable();
-    }
-
-    @Override
     public Throwable cause() {
         return promise.cause();
     }
