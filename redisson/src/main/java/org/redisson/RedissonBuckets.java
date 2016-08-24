@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DelegateDecoderCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -33,8 +34,6 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonBuckets implements RBuckets {
 
@@ -73,7 +72,7 @@ public class RedissonBuckets implements RBuckets {
         }
 
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.<Object>asList(keys), 0), ValueType.OBJECTS);
-        Future<Map<String, V>> future = commandExecutor.readAsync(keys[0], new DelegateDecoderCodec(codec), command, keys);
+        RFuture<Map<String, V>> future = commandExecutor.readAsync(keys[0], new DelegateDecoderCodec(codec), command, keys);
         return commandExecutor.get(future);
     }
 

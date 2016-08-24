@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 import org.redisson.api.RFuture;
 
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -55,36 +55,44 @@ public class RedissonFuture<T> implements RFuture<T> {
         return future.cause();
     }
 
-    public Future<T> addListener(GenericFutureListener<? extends Future<? super T>> listener) {
-        return future.addListener(listener);
+    public RFuture<T> addListener(FutureListener<? super T> listener) {
+        future.addListener(listener);
+        return this;
     }
 
-    public Future<T> addListeners(GenericFutureListener<? extends Future<? super T>>... listeners) {
-        return future.addListeners(listeners);
+    public RFuture<T> addListeners(FutureListener<? super T>... listeners) {
+        future.addListeners(listeners);
+        return this;
     }
 
-    public Future<T> removeListener(GenericFutureListener<? extends Future<? super T>> listener) {
-        return future.removeListener(listener);
+    public RFuture<T> removeListener(FutureListener<? super T> listener) {
+        future.removeListener(listener);
+        return this;
     }
 
-    public Future<T> removeListeners(GenericFutureListener<? extends Future<? super T>>... listeners) {
-        return future.removeListeners(listeners);
+    public RFuture<T> removeListeners(FutureListener<? super T>... listeners) {
+        future.removeListeners(listeners);
+        return this;
     }
 
-    public Future<T> sync() throws InterruptedException {
-        return future.sync();
+    public RFuture<T> sync() throws InterruptedException {
+        future.sync();
+        return this;
     }
 
-    public Future<T> syncUninterruptibly() {
-        return future.syncUninterruptibly();
+    public RFuture<T> syncUninterruptibly() {
+        future.syncUninterruptibly();
+        return this;
     }
 
-    public Future<T> await() throws InterruptedException {
-        return future.await();
+    public RFuture<T> await() throws InterruptedException {
+        future.await();
+        return this;
     }
 
-    public Future<T> awaitUninterruptibly() {
-        return future.awaitUninterruptibly();
+    public RFuture<T> awaitUninterruptibly() {
+        future.awaitUninterruptibly();
+        return this;
     }
 
     public boolean await(long timeout, TimeUnit unit) throws InterruptedException {

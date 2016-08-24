@@ -17,16 +17,15 @@ package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 
-import io.netty.util.concurrent.Future;
-
 public interface LoadBalancerManager {
 
-    Future<RedisConnection> getConnection(InetSocketAddress addr);
+    RFuture<RedisConnection> getConnection(InetSocketAddress addr);
 
     int getAvailableClients();
 
@@ -40,11 +39,11 @@ public interface LoadBalancerManager {
     
     ClientConnectionsEntry freeze(String host, int port, FreezeReason freezeReason);
 
-    Future<Void> add(ClientConnectionsEntry entry);
+    RFuture<Void> add(ClientConnectionsEntry entry);
 
-    Future<RedisConnection> nextConnection();
+    RFuture<RedisConnection> nextConnection();
 
-    Future<RedisPubSubConnection> nextPubSubConnection();
+    RFuture<RedisPubSubConnection> nextPubSubConnection();
 
     void returnConnection(RedisConnection connection);
 

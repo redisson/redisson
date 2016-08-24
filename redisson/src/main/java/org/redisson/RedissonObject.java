@@ -25,9 +25,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
-
 /**
  * Base Redisson object
  *
@@ -50,11 +47,11 @@ abstract class RedissonObject implements RObject {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
-    protected boolean await(Future<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException {
+    protected boolean await(RFuture<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException {
         return commandExecutor.await(future, timeout, timeoutUnit);
     }
     
-    protected <V> V get(Future<V> future) {
+    protected <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);
     }
 

@@ -17,6 +17,7 @@ package org.redisson.misc;
 
 import org.redisson.api.RFuture;
 
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 /**
@@ -25,6 +26,74 @@ import io.netty.util.concurrent.Promise;
  *
  * @param <T>
  */
-public interface RPromise<T> extends Promise<T>, RFuture<T> {
+public interface RPromise<T> extends RFuture<T> {
+
+    /**
+     * Marks this future as a success and notifies all
+     * listeners.
+     *
+     * If it is success or failed already it will throw an {@link IllegalStateException}.
+     */
+    RPromise<T> setSuccess(T result);
+
+    /**
+     * Marks this future as a success and notifies all
+     * listeners.
+     *
+     * @return {@code true} if and only if successfully marked this future as
+     *         a success. Otherwise {@code false} because this future is
+     *         already marked as either a success or a failure.
+     */
+    boolean trySuccess(T result);
+
+    /**
+     * Marks this future as a failure and notifies all
+     * listeners.
+     *
+     * If it is success or failed already it will throw an {@link IllegalStateException}.
+     */
+    Promise<T> setFailure(Throwable cause);
+
+    /**
+     * Marks this future as a failure and notifies all
+     * listeners.
+     *
+     * @return {@code true} if and only if successfully marked this future as
+     *         a failure. Otherwise {@code false} because this future is
+     *         already marked as either a success or a failure.
+     */
+    boolean tryFailure(Throwable cause);
+
+    /**
+     * Make this future impossible to cancel.
+     *
+     * @return {@code true} if and only if successfully marked this future as uncancellable or it is already done
+     *         without being cancelled.  {@code false} if this future has been cancelled already.
+     */
+    boolean setUncancellable();
+
+    @Override
+    RPromise<T> addListener(FutureListener<? super T> listener);
+
+    @Override
+    RPromise<T> addListeners(FutureListener<? super T>... listeners);
+
+    @Override
+    RPromise<T> removeListener(FutureListener<? super T> listener);
+
+    @Override
+    RPromise<T> removeListeners(FutureListener<? super T>... listeners);
+
+    @Override
+    RPromise<T> await() throws InterruptedException;
+
+    @Override
+    RPromise<T> awaitUninterruptibly();
+
+    @Override
+    RPromise<T> sync() throws InterruptedException;
+
+    @Override
+    RPromise<T> syncUninterruptibly();
 
 }

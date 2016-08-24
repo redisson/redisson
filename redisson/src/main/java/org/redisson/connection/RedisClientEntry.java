@@ -15,16 +15,15 @@
  */
 package org.redisson.connection;
 
-import io.netty.util.concurrent.Promise;
+import java.net.InetSocketAddress;
+import java.util.Map;
 
 import org.redisson.api.ClusterNode;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
-
-import java.net.InetSocketAddress;
-import java.util.Map;
+import org.redisson.misc.RPromise;
 
 public class RedisClientEntry implements ClusterNode {
 
@@ -55,7 +54,7 @@ public class RedisClientEntry implements ClusterNode {
 
     private RedisConnection connect() {
         RedisConnection c = client.connect();
-        Promise<RedisConnection> future = manager.newPromise();
+        RPromise<RedisConnection> future = manager.newPromise();
         manager.getConnectListener().onConnect(future, c, null, manager.getConfig());
         future.syncUninterruptibly();
         return future.getNow();

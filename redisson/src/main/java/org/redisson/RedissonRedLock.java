@@ -22,6 +22,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 
 import io.netty.util.concurrent.Future;
@@ -47,10 +48,10 @@ public class RedissonRedLock extends RedissonMultiLock {
         super(locks);
     }
     
-    protected boolean sync(Map<RLock, Future<Boolean>> tryLockFutures) {
+    protected boolean sync(Map<RLock, RFuture<Boolean>> tryLockFutures) {
         List<RLock> lockedLocks = new ArrayList<RLock>(tryLockFutures.size());
         RuntimeException latestException = null;
-        for (Entry<RLock, Future<Boolean>> entry : tryLockFutures.entrySet()) {
+        for (Entry<RLock, RFuture<Boolean>> entry : tryLockFutures.entrySet()) {
             try {
                 if (entry.getValue().syncUninterruptibly().getNow()) {
                     lockedLocks.add(entry.getKey());

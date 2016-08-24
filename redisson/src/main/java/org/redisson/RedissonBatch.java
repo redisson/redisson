@@ -45,8 +45,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 
-import io.netty.util.concurrent.Future;
-
 /**
  *
  *

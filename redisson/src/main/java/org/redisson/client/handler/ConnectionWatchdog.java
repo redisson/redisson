@@ -23,6 +23,8 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +41,6 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
 
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
@@ -125,7 +126,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         if (connection.getReconnectListener() != null) {
             // new connection used only for channel init
             RedisConnection rc = new RedisConnection(connection.getRedisClient(), channel);
-            Promise<RedisConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
+            RPromise<RedisConnection> connectionFuture = new RedissonPromise<RedisConnection>(ImmediateEventExecutor.INSTANCE.<RedisConnection>newPromise());
             connection.getReconnectListener().onReconnect(rc, connectionFuture);
             connectionFuture.addListener(new FutureListener<RedisConnection>() {
                 @Override

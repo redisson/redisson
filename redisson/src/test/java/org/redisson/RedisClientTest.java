@@ -18,6 +18,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -28,10 +29,11 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 
 public class RedisClientTest {
 
@@ -66,7 +68,7 @@ public class RedisClientTest {
     @Test
     public void testConnectAsync() throws InterruptedException {
         RedisClient c = new RedisClient("localhost", 6379);
-        Future<RedisConnection> f = c.connectAsync();
+        RFuture<RedisConnection> f = c.connectAsync();
         final CountDownLatch l = new CountDownLatch(1);
         f.addListener((FutureListener<RedisConnection>) future -> {
             RedisConnection conn = future.get();
@@ -143,7 +145,7 @@ public class RedisClientTest {
         CommandData<String, String> cmd4 = conn.create(null, RedisCommands.PING);
         commands.add(cmd4);
 
-        Promise<Void> p = c.getBootstrap().group().next().newPromise();
+        RPromise<Void> p = new RedissonPromise<Void>(ImmediateEventExecutor.INSTANCE.newPromise());
         conn.send(new CommandsData(p, commands));
 
         assertThat(cmd1.getPromise().get()).isEqualTo("PONG");
@@ -180,7 +182,7 @@ public class RedisClientTest {
             commands.add(cmd1);
         }
 
-        Promise<Void> p = c.getBootstrap().group().next().newPromise();
+        RPromise<Void> p = new RedissonPromise<Void>(ImmediateEventExecutor.INSTANCE.newPromise());
         conn.send(new CommandsData(p, commands));
 
         for (CommandData<?, ?> commandData : commands) {

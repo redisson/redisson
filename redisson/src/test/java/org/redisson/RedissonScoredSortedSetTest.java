@@ -16,13 +16,12 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RLexSortedSet;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSortedSet;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
@@ -206,9 +205,9 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
-        Future<Boolean> future = set.addAsync(0.323, 2);
+        RFuture<Boolean> future = set.addAsync(0.323, 2);
         Assert.assertTrue(future.get());
-        Future<Boolean> future2 = set.addAsync(0.323, 2);
+        RFuture<Boolean> future2 = set.addAsync(0.323, 2);
         Assert.assertFalse(future2.get());
 
         Assert.assertTrue(set.contains(2));

@@ -18,13 +18,12 @@ package org.redisson.command;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.netty.util.concurrent.Future;
 
 /**
  *
@@ -46,19 +45,19 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
 
     @Override
     public <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = readAsync(key, codec, command, params);
+        RFuture<R> res = readAsync(key, codec, command, params);
         return get(res);
     }
 
     @Override
     public <T, R> R read(InetSocketAddress client, String key, RedisCommand<T> command, Object ... params) {
-        Future<R> res = readAsync(client, key, connectionManager.getCodec(), command, params);
+        RFuture<R> res = readAsync(client, key, connectionManager.getCodec(), command, params);
         return get(res);
     }
 
     @Override
     public <T, R> R read(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = readAsync(client, key, codec, command, params);
+        RFuture<R> res = readAsync(client, key, codec, command, params);
         return get(res);
     }
 
@@ -69,7 +68,7 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
 
     @Override
     public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Future<R> res = evalReadAsync(key, codec, evalCommandType, script, keys, params);
+        RFuture<R> res = evalReadAsync(key, codec, evalCommandType, script, keys, params);
         return get(res);
     }
 
@@ -80,25 +79,25 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
 
     @Override
     public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
-        Future<R> res = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+        RFuture<R> res = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         return get(res);
     }
 
     @Override
     public <T, R> R write(Integer slot, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(slot, codec, command, params);
+        RFuture<R> res = writeAsync(slot, codec, command, params);
         return get(res);
     }
 
     @Override
     public <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(key, codec, command, params);
+        RFuture<R> res = writeAsync(key, codec, command, params);
         return get(res);
     }
 
     @Override
     public <T, R> R write(String key, RedisCommand<T> command, Object ... params) {
-        Future<R> res = writeAsync(key, command, params);
+        RFuture<R> res = writeAsync(key, command, params);
         return get(res);
     }
 

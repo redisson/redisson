@@ -16,12 +16,12 @@
 package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
+import org.redisson.api.RFuture;
 import org.redisson.api.RObjectReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
-import io.netty.util.concurrent.Future;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 
@@ -43,7 +43,7 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         this.commandExecutor = commandExecutor;
     }
 
-    public <R> Publisher<R> reactive(Future<R> future) {
+    public <R> Publisher<R> reactive(RFuture<R> future) {
         return commandExecutor.reactive(future);
     }
 

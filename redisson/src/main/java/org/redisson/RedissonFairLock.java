@@ -28,8 +28,6 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandExecutor;
 import org.redisson.pubsub.LockPubSub;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
  * Implements reentrant lock.<br>
@@ -63,13 +61,13 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
-    protected Future<RedissonLockEntry> subscribe(long threadId) {
+    protected RFuture<RedissonLockEntry> subscribe(long threadId) {
         return PUBSUB.subscribe(getEntryName() + ":" + threadId, 
                 getChannelName() + ":" + getLockName(threadId), commandExecutor.getConnectionManager());
     }
 
     @Override
-    protected void unsubscribe(Future<RedissonLockEntry> future, long threadId) {
+    protected void unsubscribe(RFuture<RedissonLockEntry> future, long threadId) {
         PUBSUB.unsubscribe(future.getNow(), getEntryName() + ":" + threadId, 
                 getChannelName() + ":" + getLockName(threadId), commandExecutor.getConnectionManager());
     }

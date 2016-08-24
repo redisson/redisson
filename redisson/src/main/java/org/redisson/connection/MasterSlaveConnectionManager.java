@@ -70,7 +70,6 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -131,7 +130,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Map<Integer, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
-    private final Promise<Boolean> shutdownPromise;
+    private final RPromise<Boolean> shutdownPromise;
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
@@ -245,7 +244,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         MasterSlaveEntry entry;
         if (config.getReadMode() == ReadMode.MASTER) {
             entry = new SingleEntry(slots, this, config);
-            Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+            RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
             f.syncUninterruptibly();
         } else {
             entry = createMasterSlaveEntry(config, slots);
@@ -259,11 +258,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<Future<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
-        for (Future<Void> future : fs) {
+        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
+        for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();
         }
-        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         f.syncUninterruptibly();
         return entry;
     }
@@ -322,40 +321,40 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?> listener) {
+    public RFuture<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?> listener) {
         final AsyncSemaphore lock = getSemaphore(channelName);
-        final Promise<PubSubConnectionEntry> result = newPromise();
+        final RPromise<PubSubConnectionEntry> result = newPromise();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
-                Future<PubSubConnectionEntry> future = psubscribe(channelName, codec, listener, lock);
+                RFuture<PubSubConnectionEntry> future = psubscribe(channelName, codec, listener, lock);
                 future.addListener(new TransferListener<PubSubConnectionEntry>(result));
             }
         });
         return result;
     }
     
-    public Future<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
-        Promise<PubSubConnectionEntry> promise = newPromise();
+    public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
+        RPromise<PubSubConnectionEntry> promise = newPromise();
         subscribe(codec, channelName, listener, promise, PubSubType.PSUBSCRIBE, semaphore);
         return promise;
     }
 
-    public Future<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener) {
+    public RFuture<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener) {
         final AsyncSemaphore lock = getSemaphore(channelName);
-        final Promise<PubSubConnectionEntry> result = newPromise();
+        final RPromise<PubSubConnectionEntry> result = newPromise();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
-                Future<PubSubConnectionEntry> future = subscribe(codec, channelName, listener, lock);
+                RFuture<PubSubConnectionEntry> future = subscribe(codec, channelName, listener, lock);
                 future.addListener(new TransferListener<PubSubConnectionEntry>(result));
             }
         });
         return result;
     }
     
-    public Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
-        Promise<PubSubConnectionEntry> promise = newPromise();
+    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
+        RPromise<PubSubConnectionEntry> promise = newPromise();
         subscribe(codec, channelName, listener, promise, PubSubType.SUBSCRIBE, semaphore);
         return promise;
     }
@@ -365,7 +364,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     private void subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener, 
-            final Promise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
+            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
         final PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
         if (сonnEntry != null) {
             сonnEntry.addListener(channelName, listener);
@@ -439,9 +438,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private void connect(final Codec codec, final String channelName, final RedisPubSubListener<?> listener,
-            final Promise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
+            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
         final int slot = calcSlot(channelName);
-        Future<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
+        RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
         connFuture.addListener(new FutureListener<RedisPubSubConnection>() {
 
             @Override
@@ -614,7 +613,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
+    public RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = source.getEntry();
         if (entry == null) {
             entry = getEntry(source);
@@ -640,7 +639,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
+    public RFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = source.getEntry();
         if (entry == null && source.getSlot() != null) {
             entry = getEntry(source.getSlot());
@@ -651,7 +650,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entry.connectionReadOp();
     }
 
-    Future<RedisPubSubConnection> nextPubSubConnection(int slot) {
+    RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {
         return getEntry(slot).nextPubSubConnection();
     }
 
@@ -746,7 +745,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<Boolean> getShutdownPromise() {
+    public RFuture<Boolean> getShutdownPromise() {
         return shutdownPromise;
     }
 

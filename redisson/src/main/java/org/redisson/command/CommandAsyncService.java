@@ -59,7 +59,6 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 /**
  *
@@ -82,7 +81,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <V> V get(Future<V> future) {
+    public <V> V get(RFuture<V> future) {
         final CountDownLatch l = new CountDownLatch(1);
         future.addListener(new FutureListener<V>() {
             @Override
@@ -114,7 +113,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public boolean await(Future<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException {
+    public boolean await(RFuture<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException {
         final CountDownLatch l = new CountDownLatch(1);
         future.addListener(new FutureListener<Object>() {
             @Override
@@ -173,7 +172,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         };
 
         for (MasterSlaveEntry entry : nodes) {
-            Promise<R> promise = connectionManager.newPromise();
+            RPromise<R> promise = connectionManager.newPromise();
             promise.addListener(listener);
             async(true, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0);
         }
@@ -190,7 +189,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    private <R, T> void retryReadRandomAsync(final RedisCommand<T> command, final Promise<R> mainPromise,
+    private <R, T> void retryReadRandomAsync(final RedisCommand<T> command, final RPromise<R> mainPromise,
             final List<MasterSlaveEntry> nodes, final Object... params) {
         final RPromise<R> attemptPromise = connectionManager.newPromise();
         attemptPromise.addListener(new FutureListener<R>() {
@@ -257,14 +256,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         };
 
         for (MasterSlaveEntry entry : nodes) {
-            Promise<T> promise = connectionManager.newPromise();
+            RPromise<T> promise = connectionManager.newPromise();
             promise.addListener(listener);
             async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0);
         }
         return mainPromise;
     }
 
-    public <V> RedisException convertException(Future<V> future) {
+    public <V> RedisException convertException(RFuture<V> future) {
         return future.cause() instanceof RedisException ?
                 (RedisException) future.cause() :
                 new RedisException("Unexpected exception while processing command", future.cause());
@@ -385,7 +384,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
         for (MasterSlaveEntry entry : entries) {
-            Promise<T> promise = connectionManager.newPromise();
+            RPromise<T> promise = connectionManager.newPromise();
             promise.addListener(listener);
             async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, args.toArray(), promise, 0);
         }
@@ -417,7 +416,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     protected <V, R> void async(final boolean readOnlyMode, final NodeSource source, final Codec codec,
-                                    final RedisCommand<V> command, final Object[] params, final Promise<R> mainPromise, final int attempt) {
+                                    final RedisCommand<V> command, final Object[] params, final RPromise<R> mainPromise, final int attempt) {
         if (mainPromise.isCancelled()) {
             return;
         }
@@ -427,9 +426,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return;
         }
 
-        final Promise<R> attemptPromise = connectionManager.newPromise();
+        final RPromise<R> attemptPromise = connectionManager.newPromise();
 
-        final Future<RedisConnection> connectionFuture;
+        final RFuture<RedisConnection> connectionFuture;
         if (readOnlyMode) {
             connectionFuture = connectionManager.connectionReadOp(source, command);
         } else {
@@ -499,22 +498,22 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (!connFuture.isSuccess()) {
                     connectionManager.getShutdownLatch().release();
-                    details.setException(convertException(connFuture));
+                    details.setException(convertException(connectionFuture));
                     return;
                 }
 
                 if (details.getAttemptPromise().isDone() || details.getMainPromise().isDone()) {
-                    releaseConnection(source, connFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
+                    releaseConnection(source, connectionFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
                     return;
                 }
                 
                 final RedisConnection connection = connFuture.getNow();
                 if (details.getSource().getRedirect() == Redirect.ASK) {
                     List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
-                    Promise<Void> promise = connectionManager.newPromise();
+                    RPromise<Void> promise = connectionManager.newPromise();
                     list.add(new CommandData<Void, Void>(promise, details.getCodec(), RedisCommands.ASKING, new Object[] {}));
                     list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
-                    Promise<Void> main = connectionManager.newPromise();
+                    RPromise<Void> main = connectionManager.newPromise();
                     ChannelFuture future = connection.send(new CommandsData(main, list));
                     details.setWriteFuture(future);
                 } else {
@@ -533,7 +532,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     }
                 });
 
-                releaseConnection(source, connFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
+                releaseConnection(source, connectionFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
             }
         });
 
@@ -647,8 +646,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
-    protected <V, R> void releaseConnection(final NodeSource source, final Future<RedisConnection> connectionFuture,
-                            final boolean isReadOnly, Promise<R> attemptPromise, final AsyncDetails<V, R> details) {
+    protected <V, R> void releaseConnection(final NodeSource source, final RFuture<RedisConnection> connectionFuture,
+                            final boolean isReadOnly, RPromise<R> attemptPromise, final AsyncDetails<V, R> details) {
         attemptPromise.addListener(new FutureListener<R>() {
             @Override
             public void operationComplete(Future<R> future) throws Exception {

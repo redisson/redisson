@@ -19,24 +19,23 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 public class PromiseDelegator<T> implements RPromise<T> {
 
-    private final Promise<T> promise;
+    private final RPromise<T> promise;
     
-    public PromiseDelegator(Promise<T> promise) {
+    public PromiseDelegator(RPromise<T> promise) {
         super();
         this.promise = promise;
     }
     
-    public Promise<T> getInnerPromise() {
+    public RPromise<T> getInnerPromise() {
         return promise;
     }
 
-    public Promise<T> setSuccess(T result) {
+    public RPromise<T> setSuccess(T result) {
         return promise.setSuccess(result);
     }
 
@@ -68,35 +67,35 @@ public class PromiseDelegator<T> implements RPromise<T> {
         return promise.setUncancellable();
     }
 
-    public Promise<T> addListener(GenericFutureListener<? extends Future<? super T>> listener) {
+    public RPromise<T> addListener(FutureListener<? super T> listener) {
         return promise.addListener(listener);
     }
 
-    public Promise<T> addListeners(GenericFutureListener<? extends Future<? super T>>... listeners) {
+    public RPromise<T> addListeners(FutureListener<? super T>... listeners) {
         return promise.addListeners(listeners);
     }
 
-    public Promise<T> removeListener(GenericFutureListener<? extends Future<? super T>> listener) {
+    public RPromise<T> removeListener(FutureListener<? super T> listener) {
         return promise.removeListener(listener);
     }
 
-    public Promise<T> removeListeners(GenericFutureListener<? extends Future<? super T>>... listeners) {
+    public RPromise<T> removeListeners(FutureListener<? super T>... listeners) {
         return promise.removeListeners(listeners);
     }
 
-    public Promise<T> await() throws InterruptedException {
+    public RPromise<T> await() throws InterruptedException {
         return promise.await();
     }
 
-    public Promise<T> awaitUninterruptibly() {
+    public RPromise<T> awaitUninterruptibly() {
         return promise.awaitUninterruptibly();
     }
 
-    public Promise<T> sync() throws InterruptedException {
+    public RPromise<T> sync() throws InterruptedException {
         return promise.sync();
     }
 
-    public Promise<T> syncUninterruptibly() {
+    public RPromise<T> syncUninterruptibly() {
         return promise.syncUninterruptibly();
     }
 
