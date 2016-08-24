@@ -3,13 +3,13 @@ Redisson Releases History
 ####Please Note: trunk is current development branch.
 
 ####24-Aug-2016 - version 2.3.0 released
-Starting from this version Redisson could be run as standalone node to execute distributed tasks and do other things in future. More info about it [here](https://github.com/mrniko/redisson/wiki/12.-Standalone-node)
+Starting from this version Redisson could be run as standalone node to execute distributed tasks. More features will be added to it in future. Read docs about it [here](https://github.com/mrniko/redisson/wiki/12.-Standalone-node)
 
 Feature - __new service added__ `RExecutorService`. More info about it [here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-executor-service)  
 Feature - __new service added__ `RScheduledExecutorService`. More info about it
 [here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)  
 Feature - __new service added__ `RLiveObjectService`. More info about it
-[here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service) (big thanks to Rui Gu for this amazin feature)  
+[here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service) (big thanks to Rui Gu for this amazing feature)  
 Feature - __new object added__ `RBoundedBlockingQueue`. More info about it [here](https://github.com/mrniko/redisson/wiki/7.-distributed-collections/#711-bounded-blocking-queue)  
 Feature - __Redis deployment tool__. More info about it
 [here](https://github.com/mrniko/redisson/wiki/13.-Tools#131-redis-deployment-tool)  
