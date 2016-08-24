@@ -660,7 +660,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             }
         };
         for (Future<T> future : futures) {
-            io.netty.util.concurrent.Future<T> f = (io.netty.util.concurrent.Future<T>) future;
+            RFuture<T> f = (RFuture<T>) future;
             f.addListener(listener);
         }
         
@@ -671,7 +671,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
         
         for (Future<T> future : futures) {
-            io.netty.util.concurrent.Future<T> f = (io.netty.util.concurrent.Future<T>) future;
+            RFuture<T> f = (RFuture<T>) future;
             f.removeListener(listener);
         }
 

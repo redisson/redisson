@@ -365,8 +365,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
                         if (entry.getConfig().getPassword() != null) {
                             RFuture<Void> temp = c.async(RedisCommands.AUTH, config.getPassword());
 
-                            FutureListener<Void> listener = new FutureListener<Void> () {
-                                @Override public void operationComplete (Future < Void > future)throws Exception {
+                            FutureListener<Void> listener = new FutureListener<Void>() {
+                                @Override public void operationComplete(Future<Void> future)throws Exception {
                                     ping(c, pingListener);
                                 }
                             };
