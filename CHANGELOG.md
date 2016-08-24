@@ -2,6 +2,24 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####24-Aug-2016 - version 2.3.0 released
+Starting from this version Redisson could be run as standalone node to execute distributed tasks and do other things in future. More info about it [here](https://github.com/mrniko/redisson/wiki/12.-Standalone-node)
+
+Feature - __new service added__ `RExecutorService`. More info about it [here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-executor-service)  
+Feature - __new service added__ `RScheduledExecutorService`. More info about it
+[here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)  
+Feature - __new service added__ `RLiveObjectService`. More info about it
+[here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service) (big thanks to Rui Gu for this amazin feature)  
+Feature - __new object added__ `RBoundedBlockingQueue`. More info about it [here](https://github.com/mrniko/redisson/wiki/7.-distributed-collections/#711-bounded-blocking-queue)  
+Feature - __Redis deployment tool__. More info about it
+[here](https://github.com/mrniko/redisson/wiki/13.-Tools#131-redis-deployment-tool)  
+Feature - __Cluster management tool__. More info about it [here](https://github.com/mrniko/redisson/wiki/13.-Tools#132-cluster-management-tool)  
+Feature - Avro and Smile codecs added  
+__Breaking api change__ - all config classes moved to `org.redisson.config` package  
+__Breaking api change__ - all classes moved from `org.redisson.core` to `org.redisson.api` package  
+__Breaking api change__ - switched from `io.netty.util.concurrent.Future` to `org.redisson.api.RFuture` interface  
+Fixed - division by zero in WeightedRoundRobinBalancer (thanks to Shailender R Bathula)
+
 ####08-Aug-2016 - version 2.2.24 released
 Fixed - PubSub connection in cluster mode should be connected to node according slot derived from channel name  
 Fixed - `RLock.tryLock` could block forever under some conditions  
