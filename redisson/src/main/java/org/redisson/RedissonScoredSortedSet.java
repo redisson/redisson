@@ -30,8 +30,8 @@ import java.util.Map.Entry;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.ScoredCodec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -357,8 +357,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Double> addScoreAsync(V object, Number value) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZINCRBY,
-                                   getName(), new BigDecimal(value.toString()).toPlainString(), object);
+        return commandExecutor.writeAsync(getName(), DoubleCodec.INSTANCE, RedisCommands.ZINCRBY,
+                                   getName(), new BigDecimal(value.toString()).toPlainString(), encode(object));
     }
 
     @Override
