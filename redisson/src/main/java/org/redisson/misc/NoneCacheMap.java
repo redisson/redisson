@@ -1,0 +1,48 @@
+/**
+ * Copyright 2016 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson.misc;
+
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K>
+ * @param <V>
+ */
+public class NoneCacheMap<K, V> extends AbstractCacheMap<K, V> {
+
+    public NoneCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
+        super(0, timeToLiveInMillis, maxIdleInMillis);
+    }
+
+    @Override
+    public V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        CachedValue entry = new CachedValue(key, value, ttlUnit.toMillis(ttl), maxIdleUnit.toMillis(maxIdleTime));
+        onValueCreate(entry);
+        CachedValue prevCachedValue = map.put(key, entry);
+        if (prevCachedValue != null && !prevCachedValue.isExpired()) {
+            return (V) prevCachedValue.getValue();
+        }
+        return null;
+    }
+
+    @Override
+    protected void onMapFull() {
+    }
+    
+}
