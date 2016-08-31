@@ -19,6 +19,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -437,6 +438,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
         if (task.getClass().isAnonymousClass()) {
             throw new IllegalArgumentException("Task can't be created using anonymous class");
+        }
+        if (task.getClass().isMemberClass()
+                && !Modifier.isStatic(task.getClass().getModifiers())) {
+            throw new IllegalArgumentException("Task class is an inner class and it should be static");
         }
     }
 
