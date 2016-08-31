@@ -18,6 +18,7 @@ package org.redisson.misc;
 import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * LFU (least frequently used) cache.
@@ -32,9 +33,9 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     public static class MapKey implements Comparable<MapKey> {
         
         private Long accessCount;
-        private CachedValue cachedValue;
+        private LFUCachedValue cachedValue;
         
-        public MapKey(Long accessCount, CachedValue cachedValue) {
+        public MapKey(Long accessCount, LFUCachedValue cachedValue) {
             super();
             this.accessCount = accessCount;
             this.cachedValue = cachedValue;
@@ -44,10 +45,7 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
         public int compareTo(MapKey o) {
             int compare = accessCount.compareTo(o.accessCount);
             if (compare == 0) {
-                if (!cachedValue.equals(o.cachedValue)) {
-                    return ((Integer)cachedValue.hashCode()).compareTo(o.cachedValue.hashCode());
-                }
-                return 0;
+                return cachedValue.id.compareTo(o.cachedValue.id);
             }
             return compare;
         }
@@ -59,38 +57,60 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
         
     }
     
-    private final ConcurrentNavigableMap<MapKey, CachedValue> accessMap = new ConcurrentSkipListMap<MapKey, CachedValue>();
+    public static class LFUCachedValue extends CachedValue {
+
+        Long id;
+        long accessCount;
+        
+        public LFUCachedValue(long id, Object key, Object value, long ttl, long maxIdleTime) {
+            super(key, value, ttl, maxIdleTime);
+            this.id = id;
+        }
+
+        public void addAccessCount(long value) {
+            accessCount += value;
+        }
+        
+    }
+    
+    private final AtomicLong idGenerator = new AtomicLong();
+    private final ConcurrentNavigableMap<MapKey, LFUCachedValue> accessMap = new ConcurrentSkipListMap<MapKey, LFUCachedValue>();
     
     public LFUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         super(size, timeToLiveInMillis, maxIdleInMillis);
     }
     
     @Override
+    protected CachedValue create(K key, V value, long ttl, long maxIdleTime) {
+        return new LFUCachedValue(idGenerator.incrementAndGet(), key, value, ttl, maxIdleTime);
+    }
+    
+    @Override
     protected void onValueCreate(CachedValue value) {
-        MapKey key = toKey(value);
-        accessMap.put(key, value);
+        MapKey key = toKey((LFUCachedValue)value);
+        accessMap.put(key, (LFUCachedValue)value);
     }
     
     @Override
     protected void onValueRead(CachedValue value) {
-        addAccessCount(value, 1);
+        addAccessCount((LFUCachedValue)value, 1);
     }
     
-    private MapKey toKey(CachedValue value) {
-        return new MapKey(value.getAccessCount(), value);
+    private MapKey toKey(LFUCachedValue value) {
+        return new MapKey(value.accessCount, value);
     }
     
     @Override
     protected void onValueRemove(CachedValue value) {
-        MapKey key = toKey(value);
+        MapKey key = toKey((LFUCachedValue)value);
         if (accessMap.remove(key) == null) {
             throw new IllegalStateException();
         }
     }
 
-    private void addAccessCount(CachedValue value, long count) {
+    private void addAccessCount(LFUCachedValue value, long count) {
         synchronized (value) {
-            if (count < 0 && value.getAccessCount() == 0) {
+            if (count < 0 && value.accessCount == 0) {
                 return;
             }
             
@@ -100,7 +120,7 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
             }
 
             if (count < 0) {
-                count = -Math.min(value.getAccessCount(), -count);
+                count = -Math.min(value.accessCount, -count);
             }
             value.addAccessCount(count);
             
@@ -111,17 +131,17 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     @Override
     protected void onMapFull() {
-        Map.Entry<MapKey, CachedValue> entry = accessMap.pollFirstEntry();
+        Map.Entry<MapKey, LFUCachedValue> entry = accessMap.pollFirstEntry();
         map.remove(entry.getValue().getKey(), entry.getValue());
         
-        if (entry.getValue().getAccessCount() == 0) {
+        if (entry.getValue().accessCount == 0) {
             return;
         }
 
         // TODO optimize
         // decrease all values
-        for (CachedValue value : accessMap.values()) {
-            addAccessCount(value, -entry.getValue().getAccessCount());
+        for (LFUCachedValue value : accessMap.values()) {
+            addAccessCount(value, -entry.getValue().accessCount);
         }
     }
 

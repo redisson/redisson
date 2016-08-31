@@ -15,8 +15,6 @@
  */
 package org.redisson.misc;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -28,17 +26,6 @@ public class NoneCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     public NoneCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
         super(0, timeToLiveInMillis, maxIdleInMillis);
-    }
-
-    @Override
-    public V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
-        CachedValue entry = new CachedValue(key, value, ttlUnit.toMillis(ttl), maxIdleUnit.toMillis(maxIdleTime));
-        onValueCreate(entry);
-        CachedValue prevCachedValue = map.put(key, entry);
-        if (prevCachedValue != null && !prevCachedValue.isExpired()) {
-            return (V) prevCachedValue.getValue();
-        }
-        return null;
     }
 
     @Override

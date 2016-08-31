@@ -47,7 +47,6 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         
         long creationTime;
         long lastAccess;
-        long accessCount;
 
         public CachedValue(Object key, Object value, long ttl, long maxIdleTime) {
             this.value = value;
@@ -70,14 +69,6 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             return result;
         }
         
-        public void addAccessCount(long value) {
-            accessCount += value;
-        }
-        
-        public Long getAccessCount() {
-            return accessCount;
-        }
-        
         public Object getKey() {
             return key;
         }
@@ -89,7 +80,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
         @Override
         public String toString() {
-            return "CachedValue [key=" + key + ", value=" + value + ", accessCount=" + accessCount + "]";
+            return "CachedValue [key=" + key + ", value=" + value + "]";
         }
 
     }
@@ -98,6 +89,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     final ConcurrentMap<K, CachedValue> map = PlatformDependent.newConcurrentHashMap();
     private final long timeToLiveInMillis;
     private final long maxIdleInMillis;
+
 
     public AbstractCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         if (size < 0) {
@@ -227,7 +219,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     @SuppressWarnings("unchecked")
     @Override
     public V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
-        CachedValue entry = new CachedValue(key, value, ttlUnit.toMillis(ttl), maxIdleUnit.toMillis(maxIdleTime));
+        CachedValue entry = create(key, value, ttlUnit.toMillis(ttl), maxIdleUnit.toMillis(maxIdleTime));
         if (isFull(key)) {
             if (!removeExpiredEntries()) {
                 onMapFull();
@@ -244,6 +236,10 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return null;
     }
 
+    protected CachedValue create(K key, V value, long ttl, long maxIdleTime) {
+        return new CachedValue(key, value, ttl, maxIdleTime);        
+    }
+    
     protected void onValueCreate(CachedValue entry) {
     }
 
