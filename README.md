@@ -41,10 +41,8 @@ Features
 * [Distributed objects](https://github.com/mrniko/redisson/wiki/6.-Distributed-objects)
 * [Distributed collections](https://github.com/mrniko/redisson/wiki/7.-Distributed-collections)
 * [Distributed locks and synchronizers](https://github.com/mrniko/redisson/wiki/8.-Distributed-locks-and-synchronizers)
-* [Remote service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#91-remote-service)
-* [Executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-executor-service)
-* [Scheduled executor service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)
-* [Live Object service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service)
+* [Distributed services](https://github.com/mrniko/redisson/wiki/9.-distributed-services)
+* [Scheduler service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)
 * [Spring cache](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) integration  
 * [Hibernate](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
 * [Reactive Streams](https://github.com/mrniko/redisson/wiki/3.-operations-execution#32-reactive-way)
@@ -76,7 +74,7 @@ Include the following to your dependency list:
 
 ### Downloads
    
-[Redisson node 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.3.0&e=jar)
+[Redisson 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.3.0&e=jar), [Redisson node 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.3.0&e=jar)
 
 ### Supported by
 
