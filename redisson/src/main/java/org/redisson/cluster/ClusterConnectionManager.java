@@ -296,9 +296,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (nodesIterator == null) {
                     List<URI> nodes = new ArrayList<URI>();
                     List<URI> slaves = new ArrayList<URI>();
-                    if (lastPartitions.isEmpty()) {
-                        System.out.println("lastPartitions.isEmpty()");
-                    }
                     
                     for (ClusterPartition partition : getLastPartitions()) {
                         if (!partition.isMasterFail()) {
@@ -391,17 +388,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 MasterSlaveEntry entry = getEntry(currentPart.getMasterAddr());
                 // should be invoked first in order to remove stale failedSlaveAddresses
-                addRemoveSlaves(entry, currentPart, newPart);
-                // Does some slaves change failed state to alive?
-                upDownSlaves(entry, currentPart, newPart);
+                Set<URI> addedSlaves = addRemoveSlaves(entry, currentPart, newPart);
+                // Do some slaves have changed state from failed to alive?
+                upDownSlaves(entry, currentPart, newPart, addedSlaves);
 
                 break;
             }
         }
     }
 
-    private void upDownSlaves(final MasterSlaveEntry entry, final ClusterPartition currentPart, final ClusterPartition newPart) {
+    private void upDownSlaves(final MasterSlaveEntry entry, final ClusterPartition currentPart, final ClusterPartition newPart, Set<URI> addedSlaves) {
         Set<URI> aliveSlaves = new HashSet<URI>(currentPart.getFailedSlaveAddresses());
+        aliveSlaves.removeAll(addedSlaves);
         aliveSlaves.removeAll(newPart.getFailedSlaveAddresses());
         for (URI uri : aliveSlaves) {
             currentPart.removeFailedSlaveAddress(uri);
@@ -420,7 +418,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private void addRemoveSlaves(final MasterSlaveEntry entry, final ClusterPartition currentPart, final ClusterPartition newPart) {
+    private Set<URI> addRemoveSlaves(final MasterSlaveEntry entry, final ClusterPartition currentPart, final ClusterPartition newPart) {
         Set<URI> removedSlaves = new HashSet<URI>(currentPart.getSlaveAddresses());
         removedSlaves.removeAll(newPart.getSlaveAddresses());
 
@@ -450,6 +448,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
             });
         }
+        return addedSlaves;
     }
 
     private Collection<Integer> slots(Collection<ClusterPartition> partitions) {
