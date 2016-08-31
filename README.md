@@ -74,7 +74,9 @@ Include the following to your dependency list:
 
 ### Downloads
    
-[Redisson 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.3.0&e=jar), [Redisson node 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.3.0&e=jar)
+[Redisson 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.3.0&e=jar)  
+[Redisson node 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.3.0&e=jar)
+[Java data structures powered by Redis. Introduction to Redisson @ Redis Lightning Talks, May 9](http://redisson.org/Redisson.pdf)
 
 ### Supported by
 
