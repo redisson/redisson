@@ -58,6 +58,13 @@ Projects using Redisson
 ================================
 [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/)
 
+### Articles
+
+[Java data structures powered by Redis. Introduction to Redisson. PDF](http://redisson.org/Redisson.pdf)  
+[Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
+[Java Remote Method Invocation with Redisson](https://dzone.com/articles/java-remote-method-invocation-with-redisson)  
+[Java Multimaps With Redis](https://dzone.com/articles/multimaps-with-redis)  
+
 ### Maven 
 
 Include the following to your dependency list:
@@ -76,7 +83,6 @@ Include the following to your dependency list:
    
 [Redisson 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.3.0&e=jar)  
 [Redisson node 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.3.0&e=jar)  
-[Java data structures powered by Redis. Introduction to Redisson. PDF](http://redisson.org/Redisson.pdf)
 
 ### Supported by
 
