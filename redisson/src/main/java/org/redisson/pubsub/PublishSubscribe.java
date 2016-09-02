@@ -19,15 +19,15 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.PubSubEntry;
+import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.misc.PromiseDelegator;
+import org.redisson.misc.RPromise;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 abstract class PublishSubscribe<E extends PubSubEntry<E>> {
@@ -58,10 +58,10 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         return entries.get(entryName);
     }
 
-    public Future<E> subscribe(final String entryName, final String channelName, final ConnectionManager connectionManager) {
+    public RFuture<E> subscribe(final String entryName, final String channelName, final ConnectionManager connectionManager) {
         final AtomicReference<Runnable> listenerHolder = new AtomicReference<Runnable>();
         final AsyncSemaphore semaphore = connectionManager.getSemaphore(channelName);
-        final Promise<E> newPromise = new PromiseDelegator<E>(connectionManager.<E>newPromise()) {
+        final RPromise<E> newPromise = new PromiseDelegator<E>(connectionManager.<E>newPromise()) {
             @Override
             public boolean cancel(boolean mayInterruptIfRunning) {
                 return semaphore.remove(listenerHolder.get());
@@ -101,7 +101,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         return newPromise;
     }
 
-    protected abstract E createEntry(Promise<E> newPromise);
+    protected abstract E createEntry(RPromise<E> newPromise);
 
     protected abstract void onMessage(E value, Long message);
 

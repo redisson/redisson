@@ -43,7 +43,6 @@ import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 public class RedissonKeys implements RKeys {
 
@@ -255,7 +254,7 @@ public class RedissonKeys implements RKeys {
                 executorService.writeAsync(entry.getKey(), null, RedisCommands.DEL, key);
             }
 
-            Future<List<?>> future = executorService.executeAsync();
+            RFuture<List<?>> future = executorService.executeAsync();
             future.addListener(listener);
         }
 
@@ -303,7 +302,7 @@ public class RedissonKeys implements RKeys {
         return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL);
     }
 
-    private void checkExecution(final Promise<Long> result, final AtomicReference<Throwable> failed,
+    private void checkExecution(final RPromise<Long> result, final AtomicReference<Throwable> failed,
             final AtomicLong count, final AtomicLong executed) {
         if (executed.decrementAndGet() == 0) {
             if (failed.get() != null) {

@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.NodeType;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -27,10 +28,10 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SinglePubSubConnectionPool;
+import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 public class SingleEntry extends MasterSlaveEntry {
 
@@ -42,16 +43,16 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public Future<Void> setupMasterEntry(String host, int port) {
+    public RFuture<Void> setupMasterEntry(String host, int port) {
         RedisClient masterClient = connectionManager.createClient(NodeType.MASTER, host, port);
         masterEntry = new ClientConnectionsEntry(masterClient,
                 config.getMasterConnectionMinimumIdleSize(),
                 config.getMasterConnectionPoolSize(),
                 config.getSlaveConnectionMinimumIdleSize(),
                 config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, NodeType.MASTER);
-        final Promise<Void> res = connectionManager.newPromise();
-        Future<Void> f = writeConnectionHolder.add(masterEntry);
-        Future<Void> s = pubSubConnectionHolder.add(masterEntry);
+        final RPromise<Void> res = connectionManager.newPromise();
+        RFuture<Void> f = writeConnectionHolder.add(masterEntry);
+        RFuture<Void> s = pubSubConnectionHolder.add(masterEntry);
         FutureListener<Void> listener = new FutureListener<Void>() {
             AtomicInteger counter = new AtomicInteger(2);
             @Override
@@ -71,7 +72,7 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    Future<RedisPubSubConnection> nextPubSubConnection() {
+    RFuture<RedisPubSubConnection> nextPubSubConnection() {
         return pubSubConnectionHolder.get();
     }
 
@@ -81,12 +82,12 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public Future<RedisConnection> connectionReadOp(InetSocketAddress addr) {
+    public RFuture<RedisConnection> connectionReadOp(InetSocketAddress addr) {
         return super.connectionWriteOp();
     }
 
     @Override
-    public Future<RedisConnection> connectionReadOp() {
+    public RFuture<RedisConnection> connectionReadOp() {
         return super.connectionWriteOp();
     }
 

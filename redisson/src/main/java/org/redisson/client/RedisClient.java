@@ -19,12 +19,15 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Map;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.handler.CommandBatchEncoder;
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.handler.ConnectionWatchdog;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.URIBuilder;
 
 import io.netty.bootstrap.Bootstrap;
@@ -43,10 +46,9 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
 
 /**
  * Low-level Redis client
@@ -128,8 +130,8 @@ public class RedisClient {
         }
     }
 
-    public Future<RedisConnection> connectAsync() {
-        final Promise<RedisConnection> f = ImmediateEventExecutor.INSTANCE.newPromise();
+    public RFuture<RedisConnection> connectAsync() {
+        final RPromise<RedisConnection> f = new RedissonPromise<RedisConnection>(ImmediateEventExecutor.INSTANCE.<RedisConnection>newPromise());
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
@@ -155,8 +157,8 @@ public class RedisClient {
         }
     }
 
-    public Future<RedisPubSubConnection> connectPubSubAsync() {
-        final Promise<RedisPubSubConnection> f = ImmediateEventExecutor.INSTANCE.newPromise();
+    public RFuture<RedisPubSubConnection> connectPubSubAsync() {
+        final RPromise<RedisPubSubConnection> f = new RedissonPromise<RedisPubSubConnection>(ImmediateEventExecutor.INSTANCE.<RedisPubSubConnection>newPromise());
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
@@ -206,12 +208,12 @@ public class RedisClient {
      * @return A future for a map extracted from each response line splitting by
      * ':' symbol
      */
-    public Future<Map<String, String>> serverInfoAsync() {
+    public RFuture<Map<String, String>> serverInfoAsync() {
         final RedisConnection connection = connect();
-        Promise<Map<String, String>> async = (Promise) connection.async(RedisCommands.SERVER_INFO);
-        async.addListener(new GenericFutureListener<Promise<Map<String, String>>>() {
+        RFuture<Map<String, String>> async = connection.async(RedisCommands.SERVER_INFO);
+        async.addListener(new FutureListener<Map<String, String>>() {
             @Override
-            public void operationComplete(Promise<Map<String, String>> future) throws Exception {
+            public void operationComplete(Future<Map<String, String>> future) throws Exception {
                 connection.closeAsync();
             }
         });

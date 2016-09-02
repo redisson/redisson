@@ -15,7 +15,9 @@
  */
 package org.redisson.api;
 
-import io.netty.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * Represents the result of an asynchronous computation
@@ -24,6 +26,136 @@ import io.netty.util.concurrent.Future;
  *
  * @param <V>
  */
-public interface RFuture<V> extends Future<V> {
+public interface RFuture<V> extends java.util.concurrent.Future<V> {
 
+    /**
+     * Returns {@code true} if and only if the I/O operation was completed
+     * successfully.
+     */
+    boolean isSuccess();
+
+    /**
+     * Returns the cause of the failed I/O operation if the I/O operation has
+     * failed.
+     *
+     * @return the cause of the failure.
+     *         {@code null} if succeeded or this future is not
+     *         completed yet.
+     */
+    Throwable cause();
+    
+    /**
+     * Return the result without blocking. If the future is not done yet this will return {@code null}.
+     *
+     * As it is possible that a {@code null} value is used to mark the future as successful you also need to check
+     * if the future is really done with {@link #isDone()} and not relay on the returned {@code null} value.
+     */
+    V getNow();
+    
+    /**
+     * Waits for this future to be completed within the
+     * specified time limit.
+     *
+     * @return {@code true} if and only if the future was completed within
+     *         the specified time limit
+     *
+     * @throws InterruptedException
+     *         if the current thread was interrupted
+     */
+    boolean await(long timeout, TimeUnit unit) throws InterruptedException;
+
+    /**
+     * Waits for this future to be completed within the
+     * specified time limit.
+     *
+     * @return {@code true} if and only if the future was completed within
+     *         the specified time limit
+     *
+     * @throws InterruptedException
+     *         if the current thread was interrupted
+     */
+    boolean await(long timeoutMillis) throws InterruptedException;
+    
+    /**
+     * Adds the specified listener to this future.  The
+     * specified listener is notified when this future is
+     * {@linkplain #isDone() done}.  If this future is already
+     * completed, the specified listener is notified immediately.
+     */
+    RFuture<V> addListener(FutureListener<? super V> listener);
+
+    /**
+     * Adds the specified listeners to this future.  The
+     * specified listeners are notified when this future is
+     * {@linkplain #isDone() done}.  If this future is already
+     * completed, the specified listeners are notified immediately.
+     */
+    RFuture<V> addListeners(FutureListener<? super V>... listeners);
+
+    /**
+     * Removes the first occurrence of the specified listener from this future.
+     * The specified listener is no longer notified when this
+     * future is {@linkplain #isDone() done}.  If the specified
+     * listener is not associated with this future, this method
+     * does nothing and returns silently.
+     */
+    RFuture<V> removeListener(FutureListener<? super V> listener);
+
+    /**
+     * Removes the first occurrence for each of the listeners from this future.
+     * The specified listeners are no longer notified when this
+     * future is {@linkplain #isDone() done}.  If the specified
+     * listeners are not associated with this future, this method
+     * does nothing and returns silently.
+     */
+    RFuture<V> removeListeners(FutureListener<? super V>... listeners);
+
+    /**
+     * Waits for this future until it is done, and rethrows the cause of the failure if this future
+     * failed.
+     */
+    RFuture<V> sync() throws InterruptedException;
+
+    /**
+     * Waits for this future until it is done, and rethrows the cause of the failure if this future
+     * failed.
+     */
+    RFuture<V> syncUninterruptibly();
+
+    /**
+     * Waits for this future to be completed.
+     *
+     * @throws InterruptedException
+     *         if the current thread was interrupted
+     */
+    RFuture<V> await() throws InterruptedException;
+
+    /**
+     * Waits for this future to be completed without
+     * interruption.  This method catches an {@link InterruptedException} and
+     * discards it silently.
+     */
+    RFuture<V> awaitUninterruptibly();
+
+    /**
+     * Waits for this future to be completed within the
+     * specified time limit without interruption.  This method catches an
+     * {@link InterruptedException} and discards it silently.
+     *
+     * @return {@code true} if and only if the future was completed within
+     *         the specified time limit
+     */
+    boolean awaitUninterruptibly(long timeout, TimeUnit unit);
+
+    /**
+     * Waits for this future to be completed within the
+     * specified time limit without interruption.  This method catches an
+     * {@link InterruptedException} and discards it silently.
+     *
+     * @return {@code true} if and only if the future was completed within
+     *         the specified time limit
+     */
+    boolean awaitUninterruptibly(long timeoutMillis);
+
+    
 }

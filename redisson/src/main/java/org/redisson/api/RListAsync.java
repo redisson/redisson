@@ -81,8 +81,10 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      * @param toIndex
      * @return
      */
-    RFuture<Void> trimAsync(int fromIndex, int toIndex);
+    RFuture<Void> trimAsync(long fromIndex, long toIndex);
 
-    RFuture<Void> fastRemoveAsync(int index);
+    RFuture<Void> fastRemoveAsync(long index);
+
+    RFuture<V> removeAsync(long index);
     
 }

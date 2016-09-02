@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.config.RedissonNodeConfig;
@@ -33,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBufUtil;
-import io.netty.util.concurrent.Future;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
@@ -157,7 +157,7 @@ public class RedissonNode {
     private void retrieveAdresses() {
         ConnectionManager connectionManager = ((Redisson)redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            Future<RedisConnection> readFuture = entry.connectionReadOp();
+            RFuture<RedisConnection> readFuture = entry.connectionReadOp();
             if (readFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout()) 
                     && readFuture.isSuccess()) {
                 RedisConnection connection = readFuture.getNow();
@@ -166,7 +166,7 @@ public class RedissonNode {
                 localAddress = (InetSocketAddress) connection.getChannel().localAddress();
                 return;
             }
-            Future<RedisConnection> writeFuture = entry.connectionWriteOp();
+            RFuture<RedisConnection> writeFuture = entry.connectionWriteOp();
             if (writeFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout())
                     && writeFuture.isSuccess()) {
                 RedisConnection connection = writeFuture.getNow();

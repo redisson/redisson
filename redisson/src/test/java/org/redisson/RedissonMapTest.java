@@ -16,13 +16,12 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonMapTest extends BaseTest {
 
@@ -596,12 +595,12 @@ public class RedissonMapTest extends BaseTest {
     @Test
     public void testPutAsync() throws InterruptedException, ExecutionException {
         RMap<Integer, Integer> map = redisson.getMap("simple");
-        Future<Integer> future = map.putAsync(2, 3);
+        RFuture<Integer> future = map.putAsync(2, 3);
         Assert.assertNull(future.get());
 
         Assert.assertEquals((Integer) 3, map.get(2));
 
-        Future<Integer> future1 = map.putAsync(2, 4);
+        RFuture<Integer> future1 = map.putAsync(2, 4);
         Assert.assertEquals((Integer) 3, future1.get());
 
         Assert.assertEquals((Integer) 4, map.get(2));

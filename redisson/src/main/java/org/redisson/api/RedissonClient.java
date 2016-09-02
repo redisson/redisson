@@ -208,6 +208,27 @@ public interface RedissonClient {
     <K, V> RListMultimapCache<K, V> getListMultimapCache(String name, Codec codec);
     
     /**
+     * Returns local cached map instance by name.
+     * Configured by parameters of options-object. 
+     * 
+     * @param name
+     * @param options
+     * @return
+     */
+    <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions options);
+    
+    /**
+     * Returns local cached map instance by name
+     * using provided codec. Configured by parameters of options-object.
+     * 
+     * @param name
+     * @param codec
+     * @param options
+     * @return
+     */
+    <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions options);
+    
+    /**
      * Returns map instance by name.
      *
      * @param name of map

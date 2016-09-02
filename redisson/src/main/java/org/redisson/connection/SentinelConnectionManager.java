@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -115,13 +116,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
         init(c);
 
-        List<Future<RedisPubSubConnection>> connectionFutures = new ArrayList<Future<RedisPubSubConnection>>(cfg.getSentinelAddresses().size());
+        List<RFuture<RedisPubSubConnection>> connectionFutures = new ArrayList<RFuture<RedisPubSubConnection>>(cfg.getSentinelAddresses().size());
         for (URI addr : cfg.getSentinelAddresses()) {
-            Future<RedisPubSubConnection> future = registerSentinel(cfg, addr, c);
+            RFuture<RedisPubSubConnection> future = registerSentinel(cfg, addr, c);
             connectionFutures.add(future);
         }
 
-        for (Future<RedisPubSubConnection> future : connectionFutures) {
+        for (RFuture<RedisPubSubConnection> future : connectionFutures) {
             future.awaitUninterruptibly();
         }
     }
@@ -130,23 +131,23 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<Future<Void>> fs = entry.initSlaveBalancer(disconnectedSlaves);
-        for (Future<Void> future : fs) {
+        List<RFuture<Void>> fs = entry.initSlaveBalancer(disconnectedSlaves);
+        for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();
         }
-        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         f.syncUninterruptibly();
         return entry;
     }
 
-    private Future<RedisPubSubConnection> registerSentinel(final SentinelServersConfig cfg, final URI addr, final MasterSlaveServersConfig c) {
+    private RFuture<RedisPubSubConnection> registerSentinel(final SentinelServersConfig cfg, final URI addr, final MasterSlaveServersConfig c) {
         RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());
         RedisClient oldClient = sentinels.putIfAbsent(addr.getHost() + ":" + addr.getPort(), client);
         if (oldClient != null) {
             return newSucceededFuture(null);
         }
 
-        Future<RedisPubSubConnection> pubsubFuture = client.connectPubSubAsync();
+        RFuture<RedisPubSubConnection> pubsubFuture = client.connectPubSubAsync();
         pubsubFuture.addListener(new FutureListener<RedisPubSubConnection>() {
             @Override
             public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
@@ -218,7 +219,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() != ReadMode.MASTER) {
-                Future<Void> future = getEntry(singleSlotRange.getStartSlot()).addSlave(ip, Integer.valueOf(port));
+                RFuture<Void> future = getEntry(singleSlotRange.getStartSlot()).addSlave(ip, Integer.valueOf(port));
                 future.addListener(new FutureListener<Void>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {

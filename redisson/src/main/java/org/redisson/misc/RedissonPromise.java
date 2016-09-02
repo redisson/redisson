@@ -15,6 +15,11 @@
  */
 package org.redisson.misc;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 /**
@@ -23,10 +28,150 @@ import io.netty.util.concurrent.Promise;
  *
  * @param <T>
  */
-public class RedissonPromise<T> extends PromiseDelegator<T> implements RPromise<T> {
+public class RedissonPromise<T> implements RPromise<T> {
 
+    private final Promise<T> promise;
+    
     public RedissonPromise(Promise<T> promise) {
-        super(promise);
+        this.promise = promise;
+    }
+    
+    public Promise<T> getInnerPromise() {
+        return promise;
+    }
+
+    @Override
+    public RPromise<T> setSuccess(T result) {
+        promise.setSuccess(result);
+        return this;
+    }
+
+    @Override
+    public boolean isSuccess() {
+        return promise.isSuccess();
+    }
+
+    @Override
+    public boolean trySuccess(T result) {
+        return promise.trySuccess(result);
+    }
+
+    @Override
+    public Throwable cause() {
+        return promise.cause();
+    }
+
+    @Override
+    public Promise<T> setFailure(Throwable cause) {
+        return promise.setFailure(cause);
+    }
+
+    @Override
+    public boolean tryFailure(Throwable cause) {
+        return promise.tryFailure(cause);
+    }
+
+    @Override
+    public boolean setUncancellable() {
+        return promise.setUncancellable();
+    }
+
+    @Override
+    public RPromise<T> addListener(FutureListener<? super T> listener) {
+        promise.addListener(listener);
+        return this;
+    }
+
+    @Override
+    public RPromise<T> addListeners(FutureListener<? super T>... listeners) {
+        promise.addListeners(listeners);
+        return this;
+    }
+
+    @Override
+    public RPromise<T> removeListener(FutureListener<? super T> listener) {
+        promise.removeListener(listener);
+        return this;
+    }
+
+    @Override
+    public RPromise<T> removeListeners(FutureListener<? super T>... listeners) {
+        promise.removeListeners(listeners);
+        return this;
+    }
+
+    @Override
+    public RPromise<T> await() throws InterruptedException {
+        promise.await();
+        return this;
+    }
+
+    @Override
+    public RPromise<T> awaitUninterruptibly() {
+        promise.awaitUninterruptibly();
+        return this;
+    }
+
+    @Override
+    public RPromise<T> sync() throws InterruptedException {
+        promise.sync();
+        return this;
+    }
+
+    @Override
+    public RPromise<T> syncUninterruptibly() {
+        promise.syncUninterruptibly();
+        return this;
+    }
+
+    @Override
+    public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+        return promise.await(timeout, unit);
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return promise.isCancelled();
+    }
+
+    @Override
+    public boolean isDone() {
+        return promise.isDone();
+    }
+
+    @Override
+    public boolean await(long timeoutMillis) throws InterruptedException {
+        return promise.await(timeoutMillis);
+    }
+
+    @Override
+    public T get() throws InterruptedException, ExecutionException {
+        return promise.get();
+    }
+
+    @Override
+    public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
+        return promise.awaitUninterruptibly(timeout, unit);
+    }
+
+    @Override
+    public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        return promise.get(timeout, unit);
+    }
+
+    @Override
+    public boolean awaitUninterruptibly(long timeoutMillis) {
+        return promise.awaitUninterruptibly(timeoutMillis);
+    }
+
+    @Override
+    public T getNow() {
+        return promise.getNow();
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+        return promise.cancel(mayInterruptIfRunning);
     }
     
 }

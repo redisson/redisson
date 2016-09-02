@@ -26,8 +26,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.CountDownLatchPubSub;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
  *
@@ -52,7 +50,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     public void await() throws InterruptedException {
-        Future<RedissonCountDownLatchEntry> promise = subscribe();
+        RFuture<RedissonCountDownLatchEntry> promise = subscribe();
         try {
             get(promise);
 
@@ -70,7 +68,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean await(long time, TimeUnit unit) throws InterruptedException {
-        Future<RedissonCountDownLatchEntry> promise = subscribe();
+        RFuture<RedissonCountDownLatchEntry> promise = subscribe();
         try {
             if (!await(promise, time, unit)) {
                 return false;
@@ -102,11 +100,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         return PUBSUB.getEntry(getEntryName());
     }
 
-    private Future<RedissonCountDownLatchEntry> subscribe() {
+    private RFuture<RedissonCountDownLatchEntry> subscribe() {
         return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 
-    private void unsubscribe(Future<RedissonCountDownLatchEntry> future) {
+    private void unsubscribe(RFuture<RedissonCountDownLatchEntry> future) {
         PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 

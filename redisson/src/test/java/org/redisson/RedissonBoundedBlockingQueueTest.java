@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBoundedBlockingQueue;
+import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.config.Config;
@@ -229,7 +230,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
         final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:pollTimeout");
         assertThat(queue1.trySetCapacity(5)).isTrue();
-        Future<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
+        RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
         
         Assert.assertFalse(f.await(1, TimeUnit.SECONDS));
         runner.stop();
@@ -307,7 +308,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
-        Future<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
+        RFuture<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
 
@@ -346,7 +347,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeReattach");
         assertThat(queue1.trySetCapacity(15)).isTrue();
-        Future<Integer> f = queue1.takeAsync();
+        RFuture<Integer> f = queue1.takeAsync();
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
 
@@ -380,7 +381,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeAsyncCancel");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         for (int i = 0; i < 10; i++) {
-            Future<Integer> f = queue1.takeAsync();
+            RFuture<Integer> f = queue1.takeAsync();
             f.cancel(true);
         }
         assertThat(queue1.add(1)).isTrue();
@@ -401,7 +402,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         for (int i = 0; i < 10; i++) {
-            Future<Integer> f = queue1.pollAsync(1, TimeUnit.SECONDS);
+            RFuture<Integer> f = queue1.pollAsync(1, TimeUnit.SECONDS);
             f.cancel(true);
         }
         assertThat(queue1.add(1)).isTrue();

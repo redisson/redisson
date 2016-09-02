@@ -36,7 +36,6 @@ import org.redisson.pubsub.AsyncSemaphore;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
 
 /**
  *
@@ -59,9 +58,9 @@ public interface ConnectionManager {
 
     boolean isShuttingDown();
 
-    Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener);
+    RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener);
 
-    Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener, AsyncSemaphore semaphore);
+    RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener, AsyncSemaphore semaphore);
     
     ConnectionInitializer getConnectListener();
 
@@ -89,9 +88,9 @@ public interface ConnectionManager {
 
     void releaseWrite(NodeSource source, RedisConnection connection);
 
-    Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
+    RFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command);
 
-    Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
+    RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
     RedisClient createClient(String host, int port, int timeout, int commandTimeout);
 
@@ -101,9 +100,9 @@ public interface ConnectionManager {
 
     PubSubConnectionEntry getPubSubEntry(String channelName);
 
-    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener);
+    RFuture<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener);
     
-    Future<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener, AsyncSemaphore semaphore);
+    RFuture<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?> listener, AsyncSemaphore semaphore);
 
     Codec unsubscribe(String channelName, AsyncSemaphore lock);
     
@@ -123,6 +122,6 @@ public interface ConnectionManager {
 
     InfinitySemaphoreLatch getShutdownLatch();
     
-    Future<Boolean> getShutdownPromise();
+    RFuture<Boolean> getShutdownPromise();
 
 }

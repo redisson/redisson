@@ -1,7 +1,5 @@
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -15,6 +13,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RSortedSet;
 
 public class RedissonSortedSetTest extends BaseTest {
@@ -22,7 +21,7 @@ public class RedissonSortedSetTest extends BaseTest {
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
         RSortedSet<Integer> set = redisson.getSortedSet("simple");
-        Future<Boolean> future = set.addAsync(2);
+        RFuture<Boolean> future = set.addAsync(2);
         Assert.assertTrue(future.get());
 
         Assert.assertTrue(set.contains(2));

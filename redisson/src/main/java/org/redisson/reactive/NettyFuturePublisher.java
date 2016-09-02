@@ -16,6 +16,7 @@
 package org.redisson.reactive;
 
 import org.reactivestreams.Subscriber;
+import org.redisson.api.RFuture;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -26,9 +27,9 @@ import reactor.rx.subscription.ReactiveSubscription;
 
 public class NettyFuturePublisher<T> extends Stream<T> {
 
-    private final Future<? extends T> that;
+    private final RFuture<? extends T> that;
 
-    public NettyFuturePublisher(Future<? extends T> that) {
+    public NettyFuturePublisher(RFuture<? extends T> that) {
         this.that = that;
     }
 

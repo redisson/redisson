@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -70,7 +71,7 @@ public class EvictionScheduler {
 
         @Override
         public void run() {
-            Future<Integer> future = cleanupExpiredEntires(name, timeoutSetName, maxIdleSetName, keysLimit, multimap);
+            RFuture<Integer> future = cleanupExpiredEntires(name, timeoutSetName, maxIdleSetName, keysLimit, multimap);
 
             future.addListener(new FutureListener<Integer>() {
                 @Override
@@ -169,7 +170,7 @@ public class EvictionScheduler {
             return;
         }
 
-        Future<Integer> future = cleanupExpiredEntires(name, timeoutSetName, null, valuesAmountToClean, false);
+        RFuture<Integer> future = cleanupExpiredEntires(name, timeoutSetName, null, valuesAmountToClean, false);
 
         future.addListener(new FutureListener<Integer>() {
             @Override
@@ -189,7 +190,7 @@ public class EvictionScheduler {
         });
     }
 
-    private Future<Integer> cleanupExpiredEntires(String name, String timeoutSetName, String maxIdleSetName, int keysLimit, boolean multimap) {
+    private RFuture<Integer> cleanupExpiredEntires(String name, String timeoutSetName, String maxIdleSetName, int keysLimit, boolean multimap) {
         if (multimap) {
             return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                     "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
