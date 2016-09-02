@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.ClusterNodesGroup;
+import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RAtomicDouble;
@@ -42,6 +43,7 @@ import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
 import org.redisson.api.RListMultimapCache;
 import org.redisson.api.RLiveObjectService;
+import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
@@ -214,6 +216,16 @@ public class Redisson implements RedissonClient {
     @Override
     public <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec) {
         return new RedissonListMultimap<K, V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions options) {
+        return new RedissonLocalCachedMap<K, V>(this, commandExecutor, name, options);
+    }
+
+    @Override
+    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions options) {
+        return new RedissonLocalCachedMap<K, V>(this, codec, commandExecutor, name, options);
     }
 
     @Override

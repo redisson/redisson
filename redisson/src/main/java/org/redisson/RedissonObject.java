@@ -140,5 +140,21 @@ abstract class RedissonObject implements RObject {
             throw new IllegalArgumentException(e);
         }
     }
+    
+    protected byte[] encodeMapKey(Object value) {
+        try {
+            return codec.getMapKeyEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    protected byte[] encodeMapValue(Object value) {
+        try {
+            return codec.getMapValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 
 }
