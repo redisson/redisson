@@ -102,9 +102,9 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     
     @Override
     protected void onValueRemove(CachedValue value) {
-        MapKey key = toKey((LFUCachedValue)value);
-        if (accessMap.remove(key) == null) {
-            throw new IllegalStateException();
+        synchronized (value) {
+            MapKey key = toKey((LFUCachedValue)value);
+            accessMap.remove(key);
         }
     }
 
@@ -116,7 +116,7 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
             
             MapKey key = toKey(value);
             if (accessMap.remove(key) == null) {
-                throw new IllegalStateException();
+                return;
             }
 
             if (count < 0) {
@@ -132,6 +132,9 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     @Override
     protected void onMapFull() {
         Map.Entry<MapKey, LFUCachedValue> entry = accessMap.pollFirstEntry();
+        if (entry == null) {
+            return;
+        }
         map.remove(entry.getValue().getKey(), entry.getValue());
         
         if (entry.getValue().accessCount == 0) {

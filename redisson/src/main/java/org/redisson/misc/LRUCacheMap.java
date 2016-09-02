@@ -41,22 +41,27 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     
     @Override
     protected void onValueRemove(CachedValue value) {
-        queue.remove(value);
+        synchronized (value) {
+            queue.remove(value);
+        }
     }
     
     @Override
     protected void onValueRead(CachedValue value) {
         // move value to tail of queue 
         synchronized (value) {
-            queue.remove(value);
-            queue.add(value);
+            if (queue.remove(value)) {
+                queue.add(value);
+            }
         }
     }
 
     @Override
     protected void onMapFull() {
         CachedValue value = queue.poll();
-        map.remove(value.getKey(), value);
+        if (value != null) {
+            map.remove(value.getKey(), value);
+        }
     }
     
     @Override
