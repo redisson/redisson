@@ -55,7 +55,7 @@ import org.redisson.api.annotation.RObjectField;
 import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.misc.RedissonObjectFactory;
-import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
 
@@ -117,7 +117,10 @@ public class AccessorInterceptor {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result instanceof RedissonReference) {
-                return RedissonObjectFactory.create(redisson, codecProvider, resolverProvider, (RedissonReference) result, method.getReturnType());
+                return RedissonObjectFactory.fromReference(redisson, codecProvider, resolverProvider, (RedissonReference) result, method.getReturnType());
+//                if (BitSet.class.isAssignableFrom(method.getReturnType()) && RBitSet.class.isAssignableFrom(((RedissonReference) result).getType())) {
+//                    return ((RBitSet) rObject).asBitSet();
+//                }
             }
             return result;
         }
@@ -144,7 +147,7 @@ public class AccessorInterceptor {
                 if (mappedClass != null) {
                     Entry<NamingScheme, Codec> entry = getFieldNamingSchemeAndCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
                     RObject obj = RedissonObjectFactory
-                            .create(redisson,
+                            .createRObject(redisson,
                                     mappedClass,
                                     entry.getKey().getFieldReferenceName(me.getClass().getSuperclass(),
                                             idFieldType,

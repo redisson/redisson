@@ -29,6 +29,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 
 import io.netty.util.concurrent.Future;
+import org.redisson.Redisson;
 
 /**
  *
@@ -39,6 +40,8 @@ public interface CommandAsyncExecutor {
 
     ConnectionManager getConnectionManager();
 
+    CommandAsyncExecutor enableRedissonReferenceSupport(Redisson redisson);
+        
     <V> RedisException convertException(Future<V> RFuture);
 
     boolean await(Future<?> RFuture, long timeout, TimeUnit timeoutUnit) throws InterruptedException;

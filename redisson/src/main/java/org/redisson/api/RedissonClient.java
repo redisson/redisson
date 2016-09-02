@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
-import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
@@ -674,6 +674,21 @@ public interface RedissonClient {
      */
     Config getConfig();
 
+    /**
+     * Returns the CodecProvider instance
+     * 
+     * @return CodecProvider
+     */
+    public CodecProvider getCodecProvider();
+    
+    /**
+     * Returns the ResolverProvider instance
+     * 
+     * @return resolverProvider
+     */
+    public ResolverProvider getResolverProvider();
+
+    
     /**
      * Get Redis nodes group for server operations
      *

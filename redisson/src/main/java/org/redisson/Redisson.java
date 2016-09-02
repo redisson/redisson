@@ -67,8 +67,8 @@ import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.liveobject.provider.CodecProvider;
-import org.redisson.liveobject.provider.DefaultCodecProvider;
+import org.redisson.codec.CodecProvider;
+import org.redisson.codec.DefaultCodecProvider;
 import org.redisson.liveobject.provider.DefaultResolverProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.pubsub.SemaphorePubSub;
@@ -89,8 +89,8 @@ public class Redisson implements RedissonClient {
     protected final ConnectionManager connectionManager;
     
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = PlatformDependent.newConcurrentHashMap();
-    protected final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
-    protected final ResolverProvider liveObjectDefaultResolverProvider = new DefaultResolverProvider();
+    protected final CodecProvider codecProvider;
+    protected final ResolverProvider resolverProvider;
     protected final Config config;
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
@@ -103,6 +103,8 @@ public class Redisson implements RedissonClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandSyncService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
+        codecProvider = config.getCodecProvider();
+        resolverProvider = config.getResolverProvider();
     }
     
     ConnectionManager getConnectionManager() {
@@ -130,7 +132,11 @@ public class Redisson implements RedissonClient {
      * @return Redisson instance
      */
     public static RedissonClient create(Config config) {
-        return new Redisson(config);
+        Redisson redisson = new Redisson(config);
+        if (config.isRedissonReferenceEnabled()) {
+            redisson.enableRedissonReferenceSupport();
+        }
+        return redisson;
     }
 
     /**
@@ -478,7 +484,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, liveObjectDefaultCodecProvider, liveObjectDefaultResolverProvider);
+        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider, resolverProvider);
     }
     
     @Override
@@ -503,6 +509,16 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public CodecProvider getCodecProvider() {
+        return codecProvider;
+    }
+    
+    @Override
+    public ResolverProvider getResolverProvider() {
+        return resolverProvider;
+    }
+
+    @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);
     }
@@ -523,6 +539,10 @@ public class Redisson implements RedissonClient {
     @Override
     public boolean isShuttingDown() {
         return connectionManager.isShuttingDown();
+    }
+
+    protected void enableRedissonReferenceSupport() {
+        this.commandExecutor.enableRedissonReferenceSupport(this);
     }
 
 }

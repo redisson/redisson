@@ -29,7 +29,7 @@ import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.Resolver;
 
