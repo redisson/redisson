@@ -23,6 +23,11 @@ import org.redisson.client.protocol.Encoder;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class BitSetCodec implements Codec {
 
     public static final BitSetCodec INSTANCE = new BitSetCodec();
