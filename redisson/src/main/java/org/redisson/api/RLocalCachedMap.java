@@ -28,7 +28,7 @@ import java.util.Map;
  * @param <K>
  * @param <V>
  */
-public interface RLocalCachedMap<K, V> extends Map<K, V>, RExpirable, RLocalCachedMapAsync<K, V> {
+public interface RLocalCachedMap<K, V> extends Map<K, V>, RExpirable, RLocalCachedMapAsync<K, V>, RDestroyable {
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>.

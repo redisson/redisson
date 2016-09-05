@@ -170,6 +170,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonExpirable implements R
     private RMap<K, V> map;
     private Cache<CacheKey, CacheValue> cache;
     private int invalidateEntryOnChange;
+    private int invalidationListenerId;
 
     protected RedissonLocalCachedMap(RedissonClient redisson, CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions options) {
         super(commandExecutor, name);
@@ -198,18 +199,20 @@ public class RedissonLocalCachedMap<K, V> extends RedissonExpirable implements R
         }
 
         invalidationTopic = redisson.getTopic(name + ":topic");
-        invalidationTopic.addListener(new MessageListener<Object>() {
-            @Override
-            public void onMessage(String channel, Object msg) {
-                if (msg instanceof LocalCachedMapClear) {
-                    cache.clear();
+        if (options.isInvalidateEntryOnChange()) {
+            invalidationListenerId = invalidationTopic.addListener(new MessageListener<Object>() {
+                @Override
+                public void onMessage(String channel, Object msg) {
+                    if (msg instanceof LocalCachedMapClear) {
+                        cache.clear();
+                    }
+                    if (msg instanceof LocalCachedMapInvalidate) {
+                        CacheKey key = new CacheKey(((LocalCachedMapInvalidate)msg).getKeyHash());
+                        cache.remove(key);
+                    }
                 }
-                if (msg instanceof LocalCachedMapInvalidate) {
-                    CacheKey key = new CacheKey(((LocalCachedMapInvalidate)msg).getKeyHash());
-                    cache.remove(key);
-                }
-            }
-        });
+            });
+        }
     }
     
     @Override
@@ -358,6 +361,13 @@ public class RedissonLocalCachedMap<K, V> extends RedissonExpirable implements R
                 + "return 1; ",
                 Arrays.<Object>asList(getName(), invalidationTopic.getChannelNames().get(0)), 
                 encodedKey, encodedValue, msg, invalidateEntryOnChange);
+    }
+    
+    @Override
+    public void destroy() {
+        if (invalidationListenerId != 0) {
+            invalidationTopic.removeListener(invalidationListenerId);
+        }
     }
 
     @Override
