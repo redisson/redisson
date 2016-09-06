@@ -67,19 +67,11 @@ public class RedissonObjectFactory {
     }
 
     public static <T> T fromReference(RedissonClient redisson, RedissonReference rr, Class<?> expected) throws Exception {
-        return fromReference(redisson, null, null, rr, expected);
-    }
-
-    public static <T> T fromReference(RedissonClient redisson, CodecProvider codecProvider, ResolverProvider resolverProvider, RedissonReference rr, Class<?> expected) throws Exception {
         Class<? extends Object> type = rr.getType();
-        if (codecProvider == null) {
-            codecProvider = redisson.getConfig().getCodecProvider();
-        }
+        CodecProvider codecProvider = redisson.getConfig().getCodecProvider();
         if (type != null) {
             if (type.isAnnotationPresent(REntity.class)) {
-                RLiveObjectService liveObjectService = resolverProvider == null
-                        ? redisson.getLiveObjectService()
-                        : redisson.getLiveObjectService(codecProvider, resolverProvider);
+                RLiveObjectService liveObjectService = redisson.getLiveObjectService();
                 REntity anno = type.getAnnotation(REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
@@ -106,7 +98,7 @@ public class RedissonObjectFactory {
             return new RedissonReference(object.getClass(), ((RObject) object).getName(), ((RObject) object).getCodec());
         }
         try {
-            if (object.getClass().getSuperclass().isAnnotationPresent(REntity.class)) {
+            if (object instanceof RLiveObject) {
                 Class<? extends Object> rEntity = object.getClass().getSuperclass();
                 REntity anno = rEntity.getAnnotation(REntity.class);
                 NamingScheme ns = anno.namingScheme()

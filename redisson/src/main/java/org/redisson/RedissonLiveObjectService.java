@@ -325,7 +325,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))
                 .intercept(MethodDelegation.to(
-                                new AccessorInterceptor(redisson, codecProvider, resolverProvider)))
+                                new AccessorInterceptor(redisson)))
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();

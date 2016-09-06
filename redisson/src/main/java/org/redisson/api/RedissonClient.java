@@ -657,15 +657,6 @@ public interface RedissonClient {
     RLiveObjectService getLiveObjectService();
     
     /**
-     * Returns RedissonAttachedLiveObjectService which can be used to 
-     * retrieve live REntity(s)
-     * 
-     * @param codecProvider the CodecProvider to be used to create the service
-     * @return 
-     */
-    RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider);
-    
-    /**
      * Shutdown Redisson instance but <b>NOT</b> Redis server
      * 
      * This equates to invoke shutdown(2, 15, TimeUnit.SECONDS);

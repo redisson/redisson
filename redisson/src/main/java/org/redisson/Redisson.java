@@ -70,8 +70,6 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.codec.CodecProvider;
-import org.redisson.codec.DefaultCodecProvider;
-import org.redisson.liveobject.provider.DefaultResolverProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.pubsub.SemaphorePubSub;
 
@@ -496,11 +494,6 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider, resolverProvider);
-    }
-    
-    @Override
-    public RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider) {
         return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider, resolverProvider);
     }
     

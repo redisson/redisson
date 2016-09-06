@@ -33,7 +33,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
-import org.redisson.RedissonBitSet;
 import org.redisson.RedissonBlockingDeque;
 import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonDeque;
@@ -56,7 +55,6 @@ import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.misc.RedissonObjectFactory;
 import org.redisson.codec.CodecProvider;
-import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 import io.netty.util.internal.PlatformDependent;
@@ -78,14 +76,12 @@ public class AccessorInterceptor {
 
     private final RedissonClient redisson;
     private final CodecProvider codecProvider;
-    private final ResolverProvider resolverProvider;
     private final ConcurrentMap<String, NamingScheme> namingSchemeCache = PlatformDependent.newConcurrentHashMap();
     private static final LinkedHashMap<Class, Class<? extends RObject>> supportedClassMapping;
 
-    public AccessorInterceptor(RedissonClient redisson, CodecProvider codecProvider, ResolverProvider resolverProvider) {
+    public AccessorInterceptor(RedissonClient redisson) {
         this.redisson = redisson;
-        this.codecProvider = codecProvider;
-        this.resolverProvider = resolverProvider;
+        this.codecProvider = redisson.getCodecProvider();
     }
 
     static {
@@ -116,7 +112,7 @@ public class AccessorInterceptor {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result instanceof RedissonReference) {
-                return RedissonObjectFactory.fromReference(redisson, codecProvider, resolverProvider, (RedissonReference) result, method.getReturnType());
+                return RedissonObjectFactory.fromReference(redisson, (RedissonReference) result, method.getReturnType());
 //                if (BitSet.class.isAssignableFrom(method.getReturnType()) && RBitSet.class.isAssignableFrom(((RedissonReference) result).getType())) {
 //                    return ((RBitSet) rObject).asBitSet();
 //                }
@@ -125,7 +121,7 @@ public class AccessorInterceptor {
         }
         if (isSetter(method, fieldName)) {
             Class idFieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
-            if (args[0].getClass().getSuperclass().isAnnotationPresent(REntity.class)) {
+            if (args[0] instanceof RLiveObject) {
                 Class<? extends Object> rEntity = args[0].getClass().getSuperclass();
                 REntity anno = rEntity.getAnnotation(REntity.class);
                 NamingScheme ns = anno.namingScheme()
