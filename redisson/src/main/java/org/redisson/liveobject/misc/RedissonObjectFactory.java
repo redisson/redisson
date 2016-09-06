@@ -89,8 +89,8 @@ public class RedissonObjectFactory {
             List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
             for (Class<?> iType : interfaces) {
                 if (builders.containsKey(iType)) {// user cache to speed up things a little.
-                    Method builder = builders.get(iType).get(rr.isDefaultCodec() || RBitSet.class.isAssignableFrom(rr.getType()));
-                    return (T) (rr.isDefaultCodec() || RBitSet.class.isAssignableFrom(rr.getType())
+                    Method builder = builders.get(iType).get(rr.isDefaultCodec());
+                    return (T) (rr.isDefaultCodec()
                             ? builder.invoke(redisson, rr.getKeyName())
                             : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
                 }

@@ -99,7 +99,6 @@ public class AccessorInterceptor {
         supportedClassMapping.put(BlockingQueue.class,  RedissonBlockingQueue.class);
         supportedClassMapping.put(Queue.class,          RedissonQueue.class);
         supportedClassMapping.put(List.class,           RedissonList.class);
-        supportedClassMapping.put(BitSet.class,         RedissonBitSet.class);
     }
     
     @RuntimeType
