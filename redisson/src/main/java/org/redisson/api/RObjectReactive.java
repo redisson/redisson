@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.reactivestreams.Publisher;
+import org.redisson.client.codec.Codec;
 
 /**
  * Base interface for all Redisson objects
@@ -26,7 +27,8 @@ import org.reactivestreams.Publisher;
 public interface RObjectReactive {
 
     String getName();
-
+    
+    Codec getCodec();
     /**
      * Transfer a object from a source Redis instance to a destination Redis instance
      * in  mode

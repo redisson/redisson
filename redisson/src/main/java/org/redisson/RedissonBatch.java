@@ -56,7 +56,7 @@ public class RedissonBatch implements RBatch {
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
 
-    public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+    protected RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.executorService = new CommandBatchService(connectionManager);
         this.evictionScheduler = evictionScheduler;
     }
@@ -281,5 +281,8 @@ public class RedissonBatch implements RBatch {
         return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
     }
 
+    protected void enableRedissonReferenceSupport(Redisson redisson) {
+        this.executorService.enableRedissonReferenceSupport(redisson);
+    }
 
 }

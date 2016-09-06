@@ -61,8 +61,11 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import org.redisson.Redisson;
+import org.redisson.RedissonReactive;
 import org.redisson.RedissonReference;
 import org.redisson.api.RObject;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
 import org.redisson.liveobject.misc.RedissonObjectFactory;
 
 /**
@@ -75,7 +78,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
-    private Redisson redisson;
+    protected RedissonClient redisson;
+    protected RedissonReactiveClient redissonReactive;
 
     public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
@@ -87,11 +91,26 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(Redisson redisson) {
+    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson) {
         if (redisson != null) {
             this.redisson = redisson;
+            this.redissonReactive = null;
         }
         return this;
+    }
+
+    @Override
+    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
+        if (redissonReactive != null) {
+            this.redissonReactive = redissonReactive;
+            this.redisson = null;
+        }
+        return this;
+    }
+    
+    @Override
+    public boolean isRedissonReferenceSupportEnabled() {
+        return redisson != null || redissonReactive != null;
     }
     
     @Override
@@ -450,9 +469,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         final AsyncDetails<V, R> details = AsyncDetails.acquire();
-        if (redisson != null) {
+        if (isRedissonReferenceSupportEnabled()) {
             for (int i = 0; i < params.length; i++) {
-                RedissonReference reference = RedissonObjectFactory.toReference(redisson, params[i]);
+                RedissonReference reference = redisson != null
+                        ? RedissonObjectFactory.toReference(redisson, params[i])
+                        : RedissonObjectFactory.toReference(redissonReactive, params[i]);
                 params[i] = reference == null ? params[i] : reference;
             }
         }
@@ -730,9 +751,25 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
                 ((RedisClientResult)res).setRedisClient(addr);
             }
-            if (redisson != null && res instanceof RedissonReference) {
+            
+            if (isRedissonReferenceSupportEnabled() && res instanceof List) {
+                List r = (List) res;
+                for (int i = 0; i < r.size(); i++) {
+                    if (r.get(i) instanceof RedissonReference) {
+                        try {
+                            r.set(i ,(redisson != null
+                                    ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) r.get(i))
+                                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) r.get(i))));
+                        } catch (Exception exception) {//skip and carry on to next one.
+                        }
+                    }
+                }
+                details.getMainPromise().trySuccess(res);
+            } else if (isRedissonReferenceSupportEnabled() && res instanceof RedissonReference) {
                 try {
-                    details.getMainPromise().trySuccess(RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) res));
+                    details.getMainPromise().trySuccess(redisson != null
+                            ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) res)
+                            : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) res));
                 } catch (Exception exception) {
                     details.getMainPromise().trySuccess(res);//fallback
                 }

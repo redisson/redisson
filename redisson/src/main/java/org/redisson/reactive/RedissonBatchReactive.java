@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.redisson.EvictionScheduler;
+import org.redisson.Redisson;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
@@ -37,6 +38,7 @@ import org.redisson.api.RScriptReactive;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
+import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
@@ -199,6 +201,10 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public Publisher<List<?>> execute() {
         return new NettyFuturePublisher<List<?>>(executorService.executeAsync());
+    }
+
+    public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
+        this.executorService.enableRedissonReferenceSupport(redissonReactive);
     }
 
 }

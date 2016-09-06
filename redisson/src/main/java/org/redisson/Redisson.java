@@ -159,7 +159,11 @@ public class Redisson implements RedissonClient {
      * @return Redisson instance
      */
     public static RedissonReactiveClient createReactive(Config config) {
-        return new RedissonReactive(config);
+        RedissonReactive react = new RedissonReactive(config);
+        if (config.isRedissonReferenceEnabled()) {
+            react.enableRedissonReferenceSupport();
+        }
+        return react;
     }
     
     @Override
@@ -489,7 +493,11 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RBatch createBatch() {
-        return new RedissonBatch(evictionScheduler, connectionManager);
+        RedissonBatch batch = new RedissonBatch(evictionScheduler, connectionManager);
+        if (config.isRedissonReferenceEnabled()) {
+            batch.enableRedissonReferenceSupport(this);
+        }
+        return batch;
     }
 
     @Override

@@ -17,6 +17,7 @@ package org.redisson;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.api.RObject;
+import org.redisson.api.RObjectReactive;
 import org.redisson.api.annotation.REntity;
 
 /**
@@ -37,12 +38,14 @@ public class RedissonReference {
     }
 
     public RedissonReference(Class type, String keyName, Codec codec) {
-        if (!type.isAnnotationPresent(REntity.class) && !RObject.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject");
+        if (!type.isAnnotationPresent(REntity.class) && !RObject.class.isAssignableFrom(type) && !RObjectReactive.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
         }
-        this.type = type.getName();
+        this.type = RObjectReactive.class.isAssignableFrom(type)
+                ? type.getName().substring(0, type.getName().length() - "Reactive".length()).replaceFirst(".reactive", "")
+                : type.getName();
         this.keyName = keyName;
-        this.codec = codec != null ? codec.getClass().getCanonicalName() : null;
+        this.codec = codec != null ? codec.getClass().getName() : null;
     }
 
     public boolean isDefaultCodec() {
@@ -61,6 +64,17 @@ public class RedissonReference {
     }
 
     /**
+     * @return the type
+     * @throws java.lang.Exception - which could be:
+     *     LinkageError - if the linkage fails
+     *     ExceptionInInitializerError - if the initialization provoked by this method fails
+     *     ClassNotFoundException - if the class cannot be located
+     */
+    public Class<?> getReactiveType() throws Exception {
+        return Class.forName(type.replaceFirst("org.redisson", "org.redisson.reactive") + "Reactive");//live object is not supported in reactive client
+    }
+
+    /**
      * @return type name in string
      */
     public String getTypeName() {
@@ -68,13 +82,20 @@ public class RedissonReference {
     }
 
     /**
+     * @return type name in string
+     */
+    public String getReactiveTypeName() {
+        return type + "Reactive";
+    }
+
+    /**
      * @param type the type to set
      */
     public void setType(Class<?> type) {
-        if (!type.isAnnotationPresent(REntity.class) && !RObject.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject");
+        if (!type.isAnnotationPresent(REntity.class) && (!RObject.class.isAssignableFrom(type) || !RObjectReactive.class.isAssignableFrom(type))) {
+            throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
         }
-        this.type = type.getCanonicalName();
+        this.type = type.getName();
     }
 
     /**
@@ -115,7 +136,7 @@ public class RedissonReference {
      * @param codec the codec to set
      */
     public void setCodecType(Class<? extends Codec> codec) {
-        this.codec = codec.getCanonicalName();
+        this.codec = codec.getName();
     }
 
 }
