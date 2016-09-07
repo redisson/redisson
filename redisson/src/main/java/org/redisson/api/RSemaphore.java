@@ -219,11 +219,31 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
     int drainPermits();
 
     /**
+     * Use {@link #trySetPermits(int)}
+     */
+    @Deprecated
+    void setPermits(int permits);
+
+    /**
      * Sets new number of permits.
      *
      * @param count - number of times {@link #countDown} must be invoked
      *        before threads can pass through {@link #await}
+     * @result <code>true</code> if semaphore has not initialized yet, otherwise <code>false</code>.  
+     *        
      */
-    void setPermits(int permits);
+    boolean trySetPermits(int permits);
 
+    /**
+     * Shrinks the number of available permits by the indicated
+     * reduction. This method can be useful in subclasses that use
+     * semaphores to track resources that become unavailable. This
+     * method differs from {@code acquire} in that it does not block
+     * waiting for permits to become available.
+     *
+     * @param reduction the number of permits to remove
+     * @throws IllegalArgumentException if {@code reduction} is negative
+     */
+    void reducePermits(int permits);
+    
 }
