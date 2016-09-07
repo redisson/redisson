@@ -485,7 +485,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
-    protected final Iterator<Map.Entry<K,V>> entryIterator() {
+    protected Iterator<Map.Entry<K,V>> entryIterator() {
         return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this);
     }
 
