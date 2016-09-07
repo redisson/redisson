@@ -111,13 +111,9 @@ public class AccessorInterceptor {
         String fieldName = getFieldName(method);
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
-            if (result instanceof RedissonReference) {
-                return RedissonObjectFactory.fromReference(redisson, (RedissonReference) result, method.getReturnType());
-//                if (BitSet.class.isAssignableFrom(method.getReturnType()) && RBitSet.class.isAssignableFrom(((RedissonReference) result).getType())) {
-//                    return ((RBitSet) rObject).asBitSet();
-//                }
-            }
-            return result;
+            return result instanceof RedissonReference
+                    ? RedissonObjectFactory.fromReference(redisson, (RedissonReference) result, method.getReturnType())
+                    : result;
         }
         if (isSetter(method, fieldName)) {
             Class idFieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
