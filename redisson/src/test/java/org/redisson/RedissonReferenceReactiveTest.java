@@ -3,7 +3,9 @@ package org.redisson;
 import java.util.List;
 import static org.junit.Assert.*;
 import org.junit.Test;
+import org.redisson.api.RBatch;
 import org.redisson.api.RBatchReactive;
+import org.redisson.api.RBucket;
 import org.redisson.api.RBucketReactive;
 import org.redisson.reactive.RedissonBucketReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
@@ -46,6 +48,27 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         batch.getBucket("b2").get();
         batch.getBucket("b3").get();
         List<RBucketReactive> result = (List<RBucketReactive>) sync(batch.execute());
+        assertEquals("b2", result.get(0).getName());
+        assertEquals("b3", result.get(1).getName());
+        assertEquals("b1", result.get(2).getName());
+    }
+    
+    @Test
+    public void testReactiveToNormal() throws InterruptedException {
+        RBatchReactive batch = redisson.createBatch();
+        RBucketReactive<Object> b1 = batch.getBucket("b1");
+        RBucketReactive<Object> b2 = batch.getBucket("b2");
+        RBucketReactive<Object> b3 = batch.getBucket("b3");
+        b2.set(b3);
+        b1.set(b2);
+        b3.set(b1);
+        sync(batch.execute());
+        
+        RBatch b = Redisson.create(redisson.getConfig()).createBatch();
+        b.getBucket("b1").getAsync();
+        b.getBucket("b2").getAsync();
+        b.getBucket("b3").getAsync();
+        List<RBucket> result = (List<RBucket>)b.execute();
         assertEquals("b2", result.get(0).getName());
         assertEquals("b3", result.get(1).getName());
         assertEquals("b1", result.get(2).getName());
