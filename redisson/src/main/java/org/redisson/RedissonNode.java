@@ -46,15 +46,22 @@ public class RedissonNode {
     private static final Logger log = LoggerFactory.getLogger(RedissonNode.class);
     
     private ExecutorService executor;
+    private boolean hasRedissonInstance;
     private RedissonClient redisson;
     private final RedissonNodeConfig config;
     private final String id;
     private InetSocketAddress remoteAddress;
     private InetSocketAddress localAddress;
     
-    private RedissonNode(RedissonNodeConfig config) {
+    private RedissonNode(RedissonNodeConfig config, Redisson redisson) {
         this.config = new RedissonNodeConfig(config);
         this.id = generateId();
+        this.redisson = redisson;
+        hasRedissonInstance = redisson == null;
+    }
+
+    public RedissonClient getRedisson() {
+        return redisson;
     }
     
     public InetSocketAddress getLocalAddress() {
@@ -122,7 +129,9 @@ public class RedissonNode {
                 Thread.currentThread().interrupt();
             }
         }
-        redisson.shutdown();
+        if (hasRedissonInstance) {
+            redisson.shutdown();
+        }
         log.info("Redisson node has been shutdown successfully");
     }
     
@@ -136,12 +145,14 @@ public class RedissonNode {
             executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads(), new RedissonThreadFactory());
         }
 
-        redisson = Redisson.create(config);
+        if (hasRedissonInstance) {
+            redisson = Redisson.create(config);
+        }
         
         retrieveAdresses();
         
         if (config.getRedissonNodeInitializer() != null) {
-            config.getRedissonNodeInitializer().onStartup(redisson, this);
+            config.getRedissonNodeInitializer().onStartup(this);
         }
         
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
@@ -185,11 +196,22 @@ public class RedissonNode {
      * @return RedissonNode instance
      */
     public static RedissonNode create(RedissonNodeConfig config) {
+        return create(config, null);
+    }
+
+    /**
+     * Create Redisson node instance with provided config and Redisson instance
+     *
+     * @param config
+     * @param redisson
+     * @return RedissonNode instance
+     */
+    public static RedissonNode create(RedissonNodeConfig config, Redisson redisson) {
         if (config.getExecutorServiceWorkers().isEmpty()) {
             throw new IllegalArgumentException("Executor service workers are empty");
         }
         
-        return new RedissonNode(config);
+        return new RedissonNode(config, redisson);
     }
     
 }

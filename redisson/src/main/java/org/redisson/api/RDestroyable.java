@@ -15,20 +15,16 @@
  */
 package org.redisson.api;
 
-import org.redisson.RedissonNode;
-
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public interface RedissonNodeInitializer {
+public interface RDestroyable {
 
     /**
-     * Invoked during Redisson Node startup
-     * 
-     * @param redissonNode
+     * Allows to destroy object then it's not necessary anymore.
      */
-    void onStartup(RedissonNode redissonNode);
+    void destroy();
     
 }
