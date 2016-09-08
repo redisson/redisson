@@ -66,7 +66,7 @@ import org.redisson.RedissonReference;
 import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
-import org.redisson.liveobject.misc.RedissonObjectFactory;
+import org.redisson.misc.RedissonObjectFactory;
 
 /**
  *

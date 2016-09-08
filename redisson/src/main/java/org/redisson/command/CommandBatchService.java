@@ -52,7 +52,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.RedissonReference;
-import org.redisson.liveobject.misc.RedissonObjectFactory;
+import org.redisson.misc.RedissonObjectFactory;
 
 public class CommandBatchService extends CommandReactiveService {
 

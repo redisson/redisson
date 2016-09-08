@@ -53,7 +53,7 @@ import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RObjectField;
 import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.liveobject.misc.RedissonObjectFactory;
+import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
 
