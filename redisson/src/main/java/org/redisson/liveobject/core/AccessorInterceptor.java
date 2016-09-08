@@ -18,7 +18,6 @@ package org.redisson.liveobject.core;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.AbstractMap;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -44,7 +43,6 @@ import org.redisson.RedissonSet;
 import org.redisson.RedissonSortedSet;
 import org.redisson.api.RLiveObject;
 import org.redisson.client.codec.Codec;
-import org.redisson.api.RBitSet;
 import org.redisson.api.RMap;
 import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
@@ -130,7 +128,7 @@ public class AccessorInterceptor {
             }
             Object arg = args[0];
             if (!(arg instanceof RObject)
-                    && (arg instanceof BitSet || arg instanceof Collection || arg instanceof Map)
+                    && (arg instanceof Collection || arg instanceof Map)
                     && TransformationMode.ANNOTATION_BASED
                             .equals(me.getClass().getSuperclass()
                             .getAnnotation(REntity.class).fieldTransformation())) {
@@ -148,8 +146,6 @@ public class AccessorInterceptor {
                                             fieldName,
                                             arg),
                                     entry.getValue());
-                    if (obj instanceof RBitSet) {
-                        ((RBitSet) obj).set((BitSet) args[0]);
                     } else if (obj instanceof Collection) {
                         ((Collection) obj).addAll((Collection) arg);
                     } else {

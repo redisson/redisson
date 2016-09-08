@@ -185,7 +185,7 @@ public class CommandBatchService extends CommandReactiveService {
                                 ? RedissonObjectFactory.<Object>fromReference(redisson, (RedissonReference) entryResult)
                                 : RedissonObjectFactory.<Object>fromReference(redissonReactive, (RedissonReference) entryResult));
                     } else {
-                        result.add(commandEntry.getPromise().getNow());
+                        result.add(entryResult);
                     }
                 }
                 promise.setSuccess(result);
