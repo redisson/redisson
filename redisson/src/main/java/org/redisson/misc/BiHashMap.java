@@ -119,4 +119,9 @@ public class BiHashMap<K, V> implements Map<K, V> {
     public Set<Entry<V, K>> reverseEntrySet() {
         return valueKeyMap.entrySet();
     }
+    
+    public void makeImmutable() {
+        keyValueMap = Collections.unmodifiableMap(keyValueMap);
+        valueKeyMap = Collections.unmodifiableMap(valueKeyMap);
+    }
 }
