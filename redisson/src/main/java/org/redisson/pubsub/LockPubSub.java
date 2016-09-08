@@ -33,12 +33,17 @@ public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
             value.getLatch().release();
 
             synchronized (value) {
-                Runnable runnable = value.getListeners().poll();
-                if (runnable != null) {
-                    if (value.getLatch().tryAcquire()) {
-                        runnable.run();
+                while (true) {
+                    Runnable runnable = value.getListeners().poll();
+                    if (runnable != null) {
+                        if (value.getLatch().tryAcquire()) {
+                            runnable.run();
+                        } else {
+                            value.addListener(runnable);
+                            return;
+                        }
                     } else {
-                        value.getListeners().add(runnable);
+                        return;
                     }
                 }
             }

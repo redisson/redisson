@@ -19,7 +19,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.redisson.api.RFuture;
+
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 /**
@@ -30,11 +33,23 @@ import io.netty.util.concurrent.Promise;
  */
 public class RedissonPromise<T> implements RPromise<T> {
 
-    private final Promise<T> promise;
+    private final Promise<T> promise = ImmediateEventExecutor.INSTANCE.newPromise();
     
-    public RedissonPromise(Promise<T> promise) {
-        this.promise = promise;
+    public RedissonPromise() {
     }
+    
+    public static <V> RFuture<V> newFailedFuture(Throwable cause) {
+        RedissonPromise<V> future = new RedissonPromise<V>();
+        future.setFailure(cause);
+        return future;
+    }
+    
+    public static <V> RFuture<V> newSucceededFuture(V result) {
+        RedissonPromise<V> future = new RedissonPromise<V>();
+        future.setSuccess(result);
+        return future;
+    }
+
     
     public Promise<T> getInnerPromise() {
         return promise;
@@ -62,8 +77,9 @@ public class RedissonPromise<T> implements RPromise<T> {
     }
 
     @Override
-    public Promise<T> setFailure(Throwable cause) {
-        return promise.setFailure(cause);
+    public RPromise<T> setFailure(Throwable cause) {
+        promise.setFailure(cause);
+        return this;
     }
 
     @Override

@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.Semaphore}.
- * <p/>
- * Works in non-fair mode. Therefore order of acquiring is unpredictable.
+ * 
+ * <p>Works in non-fair mode. Therefore order of acquiring is unpredictable.
  *
  * @author Nikita Koksharov
  *
@@ -236,10 +236,7 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
 
     /**
      * Shrinks the number of available permits by the indicated
-     * reduction. This method can be useful in subclasses that use
-     * semaphores to track resources that become unavailable. This
-     * method differs from {@code acquire} in that it does not block
-     * waiting for permits to become available.
+     * reduction.
      *
      * @param reduction the number of permits to remove
      * @throws IllegalArgumentException if {@code reduction} is negative

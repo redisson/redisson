@@ -131,7 +131,7 @@ public class RedisClient {
     }
 
     public RFuture<RedisConnection> connectAsync() {
-        final RPromise<RedisConnection> f = new RedissonPromise<RedisConnection>(ImmediateEventExecutor.INSTANCE.<RedisConnection>newPromise());
+        final RPromise<RedisConnection> f = new RedissonPromise<RedisConnection>();
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
@@ -158,7 +158,7 @@ public class RedisClient {
     }
 
     public RFuture<RedisPubSubConnection> connectPubSubAsync() {
-        final RPromise<RedisPubSubConnection> f = new RedissonPromise<RedisPubSubConnection>(ImmediateEventExecutor.INSTANCE.<RedisPubSubConnection>newPromise());
+        final RPromise<RedisPubSubConnection> f = new RedissonPromise<RedisPubSubConnection>();
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override

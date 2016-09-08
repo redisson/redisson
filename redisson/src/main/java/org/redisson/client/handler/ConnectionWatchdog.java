@@ -126,7 +126,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         if (connection.getReconnectListener() != null) {
             // new connection used only for channel init
             RedisConnection rc = new RedisConnection(connection.getRedisClient(), channel);
-            RPromise<RedisConnection> connectionFuture = new RedissonPromise<RedisConnection>(ImmediateEventExecutor.INSTANCE.<RedisConnection>newPromise());
+            RPromise<RedisConnection> connectionFuture = new RedissonPromise<RedisConnection>();
             connection.getReconnectListener().onReconnect(rc, connectionFuture);
             connectionFuture.addListener(new FutureListener<RedisConnection>() {
                 @Override

@@ -52,7 +52,7 @@ public interface RPromise<T> extends RFuture<T> {
      *
      * If it is success or failed already it will throw an {@link IllegalStateException}.
      */
-    Promise<T> setFailure(Throwable cause);
+    RPromise<T> setFailure(Throwable cause);
 
     /**
      * Marks this future as a failure and notifies all
