@@ -19,12 +19,48 @@ import org.redisson.client.codec.Codec;
 import org.redisson.api.RObject;
 import org.redisson.api.RObjectReactive;
 import org.redisson.api.annotation.REntity;
+import org.redisson.misc.BiHashMap;
+import org.redisson.reactive.RedissonAtomicLongReactive;
+import org.redisson.reactive.RedissonBitSetReactive;
+import org.redisson.reactive.RedissonBlockingQueueReactive;
+import org.redisson.reactive.RedissonBucketReactive;
+import org.redisson.reactive.RedissonDequeReactive;
+import org.redisson.reactive.RedissonHyperLogLogReactive;
+import org.redisson.reactive.RedissonLexSortedSetReactive;
+import org.redisson.reactive.RedissonListReactive;
+import org.redisson.reactive.RedissonMapCacheReactive;
+import org.redisson.reactive.RedissonMapReactive;
+import org.redisson.reactive.RedissonQueueReactive;
+import org.redisson.reactive.RedissonScoredSortedSetReactive;
+import org.redisson.reactive.RedissonSetCacheReactive;
+import org.redisson.reactive.RedissonSetReactive;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class RedissonReference {
+
+    private static final BiHashMap<String, String> reactiveMap = new BiHashMap<String, String>();
+
+    static {
+        reactiveMap.put(RedissonAtomicLongReactive.class.getName(),         RedissonAtomicLong.class.getName());
+        reactiveMap.put(RedissonBitSetReactive.class.getName(),             RedissonBitSet.class.getName());
+        reactiveMap.put(RedissonBlockingQueueReactive.class.getName(),      RedissonBlockingQueue.class.getName());
+        reactiveMap.put(RedissonBucketReactive.class.getName(),             RedissonBucket.class.getName());
+        reactiveMap.put(RedissonDequeReactive.class.getName(),              RedissonDeque.class.getName());
+        reactiveMap.put(RedissonHyperLogLogReactive.class.getName(),        RedissonHyperLogLog.class.getName());
+        reactiveMap.put(RedissonLexSortedSetReactive.class.getName(),       RedissonLexSortedSet.class.getName());
+        reactiveMap.put(RedissonListReactive.class.getName(),               RedissonList.class.getName());
+        reactiveMap.put(RedissonMapCacheReactive.class.getName(),           RedissonMapCache.class.getName());
+        reactiveMap.put(RedissonMapReactive.class.getName(),                RedissonMap.class.getName());
+        reactiveMap.put(RedissonQueueReactive.class.getName(),              RedissonQueue.class.getName());
+        reactiveMap.put(RedissonScoredSortedSetReactive.class.getName(),    RedissonScoredSortedSet.class.getName());
+        reactiveMap.put(RedissonSetCacheReactive.class.getName(),           RedissonSetCache.class.getName());
+        reactiveMap.put(RedissonSetReactive.class.getName(),                RedissonSet.class.getName());
+
+        reactiveMap.makeImmutable();
+    }
 
     private String type;
     private String keyName;
@@ -42,7 +78,7 @@ public class RedissonReference {
             throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
         }
         this.type = RObjectReactive.class.isAssignableFrom(type)
-                ? type.getName().substring(0, type.getName().length() - "Reactive".length()).replaceFirst(".reactive", "")
+                ? reactiveMap.get(type.getName())
                 : type.getName();
         this.keyName = keyName;
         this.codec = codec != null ? codec.getClass().getName() : null;
@@ -71,7 +107,10 @@ public class RedissonReference {
      *     ClassNotFoundException - if the class cannot be located
      */
     public Class<?> getReactiveType() throws Exception {
-        return Class.forName(type.replaceFirst("org.redisson", "org.redisson.reactive") + "Reactive");//live object is not supported in reactive client
+        if (reactiveMap.containsValue(type)) {
+            return Class.forName(reactiveMap.reverseGet(type));//live object is not supported in reactive client
+        }
+        throw new ClassNotFoundException("There is no Reactive compatible type for " + type);
     }
 
     /**
@@ -138,5 +177,5 @@ public class RedissonReference {
     public void setCodecType(Class<? extends Codec> codec) {
         this.codec = codec.getName();
     }
-
+    
 }
