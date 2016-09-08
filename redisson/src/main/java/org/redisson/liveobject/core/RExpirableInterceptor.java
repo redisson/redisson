@@ -20,13 +20,15 @@ import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
+import org.redisson.api.RExpirable;
 import org.redisson.api.RMap;
+import org.redisson.liveobject.misc.ClassUtils;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class ExpirableInterceptor {
+public class RExpirableInterceptor {
 
     @RuntimeType
     public static Object intercept(
@@ -38,6 +40,6 @@ public class ExpirableInterceptor {
         for (int i = 0; i < args.length; i++) {
             cls[i] = args[i].getClass();
         }
-        return RMap.class.getMethod(method.getName(), cls).invoke(map, args);
+        return ClassUtils.searchForMethod(RExpirable.class, method.getName(), cls).invoke(map, args);
     }
 }
