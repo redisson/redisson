@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.api.RLiveObject;
@@ -174,6 +175,16 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> RLiveObject asLiveObject(T instance) {
         return (RLiveObject) instance;
+    }
+
+    @Override
+    public <T> RExpirable asRExpirable(T instance) {
+        return (RExpirable) instance;
+    }
+
+    @Override
+    public <T> RMap asRMap(T instance) {
+        return (RMap) instance;
     }
 
     @Override

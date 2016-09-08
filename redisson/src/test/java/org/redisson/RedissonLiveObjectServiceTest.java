@@ -34,6 +34,7 @@ import org.redisson.api.RList;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMap;
+import org.redisson.api.RObject;
 import org.redisson.api.RQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RSortedSet;
@@ -930,6 +931,38 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
             service.attach(object);
         } catch (Exception e) {
             assertEquals("Non-null value is required for the field with RId annotation.", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testExpirable() throws InterruptedException {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass myObject = service.create(TestClass.class);
+        myObject.setValue("123345");
+        assertTrue(service.asLiveObject(myObject).isExists());
+        service.asRExpirable(myObject).expire(1, TimeUnit.SECONDS);
+        Thread.sleep(2000);
+        assertFalse(service.asLiveObject(myObject).isExists());
+    }
+
+    @Test
+    public void testMap() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass myObject = service.create(TestClass.class);
+        myObject.setValue("123345");
+        assertEquals("123345", service.asRMap(myObject).get("value"));
+        service.asRMap(myObject).put("value", "9999");
+        assertEquals("9999", myObject.getValue());
+    }
+    
+    @Test
+    public void testRObject() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass myObject = service.create(TestClass.class);
+        try {
+            ((RObject) myObject).isExists();
+        } catch (Exception e) {
+            assertEquals("Please use RLiveObjectService instance for this type of functions", e.getMessage());
         }
     }
 
