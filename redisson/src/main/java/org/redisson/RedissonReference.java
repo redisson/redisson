@@ -62,6 +62,8 @@ public class RedissonReference {
         reactiveMap.makeImmutable();
     }
 
+    public static void warmUp() {}
+
     private String type;
     private String keyName;
     private String codec;

@@ -216,4 +216,6 @@ public class RedissonObjectFactory {
         }
         throw new ClassNotFoundException("No RObject is found to match class type of " + (expectedType != null ? expectedType.getName() : "null") + " with codec type of " + (codec != null ? codec.getClass().getName() : "null"));
     }
+
+    public static void warmUp() {}
 }

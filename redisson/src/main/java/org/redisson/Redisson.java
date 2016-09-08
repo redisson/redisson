@@ -74,6 +74,7 @@ import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.misc.RedissonObjectFactory;
 
 /**
  * Main infrastructure class allows to get access
@@ -84,6 +85,11 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class Redisson implements RedissonClient {
 
+    static {
+        RedissonObjectFactory.warmUp();
+        RedissonReference.warmUp();
+    }
+    
     protected final EvictionScheduler evictionScheduler;
     protected final CommandExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
