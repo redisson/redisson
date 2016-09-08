@@ -134,9 +134,9 @@ public class RedisClient {
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(final ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    RedisConnection c = new RedisConnection(RedisClient.this, future.channel());
+                    final RedisConnection c = new RedisConnection(RedisClient.this, future.channel());
                     bootstrap.group().execute(new Runnable() {
                         public void run() {
                             f.setSuccess(c);
@@ -169,9 +169,9 @@ public class RedisClient {
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(final ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    RedisPubSubConnection c = new RedisPubSubConnection(RedisClient.this, future.channel());
+                    final RedisPubSubConnection c = new RedisPubSubConnection(RedisClient.this, future.channel());
                     bootstrap.group().execute(new Runnable() {
                         public void run() {
                             f.setSuccess(c);
