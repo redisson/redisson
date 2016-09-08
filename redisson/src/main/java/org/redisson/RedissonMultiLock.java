@@ -33,12 +33,10 @@ import java.util.concurrent.locks.Lock;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonFuture;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 
 /**
  * Groups multiple independent locks and manages them as one lock.
@@ -81,7 +79,7 @@ public class RedissonMultiLock implements Lock {
     }
 
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
-        RPromise<Void> promise = new RedissonPromise<Void>(ImmediateEventExecutor.INSTANCE.<Void>newPromise());
+        RPromise<Void> promise = new RedissonPromise<Void>();
 
         long currentThreadId = Thread.currentThread().getId();            
         Queue<RLock> lockedLocks = new ConcurrentLinkedQueue<RLock>();
@@ -184,8 +182,6 @@ public class RedissonMultiLock implements Lock {
             
             if (future instanceof RedissonPromise) {
                 future = ((RedissonPromise<Boolean>)future).getInnerPromise();
-            } else if (future instanceof RedissonFuture) {
-                future = ((RedissonFuture<Boolean>)future).getInnerFuture();
             }
             
             tryLockFutures.put(future, lock);

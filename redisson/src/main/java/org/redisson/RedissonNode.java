@@ -131,8 +131,8 @@ public class RedissonNode {
         }
         if (hasRedissonInstance) {
             redisson.shutdown();
+            log.info("Redisson node has been shutdown successfully");
         }
-        log.info("Redisson node has been shutdown successfully");
     }
     
     /**

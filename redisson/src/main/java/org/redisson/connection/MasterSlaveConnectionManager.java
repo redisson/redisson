@@ -50,7 +50,6 @@ import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonFuture;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.TransferListener;
@@ -69,7 +68,6 @@ import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -711,17 +709,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public <R> RPromise<R> newPromise() {
-        return new RedissonPromise<R>(ImmediateEventExecutor.INSTANCE.<R>newPromise());
+        return new RedissonPromise<R>();
     }
 
     @Override
     public <R> RFuture<R> newSucceededFuture(R value) {
-        return new RedissonFuture<R>(ImmediateEventExecutor.INSTANCE.<R>newSucceededFuture(value));
+        return RedissonPromise.newSucceededFuture(value);
     }
 
     @Override
     public <R> RFuture<R> newFailedFuture(Throwable cause) {
-        return new RedissonFuture<R>(ImmediateEventExecutor.INSTANCE.<R>newFailedFuture(cause));
+        return RedissonPromise.newFailedFuture(cause);
     }
 
     @Override

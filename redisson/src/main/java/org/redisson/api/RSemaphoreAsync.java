@@ -108,12 +108,20 @@ public interface RSemaphoreAsync extends RExpirableAsync {
     RFuture<Void> releaseAsync(int permits);
 
     /**
+     * Use {@link #trySetPermitsAsync(int)}
+     */
+    @Deprecated
+    RFuture<Void> setPermitsAsync(int permits);
+    
+    /**
      * Sets new number of permits.
      *
      * @param count - number of times {@link #countDown} must be invoked
      *        before threads can pass through {@link #await}
+     * @result <code>true</code> if semaphore has not initialized yet, otherwise <code>false</code>.  
+     *        
      */
-    RFuture<Void> setPermitsAsync(int permits);
+    RFuture<Boolean> trySetPermitsAsync(int permits);
 
     /**
      * <p>Acquires a permit, if one is available and returns immediately,
@@ -156,4 +164,16 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      */
     RFuture<Boolean> tryAcquireAsync(int permits, long waitTime, TimeUnit unit);
 
+    /**
+     * Shrinks the number of available permits by the indicated
+     * reduction. This method can be useful in subclasses that use
+     * semaphores to track resources that become unavailable. This
+     * method differs from {@code acquire} in that it does not block
+     * waiting for permits to become available.
+     *
+     * @param reduction the number of permits to remove
+     * @throws IllegalArgumentException if {@code reduction} is negative
+     */
+    RFuture<Void> reducePermitsAsync(int permits);
+    
 }

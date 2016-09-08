@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 public class PromiseDelegator<T> implements RPromise<T> {
 
@@ -56,7 +55,7 @@ public class PromiseDelegator<T> implements RPromise<T> {
     }
 
     @Override
-    public Promise<T> setFailure(Throwable cause) {
+    public RPromise<T> setFailure(Throwable cause) {
         return promise.setFailure(cause);
     }
 

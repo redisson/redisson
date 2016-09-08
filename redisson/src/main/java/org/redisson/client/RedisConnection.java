@@ -28,7 +28,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonFuture;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.channel.Channel;
@@ -36,7 +35,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -53,7 +51,7 @@ public class RedisConnection implements RedisCommands {
     private ReconnectListener reconnectListener;
     private long lastUsageTime;
 
-    private final RFuture<?> acquireFuture = new RedissonFuture(ImmediateEventExecutor.INSTANCE.newSucceededFuture(this));
+    private final RFuture<?> acquireFuture = RedissonPromise.newSucceededFuture(this);
     
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
@@ -155,7 +153,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params) {
-        RPromise<R> promise = new RedissonPromise<R>(ImmediateEventExecutor.INSTANCE.<R>newPromise());
+        RPromise<R> promise = new RedissonPromise<R>();
         send(new CommandData<T, R>(promise, encoder, command, params));
         return await(promise);
     }
@@ -173,7 +171,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> RFuture<R> async(long timeout, Codec encoder, RedisCommand<T> command, Object ... params) {
-        final RPromise<R> promise = new RedissonPromise<R>(ImmediateEventExecutor.INSTANCE.<R>newPromise());
+        final RPromise<R> promise = new RedissonPromise<R>();
         if (timeout == -1) {
             timeout = redisClient.getCommandTimeout();
         }
@@ -197,7 +195,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> CommandData<T, R> create(Codec encoder, RedisCommand<T> command, Object ... params) {
-        RPromise<R> promise = new RedissonPromise<R>(ImmediateEventExecutor.INSTANCE.<R>newPromise());
+        RPromise<R> promise = new RedissonPromise<R>();
         return new CommandData<T, R>(promise, encoder, command, params);
     }
 

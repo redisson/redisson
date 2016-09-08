@@ -414,16 +414,20 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return h;
     }
 
+    protected Iterator<K> keyIterator() {
+        return new RedissonMapIterator<K, V, K>(RedissonMap.this) {
+            @Override
+            K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (K) entry.getKey().getObj();
+            }
+        };
+    }
+    
     final class KeySet extends AbstractSet<K> {
 
         @Override
         public Iterator<K> iterator() {
-            return new RedissonMapIterator<K, V, K>(RedissonMap.this) {
-                @Override
-                K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                    return (K) entry.getKey().getObj();
-                }
-            };
+            return keyIterator();
         }
 
         @Override
@@ -448,16 +452,20 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
+    protected Iterator<V> valueIterator() {
+        return new RedissonMapIterator<K, V, V>(RedissonMap.this) {
+            @Override
+            V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (V) entry.getValue().getObj();
+            }
+        };
+    }
+
     final class Values extends AbstractCollection<V> {
 
         @Override
         public Iterator<V> iterator() {
-            return new RedissonMapIterator<K, V, V>(RedissonMap.this) {
-                @Override
-                V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                    return (V) entry.getValue().getObj();
-                }
-            };
+            return valueIterator();
         }
 
         @Override
@@ -477,10 +485,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
+    protected Iterator<Map.Entry<K,V>> entryIterator() {
+        return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this);
+    }
+
+    
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
 
         public final Iterator<Map.Entry<K,V>> iterator() {
-            return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this);
+            return entryIterator();
         }
 
         public final boolean contains(Object o) {

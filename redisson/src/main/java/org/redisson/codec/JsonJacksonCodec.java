@@ -16,6 +16,7 @@
 package org.redisson.codec;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
@@ -71,7 +72,7 @@ public class JsonJacksonCodec implements Codec {
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            return mapObjectMapper.readValue(new ByteBufInputStream(buf), Object.class);
+            return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), Object.class);
         }
     };
     
