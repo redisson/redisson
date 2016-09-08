@@ -146,7 +146,7 @@ public class AccessorInterceptor {
                                             fieldName,
                                             arg),
                                     entry.getValue());
-                    } else if (obj instanceof Collection) {
+                    if (obj instanceof Collection) {
                         ((Collection) obj).addAll((Collection) arg);
                     } else {
                         ((Map) obj).putAll((Map) arg);
