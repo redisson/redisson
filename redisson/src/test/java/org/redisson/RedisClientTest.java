@@ -75,7 +75,7 @@ public class RedisClientTest {
             assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
             l.countDown();
         });
-        l.await(10, TimeUnit.SECONDS);
+        assertThat(l.await(10, TimeUnit.SECONDS)).isTrue();
     }
 
     @Test

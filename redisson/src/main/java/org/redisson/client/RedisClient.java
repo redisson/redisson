@@ -48,7 +48,6 @@ import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 
 /**
  * Low-level Redis client
@@ -138,9 +137,17 @@ public class RedisClient {
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
                     RedisConnection c = new RedisConnection(RedisClient.this, future.channel());
-                    f.setSuccess(c);
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            f.setSuccess(c);
+                        }
+                    });
                 } else {
-                    f.setFailure(future.cause());
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            f.setFailure(future.cause());
+                        }
+                    });
                 }
             }
         });
@@ -165,9 +172,17 @@ public class RedisClient {
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
                     RedisPubSubConnection c = new RedisPubSubConnection(RedisClient.this, future.channel());
-                    f.setSuccess(c);
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            f.setSuccess(c);
+                        }
+                    });
                 } else {
-                    f.setFailure(future.cause());
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            f.setFailure(future.cause());
+                        }
+                    });
                 }
             }
         });
