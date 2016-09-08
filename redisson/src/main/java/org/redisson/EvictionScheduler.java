@@ -43,7 +43,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class EvictionScheduler {
 
-    private static final Logger log = LoggerFactory.getLogger(RedissonSetCache.class);
+    private static final Logger log = LoggerFactory.getLogger(EvictionScheduler.class);
 
     public class RedissonCacheTask implements Runnable {
 
