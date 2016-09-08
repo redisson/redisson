@@ -198,7 +198,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RedissonClient r2 = createInstance();
         RemoteInterfaceAsync ri = r2.getRemoteSerivce().get(RemoteInterfaceAsync.class);
         
-        Future<Void> f = ri.cancelMethod();
+        RFuture<Void> f = ri.cancelMethod();
         Thread.sleep(500);
         assertThat(f.cancel(true)).isTrue();
         
@@ -230,9 +230,9 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RedissonClient r2 = createInstance();
         RemoteInterfaceAsync ri = r2.getRemoteSerivce().get(RemoteInterfaceAsync.class);
         
-        Future<Void> f = ri.voidMethod("someName", 100L);
+        RFuture<Void> f = ri.voidMethod("someName", 100L);
         f.sync();
-        Future<Long> resFuture = ri.resultMethod(100L);
+        RFuture<Long> resFuture = ri.resultMethod(100L);
         resFuture.sync();
         assertThat(resFuture.getNow()).isEqualTo(200);
 
@@ -249,9 +249,9 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RedissonClient r2 = createInstance();
         RemoteInterfaceAsync ri = r2.getRemoteSerivce().get(RemoteInterfaceAsync.class);
         
-        Future<Void> f = ri.voidMethod("someName", 100L);
+        RFuture<Void> f = ri.voidMethod("someName", 100L);
         f.sync();
-        Future<Long> resFuture = ri.resultMethod(100L);
+        RFuture<Long> resFuture = ri.resultMethod(100L);
         resFuture.sync();
         assertThat(resFuture.getNow()).isEqualTo(200);
 

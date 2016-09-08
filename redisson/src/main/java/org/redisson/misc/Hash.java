@@ -25,6 +25,19 @@ public class Hash {
 
     private Hash() {
     }
+
+    public static byte[] hash(byte[] objectState) {
+        long h1 = LongHashFunction.farmUo().hashBytes(objectState);
+        long h2 = LongHashFunction.xx_r39().hashBytes(objectState);
+
+        ByteBuf buf = Unpooled.buffer((2 * Long.SIZE) / Byte.SIZE).writeLong(h1).writeLong(h2);
+        try {
+            return buf.array();
+        } finally {
+            buf.release();
+        }
+    }
+
     
     public static String hashToBase64(byte[] objectState) {
         long h1 = LongHashFunction.farmUo().hashBytes(objectState);

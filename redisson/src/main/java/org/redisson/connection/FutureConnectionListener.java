@@ -19,22 +19,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 public class FutureConnectionListener<T extends RedisConnection> implements FutureListener<Object> {
 
     private final AtomicInteger commandsCounter = new AtomicInteger();
 
-    private final Promise<T> connectionPromise;
+    private final RPromise<T> connectionPromise;
     private final T connection;
     private final List<Runnable> commands = new ArrayList<Runnable>(4);
 
-    public FutureConnectionListener(Promise<T> connectionFuture, T connection) {
+    public FutureConnectionListener(RPromise<T> connectionFuture, T connection) {
         super();
         this.connectionPromise = connectionFuture;
         this.connection = connection;
@@ -45,7 +46,7 @@ public class FutureConnectionListener<T extends RedisConnection> implements Futu
         commands.add(new Runnable() {
             @Override
             public void run() {
-                Future<Object> future = connection.async(command, params);
+                RFuture<Object> future = connection.async(command, params);
                 future.addListener(FutureConnectionListener.this);
             }
         });

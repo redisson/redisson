@@ -28,6 +28,7 @@ import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
+import org.redisson.api.RFuture;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
@@ -67,8 +68,6 @@ import org.redisson.reactive.RedissonScriptReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.reactive.RedissonTopicReactive;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * Main infrastructure class allows to get access
@@ -116,7 +115,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> List<RBucketReactive<V>> findBuckets(String pattern) {
-        Future<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
+        RFuture<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
         Collection<String> keys = commandExecutor.get(r);
 
         List<RBucketReactive<V>> buckets = new ArrayList<RBucketReactive<V>>(keys.size());

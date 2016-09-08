@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RMapCache;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
@@ -571,12 +572,12 @@ public class RedissonMapCacheTest extends BaseTest {
     @Test
     public void testPutAsync() throws InterruptedException, ExecutionException {
         RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
-        Future<Integer> future = map.putAsync(2, 3);
+        RFuture<Integer> future = map.putAsync(2, 3);
         Assert.assertNull(future.get());
 
         Assert.assertEquals((Integer) 3, map.get(2));
 
-        Future<Integer> future1 = map.putAsync(2, 4);
+        RFuture<Integer> future1 = map.putAsync(2, 4);
         Assert.assertEquals((Integer) 3, future1.get());
 
         Assert.assertEquals((Integer) 4, map.get(2));

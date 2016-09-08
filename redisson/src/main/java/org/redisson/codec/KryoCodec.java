@@ -34,6 +34,11 @@ import com.esotericsoftware.kryo.io.Output;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class KryoCodec implements Codec {
 
     public interface KryoPool {

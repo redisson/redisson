@@ -15,10 +15,9 @@
  */
 package org.redisson.executor;
 
+import org.redisson.api.RFuture;
 import org.redisson.misc.PromiseDelegator;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
 
 /**
  * 
@@ -28,9 +27,9 @@ import io.netty.util.concurrent.Promise;
 public class RemotePromise<T> extends PromiseDelegator<T> {
 
     private String requestId;
-    private Future<Boolean> addFuture;
+    private RFuture<Boolean> addFuture;
     
-    public RemotePromise(Promise<T> promise) {
+    public RemotePromise(RPromise<T> promise) {
         super(promise);
     }
     
@@ -41,10 +40,10 @@ public class RemotePromise<T> extends PromiseDelegator<T> {
         return requestId;
     }
     
-    public void setAddFuture(Future<Boolean> addFuture) {
+    public void setAddFuture(RFuture<Boolean> addFuture) {
         this.addFuture = addFuture;
     }
-    public Future<Boolean> getAddFuture() {
+    public RFuture<Boolean> getAddFuture() {
         return addFuture;
     }
     

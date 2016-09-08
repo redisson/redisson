@@ -16,13 +16,11 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RLexSortedSet;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSortedSet;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
@@ -206,9 +204,9 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
-        Future<Boolean> future = set.addAsync(0.323, 2);
+        RFuture<Boolean> future = set.addAsync(0.323, 2);
         Assert.assertTrue(future.get());
-        Future<Boolean> future2 = set.addAsync(0.323, 2);
+        RFuture<Boolean> future2 = set.addAsync(0.323, 2);
         Assert.assertFalse(future2.get());
 
         Assert.assertTrue(set.contains(2));
@@ -736,23 +734,23 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertEquals("c", a[0].getValue());
         Assert.assertEquals("d", a[1].getValue());
     }
-
+    
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
-        set.add(1, 100);
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(1, "100");
 
-        Double res = set.addScore(100, 11);
+        Double res = set.addScore("100", 11);
         Assert.assertEquals(12, (double)res, 0);
-        Double score = set.getScore(100);
+        Double score = set.getScore("100");
         Assert.assertEquals(12, (double)score, 0);
 
-        RScoredSortedSet<Integer> set2 = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
-        set2.add(100.2, 1);
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple");
+        set2.add(100.2, "1");
 
-        Double res2 = set2.addScore(1, new Double(12.1));
+        Double res2 = set2.addScore("1", new Double(12.1));
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
-        res2 = set2.getScore(1);
+        res2 = set2.getScore("1");
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
     }
 

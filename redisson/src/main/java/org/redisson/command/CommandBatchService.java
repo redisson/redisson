@@ -93,7 +93,7 @@ public class CommandBatchService extends CommandReactiveService {
 
     @Override
     protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
-            Codec codec, RedisCommand<V> command, Object[] params, Promise<R> mainPromise, int attempt) {
+            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt) {
         if (executed) {
             throw new IllegalStateException("Batch already has been executed!");
         }
@@ -153,7 +153,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
         executed = true;
 
-        Promise<Void> voidPromise = connectionManager.newPromise();
+        RPromise<Void> voidPromise = connectionManager.newPromise();
         final RPromise<List<?>> promise = connectionManager.newPromise();
         voidPromise.addListener(new FutureListener<Void>() {
             @Override
@@ -185,7 +185,7 @@ public class CommandBatchService extends CommandReactiveService {
         return promise;
     }
 
-    public void execute(final Entry entry, final NodeSource source, final Promise<Void> mainPromise, final AtomicInteger slots, final int attempt) {
+    public void execute(final Entry entry, final NodeSource source, final RPromise<Void> mainPromise, final AtomicInteger slots, final int attempt) {
         if (mainPromise.isCancelled()) {
             return;
         }
@@ -195,11 +195,11 @@ public class CommandBatchService extends CommandReactiveService {
             return;
         }
 
-        final Promise<Void> attemptPromise = connectionManager.newPromise();
+        final RPromise<Void> attemptPromise = connectionManager.newPromise();
 
         final AsyncDetails details = new AsyncDetails();
 
-        final Future<RedisConnection> connectionFuture;
+        final RFuture<RedisConnection> connectionFuture;
         if (entry.isReadOnlyMode()) {
             connectionFuture = connectionManager.connectionReadOp(source, null);
         } else {
@@ -254,7 +254,7 @@ public class CommandBatchService extends CommandReactiveService {
             connectionFuture.addListener(new FutureListener<RedisConnection>() {
                 @Override
                 public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                    checkConnectionFuture(entry, source, mainPromise, attemptPromise, details, connFuture);
+                    checkConnectionFuture(entry, source, mainPromise, attemptPromise, details, connectionFuture);
                 }
             });
         }
@@ -296,7 +296,7 @@ public class CommandBatchService extends CommandReactiveService {
         });
     }
 
-    private void checkWriteFuture(final Promise<Void> attemptPromise, AsyncDetails details,
+    private void checkWriteFuture(final RPromise<Void> attemptPromise, AsyncDetails details,
             final RedisConnection connection, ChannelFuture future) {
         if (attemptPromise.isDone() || future.isCancelled()) {
             return;
@@ -319,8 +319,8 @@ public class CommandBatchService extends CommandReactiveService {
     }
 
     private void checkConnectionFuture(final Entry entry, final NodeSource source,
-            final Promise<Void> mainPromise, final Promise<Void> attemptPromise, final AsyncDetails details,
-            Future<RedisConnection> connFuture) {
+            final RPromise<Void> mainPromise, final RPromise<Void> attemptPromise, final AsyncDetails details,
+            RFuture<RedisConnection> connFuture) {
         if (attemptPromise.isDone() || mainPromise.isCancelled() || connFuture.isCancelled()) {
             return;
         }
@@ -335,7 +335,7 @@ public class CommandBatchService extends CommandReactiveService {
 
         List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size() + 1);
         if (source.getRedirect() == Redirect.ASK) {
-            Promise<Void> promise = connectionManager.newPromise();
+            RPromise<Void> promise = connectionManager.newPromise();
             list.add(new CommandData<Void, Void>(promise, StringCodec.INSTANCE, RedisCommands.ASKING, new Object[] {}));
         } 
         for (BatchCommandData<?, ?> c : entry.getCommands()) {

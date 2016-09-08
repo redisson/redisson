@@ -15,10 +15,8 @@
  */
 package org.redisson.reactive;
 
-import static org.redisson.client.protocol.RedisCommands.EVAL_OBJECT;
 import static org.redisson.client.protocol.RedisCommands.LINDEX;
 import static org.redisson.client.protocol.RedisCommands.LLEN;
-import static org.redisson.client.protocol.RedisCommands.LPOP;
 import static org.redisson.client.protocol.RedisCommands.LREM_SINGLE;
 import static org.redisson.client.protocol.RedisCommands.RPUSH;
 
@@ -36,7 +34,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
@@ -259,17 +256,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<V> remove(long index) {
-        if (index == 0) {
-            return commandExecutor.writeReactive(getName(), codec, LPOP, getName());
-        }
-
-        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_OBJECT,
-                "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
-                        "local tail = redis.call('lrange', KEYS[1], ARGV[1]);" +
-                        "redis.call('ltrim', KEYS[1], 0, ARGV[1] - 1);" +
-                        "for i, v in ipairs(tail) do redis.call('rpush', KEYS[1], v) end;" +
-                        "return v",
-                Collections.<Object>singletonList(getName()), index);
+        return reactive(instance.removeAsync(index));
     }
 
     @Override
@@ -277,38 +264,14 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         return reactive(instance.containsAsync(o));
     }
 
-    private <R> Publisher<R> indexOf(Object o, Convertor<R> convertor) {
-        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<R>("EVAL", convertor, 4),
-                "local key = KEYS[1] " +
-                "local obj = ARGV[1] " +
-                "local items = redis.call('lrange', key, 0, -1) " +
-                "for i=1,#items do " +
-                    "if items[i] == obj then " +
-                        "return i - 1 " +
-                    "end " +
-                "end " +
-                "return -1",
-                Collections.<Object>singletonList(getName()), o);
-    }
-
     @Override
     public Publisher<Long> indexOf(Object o) {
-        return indexOf(o, new LongReplayConvertor());
+        return reactive(instance.indexOfAsync(o, new LongReplayConvertor()));
     }
 
     @Override
     public Publisher<Long> lastIndexOf(Object o) {
-        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Integer>("EVAL", 4),
-                "local key = KEYS[1] " +
-                "local obj = ARGV[1] " +
-                "local items = redis.call('lrange', key, 0, -1) " +
-                "for i = table.getn(items), 0, -1 do " +
-                    "if items[i] == obj then " +
-                        "return i - 1 " +
-                    "end " +
-                "end " +
-                "return -1",
-                Collections.<Object>singletonList(getName()), o);
+        return reactive(instance.lastIndexOfAsync(o, new LongReplayConvertor()));
     }
 
     @Override

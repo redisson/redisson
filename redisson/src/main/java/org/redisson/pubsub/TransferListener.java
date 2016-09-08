@@ -15,9 +15,10 @@
  */
 package org.redisson.pubsub;
 
+import org.redisson.misc.RPromise;
+
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 /**
  * 
@@ -27,9 +28,9 @@ import io.netty.util.concurrent.Promise;
  */
 public class TransferListener<T> implements FutureListener<T> {
 
-    private Promise<T> promise;
+    private RPromise<T> promise;
     
-    public TransferListener(Promise<T> promise) {
+    public TransferListener(RPromise<T> promise) {
         super();
         this.promise = promise;
     }

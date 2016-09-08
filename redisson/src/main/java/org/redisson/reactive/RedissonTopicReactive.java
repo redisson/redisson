@@ -21,6 +21,7 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 import org.redisson.PubSubMessageListener;
 import org.redisson.PubSubStatusListener;
+import org.redisson.api.RFuture;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
@@ -29,11 +30,11 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
+import org.redisson.misc.RPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -80,8 +81,8 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
     }
 
     private Publisher<Integer> addListener(final RedisPubSubListener<?> pubSubListener) {
-        final Promise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
+        final RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+        RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
         future.addListener(new FutureListener<PubSubConnectionEntry>() {
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {

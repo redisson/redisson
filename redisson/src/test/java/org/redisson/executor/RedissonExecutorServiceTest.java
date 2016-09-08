@@ -239,6 +239,61 @@ public class RedissonExecutorServiceTest extends BaseTest {
             }
         });
     }
+    
+    public class TaskCallableClass implements Callable<String> {
+
+        @Override
+        public String call() throws Exception {
+            return "123";
+        }
+
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testNonStaticInnerClassCallable() {
+        redisson.getExecutorService("test").submit(new TaskCallableClass());
+    }
+
+    public static class TaskStaticCallableClass implements Callable<String> {
+
+        @Override
+        public String call() throws Exception {
+            return "123";
+        }
+        
+    }
+
+    @Test
+    public void testInnerClassCallable() throws InterruptedException, ExecutionException {
+        String res = redisson.getExecutorService("test").submit(new TaskStaticCallableClass()).get();
+        assertThat(res).isEqualTo("123");
+    }
+    
+    public class TaskRunnableClass implements Runnable {
+
+        @Override
+        public void run() {
+        }
+
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testNonStaticInnerClassRunnable() {
+        redisson.getExecutorService("test").submit(new TaskRunnableClass());
+    }
+
+    public static class TaskStaticRunnableClass implements Runnable {
+
+        @Override
+        public void run() {
+        }
+
+    }
+
+    @Test
+    public void testInnerClassRunnable() throws InterruptedException, ExecutionException {
+        redisson.getExecutorService("test").submit(new TaskStaticRunnableClass()).get();
+    }
 
     @Test(expected = IllegalArgumentException.class)
     public void testAnonymousRunnableExecute() {

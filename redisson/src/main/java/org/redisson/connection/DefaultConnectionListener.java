@@ -20,12 +20,11 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
-
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
 
 public class DefaultConnectionListener implements ConnectionInitializer {
 
-    public final <T extends RedisConnection> void onConnect(Promise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config) {
+    public final <T extends RedisConnection> void onConnect(RPromise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config) {
         FutureConnectionListener<T> listener = new FutureConnectionListener<T>(connectionFuture, conn);
         doConnect(config, nodeType, listener);
         listener.executeCommands();
