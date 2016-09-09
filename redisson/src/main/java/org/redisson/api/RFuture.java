@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.util.concurrent.FutureListener;
@@ -26,7 +27,7 @@ import io.netty.util.concurrent.FutureListener;
  *
  * @param <V>
  */
-public interface RFuture<V> extends java.util.concurrent.Future<V> {
+public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionStage<V> {
 
     /**
      * Returns {@code true} if and only if the I/O operation was completed
@@ -51,6 +52,22 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * if the future is really done with {@link #isDone()} and not relay on the returned {@code null} value.
      */
     V getNow();
+    
+    /**
+     * Returns the result value when complete, or throws an
+     * (unchecked) exception if completed exceptionally. To better
+     * conform with the use of common functional forms, if a
+     * computation involved in the completion of this
+     * CompletableFuture threw an exception, this method throws an
+     * (unchecked) {@link CompletionException} with the underlying
+     * exception as its cause.
+     *
+     * @return the result value
+     * @throws CancellationException if the computation was cancelled
+     * @throws CompletionException if this future completed
+     * exceptionally or a completion computation threw an exception
+     */
+    V join();
     
     /**
      * Waits for this future to be completed within the

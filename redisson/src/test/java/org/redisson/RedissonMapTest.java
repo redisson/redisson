@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
@@ -627,8 +628,14 @@ public class RedissonMapTest extends BaseTest {
         map.put(4, 6);
         map.put(7, 8);
 
-        assertThat(map.fastRemoveAsync(1, 3, 7).get()).isEqualTo(3);
-        Thread.sleep(1);
+        CountDownLatch l = new CountDownLatch(1);
+        RFuture<Long> future = map.fastRemoveAsync(1, 3, 7);
+        future.handle((r, ex) -> {
+            assertThat(r).isEqualTo(3);
+            l.countDown();
+            return this;
+        });
+        assertThat(future.get()).isEqualTo(3);
         assertThat(map.size()).isEqualTo(1);
     }
 
