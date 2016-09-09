@@ -34,11 +34,13 @@ import org.redisson.api.RList;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMap;
+import org.redisson.api.RObject;
 import org.redisson.api.RQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
+import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
@@ -389,6 +391,15 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
         public void setContent(Object content) {
             this.content = content;
+        }
+        
+        @RFieldAccessor
+        public <T> void set(String field, T value) {
+        }
+        
+        @RFieldAccessor
+        public <T> T get(String field) {
+            return null;
         }
 
         @Override
@@ -930,6 +941,59 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
             service.attach(object);
         } catch (Exception e) {
             assertEquals("Non-null value is required for the field with RId annotation.", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testExpirable() throws InterruptedException {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass myObject = service.create(TestClass.class);
+        myObject.setValue("123345");
+        assertTrue(service.asLiveObject(myObject).isExists());
+        service.asRExpirable(myObject).expire(1, TimeUnit.SECONDS);
+        Thread.sleep(2000);
+        assertFalse(service.asLiveObject(myObject).isExists());
+    }
+
+    @Test
+    public void testMap() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass myObject = service.create(TestClass.class);
+        myObject.setValue("123345");
+        assertEquals("123345", service.asRMap(myObject).get("value"));
+        service.asRMap(myObject).put("value", "9999");
+        assertEquals("9999", myObject.getValue());
+    }
+    
+    @Test
+    public void testRObject() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass myObject = service.create(TestClass.class);
+        try {
+            ((RObject) myObject).isExists();
+        } catch (Exception e) {
+            assertEquals("Please use RLiveObjectService instance for this type of functions", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void testFieldAccessor() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass myObject = service.create(TestClass.class);
+        myObject.setValue("123345");
+        assertEquals("123345", myObject.get("value"));
+        myObject.set("value", "9999");
+        assertEquals("9999", myObject.get("value"));
+        assertEquals("9999", myObject.getValue());
+        try {
+            myObject.get("555555");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
+        }
+        try {
+            myObject.set("555555", "999");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
         }
     }
 

@@ -176,6 +176,24 @@ public interface RLiveObjectService {
     <T> RLiveObject asLiveObject(T instance);
 
     /**
+     * To cast the instance to RExpirable instance.
+     * 
+     * @param <T>
+     * @param instance
+     * @return
+     */
+    <T> RExpirable asRExpirable(T instance);
+
+    /**
+     * To cast the instance to RMap instance.
+     * 
+     * @param <T>
+     * @param instance
+     * @return
+     */
+    <T> RMap asRMap(T instance);
+
+    /**
      * Returns true if the instance is a instance of RLiveObject.
      * 
      * @param <T>
