@@ -49,6 +49,8 @@ import org.redisson.api.RExpirableAsync;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapAsync;
 import org.redisson.api.RObjectAsync;
+import org.redisson.api.annotation.RFieldAccessor;
+import org.redisson.liveobject.core.FieldAccessorInterceptor;
 import org.redisson.liveobject.core.RExpirableInterceptor;
 import org.redisson.liveobject.core.RMapInterceptor;
 import org.redisson.liveobject.core.RObjectInterceptor;
@@ -328,6 +330,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class)))
                 .implement(RLiveObject.class)
+                .method(ElementMatchers.isAnnotatedWith(RFieldAccessor.class)
+                        .and(ElementMatchers.named("get")
+                        .or(ElementMatchers.named("set"))))
+                .intercept(MethodDelegation.to(FieldAccessorInterceptor.class))
                 .method(ElementMatchers.isDeclaredBy(RObject.class)
                         .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
                 .intercept(MethodDelegation.to(RObjectInterceptor.class))

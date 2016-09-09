@@ -40,6 +40,7 @@ import org.redisson.api.RSet;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
+import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
@@ -390,6 +391,15 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
         public void setContent(Object content) {
             this.content = content;
+        }
+        
+        @RFieldAccessor
+        public <T> void set(String field, T value) {
+        }
+        
+        @RFieldAccessor
+        public <T> T get(String field) {
+            return null;
         }
 
         @Override
@@ -963,6 +973,27 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
             ((RObject) myObject).isExists();
         } catch (Exception e) {
             assertEquals("Please use RLiveObjectService instance for this type of functions", e.getMessage());
+        }
+    }
+    
+    @Test
+    public void testFieldAccessor() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClass myObject = service.create(TestClass.class);
+        myObject.setValue("123345");
+        assertEquals("123345", myObject.get("value"));
+        myObject.set("value", "9999");
+        assertEquals("9999", myObject.get("value"));
+        assertEquals("9999", myObject.getValue());
+        try {
+            myObject.get("555555");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
+        }
+        try {
+            myObject.set("555555", "999");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
         }
     }
 
