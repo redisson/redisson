@@ -20,14 +20,26 @@ import java.lang.annotation.Annotation;
 import org.redisson.api.RedissonClient;
 
 /**
+ * A resolver is used to provide value based on contextual parameters 
  *
  * @author Rui Gu (https://github.com/jackygurui)
- * @param <T> Field instance
+ * @param <T> Field instance type
  * @param <A> Annotation to resolve
  * @param <V> Value type
  */
 public interface Resolver<T, A extends Annotation, V> {
 
+    /**
+     * Used to provide a value instance based on contextual parameters.
+     * 
+     * Actual behavior may vary depending on implementation
+     * 
+     * @param value
+     * @param annotation
+     * @param idFieldName
+     * @param redisson
+     * @return resolved value
+     */
     public V resolve(T value, A annotation, String idFieldName, RedissonClient redisson);
 
 }
