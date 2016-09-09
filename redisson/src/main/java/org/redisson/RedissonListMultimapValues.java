@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
@@ -70,6 +71,54 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
         super(codec, commandExecutor, name);
         this.timeoutSetName = timeoutSetName;
         this.key = key;
+    }
+    
+    @Override
+    public RFuture<Boolean> clearExpireAsync() {
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+    }
+    
+    @Override
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+    }
+    
+    @Override
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+    }
+    
+    @Override
+    public RFuture<Long> remainTimeToLiveAsync() {
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+    }
+    
+    @Override
+    public RFuture<Void> renameAsync(String newName) {
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+    }
+    
+    @Override
+    public RFuture<Boolean> renamenxAsync(String newName) {
+        throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+    }
+    
+    public RFuture<Boolean> deleteAsync() {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local expireDate = 92233720368547758; " +
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); "
+              + "if expireDateScore ~= false then "
+                  + "expireDate = tonumber(expireDateScore) "
+              + "end; "
+              + "if expireDate <= tonumber(ARGV[1]) then "
+                  + "return 0;"
+              + "end; " +
+                "local res = redis.call('zrem', KEYS[1], ARGV[2]); " +
+                "if res > 0 then " +
+                    "redis.call('del', KEYS[2]); " +
+                "end; " +
+                "return res; ",
+                Arrays.<Object>asList(timeoutSetName, getName()), System.currentTimeMillis(), key);
     }
 
     @Override
