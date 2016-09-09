@@ -33,7 +33,6 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 
 public class RedisClientTest {
 
@@ -69,11 +68,16 @@ public class RedisClientTest {
     public void testConnectAsync() throws InterruptedException {
         RedisClient c = new RedisClient("localhost", 6379);
         RFuture<RedisConnection> f = c.connectAsync();
-        final CountDownLatch l = new CountDownLatch(1);
+        final CountDownLatch l = new CountDownLatch(2);
         f.addListener((FutureListener<RedisConnection>) future -> {
             RedisConnection conn = future.get();
             assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
             l.countDown();
+        });
+        f.handle((conn, ex) -> {
+            assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
+            l.countDown();
+            return null; 
         });
         assertThat(l.await(10, TimeUnit.SECONDS)).isTrue();
     }
