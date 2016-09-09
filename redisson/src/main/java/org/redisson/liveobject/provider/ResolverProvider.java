@@ -24,7 +24,26 @@ import org.redisson.liveobject.resolver.Resolver;
  */
 public interface ResolverProvider {
 
+    /**
+     * To retrieve a resolver based on the the class requiring values to be 
+     * resolved, the resolver type, and annotation which may carry any required
+     * configurations.
+     * 
+     * @param cls the class requires value to be resolved
+     * @param resolverClass the resolver type
+     * @param anno annotation with configurations
+     * @return a Resolver instance
+     */
     Resolver getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno);
+
+    /**
+     * To register a resolver based on the the class it can provide value to,
+     * the resolver type, the resolver instance to be cached.
+     * 
+     * @param cls
+     * @param resolverClass
+     * @param resolver
+     */
     void registerResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Resolver resolver);
     
 }
