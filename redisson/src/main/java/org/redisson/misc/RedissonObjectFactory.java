@@ -153,7 +153,7 @@ public class RedissonObjectFactory {
     }
 
     public static RedissonReference toReference(RedissonClient redisson, Object object) {
-        if (object instanceof RObject) {
+        if (object instanceof RObject && !(object instanceof RLiveObject)) {
             RObject rObject = ((RObject) object);
             redisson.getCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());
             return new RedissonReference(object.getClass(), ((RObject) object).getName(), ((RObject) object).getCodec());
@@ -179,7 +179,7 @@ public class RedissonObjectFactory {
     }
 
     public static RedissonReference toReference(RedissonReactiveClient redissonReactive, Object object) {
-        if (object instanceof RObjectReactive) {
+        if (object instanceof RObjectReactive && !(object instanceof RLiveObject)) {
             RObjectReactive rObject = ((RObjectReactive) object);
             redissonReactive.getCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());
             return new RedissonReference(object.getClass(), ((RObjectReactive) object).getName(), ((RObjectReactive) object).getCodec());
