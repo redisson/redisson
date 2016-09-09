@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.api.RLiveObject;
@@ -43,6 +44,16 @@ import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.matcher.ElementMatchers;
+import org.redisson.api.RExpirable;
+import org.redisson.api.RExpirableAsync;
+import org.redisson.api.RMap;
+import org.redisson.api.RMapAsync;
+import org.redisson.api.RObjectAsync;
+import org.redisson.api.annotation.RFieldAccessor;
+import org.redisson.liveobject.core.FieldAccessorInterceptor;
+import org.redisson.liveobject.core.RExpirableInterceptor;
+import org.redisson.liveobject.core.RMapInterceptor;
+import org.redisson.liveobject.core.RObjectInterceptor;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
 
@@ -166,6 +177,16 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> RLiveObject asLiveObject(T instance) {
         return (RLiveObject) instance;
+    }
+
+    @Override
+    public <T> RExpirable asRExpirable(T instance) {
+        return (RExpirable) instance;
+    }
+
+    @Override
+    public <T> RMap asRMap(T instance) {
+        return (RMap) instance;
     }
 
     @Override
@@ -309,18 +330,32 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class)))
                 .implement(RLiveObject.class)
-//                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
-//                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class))
-//                        .or(ElementMatchers.isDeclaredBy(RObject.class))
-//                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
-//                .intercept(MethodDelegation.to(ExpirableInterceptor.class))
-//                .implement(RExpirable.class)
+                .method(ElementMatchers.isAnnotatedWith(RFieldAccessor.class)
+                        .and(ElementMatchers.named("get")
+                        .or(ElementMatchers.named("set"))))
+                .intercept(MethodDelegation.to(FieldAccessorInterceptor.class))
+                .method(ElementMatchers.isDeclaredBy(RObject.class)
+                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+                .intercept(MethodDelegation.to(RObjectInterceptor.class))
+                .implement(RObject.class)
+                .method(ElementMatchers.isDeclaredBy(RExpirable.class)
+                        .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
+                .intercept(MethodDelegation.to(RExpirableInterceptor.class))
+                .implement(RExpirable.class)
+                .method(ElementMatchers.isDeclaredBy(Map.class)
+                        .or(ElementMatchers.isDeclaredBy(ConcurrentMap.class))
+                        .or(ElementMatchers.isDeclaredBy(RMapAsync.class))
+                        .or(ElementMatchers.isDeclaredBy(RMap.class)))
+                .intercept(MethodDelegation.to(RMapInterceptor.class))
+                .implement(RMap.class)
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RLiveObject.class)))
-//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
-//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
-//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObject.class)))
-//                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
+                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
+                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObject.class)))
+                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
+                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(ConcurrentMap.class)))
+                        .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(Map.class)))
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
                         .and(ElementMatchers.isPublic()))

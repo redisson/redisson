@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -35,6 +34,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -156,28 +156,28 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
             return newSucceededFuture(0L);
         }
 
-        try {
-            List<Object> mapKeys = new ArrayList<Object>(keys.length);
-            List<Object> listKeys = new ArrayList<Object>(keys.length + 1);
-            listKeys.add(getName());
-            for (K key : keys) {
-                byte[] keyState = codec.getMapKeyEncoder().encode(key);
-                mapKeys.add(keyState);
-                String keyHash = hash(keyState);
-                String name = getValuesName(keyHash);
-                listKeys.add(name);
-            }
-
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LONG,
-                        "local res = redis.call('hdel', KEYS[1], unpack(ARGV)); " +
-                        "if res > 0 then " +
-                            "redis.call('del', unpack(KEYS, 2, #KEYS)); " +
-                        "end; " +
-                        "return res; ",
-                        listKeys, mapKeys.toArray());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        List<Object> mapKeys = new ArrayList<Object>(keys.length);
+        List<Object> listKeys = new ArrayList<Object>(keys.length + 1);
+        listKeys.add(getName());
+        for (K key : keys) {
+            byte[] keyState = encodeMapKey(key);
+            mapKeys.add(keyState);
+            String keyHash = hash(keyState);
+            String name = getValuesName(keyHash);
+            listKeys.add(name);
         }
+
+        return fastRemoveAsync(mapKeys, listKeys, RedisCommands.EVAL_LONG);
+    }
+
+    protected <T> RFuture<T> fastRemoveAsync(List<Object> mapKeys, List<Object> listKeys, RedisCommand<T> evalCommandType) {
+        return commandExecutor.evalWriteAsync(getName(), codec, evalCommandType,
+                    "local res = redis.call('hdel', KEYS[1], unpack(ARGV)); " +
+                    "if res > 0 then " +
+                        "redis.call('del', unpack(KEYS, 2, #KEYS)); " +
+                    "end; " +
+                    "return res; ",
+                    listKeys, mapKeys.toArray());
     }
     
     @Override
@@ -242,6 +242,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 Arrays.<Object>asList(getName()));
     }
     
+    @Override
     public RFuture<Integer> keySizeAsync() {
     	return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.HLEN, getName());
     }

@@ -36,7 +36,7 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
      * specified in the {@link RMultimap} interface.
      */
     @Override
-    Set<V> get(K key);
+    RSet<V> get(K key);
 
     /**
      * {@inheritDoc}

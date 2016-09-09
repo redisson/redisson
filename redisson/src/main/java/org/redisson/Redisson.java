@@ -55,6 +55,7 @@ import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RScript;
 import org.redisson.api.RSemaphore;
+import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetCache;
 import org.redisson.api.RSetMultimap;
@@ -481,6 +482,11 @@ public class Redisson implements RedissonClient {
     public RSemaphore getSemaphore(String name) {
         return new RedissonSemaphore(commandExecutor, name, semaphorePubSub);
     }
+    
+    public RPermitExpirableSemaphore getPermitExpirableSemaphore(String name) {
+        return new RedissonPermitExpirableSemaphore(commandExecutor, name, semaphorePubSub);
+    }
+
 
     @Override
     public <V> RBloomFilter<V> getBloomFilter(String name) {

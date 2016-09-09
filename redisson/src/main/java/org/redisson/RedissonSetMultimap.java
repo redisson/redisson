@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,8 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -54,6 +55,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         super(codec, connectionManager, name);
     }
 
+    @Override
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "local keys = redis.call('hgetall', KEYS[1]); " +
@@ -68,122 +70,135 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 Arrays.<Object>asList(getName()));
     }
 
-    
-    
+    @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
 
-            String setName = getValuesName(keyHash);
-            return commandExecutor.readAsync(getName(), codec, SCARD_VALUE, setName);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public RFuture<Boolean> containsValueAsync(Object value) {
-        try {
-            byte[] valueState = codec.getMapValueEncoder().encode(value);
-
-            return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "local keys = redis.call('hgetall', KEYS[1]); " +
-                    "for i, v in ipairs(keys) do " +
-                        "if i % 2 == 0 then " +
-                            "local name = '{' .. KEYS[1] .. '}:' .. v; " +
-                            "if redis.call('sismember', name, ARGV[1]) == 1 then "
-                                + "return 1; " +
-                            "end;" +
-                        "end;" +
-                    "end; " +
-                    "return 0; ",
-                    Arrays.<Object>asList(getName()), valueState);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
-            byte[] valueState = codec.getMapValueEncoder().encode(value);
-
-            String setName = getValuesName(keyHash);
-            return commandExecutor.readAsync(getName(), codec, SISMEMBER_VALUE, setName, valueState);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public RFuture<Boolean> putAsync(K key, V value) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
-            byte[] valueState = codec.getMapValueEncoder().encode(value);
-
-            String setName = getValuesName(keyHash);
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
-                    "return redis.call('sadd', KEYS[2], ARGV[3]); ",
-                Arrays.<Object>asList(getName(), setName), keyState, keyHash, valueState);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public RFuture<Boolean> removeAsync(Object key, Object value) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
-            byte[] valueState = codec.getMapValueEncoder().encode(value);
-
-            String setName = getValuesName(keyHash);
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "local res = redis.call('srem', KEYS[2], ARGV[2]); "
-                  + "if res == 1 and redis.call('scard', KEYS[2]) == 0 then "
-                      + "redis.call('hdel', KEYS[1], ARGV[1]); "
-                  + "end; "
-                  + "return res; ",
-                Arrays.<Object>asList(getName(), setName), keyState, valueState);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public RFuture<Boolean> putAllAsync(K key, Iterable<? extends V> values) {
-        try {
-            List<Object> params = new ArrayList<Object>();
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            params.add(keyState);
-            String keyHash = hash(keyState);
-            params.add(keyHash);
-            for (Object value : values) {
-                byte[] valueState = codec.getMapValueEncoder().encode(value);
-                params.add(valueState);
-            }
-
-            String setName = getValuesName(keyHash);
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
-                    "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
-                    "return redis.call('sadd', KEYS[2], unpack(ARGV, 3, #ARGV)); ",
-                Arrays.<Object>asList(getName(), setName), params.toArray());
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        String setName = getValuesName(keyHash);
+        return commandExecutor.readAsync(getName(), codec, SCARD_VALUE, setName);
     }
 
     @Override
-    public Set<V> get(K key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
-            String setName = getValuesName(keyHash);
+    public RFuture<Boolean> containsValueAsync(Object value) {
+        byte[] valueState = encodeMapValue(value);
 
-            return new RedissonSet<V>(codec, commandExecutor, setName);
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local keys = redis.call('hgetall', KEYS[1]); " +
+                "for i, v in ipairs(keys) do " +
+                    "if i % 2 == 0 then " +
+                        "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                        "if redis.call('sismember', name, ARGV[1]) == 1 then "
+                            + "return 1; " +
+                        "end;" +
+                    "end;" +
+                "end; " +
+                "return 0; ",
+                Arrays.<Object>asList(getName()), valueState);
+    }
+
+    @Override
+    public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
+        byte[] valueState = encodeMapValue(value);
+
+        String setName = getValuesName(keyHash);
+        return commandExecutor.readAsync(getName(), codec, SISMEMBER_VALUE, setName, valueState);
+    }
+
+    @Override
+    public RFuture<Boolean> putAsync(K key, V value) {
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
+        byte[] valueState = encodeMapValue(value);
+
+        String setName = getValuesName(keyHash);
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                "return redis.call('sadd', KEYS[2], ARGV[3]); ",
+            Arrays.<Object>asList(getName(), setName), keyState, keyHash, valueState);
+    }
+
+    @Override
+    public RFuture<Boolean> removeAsync(Object key, Object value) {
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
+        byte[] valueState = encodeMapValue(value);
+
+        String setName = getValuesName(keyHash);
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local res = redis.call('srem', KEYS[2], ARGV[2]); "
+              + "if res == 1 and redis.call('scard', KEYS[2]) == 0 then "
+                  + "redis.call('hdel', KEYS[1], ARGV[1]); "
+              + "end; "
+              + "return res; ",
+            Arrays.<Object>asList(getName(), setName), keyState, valueState);
+    }
+
+    @Override
+    public RFuture<Boolean> putAllAsync(K key, Iterable<? extends V> values) {
+        List<Object> params = new ArrayList<Object>();
+        byte[] keyState = encodeMapKey(key);
+        params.add(keyState);
+        String keyHash = hash(keyState);
+        params.add(keyHash);
+        for (Object value : values) {
+            byte[] valueState = encodeMapValue(value);
+            params.add(valueState);
         }
+
+        String setName = getValuesName(keyHash);
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
+                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                "return redis.call('sadd', KEYS[2], unpack(ARGV, 3, #ARGV)); ",
+            Arrays.<Object>asList(getName(), setName), params.toArray());
+    }
+
+    @Override
+    public RSet<V> get(K key) {
+        final byte[] keyState = encodeMapKey(key);
+        final String keyHash = hash(keyState);
+        final String setName = getValuesName(keyHash);
+
+        return new RedissonSet<V>(codec, commandExecutor, setName) {
+            
+            @Override
+            public RFuture<Boolean> deleteAsync() {
+                return RedissonSetMultimap.this.fastRemoveAsync(Arrays.<Object>asList(keyState), Arrays.<Object>asList(setName), RedisCommands.EVAL_BOOLEAN_AMOUNT);
+            }
+            
+            @Override
+            public RFuture<Boolean> clearExpireAsync() {
+                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+            }
+            
+            @Override
+            public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+            }
+            
+            @Override
+            public RFuture<Boolean> expireAtAsync(long timestamp) {
+                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+            }
+            
+            @Override
+            public RFuture<Long> remainTimeToLiveAsync() {
+                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+            }
+            
+            @Override
+            public RFuture<Void> renameAsync(String newName) {
+                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+            }
+            
+            @Override
+            public RFuture<Boolean> renamenxAsync(String newName) {
+                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
+            }
+            
+        };
     }
 
     @Override
@@ -191,16 +206,13 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         return (Set<V>) super.getAll(key);
     }
 
+    @Override
     public RFuture<Collection<V>> getAllAsync(K key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
-            String setName = getValuesName(keyHash);
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
+        String setName = getValuesName(keyHash);
 
-            return commandExecutor.readAsync(getName(), codec, RedisCommands.SMEMBERS, setName);
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SMEMBERS, setName);
     }
 
     @Override
@@ -208,21 +220,18 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         return (Set<V>) get(removeAllAsync(key));
     }
 
+    @Override
     public RFuture<Collection<V>> removeAllAsync(Object key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
 
-            String setName = getValuesName(keyHash);
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_SET,
-                    "redis.call('hdel', KEYS[1], ARGV[1]); " +
-                    "local members = redis.call('smembers', KEYS[2]); " +
-                    "redis.call('del', KEYS[2]); " +
-                    "return members; ",
-                Arrays.<Object>asList(getName(), setName), keyState);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        String setName = getValuesName(keyHash);
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_SET,
+                "redis.call('hdel', KEYS[1], ARGV[1]); " +
+                "local members = redis.call('smembers', KEYS[2]); " +
+                "redis.call('del', KEYS[2]); " +
+                "return members; ",
+            Arrays.<Object>asList(getName(), setName), keyState);
     }
 
     @Override
@@ -235,6 +244,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         return (Set<V>) get(replaceValuesAsync(key, values));
     }
 
+    @Override
     Iterator<V> valuesIterator() {
         return new RedissonSetMultimapIterator<K, V, V>(RedissonSetMultimap.this, commandExecutor, codec) {
             @Override
@@ -244,33 +254,31 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         };
     }
 
+    @Override
     RedissonSetMultimapIterator<K, V, Entry<K, V>> entryIterator() {
         return new RedissonSetMultimapIterator<K, V, Map.Entry<K, V>>(RedissonSetMultimap.this, commandExecutor, codec);
     }
 
+    @Override
     public RFuture<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values) {
-        try {
-            List<Object> params = new ArrayList<Object>();
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            params.add(keyState);
-            String keyHash = hash(keyState);
-            params.add(keyHash);
-            for (Object value : values) {
-                byte[] valueState = codec.getMapValueEncoder().encode(value);
-                params.add(valueState);
-            }
-
-            String setName = getValuesName(keyHash);
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_SET,
-                    "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
-                    "local members = redis.call('smembers', KEYS[2]); " +
-                    "redis.call('del', KEYS[2]); " +
-                    "redis.call('sadd', KEYS[2], unpack(ARGV, 3, #ARGV)); " +
-                    "return members; ",
-                Arrays.<Object>asList(getName(), setName), params.toArray());
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
+        List<Object> params = new ArrayList<Object>();
+        byte[] keyState = encodeMapKey(key);
+        params.add(keyState);
+        String keyHash = hash(keyState);
+        params.add(keyHash);
+        for (Object value : values) {
+            byte[] valueState = encodeMapValue(value);
+            params.add(valueState);
         }
+
+        String setName = getValuesName(keyHash);
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_SET,
+                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
+                "local members = redis.call('smembers', KEYS[2]); " +
+                "redis.call('del', KEYS[2]); " +
+                "redis.call('sadd', KEYS[2], unpack(ARGV, 3, #ARGV)); " +
+                "return members; ",
+            Arrays.<Object>asList(getName(), setName), params.toArray());
     }
 
 }
