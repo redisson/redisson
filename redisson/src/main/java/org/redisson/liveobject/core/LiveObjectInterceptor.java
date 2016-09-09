@@ -29,7 +29,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
-import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 /**

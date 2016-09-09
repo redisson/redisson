@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
-import org.redisson.liveobject.provider.CodecProvider;
+import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
@@ -666,15 +666,6 @@ public interface RedissonClient {
     RLiveObjectService getLiveObjectService();
     
     /**
-     * Returns RedissonAttachedLiveObjectService which can be used to 
-     * retrieve live REntity(s)
-     * 
-     * @param codecProvider the CodecProvider to be used to create the service
-     * @return 
-     */
-    RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider);
-    
-    /**
      * Shutdown Redisson instance but <b>NOT</b> Redis server
      * 
      * This equates to invoke shutdown(2, 15, TimeUnit.SECONDS);
@@ -704,6 +695,21 @@ public interface RedissonClient {
      */
     Config getConfig();
 
+    /**
+     * Returns the CodecProvider instance
+     * 
+     * @return CodecProvider
+     */
+    public CodecProvider getCodecProvider();
+    
+    /**
+     * Returns the ResolverProvider instance
+     * 
+     * @return resolverProvider
+     */
+    public ResolverProvider getResolverProvider();
+
+    
     /**
      * Get Redis nodes group for server operations
      *

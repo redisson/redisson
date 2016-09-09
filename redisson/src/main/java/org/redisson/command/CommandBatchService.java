@@ -50,8 +50,9 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.RedissonReference;
+import org.redisson.misc.RedissonObjectFactory;
 
 public class CommandBatchService extends CommandReactiveService {
 
@@ -109,7 +110,14 @@ public class CommandBatchService extends CommandReactiveService {
         if (!readOnlyMode) {
             entry.setReadOnlyMode(false);
         }
-        
+        if (isRedissonReferenceSupportEnabled()) {
+            for (int i = 0; i < params.length; i++) {
+                RedissonReference reference = redisson != null
+                        ? RedissonObjectFactory.toReference(redisson, params[i])
+                        : RedissonObjectFactory.toReference(redissonReactive, params[i]);
+                params[i] = reference == null ? params[i] : reference;
+            }
+        }
         BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codec, command, params, index.incrementAndGet());
         entry.getCommands().add(commandData);
     }
@@ -171,7 +179,14 @@ public class CommandBatchService extends CommandReactiveService {
                 Collections.sort(entries);
                 List<Object> result = new ArrayList<Object>(entries.size());
                 for (BatchCommandData<?, ?> commandEntry : entries) {
-                    result.add(commandEntry.getPromise().getNow());
+                    Object entryResult = commandEntry.getPromise().getNow();
+                    if (isRedissonReferenceSupportEnabled() && entryResult instanceof RedissonReference) {
+                        result.add(redisson != null
+                                ? RedissonObjectFactory.<Object>fromReference(redisson, (RedissonReference) entryResult)
+                                : RedissonObjectFactory.<Object>fromReference(redissonReactive, (RedissonReference) entryResult));
+                    } else {
+                        result.add(entryResult);
+                    }
                 }
                 promise.setSuccess(result);
                 commands = null;

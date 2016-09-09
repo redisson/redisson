@@ -28,6 +28,9 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
+
 /**
  *
  * @author Nikita Koksharov
@@ -37,6 +40,12 @@ public interface CommandAsyncExecutor {
 
     ConnectionManager getConnectionManager();
 
+    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson);
+    
+    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive);
+    
+    boolean isRedissonReferenceSupportEnabled();
+    
     <V> RedisException convertException(RFuture<V> RFuture);
 
     boolean await(RFuture<?> RFuture, long timeout, TimeUnit timeoutUnit) throws InterruptedException;

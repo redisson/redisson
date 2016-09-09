@@ -45,6 +45,7 @@ import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.codec.CodecProvider;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
@@ -82,7 +83,8 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final CommandReactiveService commandExecutor;
     protected final ConnectionManager connectionManager;
     protected final Config config;
-
+    protected final CodecProvider codecProvider;
+    
     protected RedissonReactive(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
@@ -90,6 +92,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
+        codecProvider = config.getCodecProvider();
     }
 
 
@@ -259,7 +262,11 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch() {
-        return new RedissonBatchReactive(evictionScheduler, connectionManager);
+        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager);
+        if (config.isRedissonReferenceEnabled()) {
+            batch.enableRedissonReferenceSupport(this);
+        }
+        return batch;
     }
 
     @Override
@@ -272,6 +279,11 @@ public class RedissonReactive implements RedissonReactiveClient {
         return config;
     }
 
+    @Override
+    public CodecProvider getCodecProvider() {
+        return codecProvider;
+    }
+    
     @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);
@@ -300,5 +312,8 @@ public class RedissonReactive implements RedissonReactiveClient {
         return connectionManager.isShuttingDown();
     }
 
+    protected void enableRedissonReferenceSupport() {
+        this.commandExecutor.enableRedissonReferenceSupport(this);
+    }
 }
 

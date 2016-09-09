@@ -18,7 +18,6 @@ package org.redisson.liveobject.core;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.AbstractMap;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -33,7 +32,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
-import org.redisson.RedissonBitSet;
 import org.redisson.RedissonBlockingDeque;
 import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonDeque;
@@ -45,7 +43,6 @@ import org.redisson.RedissonSet;
 import org.redisson.RedissonSortedSet;
 import org.redisson.api.RLiveObject;
 import org.redisson.client.codec.Codec;
-import org.redisson.api.RBitSet;
 import org.redisson.api.RMap;
 import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
@@ -54,9 +51,8 @@ import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RObjectField;
 import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.liveobject.misc.RedissonObjectFactory;
-import org.redisson.liveobject.provider.CodecProvider;
-import org.redisson.liveobject.provider.ResolverProvider;
+import org.redisson.misc.RedissonObjectFactory;
+import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 import io.netty.util.internal.PlatformDependent;
@@ -78,14 +74,12 @@ public class AccessorInterceptor {
 
     private final RedissonClient redisson;
     private final CodecProvider codecProvider;
-    private final ResolverProvider resolverProvider;
     private final ConcurrentMap<String, NamingScheme> namingSchemeCache = PlatformDependent.newConcurrentHashMap();
     private static final LinkedHashMap<Class, Class<? extends RObject>> supportedClassMapping;
 
-    public AccessorInterceptor(RedissonClient redisson, CodecProvider codecProvider, ResolverProvider resolverProvider) {
+    public AccessorInterceptor(RedissonClient redisson) {
         this.redisson = redisson;
-        this.codecProvider = codecProvider;
-        this.resolverProvider = resolverProvider;
+        this.codecProvider = redisson.getCodecProvider();
     }
 
     static {
@@ -99,7 +93,6 @@ public class AccessorInterceptor {
         supportedClassMapping.put(BlockingQueue.class,  RedissonBlockingQueue.class);
         supportedClassMapping.put(Queue.class,          RedissonQueue.class);
         supportedClassMapping.put(List.class,           RedissonList.class);
-        supportedClassMapping.put(BitSet.class,         RedissonBitSet.class);
     }
     
     @RuntimeType
@@ -116,14 +109,13 @@ public class AccessorInterceptor {
         String fieldName = getFieldName(method);
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
-            if (result instanceof RedissonReference) {
-                return RedissonObjectFactory.create(redisson, codecProvider, resolverProvider, (RedissonReference) result, method.getReturnType());
-            }
-            return result;
+            return result instanceof RedissonReference
+                    ? RedissonObjectFactory.fromReference(redisson, (RedissonReference) result, method.getReturnType())
+                    : result;
         }
         if (isSetter(method, fieldName)) {
             Class idFieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
-            if (args[0].getClass().getSuperclass().isAnnotationPresent(REntity.class)) {
+            if (args[0] instanceof RLiveObject) {
                 Class<? extends Object> rEntity = args[0].getClass().getSuperclass();
                 REntity anno = rEntity.getAnnotation(REntity.class);
                 NamingScheme ns = anno.namingScheme()
@@ -136,7 +128,7 @@ public class AccessorInterceptor {
             }
             Object arg = args[0];
             if (!(arg instanceof RObject)
-                    && (arg instanceof BitSet || arg instanceof Collection || arg instanceof Map)
+                    && (arg instanceof Collection || arg instanceof Map)
                     && TransformationMode.ANNOTATION_BASED
                             .equals(me.getClass().getSuperclass()
                             .getAnnotation(REntity.class).fieldTransformation())) {
@@ -144,7 +136,7 @@ public class AccessorInterceptor {
                 if (mappedClass != null) {
                     Entry<NamingScheme, Codec> entry = getFieldNamingSchemeAndCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
                     RObject obj = RedissonObjectFactory
-                            .create(redisson,
+                            .createRObject(redisson,
                                     mappedClass,
                                     entry.getKey().getFieldReferenceName(me.getClass().getSuperclass(),
                                             idFieldType,
@@ -154,9 +146,7 @@ public class AccessorInterceptor {
                                             fieldName,
                                             arg),
                                     entry.getValue());
-                    if (obj instanceof RBitSet) {
-                        ((RBitSet) obj).set((BitSet) args[0]);
-                    } else if (obj instanceof Collection) {
+                    if (obj instanceof Collection) {
                         ((Collection) obj).addAll((Collection) arg);
                     } else {
                         ((Map) obj).putAll((Map) arg);

@@ -61,6 +61,11 @@ abstract class RedissonObjectReactive implements RObjectReactive {
     }
 
     @Override
+    public Codec getCodec() {
+        return codec;
+    }
+    
+    @Override
     public Publisher<Void> rename(String newName) {
         return commandExecutor.writeReactive(getName(), RedisCommands.RENAME, getName(), newName);
     }

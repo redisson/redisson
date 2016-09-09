@@ -26,7 +26,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.redisson.api.RBitSet;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDeque;
@@ -731,11 +730,6 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertFalse(HashSet.class.isAssignableFrom(ts.getContent().getClass()));
         assertTrue(RSet.class.isAssignableFrom(ts.getContent().getClass()));
 
-        BitSet bs = new BitSet();
-        ts.setContent(bs);
-        assertFalse(BitSet.class.isAssignableFrom(ts.getContent().getClass()));
-        assertTrue(RBitSet.class.isAssignableFrom(ts.getContent().getClass()));
-
         TreeSet<String> ss = new TreeSet();
         ts.setContent(ss);
         assertFalse(TreeSet.class.isAssignableFrom(ts.getContent().getClass()));
@@ -853,11 +847,6 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         ts.setContent(s);
         assertTrue(HashSet.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RSet.class.isAssignableFrom(ts.getContent().getClass()));
-
-        BitSet bs = new BitSet();
-        ts.setContent(bs);
-        assertTrue(BitSet.class.isAssignableFrom(ts.getContent().getClass()));
-        assertFalse(RBitSet.class.isAssignableFrom(ts.getContent().getClass()));
 
         TreeSet<String> ss = new TreeSet();
         ts.setContent(ss);

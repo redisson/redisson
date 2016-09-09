@@ -59,6 +59,14 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
+import org.redisson.Redisson;
+import org.redisson.RedissonReactive;
+import org.redisson.RedissonReference;
+import org.redisson.api.RObject;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
+import org.redisson.misc.RedissonObjectFactory;
 
 /**
  *
@@ -70,6 +78,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
+    protected RedissonClient redisson;
+    protected RedissonReactiveClient redissonReactive;
 
     public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
@@ -80,6 +90,29 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return connectionManager;
     }
 
+    @Override
+    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson) {
+        if (redisson != null) {
+            this.redisson = redisson;
+            this.redissonReactive = null;
+        }
+        return this;
+    }
+
+    @Override
+    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
+        if (redissonReactive != null) {
+            this.redissonReactive = redissonReactive;
+            this.redisson = null;
+        }
+        return this;
+    }
+    
+    @Override
+    public boolean isRedissonReferenceSupportEnabled() {
+        return redisson != null || redissonReactive != null;
+    }
+    
     @Override
     public <V> V get(RFuture<V> future) {
         final CountDownLatch l = new CountDownLatch(1);
@@ -436,6 +469,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         final AsyncDetails<V, R> details = AsyncDetails.acquire();
+        if (isRedissonReferenceSupportEnabled()) {
+            for (int i = 0; i < params.length; i++) {
+                RedissonReference reference = redisson != null
+                        ? RedissonObjectFactory.toReference(redisson, params[i])
+                        : RedissonObjectFactory.toReference(redissonReactive, params[i]);
+                params[i] = reference == null ? params[i] : reference;
+            }
+        }
         details.init(connectionFuture, attemptPromise,
                 readOnlyMode, source, codec, command, params, mainPromise, attempt);
 
@@ -710,7 +751,31 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
                 ((RedisClientResult)res).setRedisClient(addr);
             }
-            details.getMainPromise().trySuccess(res);
+            
+            if (isRedissonReferenceSupportEnabled() && res instanceof List) {
+                List r = (List) res;
+                for (int i = 0; i < r.size(); i++) {
+                    if (r.get(i) instanceof RedissonReference) {
+                        try {
+                            r.set(i ,(redisson != null
+                                    ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) r.get(i))
+                                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) r.get(i))));
+                        } catch (Exception exception) {//skip and carry on to next one.
+                        }
+                    }
+                }
+                details.getMainPromise().trySuccess(res);
+            } else if (isRedissonReferenceSupportEnabled() && res instanceof RedissonReference) {
+                try {
+                    details.getMainPromise().trySuccess(redisson != null
+                            ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) res)
+                            : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) res));
+                } catch (Exception exception) {
+                    details.getMainPromise().trySuccess(res);//fallback
+                }
+            } else {
+                details.getMainPromise().trySuccess(res);
+            }
         } else {
             details.getMainPromise().tryFailure(future.cause());
         }

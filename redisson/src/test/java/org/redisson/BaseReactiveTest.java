@@ -58,23 +58,23 @@ public abstract class BaseReactiveTest {
         }
     }
 
-    public <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
+    public static <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
         return Streams.create(list.iterator()).toList().poll();
     }
 
-    public <V> Iterable<V> sync(RCollectionReactive<V> list) {
+    public static <V> Iterable<V> sync(RCollectionReactive<V> list) {
         return Streams.create(list.iterator()).toList().poll();
     }
 
-    public <V> Iterator<V> toIterator(Publisher<V> pub) {
+    public static <V> Iterator<V> toIterator(Publisher<V> pub) {
         return Streams.create(pub).toList().poll().iterator();
     }
 
-    public <V> Iterable<V> toIterable(Publisher<V> pub) {
+    public static <V> Iterable<V> toIterable(Publisher<V> pub) {
         return Streams.create(pub).toList().poll();
     }
 
-    public <V> V sync(Publisher<V> ob) {
+    public static <V> V sync(Publisher<V> ob) {
         Promise<V> promise;
         if (Promise.class.isAssignableFrom(ob.getClass())) {
             promise = (Promise<V>) ob;

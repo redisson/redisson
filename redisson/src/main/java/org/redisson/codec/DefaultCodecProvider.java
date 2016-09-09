@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.provider;
+package org.redisson.codec;
 
 import io.netty.util.internal.PlatformDependent;
 import java.util.concurrent.ConcurrentMap;

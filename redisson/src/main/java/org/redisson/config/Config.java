@@ -25,6 +25,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
 
 import io.netty.channel.EventLoopGroup;
+import org.redisson.codec.CodecProvider;
+import org.redisson.codec.DefaultCodecProvider;
+import org.redisson.liveobject.provider.DefaultResolverProvider;
+import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
  * Redisson configuration
@@ -53,7 +57,23 @@ public class Config {
      * Redis key/value codec. JsonJacksonCodec used by default
      */
     private Codec codec;
-
+    
+    /**
+     * For codec registry and look up. DefaultCodecProvider used by default
+     */
+    private CodecProvider codecProvider = new DefaultCodecProvider();
+    
+    /**
+     * For resolver registry and look up. DefaultResolverProvider used by default
+     */
+    private ResolverProvider resolverProvider = new DefaultResolverProvider();
+    
+    /**
+     * Config option for enabling Redisson Reference feature.
+     * Default value is TRUE
+     */
+    private boolean redissonReferenceEnabled = true;
+    
     private boolean useLinuxNativeEpoll;
 
     private EventLoopGroup eventLoopGroup;
@@ -72,6 +92,9 @@ public class Config {
 
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
+        setCodecProvider(oldConf.getCodecProvider());
+        setResolverProvider(oldConf.getResolverProvider());
+        setRedissonReferenceEnabled(oldConf.redissonReferenceEnabled);
         setEventLoopGroup(oldConf.getEventLoopGroup());
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -104,7 +127,67 @@ public class Config {
     public Codec getCodec() {
         return codec;
     }
+    
+    /**
+     * For codec registry and look up. DefaultCodecProvider used by default.
+     * 
+     * @param codecProvider 
+     * @return this
+     * @see org.redisson.codec.CodecProvider
+     */
+    public Config setCodecProvider(CodecProvider codecProvider) {
+        this.codecProvider = codecProvider;
+        return this;
+    }
 
+    /**
+     * Returns the CodecProvider instance
+     * 
+     * @return CodecProvider
+     */
+    public CodecProvider getCodecProvider() {
+        return codecProvider;
+    }
+    
+    /**
+     * For resolver registry and look up. DefaultResolverProvider used by default.
+     * 
+     * @param resolverProvider
+     * @return this
+     */
+    public Config setResolverProvider(ResolverProvider resolverProvider) {
+        this.resolverProvider = resolverProvider;
+        return this;
+    }
+
+    /**
+     * Returns the ResolverProvider instance
+     * 
+     * @return resolverProvider
+     */
+    public ResolverProvider getResolverProvider() {
+        return resolverProvider;
+    }
+
+    /**
+     * Config option indicate whether Redisson Reference feature is enabled.
+     * Default value is TRUE
+     * 
+     * @return boolean
+     */
+    public boolean isRedissonReferenceEnabled() {
+        return redissonReferenceEnabled;
+    }
+
+    /**
+     * Config option for enabling Redisson Reference feature
+     * Default value is TRUE
+     * @param redissonReferenceEnabled
+     */
+    public void setRedissonReferenceEnabled(boolean redissonReferenceEnabled) {
+        this.redissonReferenceEnabled = redissonReferenceEnabled;
+    }
+    
     /**
      * Init cluster servers configuration
      *
