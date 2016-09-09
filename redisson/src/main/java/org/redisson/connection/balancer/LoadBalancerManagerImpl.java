@@ -65,7 +65,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
                 }
                 if (counter.decrementAndGet() == 0) {
                     addr2Entry.put(entry.getClient().getAddr(), entry);
-                    result.setSuccess(null);
+                    result.trySuccess(null);
                 }
             }
         };

@@ -480,7 +480,7 @@ public abstract class BaseRemoteService {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
                 if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
+                    promise.tryFailure(future.cause());
                     return;
                 }
 
@@ -490,15 +490,15 @@ public abstract class BaseRemoteService {
                         @Override
                         public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
                             if (!future.isSuccess()) {
-                                promise.setFailure(future.cause());
+                                promise.tryFailure(future.cause());
                                 return;
                             }
 
-                            promise.setSuccess(future.getNow());
+                            promise.trySuccess(future.getNow());
                         }
                     });
                 } else {
-                    promise.setSuccess(null);
+                    promise.trySuccess(null);
                 }
             }
         });

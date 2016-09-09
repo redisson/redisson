@@ -75,7 +75,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         final int minimumIdleSize = getMinimumIdleSize(entry);
 
         if (minimumIdleSize == 0 || (checkFreezed && entry.isFreezed())) {
-            initPromise.setSuccess(null);
+            initPromise.trySuccess(null);
             return;
         }
 
@@ -120,7 +120,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 int value = initializedConnections.decrementAndGet();
                 if (value == 0) {
                     log.info("{} connections initialized for {}", minimumIdleSize, entry.getClient().getAddr());
-                    initPromise.setSuccess(null);
+                    if (!initPromise.trySuccess(null)) {
+                        throw new IllegalStateException();
+                    }
                 } else if (value > 0 && !initPromise.isDone()) {
                     if (requests.incrementAndGet() <= minimumIdleSize) {
                         createConnection(checkFreezed, requests, entry, initPromise, minimumIdleSize, initializedConnections);

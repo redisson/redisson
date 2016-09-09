@@ -26,6 +26,12 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V>
+ */
 public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
     protected RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {

@@ -8,15 +8,22 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+
+import io.netty.channel.nio.NioEventLoopGroup;
 
 public abstract class BaseConcurrentTest extends BaseTest {
 
     protected void testMultiInstanceConcurrency(int iterations, final RedissonRunnable runnable) throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
 
+        NioEventLoopGroup group = new NioEventLoopGroup();
         final Map<Integer, RedissonClient> instances = new HashMap<Integer, RedissonClient>();
         for (int i = 0; i < iterations; i++) {
-            instances.put(i, BaseTest.createInstance());
+            Config config = createConfig();
+            config.setEventLoopGroup(group);
+            RedissonClient instance = Redisson.create(config);
+            instances.put(i, instance);
         }
 
         long watch = System.currentTimeMillis();
@@ -47,6 +54,7 @@ public abstract class BaseConcurrentTest extends BaseTest {
             });
         }
 
+        group.shutdownGracefully();
         executor.shutdown();
         Assert.assertTrue(executor.awaitTermination(5, TimeUnit.MINUTES));
     }

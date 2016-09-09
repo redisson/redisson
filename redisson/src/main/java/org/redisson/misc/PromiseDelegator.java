@@ -35,11 +35,6 @@ public class PromiseDelegator<T> implements RPromise<T> {
     }
 
     @Override
-    public RPromise<T> setSuccess(T result) {
-        return promise.setSuccess(result);
-    }
-
-    @Override
     public boolean isSuccess() {
         return promise.isSuccess();
     }
@@ -52,11 +47,6 @@ public class PromiseDelegator<T> implements RPromise<T> {
     @Override
     public Throwable cause() {
         return promise.cause();
-    }
-
-    @Override
-    public RPromise<T> setFailure(Throwable cause) {
-        return promise.setFailure(cause);
     }
 
     @Override

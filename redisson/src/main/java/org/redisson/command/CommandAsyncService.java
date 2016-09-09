@@ -199,7 +199,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 
                 if (counter.decrementAndGet() == 0
                         && !mainPromise.isDone()) {
-                    mainPromise.setSuccess(results);
+                    mainPromise.trySuccess(results);
                 }
             }
         };
@@ -231,15 +231,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (future.isSuccess()) {
                     if (future.getNow() == null) {
                         if (nodes.isEmpty()) {
-                            mainPromise.setSuccess(null);
+                            mainPromise.trySuccess(null);
                         } else {
                             retryReadRandomAsync(command, mainPromise, nodes, params);
                         }
                     } else {
-                        mainPromise.setSuccess(future.getNow());
+                        mainPromise.trySuccess(future.getNow());
                     }
                 } else {
-                    mainPromise.setFailure(future.cause());
+                    mainPromise.tryFailure(future.cause());
                 }
             }
         });
@@ -280,9 +280,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
                 if (counter.decrementAndGet() == 0) {
                     if (callback != null) {
-                        mainPromise.setSuccess(callback.onFinish());
+                        mainPromise.trySuccess(callback.onFinish());
                     } else {
-                        mainPromise.setSuccess(null);
+                        mainPromise.trySuccess(null);
                     }
                 }
             }
@@ -406,7 +406,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 callback.onSlotResult(future.getNow());
                 if (counter.decrementAndGet() == 0
                       && !mainPromise.isDone()) {
-                    mainPromise.setSuccess(callback.onFinish());
+                    mainPromise.trySuccess(callback.onFinish());
                 }
             }
         };
@@ -455,7 +455,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         if (!connectionManager.getShutdownLatch().acquire()) {
-            mainPromise.setFailure(new RedissonShutdownException("Redisson is shutdown"));
+            mainPromise.tryFailure(new RedissonShutdownException("Redisson is shutdown"));
             return;
         }
 

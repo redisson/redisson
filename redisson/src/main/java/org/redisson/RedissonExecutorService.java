@@ -462,10 +462,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<Object> future) throws Exception {
                 if (!future.isSuccess()) {
-                    resultFuture.setFailure(future.cause());
+                    resultFuture.tryFailure(future.cause());
                     return;
                 }
-                resultFuture.setSuccess(result);
+                resultFuture.trySuccess(result);
             }
         });
         return resultFuture;

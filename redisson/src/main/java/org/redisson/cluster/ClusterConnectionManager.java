@@ -154,7 +154,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -165,17 +165,17 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     @Override
                     public void operationComplete(Future<RedisConnection> future) throws Exception {
                         if (!future.isSuccess()) {
-                            result.setFailure(future.cause());
+                            result.tryFailure(future.cause());
                             return;
                         }
 
                         RedisConnection connection = future.getNow();
                         if (connection.isActive()) {
                             nodeConnections.put(addr, connection);
-                            result.setSuccess(connection);
+                            result.trySuccess(connection);
                         } else {
                             connection.closeAsync();
-                            result.setFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
+                            result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
                         }
                     }
                 });
@@ -209,7 +209,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             public void operationComplete(Future<RedisConnection> future) throws Exception {
                 if (!future.isSuccess()) {
                     log.error("Can't connect to master: {} with slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -221,7 +221,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     public void operationComplete(Future<Map<String, String>> future) throws Exception {
                         if (!future.isSuccess()) {
                             log.error("Can't execute CLUSTER_INFO for " + connection.getRedisClient().getAddr(), future.cause());
-                            result.setFailure(future.cause());
+                            result.tryFailure(future.cause());
                             return;
                         }
 
@@ -231,7 +231,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                     partition.getMasterAddress() + " for slot ranges: " +
                                     partition.getSlotRanges() + ". Reason - cluster_state:fail");
                             log.error("cluster_state:fail for " + connection.getRedisClient().getAddr());
-                            result.setFailure(e);
+                            result.tryFailure(e);
                             return;
                         }
 
@@ -265,7 +265,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             public void operationComplete(Future<Void> future) throws Exception {
                                 if (!future.isSuccess()) {
                                     log.error("Can't add master: {} for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
-                                    initFuture.setFailure(future.cause());
+                                    initFuture.tryFailure(future.cause());
                                     return;
                                 }
                                 for (Integer slot : partition.getSlots()) {
@@ -274,10 +274,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 }
 
                                 log.info("master: {} added for slot ranges: {}", partition.getMasterAddress(), partition.getSlotRanges());
-                                initFuture.setSuccess(null);
+                                if (!initFuture.trySuccess(null)) {
+                                    throw new IllegalStateException();
+                                }
                             }
                         });
-                        result.setSuccess(futures);
+                        if (!result.trySuccess(futures)) {
+                            throw new IllegalStateException();
+                        }
                     }
                 });
 
@@ -528,7 +532,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 @Override
                                 public void operationComplete(Future<Void> future) throws Exception {
                                     if (nodes.decrementAndGet() == 0) {
-                                        result.setSuccess(null);
+                                        result.trySuccess(null);
                                     }
                                 }
                             });

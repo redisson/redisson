@@ -70,7 +70,7 @@ public class ExecutorRemoteService extends BaseRemoteService {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
                 if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
+                    promise.tryFailure(future.cause());
                     return;
                 }
 
@@ -79,7 +79,7 @@ public class ExecutorRemoteService extends BaseRemoteService {
                     return;
                 }
                 
-                promise.setSuccess(true);
+                promise.trySuccess(true);
             }
         });
         
