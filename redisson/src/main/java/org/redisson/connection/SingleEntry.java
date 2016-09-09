@@ -62,7 +62,7 @@ public class SingleEntry extends MasterSlaveEntry {
                     return;
                 }
                 if (counter.decrementAndGet() == 0) {
-                    res.setSuccess(null);
+                    res.trySuccess(null);
                 }
             }
         };

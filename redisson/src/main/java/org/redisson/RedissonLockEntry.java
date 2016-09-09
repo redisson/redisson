@@ -20,8 +20,6 @@ import java.util.concurrent.Semaphore;
 
 import org.redisson.misc.RPromise;
 
-import io.netty.util.concurrent.Promise;
-
 public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
 
     private int counter;

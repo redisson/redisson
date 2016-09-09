@@ -308,12 +308,12 @@ public class RedissonKeys implements RKeys {
             if (failed.get() != null) {
                 if (count.get() > 0) {
                     RedisException ex = new RedisException("" + count.get() + " keys has been deleted. But one or more nodes has an error", failed.get());
-                    result.setFailure(ex);
+                    result.tryFailure(ex);
                 } else {
-                    result.setFailure(failed.get());
+                    result.tryFailure(failed.get());
                 }
             } else {
-                result.setSuccess(count.get());
+                result.trySuccess(count.get());
             }
         }
     }

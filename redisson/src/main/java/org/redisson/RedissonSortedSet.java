@@ -277,9 +277,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             public void run() {
                 try {
                     boolean res = add(value);
-                    promise.setSuccess(res);
+                    promise.trySuccess(res);
                 } catch (Exception e) {
-                    promise.setFailure(e);
+                    promise.tryFailure(e);
                 }
             }
         });
@@ -296,9 +296,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             public void run() {
                 try {
                     boolean result = remove(value);
-                    promise.setSuccess(result);
+                    promise.trySuccess(result);
                 } catch (Exception e) {
-                    promise.setFailure(e);
+                    promise.tryFailure(e);
                 }
             }
         });

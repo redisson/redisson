@@ -54,7 +54,7 @@ public class FutureConnectionListener<T extends RedisConnection> implements Futu
 
     public void executeCommands() {
         if (commands.isEmpty()) {
-            connectionPromise.setSuccess(connection);
+            connectionPromise.trySuccess(connection);
             return;
         }
 

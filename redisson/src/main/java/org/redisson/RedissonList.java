@@ -116,7 +116,11 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RPUSH_BOOLEAN, getName(), e);
+        return addAsync(e, RPUSH_BOOLEAN);
+    }
+    
+    protected <T> RFuture<T> addAsync(V e, RedisCommand<T> command) {
+        return commandExecutor.writeAsync(getName(), codec, command, getName(), e);
     }
 
     @Override

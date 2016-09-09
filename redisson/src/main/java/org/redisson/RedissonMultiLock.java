@@ -121,7 +121,9 @@ public class RedissonMultiLock implements Lock {
 
                 if (tryLockRequestsAmount.decrementAndGet() == 0) {
                     if (isAllLocksAcquired(lockedLockHolder, failed, lockedLocks)) {
-                        promise.setSuccess(null);
+                        if (!promise.trySuccess(null)) {
+                            unlockInner(lockedLocks);
+                        }
                         return;
                     }
 
@@ -148,14 +150,14 @@ public class RedissonMultiLock implements Lock {
                     final TimeUnit unit, final long currentThreadId, final Map<Future<Boolean>, RLock> tryLockFutures) throws InterruptedException {
                 lockedLocks.clear();
                 if (failed.get() != null) {
-                    promise.setFailure(failed.get());
+                    promise.tryFailure(failed.get());
                 } else if (lockedLockHolder.get() != null) {
                     final RedissonLock lockedLock = (RedissonLock) lockedLockHolder.get();
                     lockedLock.lockAsync(leaseTime, unit, currentThreadId).addListener(new FutureListener<Void>() {
                         @Override
                         public void operationComplete(Future<Void> future) throws Exception {
                             if (!future.isSuccess()) {
-                                promise.setFailure(future.cause());
+                                promise.tryFailure(future.cause());
                                 return;
                             }
                             

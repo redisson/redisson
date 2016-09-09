@@ -79,11 +79,11 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
                 if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
+                    promise.tryFailure(future.cause());
                     return;
                 }
 
-                promise.setSuccess(pubSubListener.hashCode());
+                promise.trySuccess(pubSubListener.hashCode());
             }
         });
     }

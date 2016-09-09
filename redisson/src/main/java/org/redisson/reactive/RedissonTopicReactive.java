@@ -87,11 +87,11 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
                 if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
+                    promise.tryFailure(future.cause());
                     return;
                 }
 
-                promise.setSuccess(System.identityHashCode(pubSubListener));
+                promise.trySuccess(System.identityHashCode(pubSubListener));
             }
         });
         return new NettyFuturePublisher<Integer>(promise);

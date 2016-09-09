@@ -167,7 +167,7 @@ public class CommandBatchService extends CommandReactiveService {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
+                    promise.tryFailure(future.cause());
                     commands = null;
                     return;
                 }
@@ -188,7 +188,7 @@ public class CommandBatchService extends CommandReactiveService {
                         result.add(entryResult);
                     }
                 }
-                promise.setSuccess(result);
+                promise.trySuccess(result);
                 commands = null;
             }
         });
@@ -206,7 +206,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
 
         if (!connectionManager.getShutdownLatch().acquire()) {
-            mainPromise.setFailure(new IllegalStateException("Redisson is shutdown"));
+            mainPromise.tryFailure(new IllegalStateException("Redisson is shutdown"));
             return;
         }
 
@@ -302,10 +302,10 @@ public class CommandBatchService extends CommandReactiveService {
 
                 if (future.isSuccess()) {
                     if (slots.decrementAndGet() == 0) {
-                        mainPromise.setSuccess(future.getNow());
+                        mainPromise.trySuccess(future.getNow());
                     }
                 } else {
-                    mainPromise.setFailure(future.cause());
+                    mainPromise.tryFailure(future.cause());
                 }
             }
         });

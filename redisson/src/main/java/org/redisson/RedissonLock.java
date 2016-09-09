@@ -54,7 +54,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class RedissonLock extends RedissonExpirable implements RLock {
 
-    private final Logger log = LoggerFactory.getLogger(RedissonLock.class);
+    private static final Logger log = LoggerFactory.getLogger(RedissonLock.class);
     
     public static final long LOCK_EXPIRATION_INTERVAL_SECONDS = 30;
     private static final ConcurrentMap<String, Timeout> expirationRenewalMap = PlatformDependent.newConcurrentHashMap();
@@ -444,7 +444,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -452,13 +452,13 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 if (opStatus == null) {
                     IllegalMonitorStateException cause = new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
                             + id + " thread-id: " + threadId);
-                    result.setFailure(cause);
+                    result.tryFailure(cause);
                     return;
                 }
                 if (opStatus) {
                     cancelExpirationRenewal();
                 }
-                result.setSuccess(null);
+                result.trySuccess(null);
             }
         });
 
@@ -481,7 +481,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -489,7 +489,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
                 // lock acquired
                 if (ttl == null) {
-                    result.setSuccess(null);
+                    if (!result.trySuccess(null)) {
+                        unlockAsync(currentThreadId);
+                    }
                     return;
                 }
 
@@ -498,7 +500,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     @Override
                     public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
                         if (!future.isSuccess()) {
-                            result.setFailure(future.cause());
+                            result.tryFailure(future.cause());
                             return;
                         }
 
@@ -520,7 +522,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             public void operationComplete(Future<Long> future) throws Exception {
                 if (!future.isSuccess()) {
                     unsubscribe(subscribeFuture, currentThreadId);
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -528,7 +530,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 // lock acquired
                 if (ttl == null) {
                     unsubscribe(subscribeFuture, currentThreadId);
-                    result.setSuccess(null);
+                    if (!result.trySuccess(null)) {
+                        unlockAsync(currentThreadId);
+                    }
                     return;
                 }
 
@@ -600,7 +604,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -608,7 +612,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
                 // lock acquired
                 if (ttl == null) {
-                    result.setSuccess(true);
+                    if (!result.trySuccess(true)) {
+                        unlockAsync(currentThreadId);
+                    }
                     return;
                 }
 

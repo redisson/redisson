@@ -130,7 +130,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             @Override
             public void operationComplete(Future<String> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -147,7 +147,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     @Override
                     public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
                         if (!future.isSuccess()) {
-                            result.setFailure(future.cause());
+                            result.tryFailure(future.cause());
                             return;
                         }
 
@@ -286,7 +286,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             public void operationComplete(Future<String> future) throws Exception {
                 if (!future.isSuccess()) {
                     unsubscribe(subscribeFuture);
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -492,7 +492,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             @Override
             public void operationComplete(Future<String> future) throws Exception {
                 if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
+                    result.tryFailure(future.cause());
                     return;
                 }
 
@@ -511,7 +511,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     @Override
                     public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
                         if (!future.isSuccess()) {
-                            result.setFailure(future.cause());
+                            result.tryFailure(future.cause());
                             return;
                         }
                         

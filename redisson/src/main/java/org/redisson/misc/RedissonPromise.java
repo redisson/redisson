@@ -40,25 +40,19 @@ public class RedissonPromise<T> implements RPromise<T> {
     
     public static <V> RFuture<V> newFailedFuture(Throwable cause) {
         RedissonPromise<V> future = new RedissonPromise<V>();
-        future.setFailure(cause);
+        future.tryFailure(cause);
         return future;
     }
     
     public static <V> RFuture<V> newSucceededFuture(V result) {
         RedissonPromise<V> future = new RedissonPromise<V>();
-        future.setSuccess(result);
+        future.trySuccess(result);
         return future;
     }
 
     
     public Promise<T> getInnerPromise() {
         return promise;
-    }
-
-    @Override
-    public RPromise<T> setSuccess(T result) {
-        promise.setSuccess(result);
-        return this;
     }
 
     @Override
@@ -74,12 +68,6 @@ public class RedissonPromise<T> implements RPromise<T> {
     @Override
     public Throwable cause() {
         return promise.cause();
-    }
-
-    @Override
-    public RPromise<T> setFailure(Throwable cause) {
-        promise.setFailure(cause);
-        return this;
     }
 
     @Override
