@@ -294,6 +294,15 @@ public interface RedissonClient {
      * @return
      */
     RSemaphore getSemaphore(String name);
+    
+    /**
+     * Returns semaphore instance by name.
+     * Supports lease time parameter for each acquired permit.
+     * 
+     * @param name
+     * @return
+     */
+    RPermitExpirableSemaphore getPermitExpirableSemaphore(String name);
 
     /**
      * Returns lock instance by name.
