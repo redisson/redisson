@@ -38,18 +38,18 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Value in milliseconds.
      *
      */
-    private int connectTimeout = 1000;
+    private int connectTimeout = 10000;
 
     /**
      * Redis server response timeout. Starts to countdown when Redis command was succesfully sent.
      * Value in milliseconds.
      *
      */
-    private int timeout = 1000;
+    private int timeout = 3000;
 
     private int retryAttempts = 3;
 
-    private int retryInterval = 1000;
+    private int retryInterval = 1500;
 
     /**
      * Reconnection attempt timeout to Redis server then
@@ -135,6 +135,8 @@ class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Error will be thrown if Redis command can't be sended to Redis server after <code>retryAttempts</code>.
      * But if it sent succesfully then <code>timeout</code> will be started.
+     * <p>
+     * Default is <code>3</code> attempts
      *
      * @see #timeout
      * @param retryAttempts
@@ -150,6 +152,8 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Time interval after which another one attempt to send Redis command will be executed.
+     * <p>
+     * Default is <code>1500</code> milliseconds
      *
      * @see retryAttempts
      * @param retryInterval - time in milliseconds
@@ -165,6 +169,8 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Redis server response timeout.
+     * <p>
+     * Default is <code>3000</code> milliseconds
      *
      * @param timeout in milliseconds
      */
@@ -208,7 +214,9 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Timeout during connecting to any Redis server.
-     * <p/>
+     * <p>
+     * Default is <code>10000</code> milliseconds.
+     * 
      * @param connectTimeout - timeout in milliseconds
      * @return
      */
@@ -241,10 +249,10 @@ class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Reconnection attempt timeout to Redis server when
      * it has been excluded from internal list of available servers.
-     * <p/>
+     * <p>
      * On every such timeout event Redisson tries
      * to connect to disconnected Redis server.
-     * <p/>
+     * <p>
      * Default is 3000
      *
      * @see #failedAttempts
@@ -264,7 +272,7 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Redis server will be excluded from the internal list of available nodes
      * when sequential unsuccessful execution attempts of any Redis command
      * on this server reaches <code>failedAttempts</code>.
-     * <p/>
+     * <p>
      * Default is 3
      *
      */
