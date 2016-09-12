@@ -27,7 +27,7 @@ public interface RedissonNodeInitializer {
     /**
      * Invoked during Redisson Node startup
      * 
-     * @param redissonNode
+     * @param redissonNode - Redisson Node instance
      */
     void onStartup(RedissonNode redissonNode);
     

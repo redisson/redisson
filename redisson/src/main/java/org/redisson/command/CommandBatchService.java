@@ -30,6 +30,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisTimeoutException;
+import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -299,6 +300,17 @@ public class CommandBatchService extends CommandReactiveService {
                     execute(entry, source, mainPromise, slots, attempt);
                     return;
                 }
+                if (future.cause() instanceof RedisTryAgainException) {
+                    entry.clearErrors();
+                    connectionManager.newTimeout(new TimerTask() {
+                        @Override
+                        public void run(Timeout timeout) throws Exception {
+                            execute(entry, source, mainPromise, slots, attempt);
+                        }
+                    }, 1, TimeUnit.SECONDS);
+                    return;
+                }
+
 
                 if (future.isSuccess()) {
                     if (slots.decrementAndGet() == 0) {

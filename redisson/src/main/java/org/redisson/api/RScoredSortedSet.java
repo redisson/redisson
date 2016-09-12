@@ -65,7 +65,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     /**
      * Adds element to this set only if has not been added before.
-     * <p/>
+     * <p>
      * Works only with <b>Redis 3.0.2 and higher.</b>
      *
      * @param score

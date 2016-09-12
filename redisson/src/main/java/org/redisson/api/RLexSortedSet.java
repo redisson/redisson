@@ -31,7 +31,7 @@ public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirab
     /**
      * Returns rank of value, with the scores ordered from high to low.
      * 
-     * @param o
+     * @param o - object
      * @return rank or <code>null</code> if value does not exist
      */
     Integer revRank(String o);
@@ -39,7 +39,7 @@ public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirab
     /**
      * Read all values at once.
      * 
-     * @return
+     * @return collection of values
      */
     Collection<String> readAll();
     

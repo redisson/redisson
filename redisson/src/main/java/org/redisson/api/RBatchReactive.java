@@ -40,9 +40,9 @@ public interface RBatchReactive {
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
      *
-     * @param name
-     * @param codec
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return SetCache object
      */
     <V> RSetCacheReactive<V> getSetCache(String name);
 
@@ -54,9 +54,10 @@ public interface RBatchReactive {
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
      *
-     * @param name
-     * @param codec
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for values
+     * @return SetCache object
      */
     <V> RSetCacheReactive<V> getSetCache(String name, Codec codec);
 
@@ -67,9 +68,11 @@ public interface RBatchReactive {
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
      *
-     * @param name
-     * @param codec
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return MapCache object
      */
     <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec);
 
@@ -79,26 +82,30 @@ public interface RBatchReactive {
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
      *
-     * @param name
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return MapCache object
      */
     <K, V> RMapCacheReactive<K, V> getMapCache(String name);
 
     /**
      * Returns object holder by name
      *
-     * @param name of object
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Bucket object
      */
     <V> RBucketReactive<V> getBucket(String name);
 
     <V> RBucketReactive<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns HyperLogLog object
+     * Returns HyperLogLog object by name
      *
-     * @param name of object
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return HyperLogLog object
      */
     <V> RHyperLogLogReactive<V> getHyperLogLog(String name);
 
@@ -107,8 +114,9 @@ public interface RBatchReactive {
     /**
      * Returns list instance by name.
      *
-     * @param name of list
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return List object
      */
     <V> RListReactive<V> getList(String name);
 
@@ -117,8 +125,10 @@ public interface RBatchReactive {
     /**
      * Returns map instance by name.
      *
-     * @param name of map
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Map object
      */
     <K, V> RMapReactive<K, V> getMap(String name);
 
@@ -126,9 +136,10 @@ public interface RBatchReactive {
 
     /**
      * Returns set instance by name.
-     *
-     * @param name of set
-     * @return
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Set object
      */
     <V> RSetReactive<V> getSet(String name);
 
@@ -137,8 +148,9 @@ public interface RBatchReactive {
     /**
      * Returns topic instance by name.
      *
-     * @param name of topic
-     * @return
+     * @param <M> type of message
+     * @param name - name of object
+     * @return Topic object
      */
     <M> RTopicReactive<M> getTopic(String name);
 
@@ -147,8 +159,9 @@ public interface RBatchReactive {
     /**
      * Returns queue instance by name.
      *
-     * @param name of queue
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Queue object
      */
     <V> RQueueReactive<V> getQueue(String name);
 
@@ -156,9 +169,10 @@ public interface RBatchReactive {
 
     /**
      * Returns blocking queue instance by name.
-     *
-     * @param name of queue
-     * @return
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return BlockingQueue object
      */
     <V> RBlockingQueueReactive<V> getBlockingQueue(String name);
 
@@ -166,9 +180,10 @@ public interface RBatchReactive {
 
     /**
      * Returns deque instance by name.
-     *
-     * @param name of deque
-     * @return
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Deque object
      */
     <V> RDequeReactive<V> getDequeReactive(String name);
 
@@ -176,17 +191,18 @@ public interface RBatchReactive {
 
     /**
      * Returns "atomic long" instance by name.
-     *
-     * @param name of the "atomic long"
-     * @return
+     * 
+     * @param name - name of object
+     * @return AtomicLong object
      */
     RAtomicLongReactive getAtomicLongReactive(String name);
 
     /**
      * Returns Redis Sorted Set instance by name
-     *
-     * @param name
-     * @return
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return ScoredSortedSet object
      */
     <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name);
 
@@ -197,8 +213,8 @@ public interface RBatchReactive {
      * All elements are inserted with the same score during addition,
      * in order to force lexicographical ordering
      *
-     * @param name
-     * @return
+     * @param name - name of object
+     * @return LexSortedSet object
      */
     RLexSortedSetReactive getLexSortedSet(String name);
 
@@ -206,14 +222,14 @@ public interface RBatchReactive {
      * Returns bitSet instance by name.
      *
      * @param name of bitSet
-     * @return
+     * @return BitSet object
      */
     RBitSetReactive getBitSet(String name);
 
     /**
      * Returns script operations object
      *
-     * @return
+     * @return Script object
      */
     RScriptReactive getScript();
 
@@ -221,7 +237,7 @@ public interface RBatchReactive {
      * Returns keys operations.
      * Each of Redis/Redisson object associated with own key
      *
-     * @return
+     * @return Keys object
      */
     RKeysReactive getKeys();
 

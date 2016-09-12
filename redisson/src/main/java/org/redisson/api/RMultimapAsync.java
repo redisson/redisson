@@ -30,25 +30,35 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
     /**
      * Returns the number of key-value pairs in this multimap.
      *
-     * @return
+     * @return size of multimap
      */
     RFuture<Integer> sizeAsync();
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the key {@code key}.
+     * 
+     * @param key - map key
+     * @return <code>true</code> if contains a key
      */
     RFuture<Boolean> containsKeyAsync(Object key);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the value {@code value}.
+     * 
+     * @param value - map value
+     * @return <code>true</code> if contains a value
      */
     RFuture<Boolean> containsValueAsync(Object value);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
      * with the key {@code key} and the value {@code value}.
+     * 
+     * @param key - map key
+     * @param value - map value
+     * @return <code>true</code> if contains an entry
      */
     RFuture<Boolean> containsEntryAsync(Object key, Object value);
 
@@ -60,6 +70,8 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      * multimap size by 1. Other implementations prohibit duplicates, and storing
      * a key-value pair that's already in the multimap has no effect.
      *
+     * @param key - map key
+     * @param value - map value
      * @return {@code true} if the method increased the size of the multimap, or
      *     {@code false} if the multimap already contained the key-value pair and
      *     doesn't allow duplicates
@@ -72,6 +84,8 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      * pairs in the multimap fit this description, which one is removed is
      * unspecified.
      *
+     * @param key - map key
+     * @param value - map value
      * @return {@code true} if the multimap changed
      */
     RFuture<Boolean> removeAsync(Object key, Object value);
@@ -89,6 +103,8 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      *
      * <p>In particular, this is a no-op if {@code values} is empty.
      *
+     * @param key - map key
+     * @param values - map values
      * @return {@code true} if the multimap changed
      */
     RFuture<Boolean> putAllAsync(K key, Iterable<? extends V> values);
@@ -100,6 +116,8 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      * <p>If {@code values} is empty, this is equivalent to
      * {@link #removeAll(Object) removeAll(key)}.
      *
+     * @param key - map key
+     * @param values - map values
      * @return the collection of replaced values, or an empty collection if no
      *     values were previously associated with the key. The collection
      *     <i>may</i> be modifiable, but updating it will have no effect on the
@@ -114,6 +132,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      * so it will not appear in {@link #keySet()}, {@link #asMap()}, or any other
      * views.
      *
+     * @param key - map key
      * @return the values that were removed (possibly empty). The returned
      *     collection <i>may</i> be modifiable, but updating it will have no
      *     effect on the multimap.
@@ -126,17 +145,17 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
     /**
      * Returns the number of key-value pairs in this multimap.
      *
-     * @return
+     * @return keys amount
      */
     RFuture<Integer> keySizeAsync();
 
     /**
      * Removes <code>keys</code> from map by one operation
      *
-     * Works faster than <code>removeAll</code> but not returning
+     * Works faster than <code>RMultimap.remove</code> but not returning
      * the value associated with <code>key</code>
      *
-     * @param keys
+     * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
     RFuture<Long> fastRemoveAsync(K ... keys);

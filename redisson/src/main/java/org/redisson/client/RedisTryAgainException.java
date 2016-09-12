@@ -20,16 +20,12 @@ package org.redisson.client;
  * @author Nikita Koksharov
  *
  */
-public class RedisConnectionException extends RedisException {
+public class RedisTryAgainException extends RedisException {
 
-    private static final long serialVersionUID = -4756928186967834601L;
+    private static final long serialVersionUID = -2565335188503354660L;
 
-    public RedisConnectionException(String msg) {
-        super(msg);
-    }
-
-    public RedisConnectionException(String msg, Throwable e) {
-        super(msg, e);
+    public RedisTryAgainException(String message) {
+        super(message);
     }
 
 }

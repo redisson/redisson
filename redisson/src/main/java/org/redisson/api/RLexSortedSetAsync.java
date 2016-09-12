@@ -30,7 +30,7 @@ public interface RLexSortedSetAsync extends RCollectionAsync<String> {
     /**
      * Read all values at once.
      * 
-     * @return
+     * @return collection of values
      */
     RFuture<Collection<String>> readAllAsync();
     
@@ -65,7 +65,7 @@ public interface RLexSortedSetAsync extends RCollectionAsync<String> {
     /**
      * Returns rank of value, with the scores ordered from high to low.
      * 
-     * @param o
+     * @param o - value
      * @return rank or <code>null</code> if value does not exist
      */
     RFuture<Integer> revRankAsync(String o);

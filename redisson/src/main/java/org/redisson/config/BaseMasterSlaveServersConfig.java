@@ -74,9 +74,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'slave' servers connection pool size for <b>each</b> slave node.
-     * <p/>
+     * <p>
      * Default is <code>250</code>
-     * <p/>
+     * <p>
      * @see #setSlaveConnectionMinimumIdleSize(int)
      *
      * @param slaveConnectionPoolSize
@@ -92,7 +92,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'master' server connection pool size.
-     * <p/>
+     * <p>
      * Default is <code>250</code>
      *
      * @see #setMasterConnectionMinimumIdleSize(int)
@@ -126,9 +126,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
-     * <p/>
+     * <p>
      * Default is <code>50</code>
-     * <p/>
+     * <p>
      * @see #setSlaveSubscriptionConnectionMinimumIdleSize(int)
      *
      */
@@ -142,9 +142,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
-     * <p/>
+     * <p>
      * Default is <code>5</code>
-     * <p/>
+     * <p>
      * @see #setSlaveConnectionPoolSize(int)
      *
      */
@@ -158,9 +158,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
-     * <p/>
+     * <p>
      * Default is <code>5</code>
-     * <p/>
+     * <p>
      * @see #setMasterConnectionPoolSize(int)
      *
      */
@@ -174,9 +174,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node.
-     * <p/>
+     * <p>
      * Default is <code>1</code>
-     * <p/>
+     * <p>
      * @see #setSlaveSubscriptionConnectionPoolSize(int)
      *
      */
@@ -190,7 +190,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     /**
      * Set node type used for read operation.
-     * <p/>
+     * <p>
      * Default is <code>SLAVE</code>
      *
      * @param readMode

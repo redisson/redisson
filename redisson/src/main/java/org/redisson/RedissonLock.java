@@ -46,7 +46,7 @@ import io.netty.util.internal.PlatformDependent;
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
  * Implements reentrant lock.<br>
  * Lock will be removed automatically if client disconnects.
- * <p/>
+ * <p>
  * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order.
  *
  * @author Nikita Koksharov
@@ -148,7 +148,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return get(tryAcquireAsync(leaseTime, unit, Thread.currentThread().getId()));
     }
     
-    private RFuture<Boolean> tryAcquireOnceAsync(long leaseTime, TimeUnit unit, long threadId) {
+    private RFuture<Boolean> tryAcquireOnceAsync(long leaseTime, TimeUnit unit, final long threadId) {
         if (leaseTime != -1) {
             return tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         }
@@ -163,14 +163,14 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 Boolean ttlRemaining = future.getNow();
                 // lock acquired
                 if (ttlRemaining) {
-                    scheduleExpirationRenewal();
+                    scheduleExpirationRenewal(threadId);
                 }
             }
         });
         return ttlRemainingFuture;
     }
 
-    private <T> RFuture<Long> tryAcquireAsync(long leaseTime, TimeUnit unit, long threadId) {
+    private <T> RFuture<Long> tryAcquireAsync(long leaseTime, TimeUnit unit, final long threadId) {
         if (leaseTime != -1) {
             return tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
         }
@@ -185,7 +185,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 Long ttlRemaining = future.getNow();
                 // lock acquired
                 if (ttlRemaining == null) {
-                    scheduleExpirationRenewal();
+                    scheduleExpirationRenewal(threadId);
                 }
             }
         });
@@ -197,7 +197,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return get(tryLockAsync());
     }
 
-    private void scheduleExpirationRenewal() {
+    private void scheduleExpirationRenewal(final long threadId) {
         if (expirationRenewalMap.containsKey(getEntryName())) {
             return;
         }
@@ -205,7 +205,15 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                RFuture<Boolean> future = expireAsync(internalLockLeaseTime, TimeUnit.MILLISECONDS);
+                
+                RFuture<Boolean> future = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                            "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                            "return 1; " +
+                        "end; " +
+                        "return 0;",
+                          Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
+                
                 future.addListener(new FutureListener<Boolean>() {
                     @Override
                     public void operationComplete(Future<Boolean> future) throws Exception {
@@ -217,7 +225,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         
                         if (future.getNow()) {
                             // reschedule itself
-                            scheduleExpirationRenewal();
+                            scheduleExpirationRenewal(threadId);
                         }
                     }
                 });

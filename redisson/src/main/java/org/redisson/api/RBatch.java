@@ -22,11 +22,11 @@ import org.redisson.client.codec.Codec;
 
 /**
  * Interface for using pipeline feature.
- * <p/>
+ * <p>
  * All method invocations on objects
  * from this interface are batched to separate queue and could be executed later
  * with <code>execute()</code> or <code>executeAsync()</code> methods.
- * <p/>
+ * <p>
  * Please be ware, atomicity <b>is not</b> guaranteed.
  *
  *
@@ -38,8 +38,9 @@ public interface RBatch {
     /**
      * Returns geospatial items holder instance by <code>name</code>.
      * 
-     * @param name
-     * @return
+     * @param <V> type of object
+     * @param name - name of object
+     * @return Geo object
      */
     <V> RGeoAsync<V> getGeo(String name);
 
@@ -47,27 +48,32 @@ public interface RBatch {
      * Returns geospatial items holder instance by <code>name</code>
      * using provided codec for geospatial members.
      *
-     * @param name
-     * @param geospatial member codec
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for value
+     * @return Geo object
      */
     <V> RGeoAsync<V> getGeo(String name, Codec codec);
     
     /**
      * Returns Set based MultiMap instance by name.
      *
-     * @param name
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Multimap object
      */
     <K, V> RMultimapAsync<K, V> getSetMultimap(String name);
 
     /**
      * Returns Set based MultiMap instance by name
      * using provided codec for both map keys and values.
-     *
-     * @param name
-     * @param codec
-     * @return
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - provided codec
+     * @return Multimap object
      */
     <K, V> RMultimapAsync<K, V> getSetMultimap(String name, Codec codec);
     
@@ -77,8 +83,10 @@ public interface RBatch {
      * 
      * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String)}.</p>
      * 
-     * @param name
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return SetMultimapCache object
      */
     <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name);
 
@@ -89,8 +97,11 @@ public interface RBatch {
      * 
      * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String, Codec)}.</p>
      * 
-     * @param name
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - provided codec
+     * @return SetMultimapCache object
      */
     <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name, Codec codec);
     
@@ -101,9 +112,9 @@ public interface RBatch {
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
      *
-     * @param name
-     * @param codec
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return SetCache object
      */
     <V> RSetCacheAsync<V> getSetCache(String name);
 
@@ -115,9 +126,10 @@ public interface RBatch {
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
      *
-     * @param name
-     * @param codec
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for values
+     * @return SetCache object
      */
     <V> RSetCacheAsync<V> getSetCache(String name, Codec codec);
 
@@ -128,9 +140,11 @@ public interface RBatch {
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
      *
-     * @param name
-     * @param codec
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return MapCache object
      */
     <K, V> RMapCacheAsync<K, V> getMapCache(String name, Codec codec);
 
@@ -140,16 +154,19 @@ public interface RBatch {
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
      *
-     * @param name
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return MapCache object
      */
     <K, V> RMapCacheAsync<K, V> getMapCache(String name);
 
     /**
      * Returns object holder by <code>name</code>
      *
-     * @param name of object
-     * @return
+     * @param <V> type of object
+     * @param name - name of object
+     * @return Bucket object
      */
     <V> RBucketAsync<V> getBucket(String name);
 
@@ -158,8 +175,9 @@ public interface RBatch {
     /**
      * Returns HyperLogLog object
      *
-     * @param name of object
-     * @return
+     * @param <V> type of object
+     * @param name - name of object
+     * @return HyperLogLog object
      */
     <V> RHyperLogLogAsync<V> getHyperLogLog(String name);
 
@@ -168,8 +186,9 @@ public interface RBatch {
     /**
      * Returns list instance by name.
      *
-     * @param name of list
-     * @return
+     * @param <V> type of object
+     * @param name - name of object
+     * @return List object
      */
     <V> RListAsync<V> getList(String name);
 
@@ -178,8 +197,10 @@ public interface RBatch {
     /**
      * Returns List based MultiMap instance by name.
      *
-     * @param name
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return ListMultimap object
      */
     <K, V> RMultimapAsync<K, V> getListMultimap(String name);
 
@@ -187,9 +208,11 @@ public interface RBatch {
      * Returns List based MultiMap instance by name
      * using provided codec for both map keys and values.
      *
-     * @param name
-     * @param codec
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return ListMultimap object
      */
     <K, V> RMultimapAsync<K, V> getListMultimap(String name, Codec codec);
     
@@ -199,8 +222,10 @@ public interface RBatch {
      * 
      * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String)}.</p>
      * 
-     * @param name
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return ListMultimapCache object
      */
     <K, V> RMultimapAsync<K, V> getListMultimapCache(String name);
     
@@ -211,16 +236,21 @@ public interface RBatch {
      * 
      * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String, Codec)}.</p>
      * 
-     * @param name
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return ListMultimapCache object
      */
     <K, V> RMultimapAsync<K, V> getListMultimapCache(String name, Codec codec);
     
     /**
      * Returns map instance by name.
      *
-     * @param name of map
-     * @return
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Map object
      */
     <K, V> RMapAsync<K, V> getMap(String name);
 
@@ -229,8 +259,9 @@ public interface RBatch {
     /**
      * Returns set instance by name.
      *
-     * @param name of set
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Set object
      */
     <V> RSetAsync<V> getSet(String name);
 
@@ -239,8 +270,9 @@ public interface RBatch {
     /**
      * Returns topic instance by name.
      *
-     * @param name of topic
-     * @return
+     * @param <M> type of message
+     * @param name - name of object
+     * @return Topic object
      */
     <M> RTopicAsync<M> getTopic(String name);
 
@@ -249,8 +281,9 @@ public interface RBatch {
     /**
      * Returns queue instance by name.
      *
-     * @param name of queue
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Queue object
      */
     <V> RQueueAsync<V> getQueue(String name);
 
@@ -259,8 +292,9 @@ public interface RBatch {
     /**
      * Returns blocking queue instance by name.
      *
-     * @param name of queue
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return BlockingQueue object
      */
     <V> RBlockingQueueAsync<V> getBlockingQueue(String name);
 
@@ -269,8 +303,9 @@ public interface RBatch {
     /**
      * Returns deque instance by name.
      *
-     * @param name of deque
-     * @return
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Deque object
      */
     <V> RDequeAsync<V> getDeque(String name);
 
@@ -278,9 +313,10 @@ public interface RBatch {
 
     /**
      * Returns blocking deque instance by name.
-     *
-     * @param name of queue
-     * @return
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return BlockingDeque object
      */
     <V> RBlockingDequeAsync<V> getBlockingDeque(String name);
 
@@ -289,24 +325,25 @@ public interface RBatch {
     /**
      * Returns atomicLong instance by name.
      *
-     * @param name
-     * @return
+     * @param name - name of object
+     * @return AtomicLong object
      */
     RAtomicLongAsync getAtomicLong(String name);
 
     /**
      * Returns atomicDouble instance by name.
      *
-     * @param name
-     * @return
+     * @param name - name of object
+     * @return AtomicDouble object
      */
     RAtomicDoubleAsync getAtomicDouble(String name);
 
     /**
      * Returns Redis Sorted Set instance by name
-     *
-     * @param name
-     * @return
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return ScoredSortedSet object
      */
     <V> RScoredSortedSetAsync<V> getScoredSortedSet(String name);
 
@@ -317,8 +354,8 @@ public interface RBatch {
      * All elements are inserted with the same score during addition,
      * in order to force lexicographical ordering
      *
-     * @param name
-     * @return
+     * @param name - name of object
+     * @return LexSortedSet object
      */
     RLexSortedSetAsync getLexSortedSet(String name);
 
@@ -327,7 +364,7 @@ public interface RBatch {
     /**
      * Returns script operations object
      *
-     * @return
+     * @return Script object
      */
     RScriptAsync getScript();
 
@@ -335,7 +372,7 @@ public interface RBatch {
      * Returns keys operations.
      * Each of Redis/Redisson object associated with own key
      *
-     * @return
+     * @return Keys object
      */
     RKeysAsync getKeys();
 

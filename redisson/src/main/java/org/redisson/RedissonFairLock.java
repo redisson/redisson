@@ -32,7 +32,7 @@ import org.redisson.pubsub.LockPubSub;
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
  * Implements reentrant lock.<br>
  * Lock will be removed automatically if client disconnects.
- * <p/>
+ * <p>
  * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
  *
  * @author Nikita Koksharov

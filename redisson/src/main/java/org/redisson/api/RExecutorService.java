@@ -28,7 +28,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     /**
      * Returns executor name
      * 
-     * @return
+     * @return name of service
      */
     String getName();
     
@@ -43,6 +43,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * Register workers using custom executor to execute each task
      * 
      * @param workers - workers amount
+     * @param executor - executor instance
      */
     void registerWorkers(int workers, ExecutorService executor);
 

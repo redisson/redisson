@@ -22,8 +22,8 @@ public interface RKeys extends RKeysAsync {
     /**
      * Get Redis object type by key
      * 
-     * @param name
-     * @return
+     * @param key - name of key
+     * @return type of key
      */
     RType getType(String key);
     
@@ -31,8 +31,8 @@ public interface RKeys extends RKeysAsync {
      * Get hash slot identifier for key.
      * Available for cluster nodes only
      *
-     * @param key
-     * @return
+     * @param key - name of key
+     * @return slot number
      */
     int getSlot(String key);
 
@@ -40,17 +40,17 @@ public interface RKeys extends RKeysAsync {
      * Get all keys by pattern using iterator. 
      * Keys traversed with SCAN operation. Each SCAN operation loads 
      * up to <b>10</b> keys per request. 
-     * <p/>
+     * <p>
      *  Supported glob-style patterns:
-     *  <p/>
+     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p/>
+     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p/>
+     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      * 
      * @param pattern - match pattern
-     * @return
+     * @return Iterable object
      */
     Iterable<String> getKeysByPattern(String pattern);
 
@@ -58,32 +58,32 @@ public interface RKeys extends RKeysAsync {
      * Get all keys by pattern using iterator. 
      * Keys traversed with SCAN operation. Each SCAN operation loads 
      * up to <code>count</code> keys per request. 
-     * <p/>
+     * <p>
      *  Supported glob-style patterns:
-     *  <p/>
+     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p/>
+     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p/>
+     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
      * @param pattern - match pattern
      * @param count - keys loaded per request to Redis
-     * @return
+     * @return Iterable object
      */
     Iterable<String> getKeysByPattern(String pattern, int count);
     
     /**
      * Get all keys using iterator. Keys traversing with SCAN operation
      *
-     * @return
+     * @return Iterable object
      */
     Iterable<String> getKeys();
 
     /**
      * Get random key
      *
-     * @return
+     * @return random key
      */
     String randomKey();
 
@@ -95,22 +95,22 @@ public interface RKeys extends RKeysAsync {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern
-     * @return
+     * @param pattern - match pattern
+     * @return collection of keys
      */
     Collection<String> findKeysByPattern(String pattern);
 
     /**
      * Delete multiple objects by a key pattern.
-     * <p/>
+     * <p>
      * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
-     * <p/>
+     * <p>
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern
+     * @param pattern - match pattern 
      * @return number of removed keys
      */
     long deleteByPattern(String pattern);
@@ -126,7 +126,7 @@ public interface RKeys extends RKeysAsync {
     /**
      * Returns the number of keys in the currently-selected database
      *
-     * @return
+     * @return count of keys
      */
     long count();
 

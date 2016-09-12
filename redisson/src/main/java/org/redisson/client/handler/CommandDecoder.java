@@ -29,6 +29,7 @@ import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisTimeoutException;
+import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
@@ -240,6 +241,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     int slot = Integer.valueOf(errorParts[1]);
                     String addr = errorParts[2];
                     data.tryFailure(new RedisAskException(slot, addr));
+                } else if (error.startsWith("TRYAGAIN")) {
+                    data.tryFailure(new RedisTryAgainException(error
+                            + ". channel: " + channel + " data: " + data));
                 } else if (error.startsWith("LOADING")) {
                     data.tryFailure(new RedisLoadingException(error
                             + ". channel: " + channel + " data: " + data));

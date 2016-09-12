@@ -353,9 +353,9 @@ public class Config {
 
     /**
      * Threads amount shared between all redis node clients.
-     * <p/>
+     * <p>
      * Default is <code>0</code>.
-     * <p/>
+     * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
      * @param threads
@@ -419,7 +419,7 @@ public class Config {
      * own threads and each Redisson client creates own EventLoopGroup by default.
      * So if there are multiple Redisson instances in same JVM
      * it would be useful to share one EventLoopGroup among them.
-     * <p/>
+     * <p>
      * Only {@link io.netty.channel.epoll.EpollEventLoopGroup} or
      * {@link io.netty.channel.nio.NioEventLoopGroup} can be used.
      *

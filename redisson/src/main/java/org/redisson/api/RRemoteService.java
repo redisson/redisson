@@ -20,36 +20,36 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Allows to execute object methods remotely between Redisson instances (Server side and Client side instances in terms of remote invocation).
- * <p/>
+ * <p>
  * <b>1. Server side instance (worker instance).</b> Register object with RRemoteService instance. 
- * <p/>
+ * <p>
  * <code>
  * RRemoteService remoteService = redisson.getRemoteService();<br/>
  * <br/>
  * // register remote service before any remote invocation<br/>
  * remoteService.register(SomeServiceInterface.class, someServiceImpl);
  * </code>
- * <p/>
+ * <p>
  * <b>2. Client side instance.</b> Invokes method remotely.
- * <p/>
+ * <p>
  * <code>
  * RRemoteService remoteService = redisson.getRemoteService();<br/>
  * SomeServiceInterface service = remoteService.get(SomeServiceInterface.class);<br/>
  * <br/>
  * String result = service.doSomeStuff(1L, "secondParam", new AnyParam());
  * </code>
- * <p/>
- * <p/>
+ * <p>
+ * <p>
  * There are two timeouts during execution:
- * <p/>
+ * <p>
  * <b>Acknowledge (Ack) timeout.</b>Client side instance waits for acknowledge message from Server side instance.
- * <p/>
+ * <p>
  * If acknowledge has not been received by Client side instance then <code>RemoteServiceAckTimeoutException</code> will be thrown. 
  * And next invocation attempt can be made.
- * <p/>
+ * <p>
  * If acknowledge has not been received Client side instance but Server side instance has received invocation message already. 
  * In this case invocation will be skipped, due to ack timeout checking by Server side instance. 
- * <p/>
+ * <p>
  * <b>Execution timeout.</b> Client side instance received acknowledge message. If it hasn't received any result or error 
  * from server side during execution timeout then <code>RemoteServiceTimeoutException</code> will be thrown.
  * 
@@ -88,7 +88,7 @@ public interface RRemoteService {
     
     /**
      * Get remote service object for remote invocations.
-     * <p/>
+     * <p>
      * This method is a shortcut for
      * <pre>
      *     get(remoteInterface, RemoteInvocationOptions.defaults())
@@ -105,7 +105,7 @@ public interface RRemoteService {
     /**
      * Get remote service object for remote invocations 
      * with specified invocation timeout.
-     * <p/>
+     * <p>
      * This method is a shortcut for
      * <pre>
      *     get(remoteInterface, RemoteInvocationOptions.defaults()
@@ -125,7 +125,7 @@ public interface RRemoteService {
     /**
      * Get remote service object for remote invocations
      * with specified invocation and ack timeouts
-     * <p/>
+     * <p>
      * This method is a shortcut for
      * <pre>
      *     get(remoteInterface, RemoteInvocationOptions.defaults()
@@ -148,7 +148,7 @@ public interface RRemoteService {
     /**
      * Get remote service object for remote invocations
      * with the specified options
-     * <p/>
+     * <p>
      * Note that when using the noResult() option,
      * it is expected that the invoked method returns void,
      * or else IllegalArgumentException will be thrown.

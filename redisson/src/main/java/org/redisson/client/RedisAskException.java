@@ -15,6 +15,11 @@
  */
 package org.redisson.client;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisAskException extends RedisRedirectException {
 
     private static final long serialVersionUID = -6969734163155547631L;
