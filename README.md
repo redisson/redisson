@@ -98,6 +98,8 @@ RList<MyValue> list = redisson.getList("myList");
 
 RLock lock = redisson.getLock("myLock");
 
+RExecutorService lock = redisson.getExecutorService("myExecutorService");
+
 // over 30 different objects and services ...
 
 ```
