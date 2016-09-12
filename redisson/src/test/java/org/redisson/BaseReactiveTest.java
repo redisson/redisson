@@ -2,11 +2,14 @@ package org.redisson;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.Timeout;
 import org.reactivestreams.Publisher;
 import org.redisson.api.RCollectionReactive;
 import org.redisson.api.RScoredSortedSetReactive;
@@ -17,6 +20,9 @@ import reactor.rx.Promise;
 import reactor.rx.Streams;
 
 public abstract class BaseReactiveTest {
+
+    @ClassRule
+    public static Timeout classTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     protected RedissonReactiveClient redisson;
     protected static RedissonReactiveClient defaultRedisson;

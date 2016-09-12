@@ -17,12 +17,18 @@ import org.redisson.config.Config;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.Timeout;
 import static org.redisson.BaseTest.createInstance;
 
 @RunWith(Parameterized.class)
 public class RedissonTwoLockedThread {
+
+    @ClassRule
+    public static Timeout classTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @Parameterized.Parameters(name= "{index} - {0}")
     public static Iterable<Object[]> data() {

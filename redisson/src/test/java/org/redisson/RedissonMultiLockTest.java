@@ -14,8 +14,13 @@ import org.redisson.config.Config;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.ClassRule;
+import org.junit.rules.Timeout;
 
 public class RedissonMultiLockTest {
+
+    @ClassRule
+    public static Timeout classTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @Test
     public void testMultiThreads() throws IOException, InterruptedException {

@@ -19,7 +19,9 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RTopic;
@@ -32,6 +34,9 @@ import org.redisson.api.listener.StatusListener;
 import org.redisson.config.Config;
 
 public class RedissonTopicPatternTest {
+
+    @ClassRule
+    public static Timeout classTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {

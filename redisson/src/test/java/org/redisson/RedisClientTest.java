@@ -34,8 +34,13 @@ import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
+import org.junit.ClassRule;
+import org.junit.rules.Timeout;
 
 public class RedisClientTest {
+
+    @ClassRule
+    public static Timeout classTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
