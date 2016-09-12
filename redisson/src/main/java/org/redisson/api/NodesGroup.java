@@ -30,24 +30,23 @@ public interface NodesGroup<N extends Node> {
      * Adds connection listener which will be triggered
      * when Redisson has just been connected to or disconnected from redis server
      *
-     * @param connectionListener
+     * @param connectionListener - connection listener
+     * @return id of listener
      */
     int addConnectionListener(ConnectionListener connectionListener);
 
     /**
      * Removes connection listener by id
      *
-     * @param listenerId
+     * @param listenerId - id of connection listener
      */
     void removeConnectionListener(int listenerId);
 
     /**
      * Get all nodes by type
      *
-     * @see {@link NodeType}
-     *
-     * @param type
-     * @return
+     * @param type - type of node
+     * @return collection of nodes
      */
     Collection<N> getNodes(NodeType type);
 
@@ -55,7 +54,7 @@ public interface NodesGroup<N extends Node> {
      * All Redis nodes used by Redisson.
      * This collection may change during master change, cluster topology update and etc.
      *
-     * @return
+     * @return collection of nodes
      */
     Collection<N> getNodes();
 

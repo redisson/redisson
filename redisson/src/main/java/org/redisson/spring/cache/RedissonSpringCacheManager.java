@@ -69,7 +69,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     /**
      * Creates CacheManager supplied by Redisson instance, Codec instance
      * and Cache config mapped by Cache name.
-     * <p/>
+     * <p>
      * Each Cache instance share one Codec instance.
      *
      * @param redisson
@@ -84,7 +84,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     /**
      * Creates CacheManager supplied by Redisson instance
      * and Cache config mapped by Cache name.
-     * <p/>
+     * <p>
      * Loads the config file from the class path, interpreting plain paths as class path resource names
      * that include the package path (e.g. "mypackage/myresource.txt").
      *
@@ -98,9 +98,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     /**
      * Creates CacheManager supplied by Redisson instance, Codec instance
      * and Config location path.
-     * <p/>
+     * <p>
      * Each Cache instance share one Codec instance.
-     * <p/>
+     * <p>
      * Loads the config file from the class path, interpreting plain paths as class path resource names
      * that include the package path (e.g. "mypackage/myresource.txt").
      *
@@ -211,5 +211,5 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             }
         }
     }
-
+    
 }

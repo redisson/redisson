@@ -31,8 +31,8 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
     /**
      * Add <code>element</code> after <code>elementToFind</code>
      * 
-     * @param elementToFind
-     * @param element
+     * @param elementToFind - object to find
+     * @param element - object to add
      * @return new list size
      */
     RFuture<Integer> addAfterAsync(V elementToFind, V element);
@@ -40,8 +40,8 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
     /**
      * Add <code>element</code> before <code>elementToFind</code>
      * 
-     * @param elementToFind
-     * @param element
+     * @param elementToFind - object to find
+     * @param element - object to add
      * @return new list size
      */
     RFuture<Integer> addBeforeAsync(V elementToFind, V element);
@@ -57,8 +57,9 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      * Works faster than {@link #setAsync(int, Object)} but 
      * doesn't return previous element.
      * 
-     * @param index
-     * @param element
+     * @param index - index of object
+     * @param element - object
+     * @return void
      */
     RFuture<Void> fastSetAsync(int index, V element);
 
@@ -69,7 +70,7 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
     /**
      * Read all elements at once
      *
-     * @return
+     * @return list of values
      */
     RFuture<List<V>> readAllAsync();
 
@@ -77,9 +78,9 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      * Trim list and remains elements only in specified range
      * <tt>fromIndex</tt>, inclusive, and <tt>toIndex</tt>, inclusive.
      *
-     * @param fromIndex
-     * @param toIndex
-     * @return
+     * @param fromIndex - from index
+     * @param toIndex - to index
+     * @return void
      */
     RFuture<Void> trimAsync(long fromIndex, long toIndex);
 

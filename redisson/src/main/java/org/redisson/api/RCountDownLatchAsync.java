@@ -19,7 +19,7 @@ package org.redisson.api;
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
  *
  * It has an advantage over {@link java.util.concurrent.CountDownLatch} --
- * count can be set via {@link #trySetCount} method.
+ * count can be set via {@link #trySetCountAsync} method.
  *
  * @author Nikita Koksharov
  *
@@ -35,6 +35,8 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      * thread scheduling purposes.
      *
      * <p>If the current count equals zero then nothing happens.
+     * 
+     * @return void
      */
     RFuture<Void> countDownAsync();
 
@@ -51,8 +53,8 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      * Sets new count value only if previous count already has reached zero
      * or is not set at all.
      *
-     * @param count - number of times {@link #countDown} must be invoked
-     *        before threads can pass through {@link #await}
+     * @param count - number of times <code>countDown</code> must be invoked
+     *        before threads can pass through <code>await</code>
      * @return <code>true</code> if new count setted
      *         <code>false</code> if previous count has not reached zero
      */

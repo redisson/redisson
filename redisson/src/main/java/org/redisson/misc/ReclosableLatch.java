@@ -20,7 +20,7 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /**
  * A thread gate, that uses an {@link java.util.concurrent.locks.AbstractQueuedSynchronizer}.
- * <p/>
+ * <p>
  * This implementation allows you to create a latch with a default state (open or closed), and repeatedly open or close
  * the latch.
  *

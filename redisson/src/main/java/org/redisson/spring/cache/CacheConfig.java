@@ -51,7 +51,7 @@ public class CacheConfig {
      * @param maxIdleTime - max idle time for key\value entry in milliseconds.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
      * @param maxIdleUnit
-     * <p/>
+     * <p>
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
      */

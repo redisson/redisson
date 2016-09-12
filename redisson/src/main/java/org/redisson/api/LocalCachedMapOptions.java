@@ -46,7 +46,7 @@ public class LocalCachedMapOptions {
     
     /**
      * Creates a new instance of LocalCachedMapOptions with default options.
-     * <p/>
+     * <p>
      * This is equivalent to:
      * <pre>
      *     new LocalCachedMapOptions()
@@ -54,6 +54,9 @@ public class LocalCachedMapOptions {
      *      .evictionPolicy(EvictionPolicy.NONE)
      *      .invalidateEntryOnChange(true);
      * </pre>
+     * 
+     * @return LocalCachedMapOptions instance
+     * 
      */
     public static LocalCachedMapOptions defaults() {
         return new LocalCachedMapOptions()
@@ -85,8 +88,8 @@ public class LocalCachedMapOptions {
     /**
      * Sets cache size. If size is <code>0</code> then cache is unbounded.
      * 
-     * @param cacheSize
-     * @return
+     * @param cacheSize - size of cache
+     * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions cacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
@@ -99,7 +102,7 @@ public class LocalCachedMapOptions {
      * @param value - if <code>true</code> then invalidation message which removes corresponding entry from cache
      *         will be sent to all other RLocalCachedMap instances on each entry update/remove operation.
      *         if <code>false</code> then invalidation message won't be sent
-     * @return
+     * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions invalidateEntryOnChange(boolean value) {
         this.invalidateEntryOnChange = value;
@@ -113,7 +116,7 @@ public class LocalCachedMapOptions {
      *         <p><code>LRU</code> - uses cache with LRU (least recently used) eviction policy.
      *         <p><code>LFU</code> - uses cache with LFU (least frequently used) eviction policy.
      *         <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
-     * @return
+     * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions evictionPolicy(EvictionPolicy evictionPolicy) {
         if (evictionPolicy == null) {
@@ -125,10 +128,10 @@ public class LocalCachedMapOptions {
     
     /**
      * Sets time to live in milliseconds for each map entry in cache.
-     * If value equals to <code>0<code> then timeout is not applied
+     * If value equals to <code>0</code> then timeout is not applied
      * 
-     * @param timeToLiveInMillis
-     * @return
+     * @param timeToLiveInMillis - time to live in milliseconds
+     * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions timeToLive(long timeToLiveInMillis) {
         this.timeToLiveInMillis = timeToLiveInMillis;
@@ -137,11 +140,11 @@ public class LocalCachedMapOptions {
 
     /**
      * Sets time to live for each map entry in cache.
-     * If value equals to <code>0<code> then timeout is not applied
+     * If value equals to <code>0</code> then timeout is not applied
      * 
-     * @param timeToLive
-     * @param timeUnit
-     * @return
+     * @param timeToLive - time to live
+     * @param timeUnit - time unit
+     * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions timeToLive(long timeToLive, TimeUnit timeUnit) {
         return timeToLive(timeUnit.toMillis(timeToLive));
@@ -149,10 +152,10 @@ public class LocalCachedMapOptions {
 
     /**
      * Sets max idle time in milliseconds for each map entry in cache.
-     * If value equals to <code>0<code> then timeout is not applied
+     * If value equals to <code>0</code> then timeout is not applied
      * 
-     * @param maxIdleInMillis
-     * @return
+     * @param maxIdleInMillis - time to live in milliseconds
+     * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions maxIdle(long maxIdleInMillis) {
         this.maxIdleInMillis = maxIdleInMillis;
@@ -161,10 +164,11 @@ public class LocalCachedMapOptions {
 
     /**
      * Sets max idle time for each map entry in cache.
-     * If value equals to <code>0<code> then timeout is not applied
+     * If value equals to <code>0</code> then timeout is not applied
      * 
-     * @param maxIdleInMillis
-     * @return
+     * @param maxIdle - max idle time
+     * @param timeUnit - time unit
+     * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions maxIdle(long maxIdle, TimeUnit timeUnit) {
         return timeToLive(timeUnit.toMillis(maxIdle));

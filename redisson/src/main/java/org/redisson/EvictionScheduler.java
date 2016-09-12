@@ -120,7 +120,7 @@ public class EvictionScheduler {
 
     private final ConcurrentMap<String, Long> lastExpiredTime = PlatformDependent.newConcurrentHashMap();
     private final int expireTaskExecutionDelay = 1000;
-    private final int valuesAmountToClean = 100;
+    private final int valuesAmountToClean = 500;
 
     public EvictionScheduler(CommandAsyncExecutor executor) {
         this.executor = executor;

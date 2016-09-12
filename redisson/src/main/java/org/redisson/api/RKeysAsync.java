@@ -22,8 +22,8 @@ public interface RKeysAsync {
     /**
      * Get Redis object type by key
      * 
-     * @param name
-     * @return
+     * @param key - name of key
+     * @return type of key
      */
     RFuture<RType> getTypeAsync(String key);
     
@@ -31,15 +31,15 @@ public interface RKeysAsync {
      * Get hash slot identifier for key in async mode.
      * Available for cluster nodes only
      *
-     * @param key
-     * @return
+     * @param key - name of key
+     * @return slot
      */
     RFuture<Integer> getSlotAsync(String key);
 
     /**
      * Get random key in async mode
      *
-     * @return
+     * @return random key
      */
     RFuture<String> randomKeyAsync();
 
@@ -51,22 +51,22 @@ public interface RKeysAsync {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern
-     * @return
+     * @param pattern - match pattern
+     * @return collections of keys
      */
     RFuture<Collection<String>> findKeysByPatternAsync(String pattern);
 
     /**
      * Delete multiple objects by a key pattern.
-     * <p/>
+     * <p>
      * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
-     * <p/>
+     * <p>
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern
+     * @param pattern - match pattern
      * @return number of removed keys
      */
     RFuture<Long> deleteByPatternAsync(String pattern);
@@ -82,17 +82,19 @@ public interface RKeysAsync {
     /**
      * Returns the number of keys in the currently-selected database in async mode
      *
-     * @return
+     * @return number of keys
      */
     RFuture<Long> countAsync();
 
     /**
      * Delete all keys of currently selected database
+     * @return void
      */
     RFuture<Void> flushdbAsync();
 
     /**
      * Delete all keys of all existing databases
+     * @return void
      */
     RFuture<Void> flushallAsync();
 

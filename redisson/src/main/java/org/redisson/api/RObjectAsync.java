@@ -30,14 +30,14 @@ public interface RObjectAsync {
      * @param host - destination host
      * @param port - destination port
      * @param database - destination database
-     * @return
+     * @return void
      */
     RFuture<Void> migrateAsync(String host, int port, int database);
 
     /**
      * Move object to another database in async mode
      *
-     * @param database
+     * @param database - number of Redis database
      * @return <code>true</code> if key was moved <code>false</code> if not
      */
     RFuture<Boolean> moveAsync(int database);
@@ -53,8 +53,8 @@ public interface RObjectAsync {
      * Rename current object key to <code>newName</code>
      * in async mode
      *
-     * @param newName
-     * @return
+     * @param newName - new name of object
+     * @return void
      */
     RFuture<Void> renameAsync(String newName);
 
@@ -62,8 +62,8 @@ public interface RObjectAsync {
      * Rename current object key to <code>newName</code>
      * in async mode only if new key is not exists
      *
-     * @param newName
-     * @return
+     * @param newName - new name of object
+     * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
      */
     RFuture<Boolean> renamenxAsync(String newName);
 

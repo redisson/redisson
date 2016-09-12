@@ -46,7 +46,7 @@ import io.netty.util.internal.PlatformDependent;
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
  * Implements reentrant lock.<br>
  * Lock will be removed automatically if client disconnects.
- * <p/>
+ * <p>
  * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order.
  *
  * @author Nikita Koksharov

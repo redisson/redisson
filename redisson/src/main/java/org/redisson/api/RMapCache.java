@@ -41,10 +41,10 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
-     * <p/>
+     * <p>
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
@@ -60,10 +60,10 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
-     * <p/>
+     * <p>
      * Stores value mapped by key with specified time to live and max idle time.
      * Entry expires when specified time to live or max idle time has expired.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
@@ -75,7 +75,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param maxIdleTime - max idle time for key\value entry.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
      * @param maxIdleUnit
-     * <p/>
+     * <p>
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
      *
@@ -86,7 +86,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
@@ -102,7 +102,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * Stores value mapped by key with specified time to live and max idle time.
      * Entry expires when specified time to live or max idle time has expired.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
@@ -114,7 +114,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param maxIdleTime - max idle time for key\value entry.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
      * @param maxIdleUnit
-     * <p/>
+     * <p>
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
      *
@@ -125,10 +125,10 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
-     * <p/>
+     * <p>
      * Works faster than usual {@link #put(Object, Object, long, TimeUnit)}
      * as it not returns previous value.
      *
@@ -144,10 +144,10 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * Stores value mapped by key with specified time to live and max idle time.
      * Entry expires when specified time to live or max idle time has expired.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
-     * <p/>
+     * <p>
      * Works faster than usual {@link #put(Object, Object, long, TimeUnit, long, TimeUnit)}
      * as it not returns previous value.
      *
@@ -159,7 +159,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param maxIdleTime - max idle time for key\value entry.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
      * @param maxIdleUnit
-     * <p/>
+     * <p>
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
 

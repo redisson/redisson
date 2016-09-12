@@ -81,7 +81,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
     /**
      * Returns the number of elements in this collection.
      *
-     * @return
+     * @return size of collection
      */
     RFuture<Integer> sizeAsync();
 
