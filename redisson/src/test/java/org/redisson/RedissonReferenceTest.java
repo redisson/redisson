@@ -10,6 +10,8 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RBucketAsync;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RLiveObject;
+import org.redisson.api.RMap;
+import org.redisson.api.RSet;
 
 /**
  *
@@ -84,4 +86,31 @@ public class RedissonReferenceTest extends BaseTest {
         assertEquals("b1", result.get(2).getName());
     }
     
+        @Test
+    public void testWithList() {
+        RSet<RBucket<String>> b1 = redisson.getSet("set");
+        RBucket<String> b2 = redisson.getBucket("bucket");
+
+        b1.add(b2);
+        b2.set("test1");
+        assertEquals(b2.get(), b1.iterator().next().get());
+        assertEquals(2, redisson.getKeys().count());
+    }
+    
+        @Test
+    public void testWithMap() {
+        RMap<RBucket<RMap>, RBucket<RMap>> map = redisson.getMap("set");
+        RBucket<RMap> b1 = redisson.getBucket("bucket1");
+        RBucket<RMap> b2 = redisson.getBucket("bucket2");
+
+        map.put(b1, b2);
+        assertEquals(b2.get(), map.values().iterator().next().get());
+        assertEquals(b1.get(), map.keySet().iterator().next().get());
+        assertNotEquals(3, redisson.getKeys().count());
+        assertEquals(1, redisson.getKeys().count());
+        b1.set(map);
+        b2.set(map);
+        assertNotEquals(1, redisson.getKeys().count());
+        assertEquals(3, redisson.getKeys().count());
+    }
 }
