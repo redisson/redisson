@@ -88,8 +88,6 @@ Config = ...
 
 // 2. Create Redisson instance
 RedissonClient redisson = Redisson.create(config);
-// or
-RedissonReactiveClient redisson = Redisson.createReactive(config);
 
 // 3. Get object you need
 RMap<MyKey, MyValue> map = redisson.getMap("myMap");
