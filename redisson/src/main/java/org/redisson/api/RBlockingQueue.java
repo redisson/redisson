@@ -31,6 +31,7 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
      *
+     * @param queueNames - names of queue
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the

@@ -28,16 +28,14 @@ public interface Node {
     /**
      * Returns node type
      *
-     * @see {@link NodeType}
-     *
-     * @return
+     * @return node type
      */
     NodeType getType();
 
     /**
      * Get Redis node address
      *
-     * @return
+     * @return node address
      */
     InetSocketAddress getAddr();
 

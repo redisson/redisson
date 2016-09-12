@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * Used to tune how RRemoteService will behave
  * in regard to the remote invocations acknowledgement
  * and execution timeout.
- * <p/>
+ * <p>
  * Examples:
  * <pre>
  *     // 1 second ack timeout and 30 seconds execution timeout
@@ -73,13 +73,15 @@ public class RemoteInvocationOptions implements Serializable {
 
     /**
      * Creates a new instance of RemoteInvocationOptions with opinionated defaults.
-     * <p/>
+     * <p>
      * This is equivalent to:
      * <pre>
      *     new RemoteInvocationOptions()
      *      .expectAckWithin(1, TimeUnit.SECONDS)
      *      .expectResultWithin(30, TimeUnit.SECONDS)
      * </pre>
+     * 
+     * @return RemoteInvocationOptions object
      */
     public static RemoteInvocationOptions defaults() {
         return new RemoteInvocationOptions()

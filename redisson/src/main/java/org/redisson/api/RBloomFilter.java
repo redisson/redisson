@@ -22,7 +22,7 @@ package org.redisson.api;
  *
  * @author Nikita Koksharov
  *
- * @param <T>
+ * @param <T> - type of object
  */
 public interface RBloomFilter<T> extends RExpirable {
 
@@ -35,8 +35,8 @@ public interface RBloomFilter<T> extends RExpirable {
      * calculated from <code>expectedInsertions</code> and <code>falseProbability</code>
      * Stores config to Redis server.
      *
-     * @param expectedInsertions
-     * @param falseProbability
+     * @param expectedInsertions - expected amount of insertions
+     * @param falseProbability - expected false probability
      * @return <code>true</code> if Bloom filter initialized
      *         <code>false</code> if Bloom filter already has been initialized
      */
@@ -53,7 +53,7 @@ public interface RBloomFilter<T> extends RExpirable {
     /**
      * Calculates probabilistic number of elements already added to Bloom filter.
      *
-     * @return
+     * @return probabilistic number of elements
      */
     int count();
 

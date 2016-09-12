@@ -58,9 +58,9 @@ public interface RKeysAsync {
 
     /**
      * Delete multiple objects by a key pattern.
-     * <p/>
+     * <p>
      * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
-     * <p/>
+     * <p>
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello

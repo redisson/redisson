@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.Semaphore}.
- * <p/>
+ * <p>
  * Works in non-fair mode. Therefore order of acquiring is unpredictable.
  * 
  * @author Nikita Koksharov

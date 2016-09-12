@@ -40,13 +40,13 @@ public interface RKeys extends RKeysAsync {
      * Get all keys by pattern using iterator. 
      * Keys traversed with SCAN operation. Each SCAN operation loads 
      * up to <b>10</b> keys per request. 
-     * <p/>
+     * <p>
      *  Supported glob-style patterns:
-     *  <p/>
+     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p/>
+     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p/>
+     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      * 
      * @param pattern - match pattern
@@ -58,13 +58,13 @@ public interface RKeys extends RKeysAsync {
      * Get all keys by pattern using iterator. 
      * Keys traversed with SCAN operation. Each SCAN operation loads 
      * up to <code>count</code> keys per request. 
-     * <p/>
+     * <p>
      *  Supported glob-style patterns:
-     *  <p/>
+     *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
-     *    <p/>
+     *    <p>
      *    h*llo subscribes to hllo and heeeello
-     *    <p/>
+     *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
      * @param pattern - match pattern
@@ -102,9 +102,9 @@ public interface RKeys extends RKeysAsync {
 
     /**
      * Delete multiple objects by a key pattern.
-     * <p/>
+     * <p>
      * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
-     * <p/>
+     * <p>
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello

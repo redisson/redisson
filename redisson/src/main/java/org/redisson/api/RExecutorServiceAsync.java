@@ -35,16 +35,17 @@ public interface RExecutorServiceAsync {
     /**
      * Submit task for execution in async mode with listeners support 
      * 
-     * @param task
-     * @return
+     * @param <T> type of return value
+     * @param task - task to execute
+     * @return Future object
      */
     <T> RFuture<T> submitAsync(Callable<T> task);
 
     /**
      * Submit task for execution in async mode with listeners support
      * 
-     * @param task
-     * @return
+     * @param task - task to execute
+     * @return Future object
      */
     RFuture<?> submitAsync(Runnable task);
     

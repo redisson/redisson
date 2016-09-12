@@ -23,10 +23,10 @@ import java.lang.annotation.Target;
 /**
  * Annotation used to mark interface as asynchronous 
  * client interface for remote service interface. 
- * <p/>
+ * <p>
  * All method signatures must match with remote service interface,
  * but return type must be <code>io.netty.util.concurrent.Future</code>.
- * <p/>
+ * <p>
  * It's not necessary to add all methods from remote service.
  * Add only those which are needed. 
  * 
@@ -40,7 +40,7 @@ public @interface RRemoteAsync {
     /**
      * Remote interface class used to register
      * 
-     * @return
+     * @return class used to register
      */
     Class<?> value();
     

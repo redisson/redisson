@@ -24,13 +24,15 @@ import io.netty.util.concurrent.FutureListener;
  * 
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> type of value
  */
 public interface RFuture<V> extends java.util.concurrent.Future<V> {
 
     /**
      * Returns {@code true} if and only if the I/O operation was completed
      * successfully.
+     * 
+     * @return {@code true} if future was completed successfully
      */
     boolean isSuccess();
 
@@ -49,6 +51,8 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      *
      * As it is possible that a {@code null} value is used to mark the future as successful you also need to check
      * if the future is really done with {@link #isDone()} and not relay on the returned {@code null} value.
+     * 
+     * @return object
      */
     V getNow();
     
@@ -56,6 +60,8 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * Waits for this future to be completed within the
      * specified time limit.
      *
+     * @param timeout - wait timeout
+     * @param unit - time unit
      * @return {@code true} if and only if the future was completed within
      *         the specified time limit
      *
@@ -68,6 +74,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * Waits for this future to be completed within the
      * specified time limit.
      *
+     * @param timeoutMillis - timeout value
      * @return {@code true} if and only if the future was completed within
      *         the specified time limit
      *
@@ -81,6 +88,9 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * specified listener is notified when this future is
      * {@linkplain #isDone() done}.  If this future is already
      * completed, the specified listener is notified immediately.
+     * 
+     * @param listener - listener for future object
+     * @return Future object
      */
     RFuture<V> addListener(FutureListener<? super V> listener);
 
@@ -89,6 +99,9 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * specified listeners are notified when this future is
      * {@linkplain #isDone() done}.  If this future is already
      * completed, the specified listeners are notified immediately.
+     * 
+     * @param listeners - listeners for future object
+     * @return Future object
      */
     RFuture<V> addListeners(FutureListener<? super V>... listeners);
 
@@ -98,6 +111,9 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * future is {@linkplain #isDone() done}.  If the specified
      * listener is not associated with this future, this method
      * does nothing and returns silently.
+     * 
+     * @param listener - listener for future object
+     * @return Future object
      */
     RFuture<V> removeListener(FutureListener<? super V> listener);
 
@@ -107,18 +123,27 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * future is {@linkplain #isDone() done}.  If the specified
      * listeners are not associated with this future, this method
      * does nothing and returns silently.
+     * 
+     * @param listeners - listeners for future object
+     * @return Future object
      */
     RFuture<V> removeListeners(FutureListener<? super V>... listeners);
 
     /**
      * Waits for this future until it is done, and rethrows the cause of the failure if this future
      * failed.
+     *
+     * @throws InterruptedException
+     *         if the current thread was interrupted
+     * @return Future object
      */
     RFuture<V> sync() throws InterruptedException;
 
     /**
      * Waits for this future until it is done, and rethrows the cause of the failure if this future
      * failed.
+     * 
+     * @return Future object
      */
     RFuture<V> syncUninterruptibly();
 
@@ -127,6 +152,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      *
      * @throws InterruptedException
      *         if the current thread was interrupted
+     * @return Future object
      */
     RFuture<V> await() throws InterruptedException;
 
@@ -134,6 +160,8 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * Waits for this future to be completed without
      * interruption.  This method catches an {@link InterruptedException} and
      * discards it silently.
+     * 
+     * @return Future object
      */
     RFuture<V> awaitUninterruptibly();
 
@@ -142,6 +170,8 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * specified time limit without interruption.  This method catches an
      * {@link InterruptedException} and discards it silently.
      *
+     * @param timeout - timeout value
+     * @param unit - timeout unit value
      * @return {@code true} if and only if the future was completed within
      *         the specified time limit
      */
@@ -151,7 +181,8 @@ public interface RFuture<V> extends java.util.concurrent.Future<V> {
      * Waits for this future to be completed within the
      * specified time limit without interruption.  This method catches an
      * {@link InterruptedException} and discards it silently.
-     *
+     * 
+     * @param timeoutMillis - timeout value
      * @return {@code true} if and only if the future was completed within
      *         the specified time limit
      */

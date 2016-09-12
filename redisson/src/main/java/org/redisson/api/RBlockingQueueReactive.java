@@ -34,13 +34,13 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
      *
+     * @param queueNames - names of queue
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
      *        {@code timeout} parameter
      * @return Publisher object with the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
      */
     Publisher<V> pollFromAny(long timeout, TimeUnit unit, String ... queueNames);
 

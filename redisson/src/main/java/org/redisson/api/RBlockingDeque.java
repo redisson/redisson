@@ -30,7 +30,8 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
      * Retrieves and removes first available head element of <b>any</b> queue,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
-     *
+     * 
+     * @param queueNames - names of queue
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
@@ -45,7 +46,8 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
      * Retrieves and removes first available tail element of <b>any</b> queue,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
-     *
+     * 
+     * @param queueNames - names of queue
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
