@@ -15,6 +15,11 @@
  */
 package org.redisson.client;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisLoadingException extends RedisException {
 
     private static final long serialVersionUID = -2565335188503354660L;
