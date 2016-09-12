@@ -92,11 +92,11 @@ RedissonClient redisson = Redisson.create(config);
 // 3. Get object you need
 RMap<MyKey, MyValue> map = redisson.getMap("myMap");
 
-RSet<MyValue> set = redisson.getMap("mySet");
+RSet<MyValue> set = redisson.getSet("mySet");
 
-RList<MyValue> list = redisson.getMap("myList");
+RList<MyValue> list = redisson.getList("myList");
 
-RLock lock = redisson.getMap("myLock");
+RLock lock = redisson.getLock("myLock");
 
 // over 30 different objects and services ...
 
