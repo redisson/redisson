@@ -60,13 +60,15 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
-import org.redisson.Redisson;
-import org.redisson.RedissonReactive;
+import java.util.HashMap;
+import java.util.Map;
 import org.redisson.RedissonReference;
-import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.misc.RedissonObjectFactory;
 
 /**
@@ -766,8 +768,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 ((RedisClientResult)res).setRedisClient(addr);
             }
             
-            if (isRedissonReferenceSupportEnabled() && res instanceof List) {
-                List r = (List) res;
+            if (isRedissonReferenceSupportEnabled() && (res instanceof List || res instanceof ListScanResult)) {
+                List r = res instanceof ListScanResult ? ((ListScanResult)res).getValues() : (List) res;
                 for (int i = 0; i < r.size(); i++) {
                     if (r.get(i) instanceof RedissonReference) {
                         try {
@@ -776,9 +778,48 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                     : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) r.get(i))));
                         } catch (Exception exception) {//skip and carry on to next one.
                         }
+                    } else if (r.get(i) instanceof ScoredEntry && ((ScoredEntry) r.get(i)).getValue() instanceof RedissonReference) {
+                        try {
+                            ScoredEntry se = ((ScoredEntry) r.get(i));
+                            r.set(i ,new ScoredEntry(se.getScore(), redisson != null
+                                    ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) se.getValue())
+                                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) se.getValue())));
+                        } catch (Exception exception) {//skip and carry on to next one.
+                        }
                     }
                 }
                 details.getMainPromise().trySuccess(res);
+            } else if (isRedissonReferenceSupportEnabled() && (res instanceof MapScanResult)) {
+                Map<ScanObjectEntry,  ScanObjectEntry> map = ((MapScanResult)res).getMap();
+                HashMap<ScanObjectEntry,  ScanObjectEntry> toAdd = null;
+                for (Map.Entry<ScanObjectEntry,  ScanObjectEntry> e : (Set<Map.Entry<ScanObjectEntry, ScanObjectEntry>>) map.entrySet()) {
+                    if (e.getValue().getObj() instanceof RedissonReference) {
+                        try {
+                            e.setValue(new ScanObjectEntry(e.getValue().getBuf(), redisson != null
+                                    ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) e.getValue().getObj())
+                                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) e.getValue().getObj())));
+                        } catch (Exception exception) {//skip and carry on to next one.
+                        }
+                    }
+                    if (e.getKey().getObj() instanceof RedissonReference) {
+                        if (toAdd == null) {
+                            toAdd = new HashMap<ScanObjectEntry,  ScanObjectEntry>();
+                        }
+                        toAdd.put(e.getKey(), e.getValue());
+                    }
+                }
+                if (toAdd != null) {
+                    for (Map.Entry<ScanObjectEntry,  ScanObjectEntry> e : (Set<Map.Entry<ScanObjectEntry,  ScanObjectEntry>>) toAdd.entrySet()) {
+                        try {
+                            map.put(new ScanObjectEntry(e.getValue().getBuf(), (redisson != null
+                                    ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) e.getKey().getObj())
+                                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) e.getKey().getObj()))), map.remove(e.getKey()));
+                        } catch (Exception exception) {//skip and carry on to next one.
+                        }
+                    }
+                }
+                details.getMainPromise().trySuccess(res);
+            } else if (isRedissonReferenceSupportEnabled() && (res instanceof MapScanResult)) {
             } else if (isRedissonReferenceSupportEnabled() && res instanceof RedissonReference) {
                 try {
                     details.getMainPromise().trySuccess(redisson != null
