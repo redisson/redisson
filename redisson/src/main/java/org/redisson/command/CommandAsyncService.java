@@ -65,6 +65,7 @@ import java.util.Map;
 import org.redisson.RedissonReference;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -777,6 +778,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                     : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) r.get(i))));
                         } catch (Exception exception) {//skip and carry on to next one.
                         }
+                    } else if (r.get(i) instanceof ScoredEntry && ((ScoredEntry) r.get(i)).getValue() instanceof RedissonReference) {
+                        try {
+                            ScoredEntry se = ((ScoredEntry) r.get(i));
+                            r.set(i ,new ScoredEntry(se.getScore(), redisson != null
+                                    ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) se.getValue())
+                                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) se.getValue())));
+                        } catch (Exception exception) {//skip and carry on to next one.
+                        }
                     }
                 }
                 details.getMainPromise().trySuccess(res);
@@ -802,15 +811,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (toAdd != null) {
                     for (Map.Entry<ScanObjectEntry,  ScanObjectEntry> e : (Set<Map.Entry<ScanObjectEntry,  ScanObjectEntry>>) toAdd.entrySet()) {
                         try {
-                            map.remove(e.getKey());
                             map.put(new ScanObjectEntry(e.getValue().getBuf(), (redisson != null
                                     ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) e.getKey().getObj())
-                                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) e.getKey().getObj()))), e.getValue());
+                                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) e.getKey().getObj()))), map.remove(e.getKey()));
                         } catch (Exception exception) {//skip and carry on to next one.
                         }
                     }
                 }
                 details.getMainPromise().trySuccess(res);
+            } else if (isRedissonReferenceSupportEnabled() && (res instanceof MapScanResult)) {
             } else if (isRedissonReferenceSupportEnabled() && res instanceof RedissonReference) {
                 try {
                     details.getMainPromise().trySuccess(redisson != null
