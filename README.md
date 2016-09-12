@@ -65,7 +65,7 @@ Articles
 [Java Remote Method Invocation with Redisson](https://dzone.com/articles/java-remote-method-invocation-with-redisson)  
 [Java Multimaps With Redis](https://dzone.com/articles/multimaps-with-redis)  
 
-Quick start
+Easy to use. Quick start
 ===============================
 
 #### Maven 
