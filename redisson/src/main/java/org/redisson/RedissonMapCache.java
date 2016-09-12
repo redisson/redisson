@@ -64,7 +64,7 @@ import io.netty.util.concurrent.FutureListener;
  * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
- * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
+ * <p>If eviction is not required then it's better to use {@link org.redisson.RedissonMap} object.</p>
  *
  * @author Nikita Koksharov
  *
