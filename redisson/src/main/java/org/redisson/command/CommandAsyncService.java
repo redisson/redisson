@@ -37,6 +37,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisTimeoutException;
+import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
@@ -738,6 +739,19 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (future.cause() instanceof RedisLoadingException) {
             async(details.isReadOnlyMode(), source, details.getCodec(),
                     details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt());
+            AsyncDetails.release(details);
+            return;
+        }
+        
+        if (future.cause() instanceof RedisTryAgainException) {
+            connectionManager.newTimeout(new TimerTask() {
+                @Override
+                public void run(Timeout timeout) throws Exception {
+                    async(details.isReadOnlyMode(), source, details.getCodec(),
+                            details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt());
+                    
+                }
+            }, 1, TimeUnit.SECONDS);
             AsyncDetails.release(details);
             return;
         }
