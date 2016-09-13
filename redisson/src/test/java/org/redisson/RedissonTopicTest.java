@@ -45,7 +45,7 @@ public class RedissonTopicTest {
     @ClassRule
     public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
     @Rule
-    public static Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
+    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {

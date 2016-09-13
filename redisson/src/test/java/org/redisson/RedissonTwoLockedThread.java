@@ -31,7 +31,7 @@ public class RedissonTwoLockedThread {
     @ClassRule
     public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
     @Rule
-    public static Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
+    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @Parameterized.Parameters(name= "{index} - {0}")
     public static Iterable<Object[]> data() {

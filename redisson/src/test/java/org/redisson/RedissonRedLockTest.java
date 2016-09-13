@@ -25,7 +25,7 @@ public class RedissonRedLockTest {
     @ClassRule
     public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
     @Rule
-    public static Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
+    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @Test
     public void testLockFailed() throws IOException, InterruptedException {

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Inet4Address;
+import java.net.ServerSocket;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ public class RedisRunner {
         DAEMONIZE,
         PIDFILE,
         PORT,
+        RANDOM_PORT,
         TCP_BACKLOG,
         BIND(true),
         UNIXSOCKET,
@@ -179,6 +181,7 @@ public class RedisRunner {
     private boolean randomDir = false;
     private ArrayList<String> bindAddr = new ArrayList<>();
     private int port = 6379;
+    private boolean randomPort = true;
 
     {
         this.options.put(REDIS_OPTIONS.BINARY_PATH, RedissonRuntimeEnvironment.redisBinaryPath);
@@ -266,7 +269,14 @@ public class RedisRunner {
 
     public RedisRunner port(int port) {
         this.port = port;
+        this.randomPort = false;
         addConfigOption(REDIS_OPTIONS.PORT, port);
+        return this;
+    }
+    
+    public RedisRunner randomPort() {
+        this.randomPort = true;
+        options.remove(REDIS_OPTIONS.PORT);
         return this;
     }
 
@@ -784,5 +794,29 @@ public class RedisRunner {
 
     public static RedisRunner.RedisProcess getDefaultRedisServerInstance() {
         return defaultRedisInstance;
+    }
+    
+    private static int findFreePort() {
+        ServerSocket socket = null;
+        try {
+            socket = new ServerSocket(0);
+            socket.setReuseAddress(true);
+            int port = socket.getLocalPort();
+            try {
+                socket.close();
+            } catch (IOException e) {
+                // Ignore IOException on close()
+            }
+            return port;
+        } catch (IOException e) {
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+        throw new IllegalStateException("Could not find a free TCP/IP port to start embedded Jetty HTTP Server on");
     }
 }

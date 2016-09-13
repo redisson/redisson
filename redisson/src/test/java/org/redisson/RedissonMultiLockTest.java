@@ -23,7 +23,7 @@ public class RedissonMultiLockTest {
     @ClassRule
     public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
     @Rule
-    public static Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
+    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @Test
     public void testMultiThreads() throws IOException, InterruptedException {

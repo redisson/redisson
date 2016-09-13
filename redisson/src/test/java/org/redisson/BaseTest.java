@@ -18,7 +18,7 @@ public abstract class BaseTest {
     @ClassRule
     public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
     @Rule
-    public static Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
+    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
