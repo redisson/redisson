@@ -117,7 +117,7 @@ public class RedissonTest {
     @Test(expected = RedisException.class)
     public void testSer() {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6379");
+        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         config.setCodec(new SerializationCodec());
         RedissonClient r = Redisson.create(config);
         r.getMap("test").put("1", new Dummy());
@@ -163,7 +163,7 @@ public class RedissonTest {
     public void testConfigValidation() {
         Config redissonConfig = new Config();
         redissonConfig.useSingleServer()
-        .setAddress("127.0.0.1:6379")
+        .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort())
         .setConnectionPoolSize(2);
         Redisson.create(redissonConfig);        
     }
@@ -221,7 +221,7 @@ public class RedissonTest {
     @Test
     public void testShutdown() {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6379");
+        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
 
         RedissonClient r = Redisson.create(config);
         Assert.assertFalse(r.isShuttingDown());
@@ -349,7 +349,7 @@ public class RedissonTest {
         redisConfig.useSingleServer()
         .setConnectionMinimumIdleSize(10000)
         .setConnectionPoolSize(10000)
-        .setAddress("localhost:6379");
+        .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedissonClient r = Redisson.create(redisConfig);
         r.shutdown();
     }

@@ -32,7 +32,6 @@ public class RedisRunner {
         DAEMONIZE,
         PIDFILE,
         PORT,
-        RANDOM_PORT,
         TCP_BACKLOG,
         BIND(true),
         UNIXSOCKET,
@@ -181,7 +180,8 @@ public class RedisRunner {
     private boolean randomDir = false;
     private ArrayList<String> bindAddr = new ArrayList<>();
     private int port = 6379;
-    private boolean randomPort = true;
+    private int retryCount = Integer.MAX_VALUE;
+    private boolean randomPort = false;
 
     {
         this.options.put(REDIS_OPTIONS.BINARY_PATH, RedissonRuntimeEnvironment.redisBinaryPath);
@@ -231,11 +231,31 @@ public class RedisRunner {
         return new RedisProcess(p, runner);
     }
 
-    public RedisProcess run() throws IOException, InterruptedException {
+    public RedisProcess run() throws IOException, InterruptedException, FailedToStartRedisException {
         if (!options.containsKey(REDIS_OPTIONS.DIR)) {
-            options.put(REDIS_OPTIONS.DIR, defaultDir);
+            addConfigOption(REDIS_OPTIONS.DIR, defaultDir);
         }
-        return runWithOptions(this, options.values().toArray(new String[0]));
+        if (randomPort) {
+            for (int i = 0; i < retryCount; i++) {
+                this.port = findFreePort();
+                addConfigOption(REDIS_OPTIONS.PORT, this.port);
+                try {
+                    return runAndCheck();
+                } catch (FailedToStartRedisException e) {
+                }
+            }
+            throw new FailedToStartRedisException();
+        } else {
+            return runAndCheck();
+        }
+    }
+    
+    public RedisProcess runAndCheck() throws IOException, InterruptedException, FailedToStartRedisException {
+        RedisProcess rp = runWithOptions(this, options.values().toArray(new String[0]));
+        if (rp.redisProcess.waitFor(1000, TimeUnit.MILLISECONDS)) {
+            throw new FailedToStartRedisException();
+        }
+        return rp;
     }
 
     private void addConfigOption(REDIS_OPTIONS option, Object... args) {
@@ -275,7 +295,12 @@ public class RedisRunner {
     }
     
     public RedisRunner randomPort() {
+        return randomPort(Integer.MAX_VALUE);
+    }
+    
+    public RedisRunner randomPort(int retryCount) {
         this.randomPort = true;
+        this.retryCount = retryCount;
         options.remove(REDIS_OPTIONS.PORT);
         return this;
     }
@@ -753,13 +778,20 @@ public class RedisRunner {
             }
             return redisVersion;
         }
-
+        
+        public int getRedisServerPort() {
+            return runner.getPort();
+        }
+        
+        public String getRedisServerBindAddress() {
+            return runner.getInitialBindAddr();
+        }
     }
 
-    public static RedisRunner.RedisProcess startDefaultRedisServerInstance() throws IOException, InterruptedException {
+    public static RedisRunner.RedisProcess startDefaultRedisServerInstance() throws IOException, InterruptedException, FailedToStartRedisException {
         if (defaultRedisInstance == null) {
             System.out.println("REDIS RUNNER: Starting up default instance...");
-            defaultRedisInstance = new RedisRunner().nosave().randomDir().run();
+            defaultRedisInstance = new RedisRunner().nosave().randomDir().randomPort().run();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
                     shutDownDefaultRedisServerInstance();
@@ -795,8 +827,14 @@ public class RedisRunner {
     public static RedisRunner.RedisProcess getDefaultRedisServerInstance() {
         return defaultRedisInstance;
     }
+
+    public static String getDefaultRedisServerBindAddressAndPort() {
+        return defaultRedisInstance.getRedisServerBindAddress()
+                + ":"
+                + defaultRedisInstance.getRedisServerPort();
+    }
     
-    private static int findFreePort() {
+    public static int findFreePort() {
         ServerSocket socket = null;
         try {
             socket = new ServerSocket(0);
@@ -817,6 +855,13 @@ public class RedisRunner {
                 }
             }
         }
-        throw new IllegalStateException("Could not find a free TCP/IP port to start embedded Jetty HTTP Server on");
+        throw new IllegalStateException("Could not find a free TCP/IP port.");
     }
+    
+    public static class FailedToStartRedisException extends RuntimeException {
+
+        private FailedToStartRedisException() {
+        }
+    }
+
 }

@@ -7,8 +7,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.junit.ClassRule;
+import org.junit.Rule;
 
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.Redisson;
@@ -18,24 +21,31 @@ import org.redisson.config.ReadMode;
 
 public class WeightedRoundRobinBalancerTest {
 
+    @ClassRule
+    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
+    @Rule
+    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
+
     @Test
     public void testUseMasterForReadsIfNoConnectionsToSlaves() throws IOException, InterruptedException {
         RedisProcess master = null;
         RedisProcess slave = null;
         RedissonClient client = null;
         try {
-            master = redisTestInstance(6379);
-            slave = redisTestInstance(6380);
+            int mPort = RedisRunner.findFreePort();
+            int sPort = RedisRunner.findFreePort();
+            master = redisTestInstance(mPort);
+            slave = redisTestInstance(sPort);
 
             Map<String, Integer> weights = new HashMap<>();
-            weights.put("127.0.0.1:6379", 1);
-            weights.put("127.0.0.1:6380", 2);
+            weights.put("127.0.0.1:" + mPort, 1);
+            weights.put("127.0.0.1:" + sPort, 2);
 
             Config config = new Config();
             config.useMasterSlaveServers()
                 .setReadMode(ReadMode.SLAVE)
-                .setMasterAddress("127.0.0.1:6379")
-                .addSlaveAddress("127.0.0.1:6380")
+                .setMasterAddress("127.0.0.1:" + mPort)
+                .addSlaveAddress("127.0.0.1:" + sPort)
                 .setLoadBalancer(new WeightedRoundRobinBalancer(weights, 1));
 
             client = Redisson.create(config);

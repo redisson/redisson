@@ -75,7 +75,7 @@ public class RedisClientTest {
 
     @Test
     public void testConnectAsync() throws InterruptedException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RFuture<RedisConnection> f = c.connectAsync();
         final CountDownLatch l = new CountDownLatch(1);
         f.addListener((FutureListener<RedisConnection>) future -> {
@@ -88,7 +88,7 @@ public class RedisClientTest {
 
     @Test
     public void testSubscribe() throws InterruptedException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedisPubSubConnection pubSubConnection = c.connectPubSub();
         final CountDownLatch latch = new CountDownLatch(2);
         pubSubConnection.addListener(new RedisPubSubListener<Object>() {
@@ -116,7 +116,7 @@ public class RedisClientTest {
 
     @Test
     public void test() throws InterruptedException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         final RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
@@ -138,7 +138,7 @@ public class RedisClientTest {
 
     @Test
     public void testPipeline() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
@@ -166,7 +166,7 @@ public class RedisClientTest {
 
     @Test
     public void testBigRequest() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedisConnection conn = c.connect();
 
         for (int i = 0; i < 50; i++) {
@@ -181,7 +181,7 @@ public class RedisClientTest {
 
     @Test
     public void testPipelineBigResponse() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedisConnection conn = c.connect();
 
         List<CommandData<?, ?>> commands = new ArrayList<CommandData<?, ?>>();
