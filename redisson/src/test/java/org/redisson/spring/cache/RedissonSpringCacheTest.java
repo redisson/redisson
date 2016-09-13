@@ -6,9 +6,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.redisson.BaseTest;
@@ -29,6 +33,11 @@ import org.springframework.stereotype.Service;
 
 @RunWith(Parameterized.class)
 public class RedissonSpringCacheTest {
+
+    @ClassRule
+    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
+    @Rule
+    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     public static class SampleObject {
 

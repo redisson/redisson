@@ -13,10 +13,19 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 
 public class JsonJacksonMapValueCodecTest {
+
+    @ClassRule
+    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
+    @Rule
+    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     private final JsonJacksonMapValueCodec<Map<String, List<String>>> mapCodec = new JsonJacksonMapValueCodec<Map<String, List<String>>>(new TypeReference<Map<String, List<String>>>() {
     });
