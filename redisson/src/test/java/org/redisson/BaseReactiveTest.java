@@ -9,6 +9,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.rules.Timeout;
 import org.reactivestreams.Publisher;
 import org.redisson.api.RCollectionReactive;
@@ -22,7 +23,9 @@ import reactor.rx.Streams;
 public abstract class BaseReactiveTest {
 
     @ClassRule
-    public static Timeout classTimeout = new Timeout(15, TimeUnit.MINUTES);
+    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
+    @Rule
+    public static Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     protected RedissonReactiveClient redisson;
     protected static RedissonReactiveClient defaultRedisson;

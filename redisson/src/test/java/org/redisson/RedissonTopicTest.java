@@ -37,12 +37,15 @@ import org.redisson.config.Config;
 import com.jayway.awaitility.Awaitility;
 import com.jayway.awaitility.Duration;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.rules.Timeout;
 
 public class RedissonTopicTest {
 
     @ClassRule
-    public static Timeout classTimeout = new Timeout(15, TimeUnit.MINUTES);
+    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
+    @Rule
+    public static Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {

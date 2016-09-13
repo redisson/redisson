@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.redisson.api.RCountDownLatch;
@@ -20,7 +21,9 @@ import org.redisson.api.RedissonClient;
 public class RedissonCountDownLatchConcurrentTest {
     
     @ClassRule
-    public static Timeout classTimeout = new Timeout(15, TimeUnit.MINUTES);
+    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
+    @Rule
+    public static Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
