@@ -786,6 +786,10 @@ public class RedisRunner {
         public String getRedisServerBindAddress() {
             return runner.getInitialBindAddr();
         }
+        
+        public String getRedisServerAddressAndPort() {
+            return getRedisServerBindAddress() + ":" + getRedisServerPort();
+        }
     }
 
     public static RedisRunner.RedisProcess startDefaultRedisServerInstance() throws IOException, InterruptedException, FailedToStartRedisException {

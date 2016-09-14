@@ -32,20 +32,18 @@ public class WeightedRoundRobinBalancerTest {
         RedisProcess slave = null;
         RedissonClient client = null;
         try {
-            int mPort = RedisRunner.findFreePort();
-            int sPort = RedisRunner.findFreePort();
-            master = redisTestInstance(mPort);
-            slave = redisTestInstance(sPort);
+            master = redisTestInstance();
+            slave = redisTestInstance();
 
             Map<String, Integer> weights = new HashMap<>();
-            weights.put("127.0.0.1:" + mPort, 1);
-            weights.put("127.0.0.1:" + sPort, 2);
+            weights.put(master.getRedisServerAddressAndPort(), 1);
+            weights.put(slave.getRedisServerAddressAndPort(), 2);
 
             Config config = new Config();
             config.useMasterSlaveServers()
                 .setReadMode(ReadMode.SLAVE)
-                .setMasterAddress("127.0.0.1:" + mPort)
-                .addSlaveAddress("127.0.0.1:" + sPort)
+                .setMasterAddress(master.getRedisServerAddressAndPort())
+                .addSlaveAddress(slave.getRedisServerAddressAndPort())
                 .setLoadBalancer(new WeightedRoundRobinBalancer(weights, 1));
 
             client = Redisson.create(config);
@@ -70,10 +68,11 @@ public class WeightedRoundRobinBalancerTest {
         }
     }
 
-    private RedisProcess redisTestInstance(int port) throws IOException, InterruptedException {
+    private RedisProcess redisTestInstance() throws IOException, InterruptedException {
         return new RedisRunner()
                 .nosave()
                 .randomDir()
-                .port(port).run();
+                .randomPort()
+                .run();
     }
 }

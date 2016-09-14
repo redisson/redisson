@@ -27,10 +27,10 @@ public class RedissonMultiLockTest {
 
     @Test
     public void testMultiThreads() throws IOException, InterruptedException {
-        RedisProcess redis1 = redisTestMultilockInstance(6320);
+        RedisProcess redis1 = redisTestMultilockInstance();
         
         Config config1 = new Config();
-        config1.useSingleServer().setAddress("127.0.0.1:6320");
+        config1.useSingleServer().setAddress(redis1.getRedisServerAddressAndPort());
         RedissonClient client = Redisson.create(config1);
         
         RLock lock1 = client.getLock("lock1");
@@ -62,15 +62,15 @@ public class RedissonMultiLockTest {
     
     @Test
     public void test() throws IOException, InterruptedException {
-        RedisProcess redis1 = redisTestMultilockInstance(6320);
-        RedisProcess redis2 = redisTestMultilockInstance(6321);
-        RedisProcess redis3 = redisTestMultilockInstance(6322);
+        RedisProcess redis1 = redisTestMultilockInstance();
+        RedisProcess redis2 = redisTestMultilockInstance();
+        RedisProcess redis3 = redisTestMultilockInstance();
 
         NioEventLoopGroup group = new NioEventLoopGroup();
         
-        RedissonClient client1 = createClient(group, "127.0.0.1:6320");
-        RedissonClient client2 = createClient(group, "127.0.0.1:6321");
-        RedissonClient client3 = createClient(group, "127.0.0.1:6322");
+        RedissonClient client1 = createClient(group, redis1.getRedisServerAddressAndPort());
+        RedissonClient client2 = createClient(group, redis2.getRedisServerAddressAndPort());
+        RedissonClient client3 = createClient(group, redis3.getRedisServerAddressAndPort());
 
         final RLock lock1 = client1.getLock("lock1");
         final RLock lock2 = client2.getLock("lock2");
@@ -117,11 +117,11 @@ public class RedissonMultiLockTest {
         return client1;
     }
     
-    private RedisProcess redisTestMultilockInstance(int port) throws IOException, InterruptedException {
+    private RedisProcess redisTestMultilockInstance() throws IOException, InterruptedException {
         return new RedisRunner()
                 .nosave()
                 .randomDir()
-                .port(port)
+                .randomPort()
                 .run();
     }
     
