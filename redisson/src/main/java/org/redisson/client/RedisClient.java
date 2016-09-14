@@ -203,7 +203,10 @@ public class RedisClient {
 
     public ChannelGroupFuture shutdownAsync() {
         for (Channel channel : channels) {
-            RedisConnection.getFrom(channel).setClosed(true);
+            RedisConnection connection = RedisConnection.getFrom(channel);
+            if (connection != null) {
+                connection.setClosed(true);
+            }
         }
         return channels.close();
     }
