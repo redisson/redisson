@@ -233,7 +233,9 @@ public class RedissonTopicTest {
         CountDownLatch latch = new CountDownLatch(1);
         topic.addListener((channel, msg) -> {
             for (int j = 0; j < 1000; j++) {
+                System.out.println("start: " + j);
                 redissonSet.contains("" + j);
+                System.out.println("end: " + j);
             }
             latch.countDown();
         });
