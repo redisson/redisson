@@ -69,7 +69,10 @@ public abstract class BaseTest {
 //        config.setCodec(new MsgPackJacksonCodec());
 //        config.useSentinelServers().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26379", "127.0.0.1:26389");
 //        config.useClusterServers().addNodeAddress("127.0.0.1:7004", "127.0.0.1:7001", "127.0.0.1:7000");
-        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        config.useSingleServer()
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort())
+                .setConnectTimeout(1000000)
+                .setTimeout(1000000);
 //        .setPassword("mypass1");
 //        config.useMasterSlaveConnection()
 //        .setMasterAddress("127.0.0.1:6379")

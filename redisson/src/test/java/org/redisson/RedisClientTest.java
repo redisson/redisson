@@ -116,7 +116,9 @@ public class RedisClientTest {
 
     @Test
     public void test() throws InterruptedException {
-        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerInstance().getRedisServerBindAddress(),
+                RedisRunner.getDefaultRedisServerInstance().getRedisServerPort(),
+                1000000, 1000000);
         final RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
