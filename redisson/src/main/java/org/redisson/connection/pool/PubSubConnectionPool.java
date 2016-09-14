@@ -22,6 +22,12 @@ import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 
+/**
+ * Connection pool for Publish / Subscribe
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> {
 
     public PubSubConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
