@@ -86,10 +86,6 @@ public class RedissonReference {
         this.codec = codec != null ? codec.getClass().getName() : null;
     }
 
-    public boolean isDefaultCodec() {
-        return codec == null;
-    }
-
     /**
      * @return the type
      * @throws java.lang.Exception - which could be:
@@ -151,6 +147,10 @@ public class RedissonReference {
      */
     public void setKeyName(String keyName) {
         this.keyName = keyName;
+    }
+    
+    public String getCodec() {
+        return codec;
     }
 
     /**
