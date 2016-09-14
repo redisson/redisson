@@ -100,7 +100,7 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
 
     RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue);
 
-    RFuture<Long> removeAsync(Object key, Object value);
+    RFuture<Boolean> removeAsync(Object key, Object value);
 
     RFuture<V> putIfAbsentAsync(K key, V value);
 

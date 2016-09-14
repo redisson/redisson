@@ -307,8 +307,8 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         RMapReactive<SimpleKey, SimpleValue> map = redisson.getMap("simple");
         sync(map.put(new SimpleKey("1"), new SimpleValue("2")));
 
-        long size = sync(map.remove(new SimpleKey("1"), new SimpleValue("2")));
-        Assert.assertEquals(1, size);
+        boolean size = sync(map.remove(new SimpleKey("1"), new SimpleValue("2")));
+        Assert.assertTrue(size);
 
         SimpleValue val1 = sync(map.get(new SimpleKey("1")));
         Assert.assertNull(val1);
@@ -321,11 +321,11 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         RMapReactive<SimpleKey, SimpleValue> map = redisson.getMap("simple");
         sync(map.put(new SimpleKey("1"), new SimpleValue("2")));
 
-        long size = sync(map.remove(new SimpleKey("2"), new SimpleValue("1")));
-        Assert.assertEquals(0, size);
+        boolean removed = sync(map.remove(new SimpleKey("2"), new SimpleValue("1")));
+        Assert.assertFalse(removed);
 
-        long size2 = sync(map.remove(new SimpleKey("1"), new SimpleValue("3")));
-        Assert.assertEquals(0, size2);
+        boolean size2 = sync(map.remove(new SimpleKey("1"), new SimpleValue("3")));
+        Assert.assertFalse(size2);
 
         SimpleValue val1 = sync(map.get(new SimpleKey("1")));
         Assert.assertEquals("2", val1.getValue());
@@ -444,9 +444,9 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
     @Test
     public void testEmptyRemove() {
         RMapReactive<Integer, Integer> map = redisson.getMap("simple");
-        Assert.assertEquals(0, sync(map.remove(1, 3)).intValue());
+        assertThat(sync(map.remove(1, 3))).isFalse();
         sync(map.put(4, 5));
-        Assert.assertEquals(1, sync(map.remove(4, 5)).intValue());
+        assertThat(sync(map.remove(4, 5))).isTrue();
     }
 
     @Test

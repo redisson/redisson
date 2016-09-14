@@ -278,8 +278,8 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
         RMapCacheReactive<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         sync(map.put(new SimpleKey("1"), new SimpleValue("2"), 1, TimeUnit.SECONDS));
 
-        long res = sync(map.remove(new SimpleKey("1"), new SimpleValue("2")));
-        Assert.assertEquals(1, res);
+        boolean res = sync(map.remove(new SimpleKey("1"), new SimpleValue("2")));
+        Assert.assertTrue(res);
 
         SimpleValue val1 = sync(map.get(new SimpleKey("1")));
         Assert.assertNull(val1);
@@ -373,9 +373,9 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
     @Test
     public void testEmptyRemove() {
         RMapCacheReactive<Integer, Integer> map = redisson.getMapCache("simple");
-        Assert.assertEquals(0, sync(map.remove(1, 3)).longValue());
+        assertThat(sync(map.remove(1, 3))).isEqualTo(0);
         sync(map.put(4, 5));
-        Assert.assertEquals(1, sync(map.remove(4, 5)).longValue());
+        assertThat(sync(map.remove(4, 5))).isEqualTo(1);
     }
 
     @Test

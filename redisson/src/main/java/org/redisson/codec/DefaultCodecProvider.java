@@ -28,7 +28,7 @@ import org.redisson.api.annotation.RObjectField;
  */
 public class DefaultCodecProvider implements CodecProvider {
 
-    public final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
+    public transient final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
 
     @Override
     public <T extends Codec> T getCodec(Class<T> codecClass) {

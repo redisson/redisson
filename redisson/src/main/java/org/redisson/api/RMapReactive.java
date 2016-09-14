@@ -77,7 +77,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
 
     Publisher<Boolean> replace(K key, V oldValue, V newValue);
 
-    Publisher<Long> remove(Object key, Object value);
+    Publisher<Boolean> remove(Object key, Object value);
 
     Publisher<V> putIfAbsent(K key, V value);
 
