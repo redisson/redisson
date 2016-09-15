@@ -21,6 +21,8 @@ import java.util.Queue;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -39,6 +41,8 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class CommandsQueue extends ChannelOutboundHandlerAdapter {
 
+    private static final Logger log = LoggerFactory.getLogger(CommandsQueue.class);
+    
     public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
     private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
@@ -53,7 +57,7 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
     };
 
     public void sendNextCommand(Channel channel) {
-        channel.attr(CommandsQueue.CURRENT_COMMAND).remove();
+        channel.attr(CommandsQueue.CURRENT_COMMAND).set(null);
         queue.poll();
         sendData(channel);
     }
@@ -94,4 +98,18 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
         }
     }
 
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        QueueCommand command = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
+        if (command != null) {
+            if (!command.tryFailure(cause)) {
+                log.error("Exception occured. Channel: " + ctx.channel() + " Command: " + command, cause);
+            }
+            sendNextCommand(ctx.channel());
+            return;
+        }
+        
+        log.error("Exception occured. Channel: " + ctx.channel(), cause);
+    }
+    
 }
