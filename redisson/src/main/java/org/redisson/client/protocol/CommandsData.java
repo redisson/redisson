@@ -20,6 +20,11 @@ import java.util.List;
 
 import org.redisson.misc.RPromise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class CommandsData implements QueueCommand {
 
     private final List<CommandData<?, ?>> commands;
@@ -48,6 +53,11 @@ public class CommandsData implements QueueCommand {
             }
         }
         return result;
+    }
+
+    @Override
+    public boolean tryFailure(Throwable cause) {
+        return promise.tryFailure(cause);
     }
 
 }

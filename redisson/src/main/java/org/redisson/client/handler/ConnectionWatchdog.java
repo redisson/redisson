@@ -40,7 +40,6 @@ import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
@@ -151,11 +150,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                 conn.psubscribe(entry.getValue(), entry.getKey());
             }
         }
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        ctx.channel().close();
     }
 
     private void refresh(RedisConnection connection, Channel channel) {

@@ -23,6 +23,13 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.misc.RPromise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> input type
+ * @param <R> output type
+ */
 public class CommandData<T, R> implements QueueCommand {
 
     final RPromise<R> promise;
