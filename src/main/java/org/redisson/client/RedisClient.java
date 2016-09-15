@@ -133,14 +133,22 @@ public class RedisClient {
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    RedisConnection c = new RedisConnection(RedisClient.this, future.channel());
-                    f.setSuccess(c);
-                } else {
-                    f.setFailure(future.cause());
-                }
-            }
+            public void operationComplete(final ChannelFuture future) throws Exception {
+                 if (future.isSuccess()) {
+                     final RedisConnection c = new RedisConnection(RedisClient.this, future.channel());
+                     bootstrap.group().execute(new Runnable() {
+                         public void run() {
+                            f.setSuccess(c);
+                         }
+                     });
+                 } else {
+                     bootstrap.group().execute(new Runnable() {
+                         public void run() {
+                             f.setFailure(future.cause());
+                         }
+                     });
+                 }
+            }				
         });
         return f;
     }
@@ -160,14 +168,22 @@ public class RedisClient {
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    RedisPubSubConnection c = new RedisPubSubConnection(RedisClient.this, future.channel());
-                    f.setSuccess(c);
+            public void operationComplete(final ChannelFuture future) throws Exception {
+                 if (future.isSuccess()) {
+                    final RedisPubSubConnection c = new RedisPubSubConnection(RedisClient.this, future.channel());
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            f.setSuccess(c);
+                        }
+                    });
                 } else {
-                    f.setFailure(future.cause());
-                }
-            }
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            f.setFailure(future.cause());
+                        }
+                    });
+                 }
+			}
         });
         return f;
     }
