@@ -152,12 +152,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         }
     }
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        ctx.channel().close();
-        super.exceptionCaught(ctx, cause);
-    }
-
     private void refresh(RedisConnection connection, Channel channel) {
         CommandData<?, ?> commandData = connection.getCurrentCommand();
         connection.updateChannel(channel);
