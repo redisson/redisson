@@ -31,6 +31,9 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.PlatformDependent;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 /**
  *
  *
@@ -38,6 +41,8 @@ import io.netty.util.internal.PlatformDependent;
  *
  */
 public class CommandsQueue extends ChannelOutboundHandlerAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(CommandsQueue.class);
 
     public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
@@ -92,6 +97,20 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
             command.getChannelPromise().addListener(listener);
             ch.writeAndFlush(data, command.getChannelPromise());
         }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        QueueCommand command = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
+        if (command != null) {
+            if (!command.tryFailure(cause)) {
+                log.error("Exception occured. Channel: " + ctx.channel() + " Command: " + command, cause);
+            }
+            sendNextCommand(ctx.channel());
+            return;
+        }
+        
+        log.error("Exception occured. Channel: " + ctx.channel(), cause);
     }
 
 }

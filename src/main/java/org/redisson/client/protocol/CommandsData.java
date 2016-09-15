@@ -50,4 +50,9 @@ public class CommandsData implements QueueCommand {
         return result;
     }
 
+    @Override
+    public boolean tryFailure(Throwable cause) {
+        return promise.tryFailure(cause);
+    }
+
 }

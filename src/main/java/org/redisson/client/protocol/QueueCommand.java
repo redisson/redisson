@@ -29,4 +29,6 @@ public interface QueueCommand {
 
     List<CommandData<Object, Object>> getPubSubOperations();
 
+    boolean tryFailure(Throwable cause);
+
 }
