@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Map object with entry cache support.
+ * Map object with local entry cache support.
  * <p>
  * Each instance maintains local cache to achieve fast read operations.
  * Suitable for maps which used mostly for read operations and network roundtrip delays are undesirable.
@@ -26,6 +26,6 @@ package org.redisson.api;
  * @param <K>
  * @param <V>
  */
-public interface RLocalCachedMap<K, V> extends RMap<K, V>, RExpirable, RDestroyable {
+public interface RLocalCachedMap<K, V> extends RMap<K, V>, RDestroyable {
 
 }
