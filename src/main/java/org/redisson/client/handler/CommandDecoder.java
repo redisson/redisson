@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
@@ -240,6 +241,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     int slot = Integer.valueOf(errorParts[1]);
                     String addr = errorParts[2];
                     data.tryFailure(new RedisAskException(slot, addr));
+                } else if (error.startsWith("TRYAGAIN")) {
+                    data.tryFailure(new RedisTryAgainException(error
+                            + ". channel: " + channel + " data: " + data));
                 } else if (error.startsWith("LOADING")) {
                     data.tryFailure(new RedisLoadingException(error
                             + ". channel: " + channel + " data: " + data));

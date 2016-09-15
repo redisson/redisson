@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisLoadingException;
@@ -277,9 +278,21 @@ public class CommandBatchService extends CommandReactiveService {
                     execute(entry, new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), mainPromise, slots, attempt);
                     return;
                 }
+
                 if (future.cause() instanceof RedisLoadingException) {
                     entry.clearErrors();
                     execute(entry, source, mainPromise, slots, attempt);
+                    return;
+                }
+
+                if (future.cause() instanceof RedisTryAgainException) {
+                    entry.clearErrors();
+                    connectionManager.newTimeout(new TimerTask() {
+                        @Override
+                        public void run(Timeout timeout) throws Exception {
+                            execute(entry, source, mainPromise, slots, attempt);
+                        }
+                    }, 1, TimeUnit.SECONDS);
                     return;
                 }
 
