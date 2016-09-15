@@ -60,7 +60,8 @@ Projects using Redisson
 Articles
 ================================
 
-[Java data structures powered by Redis. Introduction to Redisson. PDF](http://redisson.org/Redisson.pdf)  
+[Java data structures powered by Redis. Introduction to Redisson (pdf)](http://redisson.org/Redisson.pdf)  
+[Distributed tasks Execution and Scheduling in Java](https://dzone.com/articles/distributed-tasks-execution-and-scheduling-in-java)
 [Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
 [Java Remote Method Invocation with Redisson](https://dzone.com/articles/java-remote-method-invocation-with-redisson)  
 [Java Multimaps With Redis](https://dzone.com/articles/multimaps-with-redis)  
