@@ -24,7 +24,6 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisOutOfMemoryException;
-import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
@@ -32,17 +31,9 @@ import org.redisson.connection.ConnectionListener;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
 import static org.redisson.BaseTest.createInstance;
 
 public class RedissonTest {
-
-    @ClassRule
-    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
-    @Rule
-    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;

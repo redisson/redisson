@@ -1,17 +1,12 @@
 package org.redisson.connection.balancer;
 
-import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import org.junit.ClassRule;
-import org.junit.Rule;
 
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.Redisson;
@@ -20,11 +15,6 @@ import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 
 public class WeightedRoundRobinBalancerTest {
-
-    @ClassRule
-    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
-    @Rule
-    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @Test
     public void testUseMasterForReadsIfNoConnectionsToSlaves() throws IOException, InterruptedException {

@@ -1,25 +1,15 @@
 package org.redisson;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
 import org.redisson.api.RedissonClient;
-import org.redisson.codec.MsgPackJacksonCodec;
 import org.redisson.config.Config;
 
 public abstract class BaseTest {
     
-    @ClassRule
-    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
-    @Rule
-    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
-
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
 

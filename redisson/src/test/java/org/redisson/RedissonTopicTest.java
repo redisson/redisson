@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
@@ -36,16 +35,8 @@ import org.redisson.config.Config;
 
 import com.jayway.awaitility.Awaitility;
 import com.jayway.awaitility.Duration;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
 
 public class RedissonTopicTest {
-
-    @ClassRule
-    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
-    @Rule
-    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {

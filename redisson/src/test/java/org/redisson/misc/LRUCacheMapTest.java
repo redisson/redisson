@@ -3,18 +3,10 @@ package org.redisson.misc;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.concurrent.TimeUnit;
-import org.junit.ClassRule;
-import org.junit.Rule;
 
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 public class LRUCacheMapTest {
-
-    @ClassRule
-    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
-    @Rule
-    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @Test
     public void testMaxIdleTimeEviction() throws InterruptedException {

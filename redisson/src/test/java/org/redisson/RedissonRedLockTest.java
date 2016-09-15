@@ -16,16 +16,8 @@ import org.redisson.config.Config;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.Timeout;
 
 public class RedissonRedLockTest {
-
-    @ClassRule
-    public static Timeout classTimeout = new Timeout(1, TimeUnit.HOURS);
-    @Rule
-    public Timeout testTimeout = new Timeout(15, TimeUnit.MINUTES);
 
     @Test
     public void testLockFailed() throws IOException, InterruptedException {
