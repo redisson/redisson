@@ -381,8 +381,8 @@ public class MasterSlaveEntry {
         writeConnectionHolder.returnConnection(masterEntry, connection);
     }
 
-    public void releaseRead(RedisConnection сonnection) {
-        slaveBalancer.returnConnection(сonnection);
+    public void releaseRead(RedisConnection connection) {
+        slaveBalancer.returnConnection(connection);
     }
 
     public void shutdown() {

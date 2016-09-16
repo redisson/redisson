@@ -38,9 +38,17 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @return <code>true</code> if any of objects were deleted
      */
     boolean delete();
+
+    /**
+     * Register workers
+     * 
+     * @param workers - workers amount
+     * @param executor - executor instance
+     */
+    void registerWorkers(int workers);
     
     /**
-     * Register workers using custom executor to execute each task
+     * Register workers with custom executor which executes each task
      * 
      * @param workers - workers amount
      * @param executor - executor instance

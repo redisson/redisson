@@ -18,6 +18,9 @@ package org.redisson.client;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.client.handler.CommandBatchEncoder;
@@ -61,6 +64,7 @@ public class RedisClient {
     private final InetSocketAddress addr;
     private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
+    private ExecutorService executor;
     private final long commandTimeout;
     private Timer timer;
     private boolean hasOwnGroup;
@@ -70,29 +74,30 @@ public class RedisClient {
     }
     
     public RedisClient(URI address) {
-        this(new HashedWheelTimer(), new NioEventLoopGroup(), address);
+        this(new HashedWheelTimer(), Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2), new NioEventLoopGroup(), address);
         hasOwnGroup = true;
     }
 
-    public RedisClient(Timer timer, EventLoopGroup group, URI address) {
-        this(timer, group, address.getHost(), address.getPort());
+    public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, URI address) {
+        this(timer, executor, group, address.getHost(), address.getPort());
     }
     
     public RedisClient(String host, int port) {
-        this(new HashedWheelTimer(), new NioEventLoopGroup(), NioSocketChannel.class, host, port, 10000, 10000);
+        this(new HashedWheelTimer(), Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2), new NioEventLoopGroup(), NioSocketChannel.class, host, port, 10000, 10000);
         hasOwnGroup = true;
     }
     
-    public RedisClient(Timer timer, EventLoopGroup group, String host, int port) {
-        this(timer, group, NioSocketChannel.class, host, port, 10000, 10000);
+    public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, String host, int port) {
+        this(timer, executor, group, NioSocketChannel.class, host, port, 10000, 10000);
     }
     
     public RedisClient(String host, int port, int connectTimeout, int commandTimeout) {
         this(new HashedWheelTimer(), new NioEventLoopGroup(), NioSocketChannel.class, host, port, connectTimeout, commandTimeout);
     }
 
-    public RedisClient(final Timer timer, EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, 
+    public RedisClient(final Timer timer, ExecutorService executor, EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, 
                         int connectTimeout, int commandTimeout) {
+        this.executor = executor;
         addr = new InetSocketAddress(host, port);
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
         bootstrap.handler(new ChannelInitializer<Channel>() {
@@ -102,7 +107,7 @@ public class RedisClient {
                     CommandEncoder.INSTANCE,
                     CommandBatchEncoder.INSTANCE,
                     new CommandsQueue(),
-                    new CommandDecoder());
+                    new CommandDecoder(RedisClient.this.executor));
             }
         });
 
@@ -201,7 +206,14 @@ public class RedisClient {
         shutdownAsync().syncUninterruptibly();
         if (hasOwnGroup) {
             timer.stop();
+            executor.shutdown();
+            try {
+                executor.awaitTermination(15, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             bootstrap.group().shutdownGracefully();
+            
         }
     }
 
