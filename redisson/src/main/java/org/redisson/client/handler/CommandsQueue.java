@@ -15,11 +15,10 @@
  */
 package org.redisson.client.handler;
 
-import java.util.Arrays;
-import java.util.HashSet;
+import java.io.IOException;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
@@ -45,8 +44,9 @@ import io.netty.util.internal.PlatformDependent;
 public class CommandsQueue extends ChannelOutboundHandlerAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(CommandsQueue.class);
-    
-    private static final Set<String> SKIP_MESSAGES = new HashSet<String>(Arrays.asList("Connection timed out", "Connection reset by peer", "Broken pipe"));
+
+    private static final Pattern IGNORABLE_ERROR_MESSAGE = Pattern.compile(
+            "^.*(?:connection.*(?:reset|closed|abort|broken)|broken.*pipe).*$", Pattern.CASE_INSENSITIVE);
     
     public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
@@ -105,18 +105,22 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        QueueCommand command = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
-        if (command != null) {
-            if (!command.tryFailure(cause)) {
-                log.error("Exception occured. Channel: " + ctx.channel() + " Command: " + command, cause);
+        if (cause instanceof IOException) {
+            String message = String.valueOf(cause.getMessage()).toLowerCase();
+            if (IGNORABLE_ERROR_MESSAGE.matcher(message).matches()) {
+                return;
             }
-            sendNextCommand(ctx.channel());
-            return;
         }
-        
-        if (!SKIP_MESSAGES.contains(cause.getMessage())) {
-            log.error("Exception occured. Channel: " + ctx.channel(), cause);
-        }
-    }
+
+//        QueueCommand command = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
+//        if (command != null) {
+//            if (!command.tryFailure(cause)) {
+//                log.error("Exception occured. Channel: " + ctx.channel() + " Command: " + command, cause);
+//            }
+//            sendNextCommand(ctx.channel());
+//            return;
+//        }
+        log.error("Exception occured. Channel: " + ctx.channel(), cause);
+   }
     
 }
