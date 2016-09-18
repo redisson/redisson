@@ -53,6 +53,7 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.RedissonThreadFactory;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.TransferListener;
 import org.slf4j.Logger;
@@ -68,6 +69,7 @@ import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
@@ -170,7 +172,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = EpollSocketChannel.class;
         } else {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new NioEventLoopGroup(cfg.getNettyThreads());
+                this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -189,7 +191,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             if (cfg.getThreads() != 0) {
                 threads = cfg.getThreads();
             }
-            executor = Executors.newFixedThreadPool(threads);
+            executor = Executors.newFixedThreadPool(threads, new DefaultThreadFactory("redisson"));
         } else {
             executor = cfg.getExecutor();
         }

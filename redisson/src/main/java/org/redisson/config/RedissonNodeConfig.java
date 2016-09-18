@@ -30,7 +30,6 @@ import org.redisson.api.RedissonNodeInitializer;
 public class RedissonNodeConfig extends Config {
     
     private RedissonNodeInitializer redissonNodeInitializer;
-    private int executorServiceThreads = 0;
     private Map<String, Integer> executorServiceWorkers = new HashMap<String, Integer>();
     
     public RedissonNodeConfig() {
@@ -43,29 +42,8 @@ public class RedissonNodeConfig extends Config {
     
     public RedissonNodeConfig(RedissonNodeConfig oldConf) {
         super(oldConf);
-        this.executorServiceThreads = oldConf.executorServiceThreads;
         this.executorServiceWorkers = new HashMap<String, Integer>(oldConf.executorServiceWorkers);
         this.redissonNodeInitializer = oldConf.redissonNodeInitializer;
-    }
-
-    /**
-     * Executor service threads amount shared between all workers.
-     * <p>
-     * <code>0</code> - create separate thread executor with <code>(current_processors_amount * 2)</code> threads
-     * <p>
-     * <code>n</code> - create separate thread executor with <code>(n)</code> threads
-     * <p>
-     * Default is <code>0</code>.
-     * 
-     * @param executorThreads
-     * @return
-     */
-    public RedissonNodeConfig setExecutorServiceThreads(int executorThreads) {
-        this.executorServiceThreads = executorThreads;
-        return this;
-    }
-    public int getExecutorServiceThreads() {
-        return executorServiceThreads;
     }
     
     /**
