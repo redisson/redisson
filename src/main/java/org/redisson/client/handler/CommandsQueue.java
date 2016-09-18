@@ -15,6 +15,8 @@
  */
 package org.redisson.client.handler;
 
+import java.io.IOException;
+import java.util.regex.Pattern;
 import java.util.List;
 import java.util.Queue;
 
@@ -43,6 +45,9 @@ import org.slf4j.Logger;
 public class CommandsQueue extends ChannelOutboundHandlerAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(CommandsQueue.class);
+
+    private static final Pattern IGNORABLE_ERROR_MESSAGE = 
+              Pattern.compile("^.*(?:connection.*(?:reset|closed|abort|broken)|broken.*pipe).*$", Pattern.CASE_INSENSITIVE);
 
     public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
@@ -101,15 +106,21 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        QueueCommand command = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
-        if (command != null) {
-            if (!command.tryFailure(cause)) {
-                log.error("Exception occured. Channel: " + ctx.channel() + " Command: " + command, cause);
+        if (cause instanceof IOException) {
+            String message = String.valueOf(cause.getMessage()).toLowerCase();
+            if (IGNORABLE_ERROR_MESSAGE.matcher(message).matches()) {
+                return;
             }
-            sendNextCommand(ctx.channel());
-            return;
         }
-        
+
+//        QueueCommand command = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
+//        if (command != null) {
+//            if (!command.tryFailure(cause)) {
+//                log.error("Exception occured. Channel: " + ctx.channel() + " Command: " + command, cause);
+//            }
+//            sendNextCommand(ctx.channel());
+//            return;
+//        }
         log.error("Exception occured. Channel: " + ctx.channel(), cause);
     }
 
