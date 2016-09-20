@@ -438,8 +438,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         byte[] msgEncoded = encode(new LocalCachedMapClear());
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1]) == 1 and ARGV[2] == '1' then "
-                + "redis.call('publish', KEYS[2], ARGV[1]); " 
-              + "end; ",
+                + "redis.call('publish', KEYS[2], ARGV[1]); "
+                + "return 1;" 
+              + "end; "
+              + "return 0;",
               Arrays.<Object>asList(getName(), invalidationTopic.getChannelNames().get(0)), 
               msgEncoded, invalidateEntryOnChange);
     }
