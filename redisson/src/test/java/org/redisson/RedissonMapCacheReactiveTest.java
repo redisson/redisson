@@ -373,9 +373,9 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
     @Test
     public void testEmptyRemove() {
         RMapCacheReactive<Integer, Integer> map = redisson.getMapCache("simple");
-        assertThat(sync(map.remove(1, 3))).isEqualTo(0);
+        assertThat(sync(map.remove(1, 3))).isEqualTo(Boolean.FALSE);
         sync(map.put(4, 5));
-        assertThat(sync(map.remove(4, 5))).isEqualTo(1);
+        assertThat(sync(map.remove(4, 5))).isEqualTo(Boolean.TRUE);
     }
 
     @Test

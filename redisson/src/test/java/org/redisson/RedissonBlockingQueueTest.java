@@ -31,13 +31,13 @@ public class RedissonBlockingQueueTest extends BaseTest {
     @Test
     public void testPollWithBrokenConnection() throws IOException, InterruptedException, ExecutionException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollTimeout");
         RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
@@ -53,13 +53,13 @@ public class RedissonBlockingQueueTest extends BaseTest {
     @Test
     public void testPollReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
@@ -85,7 +85,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         runner.stop();
 
         runner = new RedisRunner()
-                .port(6319)
+                .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
                 .run();
@@ -105,13 +105,13 @@ public class RedissonBlockingQueueTest extends BaseTest {
     @Test
     public void testPollAsyncReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
@@ -120,7 +120,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         runner.stop();
 
         runner = new RedisRunner()
-                .port(6319)
+                .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
                 .run();
@@ -141,13 +141,13 @@ public class RedissonBlockingQueueTest extends BaseTest {
     @Test
     public void testTakeReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("testTakeReattach");
         RFuture<Integer> f = queue1.takeAsync();
@@ -155,7 +155,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         runner.stop();
 
         runner = new RedisRunner()
-                .port(6319)
+                .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
                 .run();

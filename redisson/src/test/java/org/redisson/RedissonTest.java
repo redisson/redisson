@@ -24,7 +24,6 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisOutOfMemoryException;
-import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
@@ -109,7 +108,7 @@ public class RedissonTest {
     @Test(expected = RedisException.class)
     public void testSer() {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6379");
+        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         config.setCodec(new SerializationCodec());
         RedissonClient r = Redisson.create(config);
         r.getMap("test").put("1", new Dummy());
@@ -120,7 +119,7 @@ public class RedissonTest {
         RedisProcess p = redisTestSmallMemory();
 
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319").setTimeout(100000);
+        config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
         try {
             RedissonClient r = Redisson.create(config);
@@ -138,7 +137,7 @@ public class RedissonTest {
         RedisProcess p = redisTestSmallMemory();
 
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319").setTimeout(100000);
+        config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
         try {
             RedissonClient r = Redisson.create(config);
@@ -155,7 +154,7 @@ public class RedissonTest {
     public void testConfigValidation() {
         Config redissonConfig = new Config();
         redissonConfig.useSingleServer()
-        .setAddress("127.0.0.1:6379")
+        .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort())
         .setConnectionPoolSize(2);
         Redisson.create(redissonConfig);        
     }
@@ -163,13 +162,13 @@ public class RedissonTest {
     @Test
     public void testConnectionListener() throws IOException, InterruptedException, TimeoutException {
 
-        RedisProcess p = redisTestConnection();
+        final RedisProcess p = redisTestConnection();
 
         final AtomicInteger connectCounter = new AtomicInteger();
         final AtomicInteger disconnectCounter = new AtomicInteger();
 
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(p.getRedisServerAddressAndPort());
 
         RedissonClient r = Redisson.create(config);
 
@@ -177,13 +176,13 @@ public class RedissonTest {
 
             @Override
             public void onDisconnect(InetSocketAddress addr) {
-                assertThat(addr).isEqualTo(new InetSocketAddress("127.0.0.1", 6319));
+                assertThat(addr).isEqualTo(new InetSocketAddress(p.getRedisServerBindAddress(), p.getRedisServerPort()));
                 disconnectCounter.incrementAndGet();
             }
 
             @Override
             public void onConnect(InetSocketAddress addr) {
-                assertThat(addr).isEqualTo(new InetSocketAddress("127.0.0.1", 6319));
+                assertThat(addr).isEqualTo(new InetSocketAddress(p.getRedisServerBindAddress(), p.getRedisServerPort()));
                 connectCounter.incrementAndGet();
             }
         });
@@ -198,13 +197,17 @@ public class RedissonTest {
         } catch (Exception e) {
         }
 
-        p = redisTestConnection();
+        RedisProcess pp = new RedisRunner()
+                .nosave()
+                .port(p.getRedisServerPort())
+                .randomDir()
+                .run();
 
         r.getBucket("1").get();
 
         r.shutdown();
 
-        Assert.assertEquals(0, p.stop());
+        Assert.assertEquals(0, pp.stop());
 
         await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
         await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
@@ -213,7 +216,7 @@ public class RedissonTest {
     @Test
     public void testShutdown() {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6379");
+        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
 
         RedissonClient r = Redisson.create(config);
         Assert.assertFalse(r.isShuttingDown());
@@ -292,7 +295,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testSingleConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:1111");
+        config.useSingleServer().setAddress("127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -301,7 +304,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testClusterConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useClusterServers().addNodeAddress("127.0.0.1:1111");
+        config.useClusterServers().addNodeAddress("127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -310,7 +313,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testElasticacheConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useElasticacheServers().addNodeAddress("127.0.0.1:1111");
+        config.useElasticacheServers().addNodeAddress("127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -319,7 +322,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testMasterSlaveConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useMasterSlaveServers().setMasterAddress("127.0.0.1:1111");
+        config.useMasterSlaveServers().setMasterAddress("127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -328,7 +331,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testSentinelConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useSentinelServers().addSentinelAddress("127.0.0.1:1111");
+        config.useSentinelServers().addSentinelAddress("127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -336,12 +339,12 @@ public class RedissonTest {
 
     @Test
     public void testManyConnections() {
-        Assume.assumeFalse(Boolean.valueOf(System.getProperty("travisEnv")));
+        Assume.assumeFalse(RedissonRuntimeEnvironment.isTravis);
         Config redisConfig = new Config();
         redisConfig.useSingleServer()
         .setConnectionMinimumIdleSize(10000)
         .setConnectionPoolSize(10000)
-        .setAddress("localhost:6379");
+        .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedissonClient r = Redisson.create(redisConfig);
         r.shutdown();
     }
@@ -351,7 +354,7 @@ public class RedissonTest {
                 .maxmemory("1mb")
                 .nosave()
                 .randomDir()
-                .port(6319)
+                .randomPort()
                 .run();
     }
 
@@ -359,7 +362,7 @@ public class RedissonTest {
         return new RedisRunner()
                 .nosave()
                 .randomDir()
-                .port(6319)
+                .randomPort()
                 .run();
     }
     

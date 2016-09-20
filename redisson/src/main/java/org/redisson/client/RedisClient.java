@@ -90,6 +90,10 @@ public class RedisClient {
     public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, String host, int port) {
         this(timer, executor, group, NioSocketChannel.class, host, port, 10000, 10000);
     }
+    
+    public RedisClient(String host, int port, int connectTimeout, int commandTimeout) {
+        this(new HashedWheelTimer(), new NioEventLoopGroup(), NioSocketChannel.class, host, port, connectTimeout, commandTimeout);
+    }
 
     public RedisClient(final Timer timer, ExecutorService executor, EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, 
                         int connectTimeout, int commandTimeout) {
