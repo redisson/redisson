@@ -47,23 +47,19 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @AfterClass
     public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            BaseTest.afterClass();
-            node.shutdown();
-        }
+        BaseTest.afterClass();
+        node.shutdown();
     }
-    
+
     @Before
     @Override
     public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            super.before();
-            Config config = createConfig();
-            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
-            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
-            node = RedissonNode.create(nodeConfig);
-            node.start();
-        }
+        super.before();
+        Config config = createConfig();
+        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+        node = RedissonNode.create(nodeConfig);
+        node.start();
     }
 
     @After

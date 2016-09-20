@@ -50,23 +50,19 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     @Before
     @Override
     public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            super.before();
-            Config config = createConfig();
-            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
-            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
-            node = RedissonNode.create(nodeConfig);
-            node.start();
-        }
+        super.before();
+        Config config = createConfig();
+        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+        node = RedissonNode.create(nodeConfig);
+        node.start();
     }
 
     @After
     @Override
     public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            super.after();
-            node.shutdown();
-        }
+        super.after();
+        node.shutdown();
     }
 
     @Test
