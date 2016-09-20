@@ -16,6 +16,7 @@
 package org.redisson.client.protocol.decoder;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -32,7 +33,7 @@ public class ObjectSetReplayDecoder<T> implements MultiDecoder<Set<T>> {
 
     @Override
     public Set<T> decode(List<Object> parts, State state) {
-        return new HashSet(parts);
+        return new LinkedHashSet(parts);
     }
 
     @Override

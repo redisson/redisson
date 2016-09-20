@@ -1,8 +1,11 @@
 package org.redisson;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -19,6 +22,50 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRedLockTest {
 
+    @Test
+    public void testTryLockLeasetime() throws IOException, InterruptedException {
+        RedisProcess redis1 = redisTestMultilockInstance();
+        RedisProcess redis2 = redisTestMultilockInstance();
+        
+        RedissonClient client1 = createClient(redis1.getRedisServerAddressAndPort());
+        RedissonClient client2 = createClient(redis2.getRedisServerAddressAndPort());
+        
+        RLock lock1 = client1.getLock("lock1");
+        RLock lock2 = client1.getLock("lock2");
+        RLock lock3 = client2.getLock("lock3");
+
+        RedissonRedLock lock = new RedissonRedLock(lock1, lock2, lock3);
+        
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+        AtomicInteger counter = new AtomicInteger();
+        for (int i = 0; i < 10; i++) {
+            executor.submit(() -> {
+                for (int j = 0; j < 5; j++) {
+                    try {
+                        if (lock.tryLock(4, 2, TimeUnit.SECONDS)) {
+                            int nextValue = counter.get() + 1;
+                            Thread.sleep(1000);
+                            counter.set(nextValue);
+                            lock.unlock();
+                        } else {
+                            j--;
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(2, TimeUnit.MINUTES)).isTrue();
+        assertThat(counter.get()).isEqualTo(50);
+        
+        assertThat(redis1.stop()).isEqualTo(0);
+        assertThat(redis2.stop()).isEqualTo(0);
+    }
+
+    
     @Test
     public void testLockFailed() throws IOException, InterruptedException {
         RedisProcess redis1 = redisTestMultilockInstance();
