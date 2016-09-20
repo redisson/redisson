@@ -359,8 +359,8 @@ public class Config {
     }
 
     /**
-     * Threads amount shared across all listeners of <code>RTopic</code>, 
-     * <code>RRemoteService</code> invocation handlers 
+     * Threads amount shared across all listeners of <code>RTopic</code> object, 
+     * invocation handlers of <code>RRemoteService</code> object  
      * and <code>RExecutorService</code> tasks.
      * <p>
      * Default is <code>0</code>.
