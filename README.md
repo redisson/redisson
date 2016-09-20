@@ -42,7 +42,6 @@ Features
 * [Distributed collections](https://github.com/mrniko/redisson/wiki/7.-Distributed-collections)
 * [Distributed locks and synchronizers](https://github.com/mrniko/redisson/wiki/8.-Distributed-locks-and-synchronizers)
 * [Distributed services](https://github.com/mrniko/redisson/wiki/9.-distributed-services)
-* [Scheduler service](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#94-scheduled-executor-service)
 * [Spring cache](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) integration  
 * [Hibernate](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
 * [Reactive Streams](https://github.com/mrniko/redisson/wiki/3.-operations-execution#32-reactive-way)
@@ -58,16 +57,19 @@ Projects using Redisson
 ================================
 [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/)
 
-### Articles
+Articles
+================================
 
-[Java data structures powered by Redis. Introduction to Redisson. PDF](http://redisson.org/Redisson.pdf)  
+[Java data structures powered by Redis. Introduction to Redisson (pdf)](http://redisson.org/Redisson.pdf)  
+[Distributed tasks Execution and Scheduling in Java, powered by Redis](https://dzone.com/articles/distributed-tasks-execution-and-scheduling-in-java)  
 [Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
 [Java Remote Method Invocation with Redisson](https://dzone.com/articles/java-remote-method-invocation-with-redisson)  
 [Java Multimaps With Redis](https://dzone.com/articles/multimaps-with-redis)  
 
-### Maven 
+Quick start
+===============================
 
-Include the following to your dependency list:
+#### Maven 
 
     <dependency>
        <groupId>org.redisson</groupId>
@@ -75,11 +77,32 @@ Include the following to your dependency list:
        <version>2.3.0</version>
     </dependency>
 
-### Gradle
+#### Gradle
 
     compile 'org.redisson:redisson:2.3.0'
+    
+#### Java
 
-### Downloads
+```java
+// 1. Create config object
+Config = ...
+
+// 2. Create Redisson instance
+RedissonClient redisson = Redisson.create(config);
+
+// 3. Get object you need
+RMap<MyKey, MyValue> map = redisson.getMap("myMap");
+
+RLock lock = redisson.getLock("myLock");
+
+RExecutorService executor = redisson.getExecutorService("myExecutorService");
+
+// over 30 different objects and services ...
+
+```
+
+Downloads
+===============================
    
 [Redisson 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.3.0&e=jar)  
 [Redisson node 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.3.0&e=jar)  

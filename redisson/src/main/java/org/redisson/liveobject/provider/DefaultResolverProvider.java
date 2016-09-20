@@ -25,10 +25,11 @@ import org.redisson.liveobject.resolver.Resolver;
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class DefaultResolverProvider implements ResolverProvider {
-    public final ConcurrentMap<Class<? extends Resolver>, Resolver> providerCache = PlatformDependent.newConcurrentHashMap();
+    
+    public transient final ConcurrentMap<Class<? extends Resolver>, Resolver<?, ?, ?>> providerCache = PlatformDependent.newConcurrentHashMap();
 
     @Override
-    public Resolver getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno) {
+    public Resolver<?, ?, ?> getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno) {
         if (!providerCache.containsKey(resolverClass)) {
             try {
                 providerCache.putIfAbsent(resolverClass, resolverClass.newInstance());

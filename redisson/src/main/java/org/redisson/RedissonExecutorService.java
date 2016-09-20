@@ -235,6 +235,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
+    public void registerWorkers(int workers) {
+        registerWorkers(workers, commandExecutor.getConnectionManager().getExecutor());
+    }
+    
+    @Override
     public void registerWorkers(int workers, ExecutorService executor) {
         registerScheduler();
         

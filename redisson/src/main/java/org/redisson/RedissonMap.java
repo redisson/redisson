@@ -38,7 +38,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -59,7 +58,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     static final RedisCommand<Object> EVAL_REPLACE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
     static final RedisCommand<Boolean> EVAL_REPLACE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE, ValueType.MAP_VALUE));
-    static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 4, ValueType.MAP);
+    static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.MAP);
     static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
 
     protected RedissonMap(CommandAsyncExecutor commandExecutor, String name) {
@@ -244,11 +243,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean remove(Object key, Object value) {
-        return get(removeAsync(key, value)) == 1;
+        return get(removeAsync(key, value));
     }
 
     @Override
-    public RFuture<Long> removeAsync(Object key, Object value) {
+    public RFuture<Boolean> removeAsync(Object key, Object value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REMOVE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                         + "return redis.call('hdel', KEYS[1], ARGV[1]) "

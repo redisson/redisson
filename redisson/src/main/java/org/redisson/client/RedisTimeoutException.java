@@ -15,6 +15,11 @@
  */
 package org.redisson.client;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisTimeoutException extends RedisException {
 
     private static final long serialVersionUID = -8418769175260962404L;

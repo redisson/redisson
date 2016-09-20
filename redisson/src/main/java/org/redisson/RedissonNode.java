@@ -19,9 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -29,7 +26,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.RedissonThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +41,6 @@ public class RedissonNode {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonNode.class);
     
-    private ExecutorService executor;
     private boolean hasRedissonInstance;
     private RedissonClient redisson;
     private final RedissonNodeConfig config;
@@ -118,17 +113,6 @@ public class RedissonNode {
      * 
      */
     public void shutdown() {
-        if (executor != null) {
-            log.info("Worker executor is being shutdown...");
-            executor.shutdown();
-            try {
-                if (executor.awaitTermination(5, TimeUnit.MINUTES)) {
-                    log.info("Worker executor has been shutdown successfully");
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
         if (hasRedissonInstance) {
             redisson.shutdown();
             log.info("Redisson node has been shutdown successfully");
@@ -139,12 +123,6 @@ public class RedissonNode {
      * Start Redisson node instance
      */
     public void start() {
-        if (config.getExecutorServiceThreads() == 0) {
-            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2, new RedissonThreadFactory());
-        } else if (config.getExecutorServiceThreads() > 0) {
-            executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads(), new RedissonThreadFactory());
-        }
-
         if (hasRedissonInstance) {
             redisson = Redisson.create(config);
         }
@@ -158,7 +136,7 @@ public class RedissonNode {
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();
             int workers = entry.getValue();
-            redisson.getExecutorService(name).registerWorkers(workers, executor);
+            redisson.getExecutorService(name).registerWorkers(workers);
             log.info("{} worker(s) for '{}' ExecutorService registered", workers, name);
         }
 

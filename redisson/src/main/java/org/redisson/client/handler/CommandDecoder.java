@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisException;
@@ -29,6 +30,7 @@ import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisTimeoutException;
+import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
@@ -73,6 +75,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     // It is not needed to use concurrent map because responses are coming consecutive
     private final Map<String, MultiDecoder<Object>> pubSubMessageDecoders = new HashMap<String, MultiDecoder<Object>>();
     private final Map<PubSubKey, CommandData<Object, Object>> pubSubChannels = PlatformDependent.newConcurrentHashMap();
+
+    private final ExecutorService executor;
+    
+    public CommandDecoder(ExecutorService executor) {
+        this.executor = executor;
+    }
 
     public void addPubSubCommand(String channel, CommandData<Object, Object> data) {
         String operation = data.getCommand().getName().toLowerCase();
@@ -240,6 +248,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     int slot = Integer.valueOf(errorParts[1]);
                     String addr = errorParts[2];
                     data.tryFailure(new RedisAskException(slot, addr));
+                } else if (error.startsWith("TRYAGAIN")) {
+                    data.tryFailure(new RedisTryAgainException(error
+                            + ". channel: " + channel + " data: " + data));
                 } else if (error.startsWith("LOADING")) {
                     data.tryFailure(new RedisLoadingException(error
                             + ". channel: " + channel + " data: " + data));
@@ -326,7 +337,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     private void handleMultiResult(CommandData<Object, Object> data, List<Object> parts,
-            Channel channel, Object result) {
+            Channel channel, final Object result) {
         if (result instanceof PubSubStatusMessage) {
             String channelName = ((PubSubStatusMessage) result).getChannel();
             String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
@@ -342,14 +353,20 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
         }
 
-        RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
-        if (result instanceof PubSubStatusMessage) {
-            pubSubConnection.onMessage((PubSubStatusMessage) result);
-        } else if (result instanceof PubSubMessage) {
-            pubSubConnection.onMessage((PubSubMessage) result);
-        } else {
-            pubSubConnection.onMessage((PubSubPatternMessage) result);
-        }
+        final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (result instanceof PubSubStatusMessage) {
+                    pubSubConnection.onMessage((PubSubStatusMessage) result);
+                } else if (result instanceof PubSubMessage) {
+                    pubSubConnection.onMessage((PubSubMessage) result);
+                } else {
+                    pubSubConnection.onMessage((PubSubPatternMessage) result);
+                }
+            }
+        });
+        
     }
 
     private void handleResult(CommandData<Object, Object> data, List<Object> parts, Object result, boolean multiResult, Channel channel) {

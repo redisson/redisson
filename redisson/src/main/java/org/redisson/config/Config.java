@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
@@ -52,6 +54,8 @@ public class Config {
      * Threads amount shared between all redis node clients
      */
     private int threads = 0; // 0 = current_processors_amount * 2
+    
+    private int nettyThreads = 0; // 0 = current_processors_amount * 2
 
     /**
      * Redis key/value codec. JsonJacksonCodec used by default
@@ -68,6 +72,8 @@ public class Config {
      */
     private ResolverProvider resolverProvider = new DefaultResolverProvider();
     
+    private ExecutorService executor;
+    
     /**
      * Config option for enabling Redisson Reference feature.
      * Default value is TRUE
@@ -83,13 +89,14 @@ public class Config {
 
     public Config(Config oldConf) {
         setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());
-        setEventLoopGroup(oldConf.getEventLoopGroup());
+        setExecutor(oldConf.getExecutor());
 
         if (oldConf.getCodec() == null) {
             // use it by default
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
+        setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
         setCodecProvider(oldConf.getCodecProvider());
@@ -352,7 +359,9 @@ public class Config {
     }
 
     /**
-     * Threads amount shared between all redis node clients.
+     * Threads amount shared across all listeners of <code>RTopic</code> object, 
+     * invocation handlers of <code>RRemoteService</code> object  
+     * and <code>RExecutorService</code> tasks.
      * <p>
      * Default is <code>0</code>.
      * <p>
@@ -411,6 +420,43 @@ public class Config {
 
     public boolean isUseLinuxNativeEpoll() {
         return useLinuxNativeEpoll;
+    }
+
+    /**
+     * Threads amount shared between all redis clients used by Redisson.
+     * <p>
+     * Default is <code>0</code>.
+     * <p>
+     * <code>0</code> means <code>current_processors_amount * 2</code>
+     *
+     * @param nettyThreads
+     * @return
+     */
+    public Config setNettyThreads(int nettyThreads) {
+        this.nettyThreads = nettyThreads;
+        return this;
+    }
+    
+    public int getNettyThreads() {
+        return nettyThreads;
+    }
+    
+    /**
+     * Use external ExecutorService. ExecutorService processes 
+     * all listeners of <code>RTopic</code>, 
+     * <code>RRemoteService</code> invocation handlers  
+     * and <code>RExecutorService</code> tasks. 
+     * 
+     * @param executor
+     * @return
+     */
+    public Config setExecutor(ExecutorService executor) {
+        this.executor = executor;
+        return this;
+    }
+    
+    public ExecutorService getExecutor() {
+        return executor;
     }
 
     /**

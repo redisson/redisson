@@ -118,8 +118,8 @@ public class RedissonObjectFactory {
             List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
             for (Class<?> iType : interfaces) {
                 if (builders.containsKey(iType)) {// user cache to speed up things a little.
-                    Method builder = builders.get(iType).get(rr.isDefaultCodec());
-                    return (T) (rr.isDefaultCodec()
+                    Method builder = builders.get(iType).get(isDefaultCodec(rr));
+                    return (T) (isDefaultCodec(rr)
                             ? builder.invoke(redisson, rr.getKeyName())
                             : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
                 }
@@ -127,6 +127,11 @@ public class RedissonObjectFactory {
         }
         throw new ClassNotFoundException("No RObject is found to match class type of " + rr.getTypeName() + " with codec type of " + rr.getCodecName());
     }
+    
+    public static boolean isDefaultCodec(RedissonReference rr) {
+        return rr.getCodec() == null;
+    }
+
     
     public static <T> T fromReference(RedissonReactiveClient redisson, RedissonReference rr) throws Exception {
         return fromReference(redisson, rr, null);
@@ -142,8 +147,8 @@ public class RedissonObjectFactory {
             List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
             for (Class<?> iType : interfaces) {
                 if (builders.containsKey(iType)) {// user cache to speed up things a little.
-                    Method builder = builders.get(iType).get(rr.isDefaultCodec());
-                    return (T) (rr.isDefaultCodec()
+                    Method builder = builders.get(iType).get(isDefaultCodec(rr));
+                    return (T) (isDefaultCodec(rr)
                             ? builder.invoke(redisson, rr.getKeyName())
                             : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
                 }

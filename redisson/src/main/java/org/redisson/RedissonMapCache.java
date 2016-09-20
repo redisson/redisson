@@ -34,7 +34,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.LongMultiDecoder;
@@ -42,9 +41,7 @@ import org.redisson.client.protocol.decoder.MapCacheScanResult;
 import org.redisson.client.protocol.decoder.MapCacheScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ObjectListDecoder;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
@@ -64,7 +61,7 @@ import io.netty.util.concurrent.FutureListener;
  * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
- * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
+ * <p>If eviction is not required then it's better to use {@link org.redisson.RedissonMap} object.</p>
  *
  * @author Nikita Koksharov
  *
@@ -77,9 +74,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     static final RedisCommand<Object> EVAL_REPLACE = new RedisCommand<Object>("EVAL", 6, ValueType.MAP, ValueType.MAP_VALUE);
     static final RedisCommand<Boolean> EVAL_REPLACE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE, ValueType.MAP_VALUE));
     private static final RedisCommand<Void> EVAL_HMSET = new RedisCommand<Void>("EVAL", new VoidReplayConvertor(), 4, ValueType.MAP);
-    private static final RedisCommand<MapCacheScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL", new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapReplayDecoder(), new ObjectListReplayDecoder()), ValueType.MAP);
     private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5, ValueType.MAP);
+    private static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.MAP);
     private static final RedisCommand<Object> EVAL_PUT_TTL = new RedisCommand<Object>("EVAL", 9, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<Boolean> EVAL_FAST_PUT_TTL = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 9, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<Object> EVAL_GET_TTL = new RedisCommand<Object>("EVAL", 7, ValueType.MAP_KEY, ValueType.MAP_VALUE);
@@ -283,7 +279,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<Long> removeAsync(Object key, Object value) {
+    public RFuture<Boolean> removeAsync(Object key, Object value) {
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_REMOVE_VALUE,
                   "local value = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "if value == false then "

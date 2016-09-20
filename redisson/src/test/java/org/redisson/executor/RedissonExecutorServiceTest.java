@@ -14,12 +14,16 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.junit.After;
 
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.BaseTest;
+import static org.redisson.BaseTest.createConfig;
 import org.redisson.RedissonNode;
+import org.redisson.RedissonRuntimeEnvironment;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.config.Config;
@@ -31,22 +35,46 @@ public class RedissonExecutorServiceTest extends BaseTest {
     
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
-        BaseTest.beforeClass();
-        
-        Config config = createConfig();
-        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
-        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
-        node = RedissonNode.create(nodeConfig);
-        node.start();
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            BaseTest.beforeClass();
+            Config config = createConfig();
+            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+            node = RedissonNode.create(nodeConfig);
+            node.start();
+        }
     }
     
     @AfterClass
     public static void afterClass() throws IOException, InterruptedException {
-        BaseTest.afterClass();
-        
-        node.shutdown();
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            BaseTest.afterClass();
+            node.shutdown();
+        }
     }
     
+    @Before
+    @Override
+    public void before() throws IOException, InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            super.before();
+            Config config = createConfig();
+            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+            node = RedissonNode.create(nodeConfig);
+            node.start();
+        }
+    }
+
+    @After
+    @Override
+    public void after() throws InterruptedException {
+        if (RedissonRuntimeEnvironment.isTravis) {
+            super.after();
+            node.shutdown();
+        }
+    }
+
     private void cancel(ScheduledFuture<?> future1) throws InterruptedException, ExecutionException {
         assertThat(future1.cancel(true)).isTrue();
         boolean canceled = false;

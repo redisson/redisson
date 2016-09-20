@@ -20,6 +20,12 @@ import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 
+/**
+ * Connection pool for Publish/Subscribe used with single node
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SinglePubSubConnectionPool extends PubSubConnectionPool {
 
     public SinglePubSubConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager,

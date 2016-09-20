@@ -25,10 +25,8 @@ import org.redisson.api.RPatternTopic;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BasePatternStatusListener;
-import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
-import org.redisson.api.listener.StatusListener;
 import org.redisson.config.Config;
 
 public class RedissonTopicPatternTest {
@@ -272,13 +270,13 @@ public class RedissonTopicPatternTest {
     @Test
     public void testReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
@@ -296,7 +294,7 @@ public class RedissonTopicPatternTest {
         runner.stop();
 
         runner = new RedisRunner()
-                .port(6319)
+                .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
                 .run();

@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
@@ -225,7 +224,9 @@ public class RedissonTopicTest {
         CountDownLatch latch = new CountDownLatch(1);
         topic.addListener((channel, msg) -> {
             for (int j = 0; j < 1000; j++) {
+                System.out.println("start: " + j);
                 redissonSet.contains("" + j);
+                System.out.println("end: " + j);
             }
             latch.countDown();
         });
@@ -427,13 +428,13 @@ public class RedissonTopicTest {
     @Test
     public void testReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
@@ -451,7 +452,7 @@ public class RedissonTopicTest {
         runner.stop();
 
         runner = new RedisRunner()
-                .port(6319)
+                .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
                 .run();

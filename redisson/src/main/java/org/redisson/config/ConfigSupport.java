@@ -203,8 +203,8 @@ public class ConfigSupport {
         mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
         mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);
-        mapper.addMixIn(CodecProvider.class, ConfigMixIn.class);
-        mapper.addMixIn(ResolverProvider.class, ConfigMixIn.class);
+        mapper.addMixIn(CodecProvider.class, ClassMixIn.class);
+        mapper.addMixIn(ResolverProvider.class, ClassMixIn.class);
         mapper.addMixIn(Codec.class, ClassMixIn.class);
         mapper.addMixIn(RedissonNodeInitializer.class, ClassMixIn.class);
         mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);

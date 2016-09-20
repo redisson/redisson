@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.NodeType;
@@ -43,6 +44,8 @@ import io.netty.util.TimerTask;
  *
  */
 public interface ConnectionManager {
+    
+    ExecutorService getExecutor();
     
     URI getLastClusterNode();
 

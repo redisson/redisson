@@ -15,10 +15,8 @@
  */
 package org.redisson.api;
 
-import java.util.Map;
-
 /**
- * Map object with entry cache support.
+ * Map object with local entry cache support.
  * <p>
  * Each instance maintains local cache to achieve fast read operations.
  * Suitable for maps which used mostly for read operations and network roundtrip delays are undesirable.
@@ -28,31 +26,6 @@ import java.util.Map;
  * @param <K>
  * @param <V>
  */
-public interface RLocalCachedMap<K, V> extends Map<K, V>, RExpirable, RLocalCachedMapAsync<K, V>, RDestroyable {
+public interface RLocalCachedMap<K, V> extends RMap<K, V>, RDestroyable {
 
-    /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>.
-     * <p>
-     * Works faster than <code>RLocalCachedMap.put</code> but not returning
-     * the previous value associated with <code>key</code>
-     *
-     * @param key
-     * @param value
-     * @return <code>true</code> if key is a new key in the hash and value was set.
-     *         <code>false</code> if key already exists in the hash and the value was updated.
-     */
-    boolean fastPut(K key, V value);
-    
-    /**
-     * Removes <code>key</code> from map
-     * <p>
-     * Works faster than <code>RLocalCachedMap.remove</code> but not returning
-     * the value associated with <code>key</code>
-     *
-     * @param key
-     * @return <code>true</code> if key has been deleted.
-     *         <code>false</code> if key doesn't exist.
-     */
-    boolean fastRemove(Object key);
-    
 }

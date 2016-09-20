@@ -10,6 +10,7 @@ import java.util.concurrent.locks.Lock;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 
 public class RedissonLockTest extends BaseConcurrentTest {
 
@@ -72,15 +73,31 @@ public class RedissonLockTest extends BaseConcurrentTest {
     @Test
     public void testAutoExpire() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        testSingleInstanceConcurrency(1, r -> {
-            RLock lock = r.getLock("lock");
-            lock.lock();
-            latch.countDown();
-        });
+        
+        RedissonClient r = createInstance();
+        
+        Thread t = new Thread() {
+            @Override
+            public void run() {
+                RLock lock = r.getLock("lock");
+                lock.lock();
+                latch.countDown();
+                try {
+                    Thread.sleep(15000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        };
+        
+        t.start();
 
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redisson.getLock("lock");
-        Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS + 1));
+        t.join();
+        r.shutdown();
+        Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS));
         Assert.assertFalse("Transient lock has not expired automatically", lock.isLocked());
     }
 

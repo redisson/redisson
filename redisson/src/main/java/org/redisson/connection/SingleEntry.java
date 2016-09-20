@@ -92,8 +92,8 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public void releaseRead(RedisConnection сonnection) {
-        super.releaseWrite(сonnection);
+    public void releaseRead(RedisConnection connection) {
+        super.releaseWrite(connection);
     }
 
 }

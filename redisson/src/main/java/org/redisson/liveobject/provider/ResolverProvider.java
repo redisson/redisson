@@ -34,7 +34,7 @@ public interface ResolverProvider {
      * @param anno annotation with configurations
      * @return a Resolver instance
      */
-    Resolver getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno);
+    Resolver<?, ?, ?> getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno);
 
     /**
      * To register a resolver based on the the class it can provide value to,
