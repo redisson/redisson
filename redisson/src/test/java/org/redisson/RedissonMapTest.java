@@ -366,7 +366,7 @@ public class RedissonMapTest extends BaseTest {
         map.put("ar_kills", "0");
         map.put("ar_deaths", "0");
 
-        RMap<String, String> rmap = redisson.getMap("123", StringCodec.INSTANCE);
+        RMap<String, String> rmap = redisson.getMap("123");
         rmap.putAll(map);
 
         assertThat(rmap.keySet()).containsExactlyElementsOf(map.keySet());
