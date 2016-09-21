@@ -214,7 +214,7 @@ public class RedissonMultiLock implements Lock {
     }
     
     protected int failedLocksLimit() {
-        return 1;
+        return 0;
     }
 
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
@@ -242,7 +242,6 @@ public class RedissonMultiLock implements Lock {
             if (lockAcquired) {
                 lockedLocks.add(lock);
             } else {
-                failedLocksLimit--;
                 if (failedLocksLimit == 0) {
                     unlockInner(lockedLocks);
                     if (waitTime == -1 && leaseTime == -1) {
@@ -250,6 +249,8 @@ public class RedissonMultiLock implements Lock {
                     }
                     failedLocksLimit = failedLocksLimit();
                     lockedLocks.clear();
+                } else {
+                    failedLocksLimit--;
                 }
             }
             
