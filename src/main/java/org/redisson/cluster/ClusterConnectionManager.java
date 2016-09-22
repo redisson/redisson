@@ -75,7 +75,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         this.config = create(cfg);
         init(this.config);
 
-        Exception lastException = null;
+        Throwable lastException = null;
+        List<String> failedMasters = new ArrayList<String>();
         for (URI addr : cfg.getNodeAddresses()) {
             Future<RedisConnection> connectionFuture = connect(cfg, addr);
             try {
@@ -96,6 +97,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 List<Future<Collection<Future<Void>>>> futures = new ArrayList<Future<Collection<Future<Void>>>>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
+                        failedMasters.add(partition.getMasterAddr().toString());
                         continue;
                     }
                     Future<Collection<Future<Void>>> masterFuture = addMasterEntry(partition, cfg);
@@ -105,6 +107,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 for (Future<Collection<Future<Void>>> masterFuture : futures) {
                     masterFuture.awaitUninterruptibly();
                     if (!masterFuture.isSuccess()) {
+                        lastException = masterFuture.cause();
                         continue;
                     }
                     for (Future<Void> future : masterFuture.getNow()) {
@@ -123,12 +126,20 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         if (lastPartitions.isEmpty()) {
             stopThreads();
-            throw new RedisConnectionException("Can't connect to servers!", lastException);
+            if (failedMasters.isEmpty()) {
+                throw new RedisConnectionException("Can't connect to servers!", lastException);
+            } else {
+                throw new RedisConnectionException("Can't connect to servers! Failed masters according to cluster status: " + failedMasters, lastException);
+            }
         }
 
         if (lastPartitions.size() != MAX_SLOT) {
             stopThreads();
-            throw new RedisConnectionException("Not all slots are covered! Only " + lastPartitions.size() + " slots are avaliable", lastException);
+            if (failedMasters.isEmpty()) {
+                throw new RedisConnectionException("Not all slots are covered! Only " + lastPartitions.size() + " slots are avaliable", lastException);
+            } else {
+                throw new RedisConnectionException("Not all slots are covered! Only " + lastPartitions.size() + " slots are avaliable. Failed masters according to cluster status: " + failedMasters, lastException);
+            }
         }
 
         scheduleClusterChangeCheck(cfg, null);
