@@ -18,6 +18,7 @@ import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
 import org.redisson.misc.Cache;
 
 import mockit.Deencapsulation;
@@ -45,6 +46,25 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         System.out.println(System.currentTimeMillis() - s);
 
     }
+    
+    @Test
+    public void testClearEmpty() {
+        RLocalCachedMap<Object, Object> localCachedMap = redisson.getLocalCachedMap("udi-test",
+                        LocalCachedMapOptions.defaults());
+
+        localCachedMap.clear();
+    }
+    
+    @Test
+    public void testDelete() {
+        RLocalCachedMap<String, String> localCachedMap = redisson.getLocalCachedMap("udi-test",
+                        LocalCachedMapOptions.defaults());
+
+        assertThat(localCachedMap.delete()).isFalse();
+        localCachedMap.put("1", "2");
+        assertThat(localCachedMap.delete()).isTrue();
+    }
+
     
     @Test
     public void testInvalidationOnUpdate() throws InterruptedException {

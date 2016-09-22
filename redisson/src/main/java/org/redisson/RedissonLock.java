@@ -688,7 +688,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 // lock acquired
                 if (ttl == null) {
                     unsubscribe(subscribeFuture, currentThreadId);
-                    result.trySuccess(true);
+                    if (!result.trySuccess(true)) {
+                        unlockAsync(currentThreadId);
+                    }
                     return;
                 }
                 
