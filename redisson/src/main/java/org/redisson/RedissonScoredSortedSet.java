@@ -31,6 +31,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -486,6 +487,60 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZCOUNT, getName(), startValue, endValue);
+    }
+    
+    @Override
+    public int intersection(String... names) {
+        return get(intersectionAsync(names));        
+    }
+
+    public RFuture<Integer> intersectionAsync(String... names) {
+        return intersectionAsync(Aggregate.SUM, names);
+    }
+    
+    @Override
+    public int intersection(Aggregate aggregate, String... names) {
+        return get(intersectionAsync(aggregate, names));        
+    }
+    
+    public RFuture<Integer> intersectionAsync(Aggregate aggregate, String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 4);
+        args.add(getName());
+        args.add(names.length);
+        args.addAll(Arrays.asList(names));
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, args.toArray());
+    }
+
+    @Override
+    public int intersection(Map<String, Double> nameWithWeight) {
+        return get(intersectionAsync(nameWithWeight));        
+    }
+    
+    public RFuture<Integer> intersectionAsync(Map<String, Double> nameWithWeight) {
+        return intersectionAsync(Aggregate.SUM, nameWithWeight);
+    }
+
+    @Override
+    public int intersection(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        return get(intersectionAsync(aggregate, nameWithWeight));        
+    }
+
+    public RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        args.add(getName());
+        args.add(nameWithWeight.size());
+        args.addAll(nameWithWeight.keySet());
+        args.add("WEIGHTS");
+        List<String> weights = new ArrayList<String>();
+        for (Double weight : nameWithWeight.values()) {
+            weights.add(BigDecimal.valueOf(weight).toPlainString());
+        }
+        args.addAll(weights);
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, args.toArray());
     }
     
 }

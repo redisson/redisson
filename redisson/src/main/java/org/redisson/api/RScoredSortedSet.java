@@ -18,10 +18,17 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 
+import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable {
 
+    public enum Aggregate {
+        
+        SUM, MAX, MIN
+        
+    }
+    
     V pollFirst();
 
     V pollLast();
@@ -131,5 +138,13 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return
      */
     Collection<V> readAll();
+
+    int intersection(String... names);
+
+    int intersection(Aggregate aggregate, String... names);
+
+    int intersection(Map<String, Double> nameWithWeight);
+
+    int intersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
 }

@@ -754,4 +754,45 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
     }
 
+    @Test
+    public void testIntersection() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        assertThat(out.intersection(set1.getName(), set2.getName())).isEqualTo(2);
+
+        assertThat(out.readAll()).containsOnly("one", "two");
+        assertThat(out.getScore("one")).isEqualTo(2);
+        assertThat(out.getScore("two")).isEqualTo(4);
+    }
+    
+    @Test
+    public void testIntersectionWithWeight() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        Map<String, Double> nameWithWeight = new HashMap<>();
+        nameWithWeight.put(set1.getName(), 2D);
+        nameWithWeight.put(set2.getName(), 3D);
+        assertThat(out.intersection(nameWithWeight)).isEqualTo(2);
+
+        assertThat(out.readAll()).containsOnly("one", "two");
+        assertThat(out.getScore("one")).isEqualTo(5);
+        assertThat(out.getScore("two")).isEqualTo(10);
+    }
+    
 }

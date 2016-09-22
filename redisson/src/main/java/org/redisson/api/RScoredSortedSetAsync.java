@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 
+import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
@@ -111,5 +112,13 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
      * @return
      */
     RFuture<Collection<V>> readAllAsync();
+
+    RFuture<Integer> intersectionAsync(String... names);
+
+    RFuture<Integer> intersectionAsync(Aggregate aggregate, String... names);
+
+    RFuture<Integer> intersectionAsync(Map<String, Double> nameWithWeight);
+
+    RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
 }
