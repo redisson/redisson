@@ -13,6 +13,15 @@ import org.redisson.api.RBucket;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testSize() {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndSet");
+        assertThat(bucket.size()).isZero();
+        bucket.set("1234");
+        // json adds quotes
+        assertThat(bucket.size()).isEqualTo(6);
+    }
+    
+    @Test
     public void testCompareAndSet() {
         RBucket<List<String>> r1 = redisson.getBucket("testCompareAndSet");
         assertThat(r1.compareAndSet(null, Arrays.asList("81"))).isTrue();

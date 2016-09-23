@@ -95,6 +95,16 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     public RFuture<V> getAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.GET, getName());
     }
+    
+    @Override
+    public int size() {
+        return get(sizeAsync());
+    }
+    
+    @Override
+    public RFuture<Integer> sizeAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.STRLEN, getName());
+    }
 
     @Override
     public void set(V value) {
