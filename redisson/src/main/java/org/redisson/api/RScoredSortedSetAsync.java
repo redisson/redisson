@@ -78,8 +78,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
     RFuture<Double> addScoreAsync(V object, Number value);
 
     RFuture<Collection<V>> valueRangeAsync(int startIndex, int endIndex);
+    
+    RFuture<Collection<V>> valueRangeReversedAsync(int startIndex, int endIndex);
 
     RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex);
+    
+    RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(int startIndex, int endIndex);
 
     RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 

@@ -373,6 +373,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> valueRangeReversed(int startIndex, int endIndex) {
+        return get(valueRangeReversedAsync(startIndex, endIndex));
+    }
+    
+    @Override
+    public RFuture<Collection<V>> valueRangeReversedAsync(int startIndex, int endIndex) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGE, getName(), startIndex, endIndex);
+    }
+    
+    @Override
     public Collection<ScoredEntry<V>> entryRange(int startIndex, int endIndex) {
         return get(entryRangeAsync(startIndex, endIndex));
     }
@@ -380,6 +390,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
+    }
+
+    @Override
+    public Collection<ScoredEntry<V>> entryRangeReversed(int startIndex, int endIndex) {
+        return get(entryRangeReversedAsync(startIndex, endIndex));
+    }
+    
+    @Override
+    public RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(int startIndex, int endIndex) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
     }
 
     @Override
@@ -479,10 +499,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(revRankAsync(o));
     }
 
+    @Override
     public Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         return get(countAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
     }
     
+    @Override
     public RFuture<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);

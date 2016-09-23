@@ -542,6 +542,21 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Collection<Integer> vals = set.valueRange(0, -1);
         assertThat(vals).containsExactly(1, 2, 3, 4, 5);
     }
+    
+    @Test
+    public void testValueRangeReversed() {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        set.add(0, 1);
+        set.add(1, 2);
+        set.add(2, 3);
+        set.add(3, 4);
+        set.add(4, 5);
+        set.add(4, 5);
+
+        Collection<Integer> vals = set.valueRangeReversed(0, -1);
+        assertThat(vals).containsExactly(5, 4, 3, 2, 1);
+    }
+
 
     @Test
     public void testEntryRange() {
@@ -559,6 +574,26 @@ public class RedissonScoredSortedSetTest extends BaseTest {
                 new ScoredEntry<Integer>(40D, 4),
                 new ScoredEntry<Integer>(50D, 5));
     }
+    
+    @Test
+    public void testEntryRangeReversed() {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        set.add(10, 1);
+        set.add(20, 2);
+        set.add(30, 3);
+        set.add(40, 4);
+        set.add(50, 5);
+
+        Collection<ScoredEntry<Integer>> vals = set.entryRangeReversed(0, -1);
+        assertThat(vals).containsExactly(
+                new ScoredEntry<Integer>(50D, 5),
+                new ScoredEntry<Integer>(40D, 4),
+                new ScoredEntry<Integer>(30D, 3),
+                new ScoredEntry<Integer>(20D, 2),
+                new ScoredEntry<Integer>(10D, 1)
+                );
+    }
+
 
     @Test
     public void testLexSortedSet() {

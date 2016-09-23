@@ -103,8 +103,12 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Double addScore(V object, Number value);
 
     Collection<V> valueRange(int startIndex, int endIndex);
+    
+    Collection<V> valueRangeReversed(int startIndex, int endIndex);
 
     Collection<ScoredEntry<V>> entryRange(int startIndex, int endIndex);
+    
+    Collection<ScoredEntry<V>> entryRangeReversed(int startIndex, int endIndex);
 
     Collection<V> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
