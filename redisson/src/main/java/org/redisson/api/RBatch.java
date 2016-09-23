@@ -378,7 +378,7 @@ public interface RBatch {
 
     /**
      * Executes all operations accumulated during async methods invocations.
-     *
+     * <p>
      * If cluster configuration used then operations are grouped by slot ids
      * and may be executed on different servers. Thus command execution order could be changed
      *
@@ -390,7 +390,7 @@ public interface RBatch {
 
     /**
      * Executes all operations accumulated during async methods invocations asynchronously.
-     *
+     * <p>
      * In cluster configurations operations grouped by slot ids
      * so may be executed on different servers. Thus command execution order could be changed
      *
@@ -399,9 +399,9 @@ public interface RBatch {
     RFuture<List<?>> executeAsync();
 
     /**
-     * Executes all operations accumulated during async methods invocations, 
-     * but skip command replies
-     *
+     * Executes all operations accumulated during async methods invocations. 
+     * Command replies are skipped such approach saves response bandwidth.
+     * <p>
      * If cluster configuration used then operations are grouped by slot ids
      * and may be executed on different servers. Thus command execution order could be changed
      *
@@ -413,8 +413,8 @@ public interface RBatch {
 
     /**
      * Executes all operations accumulated during async methods invocations asynchronously, 
-     * but skip command replies
-     *
+     * Command replies are skipped such approach saves response bandwidth.
+     * <p>
      * If cluster configuration used then operations are grouped by slot ids
      * and may be executed on different servers. Thus command execution order could be changed
      *
