@@ -34,6 +34,14 @@ import java.util.concurrent.ConcurrentMap;
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
 
     /**
+     * Returns size of value mapped by key in bytes
+     * 
+     * @param key
+     * @return
+     */
+    int valueSize(K key);
+    
+    /**
      * Atomically adds the given <code>delta</code> to the current value
      * by mapped <code>key</code>.
      *

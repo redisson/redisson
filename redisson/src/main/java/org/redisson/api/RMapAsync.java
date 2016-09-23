@@ -30,6 +30,14 @@ import java.util.Set;
  */
 public interface RMapAsync<K, V> extends RExpirableAsync {
 
+    /**
+     * Returns size of value mapped by key in bytes
+     * 
+     * @param key
+     * @return
+     */
+    RFuture<Integer> valueSizeAsync(K key);
+    
     RFuture<Map<K, V>> getAllAsync(Set<K> keys);
 
     RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map);
