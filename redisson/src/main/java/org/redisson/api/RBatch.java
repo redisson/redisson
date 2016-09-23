@@ -398,4 +398,29 @@ public interface RBatch {
      */
     RFuture<List<?>> executeAsync();
 
+    /**
+     * Executes all operations accumulated during async methods invocations, 
+     * but skip command replies
+     *
+     * If cluster configuration used then operations are grouped by slot ids
+     * and may be executed on different servers. Thus command execution order could be changed
+     *
+     * @return List with result object for each command
+     * @throws RedisException in case of any error
+     *
+     */
+    void executeSkipResult();
+
+    /**
+     * Executes all operations accumulated during async methods invocations asynchronously, 
+     * but skip command replies
+     *
+     * If cluster configuration used then operations are grouped by slot ids
+     * and may be executed on different servers. Thus command execution order could be changed
+     *
+     * @return List with result object for each command
+     * @throws RedisException in case of any error
+     *
+     */
+    RFuture<Void> executeSkipResultAsync();
 }
