@@ -26,6 +26,13 @@ import java.util.concurrent.TimeUnit;
  */
 public interface RBucketAsync<V> extends RExpirableAsync {
 
+    /**
+     * Returns size of object in bytes
+     * 
+     * @return
+     */
+    RFuture<Integer> sizeAsync();
+    
     RFuture<V> getAsync();
 
     RFuture<Boolean> trySetAsync(V value);
