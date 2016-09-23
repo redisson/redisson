@@ -794,5 +794,49 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(out.getScore("one")).isEqualTo(5);
         assertThat(out.getScore("two")).isEqualTo(10);
     }
+
+    @Test
+    public void testUnion() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        assertThat(out.union(set1.getName(), set2.getName())).isEqualTo(3);
+
+        assertThat(out.readAll()).containsOnly("one", "two", "three");
+        assertThat(out.getScore("one")).isEqualTo(2);
+        assertThat(out.getScore("two")).isEqualTo(4);
+        assertThat(out.getScore("three")).isEqualTo(3);
+    }
+    
+    @Test
+    public void testUnionWithWeight() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        Map<String, Double> nameWithWeight = new HashMap<>();
+        nameWithWeight.put(set1.getName(), 2D);
+        nameWithWeight.put(set2.getName(), 3D);
+        assertThat(out.union(nameWithWeight)).isEqualTo(3);
+
+        assertThat(out.readAll()).containsOnly("one", "two", "three");
+        assertThat(out.getScore("one")).isEqualTo(5);
+        assertThat(out.getScore("two")).isEqualTo(10);
+        assertThat(out.getScore("three")).isEqualTo(9);
+    }
+
     
 }

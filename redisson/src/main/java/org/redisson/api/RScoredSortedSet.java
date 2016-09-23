@@ -18,7 +18,6 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 
-import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable {
@@ -139,12 +138,82 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Collection<V> readAll();
 
+    /**
+     * Intersect provided ScoredSortedSets 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param names - names of ScoredSortedSet
+     * @return length of intersection
+     */
     int intersection(String... names);
 
+    /**
+     * Intersect provided ScoredSortedSets with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return length of intersection
+     */
     int intersection(Aggregate aggregate, String... names);
 
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of intersection
+     */
     int intersection(Map<String, Double> nameWithWeight);
 
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of intersection
+     */
     int intersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    int union(String... names);
+
+    /**
+     * Union provided ScoredSortedSets with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    int union(Aggregate aggregate, String... names);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    int union(Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    int union(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
 }

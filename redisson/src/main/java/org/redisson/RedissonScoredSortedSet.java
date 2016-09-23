@@ -494,6 +494,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(intersectionAsync(names));        
     }
 
+    @Override
     public RFuture<Integer> intersectionAsync(String... names) {
         return intersectionAsync(Aggregate.SUM, names);
     }
@@ -503,6 +504,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(intersectionAsync(aggregate, names));        
     }
     
+    @Override
     public RFuture<Integer> intersectionAsync(Aggregate aggregate, String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 4);
         args.add(getName());
@@ -518,6 +520,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(intersectionAsync(nameWithWeight));        
     }
     
+    @Override
     public RFuture<Integer> intersectionAsync(Map<String, Double> nameWithWeight) {
         return intersectionAsync(Aggregate.SUM, nameWithWeight);
     }
@@ -527,6 +530,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(intersectionAsync(aggregate, nameWithWeight));        
     }
 
+    @Override
     public RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
         List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
         args.add(getName());
@@ -542,5 +546,64 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         args.add(aggregate.name());
         return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, args.toArray());
     }
+    
+    @Override
+    public int union(String... names) {
+        return get(unionAsync(names));        
+    }
+
+    @Override
+    public RFuture<Integer> unionAsync(String... names) {
+        return unionAsync(Aggregate.SUM, names);
+    }
+    
+    @Override
+    public int union(Aggregate aggregate, String... names) {
+        return get(unionAsync(aggregate, names));        
+    }
+    
+    @Override
+    public RFuture<Integer> unionAsync(Aggregate aggregate, String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 4);
+        args.add(getName());
+        args.add(names.length);
+        args.addAll(Arrays.asList(names));
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZUNIONSTORE_INT, args.toArray());
+    }
+
+    @Override
+    public int union(Map<String, Double> nameWithWeight) {
+        return get(unionAsync(nameWithWeight));        
+    }
+    
+    @Override
+    public RFuture<Integer> unionAsync(Map<String, Double> nameWithWeight) {
+        return unionAsync(Aggregate.SUM, nameWithWeight);
+    }
+
+    @Override
+    public int union(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        return get(unionAsync(aggregate, nameWithWeight));        
+    }
+
+    @Override
+    public RFuture<Integer> unionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        args.add(getName());
+        args.add(nameWithWeight.size());
+        args.addAll(nameWithWeight.keySet());
+        args.add("WEIGHTS");
+        List<String> weights = new ArrayList<String>();
+        for (Double weight : nameWithWeight.values()) {
+            weights.add(BigDecimal.valueOf(weight).toPlainString());
+        }
+        args.addAll(weights);
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZUNIONSTORE_INT, args.toArray());
+    }
+
     
 }
