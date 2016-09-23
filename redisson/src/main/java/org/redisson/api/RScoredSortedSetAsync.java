@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 
+import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
@@ -77,8 +78,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
     RFuture<Double> addScoreAsync(V object, Number value);
 
     RFuture<Collection<V>> valueRangeAsync(int startIndex, int endIndex);
+    
+    RFuture<Collection<V>> valueRangeReversedAsync(int startIndex, int endIndex);
 
     RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex);
+    
+    RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(int startIndex, int endIndex);
 
     RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -111,5 +116,83 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
      * @return
      */
     RFuture<Collection<V>> readAllAsync();
+
+    /**
+     * Intersect provided ScoredSortedSets 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param names - names of ScoredSortedSet
+     * @return length of intersection
+     */
+    RFuture<Integer> intersectionAsync(String... names);
+
+    /**
+     * Intersect provided ScoredSortedSets with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return length of intersection
+     */
+    RFuture<Integer> intersectionAsync(Aggregate aggregate, String... names);
+
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of intersection
+     */
+    RFuture<Integer> intersectionAsync(Map<String, Double> nameWithWeight);
+
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of intersection
+     */
+    RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    RFuture<Integer> unionAsync(String... names);
+
+    /**
+     * Union provided ScoredSortedSets with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    RFuture<Integer> unionAsync(Aggregate aggregate, String... names);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    RFuture<Integer> unionAsync(Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    RFuture<Integer> unionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
 }

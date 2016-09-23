@@ -114,7 +114,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     for (RFuture<Void> future : masterFuture.getNow()) {
                         future.awaitUninterruptibly();
                         if (!future.isSuccess()) {
-                            continue;
+                            lastException = masterFuture.cause();
                         }
                     }
                 }
