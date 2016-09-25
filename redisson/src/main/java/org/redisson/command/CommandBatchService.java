@@ -199,7 +199,7 @@ public class CommandBatchService extends CommandReactiveService {
                     return;
                 }
 
-                List<BatchCommandData<?, ?>> entries = new ArrayList<BatchCommandData<?, ?>>();
+                List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
                 for (Entry e : commands.values()) {
                     entries.addAll(e.getCommands());
                 }
@@ -369,7 +369,7 @@ public class CommandBatchService extends CommandReactiveService {
 
     private void checkConnectionFuture(final Entry entry, final NodeSource source,
             final RPromise<Void> mainPromise, final RPromise<Void> attemptPromise, final AsyncDetails details,
-            RFuture<RedisConnection> connFuture, boolean noResult) {
+            RFuture<RedisConnection> connFuture, final boolean noResult) {
         if (attemptPromise.isDone() || mainPromise.isCancelled() || connFuture.isCancelled()) {
             return;
         }
