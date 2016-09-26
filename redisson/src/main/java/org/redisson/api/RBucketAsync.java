@@ -29,7 +29,7 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     /**
      * Returns size of object in bytes
      * 
-     * @return
+     * @return object size
      */
     RFuture<Integer> sizeAsync();
     

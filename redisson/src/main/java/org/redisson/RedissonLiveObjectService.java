@@ -185,7 +185,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public <T> RMap asRMap(T instance) {
+    public <T, K, V> RMap<K, V> asRMap(T instance) {
         return (RMap) instance;
     }
 

@@ -405,7 +405,6 @@ public interface RBatch {
      * If cluster configuration used then operations are grouped by slot ids
      * and may be executed on different servers. Thus command execution order could be changed
      *
-     * @return List with result object for each command
      * @throws RedisException in case of any error
      *
      */
@@ -417,8 +416,8 @@ public interface RBatch {
      * <p>
      * If cluster configuration used then operations are grouped by slot ids
      * and may be executed on different servers. Thus command execution order could be changed
-     *
-     * @return List with result object for each command
+     * 
+     * @return void
      * @throws RedisException in case of any error
      *
      */

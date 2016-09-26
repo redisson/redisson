@@ -32,7 +32,7 @@ public interface RPatternTopic<M> {
     /**
      * Get topic channel patterns
      *
-     * @return
+     * @return list of topic names
      */
     List<String> getPatternNames();
 
@@ -41,8 +41,8 @@ public interface RPatternTopic<M> {
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.
      *
-     * @param listener
-     * @return locally unique listener id
+     * @param listener - message listener
+     * @return local JVM unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
     int addListener(PatternMessageListener<M> listener);
@@ -50,8 +50,8 @@ public interface RPatternTopic<M> {
     /**
      * Subscribes to status changes of this topic
      *
-     * @param listener
-     * @return
+     * @param listener - message listener
+     * @return local JVM unique listener id
      * @see org.redisson.api.listener.StatusListener
      */
     int addListener(PatternStatusListener listener);
@@ -59,7 +59,7 @@ public interface RPatternTopic<M> {
     /**
      * Removes the listener by <code>id</code> for listening this topic
      *
-     * @param listenerId
+     * @param listenerId - id of message listener
      */
     void removeListener(int listenerId);
 

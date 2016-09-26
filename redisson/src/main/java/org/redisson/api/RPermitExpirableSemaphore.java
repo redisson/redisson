@@ -71,8 +71,8 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * </ul>
      * 
      * @param leaseTime - permit lease time
-     * @param unit
-     * @return
+     * @param unit - time unit
+     * @return permit id
      * @throws InterruptedException if the current thread is interrupted
      */
     String acquire(long leaseTime, TimeUnit unit) throws InterruptedException;
@@ -175,7 +175,7 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * Correct usage of a semaphore is established by programming convention
      * in the application.
      * 
-     * @param permitId
+     * @param permitId - permit id
      * @return {@code true} if a permit has been released and {@code false}
      *         otherwise
      */
@@ -195,7 +195,7 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * 
      * <p>Throws an exception if permit id doesn't exist or has already been release
      * 
-     * @param permitId
+     * @param permitId - permit id
      */
     void release(String permitId);
     
@@ -207,19 +207,17 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     int availablePermits();
 
     /**
-     * Sets new number of permits.
+     * Sets number of permits.
      *
-     * @param count - number of times {@link #countDown} must be invoked
-     *        before threads can pass through {@link #await}
-     * @result <code>true</code> if semaphore has not initialized yet, otherwise <code>false</code>.  
-     *        
+     * @param permits - number of permits
+     * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
      */
     boolean trySetPermits(int permits);
     
     /**
      * Increases or decreases the number of available permits by defined value. 
      *
-     * @param number of permits to add/remove
+     * @param permits - number of permits to add/remove
      */
     void addPermits(int permits);
     

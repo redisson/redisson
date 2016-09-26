@@ -28,7 +28,7 @@ public interface Node {
     /**
      * Returns current Redis server time in seconds
      * 
-     * @return
+     * @return time in seconds
      */
     long time();
     

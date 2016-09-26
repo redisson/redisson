@@ -29,7 +29,7 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
     /**
      * Returns size of object in bytes
      * 
-     * @return
+     * @return object size
      */
     int size();
     

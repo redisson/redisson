@@ -58,10 +58,10 @@ public interface RLock extends Lock, RExpirable {
      * have passed since the lock was granted - whichever comes first.
      *
      * @param waitTime the maximum time to aquire the lock
-     * @param leaseTime
-     * @param unit
-     * @return
-     * @throws InterruptedException
+     * @param leaseTime lease time
+     * @param unit time unit
+     * @return <code>true</code> if lock has been successfully acquired
+     * @throws InterruptedException - if the thread is interrupted before or during this method.
      */
     boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException;
 
@@ -100,7 +100,7 @@ public interface RLock extends Lock, RExpirable {
     /**
      * Checks if this lock is held by the current thread
      *
-     * @return @return <code>true</code> if held by current thread
+     * @return <code>true</code> if held by current thread
      * otherwise <code>false</code>
      */
     boolean isHeldByCurrentThread();
