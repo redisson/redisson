@@ -33,10 +33,10 @@ public class RedissonRedLockTest {
         RLock lock1 = client1.getLock("lock1");
         RLock lock2 = client1.getLock("lock2");
         RLock lock3 = client2.getLock("lock3");
-        RLock lock4 = client2.getLock("lock3");
-        RLock lock5 = client2.getLock("lock3");
-        RLock lock6 = client2.getLock("lock3");
-        RLock lock7 = client2.getLock("lock3");
+        RLock lock4 = client2.getLock("lock4");
+        RLock lock5 = client2.getLock("lock5");
+        RLock lock6 = client2.getLock("lock6");
+        RLock lock7 = client2.getLock("lock7");
 
 
         RedissonRedLock lock = new RedissonRedLock(lock1, lock2, lock3, lock4, lock5, lock6, lock7);
