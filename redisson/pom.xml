@@ -79,7 +79,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.4.1</version>
+            <version>3.5.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -97,13 +97,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.12</version>
+            <version>1.7.21</version>
             <scope>test</scope>
         </dependency>
         <dependency>
            <groupId>org.jmockit</groupId>
            <artifactId>jmockit</artifactId>
-           <version>1.27</version>
+           <version>1.28</version>
            <scope>test</scope>
         </dependency>
 
