@@ -839,16 +839,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         RFuture<Collection<V>> future = commandExecutor.evalReadAsync(getName(), codec, ALL_KEYS,
                 "local entries = redis.call('hgetall', KEYS[1]); "
               + "local result = {};"
-              + "for j = 1, #entries, 2 do "
-                  + "local founded = false;"
-                  + "for i = 1, #ARGV, 1 do "
-                      + "if ARGV[i] == entries[j] then "
-                          + "founded = true;"
+              + "for j, v in ipairs(entries) do "
+                  + "if j % 2 == 0 then "
+                      + "local founded = false;"
+                      + "for i = 1, #ARGV, 1 do "
+                          + "if ARGV[i] == entries[j] then "
+                              + "founded = true;"
+                          + "end;"
+                      + "end; "
+                      + "if founded == false then "
+                          + "table.insert(result, entries[j+1]);"
                       + "end;"
                   + "end; "
-                  + "if founded == false then "
-                      + "table.insert(result, entries[j+1]);"
-                  + "end;"
               + "end; "
               + "return result; ",
               Arrays.<Object>asList(getName()), 
@@ -884,18 +886,20 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         RFuture<Set<Entry<K, V>>> future = commandExecutor.evalReadAsync(getName(), codec, ALL_ENTRIES,
                 "local entries = redis.call('hgetall', KEYS[1]); "
               + "local result = {};"
-              + "for j = 1, #entries, 2 do "
-                  + "local founded = false;"
-                  + "for i = 1, #ARGV, 1 do "
-                      + "if ARGV[i] == entries[j] then "
-                          + "founded = true;"
+              + "for j, v in ipairs(entries) do "
+              + "if j % 2 == 0 then "
+                      + "local founded = false;"
+                      + "for i = 1, #ARGV, 1 do "
+                          + "if ARGV[i] == entries[j] then "
+                              + "founded = true;"
+                          + "end;"
+                      + "end; "
+                      + "if founded == false then "
+                          + "table.insert(result, entries[j]);"
+                          + "table.insert(result, entries[j+1]);"
                       + "end;"
                   + "end; "
-                  + "if founded == false then "
-                      + "table.insert(result, entries[j]);"
-                      + "table.insert(result, entries[j+1]);"
-                  + "end;"
-              + "end; "
+               + "end; "
               + "return result; ",
               Arrays.<Object>asList(getName()), 
               mapKeys.toArray());
@@ -907,6 +911,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                     return;
                 }
                 
+                for (java.util.Map.Entry<K, V> entry : future.getNow()) {
+                    CacheKey cacheKey = toCacheKey(entry.getKey());
+                    cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
+                }
                 result.addAll(future.getNow());
                 promise.trySuccess(result);
             }
