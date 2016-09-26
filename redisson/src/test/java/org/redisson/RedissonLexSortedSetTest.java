@@ -2,8 +2,6 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLexSortedSet;
@@ -20,7 +18,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("c");
 
         Assert.assertEquals("c", set.pollLast());
-        MatcherAssert.assertThat(set, Matchers.contains("a", "b"));
+        assertThat(set).containsExactly("a", "b");
     }
 
     @Test
@@ -33,7 +31,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
         set.add("c");
 
         Assert.assertEquals("a", set.pollFirst());
-        MatcherAssert.assertThat(set, Matchers.contains("b", "c"));
+        assertThat(set).containsExactly("b", "c");
     }
 
     @Test
