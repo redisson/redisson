@@ -131,7 +131,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         t.join(1);
 
         long startTime = System.currentTimeMillis();
-        assertThat(s.tryAcquire(4, 1, TimeUnit.SECONDS)).isTrue();
+        assertThat(s.tryAcquire(4, 2, TimeUnit.SECONDS)).isTrue();
         assertThat(System.currentTimeMillis() - startTime).isBetween(900L, 1020L);
         assertThat(s.availablePermits()).isEqualTo(0);
     }
