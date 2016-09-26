@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import io.netty.util.internal.ThreadLocalRandom;
 
 import org.redisson.RedissonLock;
 
@@ -84,7 +85,15 @@ public class RedissonMultiLock implements Lock {
             waitTime = 5;
             unit = TimeUnit.SECONDS;
         } else {
-            waitTime = unit.convert(5, TimeUnit.SECONDS);
+            waitTime = unit.toMillis(leaseTime);
+            if (waitTime <= 2000) {
+                waitTime = 2000;
+            } else if (waitTime <= 5000) {
+                waitTime = ThreadLocalRandom.current().nextLong(waitTime/2, waitTime);
+            } else {
+                waitTime = ThreadLocalRandom.current().nextLong(5000, waitTime);
+            }
+            waitTime = unit.convert(waitTime, TimeUnit.MILLISECONDS);
         }
         while (true) {
             if (tryLock(waitTime, leaseTime, unit)) {
