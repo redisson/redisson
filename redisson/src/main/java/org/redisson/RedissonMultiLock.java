@@ -30,6 +30,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * Groups multiple independent locks and manages them as one lock.
@@ -82,8 +83,17 @@ public class RedissonMultiLock implements Lock {
             waitTime = 5;
             unit = TimeUnit.SECONDS;
         } else {
-            waitTime = unit.convert(5, TimeUnit.SECONDS);
+            waitTime = unit.toMillis(leaseTime);
+            if (waitTime <= 2000) {
+                waitTime = 2000;
+            } else if (waitTime <= 5000) {
+                waitTime = ThreadLocalRandom.current().nextLong(waitTime/2, waitTime);
+            } else {
+                waitTime = ThreadLocalRandom.current().nextLong(5000, waitTime);
+            }
+            waitTime = unit.convert(waitTime, TimeUnit.MILLISECONDS);
         }
+        
         while (true) {
             if (tryLock(waitTime, leaseTime, unit)) {
                 return;
@@ -141,7 +151,8 @@ public class RedissonMultiLock implements Lock {
                 if (waitTime == -1 && leaseTime == -1) {
                     lockAcquired = lock.tryLock();
                 } else {
-                    lockAcquired = lock.tryLock(unit.convert(remainTime, TimeUnit.MILLISECONDS), newLeaseTime, unit);
+                    long awaitTime = unit.convert(remainTime, TimeUnit.MILLISECONDS);
+                    lockAcquired = lock.tryLock(awaitTime, newLeaseTime, unit);
                 }
             } catch (Exception e) {
                 lockAcquired = false;
