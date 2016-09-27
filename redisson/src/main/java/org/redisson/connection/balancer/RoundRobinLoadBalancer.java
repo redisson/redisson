@@ -20,6 +20,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.connection.ClientConnectionsEntry;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RoundRobinLoadBalancer implements LoadBalancer {
 
     private final AtomicInteger index = new AtomicInteger(-1);

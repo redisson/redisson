@@ -18,6 +18,12 @@ package org.redisson.config;
 import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> config type
+ */
 public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig<T>> extends BaseConfig<T> {
 
     /**
@@ -79,8 +85,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * <p>
      * @see #setSlaveConnectionMinimumIdleSize(int)
      *
-     * @param slaveConnectionPoolSize
-     * @return
+     * @param slaveConnectionPoolSize - size of pool
+     * @return config
      */
     public T setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
         this.slaveConnectionPoolSize = slaveConnectionPoolSize;
@@ -96,6 +102,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * Default is <code>250</code>
      *
      * @see #setMasterConnectionMinimumIdleSize(int)
+     * 
+     * @param masterConnectionPoolSize - pool size
+     * @return config
      *
      */
     public T setMasterConnectionPoolSize(int masterConnectionPoolSize) {
@@ -110,11 +119,12 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * Сonnection load balancer to multiple Redis slave servers.
      * Uses Round-robin algorithm by default
      *
-     * @param loadBalancer
-     * @return
+     * @param loadBalancer object
+     * @return config
      *
+     * @see org.redisson.connection.balancer.RandomLoadBalancer
      * @see org.redisson.connection.balancer.RoundRobinLoadBalancer
-     * @see org.redisson.connection.BaseLoadBalancer
+     * @see org.redisson.connection.balancer.WeightedRoundRobinBalancer
      */
     public T setLoadBalancer(LoadBalancer loadBalancer) {
         this.loadBalancer = loadBalancer;
@@ -130,7 +140,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * Default is <code>50</code>
      * <p>
      * @see #setSlaveSubscriptionConnectionMinimumIdleSize(int)
-     *
+     * 
+     * @param slaveSubscriptionConnectionPoolSize - pool size
+     * @return config
      */
     public T setSlaveSubscriptionConnectionPoolSize(int slaveSubscriptionConnectionPoolSize) {
         this.slaveSubscriptionConnectionPoolSize = slaveSubscriptionConnectionPoolSize;
@@ -146,7 +158,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * Default is <code>5</code>
      * <p>
      * @see #setSlaveConnectionPoolSize(int)
-     *
+     * 
+     * @param slaveConnectionMinimumIdleSize - pool size
+     * @return config
      */
     public T setSlaveConnectionMinimumIdleSize(int slaveConnectionMinimumIdleSize) {
         this.slaveConnectionMinimumIdleSize = slaveConnectionMinimumIdleSize;
@@ -162,7 +176,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * Default is <code>5</code>
      * <p>
      * @see #setMasterConnectionPoolSize(int)
-     *
+     * 
+     * @param masterConnectionMinimumIdleSize - pool size
+     * @return config
      */
     public T setMasterConnectionMinimumIdleSize(int masterConnectionMinimumIdleSize) {
         this.masterConnectionMinimumIdleSize = masterConnectionMinimumIdleSize;
@@ -178,7 +194,9 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * Default is <code>1</code>
      * <p>
      * @see #setSlaveSubscriptionConnectionPoolSize(int)
-     *
+     * 
+     * @param slaveSubscriptionConnectionMinimumIdleSize - pool size
+     * @return config
      */
     public T setSlaveSubscriptionConnectionMinimumIdleSize(int slaveSubscriptionConnectionMinimumIdleSize) {
         this.slaveSubscriptionConnectionMinimumIdleSize = slaveSubscriptionConnectionMinimumIdleSize;
@@ -193,8 +211,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * <p>
      * Default is <code>SLAVE</code>
      *
-     * @param readMode
-     * @return
+     * @param readMode param
+     * @return config
      */
     public T setReadMode(ReadMode readMode) {
         this.readMode = readMode;

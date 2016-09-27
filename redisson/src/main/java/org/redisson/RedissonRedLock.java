@@ -38,7 +38,7 @@ public class RedissonRedLock extends RedissonMultiLock {
      * Creates instance with multiple {@link RLock} objects.
      * Each RLock object could be created by own Redisson instance.
      *
-     * @param locks
+     * @param locks - array of locks
      */
     public RedissonRedLock(RLock... locks) {
         super(locks);

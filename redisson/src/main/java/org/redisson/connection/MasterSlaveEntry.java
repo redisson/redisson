@@ -312,7 +312,9 @@ public class MasterSlaveEntry {
      * Freeze slave with <code>host:port</code> from slaves list.
      * Re-attach pub/sub listeners from it to other slave.
      * Shutdown old master client.
-     *
+     * 
+     * @param host of Redis
+     * @param port of Redis
      */
     public void changeMaster(String host, int port) {
         ClientConnectionsEntry oldMaster = masterEntry;

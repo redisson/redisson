@@ -60,6 +60,12 @@ public class ClassUtils {
      * findConstructor() method and has the similar limitations that it doesn't
      * do a real widening scope search and simply processes the methods in
      * order.
+     * 
+     * @param type param
+     * @param name of class
+     * @param parms classes
+     * 
+     * @return Method object
      */
     public static Method searchForMethod(Class type, String name, Class[] parms) {
         try {
@@ -107,6 +113,9 @@ public class ClassUtils {
      * If this specified class represents a primitive type (int, float, etc.)
      * then it is translated into its wrapper type (Integer, Float, etc.). If
      * the passed class is not a primitive then it is just returned.
+     * 
+     * @param primitive class
+     * @return class
      */
     private static Class<?> translateFromPrimitive(Class<?> primitive) {
         if (!primitive.isPrimitive()) {

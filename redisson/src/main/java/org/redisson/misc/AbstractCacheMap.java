@@ -32,8 +32,8 @@ import io.netty.util.internal.PlatformDependent;
  * 
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> key
+ * @param <V> value
  */
 public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 

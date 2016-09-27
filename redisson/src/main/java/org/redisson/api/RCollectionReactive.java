@@ -19,6 +19,12 @@ import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value
+ */
 public interface RCollectionReactive<V> extends RExpirableReactive {
 
     Publisher<V> iterator();

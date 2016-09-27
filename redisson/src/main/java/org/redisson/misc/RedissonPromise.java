@@ -29,7 +29,7 @@ import io.netty.util.concurrent.Promise;
  * 
  * @author Nikita Koksharov
  *
- * @param <T>
+ * @param <T> type of object
  */
 public class RedissonPromise<T> implements RPromise<T> {
 

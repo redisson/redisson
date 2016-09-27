@@ -34,10 +34,10 @@ public interface Resolver<T, A extends Annotation, V> {
      * 
      * Actual behavior may vary depending on implementation
      * 
-     * @param value
-     * @param annotation
-     * @param idFieldName
-     * @param redisson
+     * @param value object
+     * @param annotation object
+     * @param idFieldName name of field
+     * @param redisson instance
      * @return resolved value
      */
     public V resolve(T value, A annotation, String idFieldName, RedissonClient redisson);

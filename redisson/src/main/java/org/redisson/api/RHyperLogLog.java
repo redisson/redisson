@@ -17,6 +17,12 @@ package org.redisson.api;
 
 import java.util.Collection;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value
+ */
 public interface RHyperLogLog<V> extends RExpirable, RHyperLogLogAsync<V> {
 
     boolean add(V obj);

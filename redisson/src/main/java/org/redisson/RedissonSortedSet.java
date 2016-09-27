@@ -44,7 +44,7 @@ import io.netty.channel.EventLoopGroup;
  *
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> value
  */
 public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V> {
 

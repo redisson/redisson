@@ -35,7 +35,7 @@ public interface RTopicReactive<M> {
     /**
      * Publish the message to all subscribers of this topic asynchronously
      *
-     * @param message
+     * @param message to send
      * @return the <code>Future</code> object with number of clients that received the message
      */
     Publisher<Long> publish(M message);

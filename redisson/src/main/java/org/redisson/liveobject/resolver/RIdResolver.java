@@ -32,7 +32,7 @@ public interface RIdResolver<A extends RId, V> extends Resolver<Class, A, V>{
      * 
      * @param cls the class of the LiveObject.
      * @param annotation the RId annotation used in the class.
-     * @param redisson
+     * @param redisson instance
      * @return resolved RId field value.
      */
     public V resolve(Class cls, A annotation, String idFieldName, RedissonClient redisson);

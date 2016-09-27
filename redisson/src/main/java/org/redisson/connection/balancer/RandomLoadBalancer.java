@@ -21,6 +21,11 @@ import java.util.Random;
 
 import org.redisson.connection.ClientConnectionsEntry;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RandomLoadBalancer implements LoadBalancer {
 
     private final Random random = new SecureRandom();

@@ -46,7 +46,7 @@ public class RedissonMultiLock implements Lock {
      * Creates instance with multiple {@link RLock} objects.
      * Each RLock object could be created by own Redisson instance.
      *
-     * @param locks
+     * @param locks - array of locks
      */
     public RedissonMultiLock(RLock... locks) {
         if (locks.length == 0) {

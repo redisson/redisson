@@ -117,9 +117,6 @@ public final class CronExpression implements Serializable, Cloneable {
      * 
      * @param cronExpression String representation of the cron expression the
      *                       new object should represent
-     * @throws java.text.ParseException
-     *         if the string expression cannot be parsed into a valid 
-     *         <CODE>CronExpression</CODE>
      */
     public CronExpression(String cronExpression) {
         if (cronExpression == null) {
@@ -235,6 +232,8 @@ public final class CronExpression implements Serializable, Cloneable {
     /**
      * Returns the time zone for which this <code>CronExpression</code> 
      * will be resolved.
+     * 
+     * @return time zone
      */
     public TimeZone getTimeZone() {
         if (timeZone == null) {
@@ -247,6 +246,8 @@ public final class CronExpression implements Serializable, Cloneable {
     /**
      * Sets the time zone for which  this <code>CronExpression</code> 
      * will be resolved.
+     * 
+     * @param timeZone object
      */
     public void setTimeZone(TimeZone timeZone) {
         this.timeZone = timeZone;
@@ -1434,19 +1435,11 @@ public final class CronExpression implements Serializable, Cloneable {
         }
     }
 
-    /**
-     * NOT YET IMPLEMENTED: Returns the time before the given time
-     * that the <code>CronExpression</code> matches.
-     */ 
     public Date getTimeBefore(Date endTime) { 
         // FUTURE_TODO: implement QUARTZ-423
         return null;
     }
 
-    /**
-     * NOT YET IMPLEMENTED: Returns the final time that the 
-     * <code>CronExpression</code> will match.
-     */
     public Date getFinalFireTime() {
         // FUTURE_TODO: implement QUARTZ-423
         return null;

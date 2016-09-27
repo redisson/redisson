@@ -40,9 +40,9 @@ public interface ResolverProvider {
      * To register a resolver based on the the class it can provide value to,
      * the resolver type, the resolver instance to be cached.
      * 
-     * @param cls
-     * @param resolverClass
-     * @param resolver
+     * @param cls object
+     * @param resolverClass object
+     * @param resolver object
      */
     void registerResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Resolver resolver);
     

@@ -135,7 +135,7 @@ public class Redisson implements RedissonClient {
     /**
      * Create sync/async Redisson instance with provided config
      *
-     * @param config
+     * @param config for Redisson
      * @return Redisson instance
      */
     public static RedissonClient create(Config config) {
@@ -163,6 +163,7 @@ public class Redisson implements RedissonClient {
     /**
      * Create reactive Redisson instance with provided config
      *
+     * @param config for Redisson
      * @return Redisson instance
      */
     public static RedissonReactiveClient createReactive(Config config) {

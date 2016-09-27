@@ -17,6 +17,12 @@ package org.redisson.api;
 
 import java.util.Collection;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> type of value
+ */
 public interface RCollectionAsync<V> extends RExpirableAsync {
 
     /**

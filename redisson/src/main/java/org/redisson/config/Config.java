@@ -20,17 +20,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.JsonJacksonCodec;
-
-import io.netty.channel.EventLoopGroup;
 import org.redisson.codec.CodecProvider;
 import org.redisson.codec.DefaultCodecProvider;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.liveobject.provider.DefaultResolverProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
+
+import io.netty.channel.EventLoopGroup;
 
 /**
  * Redisson configuration
@@ -125,6 +124,9 @@ public class Config {
      * Redis key/value codec. Default is json-codec
      *
      * @see org.redisson.client.codec.Codec
+     * 
+     * @param codec object
+     * @return config
      */
     public Config setCodec(Codec codec) {
         this.codec = codec;
@@ -138,8 +140,8 @@ public class Config {
     /**
      * For codec registry and look up. DefaultCodecProvider used by default.
      * 
-     * @param codecProvider 
-     * @return this
+     * @param codecProvider object 
+     * @return config
      * @see org.redisson.codec.CodecProvider
      */
     public Config setCodecProvider(CodecProvider codecProvider) {
@@ -159,7 +161,7 @@ public class Config {
     /**
      * For resolver registry and look up. DefaultResolverProvider used by default.
      * 
-     * @param resolverProvider
+     * @param resolverProvider object
      * @return this
      */
     public Config setResolverProvider(ResolverProvider resolverProvider) {
@@ -178,9 +180,10 @@ public class Config {
 
     /**
      * Config option indicate whether Redisson Reference feature is enabled.
-     * Default value is TRUE
+     * <p>
+     * Default value is <code>true</code>
      * 
-     * @return boolean
+     * @return <code>true</code> if Redisson Reference feature enabled
      */
     public boolean isRedissonReferenceEnabled() {
         return redissonReferenceEnabled;
@@ -188,8 +191,10 @@ public class Config {
 
     /**
      * Config option for enabling Redisson Reference feature
-     * Default value is TRUE
-     * @param redissonReferenceEnabled
+     * <p>
+     * Default value is <code>true</code>
+     * 
+     * @param redissonReferenceEnabled flag
      */
     public void setRedissonReferenceEnabled(boolean redissonReferenceEnabled) {
         this.redissonReferenceEnabled = redissonReferenceEnabled;
@@ -198,7 +203,7 @@ public class Config {
     /**
      * Init cluster servers configuration
      *
-     * @return
+     * @return config
      */
     public ClusterServersConfig useClusterServers() {
         return useClusterServers(new ClusterServersConfig());
@@ -227,7 +232,7 @@ public class Config {
     /**
      * Init AWS Elasticache servers configuration.
      *
-     * @return
+     * @return ElasticacheServersConfig
      */
     public ElasticacheServersConfig useElasticacheServers() {
         return useElasticacheServers(new ElasticacheServersConfig());
@@ -256,7 +261,7 @@ public class Config {
     /**
      * Init single server configuration.
      *
-     * @return
+     * @return SingleServerConfig
      */
     public SingleServerConfig useSingleServer() {
         return useSingleServer(new SingleServerConfig());
@@ -285,18 +290,13 @@ public class Config {
     /**
      * Init sentinel servers configuration.
      *
-     * @return
+     * @return SentinelServersConfig
      */
     public SentinelServersConfig useSentinelServers() {
         return useSentinelServers(new SentinelServersConfig());
     }
 
-    /**
-     * Init sentinel servers configuration by config object.
-     *
-     * @return
-     */
-    public SentinelServersConfig useSentinelServers(SentinelServersConfig sentinelServersConfig) {
+    SentinelServersConfig useSentinelServers(SentinelServersConfig sentinelServersConfig) {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkMasterSlaveServersConfig();
@@ -319,18 +319,13 @@ public class Config {
     /**
      * Init master/slave servers configuration.
      *
-     * @return
+     * @return MasterSlaveServersConfig
      */
     public MasterSlaveServersConfig useMasterSlaveServers() {
         return useMasterSlaveServers(new MasterSlaveServersConfig());
     }
 
-    /**
-     * Init master/slave servers configuration by config object.
-     *
-     * @return
-     */
-    public MasterSlaveServersConfig useMasterSlaveServers(MasterSlaveServersConfig config) {
+    MasterSlaveServersConfig useMasterSlaveServers(MasterSlaveServersConfig config) {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkSentinelServersConfig();
@@ -367,8 +362,8 @@ public class Config {
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
-     * @param threads
-     * @return
+     * @param threads amount
+     * @return config
      */
     public Config setThreads(int threads) {
         this.threads = threads;
@@ -410,8 +405,8 @@ public class Config {
      * Also used for epoll transport activation.
      * <b>netty-transport-native-epoll</b> library should be in classpath
      *
-     * @param useLinuxNativeEpoll
-     * @return
+     * @param useLinuxNativeEpoll flag
+     * @return config
      */
     public Config setUseLinuxNativeEpoll(boolean useLinuxNativeEpoll) {
         this.useLinuxNativeEpoll = useLinuxNativeEpoll;
@@ -429,8 +424,8 @@ public class Config {
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
-     * @param nettyThreads
-     * @return
+     * @param nettyThreads amount
+     * @return config
      */
     public Config setNettyThreads(int nettyThreads) {
         this.nettyThreads = nettyThreads;
@@ -447,8 +442,8 @@ public class Config {
      * <code>RRemoteService</code> invocation handlers  
      * and <code>RExecutorService</code> tasks. 
      * 
-     * @param executor
-     * @return
+     * @param executor object
+     * @return config
      */
     public Config setExecutor(ExecutorService executor) {
         this.executor = executor;
@@ -469,8 +464,8 @@ public class Config {
      * Only {@link io.netty.channel.epoll.EpollEventLoopGroup} or
      * {@link io.netty.channel.nio.NioEventLoopGroup} can be used.
      *
-     * @param eventLoopGroup
-     * @return
+     * @param eventLoopGroup object
+     * @return config
      */
     public Config setEventLoopGroup(EventLoopGroup eventLoopGroup) {
         this.eventLoopGroup = eventLoopGroup;
@@ -484,9 +479,9 @@ public class Config {
     /**
      * Read config object stored in JSON format from <code>String</code>
      *
-     * @param content
-     * @return
-     * @throws IOException
+     * @param content of config
+     * @return config
+     * @throws IOException error
      */
     public static Config fromJSON(String content) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -496,9 +491,9 @@ public class Config {
     /**
      * Read config object stored in JSON format from <code>InputStream</code>
      *
-     * @param inputStream
-     * @return
-     * @throws IOException
+     * @param inputStream object
+     * @return config
+     * @throws IOException error
      */
     public static Config fromJSON(InputStream inputStream) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -508,9 +503,9 @@ public class Config {
     /**
      * Read config object stored in JSON format from <code>File</code>
      *
-     * @param file
-     * @return
-     * @throws IOException
+     * @param file object
+     * @return config
+     * @throws IOException error
      */
     public static Config fromJSON(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -520,9 +515,9 @@ public class Config {
     /**
      * Read config object stored in JSON format from <code>URL</code>
      *
-     * @param url
-     * @return
-     * @throws IOException
+     * @param url object
+     * @return config
+     * @throws IOException error
      */
     public static Config fromJSON(URL url) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -532,9 +527,9 @@ public class Config {
     /**
      * Read config object stored in JSON format from <code>Reader</code>
      *
-     * @param reader
-     * @return
-     * @throws IOException
+     * @param reader object
+     * @return config
+     * @throws IOException error
      */
     public static Config fromJSON(Reader reader) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -544,8 +539,8 @@ public class Config {
     /**
      * Convert current configuration to JSON format
      *
-     * @return
-     * @throws IOException
+     * @return config in json format
+     * @throws IOException error
      */
     public String toJSON() throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -555,9 +550,9 @@ public class Config {
     /**
      * Read config object stored in YAML format from <code>String</code>
      *
-     * @param content
-     * @return
-     * @throws IOException
+     * @param content of config
+     * @return config
+     * @throws IOException error
      */
     public static Config fromYAML(String content) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -567,9 +562,9 @@ public class Config {
     /**
      * Read config object stored in YAML format from <code>InputStream</code>
      *
-     * @param inputStream
-     * @return
-     * @throws IOException
+     * @param inputStream object
+     * @return config
+     * @throws IOException error
      */
     public static Config fromYAML(InputStream inputStream) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -579,9 +574,9 @@ public class Config {
     /**
      * Read config object stored in YAML format from <code>File</code>
      *
-     * @param file
-     * @return
-     * @throws IOException
+     * @param file object
+     * @return config
+     * @throws IOException error
      */
     public static Config fromYAML(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -591,9 +586,9 @@ public class Config {
     /**
      * Read config object stored in YAML format from <code>URL</code>
      *
-     * @param url
-     * @return
-     * @throws IOException
+     * @param url object
+     * @return config
+     * @throws IOException error
      */
     public static Config fromYAML(URL url) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -603,9 +598,9 @@ public class Config {
     /**
      * Read config object stored in YAML format from <code>Reader</code>
      *
-     * @param reader
-     * @return
-     * @throws IOException
+     * @param reader object
+     * @return config
+     * @throws IOException error
      */
     public static Config fromYAML(Reader reader) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -615,8 +610,8 @@ public class Config {
     /**
      * Convert current configuration to YAML format
      *
-     * @return
-     * @throws IOException
+     * @return config in yaml format
+     * @throws IOException error
      */
     public String toYAML() throws IOException {
         ConfigSupport support = new ConfigSupport();
