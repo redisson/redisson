@@ -8,6 +8,7 @@ Includes all code changes from __2.2.25__ version
 Feature - __new object added__ `RPermitExpirableSemaphore`. More info about it [here](https://github.com/redisson/redisson/wiki/8.-distributed-locks-and-synchronizers#87-permitexpirablesemaphore)  
 Feature - __new object added__ `RLocalCachedMap`. More info about it [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#712-map-local-cache)  
 Feature - __references support__ (thanks to Rui Gu) More info about it [here](https://github.com/redisson/redisson/wiki/10.-Additional-features#102-references-to-redisson-objects)  
+Feature - __Docker support__ More info about it [here](https://github.com/redisson/redisson/wiki/12.-Standalone-node#126-how-to-run-using-docker)  
 Feature -  `RSemaphore.reducePermits` method added  
 Feature - `nettyThreads` and `executor` settings added  
 Feature - `valueRangeReversed`, `entryRangeReversed`, `union` and `intersection` methods added to `RScoredSortedSet` object  
