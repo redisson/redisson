@@ -2,6 +2,24 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####27-Sep-2016 - version 2.4.0 released
+Includes all code changes from __2.2.25__ version
+
+Feature - __new object added__ `RPermitExpirableSemaphore`. More info about it [here](https://github.com/redisson/redisson/wiki/8.-distributed-locks-and-synchronizers#87-permitexpirablesemaphore)  
+Feature - __new object added__ `RLocalCachedMap`. More info about it [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#712-map-local-cache)  
+Feature - __references support__ (thanks to Rui Gu) More info about it [here](https://github.com/redisson/redisson/wiki/10.-Additional-features#102-references-to-redisson-objects)  
+Feature -  `RSemaphore.reducePermits` method added  
+Feature - `nettyThreads` and `executor` settings added  
+Feature - `valueRangeReversed`, `entryRangeReversed`, `union` and `intersection` methods added to `RScoredSortedSet` object  
+Feature - `Node.time` method added  
+Feature - `RMap.valueSize` method added  
+Feature - `RBucket.size` method added  
+Feature - `RBatch.executeSkipResult` method added  
+Improvement - Redisson Node could be created with existing Redisson instance  
+Improvement - `RMultimap.get` should return `RSet` or `RList` interface instead of `Set` and `List`  
+Fixed - `RExecutorService` should reject non-static inner task class  
+Fixed - wrong object encoding in `RScoredSortedSet.addScore` method  
+
 ####27-Sep-2016 - version 2.2.25 released
 Improvement - log unexpected errors in netty handlers  
 Improvement - `Not all slots are covered` error should be more informative  
