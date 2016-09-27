@@ -49,7 +49,7 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
  *
  * @param <V> value
  */
-public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
+public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V> {
 
     MultiDecoder<Map<Object, Object>> postitionDecoder;
     MultiDecoder<Map<Object, Object>> distanceDecoder;
