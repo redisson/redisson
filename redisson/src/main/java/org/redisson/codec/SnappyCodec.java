@@ -28,8 +28,8 @@ import io.netty.buffer.Unpooled;
 
 /**
  * Snappy compression codec.
- * Uses inner <code>Codec</codec> to convert object to binary stream.
- * <codec>FstCodec</codec> used by default.
+ * Uses inner <code>Codec</code> to convert object to binary stream.
+ * <code>FstCodec</code> used by default.
  *
  * https://github.com/xerial/snappy-java
  *

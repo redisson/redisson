@@ -80,6 +80,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public int valueSize(K key) {
+        return get(valueSizeAsync(key));
+    }
+    
+    @Override
+    public RFuture<Integer> valueSizeAsync(K key) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HSTRLEN, getName(key), key);
+    }
+    
+    @Override
     public boolean isEmpty() {
         return size() == 0;
     }

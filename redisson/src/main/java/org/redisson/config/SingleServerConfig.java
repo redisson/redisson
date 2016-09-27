@@ -21,6 +21,11 @@ import java.util.List;
 
 import org.redisson.misc.URIBuilder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
@@ -86,9 +91,11 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Redis connection pool size
-     * Default is 250
+     * <p>
+     * Default is <code>250</code>
      *
-     * @param connectionPoolSize
+     * @param connectionPoolSize - pool size
+     * @return config
      */
     public SingleServerConfig setConnectionPoolSize(int connectionPoolSize) {
         this.connectionPoolSize = connectionPoolSize;
@@ -100,10 +107,11 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Redis subscription-connection pool size limit
+     * <p>
      * Default is 50
      *
-     * @param connectionPoolSize
-     * @return
+     * @param subscriptionConnectionPoolSize - pool size
+     * @return config
      */
     public SingleServerConfig setSubscriptionConnectionPoolSize(int subscriptionConnectionPoolSize) {
         this.subscriptionConnectionPoolSize = subscriptionConnectionPoolSize;
@@ -116,7 +124,8 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Set server address. Use follow format -- host:port
      *
-     * @param address
+     * @param address of Redis
+     * @return config
      */
     public SingleServerConfig setAddress(String address) {
         if (address != null) {
@@ -141,8 +150,8 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      *
      * Default is false
      *
-     * @param dnsMonitoring
-     * @return
+     * @param dnsMonitoring flag
+     * @return config
      */
     public SingleServerConfig setDnsMonitoring(boolean dnsMonitoring) {
         this.dnsMonitoring = dnsMonitoring;
@@ -157,8 +166,8 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      *
      * Default is 5000
      *
-     * @param dnsMonitoringInterval
-     * @return
+     * @param dnsMonitoringInterval time
+     * @return config
      */
     public SingleServerConfig setDnsMonitoringInterval(long dnsMonitoringInterval) {
         this.dnsMonitoringInterval = dnsMonitoringInterval;
@@ -170,8 +179,11 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Minimum idle subscription connection amount.
-     *
+     * <p>
      * Default is 1
+     * 
+     * @param subscriptionConnectionMinimumIdleSize - connections amount
+     * @return config
      *
      */
     public SingleServerConfig setSubscriptionConnectionMinimumIdleSize(int subscriptionConnectionMinimumIdleSize) {
@@ -184,9 +196,11 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Minimum idle Redis connection amount.
-     *
+     * <p>
      * Default is 5
      *
+     * @param connectionMinimumIdleSize - connections amount
+     * @return config
      */
     public SingleServerConfig setConnectionMinimumIdleSize(int connectionMinimumIdleSize) {
         this.connectionMinimumIdleSize = connectionMinimumIdleSize;
@@ -200,7 +214,8 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * Database index used for Redis connection
      * Default is <code>0</code>
      *
-     * @param database
+     * @param database index
+     * @return config
      */
     public SingleServerConfig setDatabase(int database) {
         this.database = database;

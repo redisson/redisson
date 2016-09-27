@@ -31,6 +31,7 @@ public interface MessageListener<M> extends EventListener {
     /**
      * Invokes on every message in topic
      *
+     * @param channel of topic
      * @param msg topic message
      */
     void onMessage(String channel, M msg);

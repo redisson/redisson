@@ -54,7 +54,8 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     /**
      * Set Redis master server address. Use follow format -- host:port
      *
-     * @param masterAddress
+     * @param masterAddress of Redis
+     * @return config
      */
     public MasterSlaveServersConfig setMasterAddress(String masterAddress) {
         if (masterAddress != null) {
@@ -77,11 +78,11 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     /**
      * Add Redis slave server address. Use follow format -- host:port
      *
-     * @param addresses
-     * @return
+     * @param addresses of Redis
+     * @return config
      */
-    public MasterSlaveServersConfig addSlaveAddress(String ... sAddresses) {
-        for (String address : sAddresses) {
+    public MasterSlaveServersConfig addSlaveAddress(String ... addresses) {
+        for (String address : addresses) {
             slaveAddresses.add(URIBuilder.create(address));
         }
         return this;
@@ -101,7 +102,8 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      * Database index used for Redis connection
      * Default is <code>0</code>
      *
-     * @param database
+     * @param database number
+     * @return config
      */
     public MasterSlaveServersConfig setDatabase(int database) {
         this.database = database;

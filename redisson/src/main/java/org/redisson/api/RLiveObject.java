@@ -41,7 +41,7 @@ public interface RLiveObject {
      * naming scheme specified in the REntity annotation of the instance class.
      * 
      * @param liveObjectId the liveObjectId to set
-     * @see org.redisson.core.RMap
+     * @see org.redisson.api.RMap
      */
     void setLiveObjectId(Object liveObjectId);
 
@@ -52,14 +52,14 @@ public interface RLiveObject {
      * name of the underlying RMap, so to ensure the map exist in redis, set a 
      * non null value to any of the other fields.
      * 
-     * @return 
-     * @see org.redisson.core.RMap
+     * @return <code>true</code> is object exists 
+     * @see org.redisson.api.RMap
      */
     boolean isExists();
     
     /**
      * Deletes the underlying RMap.
-     * @return 
+     * @return <code>true</code> if object deleted successfully 
      */
     boolean delete();
     

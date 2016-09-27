@@ -49,8 +49,8 @@ public class RedissonNodeConfig extends Config {
     /**
      * Executor service workers amount per service name 
      * 
-     * @param workers
-     * @return
+     * @param workers mapping
+     * @return config
      */
     public RedissonNodeConfig setExecutorServiceWorkers(Map<String, Integer> workers) {
         this.executorServiceWorkers = workers;
@@ -67,8 +67,8 @@ public class RedissonNodeConfig extends Config {
     /**
      * Redisson node initializer
      * 
-     * @param redissonNodeInitializer
-     * @return
+     * @param redissonNodeInitializer object
+     * @return config
      */
     public RedissonNodeConfig setRedissonNodeInitializer(RedissonNodeInitializer redissonNodeInitializer) {
         this.redissonNodeInitializer = redissonNodeInitializer;
@@ -78,9 +78,9 @@ public class RedissonNodeConfig extends Config {
     /**
      * Read config object stored in JSON format from <code>File</code>
      *
-     * @param file
-     * @return
-     * @throws IOException
+     * @param file object
+     * @return config
+     * @throws IOException error
      */
     public static RedissonNodeConfig fromJSON(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -90,9 +90,9 @@ public class RedissonNodeConfig extends Config {
     /**
      * Read config object stored in YAML format from <code>File</code>
      *
-     * @param file
-     * @return
-     * @throws IOException
+     * @param file object
+     * @return config
+     * @throws IOException error
      */
     public static RedissonNodeConfig fromYAML(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();

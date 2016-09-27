@@ -22,6 +22,12 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> object type
+ */
 public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
 
     public static class NestedDecoderState implements DecoderState {

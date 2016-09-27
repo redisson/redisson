@@ -199,7 +199,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
         }
 
-        if (i == commandBatch.getCommands().size()) {
+        if (commandBatch.isNoResult() || i == commandBatch.getCommands().size()) {
             RPromise<Void> promise = commandBatch.getPromise();
             if (error != null) {
                 if (!promise.tryFailure(error) && promise.cause() instanceof RedisTimeoutException) {

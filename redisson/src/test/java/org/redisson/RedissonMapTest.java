@@ -4,14 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.Serializable;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
@@ -156,6 +154,14 @@ public class RedissonMapTest extends BaseTest {
         assertThat(mapStr.get("1")).isEqualTo(112);
     }
 
+    @Test
+    public void testValueSize() {
+        RMap<String, String> map = redisson.getMap("getAll");
+        map.put("1", "1234");
+        assertThat(map.valueSize("4")).isZero();
+        assertThat(map.valueSize("1")).isEqualTo(6);
+    }
+    
     @Test
     public void testGetAll() {
         RMap<Integer, Integer> map = redisson.getMap("getAll");

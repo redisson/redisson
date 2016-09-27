@@ -227,6 +227,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public void executeSkipResult() {
+        executorService.executeSkipResult();
+    }
+    
+    @Override
+    public RFuture<Void> executeSkipResultAsync() {
+        return executorService.executeSkipResultAsync();
+    }
+    
+    @Override
     public RFuture<List<?>> executeAsync() {
         return executorService.executeAsync();
     }

@@ -32,7 +32,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * Removes and returns random element from set
      * in async mode
      *
-     * @return
+     * @return value
      */
     Publisher<V> removeRandom();
 
@@ -40,7 +40,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * Returns random element from set
      * in async mode
      *
-     * @return
+     * @return value
      */
     Publisher<V> random();
 
@@ -58,8 +58,8 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * Union sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of union
      */
     Publisher<Long> union(String... names);
 
@@ -67,8 +67,8 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * Union sets specified by name with current set.
      * Without current set state change.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of union
      */
     Publisher<Set<V>> readUnion(String... names);
     
@@ -76,8 +76,8 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * Diff sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of diff
      */
     Publisher<Long> diff(String... names);
     
@@ -85,8 +85,8 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * Intersection sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of intersection
      */
     Publisher<Long> intersection(String... names);
 
@@ -94,8 +94,8 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * Intersection sets specified by name with current set.
      * Without current set state change.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return values
      */
     Publisher<Set<V>> readIntersection(String... names);
 

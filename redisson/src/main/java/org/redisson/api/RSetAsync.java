@@ -29,16 +29,16 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
     /**
      * Removes and returns random element from set
      * in async mode
-     *
-     * @return
+     * 
+     * @return value
      */
     RFuture<V> removeRandomAsync();
 
     /**
      * Returns random element from set
      * in async mode
-     *
-     * @return
+     * 
+     * @return value
      */
     RFuture<V> randomAsync();
 
@@ -47,7 +47,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      *
      * @param destination the destination set
      * @param member the member to move
-     * @return true if the element is moved, false if the element is not a
+     * @return <code>true</code> if the element is moved, <code>false</code> if the element is not a
      * member of this set or no operation was performed
      */
     RFuture<Boolean> moveAsync(String destination, V member);
@@ -55,7 +55,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
     /**
      * Read all elements at once
      *
-     * @return
+     * @return values
      */
     RFuture<Set<V>> readAllAsync();
 
@@ -63,54 +63,54 @@ public interface RSetAsync<V> extends RCollectionAsync<V> {
      * Union sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of union
      */
-    RFuture<Integer> unionAsync(String... keys);
+    RFuture<Integer> unionAsync(String... names);
 
     /**
      * Union sets specified by name with current set.
      * Without current set state change.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return values
      */
-    RFuture<Set<V>> readUnionAsync(String... keys);
+    RFuture<Set<V>> readUnionAsync(String... names);
 
     /**
      * Diff sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of diff
      */
-    RFuture<Integer> diffAsync(String... keys);
+    RFuture<Integer> diffAsync(String... names);
 
     /**
      * Diff sets specified by name with current set.
      * Without current set state change.
-     *
-     * @param names
-     * @return
+     * 
+     * @param names - name of sets
+     * @return values
      */
-    RFuture<Set<V>> readDiffAsync(String... keys);
+    RFuture<Set<V>> readDiffAsync(String... names);
 
     /**
      * Intersection sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of intersection
      */
-    RFuture<Integer> intersectionAsync(String... keys);
+    RFuture<Integer> intersectionAsync(String... names);
 
     /**
      * Intersection sets specified by name with current set.
      * Without current set state change.
-     *
-     * @param names
-     * @return
+     * 
+     * @param names - name of sets
+     * @return values
      */
-    RFuture<Set<V>> readIntersectionAsync(String... keys);
+    RFuture<Set<V>> readIntersectionAsync(String... names);
     
 }

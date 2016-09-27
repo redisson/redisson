@@ -24,7 +24,7 @@ import io.netty.util.concurrent.FutureListener;
  * 
  * @author Nikita Koksharov
  *
- * @param <T>
+ * @param <T> type
  */
 public class TransferListener<T> implements FutureListener<T> {
 

@@ -65,6 +65,39 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(localCachedMap.delete()).isTrue();
     }
 
+    @Test
+    public void testInvalidationOnClear() throws InterruptedException {
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(true);
+        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
+        
+        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
+        
+        map1.put("1", 1);
+        map1.put("2", 2);
+        map2.put("3", 2);
+        map2.put("4", 2);
+        
+        assertThat(map1.size()).isEqualTo(4);
+        assertThat(map2.size()).isEqualTo(4);
+        
+        assertThat(map1.readAllEntrySet()).hasSize(4);
+        assertThat(map2.readAllEntrySet()).hasSize(4);
+        
+        assertThat(cache1.size()).isEqualTo(4);
+        assertThat(cache2.size()).isEqualTo(4);
+        
+        map1.clear();
+        
+        Thread.sleep(50);
+
+        assertThat(cache1.size()).isZero();
+        assertThat(cache2.size()).isZero();
+        
+        assertThat(map1.size()).isZero();
+        assertThat(map2.size()).isZero();
+    }
     
     @Test
     public void testInvalidationOnUpdate() throws InterruptedException {

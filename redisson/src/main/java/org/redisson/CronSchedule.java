@@ -39,8 +39,8 @@ public class CronSchedule {
     /**
      * Creates cron expression object with defined expression string
      * 
-     * @param expression
-     * @return
+     * @param expression of cron
+     * @return object
      * @throws IllegalArgumentException
      *             wrapping a ParseException if the expression is invalid
      */
@@ -52,9 +52,9 @@ public class CronSchedule {
      * Creates cron expression which schedule task execution
      * every day at the given time 
      * 
-     * @param hour
-     * @param minute
-     * @return
+     * @param hour of schedule
+     * @param minute of schedule
+     * @return object
      * @throws IllegalArgumentException
      *             wrapping a ParseException if the expression is invalid
      */
@@ -68,18 +68,10 @@ public class CronSchedule {
      * every given days of the week at the given time.
      * Use Calendar object constants to define day.
      * 
-     * @see Calendar#SUNDAY
-     * @see Calendar#MONDAY
-     * @see Calendar#TUESDAY
-     * @see Calendar#WEDNESDAY
-     * @see Calendar#THURSDAY
-     * @see Calendar#FRIDAY
-     * @see Calendar#SATURDAY 
-     * 
-     * @param hour
-     * @param minute
+     * @param hour of schedule
+     * @param minute of schedule
      * @param daysOfWeek - Calendar object constants
-     * @return
+     * @return object
      */
     public static CronSchedule weeklyOnDayAndHourAndMinute(int hour, int minute, Integer... daysOfWeek) {
         if (daysOfWeek == null || daysOfWeek.length == 0) {
@@ -98,10 +90,10 @@ public class CronSchedule {
      * Creates cron expression which schedule task execution
      * every given day of the month at the given time
      * 
-     * @param hour
-     * @param minute
-     * @param daysOfWeek
-     * @return
+     * @param hour of schedule
+     * @param minute of schedule
+     * @param dayOfMonth of schedule
+     * @return object
      */
     public static CronSchedule monthlyOnDayAndHourAndMinute(int dayOfMonth, int hour, int minute) {
         String expression = String.format("0 %d %d %d * ?", minute, hour, dayOfMonth);

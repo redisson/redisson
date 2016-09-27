@@ -133,7 +133,7 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      * is returned.  If the time is less than or equal to zero, the method
      * will not wait at all.
      *
-     * @param timeout the maximum time to wait for a permit
+     * @param waitTime the maximum time to wait for a permit
      * @param unit the time unit of the {@code timeout} argument
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
@@ -167,7 +167,7 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      * is returned.  If the time is less than or equal to zero, the method
      * will not wait at all.
      *
-     * @param permits
+     * @param permits amount
      * @param waitTime the maximum time to wait for a permit
      * @param unit the time unit of the {@code timeout} argument
      * @return {@code true} if a permit was acquired and {@code false}
@@ -201,6 +201,8 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      * have acquired that permit by calling {@link #acquire}.
      * Correct usage of a semaphore is established by programming convention
      * in the application.
+     * 
+     * @param permits amount
      */
     void release(int permits);
 
@@ -220,17 +222,17 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
 
     /**
      * Use {@link #trySetPermits(int)}
+     * 
+     * @param permits amount
      */
     @Deprecated
     void setPermits(int permits);
 
     /**
-     * Sets new number of permits.
+     * Sets number of permits.
      *
-     * @param count - number of times {@link #countDown} must be invoked
-     *        before threads can pass through {@link #await}
-     * @result <code>true</code> if semaphore has not initialized yet, otherwise <code>false</code>.  
-     *        
+     * @param permits - number of permits
+     * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
      */
     boolean trySetPermits(int permits);
 
@@ -238,7 +240,7 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      * Shrinks the number of available permits by the indicated
      * reduction.
      *
-     * @param reduction the number of permits to remove
+     * @param permits - reduction the number of permits to remove
      * @throws IllegalArgumentException if {@code reduction} is negative
      */
     void reducePermits(int permits);

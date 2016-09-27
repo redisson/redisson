@@ -19,8 +19,8 @@ package org.redisson.misc;
  * 
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> key
+ * @param <V> value
  */
 public class NoneCacheMap<K, V> extends AbstractCacheMap<K, V> {
 

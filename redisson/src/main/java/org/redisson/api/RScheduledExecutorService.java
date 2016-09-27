@@ -33,8 +33,8 @@ public interface RScheduledExecutorService extends RExecutorService, ScheduledEx
      * 
      * @see RScheduledFuture#getTaskId()
      * 
-     * @param taskId 
-     * @return
+     * @param taskId - id of task
+     * @return <code>true</code> if task has been canceled successfully
      */
     boolean cancelScheduledTask(String taskId);
     
@@ -47,9 +47,9 @@ public interface RScheduledExecutorService extends RExecutorService, ScheduledEx
      * takes longer than its period, then subsequent executions
      * may start late, but will not concurrently execute.
      *
-     * @param command the task to execute
-     * @param cron schedule object
-     * @return
+     * @param task - command the task to execute
+     * @param cronSchedule- cron schedule object
+     * @return future object
      */
     ScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule);
     

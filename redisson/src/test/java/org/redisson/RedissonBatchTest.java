@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RBatch;
@@ -37,6 +38,20 @@ public class RedissonBatchTest extends BaseTest {
         }
         List<?> t = batch.execute();
         System.out.println(t);
+    }
+    
+    @Test
+    public void testSkipResult() {
+        RBatch batch = redisson.createBatch();
+        batch.getBucket("A1").setAsync("001");
+        batch.getBucket("A2").setAsync("001");
+        batch.getBucket("A3").setAsync("001");
+        batch.getKeys().deleteAsync("A1");
+        batch.getKeys().deleteAsync("A2");
+        batch.executeSkipResult();
+        
+        assertThat(redisson.getBucket("A1").isExists()).isFalse();
+        assertThat(redisson.getBucket("A3").isExists()).isTrue();
     }
     
     @Test

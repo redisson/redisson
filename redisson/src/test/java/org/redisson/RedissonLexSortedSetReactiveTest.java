@@ -1,7 +1,6 @@
 package org.redisson;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
+import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLexSortedSetReactive;
@@ -37,9 +36,9 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
         Assert.assertEquals(0, sync(set.removeRangeTailByLex("z", false)).intValue());
 
         Assert.assertEquals(4, sync(set.removeRangeTailByLex("c", false)).intValue());
-        MatcherAssert.assertThat(sync(set), Matchers.contains("a", "b", "c"));
+        assertThat(sync(set)).containsExactly("a", "b", "c");
         Assert.assertEquals(1, sync(set.removeRangeTailByLex("c", true)).intValue());
-        MatcherAssert.assertThat(sync(set), Matchers.contains("a", "b"));
+        assertThat(sync(set)).containsExactly("a", "b");
     }
 
 
@@ -55,9 +54,9 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add("g"));
 
         Assert.assertEquals(2, sync(set.removeRangeHeadByLex("c", false)).intValue());
-        MatcherAssert.assertThat(sync(set), Matchers.contains("c", "d", "e", "f", "g"));
+        assertThat(sync(set)).containsExactly("c", "d", "e", "f", "g");
         Assert.assertEquals(1, (int)sync(set.removeRangeHeadByLex("c", true)));
-        MatcherAssert.assertThat(sync(set), Matchers.contains("d", "e", "f", "g"));
+        assertThat(sync(set)).containsExactly("d", "e", "f", "g");
     }
 
     @Test
@@ -72,7 +71,7 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add("g"));
 
         Assert.assertEquals(5, sync(set.removeRangeByLex("aaa", true, "g", false)).intValue());
-        MatcherAssert.assertThat(sync(set), Matchers.contains("a", "g"));
+        assertThat(sync(set)).containsExactly("a", "g");
     }
 
 
@@ -88,8 +87,8 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
         Assert.assertTrue(sync(set.add("f")) == 1);
         Assert.assertTrue(sync(set.add("g")) == 1);
 
-        MatcherAssert.assertThat(sync(set.lexRangeTail("c", false)), Matchers.contains("d", "e", "f", "g"));
-        MatcherAssert.assertThat(sync(set.lexRangeTail("c", true)), Matchers.contains("c", "d", "e", "f", "g"));
+        assertThat(sync(set.lexRangeTail("c", false))).containsExactly("d", "e", "f", "g");
+        assertThat(sync(set.lexRangeTail("c", true))).containsExactly("c", "d", "e", "f", "g");
     }
 
 
@@ -104,8 +103,8 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add("f"));
         sync(set.add("g"));
 
-        MatcherAssert.assertThat(sync(set.lexRangeHead("c", false)), Matchers.contains("a", "b"));
-        MatcherAssert.assertThat(sync(set.lexRangeHead("c", true)), Matchers.contains("a", "b", "c"));
+        assertThat(sync(set.lexRangeHead("c", false))).containsExactly("a", "b");
+        assertThat(sync(set.lexRangeHead("c", true))).containsExactly("a", "b", "c");
     }
 
 
@@ -120,7 +119,7 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add("f"));
         sync(set.add("g"));
 
-        MatcherAssert.assertThat(sync(set.lexRange("aaa", true, "g", false)), Matchers.contains("b", "c", "d", "e", "f"));
+        assertThat(sync(set.lexRange("aaa", true, "g", false))).contains("b", "c", "d", "e", "f");
     }
 
     @Test

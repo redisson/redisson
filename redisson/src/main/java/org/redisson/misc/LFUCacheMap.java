@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * 
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> key
+ * @param <V> value
  */
 public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 

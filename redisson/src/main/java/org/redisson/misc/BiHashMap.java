@@ -25,8 +25,8 @@ import java.util.Set;
  * This is not a concurrent map.
  * 
  * @author Rui Gu (https://github.com/jackygurui)
- * @param <K>
- * @param <V>
+ * @param <K> key
+ * @param <V> value
  */
 public class BiHashMap<K, V> implements Map<K, V> {
 

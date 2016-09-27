@@ -25,7 +25,7 @@ import org.redisson.misc.PromiseDelegator;
  * 
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> value
  */
 public class RedissonScheduledFuture<V> extends PromiseDelegator<V> implements RScheduledFuture<V> {
 

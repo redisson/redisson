@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,11 +36,9 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
- * {@link #put(Object, Object, long, TimeUnit)} method.
+ * {@link RSetCache#add(Object, long, TimeUnit)} method.
  * </p>
  *
  * <p>Current Redis implementation doesn't have set entry eviction functionality.
@@ -51,11 +48,10 @@ import io.netty.util.concurrent.Future;
  * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
- * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonSet}.</p>
+ * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>
  *
  * @author Nikita Koksharov
  *
- * @param <K> key
  * @param <V> value
  */
 public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V> {

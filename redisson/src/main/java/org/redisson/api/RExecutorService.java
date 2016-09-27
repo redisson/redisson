@@ -43,7 +43,6 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * Register workers
      * 
      * @param workers - workers amount
-     * @param executor - executor instance
      */
     void registerWorkers(int workers);
     

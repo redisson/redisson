@@ -47,7 +47,7 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
  * 
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> value
  */
 public class RedissonGeo<V> extends RedissonExpirable implements RGeo<V> {
 

@@ -2,9 +2,8 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import static org.assertj.core.api.Assertions.*;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RDequeReactive;
@@ -21,7 +20,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
         sync(queue1.removeLastOccurrence(3));
 
-        MatcherAssert.assertThat(sync(queue1), Matchers.containsInAnyOrder(3, 2, 1));
+        assertThat(sync(queue1)).containsExactly(3, 2, 1);
     }
 
     @Test
@@ -34,7 +33,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
         sync(queue1.removeFirstOccurrence(3));
 
-        MatcherAssert.assertThat(sync(queue1), Matchers.containsInAnyOrder(2, 1, 3));
+        assertThat(sync(queue1)).containsExactly(2, 1, 3);
     }
 
     @Test
@@ -84,7 +83,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         sync(queue2.addFirst(4));
 
         sync(queue1.pollLastAndOfferFirstTo(queue2.getName()));
-        MatcherAssert.assertThat(sync(queue2), Matchers.contains(3, 4, 5, 6));
+        assertThat(sync(queue2)).containsExactly(3, 4, 5, 6);
     }
 
     @Test
@@ -94,7 +93,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         sync(queue.addFirst(2));
         sync(queue.addFirst(3));
 
-        MatcherAssert.assertThat(sync(queue), Matchers.contains(3, 2, 1));
+        assertThat(sync(queue)).containsExactly(3, 2, 1);
     }
 
     @Test
@@ -104,7 +103,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         sync(queue.addLast(2));
         sync(queue.addLast(3));
 
-        MatcherAssert.assertThat(sync(queue), Matchers.contains(1, 2, 3));
+        assertThat(sync(queue)).containsExactly(1, 2, 3);
     }
 
     @Test
@@ -114,7 +113,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         sync(queue.offerFirst(2));
         sync(queue.offerFirst(3));
 
-        MatcherAssert.assertThat(sync(queue), Matchers.contains(3, 2, 1));
+        assertThat(sync(queue)).containsExactly(3, 2, 1);
     }
 
     @Test
@@ -122,7 +121,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         final RDequeReactive<Integer> queue = redisson.getDeque("deque");
         sync(queue.addAll(Arrays.asList(1, 2, 3)));
 
-        MatcherAssert.assertThat(() -> toIterator(queue.descendingIterator()), Matchers.contains(3, 2, 1));
-}
+        assertThat(toIterator(queue.descendingIterator())).containsExactly(3, 2, 1);
+    }
 
 }

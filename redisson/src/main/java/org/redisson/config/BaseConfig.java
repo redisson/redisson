@@ -15,6 +15,12 @@
  */
 package org.redisson.config;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> config type
+ */
 class BaseConfig<T extends BaseConfig<T>> {
 
     /**
@@ -106,7 +112,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Subscriptions per Redis connection limit
      * Default is 5
      *
-     * @param subscriptionsPerConnection
+     * @param subscriptionsPerConnection amount
+     * @return config
      */
     public T setSubscriptionsPerConnection(int subscriptionsPerConnection) {
         this.subscriptionsPerConnection = subscriptionsPerConnection;
@@ -121,7 +128,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Password for Redis authentication. Should be null if not needed
      * Default is <code>null</code>
      *
-     * @param password
+     * @param password for connection
+     * @return config
      */
     public T setPassword(String password) {
         this.password = password;
@@ -139,7 +147,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Default is <code>3</code> attempts
      *
      * @see #timeout
-     * @param retryAttempts
+     * @param retryAttempts - retry attempts
+     * @return config
      */
     public T setRetryAttempts(int retryAttempts) {
         this.retryAttempts = retryAttempts;
@@ -157,6 +166,7 @@ class BaseConfig<T extends BaseConfig<T>> {
      *
      * @see retryAttempts
      * @param retryInterval - time in milliseconds
+     * @return config
      */
     public T setRetryInterval(int retryInterval) {
         this.retryInterval = retryInterval;
@@ -173,6 +183,7 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Default is <code>3000</code> milliseconds
      *
      * @param timeout in milliseconds
+     * @return config
      */
     public T setTimeout(int timeout) {
         this.timeout = timeout;
@@ -187,7 +198,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Setup connection name during connection init
      * via CLIENT SETNAME command
      *
-     * @param name
+     * @param clientName - name of client
+     * @return config
      */
     public T setClientName(String clientName) {
         this.clientName = clientName;
@@ -199,9 +211,10 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation
+     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll</code> operation
      *
-     * @param ping timeout in milliseconds
+     * @param pingTimeout - timeout in milliseconds
+     * @return config
      */
     public T setPingTimeout(int pingTimeout) {
         this.pingTimeout = pingTimeout;
@@ -218,7 +231,7 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Default is <code>10000</code> milliseconds.
      * 
      * @param connectTimeout - timeout in milliseconds
-     * @return
+     * @return config
      */
     public T setConnectTimeout(int connectTimeout) {
         this.connectTimeout = connectTimeout;
@@ -235,7 +248,7 @@ class BaseConfig<T extends BaseConfig<T>> {
      * then it will closed and removed from pool.
      *
      * @param idleConnectionTimeout - timeout in milliseconds
-     * @return
+     * @return config
      */
     public T setIdleConnectionTimeout(int idleConnectionTimeout) {
         this.idleConnectionTimeout = idleConnectionTimeout;
@@ -257,6 +270,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      *
      * @see #failedAttempts
      *
+     * @param slaveRetryTimeout - retry timeout in milliseconds
+     * @return config
      */
 
     public T setReconnectionTimeout(int slaveRetryTimeout) {
@@ -275,6 +290,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is 3
      *
+     * @param slaveFailedAttempts - attempts
+     * @return config
      */
     public T setFailedAttempts(int slaveFailedAttempts) {
         this.failedAttempts = slaveFailedAttempts;

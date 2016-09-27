@@ -226,8 +226,18 @@ public class RedissonTest {
         Assert.assertTrue(r.isShutdown());
     }
 
-//    @Test
-    public void test() {
+    @Test
+    public void testTime() {
+        NodesGroup<Node> nodes = redisson.getNodesGroup();
+        Assert.assertEquals(1, nodes.getNodes().size());
+        Iterator<Node> iter = nodes.getNodes().iterator();
+
+        Node node1 = iter.next();
+        assertThat(node1.time()).isGreaterThan(100000L);
+    }
+
+    @Test
+    public void testPing() {
         NodesGroup<Node> nodes = redisson.getNodesGroup();
         Assert.assertEquals(1, nodes.getNodes().size());
         Iterator<Node> iter = nodes.getNodes().iterator();

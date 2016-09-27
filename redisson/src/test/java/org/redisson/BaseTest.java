@@ -63,7 +63,6 @@ public abstract class BaseTest {
                 .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort())
                 .setConnectTimeout(1000000)
                 .setTimeout(1000000);
-        config.setThreads(10);
 //        .setPassword("mypass1");
 //        config.useMasterSlaveConnection()
 //        .setMasterAddress("127.0.0.1:6379")

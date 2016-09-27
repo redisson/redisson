@@ -44,7 +44,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
         long start = System.currentTimeMillis();
         assertThat(queue.offer(6, 2, TimeUnit.SECONDS)).isFalse();
-        assertThat(System.currentTimeMillis() - start).isGreaterThan(2000);
+        assertThat(System.currentTimeMillis() - start).isGreaterThan(1900);
         
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         final AtomicBoolean executed = new AtomicBoolean();

@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
  * 
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> key
+ * @param <V> valu
  */
 public interface Cache<K, V> extends Map<K, V> {
     

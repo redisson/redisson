@@ -26,6 +26,13 @@ import java.net.InetSocketAddress;
 public interface Node {
 
     /**
+     * Returns current Redis server time in seconds
+     * 
+     * @return time in seconds
+     */
+    long time();
+    
+    /**
      * Returns node type
      *
      * @return node type

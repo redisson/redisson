@@ -23,8 +23,8 @@ package org.redisson.api;
  * 
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> map key
+ * @param <V> map value
  */
 public interface RLocalCachedMap<K, V> extends RMap<K, V>, RDestroyable {
 

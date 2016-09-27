@@ -223,7 +223,8 @@ public class RedisConnection implements RedisCommands {
     /**
      * Access to Netty channel.
      * This method is provided to use in debug info only.
-     *
+     * 
+     * @return channel
      */
     public Channel getChannel() {
         return channel;

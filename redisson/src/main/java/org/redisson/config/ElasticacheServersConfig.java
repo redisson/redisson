@@ -58,7 +58,7 @@ public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<Elast
      * Add Redis cluster node address. Use follow format -- <code>host:port</code>
      *
      * @param addresses in <code>host:port</code> format
-     * @return
+     * @return config
      */
     public ElasticacheServersConfig addNodeAddress(String ... addresses) {
         for (String address : addresses) {
@@ -80,7 +80,7 @@ public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<Elast
      * Elasticache node scan interval in milliseconds
      *
      * @param scanInterval in milliseconds
-     * @return
+     * @return config
      */
     public ElasticacheServersConfig setScanInterval(int scanInterval) {
         this.scanInterval = scanInterval;
@@ -91,7 +91,8 @@ public class ElasticacheServersConfig extends BaseMasterSlaveServersConfig<Elast
      * Database index used for Redis connection
      * Default is <code>0</code>
      *
-     * @param database
+     * @param database number
+     * @return config
      */
     public ElasticacheServersConfig setDatabase(int database) {
         this.database = database;

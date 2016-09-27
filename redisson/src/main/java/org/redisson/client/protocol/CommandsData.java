@@ -29,17 +29,27 @@ public class CommandsData implements QueueCommand {
 
     private final List<CommandData<?, ?>> commands;
     private final RPromise<Void> promise;
+    private final boolean noResult;
 
     public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands) {
+        this(promise, commands, false);
+    }
+    
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean noResult) {
         super();
         this.promise = promise;
         this.commands = commands;
+        this.noResult = noResult;
     }
 
     public RPromise<Void> getPromise() {
         return promise;
     }
 
+    public boolean isNoResult() {
+        return noResult;
+    }
+    
     public List<CommandData<?, ?>> getCommands() {
         return commands;
     }

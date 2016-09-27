@@ -34,7 +34,7 @@ import io.netty.util.internal.PlatformDependent;
  * 
  * @author Nikita Koksharov
  *
- * @param <T>
+ * @param <T> type of object
  */
 public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise<T> {
 

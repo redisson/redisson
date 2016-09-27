@@ -41,7 +41,7 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
      * disabled for thread scheduling purposes and lies dormant until
      * one of two things happens:
      * <ul>
-     * <li>Some other thread invokes the {@link #release} method for this
+     * <li>Some other thread invokes the {@link #releaseAsync(String)} method for this
      * semaphore and the current thread is next to be assigned a permit; or
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread.
@@ -63,15 +63,15 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
      * disabled for thread scheduling purposes and lies dormant until
      * one of two things happens:
      * <ul>
-     * <li>Some other thread invokes the {@link #release} method for this
+     * <li>Some other thread invokes the {@link #releaseAsync} method for this
      * semaphore and the current thread is next to be assigned a permit; or
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread.
      * </ul>
      * 
      * @param leaseTime - permit lease time
-     * @param unit
-     * @return
+     * @param unit - time unit
+     * @return permit id
      */
     RFuture<String> acquireAsync(long leaseTime, TimeUnit unit);
     
@@ -104,7 +104,7 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
      * disabled for thread scheduling purposes and lies dormant until
      * one of three things happens:
      * <ul>
-     * <li>Some other thread invokes the {@link #release} method for this
+     * <li>Some other thread invokes the {@link #releaseAsync(String)} method for this
      * semaphore and the current thread is next to be assigned a permit; or
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread; or
@@ -138,7 +138,7 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
      * disabled for thread scheduling purposes and lies dormant until
      * one of three things happens:
      * <ul>
-     * <li>Some other thread invokes the {@link #release} method for this
+     * <li>Some other thread invokes the {@link #releaseAsync(String)} method for this
      * semaphore and the current thread is next to be assigned a permit; or
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread; or
@@ -167,11 +167,11 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
      * then one is selected and given the permit that was just released.
      *
      * <p>There is no requirement that a thread that releases a permit must
-     * have acquired that permit by calling {@link #acquire}.
+     * have acquired that permit by calling {@link #acquireAsync()}.
      * Correct usage of a semaphore is established by programming convention
      * in the application.
      * 
-     * @param permitId
+     * @param permitId - permit id
      * @return {@code true} if a permit has been released and {@code false}
      *         otherwise
      */
@@ -185,13 +185,14 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
      * then one is selected and given the permit that was just released.
      *
      * <p>There is no requirement that a thread that releases a permit must
-     * have acquired that permit by calling {@link #acquire}.
+     * have acquired that permit by calling {@link #acquireAsync()}.
      * Correct usage of a semaphore is established by programming convention
      * in the application.
      * 
      * <p>Throws an exception if permit id doesn't exist or has already been release
      * 
-     * @param permitId
+     * @param permitId - permit id
+     * @return void
      */
     RFuture<Void> releaseAsync(String permitId);
 
@@ -203,19 +204,18 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<Integer> availablePermitsAsync();
 
     /**
-     * Sets new number of permits.
+     * Sets number of permits.
      *
-     * @param count - number of times {@link #countDown} must be invoked
-     *        before threads can pass through {@link #await}
-     * @result <code>true</code> if semaphore has not initialized yet, otherwise <code>false</code>.  
-     *        
+     * @param permits - number of permits
+     * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
      */
     RFuture<Boolean> trySetPermitsAsync(int permits);
 
     /**
      * Increases or decreases the number of available permits by defined value. 
      *
-     * @param number of permits to add/remove
+     * @param permits - number of permits to add/remove
+     * @return void
      */
     RFuture<Void> addPermitsAsync(int permits);
     

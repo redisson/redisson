@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
@@ -24,8 +23,7 @@ import org.redisson.client.protocol.pubsub.PubSubType;
  *
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <V> value
  */
 public class PubSubPatternMessageListener<V> implements RedisPubSubListener<V> {
 

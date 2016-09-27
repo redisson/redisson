@@ -30,6 +30,14 @@ import java.util.Set;
  */
 public interface RMapAsync<K, V> extends RExpirableAsync {
 
+    /**
+     * Returns size of value mapped by key in bytes
+     * 
+     * @param key - map key
+     * @return size of value
+     */
+    RFuture<Integer> valueSizeAsync(K key);
+    
     RFuture<Map<K, V>> getAllAsync(Set<K> keys);
 
     RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map);
@@ -48,7 +56,7 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      * Works faster than <code>RMap.removeAsync</code> but doesn't return
      * the value associated with <code>key</code>
      *
-     * @param keys
+     * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
     RFuture<Long> fastRemoveAsync(K ... keys);
@@ -60,8 +68,8 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      * Works faster than <code>RMap.putAsync</code> but not returning
      * the previous value associated with <code>key</code>
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
@@ -72,21 +80,21 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     /**
      * Read all keys at once
      *
-     * @return
+     * @return keys
      */
     RFuture<Set<K>> readAllKeySetAsync();
 
     /**
      * Read all values at once
      *
-     * @return
+     * @return values
      */
     RFuture<Collection<V>> readAllValuesAsync();
 
     /**
      * Read all map entries at once
      *
-     * @return
+     * @return entries
      */
     RFuture<Set<Entry<K, V>>> readAllEntrySetAsync();
 

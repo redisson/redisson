@@ -48,7 +48,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * Works faster than <code>RMap.remove</code> but not returning
      * the value associated with <code>key</code>
      *
-     * @param keys
+     * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
     Publisher<Long> fastRemove(K ... keys);
@@ -60,8 +60,8 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * Works faster than <code>RMap.put</code> but not returning
      * the previous value associated with <code>key</code>
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */

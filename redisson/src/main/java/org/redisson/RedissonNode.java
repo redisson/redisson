@@ -170,7 +170,7 @@ public class RedissonNode {
     /**
      * Create Redisson node instance with provided config
      *
-     * @param config
+     * @param config of RedissonNode
      * @return RedissonNode instance
      */
     public static RedissonNode create(RedissonNodeConfig config) {
@@ -180,8 +180,8 @@ public class RedissonNode {
     /**
      * Create Redisson node instance with provided config and Redisson instance
      *
-     * @param config
-     * @param redisson
+     * @param config of RedissonNode
+     * @param redisson instance
      * @return RedissonNode instance
      */
     public static RedissonNode create(RedissonNodeConfig config, Redisson redisson) {

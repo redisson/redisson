@@ -59,8 +59,8 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * Creates CacheManager supplied by Redisson instance and
      * Cache config mapped by Cache name
      *
-     * @param redisson
-     * @param config
+     * @param redisson object
+     * @param config object
      */
     public RedissonSpringCacheManager(RedissonClient redisson, Map<String, CacheConfig> config) {
         this(redisson, config, null);
@@ -72,8 +72,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * <p>
      * Each Cache instance share one Codec instance.
      *
-     * @param redisson
-     * @param config
+     * @param redisson object
+     * @param config object
+     * @param codec object
      */
     public RedissonSpringCacheManager(RedissonClient redisson, Map<String, CacheConfig> config, Codec codec) {
         this.redisson = redisson;
@@ -88,8 +89,8 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * Loads the config file from the class path, interpreting plain paths as class path resource names
      * that include the package path (e.g. "mypackage/myresource.txt").
      *
-     * @param redisson
-     * @param config
+     * @param redisson object
+     * @param configLocation path
      */
     public RedissonSpringCacheManager(RedissonClient redisson, String configLocation) {
         this(redisson, configLocation, null);
@@ -104,8 +105,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * Loads the config file from the class path, interpreting plain paths as class path resource names
      * that include the package path (e.g. "mypackage/myresource.txt").
      *
-     * @param redisson
-     * @param config
+     * @param redisson object
+     * @param configLocation path
+     * @param codec object
      */
     public RedissonSpringCacheManager(RedissonClient redisson, String configLocation, Codec codec) {
         this.redisson = redisson;
@@ -116,8 +118,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     /**
      * Set cache config location
      *
-     * @param config
-     * @throws IOException
+     * @param configLocation object
      */
     public void setConfigLocation(String configLocation) {
         this.configLocation = configLocation;
@@ -126,7 +127,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     /**
      * Set cache config mapped by cache name
      *
-     * @param config
+     * @param config object
      */
     public void setConfig(Map<String, CacheConfig> config) {
         this.configMap = config;
@@ -135,7 +136,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     /**
      * Set Redisson instance
      *
-     * @param config
+     * @param redisson instance
      */
     public void setRedisson(RedissonClient redisson) {
         this.redisson = redisson;
@@ -144,7 +145,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     /**
      * Set Codec instance shared between all Cache instances
      *
-     * @param codec
+     * @param codec object
      */
     public void setCodec(Codec codec) {
         this.codec = codec;

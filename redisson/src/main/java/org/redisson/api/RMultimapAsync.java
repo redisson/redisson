@@ -114,7 +114,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      * values for that key.
      *
      * <p>If {@code values} is empty, this is equivalent to
-     * {@link #removeAll(Object) removeAll(key)}.
+     * {@link #removeAllAsync(Object)}.
      *
      * @param key - map key
      * @param values - map values
@@ -128,9 +128,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
     /**
      * Removes all values associated with the key {@code key}.
      *
-     * <p>Once this method returns, {@code key} will not be mapped to any values,
-     * so it will not appear in {@link #keySet()}, {@link #asMap()}, or any other
-     * views.
+     * <p>Once this method returns, {@code key} will not be mapped to any values.
      *
      * @param key - map key
      * @return the values that were removed (possibly empty). The returned

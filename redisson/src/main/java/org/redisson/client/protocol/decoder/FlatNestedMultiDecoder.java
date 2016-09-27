@@ -21,12 +21,14 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> object type
+ */
 public class FlatNestedMultiDecoder<T> extends NestedMultiDecoder {
 
-    public FlatNestedMultiDecoder(MultiDecoder<Object> firstDecoder, MultiDecoder<Object> secondDecoder) {
-        super(firstDecoder, secondDecoder);
-    }
-    
     public FlatNestedMultiDecoder(MultiDecoder firstDecoder, MultiDecoder secondDecoder, boolean handleEmpty) {
         super(firstDecoder, secondDecoder, handleEmpty);
     }

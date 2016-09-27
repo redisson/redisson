@@ -23,8 +23,7 @@ import org.redisson.client.protocol.pubsub.PubSubType;
  *
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <V> value
  */
 public class PubSubPatternStatusListener<V> implements RedisPubSubListener<V> {
 

@@ -30,7 +30,7 @@ import org.redisson.command.CommandAsyncExecutor;
  * 
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> value
  */
 public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 

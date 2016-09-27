@@ -45,7 +45,7 @@ import net.openhft.hashing.LongHashFunction;
  *
  * @author Nikita Koksharov
  *
- * @param <T>
+ * @param <T> type of object
  */
 public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomFilter<T> {
 
