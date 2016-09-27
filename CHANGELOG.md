@@ -2,6 +2,20 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####27-Sep-2016 - version 2.2.25 released
+Improvement - log unexpected errors in netty handlers  
+Improvement - `Not all slots are covered` error should be more informative  
+Improvement - implement random wait time in `lock` method of `RedissonRedLock` and `RedissonMultiLock` objects  
+Fixed - `ClassCastException` error when there are no slaves in sentinel mode  
+Fixed - keep RMap insertion ordering while iteration  
+Fixed - thread stuck at `lock` method of `RedissonRedLock` and `RedissonMultiLock` objects  
+Fixed - incorrect `tryLock` behaviour of `RedissonRedLock` and `RedissonMultiLock` objects  
+Fixed - connection shouldn't be closed on exceptionCaught  
+Fixed - Jackson 2.8.x compatibility  
+Fixed - TRYAGAIN error handling in cluster mode  
+Fixed - sync commands in connectionListener leads to connection timeout exception  
+Fixed - can't find slave error in cluster mode if failed slave hasn't been added before  
+
 ####24-Aug-2016 - version 2.3.0 released
 Starting from this version Redisson could be run as standalone node to execute distributed tasks. More features will be added to it in future. Read docs about it [here](https://github.com/mrniko/redisson/wiki/12.-Standalone-node)
 
