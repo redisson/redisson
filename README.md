@@ -74,12 +74,12 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.3.0</version>
+       <version>2.4.0</version>
     </dependency>
 
 #### Gradle
 
-    compile 'org.redisson:redisson:2.3.0'
+    compile 'org.redisson:redisson:2.4.0'
     
 #### Java
 
@@ -104,8 +104,8 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.3.0&e=jar)  
-[Redisson node 2.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.3.0&e=jar)  
+[Redisson 2.4.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.4.0&e=jar)  
+[Redisson node 2.4.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.4.0&e=jar)  
 
 ### Supported by
 
