@@ -242,8 +242,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private <T, K> T instantiateDetachedObject(Class<T> cls, K id) throws Exception {
         T instance = instantiate(cls, id);
-        if (BeanUtil.pojo.getSimpleProperty(instance, getRIdFieldName(cls)) == null) {
-            BeanUtil.pojo.setSimpleProperty(instance, getRIdFieldName(cls), id);
+        String fieldName = getRIdFieldName(cls);
+        if (BeanUtil.declared.getProperty(instance, fieldName) == null) {
+            BeanUtil.declared.setProperty(instance, fieldName, id);
         }
         return instance;
     }

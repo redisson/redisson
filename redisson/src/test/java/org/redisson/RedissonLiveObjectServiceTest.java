@@ -1,5 +1,6 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -10,7 +11,6 @@ import static org.junit.Assert.fail;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -963,6 +963,42 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         } catch (Exception e) {
             assertEquals("Please use RLiveObjectService instance for this type of functions", e.getMessage());
         }
+    }
+    
+    @REntity
+    public static class SimpleObject {
+        
+        @RId
+        private String id;
+        
+        private Long value;
+        
+        public String getId() {
+            return id;
+        }
+        
+        public Long getValue() {
+            return value;
+        }
+        
+        public void setValue(Long value) {
+            this.value = value;
+        }
+        
+    }
+    
+    @Test
+    public void testFieldWithoutSetterGetter() {
+        SimpleObject so = redisson.getLiveObjectService().create(SimpleObject.class);
+        so.setValue(10L);
+        
+        so = redisson.getLiveObjectService().detach(so);
+        assertThat(so.getId()).isNotNull();
+        assertThat(so.getValue()).isEqualTo(10L);
+        
+        so = redisson.getLiveObjectService().get(SimpleObject.class, so.getId());
+        assertThat(so.getId()).isNotNull();
+        assertThat(so.getValue()).isEqualTo(10L);
     }
     
     @Test
