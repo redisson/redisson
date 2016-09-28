@@ -988,7 +988,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
     
     @Test
-    public void testFieldWithoutSetterGetter() {
+    public void testFieldWithoutIdSetter() {
         SimpleObject so = redisson.getLiveObjectService().create(SimpleObject.class);
         so.setValue(10L);
         

@@ -134,18 +134,19 @@ public class AccessorInterceptor {
                             .getAnnotation(REntity.class).fieldTransformation())) {
                 Class<? extends RObject> mappedClass = getMappedClass(arg);
                 if (mappedClass != null) {
-                    Entry<NamingScheme, Codec> entry = getFieldNamingSchemeAndCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
+                    Codec fieldCodec = getFieldCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
+                    NamingScheme fieldNamingScheme = getFieldNamingScheme(me.getClass().getSuperclass(), fieldName, fieldCodec);
+                    
                     RObject obj = RedissonObjectFactory
                             .createRObject(redisson,
                                     mappedClass,
-                                    entry.getKey().getFieldReferenceName(me.getClass().getSuperclass(),
+                                    fieldNamingScheme.getFieldReferenceName(me.getClass().getSuperclass(),
                                             idFieldType,
-                                            getREntityIdFieldName(me),
-                                            ((RLiveObject) me).getLiveObjectId(),
                                             mappedClass,
                                             fieldName,
                                             arg),
-                                    entry.getValue());
+                                    fieldCodec);
+                    
                     if (obj instanceof Collection) {
                         ((Collection) obj).addAll((Collection) arg);
                     } else {
@@ -186,28 +187,28 @@ public class AccessorInterceptor {
     /**
      * WARNING: rEntity has to be the class of @This object.
      */
-    private Entry<NamingScheme, Codec> getFieldNamingSchemeAndCodec(Class<?> rEntity, Class<? extends RObject> rObjectClass, String fieldName) throws Exception {
-        Codec c;
+    private Codec getFieldCodec(Class<?> rEntity, Class<? extends RObject> rObjectClass, String fieldName) throws Exception {
         Field field = rEntity.getDeclaredField(fieldName);
         if (field.isAnnotationPresent(RObjectField.class)) {
             RObjectField anno = field.getAnnotation(RObjectField.class);
-            c = codecProvider.getCodec(anno, rEntity, rObjectClass, fieldName);
-            if (!namingSchemeCache.containsKey(fieldName)) {
-                namingSchemeCache.putIfAbsent(fieldName, anno.namingScheme()
-                        .getDeclaredConstructor(Codec.class)
-                        .newInstance(c));
-            }
+            return codecProvider.getCodec(anno, rEntity, rObjectClass, fieldName);
         } else {
             REntity anno = rEntity.getAnnotation(REntity.class);
-            c = codecProvider.getCodec(anno, (Class) rEntity);
-            if (!namingSchemeCache.containsKey(fieldName)) {
-                namingSchemeCache.putIfAbsent(fieldName, anno.namingScheme()
-                        .getDeclaredConstructor(Codec.class)
-                        .newInstance(c));
-            }
+            return codecProvider.getCodec(anno, (Class) rEntity);
         }
-        AbstractMap.SimpleImmutableEntry entry = new AbstractMap.SimpleImmutableEntry(namingSchemeCache.get(fieldName), c);
-        return entry;
+    }
+    
+    /**
+     * WARNING: rEntity has to be the class of @This object.
+     */
+    private NamingScheme getFieldNamingScheme(Class<?> rEntity, String fieldName, Codec c) throws Exception {
+        if (!namingSchemeCache.containsKey(fieldName)) {
+            REntity anno = rEntity.getAnnotation(REntity.class);
+            namingSchemeCache.putIfAbsent(fieldName, anno.namingScheme()
+                    .getDeclaredConstructor(Codec.class)
+                    .newInstance(c));
+        }
+        return namingSchemeCache.get(fieldName);
     }
     
     private static String getFieldNameSuffix(String fieldName) {
