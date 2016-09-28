@@ -1002,6 +1002,22 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
     
     @Test
+    public void testCreateObjectsInRuntime() {
+        TestREntityWithMap so = redisson.getLiveObjectService().create(TestREntityWithMap.class);
+        so.getValue().put("1", "2");
+        
+        so = redisson.getLiveObjectService().detach(so);
+        assertThat(so.getName()).isNotNull();
+        assertThat(so.getValue()).containsKey("1");
+        assertThat(so.getValue()).containsValue("2");
+        
+        so = redisson.getLiveObjectService().get(TestREntityWithMap.class, so.getName());
+        assertThat(so.getName()).isNotNull();
+        assertThat(so.getValue()).containsKey("1");
+        assertThat(so.getValue()).containsValue("2");
+    }
+    
+    @Test
     public void testFieldAccessor() {
         RLiveObjectService service = redisson.getLiveObjectService();
         TestClass myObject = service.create(TestClass.class);

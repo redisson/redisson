@@ -17,7 +17,6 @@ package org.redisson.liveobject.core;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -42,18 +41,18 @@ import org.redisson.RedissonReference;
 import org.redisson.RedissonSet;
 import org.redisson.RedissonSortedSet;
 import org.redisson.api.RLiveObject;
-import org.redisson.client.codec.Codec;
 import org.redisson.api.RMap;
 import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
+import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RObjectField;
-import org.redisson.api.annotation.REntity.TransformationMode;
-import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.misc.RedissonObjectFactory;
+import org.redisson.client.codec.Codec;
 import org.redisson.codec.CodecProvider;
+import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
+import org.redisson.misc.RedissonObjectFactory;
 
 import io.netty.util.internal.PlatformDependent;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
@@ -75,7 +74,7 @@ public class AccessorInterceptor {
     private final RedissonClient redisson;
     private final CodecProvider codecProvider;
     private final ConcurrentMap<String, NamingScheme> namingSchemeCache = PlatformDependent.newConcurrentHashMap();
-    private static final LinkedHashMap<Class, Class<? extends RObject>> supportedClassMapping;
+    private static final LinkedHashMap<Class<?>, Class<? extends RObject>> supportedClassMapping;
 
     public AccessorInterceptor(RedissonClient redisson) {
         this.redisson = redisson;
@@ -83,7 +82,7 @@ public class AccessorInterceptor {
     }
 
     static {
-        supportedClassMapping = new LinkedHashMap<Class, Class<? extends RObject>>();
+        supportedClassMapping = new LinkedHashMap<Class<?>, Class<? extends RObject>>();
         supportedClassMapping.put(SortedSet.class,      RedissonSortedSet.class);
         supportedClassMapping.put(Set.class,            RedissonSet.class);
         supportedClassMapping.put(ConcurrentMap.class,  RedissonMap.class);
@@ -106,22 +105,48 @@ public class AccessorInterceptor {
             ((RLiveObject) me).setLiveObjectId(args[0]);
             return null;
         }
+
         String fieldName = getFieldName(method);
+        Class<?> idFieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
+        
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
+            if (result == null) {
+                Class<? extends RObject> mappedClass = getMappedClass(idFieldType);
+                if (mappedClass != null) {
+                    Codec fieldCodec = getFieldCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
+                    NamingScheme fieldNamingScheme = getFieldNamingScheme(me.getClass().getSuperclass(), fieldName, fieldCodec);
+                    
+                    RObject obj = RedissonObjectFactory
+                            .createRObject(redisson,
+                                    mappedClass,
+                                    fieldNamingScheme.getFieldReferenceName(me.getClass().getSuperclass(),
+                                            ((RLiveObject) me).getLiveObjectId(),
+                                            mappedClass,
+                                            fieldName,
+                                            null),
+                                    fieldCodec);
+                    
+                    codecProvider.registerCodec((Class) fieldCodec.getClass(), obj, obj.getCodec());
+                    liveMap.fastPut(fieldName,
+                            new RedissonReference(obj.getClass(), obj.getName(), obj.getCodec()));
+                    
+                    return obj;
+                }
+            }
+            
             return result instanceof RedissonReference
                     ? RedissonObjectFactory.fromReference(redisson, (RedissonReference) result, method.getReturnType())
                     : result;
         }
         if (isSetter(method, fieldName)) {
-            Class idFieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
             if (args[0] instanceof RLiveObject) {
                 Class<? extends Object> rEntity = args[0].getClass().getSuperclass();
                 REntity anno = rEntity.getAnnotation(REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
-                liveMap.put(fieldName, new RedissonReference(rEntity,
+                liveMap.fastPut(fieldName, new RedissonReference(rEntity,
                         ns.getName(rEntity, idFieldType, getREntityIdFieldName(args[0]),
                                 ((RLiveObject) args[0]).getLiveObjectId())));
                 return me;
@@ -132,7 +157,7 @@ public class AccessorInterceptor {
                     && TransformationMode.ANNOTATION_BASED
                             .equals(me.getClass().getSuperclass()
                             .getAnnotation(REntity.class).fieldTransformation())) {
-                Class<? extends RObject> mappedClass = getMappedClass(arg);
+                Class<? extends RObject> mappedClass = getMappedClass(arg.getClass());
                 if (mappedClass != null) {
                     Codec fieldCodec = getFieldCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
                     NamingScheme fieldNamingScheme = getFieldNamingScheme(me.getClass().getSuperclass(), fieldName, fieldCodec);
@@ -141,7 +166,7 @@ public class AccessorInterceptor {
                             .createRObject(redisson,
                                     mappedClass,
                                     fieldNamingScheme.getFieldReferenceName(me.getClass().getSuperclass(),
-                                            idFieldType,
+                                            ((RLiveObject) me).getLiveObjectId(),
                                             mappedClass,
                                             fieldName,
                                             arg),
@@ -160,11 +185,11 @@ public class AccessorInterceptor {
                 RObject ar = (RObject) arg;
                 Codec codec = ar.getCodec();
                 codecProvider.registerCodec((Class) codec.getClass(), ar, codec);
-                liveMap.put(fieldName,
+                liveMap.fastPut(fieldName,
                         new RedissonReference(ar.getClass(), ar.getName(), codec));
                 return me;
             }
-            liveMap.put(fieldName, args[0]);
+            liveMap.fastPut(fieldName, args[0]);
             return me;
         }
         return superMethod.call();
@@ -222,9 +247,9 @@ public class AccessorInterceptor {
                 .getName();
     }
 
-    private static Class<? extends RObject> getMappedClass(Object obj) {
-        for (Entry<Class, Class<? extends RObject>> entrySet : supportedClassMapping.entrySet()) {
-            if (entrySet.getKey().isInstance(obj)) {
+    private static Class<? extends RObject> getMappedClass(Class<?> cls) {
+        for (Entry<Class<?>, Class<? extends RObject>> entrySet : supportedClassMapping.entrySet()) {
+            if (entrySet.getKey().isAssignableFrom(cls)) {
                 return entrySet.getValue();
             }
         }
