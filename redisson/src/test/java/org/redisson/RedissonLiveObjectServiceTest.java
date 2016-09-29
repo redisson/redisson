@@ -987,6 +987,47 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         
     }
     
+    @REntity
+    public static class ObjectWithList {
+        
+        @RId
+        private String id;
+        
+        private List<SimpleObject> objects;
+        
+        private SimpleObject so;
+        
+        public String getId() {
+            return id;
+        }
+        
+        public List<SimpleObject> getObjects() {
+            return objects;
+        }
+        
+        public void setSo(SimpleObject so) {
+            this.so = so;
+        }
+        
+        public SimpleObject getSo() {
+            return so;
+        }
+        
+    }
+
+    @Test
+    public void testStoreInnerObject() {
+        ObjectWithList so = redisson.getLiveObjectService().create(ObjectWithList.class);
+        SimpleObject s = redisson.getLiveObjectService().create(SimpleObject.class);
+        so.setSo(s);
+        assertThat(s.getId()).isNotNull();
+        so.getObjects().add(s);
+        
+        so = redisson.getLiveObjectService().detach(so);
+        assertThat(so.getSo().getId()).isEqualTo(s.getId());
+        assertThat(so.getObjects().get(0).getId()).isEqualTo(so.getSo().getId());
+    }
+    
     @Test
     public void testFieldWithoutIdSetter() {
         SimpleObject so = redisson.getLiveObjectService().create(SimpleObject.class);

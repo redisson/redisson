@@ -17,7 +17,10 @@ package org.redisson;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.api.RLiveObject;
@@ -26,16 +29,20 @@ import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RId;
+import org.redisson.client.codec.Codec;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
+import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.Resolver;
+import org.redisson.misc.RedissonObjectFactory;
 
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
+import jodd.util.ReflectUtil;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
@@ -150,13 +157,36 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
         throw new IllegalStateException("This REntity already exists.");
     }
+    
+    private RMap<String, Object> getMap(Object proxied) {
+        return BeanUtil.declared.getProperty(proxied, "liveObjectLiveMap");
+    }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T detach(T attachedObject) {
         validateAttached(attachedObject);
         try {
             T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
             BeanCopy.beans(attachedObject, detached).declared(false, true).copy();
+            for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
+                if (obj.getValue() instanceof RedissonList) {
+                    List<Object> list = new ArrayList<Object>((List<Object>)obj.getValue());
+                    for (int i = 0; i < list.size(); i++) {
+                        Object object = list.get(i);
+                        if (isLiveObject(object)) {
+                            Object detachedObject = detach(object);
+                            list.set(i, detachedObject);
+                        }
+                    }
+                    BeanUtil.declared.setProperty(detached, obj.getKey(), list);
+                }
+                if (isLiveObject(obj.getValue())) {
+                    Object detachedObject = detach(obj.getValue());
+                    BeanUtil.declared.setProperty(detached, obj.getKey(), detachedObject);
+                }
+            }
+            
             return detached;
         } catch (Exception ex) {
             throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
@@ -309,7 +339,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             throw new IllegalArgumentException("The object supplied is must be a RLiveObject");
         }
     }
-
+    
     private <T> void registerClassInternal(Class<T> entityClass) {
         DynamicType.Builder<T> builder = new ByteBuddy()
                 .subclass(entityClass);
