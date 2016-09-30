@@ -26,6 +26,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.redisson.LOTest.Customer;
+import org.redisson.LOTest.Order;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDeque;
@@ -1174,6 +1176,16 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         @RId(generator = DistributedAtomicLongIdGenerator.class)
         private Long id;
         
+        private Customer customer;
+        
+        public void setCustomer(Customer customer) {
+            this.customer = customer;
+        }
+        
+        public Customer getCustomer() {
+            return customer;
+        }
+        
         public Long getId() {
             return id;
         }
@@ -1207,5 +1219,27 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(customer.getOrders().get(0)).isNotNull();
     }
 
-    
+    @Test
+    public void testCyclicRefsDuringDetach() {
+        Customer customer = new Customer("12");
+        customer = redisson.getLiveObjectService().persist(customer);
+        Order order = new Order();
+        order = redisson.getLiveObjectService().persist(order);
+        order.setCustomer(customer);
+        customer.getOrders().add(order);
+        
+        customer = redisson.getLiveObjectService().detach(customer);
+
+        assertThat(customer.getClass()).isSameAs(Customer.class);
+        assertThat(customer.getId()).isNotNull();
+        List<Order> orders = customer.getOrders();
+        assertThat(orders.get(0).getCustomer()).isSameAs(customer);
+        
+        customer = redisson.getLiveObjectService().get(Customer.class, customer.getId());
+        
+        assertThat(customer.getId()).isNotNull();
+        Order o = customer.getOrders().get(0);
+        assertThat(o.getCustomer().getId()).isEqualTo(customer.getId());
+    }
+
 }

@@ -18,13 +18,19 @@ package org.redisson;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.api.RExpirable;
 import org.redisson.api.RExpirableAsync;
+import org.redisson.api.RList;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMap;
@@ -183,26 +189,38 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> T detach(T attachedObject) {
+        Map<String, Object> alreadyDetached = new HashMap<String, Object>();
+        return detach(attachedObject, alreadyDetached);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T detach(T attachedObject, Map<String, Object> alreadyDetached) {
         validateAttached(attachedObject);
         try {
             T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
             BeanCopy.beans(attachedObject, detached).declared(false, true).copy();
+            alreadyDetached.put(getMap(attachedObject).getName(), detached);
             for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
                 if (obj.getValue() instanceof RedissonList) {
                     List<Object> list = new ArrayList<Object>((List<Object>)obj.getValue());
                     for (int i = 0; i < list.size(); i++) {
                         Object object = list.get(i);
                         if (isLiveObject(object)) {
-                            Object detachedObject = detach(object);
+                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                            if (detachedObject == null) {
+                                detachedObject = detach(object, alreadyDetached);
+                            }
                             list.set(i, detachedObject);
                         }
                     }
                     ClassUtils.setField(detached, obj.getKey(), list);
                 }
                 if (isLiveObject(obj.getValue())) {
-                    Object detachedObject = detach(obj.getValue());
+                    Object detachedObject = alreadyDetached.get(getMap(obj.getValue()).getName());
+                    if (detachedObject == null) {
+                        detachedObject = detach(obj.getValue(), alreadyDetached);
+                    }
                     ClassUtils.setField(detached, obj.getKey(), detachedObject);
                 }
             }
@@ -212,6 +230,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
         }
     }
+    
 
     @Override
     public <T> void delete(T attachedObject) {
@@ -385,10 +404,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .and(ElementMatchers.named("get")
                         .or(ElementMatchers.named("set"))))
                 .intercept(MethodDelegation.to(FieldAccessorInterceptor.class))
+                
                 .method(ElementMatchers.isDeclaredBy(RObject.class)
                         .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
                 .intercept(MethodDelegation.to(RObjectInterceptor.class))
                 .implement(RObject.class)
+                
                 .method(ElementMatchers.isDeclaredBy(RExpirable.class)
                         .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
                 .intercept(MethodDelegation.to(RExpirableInterceptor.class))
