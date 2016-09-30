@@ -45,6 +45,7 @@ import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
+import org.redisson.liveobject.resolver.RandomUUIDIdStringGenerator;
 
 /**
  *
@@ -144,7 +145,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class TestREntityWithMap implements Comparable<TestREntityWithMap>, Serializable {
 
-        @RId
+        @RId(generator = RandomUUIDIdStringGenerator.class)
         private String name;
         private Map value;
         
@@ -381,7 +382,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         private String code;
         private Object content;
 
-        @RId
+        @RId(generator = RandomUUIDIdStringGenerator.class)
         private Serializable id;
 
         public TestClass() {
@@ -810,7 +811,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         private String code;
         private Object content;
 
-        @RId
+        @RId(generator = RandomUUIDIdStringGenerator.class)
         private Serializable id;
 
         public TestClassNoTransformation() {
@@ -1012,7 +1013,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class SimpleObject {
         
-        @RId
+        @RId(generator = RandomUUIDIdStringGenerator.class)
         private String id;
         
         private Long value;
@@ -1034,7 +1035,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class ObjectWithList {
         
-        @RId
+        @RId(generator = RandomUUIDIdStringGenerator.class)
         private String id;
         
         private List<SimpleObject> objects;

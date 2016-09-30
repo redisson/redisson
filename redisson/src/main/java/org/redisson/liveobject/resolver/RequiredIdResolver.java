@@ -13,24 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.annotation;
+package org.redisson.liveobject.resolver;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-import org.redisson.liveobject.resolver.RIdResolver;
-import org.redisson.liveobject.resolver.RequiredIdResolver;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.annotation.RId;
 
 /**
+ * 
+ * @author Nikita Koksharov
  *
- * @author Rui Gu (https://github.com/jackygurui)
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD})
-public @interface RId {
+public class RequiredIdResolver implements RIdResolver<RId, Object> {
     
-    Class<? extends RIdResolver> generator() default RequiredIdResolver.class;
-    
+    public static final RequiredIdResolver INSTANCE = new RequiredIdResolver();
+
+    @Override
+    public Object resolve(Class cls, RId annotation, String idFieldName, RedissonClient redisson) {
+        throw new IllegalArgumentException("id value not defined for instance of " + cls);
+    }
+
 }
