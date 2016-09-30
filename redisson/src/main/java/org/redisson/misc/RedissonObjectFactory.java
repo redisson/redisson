@@ -100,10 +100,6 @@ public class RedissonObjectFactory {
     }
 
     public static <T> T fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
-        return fromReference(redisson, rr, null);
-    }
-
-    public static <T> T fromReference(RedissonClient redisson, RedissonReference rr, Class<?> expected) throws Exception {
         Class<? extends Object> type = rr.getType();
         CodecProvider codecProvider = redisson.getConfig().getCodecProvider();
         if (type != null) {
@@ -113,7 +109,7 @@ public class RedissonObjectFactory {
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, type));
-                return (T) liveObjectService.getOrCreate(type, ns.resolveId(rr.getKeyName()));
+                return (T) liveObjectService.get(type, ns.resolveId(rr.getKeyName()));
             }
             List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
             for (Class<?> iType : interfaces) {

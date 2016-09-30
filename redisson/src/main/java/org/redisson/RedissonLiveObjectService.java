@@ -23,26 +23,32 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.api.RExpirable;
+import org.redisson.api.RExpirableAsync;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
+import org.redisson.api.RMap;
+import org.redisson.api.RMapAsync;
 import org.redisson.api.RObject;
+import org.redisson.api.RObjectAsync;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
+import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
-import org.redisson.client.codec.Codec;
+import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.core.AccessorInterceptor;
+import org.redisson.liveobject.core.FieldAccessorInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
+import org.redisson.liveobject.core.RExpirableInterceptor;
+import org.redisson.liveobject.core.RMapInterceptor;
+import org.redisson.liveobject.core.RObjectInterceptor;
 import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
-import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.Resolver;
-import org.redisson.misc.RedissonObjectFactory;
 
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
-import jodd.util.ReflectUtil;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
@@ -51,16 +57,6 @@ import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.matcher.ElementMatchers;
-import org.redisson.api.RExpirable;
-import org.redisson.api.RExpirableAsync;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapAsync;
-import org.redisson.api.RObjectAsync;
-import org.redisson.api.annotation.RFieldAccessor;
-import org.redisson.liveobject.core.FieldAccessorInterceptor;
-import org.redisson.liveobject.core.RExpirableInterceptor;
-import org.redisson.liveobject.core.RMapInterceptor;
-import org.redisson.liveobject.core.RObjectInterceptor;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
 
@@ -86,23 +82,37 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //        map.expire(timeToLive, timeUnit);
 //        return instance;
 //    }
+    
+    public RMap<String, Object> getMap(Object proxied) {
+        return BeanUtil.declared.getProperty(proxied, "liveObjectLiveMap");
+    }
+    
     @Override
     public <T> T create(Class<T> entityClass) {
+        validateClass(entityClass);
         try {
             Class<? extends T> proxyClass = getProxyClass(entityClass);
-            String idFieldName = getRIdFieldName(entityClass);
-            RId annotation = entityClass
-                    .getDeclaredField(idFieldName)
-                    .getAnnotation(RId.class);
-            Resolver resolver = resolverProvider.getResolver(entityClass,
-                    annotation.generator(), annotation);
-            Object id = resolver.resolve(entityClass, annotation, idFieldName, redisson);
+            Object id = generateId(entityClass);
             T proxied = instantiateLiveObject(proxyClass, id);
-            return asLiveObject(proxied).isExists() ? null : proxied;
+            if (!getMap(proxied).fastPut("redisson_live_object", "1")) {
+                throw new IllegalArgumentException("Object already exists");
+            }
+            return proxied;
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
         }
+    }
+
+    private <T> Object generateId(Class<T> entityClass) throws NoSuchFieldException {
+        String idFieldName = getRIdFieldName(entityClass);
+        RId annotation = entityClass
+                .getDeclaredField(idFieldName)
+                .getAnnotation(RId.class);
+        Resolver resolver = resolverProvider.getResolver(entityClass,
+                annotation.generator(), annotation);
+        Object id = resolver.resolve(entityClass, annotation, idFieldName, redisson);
+        return id;
     }
 
     @Override
@@ -119,7 +129,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T, K> T getOrCreate(Class<T> entityClass, K id) {
         try {
-            return instantiateLiveObject(getProxyClass(entityClass), id);
+            T proxied = instantiateLiveObject(getProxyClass(entityClass), id);
+            getMap(proxied).fastPut("redisson_live_object", "1");
+            return proxied;
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
@@ -131,10 +143,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         validateDetached(detachedObject);
         Class<T> entityClass = (Class<T>) detachedObject.getClass();
         try {
+            String idFieldName = getRIdFieldName(detachedObject.getClass());
+            Object id = BeanUtil.declared.getProperty(detachedObject, idFieldName);
             Class<? extends T> proxyClass = getProxyClass(entityClass);
-            return instantiateLiveObject(proxyClass,
-                    BeanUtil.pojo.getSimpleProperty(detachedObject,
-                            getRIdFieldName(detachedObject.getClass())));
+            return instantiateLiveObject(proxyClass, id);
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
@@ -150,16 +162,24 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> T persist(T detachedObject) {
+        String idFieldName = getRIdFieldName(detachedObject.getClass());
+        Object id = BeanUtil.declared.getProperty(detachedObject, idFieldName);
+        if (id == null) {
+            try {
+                id = generateId(detachedObject.getClass());
+            } catch (NoSuchFieldException e) {
+                throw new IllegalArgumentException(e);
+            }
+            BeanUtil.declared.setProperty(detachedObject, idFieldName, id);
+        }
+        
         T attachedObject = attach(detachedObject);
-        if (!asLiveObject(attachedObject).isExists()) {
+        RLiveObject liveObject = asLiveObject(attachedObject);
+        if (getMap(liveObject).fastPut("redisson_live_object", "1")) {
             copy(detachedObject, attachedObject);
             return attachedObject;
         }
-        throw new IllegalStateException("This REntity already exists.");
-    }
-    
-    private RMap<String, Object> getMap(Object proxied) {
-        return BeanUtil.declared.getProperty(proxied, "liveObjectLiveMap");
+        throw new IllegalArgumentException("This REntity already exists.");
     }
 
     @Override

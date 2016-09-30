@@ -27,22 +27,13 @@ package org.redisson.api;
 public interface RLiveObjectService {
 
     /**
-     * Find or create the entity from Redis with the id.
-     *
-     * The entityClass should have a field annotated with RId, and the
-     * entityClass itself should have REntity annotated. The type of the RId can
-     * be anything <b>except</b> the followings:
-     * <ol>
-     * <li>An array i.e. byte[], int[], Integer[], etc.</li>
-     * <li>or a RObject i.e. RedissonMap</li>
-     * <li>or a Class with REntity annotation.</li>
-     * </ol>
-     *
+     * Use {@link #persist(Object)} method instead
      *
      * @param entityClass Entity class
      * @param <T> Entity type
      * @return Always returns a proxied object. Even it does not exist in redis.
      */
+    @Deprecated
     <T> T create(Class<T> entityClass);
 
     /**
@@ -67,17 +58,7 @@ public interface RLiveObjectService {
     <T, K> T get(Class<T> entityClass, K id);
 
     /**
-     * Find or create the entity from Redis with the id.
-     *
-     * The entityClass should have a field annotated with RId, and the
-     * entityClass itself should have REntity annotated. The type of the RId can
-     * be anything <b>except</b> the followings:
-     * <ol>
-     * <li>An array i.e. byte[], int[], Integer[], etc.</li>
-     * <li>or a RObject i.e. RedissonMap</li>
-     * <li>or a Class with REntity annotation.</li>
-     * </ol>
-     *
+     * Use {@link #persist(Object)} method instead
      *
      * @param entityClass Entity class
      * @param id identifier
@@ -85,6 +66,7 @@ public interface RLiveObjectService {
      * @param <K> Key type
      * @return Always returns a proxied object. Even it does not exist in redis.
      */
+    @Deprecated
     <T, K> T getOrCreate(Class<T> entityClass, K id);
 
     /**
@@ -127,9 +109,6 @@ public interface RLiveObjectService {
      * <b>NON NULL</b> field values to the redis server. Only when the it does
      * not already exist.
      * 
-     * The class representing this object should have a field annotated with
-     * RId, and the object should hold a non null value in that field.
-     *
      * If this object is not in redis then a new hash key will be created to
      * store it.
      *

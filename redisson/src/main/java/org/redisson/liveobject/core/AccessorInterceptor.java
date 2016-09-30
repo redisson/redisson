@@ -107,12 +107,12 @@ public class AccessorInterceptor {
         }
 
         String fieldName = getFieldName(method);
-        Class<?> idFieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
+        Class<?> fieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
         
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result == null) {
-                Class<? extends RObject> mappedClass = getMappedClass(idFieldType);
+                Class<? extends RObject> mappedClass = getMappedClass(fieldType);
                 if (mappedClass != null) {
                     Codec fieldCodec = getFieldCodec(me.getClass().getSuperclass(), mappedClass, fieldName);
                     NamingScheme fieldNamingScheme = getFieldNamingScheme(me.getClass().getSuperclass(), fieldName, fieldCodec);
@@ -135,23 +135,30 @@ public class AccessorInterceptor {
                 }
             }
             
-            return result instanceof RedissonReference
-                    ? RedissonObjectFactory.fromReference(redisson, (RedissonReference) result, method.getReturnType())
-                    : result;
+            if (result instanceof RedissonReference) {
+                return RedissonObjectFactory.fromReference(redisson, (RedissonReference) result);
+            }
+            return result;
         }
         if (isSetter(method, fieldName)) {
-            if (args[0] instanceof RLiveObject) {
-                Class<? extends Object> rEntity = args[0].getClass().getSuperclass();
+            Object arg = args[0];
+            if (arg.getClass().isAnnotationPresent(REntity.class)) {
+                throw new IllegalStateException("REntity object should be attached to Redisson first");
+            }
+            
+            if (arg instanceof RLiveObject) {
+                RLiveObject liveObject = (RLiveObject) arg;
+                
+                Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
                 REntity anno = rEntity.getAnnotation(REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
                 liveMap.fastPut(fieldName, new RedissonReference(rEntity,
-                        ns.getName(rEntity, idFieldType, getREntityIdFieldName(args[0]),
-                                ((RLiveObject) args[0]).getLiveObjectId())));
+                        ns.getName(rEntity, fieldType, getREntityIdFieldName(liveObject),
+                                liveObject.getLiveObjectId())));
                 return me;
             }
-            Object arg = args[0];
             if (!(arg instanceof RObject)
                     && (arg instanceof Collection || arg instanceof Map)
                     && TransformationMode.ANNOTATION_BASED

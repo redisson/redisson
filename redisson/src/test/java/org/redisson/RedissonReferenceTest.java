@@ -11,6 +11,7 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RBucketAsync;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RLiveObject;
+import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMap;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSet;
@@ -37,7 +38,10 @@ public class RedissonReferenceTest extends BaseTest {
         ((RedissonMapCache) b4.get()).fastPut(b1, b2, 1, TimeUnit.MINUTES);
         assertEquals("b2", ((RBucket)((RedissonMapCache) b4.get()).get(b1)).getName());
         RBucket<Object> b5 = redisson.getBucket("b5");
-        RedissonLiveObjectServiceTest.TestREntity rlo = redisson.getLiveObjectService().create(RedissonLiveObjectServiceTest.TestREntity.class);
+        RLiveObjectService service = redisson.getLiveObjectService();
+        
+        RedissonLiveObjectServiceTest.TestREntity rlo = new RedissonLiveObjectServiceTest.TestREntity("123");
+        rlo = service.persist(rlo);
         rlo.setName("t1");
         rlo.setValue("t2");
         b5.set(rlo);
