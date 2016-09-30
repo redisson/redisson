@@ -2,12 +2,23 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLexSortedSet;
 
 public class RedissonLexSortedSetTest extends BaseTest {
 
+    @Test
+    public void testAll() {
+        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        set.addAll(Arrays.asList("foo", "bar"));
+        assertThat(set.contains("foo")).isTrue();
+        assertThat(set.contains("bar")).isTrue();
+        assertThat(set.contains("123")).isFalse();
+    }
+    
     @Test
     public void testPollLast() {
         RLexSortedSet set = redisson.getLexSortedSet("simple");
