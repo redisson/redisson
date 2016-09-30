@@ -177,42 +177,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return binarySearch((V)o, codec).getIndex() >= 0;
     }
 
+    @Override
     public Iterator<V> iterator() {
-        final int ind = 0;
-        return new Iterator<V>() {
-
-            private int currentIndex = ind - 1;
-            private V currentElement;
-            private boolean removeExecuted;
-
-            @Override
-            public boolean hasNext() {
-                int size = size();
-                return currentIndex+1 < size && size > 0;
-            }
-
-            @Override
-            public V next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index " + currentIndex);
-                }
-                currentIndex++;
-                removeExecuted = false;
-                currentElement = RedissonSortedSet.this.list.getValue(currentIndex);
-                return currentElement;
-            }
-
-            @Override
-            public void remove() {
-                if (removeExecuted) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-                RedissonSortedSet.this.remove(currentElement);
-                currentIndex--;
-                removeExecuted = true;
-            }
-
-        };
+        return list.iterator();
     }
 
     @Override
