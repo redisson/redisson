@@ -154,6 +154,10 @@ public class RedissonObjectFactory {
     }
 
     public static RedissonReference toReference(RedissonClient redisson, Object object) {
+        if (object != null && object.getClass().isAnnotationPresent(REntity.class)) {
+            throw new IllegalArgumentException("REntity should be attached to Redisson before save");
+        }
+        
         if (object instanceof RObject && !(object instanceof RLiveObject)) {
             RObject rObject = ((RObject) object);
             redisson.getCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());

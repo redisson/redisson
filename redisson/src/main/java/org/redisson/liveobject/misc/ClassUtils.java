@@ -45,6 +45,7 @@
 
 package org.redisson.liveobject.misc;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
@@ -52,6 +53,30 @@ import java.lang.reflect.Method;
  * @author Rui Gu (https://github.com/jackygurui) Modified
  */
 public class ClassUtils {
+    
+    public static void setField(Object obj, String fieldName, Object value) {
+        try {
+            Field field = obj.getClass().getDeclaredField(fieldName);
+            if (!field.isAccessible()) {
+                field.setAccessible(true);
+            }
+            field.set(obj, value);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+    
+    public static <T> T getField(Object obj, String fieldName) {
+        try {
+            Field field = obj.getClass().getDeclaredField(fieldName);
+            if (!field.isAccessible()) {
+                field.setAccessible(true);
+            }
+            return (T) field.get(obj);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
     
     /**
      * Searches through all methods looking for one with the specified name that

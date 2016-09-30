@@ -1134,4 +1134,78 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
     }
 
+    @REntity
+    public static class Customer {
+        
+        @RId
+        private String id;
+        
+        private List<Order> orders = new ArrayList<>();
+        
+        public Customer() {
+        }
+        
+        public Customer(String id) {
+            super();
+            this.id = id;
+        }
+
+        public void addOrder(Order order) {
+            getOrders().add(order);
+        }
+
+        public void setOrders(List<Order> orders) {
+            this.orders = orders;
+        }
+        
+        public List<Order> getOrders() {
+            return orders;
+        }
+        
+        public String getId() {
+            return id;
+        }
+        
+    }
+    
+    @REntity
+    public static class Order {
+        
+        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        private Long id;
+        
+        public Long getId() {
+            return id;
+        }
+        
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testObjectShouldNotBeAttached() {
+        Customer customer = new Customer("12");
+        customer = redisson.getLiveObjectService().persist(customer);
+        Order order = new Order();
+        customer.getOrders().add(order);
+    }
+    
+    @Test
+    public void testObjectShouldBeAttached() {
+        Customer customer = new Customer("12");
+        customer = redisson.getLiveObjectService().persist(customer);
+        Order order = new Order();
+        order = redisson.getLiveObjectService().persist(order);
+        customer.getOrders().add(order);
+        
+        customer = redisson.getLiveObjectService().detach(customer);
+        assertThat(customer.getClass()).isSameAs(Customer.class);
+        assertThat(customer.getId()).isNotNull();
+        List<Order> orders = customer.getOrders();
+        assertThat(orders.get(0)).isNotNull();
+
+        customer = redisson.getLiveObjectService().get(Customer.class, customer.getId());
+        assertThat(customer.getId()).isNotNull();
+        assertThat(customer.getOrders().get(0)).isNotNull();
+    }
+
+    
 }

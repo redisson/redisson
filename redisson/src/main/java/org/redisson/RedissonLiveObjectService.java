@@ -43,12 +43,12 @@ import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.core.RExpirableInterceptor;
 import org.redisson.liveobject.core.RMapInterceptor;
 import org.redisson.liveobject.core.RObjectInterceptor;
+import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.Resolver;
 
 import jodd.bean.BeanCopy;
-import jodd.bean.BeanUtil;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
@@ -84,7 +84,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //    }
     
     public RMap<String, Object> getMap(Object proxied) {
-        return BeanUtil.declared.getProperty(proxied, "liveObjectLiveMap");
+        return ClassUtils.getField(proxied, "liveObjectLiveMap");
     }
     
     @Override
@@ -144,7 +144,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         Class<T> entityClass = (Class<T>) detachedObject.getClass();
         try {
             String idFieldName = getRIdFieldName(detachedObject.getClass());
-            Object id = BeanUtil.declared.getProperty(detachedObject, idFieldName);
+            Object id = ClassUtils.getField(detachedObject, idFieldName);
             Class<? extends T> proxyClass = getProxyClass(entityClass);
             return instantiateLiveObject(proxyClass, id);
         } catch (Exception ex) {
@@ -163,14 +163,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> T persist(T detachedObject) {
         String idFieldName = getRIdFieldName(detachedObject.getClass());
-        Object id = BeanUtil.declared.getProperty(detachedObject, idFieldName);
+        Object id = ClassUtils.getField(detachedObject, idFieldName);
         if (id == null) {
             try {
                 id = generateId(detachedObject.getClass());
             } catch (NoSuchFieldException e) {
                 throw new IllegalArgumentException(e);
             }
-            BeanUtil.declared.setProperty(detachedObject, idFieldName, id);
+            ClassUtils.setField(detachedObject, idFieldName, id);
         }
         
         T attachedObject = attach(detachedObject);
@@ -199,11 +199,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                             list.set(i, detachedObject);
                         }
                     }
-                    BeanUtil.declared.setProperty(detached, obj.getKey(), list);
+                    ClassUtils.setField(detached, obj.getKey(), list);
                 }
                 if (isLiveObject(obj.getValue())) {
                     Object detachedObject = detach(obj.getValue());
-                    BeanUtil.declared.setProperty(detached, obj.getKey(), detachedObject);
+                    ClassUtils.setField(detached, obj.getKey(), detachedObject);
                 }
             }
             
@@ -293,8 +293,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private <T, K> T instantiateDetachedObject(Class<T> cls, K id) throws Exception {
         T instance = instantiate(cls, id);
         String fieldName = getRIdFieldName(cls);
-        if (BeanUtil.declared.getProperty(instance, fieldName) == null) {
-            BeanUtil.declared.setProperty(instance, fieldName, id);
+        if (ClassUtils.getField(instance, fieldName) == null) {
+            ClassUtils.setField(instance, fieldName, id);
         }
         return instance;
     }
