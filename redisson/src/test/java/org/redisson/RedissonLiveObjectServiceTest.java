@@ -60,6 +60,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         private String name;
         private String value;
 
+        protected TestREntity() {
+        }
+        
         public TestREntity(String name) {
             this.name = name;
         }
@@ -103,6 +106,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         private String name;
         private RMap value;
 
+        protected TestREntityWithRMap() {
+        }
+        
         public TestREntityWithRMap(String name) {
             this.name = name;
         }
@@ -234,6 +240,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         private String name;
         private TestREntityWithRMap value;
 
+        protected TestREntityValueNested() {
+        }
+        
         public TestREntityValueNested(String name) {
             this.name = name;
         }
@@ -1243,4 +1252,40 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(o.getCustomer().getId()).isEqualTo(customer.getId());
     }
 
+    @REntity
+    public static class ClassWithoutIdSetterGetter {
+        
+        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        private Long id;
+        
+        private String name;
+
+        protected ClassWithoutIdSetterGetter() {
+            System.out.println("123");
+        }
+        
+        public ClassWithoutIdSetterGetter(String name) {
+            super();
+            this.name = name;
+        }
+        
+        public String getName() {
+            return name;
+        }
+        
+    }
+
+    @Test
+    public void testWithoutIdSetterGetter() {
+        ClassWithoutIdSetterGetter sg = new ClassWithoutIdSetterGetter();
+        sg = redisson.getLiveObjectService().persist(sg);
+    }
+
+    @Test
+    public void testProtectedConstructor() {
+        ClassWithoutIdSetterGetter sg = new ClassWithoutIdSetterGetter("1234");
+        sg = redisson.getLiveObjectService().persist(sg);
+        assertThat(sg.getName()).isEqualTo("1234");
+    }
+    
 }

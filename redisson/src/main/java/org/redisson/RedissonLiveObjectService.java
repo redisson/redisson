@@ -18,16 +18,23 @@ package org.redisson;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.api.RDeque;
 import org.redisson.api.RExpirable;
 import org.redisson.api.RExpirableAsync;
 import org.redisson.api.RList;
@@ -37,6 +44,9 @@ import org.redisson.api.RMap;
 import org.redisson.api.RMapAsync;
 import org.redisson.api.RObject;
 import org.redisson.api.RObjectAsync;
+import org.redisson.api.RQueue;
+import org.redisson.api.RSet;
+import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
@@ -58,8 +68,10 @@ import jodd.bean.BeanCopy;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
+import net.bytebuddy.description.modifier.Visibility;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.MethodCall;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -180,8 +192,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
         
         T attachedObject = attach(detachedObject);
-        RLiveObject liveObject = asLiveObject(attachedObject);
-        if (getMap(liveObject).fastPut("redisson_live_object", "1")) {
+        if (getMap(attachedObject).fastPut("redisson_live_object", "1")) {
             copy(detachedObject, attachedObject);
             return attachedObject;
         }
@@ -199,29 +210,119 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         validateAttached(attachedObject);
         try {
             T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
-            BeanCopy.beans(attachedObject, detached).declared(false, true).copy();
+            BeanCopy.beans(attachedObject, detached).declared(true, true).copy();
             alreadyDetached.put(getMap(attachedObject).getName(), detached);
+            
             for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
-                if (obj.getValue() instanceof RedissonList) {
-                    List<Object> list = new ArrayList<Object>((List<Object>)obj.getValue());
-                    for (int i = 0; i < list.size(); i++) {
-                        Object object = list.get(i);
+                if (obj.getValue() instanceof RSortedSet) {
+                    SortedSet<Object> redissonSet = (SortedSet<Object>) obj.getValue();
+                    Set<Object> set = new TreeSet<Object>(redissonSet.comparator()); 
+                    for (Object object : redissonSet) {
                         if (isLiveObject(object)) {
                             Object detachedObject = alreadyDetached.get(getMap(object).getName());
                             if (detachedObject == null) {
                                 detachedObject = detach(object, alreadyDetached);
                             }
-                            list.set(i, detachedObject);
+                            object = detachedObject;
                         }
+                        set.add(object);
                     }
+                    
+                    ClassUtils.setField(detached, obj.getKey(), set);
+                } else if (obj.getValue() instanceof RDeque) {
+                    Collection<Object> redissonDeque = (Collection<Object>) obj.getValue();
+                    Deque<Object> deque = new LinkedList<Object>(); 
+                    for (Object object : redissonDeque) {
+                        if (isLiveObject(object)) {
+                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                            if (detachedObject == null) {
+                                detachedObject = detach(object, alreadyDetached);
+                            }
+                            object = detachedObject;
+                        }
+                        deque.add(object);
+                    }
+                    
+                    ClassUtils.setField(detached, obj.getKey(), deque);
+                } else if (obj.getValue() instanceof RQueue) {
+                    Collection<Object> redissonQueue = (Collection<Object>) obj.getValue();
+                    Queue<Object> queue = new LinkedList<Object>(); 
+                    for (Object object : redissonQueue) {
+                        if (isLiveObject(object)) {
+                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                            if (detachedObject == null) {
+                                detachedObject = detach(object, alreadyDetached);
+                            }
+                            object = detachedObject;
+                        }
+                        queue.add(object);
+                    }
+                    
+                    ClassUtils.setField(detached, obj.getKey(), queue);
+                } else if (obj.getValue() instanceof RSet) {
+                    Set<Object> set = new HashSet<Object>(); 
+                    Collection<Object> redissonSet = (Collection<Object>) obj.getValue();
+                    for (Object object : redissonSet) {
+                        if (isLiveObject(object)) {
+                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                            if (detachedObject == null) {
+                                detachedObject = detach(object, alreadyDetached);
+                            }
+                            object = detachedObject;
+                        }
+                        set.add(object);
+                    }
+                    
+                    ClassUtils.setField(detached, obj.getKey(), set);
+                } else if (obj.getValue() instanceof RList) {
+                    List<Object> list = new ArrayList<Object>(); 
+                    Collection<Object> redissonList = (Collection<Object>) obj.getValue();
+                    for (Object object : redissonList) {
+                        if (isLiveObject(object)) {
+                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                            if (detachedObject == null) {
+                                detachedObject = detach(object, alreadyDetached);
+                            }
+                            object = detachedObject;
+                        }
+                        list.add(object);
+                    }
+
                     ClassUtils.setField(detached, obj.getKey(), list);
                 }
+
                 if (isLiveObject(obj.getValue())) {
                     Object detachedObject = alreadyDetached.get(getMap(obj.getValue()).getName());
                     if (detachedObject == null) {
                         detachedObject = detach(obj.getValue(), alreadyDetached);
                     }
                     ClassUtils.setField(detached, obj.getKey(), detachedObject);
+                } else if (obj.getValue() instanceof RMap) {
+                    Map<Object, Object> map = new LinkedHashMap<Object, Object>(); 
+                    Map<Object, Object> redissonMap = (Map<Object, Object>) obj.getValue();
+                    for (Entry<Object, Object> entry : redissonMap.entrySet()) {
+                        Object key = entry.getKey();
+                        Object value = entry.getValue();
+                        
+                        if (isLiveObject(key)) {
+                            Object detachedObject = alreadyDetached.get(getMap(key).getName());
+                            if (detachedObject == null) {
+                                detachedObject = detach(key, alreadyDetached);
+                            }
+                            key = detachedObject;
+                        }
+                        
+                        if (isLiveObject(value)) {
+                            Object detachedObject = alreadyDetached.get(getMap(value).getName());
+                            if (detachedObject == null) {
+                                detachedObject = detach(value, alreadyDetached);
+                            }
+                            value = detachedObject;
+                        }
+                        map.put(key, value);
+                    }
+                    
+                    ClassUtils.setField(detached, obj.getKey(), map);
                 }
             }
             
@@ -287,6 +388,86 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     private <T> void copy(T detachedObject, T attachedObject) {
+//        for (FieldDescription.InDefinedShape field : Introspectior.getFieldsDescription(detachedObject.getClass())) {
+//            Object obj = ClassUtils.getField(detachedObject, field.getName());
+//            if (obj instanceof SortedSet) {
+//                ClassUtils.getField(detachedObject, field.getName());
+//                SortedSet<Object> redissonSet = (SortedSet<Object>) obj.getValue();
+//                Set<Object> set = new TreeSet<Object>(redissonSet.comparator()); 
+//                for (Object object : redissonSet) {
+//                    if (isLiveObject(object)) {
+//                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+//                        if (detachedObject == null) {
+//                            detachedObject = detach(object, alreadyDetached);
+//                        }
+//                        object = detachedObject;
+//                    }
+//                    set.add(object);
+//                }
+//                
+//                ClassUtils.setField(detached, obj.getKey(), set);
+//            } else if (obj.getValue() instanceof RDeque) {
+//                Collection<Object> redissonDeque = (Collection<Object>) obj.getValue();
+//                Deque<Object> deque = new LinkedList<Object>(); 
+//                for (Object object : redissonDeque) {
+//                    if (isLiveObject(object)) {
+//                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+//                        if (detachedObject == null) {
+//                            detachedObject = detach(object, alreadyDetached);
+//                        }
+//                        object = detachedObject;
+//                    }
+//                    deque.add(object);
+//                }
+//                
+//                ClassUtils.setField(detached, obj.getKey(), deque);
+//            } else if (obj.getValue() instanceof RQueue) {
+//                Collection<Object> redissonQueue = (Collection<Object>) obj.getValue();
+//                Queue<Object> queue = new LinkedList<Object>(); 
+//                for (Object object : redissonQueue) {
+//                    if (isLiveObject(object)) {
+//                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+//                        if (detachedObject == null) {
+//                            detachedObject = detach(object, alreadyDetached);
+//                        }
+//                        object = detachedObject;
+//                    }
+//                    queue.add(object);
+//                }
+//                
+//                ClassUtils.setField(detached, obj.getKey(), queue);
+//            } else if (obj.getValue() instanceof RSet) {
+//                Set<Object> set = new HashSet<Object>(); 
+//                Collection<Object> redissonSet = (Collection<Object>) obj.getValue();
+//                for (Object object : redissonSet) {
+//                    if (isLiveObject(object)) {
+//                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+//                        if (detachedObject == null) {
+//                            detachedObject = detach(object, alreadyDetached);
+//                        }
+//                        object = detachedObject;
+//                    }
+//                    set.add(object);
+//                }
+//                
+//                ClassUtils.setField(detached, obj.getKey(), set);
+//            } else if (obj.getValue() instanceof RList) {
+//                List<Object> list = new ArrayList<Object>(); 
+//                Collection<Object> redissonList = (Collection<Object>) obj.getValue();
+//                for (Object object : redissonList) {
+//                    if (isLiveObject(object)) {
+//                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+//                        if (detachedObject == null) {
+//                            detachedObject = detach(object, alreadyDetached);
+//                        }
+//                        object = detachedObject;
+//                    }
+//                    list.add(object);
+//                }
+//
+//                ClassUtils.setField(detached, obj.getKey(), list);
+//            }
+//        }
         String idFieldName = getRIdFieldName(detachedObject.getClass());
         BeanCopy.beans(detachedObject, attachedObject)
                 .ignoreNulls(true)
@@ -319,16 +500,13 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     private <T, K> T instantiate(Class<T> cls, K id) throws Exception {
-        try {
-            return cls.newInstance();
-        } catch (Exception exception) {
-            for (Constructor<?> ctor : classCache.containsKey(cls) ? cls.getConstructors() : cls.getDeclaredConstructors()) {
-                if (ctor.getParameterTypes().length == 1 && ctor.getParameterTypes()[0].isAssignableFrom(id.getClass())) {
-                    return (T) ctor.newInstance(id);
-                }
+        for (Constructor<?> constructor : cls.getDeclaredConstructors()) {
+            if (constructor.getParameterCount() == 0) {
+                constructor.setAccessible(true);
+                return (T) constructor.newInstance();
             }
         }
-        throw new NoSuchMethodException("Unable to find constructor matching only the RId field type [" + id.getClass().getCanonicalName() + "].");
+        throw new IllegalArgumentException("Can't find default constructor for " + cls);
     }
 
     private <T> Class<? extends T> getProxyClass(Class<T> entityClass) {
