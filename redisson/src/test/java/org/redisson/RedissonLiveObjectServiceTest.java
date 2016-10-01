@@ -579,6 +579,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertEquals("VALUE", merged.getValue());
         try {
             service.persist(ts);
+            fail("Should not be here");
         } catch (Exception e) {
             assertEquals("This REntity already exists.", e.getMessage());
         }
@@ -1188,6 +1189,14 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         
         private Customer customer;
         
+        public Order() {
+        }
+        
+        public Order(Customer customer) {
+            super();
+            this.customer = customer;
+        }
+
         public void setCustomer(Customer customer) {
             this.customer = customer;
         }
@@ -1208,6 +1217,13 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         customer = redisson.getLiveObjectService().persist(customer);
         Order order = new Order();
         customer.getOrders().add(order);
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testObjectShouldNotBeAttached2() {
+        Customer customer = new Customer("12");
+        Order order = new Order(customer);
+        order = redisson.getLiveObjectService().persist(order);
     }
     
     @Test
@@ -1261,7 +1277,6 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         private String name;
 
         protected ClassWithoutIdSetterGetter() {
-            System.out.println("123");
         }
         
         public ClassWithoutIdSetterGetter(String name) {

@@ -174,6 +174,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> T merge(T detachedObject) {
         T attachedObject = attach(detachedObject);
+        getMap(attachedObject).fastPut("redisson_live_object", "1");
         copy(detachedObject, attachedObject);
         return attachedObject;
     }
@@ -388,6 +389,13 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     private <T> void copy(T detachedObject, T attachedObject) {
+        for (FieldDescription.InDefinedShape field : Introspectior.getFieldsDescription(detachedObject.getClass())) {
+            Object object = ClassUtils.getField(detachedObject, field.getName());
+            if (object != null && object.getClass().isAnnotationPresent(REntity.class)) {
+                throw new IllegalArgumentException("REntity should be attached to Redisson before save");
+            }
+
+        }
 //        for (FieldDescription.InDefinedShape field : Introspectior.getFieldsDescription(detachedObject.getClass())) {
 //            Object obj = ClassUtils.getField(detachedObject, field.getName());
 //            if (obj instanceof SortedSet) {
