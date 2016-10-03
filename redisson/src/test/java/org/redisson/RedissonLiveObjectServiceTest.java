@@ -26,8 +26,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.redisson.LOTest.Customer;
-import org.redisson.LOTest.Order;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDeque;
@@ -554,11 +552,34 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testPersistList() {
+        Customer customer = new Customer("12");
+        Order order = new Order(customer);
+        customer.getOrders().add(order);
+        Order order2 = new Order(customer);
+        customer.getOrders().add(order2);
+
+        redisson.getLiveObjectService().persist(customer);
+        
+        customer = redisson.getLiveObjectService().get(Customer.class, "12");
+        assertThat(customer.getOrders().size()).isEqualTo(2);
+        for (Order orderElement : customer.getOrders()) {
+            assertThat(orderElement.getId()).isNotNull();
+            assertThat(orderElement.getCustomer().getId()).isEqualTo("12");
+        }
+    }
+        
+    @Test
     public void testPersist() {
         RLiveObjectService service = redisson.getLiveObjectService();
+        
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setValue("VALUE");
+        ts.setContent(new TestREntity("123"));
         TestClass persisted = service.persist(ts);
+        
+        assertEquals(2, redisson.getKeys().count());
+        assertEquals("123", ((TestREntity)persisted.getContent()).getName());
         assertEquals(new ObjectId(100), persisted.getId());
         assertEquals("VALUE", persisted.getValue());
         try {
@@ -1219,7 +1240,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         customer.getOrders().add(order);
     }
     
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testObjectShouldNotBeAttached2() {
         Customer customer = new Customer("12");
         Order order = new Order(customer);
