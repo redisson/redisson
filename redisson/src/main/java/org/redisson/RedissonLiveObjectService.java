@@ -19,7 +19,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,13 +70,8 @@ import jodd.bean.BeanUtil;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
-import net.bytebuddy.description.method.MethodDescription;
-import net.bytebuddy.description.method.ParameterDescription;
-import net.bytebuddy.description.modifier.Visibility;
-import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
-import net.bytebuddy.implementation.MethodCall;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -418,11 +412,55 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
     }
     
-
     @Override
     public <T> void delete(T attachedObject) {
+        Set<String> deleted = new HashSet<String>();
+        delete(attachedObject, deleted);
+    }
+
+    public <T> void delete(T attachedObject, Set<String> deleted) {
         validateAttached(attachedObject);
+        
+        for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
+            if (obj.getValue() instanceof RSortedSet) {
+                deleteCollection(deleted, (Iterable<?>)obj.getValue());
+                ((RObject)obj.getValue()).delete();
+            } else if (obj.getValue() instanceof RDeque) {
+                deleteCollection(deleted, (Iterable<?>)obj.getValue());
+                ((RObject)obj.getValue()).delete();
+            } else if (obj.getValue() instanceof RQueue) {
+                deleteCollection(deleted, (Iterable<?>)obj.getValue());
+                ((RObject)obj.getValue()).delete();
+            } else if (obj.getValue() instanceof RSet) {
+                deleteCollection(deleted, (Iterable<?>)obj.getValue());
+                ((RObject)obj.getValue()).delete();
+            } else if (obj.getValue() instanceof RList) {
+                deleteCollection(deleted, (Iterable<?>)obj.getValue());
+                ((RObject)obj.getValue()).delete();
+            }
+
+            if (isLiveObject(obj.getValue())) {
+                if (deleted.add(getMap(obj.getValue()).getName())) {
+                    delete(obj.getValue(), deleted);
+                }
+            } else if (obj.getValue() instanceof RMap) {
+                RMap<Object, Object> map = (RMap<Object, Object>)obj.getValue();
+                deleteCollection(deleted, map.keySet());
+                deleteCollection(deleted, map.values());
+                ((RObject)obj.getValue()).delete();
+            }
+        }
         asLiveObject(attachedObject).delete();
+    }
+
+    private void deleteCollection(Set<String> deleted, Iterable<?> objs) {
+        for (Object object : objs) {
+            if (isLiveObject(object)) {
+                if (deleted.add(getMap(object).getName())) {
+                    delete(object, deleted);
+                }
+            }
+        }
     }
 
     @Override

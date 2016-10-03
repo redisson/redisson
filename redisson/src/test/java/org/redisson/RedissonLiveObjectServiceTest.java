@@ -1272,6 +1272,32 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         Order order = new Order(customer);
         order = redisson.getLiveObjectService().persist(order);
     }
+
+    @Test
+    public void testDeleteList() {
+        Customer customer = new Customer("12");
+        Order order = new Order(customer);
+        customer.getOrders().add(order);
+        Order order2 = new Order(customer);
+        customer.getOrders().add(order2);
+
+        order = redisson.getLiveObjectService().persist(order);
+        assertThat(redisson.getKeys().count()).isEqualTo(5);
+        
+        redisson.getLiveObjectService().delete(order.getCustomer());
+        assertThat(redisson.getKeys().count()).isEqualTo(1);
+    }
+
+    
+    @Test
+    public void testDelete() {
+        Customer customer = new Customer("12");
+        Order order = new Order(customer);
+        order = redisson.getLiveObjectService().persist(order);
+        assertThat(redisson.getKeys().count()).isEqualTo(3);
+        redisson.getLiveObjectService().delete(order);
+        assertThat(redisson.getKeys().count()).isEqualTo(1);
+    }
     
     @Test
     public void testObjectShouldBeAttached() {
