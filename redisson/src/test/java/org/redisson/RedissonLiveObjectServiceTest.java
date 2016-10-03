@@ -552,6 +552,32 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testMergeList() {
+        Customer customer = new Customer("12");
+        Order order = new Order(customer);
+        customer.getOrders().add(order);
+        Order order2 = new Order(customer);
+        customer.getOrders().add(order2);
+
+        redisson.getLiveObjectService().merge(customer);
+        
+        Customer mergedCustomer = redisson.getLiveObjectService().get(Customer.class, "12");
+        assertThat(mergedCustomer.getOrders().size()).isEqualTo(2);
+        for (Order orderElement : mergedCustomer.getOrders()) {
+            assertThat(orderElement.getId()).isNotNull();
+            assertThat(orderElement.getCustomer().getId()).isEqualTo("12");
+        }
+
+        try {
+            redisson.getLiveObjectService().persist(customer);
+            fail("Should not be here");
+        } catch (Exception e) {
+            assertEquals("This REntity already exists.", e.getMessage());
+        }
+    }
+
+    
+    @Test
     public void testPersistList() {
         Customer customer = new Customer("12");
         Order order = new Order(customer);

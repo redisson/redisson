@@ -181,22 +181,17 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> T merge(T detachedObject) {
-        T attachedObject = attach(detachedObject);
-        getMap(attachedObject).fastPut("redisson_live_object", "1");
-        List<String> excludedFields = new ArrayList<String>();
-        String idFieldName = getRIdFieldName(detachedObject.getClass());
-        excludedFields.add(idFieldName);
-        copy(detachedObject, attachedObject, excludedFields);
-        return attachedObject;
+        Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
+        return persist(detachedObject, alreadyPersisted, false);
     }
-
+    
     @Override
     public <T> T persist(T detachedObject) {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
-        return persist(detachedObject, alreadyPersisted);
+        return persist(detachedObject, alreadyPersisted, true);
     }
     
-    private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted) {
+    private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted, boolean checkExistence) {
         String idFieldName = getRIdFieldName(detachedObject.getClass());
         Object id = ClassUtils.getField(detachedObject, idFieldName);
         if (id == null) {
@@ -214,78 +209,80 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         
         List<String> excludedFields = new ArrayList<String>();
         excludedFields.add(idFieldName);
-        if (liveMap.fastPut("redisson_live_object", "1")) {
-            for (FieldDescription.InDefinedShape field : Introspectior.getFieldsDescription(detachedObject.getClass())) {
-                Object object = ClassUtils.getField(detachedObject, field.getName());
-                
-                if (object == null) {
-                    continue;
-                }
-                
-                RObject rObject = objectBuilder.createObject(id, detachedObject.getClass(), object.getClass(), field.getName(), null);
-                if (rObject != null) {
-                    objectBuilder.store(rObject, field.getName(), liveMap);
-                    
-                    if (rObject instanceof SortedSet) {
-                        ((RSortedSet)rObject).trySetComparator(((SortedSet)object).comparator());
-                    }
-                    
-                    if (rObject instanceof Collection) {
-                        for (Object obj : (Collection<Object>)object) {
-                            if (obj != null && obj.getClass().isAnnotationPresent(REntity.class)) {
-                                Object persisted = alreadyPersisted.get(obj);
-                                if (persisted == null) {
-                                    persisted = persist(obj, alreadyPersisted);
-                                }
-                                obj = persisted;
-                            }
-                            ((Collection)rObject).add(obj);
-                        }
-                    }
-                    
-                    if (rObject instanceof Map) {
-                        Map<Object, Object> rMap = (Map<Object, Object>) rObject;
-                        Map<?, ?> map = (Map<?, ?>)rObject;
-                        for (Entry<?, ?> entry : map.entrySet()) {
-                            Object key = entry.getKey();
-                            Object value = entry.getValue();
-
-                            if (key != null && key.getClass().isAnnotationPresent(REntity.class)) {
-                                Object persisted = alreadyPersisted.get(key);
-                                if (persisted == null) {
-                                    persisted = persist(key, alreadyPersisted);
-                                }
-                                key = persisted;
-                            }
-
-                            if (value != null && value.getClass().isAnnotationPresent(REntity.class)) {
-                                Object persisted = alreadyPersisted.get(value);
-                                if (persisted == null) {
-                                    persisted = persist(value, alreadyPersisted);
-                                }
-                                value = persisted;
-                            }
-                            
-                            rMap.put(key, value);
-                        }
-                    }
-                    excludedFields.add(field.getName());
-                }
-                
-                if (object.getClass().isAnnotationPresent(REntity.class)) {
-                    Object persisted = alreadyPersisted.get(object);
-                    if (persisted == null) {
-                        persisted = persist(object, alreadyPersisted);
-                    }
-                    
-                    excludedFields.add(field.getName());
-                    BeanUtil.pojo.setSimpleProperty(attachedObject, field.getName(), persisted);
-                }
-            }
-            copy(detachedObject, attachedObject, excludedFields);
-            return attachedObject;
+        boolean fastResult = liveMap.fastPut("redisson_live_object", "1");
+        if (checkExistence && !fastResult) {
+            throw new IllegalArgumentException("This REntity already exists.");
         }
-        throw new IllegalArgumentException("This REntity already exists.");
+        
+        for (FieldDescription.InDefinedShape field : Introspectior.getFieldsDescription(detachedObject.getClass())) {
+            Object object = ClassUtils.getField(detachedObject, field.getName());
+            
+            if (object == null) {
+                continue;
+            }
+            
+            RObject rObject = objectBuilder.createObject(id, detachedObject.getClass(), object.getClass(), field.getName(), null);
+            if (rObject != null) {
+                objectBuilder.store(rObject, field.getName(), liveMap);
+                
+                if (rObject instanceof SortedSet) {
+                    ((RSortedSet)rObject).trySetComparator(((SortedSet)object).comparator());
+                }
+                
+                if (rObject instanceof Collection) {
+                    for (Object obj : (Collection<Object>)object) {
+                        if (obj != null && obj.getClass().isAnnotationPresent(REntity.class)) {
+                            Object persisted = alreadyPersisted.get(obj);
+                            if (persisted == null) {
+                                persisted = persist(obj, alreadyPersisted, checkExistence);
+                            }
+                            obj = persisted;
+                        }
+                        ((Collection)rObject).add(obj);
+                    }
+                }
+                
+                if (rObject instanceof Map) {
+                    Map<Object, Object> rMap = (Map<Object, Object>) rObject;
+                    Map<?, ?> map = (Map<?, ?>)rObject;
+                    for (Entry<?, ?> entry : map.entrySet()) {
+                        Object key = entry.getKey();
+                        Object value = entry.getValue();
+
+                        if (key != null && key.getClass().isAnnotationPresent(REntity.class)) {
+                            Object persisted = alreadyPersisted.get(key);
+                            if (persisted == null) {
+                                persisted = persist(key, alreadyPersisted, checkExistence);
+                            }
+                            key = persisted;
+                        }
+
+                        if (value != null && value.getClass().isAnnotationPresent(REntity.class)) {
+                            Object persisted = alreadyPersisted.get(value);
+                            if (persisted == null) {
+                                persisted = persist(value, alreadyPersisted, checkExistence);
+                            }
+                            value = persisted;
+                        }
+                        
+                        rMap.put(key, value);
+                    }
+                }
+                excludedFields.add(field.getName());
+            }
+            
+            if (object.getClass().isAnnotationPresent(REntity.class)) {
+                Object persisted = alreadyPersisted.get(object);
+                if (persisted == null) {
+                    persisted = persist(object, alreadyPersisted, checkExistence);
+                }
+                
+                excludedFields.add(field.getName());
+                BeanUtil.pojo.setSimpleProperty(attachedObject, field.getName(), persisted);
+            }
+        }
+        copy(detachedObject, attachedObject, excludedFields);
+        return attachedObject;
     }
     
     @Override
