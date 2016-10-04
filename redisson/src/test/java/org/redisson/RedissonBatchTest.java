@@ -42,6 +42,7 @@ public class RedissonBatchTest extends BaseTest {
     
     @Test
     public void testSkipResult() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
         RBatch batch = redisson.createBatch();
         batch.getBucket("A1").setAsync("001");
         batch.getBucket("A2").setAsync("001");
