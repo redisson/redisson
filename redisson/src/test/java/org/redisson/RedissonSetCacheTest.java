@@ -102,8 +102,8 @@ public class RedissonSetCacheTest extends BaseTest {
     public void testAddOverrideExpiration() throws InterruptedException {
         RSetCache<String> set = redisson.getSetCache("simple31");
         assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
-        Thread.sleep(500);
-        assertThat(set.add("123", 3, TimeUnit.SECONDS)).isTrue();
+        Thread.sleep(400);
+        assertThat(set.add("123", 3, TimeUnit.SECONDS)).isFalse();
         Thread.sleep(2000);
         assertThat(set.contains("123")).isTrue();
     }

@@ -197,11 +197,11 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
         long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
-                + "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then "
-                    + "return 0;"
-                + "end; " +
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
                 "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
+                "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then " +
+                    "return 0;" +
+                "end; " +
                 "return 1; ",
                 Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, objectState);
     }
