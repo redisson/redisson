@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
