@@ -18,6 +18,7 @@ package org.redisson;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.api.RCascadeType;
 import org.redisson.api.RDeque;
 import org.redisson.api.RExpirable;
 import org.redisson.api.RExpirableAsync;
@@ -47,6 +49,7 @@ import org.redisson.api.RQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
@@ -176,16 +179,16 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> T merge(T detachedObject) {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
-        return persist(detachedObject, alreadyPersisted, false);
+        return persist(detachedObject, alreadyPersisted, RCascadeType.MERGE);
     }
     
     @Override
     public <T> T persist(T detachedObject) {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
-        return persist(detachedObject, alreadyPersisted, true);
+        return persist(detachedObject, alreadyPersisted, RCascadeType.PERSIST);
     }
     
-    private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted, boolean checkExistence) {
+    private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted, RCascadeType type) {
         String idFieldName = getRIdFieldName(detachedObject.getClass());
         Object id = ClassUtils.getField(detachedObject, idFieldName);
         if (id == null) {
@@ -204,7 +207,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         List<String> excludedFields = new ArrayList<String>();
         excludedFields.add(idFieldName);
         boolean fastResult = liveMap.fastPut("redisson_live_object", "1");
-        if (checkExistence && !fastResult) {
+        if (type == RCascadeType.PERSIST && !fastResult) {
             throw new IllegalArgumentException("This REntity already exists.");
         }
         
@@ -218,9 +221,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             RObject rObject = objectBuilder.createObject(id, detachedObject.getClass(), object.getClass(), field.getName(), null);
             if (rObject != null) {
                 objectBuilder.store(rObject, field.getName(), liveMap);
-                
                 if (rObject instanceof SortedSet) {
                     ((RSortedSet)rObject).trySetComparator(((SortedSet)object).comparator());
+                }
+                
+                if (!checkCascade(detachedObject, type, field.getName())) {
+                    continue;
                 }
                 
                 if (rObject instanceof Collection) {
@@ -228,15 +234,13 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         if (obj != null && obj.getClass().isAnnotationPresent(REntity.class)) {
                             Object persisted = alreadyPersisted.get(obj);
                             if (persisted == null) {
-                                persisted = persist(obj, alreadyPersisted, checkExistence);
+                                persisted = persist(obj, alreadyPersisted, type);
                             }
                             obj = persisted;
                         }
                         ((Collection)rObject).add(obj);
                     }
-                }
-                
-                if (rObject instanceof Map) {
+                } else if (rObject instanceof Map) {
                     Map<Object, Object> rMap = (Map<Object, Object>) rObject;
                     Map<?, ?> map = (Map<?, ?>)rObject;
                     for (Entry<?, ?> entry : map.entrySet()) {
@@ -246,7 +250,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         if (key != null && key.getClass().isAnnotationPresent(REntity.class)) {
                             Object persisted = alreadyPersisted.get(key);
                             if (persisted == null) {
-                                persisted = persist(key, alreadyPersisted, checkExistence);
+                                persisted = persist(key, alreadyPersisted, type);
                             }
                             key = persisted;
                         }
@@ -254,7 +258,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         if (value != null && value.getClass().isAnnotationPresent(REntity.class)) {
                             Object persisted = alreadyPersisted.get(value);
                             if (persisted == null) {
-                                persisted = persist(value, alreadyPersisted, checkExistence);
+                                persisted = persist(value, alreadyPersisted, type);
                             }
                             value = persisted;
                         }
@@ -263,20 +267,49 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                 }
                 excludedFields.add(field.getName());
-            }
-            
-            if (object.getClass().isAnnotationPresent(REntity.class)) {
+            } else if (object.getClass().isAnnotationPresent(REntity.class)) {
                 Object persisted = alreadyPersisted.get(object);
                 if (persisted == null) {
-                    persisted = persist(object, alreadyPersisted, checkExistence);
+                    if (checkCascade(detachedObject, type, field.getName())) {
+                        persisted = persist(object, alreadyPersisted, type);
+                    }
                 }
                 
                 excludedFields.add(field.getName());
                 BeanUtil.pojo.setSimpleProperty(attachedObject, field.getName(), persisted);
+            } else {
+                validateAnnotation(detachedObject, field.getName());
             }
+            
         }
         copy(detachedObject, attachedObject, excludedFields);
         return attachedObject;
+    }
+
+    private void validateAnnotation(Object instance, String fieldName) {
+        Class<?> clazz = instance.getClass();
+        if (isLiveObject(instance)) {
+            clazz = clazz.getSuperclass();
+        }
+        
+        RCascade annotation = ClassUtils.getAnnotation(clazz, fieldName, RCascade.class);
+        if (annotation != null) {
+            throw new IllegalArgumentException("RCascade annotation couldn't be defined for non-Redisson object field");
+        }
+    }
+
+    private <T> boolean checkCascade(Object instance, RCascadeType type, String fieldName) {
+        Class<?> clazz = instance.getClass();
+        if (isLiveObject(instance)) {
+            clazz = clazz.getSuperclass();
+        }
+        
+        RCascade annotation = ClassUtils.getAnnotation(clazz, fieldName, RCascade.class);
+        if (annotation != null && (Arrays.asList(annotation.value()).contains(type)
+                || Arrays.asList(annotation.value()).contains(RCascadeType.ALL))) {
+            return true;
+        }
+        return false;
     }
     
     @Override
@@ -294,6 +327,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             alreadyDetached.put(getMap(attachedObject).getName(), detached);
             
             for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
+                if (!checkCascade(attachedObject, RCascadeType.DETACH, obj.getKey())) {
+                    continue;
+                }
+                
                 if (obj.getValue() instanceof RSortedSet) {
                     SortedSet<Object> redissonSet = (SortedSet<Object>) obj.getValue();
                     Set<Object> set = new TreeSet<Object>(redissonSet.comparator()); 
@@ -369,9 +406,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
 
                     ClassUtils.setField(detached, obj.getKey(), list);
-                }
-
-                if (isLiveObject(obj.getValue())) {
+                } else if (isLiveObject(obj.getValue())) {
                     Object detachedObject = alreadyDetached.get(getMap(obj.getValue()).getName());
                     if (detachedObject == null) {
                         detachedObject = detach(obj.getValue(), alreadyDetached);
@@ -403,6 +438,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                     
                     ClassUtils.setField(detached, obj.getKey(), map);
+                } else {
+                    validateAnnotation(detached, obj.getKey());
                 }
             }
             
@@ -418,10 +455,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         delete(attachedObject, deleted);
     }
 
-    public <T> void delete(T attachedObject, Set<String> deleted) {
+    private <T> void delete(T attachedObject, Set<String> deleted) {
         validateAttached(attachedObject);
         
         for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
+            if (!checkCascade(attachedObject, RCascadeType.DELETE, obj.getKey())) {
+                continue;
+            }
+            
             if (obj.getValue() instanceof RSortedSet) {
                 deleteCollection(deleted, (Iterable<?>)obj.getValue());
                 ((RObject)obj.getValue()).delete();
@@ -437,9 +478,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             } else if (obj.getValue() instanceof RList) {
                 deleteCollection(deleted, (Iterable<?>)obj.getValue());
                 ((RObject)obj.getValue()).delete();
-            }
-
-            if (isLiveObject(obj.getValue())) {
+            } else if (isLiveObject(obj.getValue())) {
                 if (deleted.add(getMap(obj.getValue()).getName())) {
                     delete(obj.getValue(), deleted);
                 }
@@ -448,7 +487,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 deleteCollection(deleted, map.keySet());
                 deleteCollection(deleted, map.values());
                 ((RObject)obj.getValue()).delete();
+            } else {
+                validateAnnotation(attachedObject, obj.getKey());
             }
+            
         }
         asLiveObject(attachedObject).delete();
     }

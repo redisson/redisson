@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RCascadeType;
 import org.redisson.api.RDeque;
 import org.redisson.api.RList;
 import org.redisson.api.RLiveObject;
@@ -38,6 +39,7 @@ import org.redisson.api.RQueue;
 import org.redisson.api.RSet;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
@@ -387,6 +389,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
         private String value;
         private String code;
+        @RCascade(RCascadeType.ALL)
         private Object content;
 
         @RId(generator = RandomUUIDIdStringGenerator.class)
@@ -1200,6 +1203,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         @RId
         private String id;
         
+        @RCascade(RCascadeType.ALL)
         private List<Order> orders = new ArrayList<>();
         
         public Customer() {
@@ -1234,6 +1238,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         @RId(generator = DistributedAtomicLongIdGenerator.class)
         private Long id;
         
+        @RCascade({RCascadeType.PERSIST, RCascadeType.DETACH})
         private Customer customer;
         
         public Order() {
@@ -1295,7 +1300,12 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         Order order = new Order(customer);
         order = redisson.getLiveObjectService().persist(order);
         assertThat(redisson.getKeys().count()).isEqualTo(3);
+        
+        Customer persistedCustomer = order.getCustomer();
         redisson.getLiveObjectService().delete(order);
+        assertThat(redisson.getKeys().count()).isEqualTo(2);
+        
+        redisson.getLiveObjectService().delete(persistedCustomer);
         assertThat(redisson.getKeys().count()).isEqualTo(1);
     }
     

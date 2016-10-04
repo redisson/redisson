@@ -92,7 +92,7 @@ public class AccessorInterceptor {
         }
         if (isSetter(method, fieldName)) {
             Object arg = args[0];
-            if (arg.getClass().isAnnotationPresent(REntity.class)) {
+            if (arg != null && arg.getClass().isAnnotationPresent(REntity.class)) {
                 throw new IllegalStateException("REntity object should be attached to Redisson first");
             }
             
@@ -125,7 +125,11 @@ public class AccessorInterceptor {
                 objectBuilder.store((RObject)arg, fieldName, liveMap);
                 return me;
             }
-            liveMap.fastPut(fieldName, args[0]);
+            if (arg == null) {
+                liveMap.remove(fieldName);
+            } else {
+                liveMap.fastPut(fieldName, arg);
+            }
             return me;
         }
         return superMethod.call();

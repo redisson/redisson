@@ -45,6 +45,7 @@
 
 package org.redisson.liveobject.misc;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -63,6 +64,18 @@ public class ClassUtils {
             field.set(obj, value);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
+        }
+    }
+    
+    public static <T extends Annotation> T getAnnotation(Class<?> clazz, String fieldName, Class<T> annotationClass) {
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            if (!field.isAccessible()) {
+                field.setAccessible(true);
+            }
+            return field.getAnnotation(annotationClass);
+        } catch (NoSuchFieldException e) {
+            return null;
         }
     }
     
