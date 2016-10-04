@@ -151,9 +151,9 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(100);
         assertThat(set.contains("123")).isTrue();
 
-        Thread.sleep(100);
+        Thread.sleep(300);
 
-        assertThat(set.contains("123")).isFalse();
+        assertThat(set.contains("123")).isTrue();
     }
 
     @Test
