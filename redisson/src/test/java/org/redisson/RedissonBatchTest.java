@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
