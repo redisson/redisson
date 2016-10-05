@@ -1291,6 +1291,49 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
         
     }
+    
+    @REntity
+    public static class SetterEncapsulation {
+        
+        @RId(generator = LongGenerator.class)
+        private Long id;
+        
+        private Map<String, Integer> map;
+        
+        public SetterEncapsulation() {
+        }
+        
+        public Long getId() {
+            return id;
+        }
+        
+        public Integer getItem(String name) {
+            return getMap().get(name);
+        }
+        
+        public void addItem(String name, Integer amount) {
+            getMap().put(name, amount);
+        }
+        
+        protected Map<String, Integer> getMap() {
+            return map;
+        }
+        
+    }
+
+    @Test
+    public void testSetterEncapsulation() {
+        SetterEncapsulation se = new SetterEncapsulation();
+        se = redisson.getLiveObjectService().persist(se);
+        
+        se.addItem("1", 1);
+        se.addItem("2", 2);
+        
+        se = redisson.getLiveObjectService().get(SetterEncapsulation.class, se.getId());
+        
+        assertThat(se.getItem("1")).isEqualTo(1);
+        assertThat(se.getItem("2")).isEqualTo(2);
+    }
 
     @Test(expected = IllegalArgumentException.class)
     public void testObjectShouldNotBeAttached() {

@@ -677,12 +677,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
                 .intercept(MethodDelegation.to(RExpirableInterceptor.class))
                 .implement(RExpirable.class)
+                
                 .method(ElementMatchers.isDeclaredBy(Map.class)
                         .or(ElementMatchers.isDeclaredBy(ConcurrentMap.class))
                         .or(ElementMatchers.isDeclaredBy(RMapAsync.class))
                         .or(ElementMatchers.isDeclaredBy(RMap.class)))
                 .intercept(MethodDelegation.to(RMapInterceptor.class))
                 .implement(RMap.class)
+                
                 .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RLiveObject.class)))
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(RExpirable.class)))
@@ -693,9 +695,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(Map.class)))
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
-                        .and(ElementMatchers.isPublic()))
+                        .and(ElementMatchers.isPublic().or(ElementMatchers.isProtected())))
                 .intercept(MethodDelegation.to(
                                 new AccessorInterceptor(redisson, objectBuilder)))
+                
                 .make().load(getClass().getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();
