@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
@@ -42,6 +43,7 @@ public class RedissonBatchTest extends BaseTest {
     
     @Test
     public void testSkipResult() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
         RBatch batch = redisson.createBatch();
         batch.getBucket("A1").setAsync("001");
         batch.getBucket("A2").setAsync("001");
