@@ -22,10 +22,10 @@ import org.redisson.api.annotation.RId;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class DistributedAtomicLongIdGenerator implements RIdResolver<RId, Long> {
+public class LongGenerator implements RIdResolver<RId, Long> {
 
-    public static final DistributedAtomicLongIdGenerator INSTANCE
-            = new DistributedAtomicLongIdGenerator();
+    public static final LongGenerator INSTANCE
+            = new LongGenerator();
 
     @Override
     public Long resolve(Class value, RId id, String idFieldName, RedissonClient redisson) {

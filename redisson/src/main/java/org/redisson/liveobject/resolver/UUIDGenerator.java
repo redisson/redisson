@@ -24,9 +24,9 @@ import org.redisson.api.annotation.RId;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class RandomUUIDIdStringGenerator implements RIdResolver<RId, String>{
+public class UUIDGenerator implements RIdResolver<RId, String>{
 
-    public static final RandomUUIDIdStringGenerator INSTANCE = new RandomUUIDIdStringGenerator();
+    public static final UUIDGenerator INSTANCE = new UUIDGenerator();
     
     @Override
     public String resolve(Class value, RId id, String idFieldName, RedissonClient redisson) {

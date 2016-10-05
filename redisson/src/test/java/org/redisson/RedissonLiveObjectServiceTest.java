@@ -44,8 +44,8 @@ import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
-import org.redisson.liveobject.resolver.DistributedAtomicLongIdGenerator;
-import org.redisson.liveobject.resolver.RandomUUIDIdStringGenerator;
+import org.redisson.liveobject.resolver.LongGenerator;
+import org.redisson.liveobject.resolver.UUIDGenerator;
 
 /**
  *
@@ -151,7 +151,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class TestREntityWithMap implements Comparable<TestREntityWithMap>, Serializable {
 
-        @RId(generator = RandomUUIDIdStringGenerator.class)
+        @RId(generator = UUIDGenerator.class)
         private String name;
         private Map value;
         
@@ -392,7 +392,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         @RCascade(RCascadeType.ALL)
         private Object content;
 
-        @RId(generator = RandomUUIDIdStringGenerator.class)
+        @RId(generator = UUIDGenerator.class)
         private Serializable id;
 
         public TestClass() {
@@ -760,7 +760,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class TestClassID1 {
 
-        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        @RId(generator = LongGenerator.class)
         private Long name;
 
         public TestClassID1() {
@@ -779,7 +779,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class TestClassID2 {
 
-        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        @RId(generator = LongGenerator.class)
         private Long name;
 
         public TestClassID2() {
@@ -871,7 +871,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         private String code;
         private Object content;
 
-        @RId(generator = RandomUUIDIdStringGenerator.class)
+        @RId(generator = UUIDGenerator.class)
         private Serializable id;
 
         public TestClassNoTransformation() {
@@ -990,7 +990,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class MyObject implements Serializable {
 
-        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        @RId(generator = LongGenerator.class)
         private Long id;
 
         private Long myId;
@@ -1073,7 +1073,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class SimpleObject {
         
-        @RId(generator = RandomUUIDIdStringGenerator.class)
+        @RId(generator = UUIDGenerator.class)
         private String id;
         
         private Long value;
@@ -1095,7 +1095,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class ObjectWithList {
         
-        @RId(generator = RandomUUIDIdStringGenerator.class)
+        @RId(generator = UUIDGenerator.class)
         private String id;
         
         private List<SimpleObject> objects;
@@ -1264,7 +1264,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class Order {
         
-        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        @RId(generator = LongGenerator.class)
         private Long id;
         
         @RCascade({RCascadeType.PERSIST, RCascadeType.DETACH})
@@ -1383,7 +1383,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @REntity
     public static class ClassWithoutIdSetterGetter {
         
-        @RId(generator = DistributedAtomicLongIdGenerator.class)
+        @RId(generator = LongGenerator.class)
         private Long id;
         
         private String name;
