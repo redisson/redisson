@@ -1197,6 +1197,35 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
     }
 
+    @Test
+    public void testCollectionRewrite() {
+        Customer c = new Customer("123");
+        c = redisson.getLiveObjectService().merge(c);
+        
+        Order o1 = new Order(c);
+        o1 = redisson.getLiveObjectService().merge(o1);
+        assertThat(o1.getId()).isEqualTo(1);
+        c.getOrders().add(o1);
+        
+        Order o2 = new Order(c);
+        o2 = redisson.getLiveObjectService().merge(o2);
+        assertThat(o2.getId()).isEqualTo(2);
+        c.getOrders().add(o2);
+        
+        assertThat(c.getOrders().size()).isEqualTo(2);
+
+        assertThat(redisson.getKeys().count()).isEqualTo(5);
+        
+        List<Order> list = new ArrayList<>();
+        Order o3 = new Order(c);
+        o3 = redisson.getLiveObjectService().merge(o3);
+        assertThat(o3.getId()).isEqualTo(3);
+        list.add(o3);
+        c.setOrders(list);
+        
+        assertThat(c.getOrders().size()).isEqualTo(1);
+    }
+    
     @REntity
     public static class Customer {
         

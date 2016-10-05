@@ -218,7 +218,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 continue;
             }
             
-            RObject rObject = objectBuilder.createObject(id, detachedObject.getClass(), object.getClass(), field.getName(), null);
+            RObject rObject = objectBuilder.createObject(id, detachedObject.getClass(), object.getClass(), field.getName());
             if (rObject != null) {
                 objectBuilder.store(rObject, field.getName(), liveMap);
                 if (rObject instanceof SortedSet) {

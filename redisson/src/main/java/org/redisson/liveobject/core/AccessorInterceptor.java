@@ -78,7 +78,7 @@ public class AccessorInterceptor {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result == null) {
-                RObject ar = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName, null);
+                RObject ar = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName);
                 if (ar != null) {
                     objectBuilder.store(ar, fieldName, liveMap);
                     return ar;
@@ -115,7 +115,18 @@ public class AccessorInterceptor {
                     && TransformationMode.ANNOTATION_BASED
                             .equals(me.getClass().getSuperclass()
                             .getAnnotation(REntity.class).fieldTransformation())) {
-                RObject rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName, arg);
+                RObject rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
+                if (arg != null) {
+                    if (rObject instanceof Collection) {
+                        Collection c = (Collection) rObject;
+                        c.clear();
+                        c.addAll((Collection) arg);
+                    } else {
+                        Map m = (Map) rObject;
+                        m.clear();
+                        m.putAll((Map) arg);
+                    }
+                }
                 if (rObject != null) {
                     arg = rObject;
                 }

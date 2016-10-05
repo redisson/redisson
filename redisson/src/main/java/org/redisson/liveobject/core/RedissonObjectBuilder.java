@@ -89,7 +89,7 @@ public class RedissonObjectBuilder {
                 new RedissonReference(ar.getClass(), ar.getName(), codec));
     }
     
-    public RObject createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName, Object arg) {
+    public RObject createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName) {
         Class<? extends RObject> mappedClass = getMappedClass(fieldType);
         try {
             if (mappedClass != null) {
@@ -103,16 +103,8 @@ public class RedissonObjectBuilder {
                                         id,
                                         mappedClass,
                                         fieldName,
-                                        arg),
+                                        null),
                                 fieldCodec);
-                
-                if (arg != null) {
-                    if (obj instanceof Collection) {
-                        ((Collection) obj).addAll((Collection) arg);
-                    } else {
-                        ((Map) obj).putAll((Map) arg);
-                    }
-                }
                 return obj;
             }
         } catch (Exception e) {
