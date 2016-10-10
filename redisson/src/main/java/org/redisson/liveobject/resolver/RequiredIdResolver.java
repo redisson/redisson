@@ -19,19 +19,17 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RId;
 
 /**
+ * 
+ * @author Nikita Koksharov
  *
- * @author Rui Gu (https://github.com/jackygurui)
  */
-public class DistributedAtomicLongIdGenerator implements RIdResolver<RId, Long> {
-
-    public static final DistributedAtomicLongIdGenerator INSTANCE
-            = new DistributedAtomicLongIdGenerator();
+public class RequiredIdResolver implements RIdResolver<RId, Object> {
+    
+    public static final RequiredIdResolver INSTANCE = new RequiredIdResolver();
 
     @Override
-    public Long resolve(Class value, RId id, String idFieldName, RedissonClient redisson) {
-        return redisson.getAtomicLong(this.getClass().getCanonicalName()
-                + "{" + value.getCanonicalName() + "}:" + idFieldName)
-                .incrementAndGet();
+    public Object resolve(Class cls, RId annotation, String idFieldName, RedissonClient redisson) {
+        throw new IllegalArgumentException("id value not defined for instance of " + cls);
     }
 
 }

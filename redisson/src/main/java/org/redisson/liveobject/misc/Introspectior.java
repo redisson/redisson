@@ -28,11 +28,11 @@ import net.bytebuddy.matcher.ElementMatchers;
  */
 public class Introspectior {
 
-    public static TypeDescription.ForLoadedType getTypeDescription(Class c) {
+    public static TypeDescription.ForLoadedType getTypeDescription(Class<?> c) {
         return new TypeDescription.ForLoadedType(c);
     }
 
-    public static MethodDescription getMethodDescription(Class c, String method) {
+    public static MethodDescription getMethodDescription(Class<?> c, String method) {
         if (method == null || method.isEmpty()) {
             return null;
         }
@@ -42,7 +42,13 @@ public class Introspectior {
                 .getOnly();
     }
 
-    public static FieldDescription getFieldDescription(Class c, String field) {
+    public static FieldList<FieldDescription.InDefinedShape> getFieldsDescription(Class<?> c) {
+        return getTypeDescription(c)
+                .getDeclaredFields();
+                
+    }
+    
+    public static FieldDescription getFieldDescription(Class<?> c, String field) {
         if (field == null || field.isEmpty()) {
             return null;
         }
@@ -52,7 +58,7 @@ public class Introspectior {
                 .getOnly();
     }
 
-    public static FieldList<FieldDescription.InDefinedShape> getFieldsWithAnnotation(Class c, Class<? extends Annotation> a) {
+    public static FieldList<FieldDescription.InDefinedShape> getFieldsWithAnnotation(Class<?> c, Class<? extends Annotation> a) {
         return getTypeDescription(c)
                 .getDeclaredFields()
                 .filter(ElementMatchers.isAnnotatedWith(a));

@@ -199,11 +199,12 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
             return newSucceededFuture(false);
         }
         List<Object> params = new ArrayList<Object>(2*c.size());
+        params.add(getName());
         for (Object param : c) {
             params.add(0);
             params.add(param);
         }
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZADD_BOOL_RAW, getName(), params.toArray());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZADD_BOOL_RAW, params.toArray());
     }
 
     @Override

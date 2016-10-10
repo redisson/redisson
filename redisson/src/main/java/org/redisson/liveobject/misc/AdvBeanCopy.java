@@ -13,24 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.annotation;
+package org.redisson.liveobject.misc;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-import org.redisson.liveobject.resolver.RIdResolver;
-import org.redisson.liveobject.resolver.RequiredIdResolver;
+import jodd.bean.BeanCopy;
+import jodd.bean.BeanUtilBean;
 
 /**
+ * 
+ * @author Nikita Koksharov
  *
- * @author Rui Gu (https://github.com/jackygurui)
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD})
-public @interface RId {
+public class AdvBeanCopy extends BeanCopy {
+
+    public AdvBeanCopy(Object source, Object destination) {
+        super(source, destination);
+    }
     
-    Class<? extends RIdResolver> generator() default RequiredIdResolver.class;
-    
+    @Override
+    public void copy() {
+        beanUtil = new BeanUtilBean()
+                .declared(declared)
+                .forced(forced);
+        visit();
+    }
+
 }

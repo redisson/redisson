@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * @param <V> type of value
  */
-public interface RGeo<V> extends RExpirable, RGeoAsync<V> {
+public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
 
     /**
      * Adds geospatial member.

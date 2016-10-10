@@ -100,10 +100,6 @@ public class RedissonObjectFactory {
     }
 
     public static <T> T fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
-        return fromReference(redisson, rr, null);
-    }
-
-    public static <T> T fromReference(RedissonClient redisson, RedissonReference rr, Class<?> expected) throws Exception {
         Class<? extends Object> type = rr.getType();
         CodecProvider codecProvider = redisson.getConfig().getCodecProvider();
         if (type != null) {
@@ -113,7 +109,7 @@ public class RedissonObjectFactory {
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, type));
-                return (T) liveObjectService.getOrCreate(type, ns.resolveId(rr.getKeyName()));
+                return (T) liveObjectService.get(type, ns.resolveId(rr.getKeyName()));
             }
             List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
             for (Class<?> iType : interfaces) {
@@ -128,7 +124,7 @@ public class RedissonObjectFactory {
         throw new ClassNotFoundException("No RObject is found to match class type of " + rr.getTypeName() + " with codec type of " + rr.getCodecName());
     }
     
-    public static boolean isDefaultCodec(RedissonReference rr) {
+    private static boolean isDefaultCodec(RedissonReference rr) {
         return rr.getCodec() == null;
     }
 
@@ -158,6 +154,10 @@ public class RedissonObjectFactory {
     }
 
     public static RedissonReference toReference(RedissonClient redisson, Object object) {
+        if (object != null && object.getClass().isAnnotationPresent(REntity.class)) {
+            throw new IllegalArgumentException("REntity should be attached to Redisson before save");
+        }
+        
         if (object instanceof RObject && !(object instanceof RLiveObject)) {
             RObject rObject = ((RObject) object);
             redisson.getCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());

@@ -20,17 +20,17 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.redisson.liveobject.resolver.RIdResolver;
-import org.redisson.liveobject.resolver.RequiredIdResolver;
+import org.redisson.api.RCascadeType;
 
 /**
+ * 
+ * @author Nikita Koksharov
  *
- * @author Rui Gu (https://github.com/jackygurui)
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
-public @interface RId {
-    
-    Class<? extends RIdResolver> generator() default RequiredIdResolver.class;
+public @interface RCascade {
+
+    RCascadeType[] value();
     
 }

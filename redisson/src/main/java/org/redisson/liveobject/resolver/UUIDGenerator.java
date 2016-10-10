@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.annotation;
+package org.redisson.liveobject.resolver;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.UUID;
 
-import org.redisson.liveobject.resolver.RIdResolver;
-import org.redisson.liveobject.resolver.RequiredIdResolver;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.annotation.RId;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD})
-public @interface RId {
+public class UUIDGenerator implements RIdResolver<RId, String>{
+
+    public static final UUIDGenerator INSTANCE = new UUIDGenerator();
     
-    Class<? extends RIdResolver> generator() default RequiredIdResolver.class;
+    @Override
+    public String resolve(Class value, RId id, String idFieldName, RedissonClient redisson) {
+        return UUID.randomUUID().toString();
+    }
     
 }

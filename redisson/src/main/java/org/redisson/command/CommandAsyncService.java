@@ -464,7 +464,22 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return;
         }
 
-        final RPromise<R> attemptPromise = connectionManager.newPromise();
+
+        final AsyncDetails<V, R> details = AsyncDetails.acquire();
+        if (isRedissonReferenceSupportEnabled()) {
+            try {
+                for (int i = 0; i < params.length; i++) {
+                    RedissonReference reference = redisson != null
+                            ? RedissonObjectFactory.toReference(redisson, params[i])
+                                    : RedissonObjectFactory.toReference(redissonReactive, params[i]);
+                            params[i] = reference == null ? params[i] : reference;
+                }
+            } catch (Exception e) {
+                connectionManager.getShutdownLatch().release();
+                mainPromise.tryFailure(e);
+                return;
+            }
+        }
 
         final RFuture<RedisConnection> connectionFuture;
         if (readOnlyMode) {
@@ -473,15 +488,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             connectionFuture = connectionManager.connectionWriteOp(source, command);
         }
 
-        final AsyncDetails<V, R> details = AsyncDetails.acquire();
-        if (isRedissonReferenceSupportEnabled()) {
-            for (int i = 0; i < params.length; i++) {
-                RedissonReference reference = redisson != null
-                        ? RedissonObjectFactory.toReference(redisson, params[i])
-                        : RedissonObjectFactory.toReference(redissonReactive, params[i]);
-                params[i] = reference == null ? params[i] : reference;
-            }
-        }
+        final RPromise<R> attemptPromise = connectionManager.newPromise();
         details.init(connectionFuture, attemptPromise,
                 readOnlyMode, source, codec, command, params, mainPromise, attempt);
 
