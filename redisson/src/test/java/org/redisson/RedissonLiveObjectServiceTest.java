@@ -1326,8 +1326,12 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         SetterEncapsulation se = new SetterEncapsulation();
         se = redisson.getLiveObjectService().persist(se);
         
+        assertThat(redisson.getKeys().count()).isEqualTo(2);
+        
         se.addItem("1", 1);
         se.addItem("2", 2);
+        
+        assertThat(redisson.getKeys().count()).isEqualTo(3);
         
         se = redisson.getLiveObjectService().get(SetterEncapsulation.class, se.getId());
         

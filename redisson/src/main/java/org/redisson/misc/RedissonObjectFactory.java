@@ -124,7 +124,7 @@ public class RedissonObjectFactory {
         throw new ClassNotFoundException("No RObject is found to match class type of " + rr.getTypeName() + " with codec type of " + rr.getCodecName());
     }
     
-    public static boolean isDefaultCodec(RedissonReference rr) {
+    private static boolean isDefaultCodec(RedissonReference rr) {
         return rr.getCodec() == null;
     }
 

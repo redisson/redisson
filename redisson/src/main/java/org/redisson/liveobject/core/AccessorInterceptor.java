@@ -151,7 +151,7 @@ public class AccessorInterceptor {
     }
 
     private boolean isGetter(Method method, String fieldName) {
-        return method.getName().startsWith("get")
+        return (method.getName().startsWith("get") || method.getName().startsWith("is"))
                 && method.getName().endsWith(getFieldNameSuffix(fieldName));
     }
 

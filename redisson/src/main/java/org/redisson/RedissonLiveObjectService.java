@@ -225,16 +225,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     ((RSortedSet)rObject).trySetComparator(((SortedSet)object).comparator());
                 }
                 
-                if (!checkCascade(detachedObject, type, field.getName())) {
-                    continue;
-                }
-                
                 if (rObject instanceof Collection) {
                     for (Object obj : (Collection<Object>)object) {
                         if (obj != null && obj.getClass().isAnnotationPresent(REntity.class)) {
                             Object persisted = alreadyPersisted.get(obj);
                             if (persisted == null) {
-                                persisted = persist(obj, alreadyPersisted, type);
+                                if (checkCascade(detachedObject, type, field.getName())) {
+                                    persisted = persist(obj, alreadyPersisted, type);
+                                }
                             }
                             obj = persisted;
                         }
@@ -250,7 +248,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         if (key != null && key.getClass().isAnnotationPresent(REntity.class)) {
                             Object persisted = alreadyPersisted.get(key);
                             if (persisted == null) {
-                                persisted = persist(key, alreadyPersisted, type);
+                                if (checkCascade(detachedObject, type, field.getName())) {
+                                    persisted = persist(key, alreadyPersisted, type);
+                                }
                             }
                             key = persisted;
                         }
@@ -258,7 +258,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         if (value != null && value.getClass().isAnnotationPresent(REntity.class)) {
                             Object persisted = alreadyPersisted.get(value);
                             if (persisted == null) {
-                                persisted = persist(value, alreadyPersisted, type);
+                                if (checkCascade(detachedObject, type, field.getName())) {
+                                    persisted = persist(value, alreadyPersisted, type);
+                                }
                             }
                             value = persisted;
                         }
@@ -695,7 +697,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .and(ElementMatchers.not(ElementMatchers.isDeclaredBy(Map.class)))
                         .and(ElementMatchers.isGetter()
                                 .or(ElementMatchers.isSetter()))
-                        .and(ElementMatchers.isPublic().or(ElementMatchers.isProtected())))
+                        .and(ElementMatchers.isPublic()
+                                .or(ElementMatchers.isProtected()))
+                        )
                 .intercept(MethodDelegation.to(
                                 new AccessorInterceptor(redisson, objectBuilder)))
                 
