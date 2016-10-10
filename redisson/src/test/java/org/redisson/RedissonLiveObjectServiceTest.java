@@ -43,6 +43,7 @@ import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
+import org.redisson.client.RedisException;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.LongGenerator;
 import org.redisson.liveobject.resolver.UUIDGenerator;
@@ -1339,7 +1340,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(se.getItem("2")).isEqualTo(2);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = RedisException.class)
     public void testObjectShouldNotBeAttached() {
         Customer customer = new Customer("12");
         customer = redisson.getLiveObjectService().persist(customer);
