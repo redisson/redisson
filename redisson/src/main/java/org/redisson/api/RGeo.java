@@ -90,6 +90,53 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
     List<V> radius(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return list of objects
+     */
+    List<V> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @return list of objects
+     */
+    List<V> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @param count - result limit
+     * @return list of objects
+     */
+    List<V> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    
+    /**
      * Returns the distance mapped by member, distance between member and the location. 
      * Members of a sorted set, which are within the 
      * borders of the area specified with the center location 
@@ -104,6 +151,56 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      */
     Map<V, Double> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
+    /**
+     * Returns the distance mapped by member, distance between member and the location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units and limited by count.
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return distance mapped by object
+     */
+    Map<V, Double> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the distance mapped by member, distance between member and the location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @return distance mapped by object
+     */
+    Map<V, Double> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the distance mapped by member, distance between member and the location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @param count - result limit
+     * @return distance mapped by object
+     */
+    Map<V, Double> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    
     /**
      * Returns the geo-position mapped by member. 
      * Members of a sorted set, which are within the 
@@ -120,6 +217,56 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
     Map<V, GeoPosition> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return geo position mapped by object
+     */
+    Map<V, GeoPosition> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @return geo position mapped by object
+     */
+    Map<V, GeoPosition> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return geo position mapped by object
+     */
+    Map<V, GeoPosition> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+
+    /**
      * Returns the members of a sorted set, which are within the 
      * borders of the area specified with the defined member location
      * and the maximum distance from the defined member location (the radius) 
@@ -131,6 +278,50 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @return list of objects
      */
     List<V> radius(V member, double radius, GeoUnit geoUnit);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return list of objects
+     */
+    List<V> radius(V member, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @return list of objects
+     */
+    List<V> radius(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return list of objects
+     */
+    List<V> radius(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /**
      * Returns the distance mapped by member, distance between member and the defined member location. 
@@ -147,6 +338,53 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
     Map<V, Double> radiusWithDistance(V member, double radius, GeoUnit geoUnit);
 
     /**
+     * Returns the distance mapped by member, distance between member and the defined member location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return distance mapped by object
+     */
+    Map<V, Double> radiusWithDistance(V member, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the distance mapped by member, distance between member and the defined member location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @return distance mapped by object
+     */
+    Map<V, Double> radiusWithDistance(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the distance mapped by member, distance between member and the defined member location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return distance mapped by object
+     */
+    Map<V, Double> radiusWithDistance(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    
+    /**
      * Returns the geo-position mapped by member. 
      * Members of a sorted set, which are within the 
      * borders of the area specified with the defined member location 
@@ -159,5 +397,52 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @return geo position mapped by object
      */
     Map<V, GeoPosition> radiusWithPosition(V member, double radius, GeoUnit geoUnit);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return geo position mapped by object
+     */
+    Map<V, GeoPosition> radiusWithPosition(V member, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @return geo position mapped by object
+     */
+    Map<V, GeoPosition> radiusWithPosition(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return geo position mapped by object
+     */
+    Map<V, GeoPosition> radiusWithPosition(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
 }

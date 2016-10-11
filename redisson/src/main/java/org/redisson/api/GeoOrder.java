@@ -20,34 +20,6 @@ package org.redisson.api;
  * @author Nikita Koksharov
  *
  */
-public enum GeoUnit {
-
-    METERS {
-        @Override
-        public String toString() {
-            return "m";
-        }
-    },
-    
-    KILOMETERS {
-        @Override
-        public String toString() {
-            return "km";
-        }
-    },
-    
-    MILES {
-        @Override
-        public String toString() {
-            return "mi";
-        }
-    },
-    
-    FEET {
-        @Override
-        public String toString() {
-            return "ft";
-        }
-    }
-    
+public enum GeoOrder {
+    ASC, DESC
 }
