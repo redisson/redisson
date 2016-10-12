@@ -104,6 +104,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
      * @param listener - listener for future object
      * @return Future object
      */
+    @Deprecated
     RFuture<V> addListener(FutureListener<? super V> listener);
 
     /**
@@ -115,6 +116,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
      * @param listeners - listeners for future object
      * @return Future object
      */
+    @Deprecated
     RFuture<V> addListeners(FutureListener<? super V>... listeners);
 
     /**
@@ -127,6 +129,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
      * @param listener - listener for future object
      * @return Future object
      */
+    @Deprecated
     RFuture<V> removeListener(FutureListener<? super V> listener);
 
     /**
@@ -139,6 +142,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
      * @param listeners - listeners for future object
      * @return Future object
      */
+    @Deprecated
     RFuture<V> removeListeners(FutureListener<? super V>... listeners);
 
     /**
