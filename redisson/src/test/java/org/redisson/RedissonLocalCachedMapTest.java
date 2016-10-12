@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
@@ -45,6 +47,28 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         }
         System.out.println(System.currentTimeMillis() - s);
 
+    }
+    
+    @Test
+    public void testReadValuesAndEntries() {
+        RLocalCachedMap<Object, Object> m = redisson.getLocalCachedMap("testValuesWithNearCache2",
+                LocalCachedMapOptions.defaults());
+        m.clear();
+        m.put("a", 1);
+        m.put("b", 2);
+        m.put("c", 3);
+
+        Set<Integer> expectedValuesSet = new HashSet<>();
+        expectedValuesSet.add(1);
+        expectedValuesSet.add(2);
+        expectedValuesSet.add(3);
+        HashSet actualValuesSet = new HashSet<>(m.readAllValues());
+        Assert.assertEquals(expectedValuesSet, actualValuesSet);
+        Map<String, Integer> expectedMap = new HashMap<>();
+        expectedMap.put("a", 1);
+        expectedMap.put("b", 2);
+        expectedMap.put("c", 3);
+        Assert.assertEquals(expectedMap.entrySet(), m.readAllEntrySet());
     }
     
     @Test

@@ -662,7 +662,18 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     
     @Override
     public RFuture<Integer> availablePermitsAsync() {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_INTEGER, getName());
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER, 
+                "local expiredIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, -1); " +
+                "if #expiredIds > 0 then " +
+                    "redis.call('zrem', KEYS[2], unpack(expiredIds)); " +
+                    "local value = redis.call('incrby', KEYS[1], #expiredIds); " + 
+                    "if tonumber(value) > 0 then " +
+                        "redis.call('publish', KEYS[3], value); " +
+                    "end;" + 
+                    "return value; " +
+                "end; " +
+                "return redis.call('get', KEYS[1]); ",
+                Arrays.<Object>asList(getName(), timeoutName, getChannelName()), System.currentTimeMillis());
     }
 
     @Override

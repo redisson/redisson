@@ -6,12 +6,32 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.client.RedisException;
 
 public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
 
+    @Test
+    public void testAvailablePermits() throws InterruptedException {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test-semaphore");
+        assertThat(semaphore.trySetPermits(2)).isTrue();
+        Assert.assertEquals(2, semaphore.availablePermits());
+        String acquire1 = semaphore.tryAcquire(200, 1000, TimeUnit.MILLISECONDS);
+        assertThat(acquire1).isNotNull();
+        String acquire2 = semaphore.tryAcquire(200, 1000, TimeUnit.MILLISECONDS);
+        assertThat(acquire2).isNotNull();
+        String acquire3 = semaphore.tryAcquire(200, 1000, TimeUnit.MILLISECONDS);
+        assertThat(acquire3).isNull();
+        Assert.assertEquals(0, semaphore.availablePermits());
+        Thread.sleep(1100);
+        String acquire4 = semaphore.tryAcquire(200, 1000, TimeUnit.MILLISECONDS);
+        assertThat(acquire4).isNotNull();
+        Thread.sleep(1100);
+        Assert.assertEquals(2, semaphore.availablePermits());
+    }
+    
     @Test
     public void testExpire() throws InterruptedException {
         RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
