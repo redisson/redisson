@@ -252,7 +252,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setSchedulerChannelName(schedulerChannelName);
         service.setSchedulerQueueName(schedulerQueueName);
         
-        redisson.getRemoteSerivce(name, codec).register(RemoteExecutorService.class, service, workers, executor);
+        redisson.getRemoteService(name, codec).register(RemoteExecutorService.class, service, workers, executor);
     }
 
     @Override

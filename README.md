@@ -65,6 +65,7 @@ Articles
 [Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
 [Java Remote Method Invocation with Redisson](https://dzone.com/articles/java-remote-method-invocation-with-redisson)  
 [Java Multimaps With Redis](https://dzone.com/articles/multimaps-with-redis)  
+[Distributed lock with Redis](https://evuvatech.com/2016/02/05/distributed-lock-with-redis/)
 
 Quick start
 ===============================
