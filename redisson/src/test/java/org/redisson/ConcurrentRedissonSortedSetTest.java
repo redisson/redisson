@@ -40,7 +40,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 
         Collections.sort(elements);
         Integer[] p = elements.toArray(new Integer[elements.size()]);
-        assertThat(map).contains(p);
+        assertThat(map).containsExactly(p);
 
         map.clear();
         r.shutdown();
