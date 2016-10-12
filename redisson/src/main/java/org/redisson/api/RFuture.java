@@ -62,14 +62,9 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
      * (unchecked) exception if completed exceptionally. To better
      * conform with the use of common functional forms, if a
      * computation involved in the completion of this
-     * CompletableFuture threw an exception, this method throws an
-     * (unchecked) {@link CompletionException} with the underlying
-     * exception as its cause.
+     * CompletableFuture threw an exception.
      *
      * @return the result value
-     * @throws CancellationException if the computation was cancelled
-     * @throws CompletionException if this future completed
-     * exceptionally or a completion computation threw an exception
      */
     V join();
     
