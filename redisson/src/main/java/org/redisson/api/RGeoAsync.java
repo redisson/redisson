@@ -377,6 +377,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param radius - radius in geo units
      * @param geoUnit - geo unit
      * @param geoOrder - geo
+     * @param count - result limit
      * @return distance mapped by object
      */
     RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);

@@ -144,7 +144,8 @@ public class CacheConfig {
     /**
      * Convert current configuration to JSON format
      *
-     * @return config object
+     * @param config object
+     * @return json string
      * @throws IOException error
      */
     public static String toJSON(Map<String, CacheConfig> config) throws IOException {
@@ -209,7 +210,8 @@ public class CacheConfig {
     /**
      * Convert current configuration to YAML format
      *
-     * @return config in yaml format
+     * @param config map
+     * @return yaml string
      * @throws IOException error
      */
     public static String toYAML(Map<String, CacheConfig> config) throws IOException {
