@@ -32,7 +32,7 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
      * Creates in async mode and executes a one-shot action that becomes enabled
      * after the given delay.
      *
-     * @param command the task to execute
+     * @param task the task to execute
      * @param delay the time from now to delay execution
      * @param unit the time unit of the delay parameter
      * @return RScheduledFuture with listeners support
@@ -43,7 +43,7 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
      * Creates in async mode and executes a ScheduledFuture that becomes enabled after the
      * given delay.
      *
-     * @param callable the function to execute
+     * @param task the function to execute
      * @param delay the time from now to delay execution
      * @param unit the time unit of the delay parameter
      * @param <V> the type of the callable's result
@@ -62,7 +62,7 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
      * takes longer than its period, then subsequent executions
      * may start late, but will not concurrently execute.
      *
-     * @param command the task to execute
+     * @param task the task to execute
      * @param initialDelay the time to delay first execution
      * @param period the period between successive executions
      * @param unit the time unit of the initialDelay and period parameters
@@ -79,7 +79,7 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
      * Otherwise, the task will only terminate via cancellation or
      * termination of the executor.
      *
-     * @param command the task to execute
+     * @param task the task to execute
      * @param initialDelay the time to delay first execution
      * @param delay the delay between the termination of one
      * execution and the commencement of the next
@@ -97,8 +97,8 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
      * takes longer than its period, then subsequent executions
      * may start late, but will not concurrently execute.
      *
-     * @param command the task to execute
-     * @param cron schedule object
+     * @param task the task to execute
+     * @param cronSchedule cron schedule object
      * @return RScheduledFuture with listeners support
      */
     RScheduledFuture<?> scheduleAsync(Runnable task, CronSchedule cronSchedule);

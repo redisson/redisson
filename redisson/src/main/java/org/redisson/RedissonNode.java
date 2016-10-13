@@ -19,21 +19,17 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.misc.RedissonThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBufUtil;
-import io.netty.util.concurrent.Future;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
@@ -45,16 +41,22 @@ public class RedissonNode {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonNode.class);
     
-    private ExecutorService executor;
+    private boolean hasRedissonInstance;
     private RedissonClient redisson;
     private final RedissonNodeConfig config;
     private final String id;
     private InetSocketAddress remoteAddress;
     private InetSocketAddress localAddress;
     
-    private RedissonNode(RedissonNodeConfig config) {
+    private RedissonNode(RedissonNodeConfig config, Redisson redisson) {
         this.config = new RedissonNodeConfig(config);
         this.id = generateId();
+        this.redisson = redisson;
+        hasRedissonInstance = redisson == null;
+    }
+
+    public RedissonClient getRedisson() {
+        return redisson;
     }
     
     public InetSocketAddress getLocalAddress() {
@@ -111,43 +113,30 @@ public class RedissonNode {
      * 
      */
     public void shutdown() {
-        if (executor != null) {
-            log.info("Worker executor is being shutdown...");
-            executor.shutdown();
-            try {
-                if (executor.awaitTermination(5, TimeUnit.MINUTES)) {
-                    log.info("Worker executor has been shutdown successfully");
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+        if (hasRedissonInstance) {
+            redisson.shutdown();
+            log.info("Redisson node has been shutdown successfully");
         }
-        redisson.shutdown();
-        log.info("Redisson node has been shutdown successfully");
     }
     
     /**
      * Start Redisson node instance
      */
     public void start() {
-        if (config.getExecutorServiceThreads() == 0) {
-            executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2, new RedissonThreadFactory());
-        } else if (config.getExecutorServiceThreads() > 0) {
-            executor = Executors.newFixedThreadPool(config.getExecutorServiceThreads(), new RedissonThreadFactory());
+        if (hasRedissonInstance) {
+            redisson = Redisson.create(config);
         }
-
-        redisson = Redisson.create(config);
         
         retrieveAdresses();
         
         if (config.getRedissonNodeInitializer() != null) {
-            config.getRedissonNodeInitializer().onStartup(redisson, this);
+            config.getRedissonNodeInitializer().onStartup(this);
         }
         
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();
             int workers = entry.getValue();
-            redisson.getExecutorService(name).registerWorkers(workers, executor);
+            redisson.getExecutorService(name).registerWorkers(workers);
             log.info("{} worker(s) for '{}' ExecutorService registered", workers, name);
         }
 
@@ -157,7 +146,7 @@ public class RedissonNode {
     private void retrieveAdresses() {
         ConnectionManager connectionManager = ((Redisson)redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            Future<RedisConnection> readFuture = entry.connectionReadOp();
+            RFuture<RedisConnection> readFuture = entry.connectionReadOp();
             if (readFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout()) 
                     && readFuture.isSuccess()) {
                 RedisConnection connection = readFuture.getNow();
@@ -166,7 +155,7 @@ public class RedissonNode {
                 localAddress = (InetSocketAddress) connection.getChannel().localAddress();
                 return;
             }
-            Future<RedisConnection> writeFuture = entry.connectionWriteOp();
+            RFuture<RedisConnection> writeFuture = entry.connectionWriteOp();
             if (writeFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout())
                     && writeFuture.isSuccess()) {
                 RedisConnection connection = writeFuture.getNow();
@@ -181,15 +170,26 @@ public class RedissonNode {
     /**
      * Create Redisson node instance with provided config
      *
-     * @param config
+     * @param config of RedissonNode
      * @return RedissonNode instance
      */
     public static RedissonNode create(RedissonNodeConfig config) {
+        return create(config, null);
+    }
+
+    /**
+     * Create Redisson node instance with provided config and Redisson instance
+     *
+     * @param config of RedissonNode
+     * @param redisson instance
+     * @return RedissonNode instance
+     */
+    public static RedissonNode create(RedissonNodeConfig config, Redisson redisson) {
         if (config.getExecutorServiceWorkers().isEmpty()) {
             throw new IllegalArgumentException("Executor service workers are empty");
         }
         
-        return new RedissonNode(config);
+        return new RedissonNode(config, redisson);
     }
     
 }

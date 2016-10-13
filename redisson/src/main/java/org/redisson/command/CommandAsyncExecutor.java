@@ -28,7 +28,8 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 
-import io.netty.util.concurrent.Future;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
 
 /**
  *
@@ -39,11 +40,17 @@ public interface CommandAsyncExecutor {
 
     ConnectionManager getConnectionManager();
 
-    <V> RedisException convertException(Future<V> RFuture);
-
-    boolean await(Future<?> RFuture, long timeout, TimeUnit timeoutUnit) throws InterruptedException;
+    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson);
     
-    <V> V get(Future<V> RFuture);
+    CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive);
+    
+    boolean isRedissonReferenceSupportEnabled();
+    
+    <V> RedisException convertException(RFuture<V> RFuture);
+
+    boolean await(RFuture<?> RFuture, long timeout, TimeUnit timeoutUnit) throws InterruptedException;
+    
+    <V> V get(RFuture<V> RFuture);
 
     <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params);
     

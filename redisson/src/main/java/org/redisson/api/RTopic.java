@@ -32,14 +32,14 @@ public interface RTopic<M> extends RTopicAsync<M> {
     /**
      * Get topic channel names
      *
-     * @return
+     * @return channel names
      */
     List<String> getChannelNames();
 
     /**
      * Publish the message to all subscribers of this topic
      *
-     * @param message
+     * @param message to send
      * @return the number of clients that received the message
      */
     long publish(M message);
@@ -49,7 +49,7 @@ public interface RTopic<M> extends RTopicAsync<M> {
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.
      *
-     * @param listener
+     * @param listener for messages
      * @return locally unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
@@ -58,8 +58,8 @@ public interface RTopic<M> extends RTopicAsync<M> {
     /**
      * Subscribes to status changes of this topic
      *
-     * @param listener
-     * @return
+     * @param listener for messages
+     * @return listener id
      * @see org.redisson.api.listener.StatusListener
      */
     int addListener(StatusListener listener);
@@ -67,7 +67,7 @@ public interface RTopic<M> extends RTopicAsync<M> {
     /**
      * Removes the listener by <code>id</code> for listening this topic
      *
-     * @param listenerId
+     * @param listenerId - listener id
      */
     void removeListener(int listenerId);
 

@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBoundedBlockingQueue;
+import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.config.Config;
@@ -43,7 +44,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
         long start = System.currentTimeMillis();
         assertThat(queue.offer(6, 2, TimeUnit.SECONDS)).isFalse();
-        assertThat(System.currentTimeMillis() - start).isGreaterThan(2000);
+        assertThat(System.currentTimeMillis() - start).isGreaterThan(1900);
         
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         final AtomicBoolean executed = new AtomicBoolean();
@@ -219,17 +220,17 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     @Test
     public void testPollWithBrokenConnection() throws IOException, InterruptedException, ExecutionException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:pollTimeout");
         assertThat(queue1.trySetCapacity(5)).isTrue();
-        Future<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
+        RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
         
         Assert.assertFalse(f.await(1, TimeUnit.SECONDS));
         runner.stop();
@@ -242,13 +243,13 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     @Test
     public void testPollReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         redisson.getKeys().flushall();
         
@@ -276,7 +277,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         runner.stop();
 
         runner = new RedisRunner()
-                .port(6319)
+                .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
                 .run();
@@ -297,22 +298,22 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     @Test
     public void testPollAsyncReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
-        Future<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
+        RFuture<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
 
         runner = new RedisRunner()
-                .port(6319)
+                .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
                 .run();
@@ -334,24 +335,24 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     @Test
     public void testTakeReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()
-                .port(6319)
                 .nosave()
                 .randomDir()
+                .randomPort()
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6319");
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         redisson.getKeys().flushall();
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeReattach");
         assertThat(queue1.trySetCapacity(15)).isTrue();
-        Future<Integer> f = queue1.takeAsync();
+        RFuture<Integer> f = queue1.takeAsync();
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
 
         runner = new RedisRunner()
-                .port(6319)
+                .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
                 .run();
@@ -380,7 +381,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeAsyncCancel");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         for (int i = 0; i < 10; i++) {
-            Future<Integer> f = queue1.takeAsync();
+            RFuture<Integer> f = queue1.takeAsync();
             f.cancel(true);
         }
         assertThat(queue1.add(1)).isTrue();
@@ -401,7 +402,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
         assertThat(queue1.trySetCapacity(15)).isTrue();
         for (int i = 0; i < 10; i++) {
-            Future<Integer> f = queue1.pollAsync(1, TimeUnit.SECONDS);
+            RFuture<Integer> f = queue1.pollAsync(1, TimeUnit.SECONDS);
             f.cancel(true);
         }
         assertThat(queue1.add(1)).isTrue();

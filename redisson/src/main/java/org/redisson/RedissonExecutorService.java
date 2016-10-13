@@ -19,6 +19,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,7 +68,6 @@ import org.slf4j.LoggerFactory;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -235,6 +235,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
+    public void registerWorkers(int workers) {
+        registerWorkers(workers, commandExecutor.getConnectionManager().getExecutor());
+    }
+    
+    @Override
     public void registerWorkers(int workers, ExecutorService executor) {
         registerScheduler();
         
@@ -247,7 +252,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setSchedulerChannelName(schedulerChannelName);
         service.setSchedulerQueueName(schedulerQueueName);
         
-        redisson.getRemoteSerivce(name, codec).register(RemoteExecutorService.class, service, workers, executor);
+        redisson.getRemoteService(name, codec).register(RemoteExecutorService.class, service, workers, executor);
     }
 
     @Override
@@ -439,10 +444,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         if (task.getClass().isAnonymousClass()) {
             throw new IllegalArgumentException("Task can't be created using anonymous class");
         }
+        if (task.getClass().isMemberClass()
+                && !Modifier.isStatic(task.getClass().getModifiers())) {
+            throw new IllegalArgumentException("Task class is an inner class and it should be static");
+        }
     }
 
     private <T> void execute(RemotePromise<T> promise) {
-        io.netty.util.concurrent.Future<Boolean> addFuture = promise.getAddFuture();
+        RFuture<Boolean> addFuture = promise.getAddFuture();
         addFuture.syncUninterruptibly();
         Boolean res = addFuture.getNow();
         if (!res) {
@@ -451,17 +460,17 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
-    public <T> Future<T> submit(Runnable task, final T result) {
-        final Promise<T> resultFuture = connectionManager.newPromise();
-        io.netty.util.concurrent.Future<Object> future = (io.netty.util.concurrent.Future<Object>) submit(task);
+    public <T> RFuture<T> submit(Runnable task, final T result) {
+        final RPromise<T> resultFuture = connectionManager.newPromise();
+        RFuture<Object> future = (RFuture<Object>) submit(task);
         future.addListener(new FutureListener<Object>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<Object> future) throws Exception {
                 if (!future.isSuccess()) {
-                    resultFuture.setFailure(future.cause());
+                    resultFuture.tryFailure(future.cause());
                     return;
                 }
-                resultFuture.setSuccess(result);
+                resultFuture.trySuccess(result);
             }
         });
         return resultFuture;
@@ -487,7 +496,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public ScheduledFuture<?> schedule(Runnable task, long delay, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(task, delay, unit);
-        execute((RemotePromise<?>)future.getInnerFuture());
+        execute((RemotePromise<?>)future.getInnerPromise());
         return future;
     }
     
@@ -505,7 +514,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public <V> ScheduledFuture<V> schedule(Callable<V> task, long delay, TimeUnit unit) {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleAsync(task, delay, unit);
-        execute((RemotePromise<V>)future.getInnerFuture());
+        execute((RemotePromise<V>)future.getInnerPromise());
         return future;
     }
     
@@ -523,7 +532,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAtFixedRateAsync(task, initialDelay, period, unit);
-        execute((RemotePromise<?>)future.getInnerFuture());
+        execute((RemotePromise<?>)future.getInnerPromise());
         return future;
     }
     
@@ -541,7 +550,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(task, cronSchedule);
-        execute((RemotePromise<?>)future.getInnerFuture());
+        execute((RemotePromise<?>)future.getInnerPromise());
         return future;
     }
     
@@ -564,7 +573,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithFixedDelayAsync(task, initialDelay, delay, unit);
-        execute((RemotePromise<?>)future.getInnerFuture());
+        execute((RemotePromise<?>)future.getInnerPromise());
         return future;
     }
     
@@ -661,7 +670,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             }
         };
         for (Future<T> future : futures) {
-            io.netty.util.concurrent.Future<T> f = (io.netty.util.concurrent.Future<T>) future;
+            RFuture<T> f = (RFuture<T>) future;
             f.addListener(listener);
         }
         
@@ -672,7 +681,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
         
         for (Future<T> future : futures) {
-            io.netty.util.concurrent.Future<T> f = (io.netty.util.concurrent.Future<T>) future;
+            RFuture<T> f = (RFuture<T>) future;
             f.removeListener(listener);
         }
 
@@ -760,7 +769,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 if (millis <= 0) {
                     int remainFutures = tasks.size() - futures.size();
                     for (int i = 0; i < remainFutures; i++) {
-                        Promise<T> cancelledFuture = connectionManager.newPromise();
+                        RPromise<T> cancelledFuture = connectionManager.newPromise();
                         cancelledFuture.cancel(true);
                         futures.add(cancelledFuture);
                         

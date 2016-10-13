@@ -17,13 +17,12 @@ package org.redisson.pubsub;
 
 import org.redisson.RedissonCountDownLatch;
 import org.redisson.RedissonCountDownLatchEntry;
-
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
 
 public class CountDownLatchPubSub extends PublishSubscribe<RedissonCountDownLatchEntry> {
 
     @Override
-    protected RedissonCountDownLatchEntry createEntry(Promise<RedissonCountDownLatchEntry> newPromise) {
+    protected RedissonCountDownLatchEntry createEntry(RPromise<RedissonCountDownLatchEntry> newPromise) {
         return new RedissonCountDownLatchEntry(newPromise);
     }
 

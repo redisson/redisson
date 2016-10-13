@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,11 +36,9 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
- * {@link #put(Object, Object, long, TimeUnit)} method.
+ * {@link RSetCache#add(Object, long, TimeUnit)} method.
  * </p>
  *
  * <p>Current Redis implementation doesn't have set entry eviction functionality.
@@ -51,11 +48,10 @@ import io.netty.util.concurrent.Future;
  * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
- * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonSet}.</p>
+ * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>
  *
  * @author Nikita Koksharov
  *
- * @param <K> key
  * @param <V> value
  */
 public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V> {
@@ -201,11 +197,11 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
         long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
-                + "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then "
-                    + "return 0;"
-                + "end; " +
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
                 "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
+                "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then " +
+                    "return 0;" +
+                "end; " +
                 "return 1; ",
                 Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, objectState);
     }

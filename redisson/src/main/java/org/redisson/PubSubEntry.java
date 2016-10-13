@@ -15,7 +15,7 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
 
 public interface PubSubEntry<E> {
 
@@ -23,6 +23,6 @@ public interface PubSubEntry<E> {
 
     int release();
 
-    Promise<E> getPromise();
+    RPromise<E> getPromise();
 
 }

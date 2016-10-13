@@ -19,15 +19,21 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.client.RedisRedirectException;
 import org.redisson.client.codec.Codec;
+import org.redisson.misc.RPromise;
 
-import io.netty.util.concurrent.Promise;
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> input type
+ * @param <R> output type
+ */
 public class BatchCommandData<T, R> extends CommandData<T, R> implements Comparable<BatchCommandData<T, R>> {
 
     private final int index;
     private final AtomicReference<RedisRedirectException> redirectError = new AtomicReference<RedisRedirectException>();
     
-    public BatchCommandData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params, int index) {
+    public BatchCommandData(RPromise<R> promise, Codec codec, RedisCommand<T> command, Object[] params, int index) {
         super(promise, codec, command, params);
         this.index = index;
     }

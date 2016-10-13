@@ -30,18 +30,20 @@ public interface RBuckets {
      *    h[^e]llo matches hallo, hbllo, ... but not hello
      *    h[a-b]llo matches hallo and hbllo</pre>
      * <p>Use \ to escape special characters if you want to match them verbatim.
-     *
-     * @param pattern
-     * @return
+     * 
+     * @param <V> type of value
+     * @param pattern - pattern of key
+     * @return List of bucket objects
      */
     <V> List<RBucket<V>> find(String pattern);
     
     /**
      * Returns Redis object mapped by key. Result Map is not contains
      * key-value entry for null values.
-     *
-     * @param keys
-     * @return
+     * 
+     * @param <V> type of value
+     * @param keys - keys
+     * @return Map with name of bucket as key and bucket as value
      */
     <V> Map<String, V> get(String ... keys);
 
@@ -50,14 +52,15 @@ public interface RBuckets {
      * If at least one of them is already exist then 
      * don't set none of them.
      *
-     * @param buckets
+     * @param buckets - map of buckets
+     * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     boolean trySet(Map<String, ?> buckets);
 
     /**
      * Saves objects mapped by Redis key.
      *
-     * @param buckets
+     * @param buckets - map of buckets
      */
     void set(Map<String, ?> buckets);
     

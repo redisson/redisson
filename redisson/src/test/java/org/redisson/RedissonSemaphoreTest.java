@@ -3,22 +3,43 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import org.junit.Assume;
 
+import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.RSemaphore;
 
 public class RedissonSemaphoreTest extends BaseConcurrentTest {
 
     @Test
+    public void testTrySetPermits() {
+        RSemaphore s = redisson.getSemaphore("test");
+        assertThat(s.trySetPermits(10)).isTrue();
+        assertThat(s.availablePermits()).isEqualTo(10);
+        assertThat(s.trySetPermits(15)).isFalse();
+        assertThat(s.availablePermits()).isEqualTo(10);
+    }
+    
+    @Test
+    public void testReducePermits() throws InterruptedException {
+        RSemaphore s = redisson.getSemaphore("test");
+        s.trySetPermits(10);
+        
+        s.acquire(10);
+        s.reducePermits(5);
+        assertThat(s.availablePermits()).isEqualTo(-5);
+        s.release(10);
+        assertThat(s.availablePermits()).isEqualTo(5);
+        s.acquire(5);
+        assertThat(s.availablePermits()).isEqualTo(0);
+    }
+    
+    @Test
     public void testBlockingAcquire() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(1);
+        s.trySetPermits(1);
         s.acquire();
 
         Thread t = new Thread() {
@@ -46,7 +67,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     @Test
     public void testBlockingNAcquire() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(5);
+        s.trySetPermits(5);
         s.acquire(3);
 
         Thread t = new Thread() {
@@ -80,7 +101,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     @Test
     public void testTryNAcquire() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(5);
+        s.trySetPermits(5);
         assertThat(s.tryAcquire(3)).isTrue();
 
         Thread t = new Thread() {
@@ -110,7 +131,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         t.join(1);
 
         long startTime = System.currentTimeMillis();
-        assertThat(s.tryAcquire(4, 1, TimeUnit.SECONDS)).isTrue();
+        assertThat(s.tryAcquire(4, 2, TimeUnit.SECONDS)).isTrue();
         assertThat(System.currentTimeMillis() - startTime).isBetween(900L, 1020L);
         assertThat(s.availablePermits()).isEqualTo(0);
     }
@@ -126,7 +147,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     @Test
     public void testDrainPermits() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(10);
+        s.trySetPermits(10);
         s.acquire(3);
 
         assertThat(s.drainPermits()).isEqualTo(7);
@@ -136,7 +157,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
     @Test
     public void testReleaseAcquire() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(10);
+        s.trySetPermits(10);
         s.acquire();
         assertThat(s.availablePermits()).isEqualTo(9);
         s.release();
@@ -153,7 +174,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(1);
+        s.trySetPermits(1);
 
         int iterations = 15;
         testSingleInstanceConcurrency(iterations, r -> {
@@ -178,7 +199,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(1);
+        s.trySetPermits(1);
 
         testMultiInstanceConcurrency(16, r -> {
             for (int i = 0; i < iterations; i++) {
@@ -208,7 +229,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(1);
+        s.trySetPermits(1);
 
         testMultiInstanceConcurrency(iterations, r -> {
             RSemaphore s1 = r.getSemaphore("test");
@@ -228,12 +249,12 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
 
     @Test
     public void testConcurrency_MultiInstance_10_permits() throws InterruptedException {
-        Assume.assumeFalse(Boolean.valueOf(System.getProperty("travisEnv")));
+        Assume.assumeFalse(RedissonRuntimeEnvironment.isTravis);
         int iterations = 100;
         final AtomicInteger lockedCounter = new AtomicInteger();
 
         RSemaphore s = redisson.getSemaphore("test");
-        s.setPermits(10);
+        s.trySetPermits(10);
 
         final AtomicInteger checkPermits = new AtomicInteger(s.availablePermits());
         final CyclicBarrier barrier = new CyclicBarrier(s.availablePermits());

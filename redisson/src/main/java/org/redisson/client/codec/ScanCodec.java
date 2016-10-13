@@ -25,6 +25,11 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ScanCodec implements Codec {
 
     private final Codec delegate;

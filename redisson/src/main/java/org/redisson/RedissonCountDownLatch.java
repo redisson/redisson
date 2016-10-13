@@ -26,8 +26,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.CountDownLatchPubSub;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
  *
@@ -52,7 +50,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     public void await() throws InterruptedException {
-        Future<RedissonCountDownLatchEntry> promise = subscribe();
+        RFuture<RedissonCountDownLatchEntry> promise = subscribe();
         try {
             get(promise);
 
@@ -70,26 +68,31 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     @Override
     public boolean await(long time, TimeUnit unit) throws InterruptedException {
-        Future<RedissonCountDownLatchEntry> promise = subscribe();
+        long remainTime = unit.toMillis(time);
+        long current = System.currentTimeMillis();
+        RFuture<RedissonCountDownLatchEntry> promise = subscribe();
+        if (!await(promise, time, unit)) {
+            return false;
+        }
+
         try {
-            if (!await(promise, time, unit)) {
+            remainTime -= (System.currentTimeMillis() - current);
+            if (remainTime <= 0) {
                 return false;
             }
 
-            time = unit.toMillis(time);
             while (getCount() > 0) {
-                if (time <= 0) {
+                if (remainTime <= 0) {
                     return false;
                 }
-                long current = System.currentTimeMillis();
+                current = System.currentTimeMillis();
                 // waiting for open state
                 RedissonCountDownLatchEntry entry = getEntry();
                 if (entry != null) {
-                    entry.getLatch().await(time, TimeUnit.MILLISECONDS);
+                    entry.getLatch().await(remainTime, TimeUnit.MILLISECONDS);
                 }
 
-                long elapsed = System.currentTimeMillis() - current;
-                time = time - elapsed;
+                remainTime -= (System.currentTimeMillis() - current);
             }
 
             return true;
@@ -102,11 +105,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         return PUBSUB.getEntry(getEntryName());
     }
 
-    private Future<RedissonCountDownLatchEntry> subscribe() {
+    private RFuture<RedissonCountDownLatchEntry> subscribe() {
         return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 
-    private void unsubscribe(Future<RedissonCountDownLatchEntry> future) {
+    private void unsubscribe(RFuture<RedissonCountDownLatchEntry> future) {
         PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 

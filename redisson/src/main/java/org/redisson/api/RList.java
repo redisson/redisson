@@ -30,8 +30,8 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
     /**
      * Add <code>element</code> after <code>elementToFind</code>
      * 
-     * @param elementToFind
-     * @param element
+     * @param elementToFind - object to find
+     * @param element - object to add
      * @return new list size
      */
     Integer addAfter(V elementToFind, V element);
@@ -39,8 +39,8 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
     /**
      * Add <code>element</code> before <code>elementToFind</code>
      * 
-     * @param elementToFind
-     * @param element
+     * @param elementToFind - object to find
+     * @param element - object to add
      * @return new list size
      */
     Integer addBefore(V elementToFind, V element);
@@ -50,8 +50,8 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
      * Works faster than {@link #set(int, Object)} but 
      * doesn't return previous element.
      * 
-     * @param index
-     * @param element
+     * @param index - index of object
+     * @param element - object to set
      */
     void fastSet(int index, V element);
 
@@ -60,7 +60,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
     /**
      * Read all elements at once
      *
-     * @return
+     * @return list of values
      */
     List<V> readAll();
 
@@ -68,9 +68,8 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
      * Trim list and remains elements only in specified range
      * <tt>fromIndex</tt>, inclusive, and <tt>toIndex</tt>, inclusive.
      *
-     * @param fromIndex
-     * @param toIndex
-     * @return
+     * @param fromIndex - from index
+     * @param toIndex - to index
      */
     void trim(int fromIndex, int toIndex);
 

@@ -28,10 +28,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
-import org.redisson.misc.RPromise;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
@@ -54,18 +50,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public RFuture<Void> putAsync(V e) {
-        final RPromise<Void> result = commandExecutor.getConnectionManager().newPromise();
-        offerAsync(e).addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.setFailure(future.cause());
-                    return; 
-                }
-                result.setSuccess(null);
-            }
-        });
-        return result;
+        return addAsync(e, RedisCommands.RPUSH_VOID);
     }
 
     /*
@@ -93,7 +78,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
      */
     @Override
     public V take() throws InterruptedException {
-        Future<V> res = takeAsync();
+        RFuture<V> res = takeAsync();
         return res.await().getNow();
     }
 
@@ -108,7 +93,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
      */
     @Override
     public V poll(long timeout, TimeUnit unit) throws InterruptedException {
-        Future<V> res = pollAsync(timeout, unit);
+        RFuture<V> res = pollAsync(timeout, unit);
         return res.await().getNow();
     }
 
@@ -118,7 +103,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
      */
     @Override
     public V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
-        Future<V> res = pollFromAnyAsync(timeout, unit, queueNames);
+        RFuture<V> res = pollFromAnyAsync(timeout, unit, queueNames);
         return res.await().getNow();
     }
 
@@ -144,7 +129,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException {
-        Future<V> res = pollLastAndOfferFirstToAsync(queueName, timeout, unit);
+        RFuture<V> res = pollLastAndOfferFirstToAsync(queueName, timeout, unit);
         return res.await().getNow();
     }
 

@@ -8,13 +8,16 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.BaseTest;
 import org.redisson.CronSchedule;
 import org.redisson.RedissonNode;
+import org.redisson.RedissonRuntimeEnvironment;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScheduledFuture;
 import org.redisson.config.Config;
@@ -26,19 +29,39 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
-        BaseTest.beforeClass();
-        
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            BaseTest.beforeClass();
+            Config config = createConfig();
+            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+            node = RedissonNode.create(nodeConfig);
+            node.start();
+        }
+    }
+    
+    @AfterClass
+    public static void afterClass() throws IOException, InterruptedException {
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            BaseTest.afterClass();
+            node.shutdown();
+        }
+    }
+
+    @Before
+    @Override
+    public void before() throws IOException, InterruptedException {
+        super.before();
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
         node = RedissonNode.create(nodeConfig);
         node.start();
     }
-    
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        BaseTest.afterClass();
-        
+
+    @After
+    @Override
+    public void after() throws InterruptedException {
+        super.after();
         node.shutdown();
     }
 

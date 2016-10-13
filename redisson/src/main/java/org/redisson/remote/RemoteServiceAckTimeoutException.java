@@ -18,7 +18,7 @@ package org.redisson.remote;
 /**
  * Rises when remote method executor has not answered 
  * within Ack timeout.
- * <p/>
+ * <p>
  * Method invocation has not been started in this case. 
  * So a new invocation attempt can be made. 
  * 

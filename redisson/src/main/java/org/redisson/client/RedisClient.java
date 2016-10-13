@@ -18,13 +18,19 @@ package org.redisson.client;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.handler.CommandBatchEncoder;
 import org.redisson.client.handler.CommandDecoder;
 import org.redisson.client.handler.CommandEncoder;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.handler.ConnectionWatchdog;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.URIBuilder;
 
 import io.netty.bootstrap.Bootstrap;
@@ -43,10 +49,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
 
 /**
  * Low-level Redis client
@@ -60,6 +64,7 @@ public class RedisClient {
     private final InetSocketAddress addr;
     private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
+    private ExecutorService executor;
     private final long commandTimeout;
     private Timer timer;
     private boolean hasOwnGroup;
@@ -69,25 +74,30 @@ public class RedisClient {
     }
     
     public RedisClient(URI address) {
-        this(new HashedWheelTimer(), new NioEventLoopGroup(), address);
+        this(new HashedWheelTimer(), Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2), new NioEventLoopGroup(), address);
         hasOwnGroup = true;
     }
 
-    public RedisClient(Timer timer, EventLoopGroup group, URI address) {
-        this(timer, group, address.getHost(), address.getPort());
+    public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, URI address) {
+        this(timer, executor, group, address.getHost(), address.getPort());
     }
     
     public RedisClient(String host, int port) {
-        this(new HashedWheelTimer(), new NioEventLoopGroup(), NioSocketChannel.class, host, port, 10000, 10000);
+        this(new HashedWheelTimer(), Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2), new NioEventLoopGroup(), NioSocketChannel.class, host, port, 10000, 10000);
         hasOwnGroup = true;
     }
     
-    public RedisClient(Timer timer, EventLoopGroup group, String host, int port) {
-        this(timer, group, NioSocketChannel.class, host, port, 10000, 10000);
+    public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, String host, int port) {
+        this(timer, executor, group, NioSocketChannel.class, host, port, 10000, 10000);
+    }
+    
+    public RedisClient(String host, int port, int connectTimeout, int commandTimeout) {
+        this(new HashedWheelTimer(), Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2), new NioEventLoopGroup(), NioSocketChannel.class, host, port, connectTimeout, commandTimeout);
     }
 
-    public RedisClient(final Timer timer, EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, 
+    public RedisClient(final Timer timer, ExecutorService executor, EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, 
                         int connectTimeout, int commandTimeout) {
+        this.executor = executor;
         addr = new InetSocketAddress(host, port);
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
         bootstrap.handler(new ChannelInitializer<Channel>() {
@@ -97,7 +107,7 @@ public class RedisClient {
                     CommandEncoder.INSTANCE,
                     CommandBatchEncoder.INSTANCE,
                     new CommandsQueue(),
-                    new CommandDecoder());
+                    new CommandDecoder(RedisClient.this.executor));
             }
         });
 
@@ -128,17 +138,27 @@ public class RedisClient {
         }
     }
 
-    public Future<RedisConnection> connectAsync() {
-        final Promise<RedisConnection> f = ImmediateEventExecutor.INSTANCE.newPromise();
+    public RFuture<RedisConnection> connectAsync() {
+        final RPromise<RedisConnection> f = new RedissonPromise<RedisConnection>();
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(final ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    RedisConnection c = new RedisConnection(RedisClient.this, future.channel());
-                    f.setSuccess(c);
+                    final RedisConnection c = new RedisConnection(RedisClient.this, future.channel());
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            if (!f.trySuccess(c)) {
+                                c.closeAsync();
+                            }
+                        }
+                    });
                 } else {
-                    f.setFailure(future.cause());
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            f.tryFailure(future.cause());
+                        }
+                    });
                 }
             }
         });
@@ -155,17 +175,27 @@ public class RedisClient {
         }
     }
 
-    public Future<RedisPubSubConnection> connectPubSubAsync() {
-        final Promise<RedisPubSubConnection> f = ImmediateEventExecutor.INSTANCE.newPromise();
+    public RFuture<RedisPubSubConnection> connectPubSubAsync() {
+        final RPromise<RedisPubSubConnection> f = new RedissonPromise<RedisPubSubConnection>();
         ChannelFuture channelFuture = bootstrap.connect();
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(final ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    RedisPubSubConnection c = new RedisPubSubConnection(RedisClient.this, future.channel());
-                    f.setSuccess(c);
+                    final RedisPubSubConnection c = new RedisPubSubConnection(RedisClient.this, future.channel());
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            if (!f.trySuccess(c)) {
+                                c.closeAsync();
+                            }
+                        }
+                    });
                 } else {
-                    f.setFailure(future.cause());
+                    bootstrap.group().execute(new Runnable() {
+                        public void run() {
+                            f.tryFailure(future.cause());
+                        }
+                    });
                 }
             }
         });
@@ -176,13 +206,23 @@ public class RedisClient {
         shutdownAsync().syncUninterruptibly();
         if (hasOwnGroup) {
             timer.stop();
+            executor.shutdown();
+            try {
+                executor.awaitTermination(15, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             bootstrap.group().shutdownGracefully();
+            
         }
     }
 
     public ChannelGroupFuture shutdownAsync() {
         for (Channel channel : channels) {
-            RedisConnection.getFrom(channel).setClosed(true);
+            RedisConnection connection = RedisConnection.getFrom(channel);
+            if (connection != null) {
+                connection.setClosed(true);
+            }
         }
         return channels.close();
     }
@@ -206,12 +246,12 @@ public class RedisClient {
      * @return A future for a map extracted from each response line splitting by
      * ':' symbol
      */
-    public Future<Map<String, String>> serverInfoAsync() {
+    public RFuture<Map<String, String>> serverInfoAsync() {
         final RedisConnection connection = connect();
-        Promise<Map<String, String>> async = (Promise) connection.async(RedisCommands.SERVER_INFO);
-        async.addListener(new GenericFutureListener<Promise<Map<String, String>>>() {
+        RFuture<Map<String, String>> async = connection.async(RedisCommands.SERVER_INFO);
+        async.addListener(new FutureListener<Map<String, String>>() {
             @Override
-            public void operationComplete(Promise<Map<String, String>> future) throws Exception {
+            public void operationComplete(Future<Map<String, String>> future) throws Exception {
                 connection.closeAsync();
             }
         });

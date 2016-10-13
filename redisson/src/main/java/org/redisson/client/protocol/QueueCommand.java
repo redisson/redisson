@@ -20,6 +20,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface QueueCommand {
 
     Set<String> PUBSUB_COMMANDS = new HashSet<String>(Arrays.asList("PSUBSCRIBE", "SUBSCRIBE", "PUNSUBSCRIBE", "UNSUBSCRIBE"));
@@ -29,4 +34,6 @@ public interface QueueCommand {
 
     List<CommandData<Object, Object>> getPubSubOperations();
 
+    boolean tryFailure(Throwable cause);
+    
 }

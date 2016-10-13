@@ -78,6 +78,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         return reactive(instance.getAllAsync(keys));
     }
 
+    @Override
     public Publisher<Void> putAll(Map<? extends K, ? extends V> map) {
         return reactive(instance.putAllAsync(map));
     }
@@ -88,7 +89,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     }
 
     @Override
-    public Publisher<Long> remove(Object key, Object value) {
+    public Publisher<Boolean> remove(Object key, Object value) {
         return reactive(instance.removeAsync(key, value));
     }
 

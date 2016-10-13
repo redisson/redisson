@@ -29,8 +29,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.pubsub.AsyncSemaphore;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
  *
@@ -80,7 +78,7 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
-        Future<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
+        RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
         future.syncUninterruptibly();
         return System.identityHashCode(pubSubListener);
     }

@@ -30,17 +30,16 @@ import java.util.Map.Entry;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScoredCodec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RScoredSortedSet<V> {
 
@@ -253,7 +252,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        Future<ListScanResult<V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
+        RFuture<ListScanResult<V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
         return get(f);
     }
 
@@ -359,8 +358,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Double> addScoreAsync(V object, Number value) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZINCRBY,
-                                   getName(), new BigDecimal(value.toString()).toPlainString(), object);
+        return commandExecutor.writeAsync(getName(), DoubleCodec.INSTANCE, RedisCommands.ZINCRBY,
+                                   getName(), new BigDecimal(value.toString()).toPlainString(), encode(object));
     }
 
     @Override
@@ -374,6 +373,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> valueRangeReversed(int startIndex, int endIndex) {
+        return get(valueRangeReversedAsync(startIndex, endIndex));
+    }
+    
+    @Override
+    public RFuture<Collection<V>> valueRangeReversedAsync(int startIndex, int endIndex) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGE, getName(), startIndex, endIndex);
+    }
+    
+    @Override
     public Collection<ScoredEntry<V>> entryRange(int startIndex, int endIndex) {
         return get(entryRangeAsync(startIndex, endIndex));
     }
@@ -381,6 +390,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex) {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
+    }
+
+    @Override
+    public Collection<ScoredEntry<V>> entryRangeReversed(int startIndex, int endIndex) {
+        return get(entryRangeReversedAsync(startIndex, endIndex));
+    }
+    
+    @Override
+    public RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(int startIndex, int endIndex) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZREVRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
     }
 
     @Override
@@ -480,14 +499,133 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return get(revRankAsync(o));
     }
 
+    @Override
     public Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         return get(countAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
     }
     
+    @Override
     public RFuture<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZCOUNT, getName(), startValue, endValue);
     }
+    
+    @Override
+    public int intersection(String... names) {
+        return get(intersectionAsync(names));        
+    }
+
+    @Override
+    public RFuture<Integer> intersectionAsync(String... names) {
+        return intersectionAsync(Aggregate.SUM, names);
+    }
+    
+    @Override
+    public int intersection(Aggregate aggregate, String... names) {
+        return get(intersectionAsync(aggregate, names));        
+    }
+    
+    @Override
+    public RFuture<Integer> intersectionAsync(Aggregate aggregate, String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 4);
+        args.add(getName());
+        args.add(names.length);
+        args.addAll(Arrays.asList(names));
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, args.toArray());
+    }
+
+    @Override
+    public int intersection(Map<String, Double> nameWithWeight) {
+        return get(intersectionAsync(nameWithWeight));        
+    }
+    
+    @Override
+    public RFuture<Integer> intersectionAsync(Map<String, Double> nameWithWeight) {
+        return intersectionAsync(Aggregate.SUM, nameWithWeight);
+    }
+
+    @Override
+    public int intersection(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        return get(intersectionAsync(aggregate, nameWithWeight));        
+    }
+
+    @Override
+    public RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        args.add(getName());
+        args.add(nameWithWeight.size());
+        args.addAll(nameWithWeight.keySet());
+        args.add("WEIGHTS");
+        List<String> weights = new ArrayList<String>();
+        for (Double weight : nameWithWeight.values()) {
+            weights.add(BigDecimal.valueOf(weight).toPlainString());
+        }
+        args.addAll(weights);
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, args.toArray());
+    }
+    
+    @Override
+    public int union(String... names) {
+        return get(unionAsync(names));        
+    }
+
+    @Override
+    public RFuture<Integer> unionAsync(String... names) {
+        return unionAsync(Aggregate.SUM, names);
+    }
+    
+    @Override
+    public int union(Aggregate aggregate, String... names) {
+        return get(unionAsync(aggregate, names));        
+    }
+    
+    @Override
+    public RFuture<Integer> unionAsync(Aggregate aggregate, String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 4);
+        args.add(getName());
+        args.add(names.length);
+        args.addAll(Arrays.asList(names));
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZUNIONSTORE_INT, args.toArray());
+    }
+
+    @Override
+    public int union(Map<String, Double> nameWithWeight) {
+        return get(unionAsync(nameWithWeight));        
+    }
+    
+    @Override
+    public RFuture<Integer> unionAsync(Map<String, Double> nameWithWeight) {
+        return unionAsync(Aggregate.SUM, nameWithWeight);
+    }
+
+    @Override
+    public int union(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        return get(unionAsync(aggregate, nameWithWeight));        
+    }
+
+    @Override
+    public RFuture<Integer> unionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        args.add(getName());
+        args.add(nameWithWeight.size());
+        args.addAll(nameWithWeight.keySet());
+        args.add("WEIGHTS");
+        List<String> weights = new ArrayList<String>();
+        for (Double weight : nameWithWeight.values()) {
+            weights.add(BigDecimal.valueOf(weight).toPlainString());
+        }
+        args.addAll(weights);
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZUNIONSTORE_INT, args.toArray());
+    }
+
     
 }

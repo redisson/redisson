@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.reactivestreams.Publisher;
+import org.redisson.client.codec.Codec;
 
 /**
  * Base interface for all Redisson objects
@@ -26,7 +27,8 @@ import org.reactivestreams.Publisher;
 public interface RObjectReactive {
 
     String getName();
-
+    
+    Codec getCodec();
     /**
      * Transfer a object from a source Redis instance to a destination Redis instance
      * in  mode
@@ -34,14 +36,14 @@ public interface RObjectReactive {
      * @param host - destination host
      * @param port - destination port
      * @param database - destination database
-     * @return
+     * @return void
      */
     Publisher<Void> migrate(String host, int port, int database);
 
     /**
      * Move object to another database in  mode
      *
-     * @param database
+     * @param database - number of Redis database
      * @return <code>true</code> if key was moved <code>false</code> if not
      */
     Publisher<Boolean> move(int database);
@@ -57,8 +59,8 @@ public interface RObjectReactive {
      * Rename current object key to <code>newName</code>
      * in  mode
      *
-     * @param newName
-     * @return
+     * @param newName - new name of object
+     * @return void
      */
     Publisher<Void> rename(String newName);
 
@@ -66,8 +68,8 @@ public interface RObjectReactive {
      * Rename current object key to <code>newName</code>
      * in  mode only if new key is not exists
      *
-     * @param newName
-     * @return
+     * @param newName - new name of object
+     * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
      */
     Publisher<Boolean> renamenx(String newName);
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.provider;
+package org.redisson.codec;
 
 import io.netty.util.internal.PlatformDependent;
 import java.util.concurrent.ConcurrentMap;
@@ -28,7 +28,7 @@ import org.redisson.api.annotation.RObjectField;
  */
 public class DefaultCodecProvider implements CodecProvider {
 
-    public final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
+    public transient final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
 
     @Override
     public <T extends Codec> T getCodec(Class<T> codecClass) {

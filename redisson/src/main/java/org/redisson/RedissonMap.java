@@ -38,7 +38,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -59,7 +58,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     static final RedisCommand<Object> EVAL_REPLACE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP, ValueType.MAP_VALUE);
     static final RedisCommand<Boolean> EVAL_REPLACE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE, ValueType.MAP_VALUE));
-    static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 4, ValueType.MAP);
+    static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.MAP);
     static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
 
     protected RedissonMap(CommandAsyncExecutor commandExecutor, String name) {
@@ -80,6 +79,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.HLEN, getName());
     }
 
+    @Override
+    public int valueSize(K key) {
+        return get(valueSizeAsync(key));
+    }
+    
+    @Override
+    public RFuture<Integer> valueSizeAsync(K key) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HSTRLEN, getName(key), key);
+    }
+    
     @Override
     public boolean isEmpty() {
         return size() == 0;
@@ -244,11 +253,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public boolean remove(Object key, Object value) {
-        return get(removeAsync(key, value)) == 1;
+        return get(removeAsync(key, value));
     }
 
     @Override
-    public RFuture<Long> removeAsync(Object key, Object value) {
+    public RFuture<Boolean> removeAsync(Object key, Object value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REMOVE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                         + "return redis.call('hdel', KEYS[1], ARGV[1]) "
@@ -414,16 +423,20 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return h;
     }
 
+    protected Iterator<K> keyIterator() {
+        return new RedissonMapIterator<K, V, K>(RedissonMap.this) {
+            @Override
+            K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (K) entry.getKey().getObj();
+            }
+        };
+    }
+    
     final class KeySet extends AbstractSet<K> {
 
         @Override
         public Iterator<K> iterator() {
-            return new RedissonMapIterator<K, V, K>(RedissonMap.this) {
-                @Override
-                K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                    return (K) entry.getKey().getObj();
-                }
-            };
+            return keyIterator();
         }
 
         @Override
@@ -448,16 +461,20 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
+    protected Iterator<V> valueIterator() {
+        return new RedissonMapIterator<K, V, V>(RedissonMap.this) {
+            @Override
+            V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (V) entry.getValue().getObj();
+            }
+        };
+    }
+
     final class Values extends AbstractCollection<V> {
 
         @Override
         public Iterator<V> iterator() {
-            return new RedissonMapIterator<K, V, V>(RedissonMap.this) {
-                @Override
-                V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                    return (V) entry.getValue().getObj();
-                }
-            };
+            return valueIterator();
         }
 
         @Override
@@ -477,10 +494,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
+    protected Iterator<Map.Entry<K,V>> entryIterator() {
+        return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this);
+    }
+
+    
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
 
         public final Iterator<Map.Entry<K,V>> iterator() {
-            return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this);
+            return entryIterator();
         }
 
         public final boolean contains(Object o) {

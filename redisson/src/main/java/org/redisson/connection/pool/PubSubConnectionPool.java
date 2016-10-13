@@ -15,14 +15,19 @@
  */
 package org.redisson.connection.pool;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.ClientConnectionsEntry;
 
-import io.netty.util.concurrent.Future;
-
+/**
+ * Connection pool for Publish / Subscribe
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> {
 
     public PubSubConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
@@ -40,7 +45,7 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
-    protected Future<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
+    protected RFuture<RedisPubSubConnection> connect(ClientConnectionsEntry entry) {
         return entry.connectPubSub();
     }
 

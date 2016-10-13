@@ -36,7 +36,7 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     }
 
     @Override
-    public String getName(Class entityClass, Class idFieldClass, String idFieldName, Object idValue) {
+    public String getName(Class<?> entityClass, Class<?> idFieldClass, String idFieldName, Object idValue) {
         try {
             String encode = bytesToHex(codec.getMapKeyEncoder().encode(idValue));
             return "redisson_live_object:{"+ encode + "}:" + entityClass.getName() + ":" + idFieldName + ":" + idFieldClass.getName();
@@ -46,10 +46,10 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     }
 
     @Override
-    public String getFieldReferenceName(Class entityClass, Class idFieldClass, String idFieldName, Object idValue, Class cls, String fieldName, Object fieldValue) {
+    public String getFieldReferenceName(Class<?> entityClass, Object idValue, Class<?> fieldClass, String fieldName, Object fieldValue) {
         try {
             String encode = bytesToHex(codec.getMapKeyEncoder().encode(idValue));
-            return "redisson_live_object_field:{" + encode + "}:" + entityClass.getName() + ":" + fieldName + ":" + cls.getName();
+            return "redisson_live_object_field:{" + encode + "}:" + entityClass.getName() + ":" + fieldName + ":" + fieldClass.getName();
         } catch (IOException ex) {
             throw new IllegalArgumentException("Unable to encode \"" + fieldName + "\" [" + fieldValue + "] into byte[]", ex);
         }

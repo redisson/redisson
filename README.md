@@ -3,11 +3,8 @@ Redis based In-Memory Data Grid for Java. Redisson.
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
 
-Use familiar Java data structures with power of [Redis](http://redis.io).
-
-Based on high-performance async and lock-free Java Redis client and [Netty 4](http://netty.io) framework.  
+Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 Redis 2.8+ and JDK 1.6+ compatible.
-
 
 Please read [documentation](https://github.com/mrniko/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
@@ -35,58 +32,81 @@ Features
     3. automatic new slave servers discovery
     4. automatic slave servers offline/online discovery  
     5. automatic sentinel servers discovery  
-* Master with Slave servers mode
-* Single server mode
-* Distributed implementation of `java.util.BitSet`  
-* Distributed implementation of `java.util.List`  
-* Distributed implementation of `java.util.Set` with TTL support for each entry
-* Distributed implementation of `java.util.SortedSet`  
-* Distributed implementation of `java.util.Queue`  
-* Distributed implementation of `java.util.concurrent.BlockingQueue`  
-* Distributed implementation of `java.util.Deque`  
-* Distributed implementation of `java.util.concurrent.BlockingDeque`  
-* Distributed implementation of `java.util.Map` with TTL support for each entry 
-* Distributed implementation of `java.util.concurrent.ConcurrentMap` with TTL support for each entry 
-* Distributed implementation of reentrant `java.util.concurrent.locks.Lock` with TTL support  
-* Distributed implementation of reentrant `java.util.concurrent.locks.ReadWriteLock` with TTL support  
-* Distributed alternative to the `java.util.concurrent.atomic.AtomicLong`  
-* Distributed alternative to the `java.util.concurrent.CountDownLatch`  
-* Distributed alternative to the `java.util.concurrent.Semaphore`  
-* Distributed publish/subscribe messaging via `org.redisson.core.RTopic`  
-* Distributed HyperLogLog via `org.redisson.core.RHyperLogLog`  
+* Master with Slave servers mode  
+* Single server mode  
 * Asynchronous interface for each object  
 * Asynchronous connection pool  
 * Thread-safe implementation  
-* All commands executes in an atomic way  
 * Lua scripting  
-* [Spring cache](https://github.com/mrniko/redisson/wiki/10.-additional-features/#104-spring-cache-integration) integration  
-* Supports [Reactive Streams](http://www.reactive-streams.org)
-* Supports [Redis pipelining](http://redis.io/topics/pipelining) (command batches)  
-* Supports [Remote services](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#91-remote-service)
+* [Distributed objects](https://github.com/mrniko/redisson/wiki/6.-Distributed-objects)
+* [Distributed collections](https://github.com/mrniko/redisson/wiki/7.-Distributed-collections)
+* [Distributed locks and synchronizers](https://github.com/mrniko/redisson/wiki/8.-Distributed-locks-and-synchronizers)
+* [Distributed services](https://github.com/mrniko/redisson/wiki/9.-distributed-services)
+* [Spring cache](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) integration  
+* [Hibernate](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
+* [Reactive Streams](https://github.com/mrniko/redisson/wiki/3.-operations-execution#32-reactive-way)
+* [Redis pipelining](https://github.com/mrniko/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)  
 * Supports Android platform  
 * Supports auto-reconnect  
 * Supports failed to send command auto-retry  
 * Supports OSGi  
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
-* With over 500 unit tests  
+* With over 900 unit tests  
 
 Projects using Redisson
 ================================
-[Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/)
+[Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/)
 
-### Maven 
+Articles
+================================
 
-Include the following to your dependency list:
+[Java data structures powered by Redis. Introduction to Redisson (pdf)](http://redisson.org/Redisson.pdf)  
+[Distributed tasks Execution and Scheduling in Java, powered by Redis](https://dzone.com/articles/distributed-tasks-execution-and-scheduling-in-java)  
+[Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
+[Java Remote Method Invocation with Redisson](https://dzone.com/articles/java-remote-method-invocation-with-redisson)  
+[Java Multimaps With Redis](https://dzone.com/articles/multimaps-with-redis)  
+[Distributed lock with Redis](https://evuvatech.com/2016/02/05/distributed-lock-with-redis/)
+
+Quick start
+===============================
+
+#### Maven 
 
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.2.24</version>
+       <version>2.4.0</version>
     </dependency>
 
-### Gradle
+#### Gradle
 
-    compile 'org.redisson:redisson:2.2.24'
+    compile 'org.redisson:redisson:2.4.0'
+    
+#### Java
+
+```java
+// 1. Create config object
+Config = ...
+
+// 2. Create Redisson instance
+RedissonClient redisson = Redisson.create(config);
+
+// 3. Get object you need
+RMap<MyKey, MyValue> map = redisson.getMap("myMap");
+
+RLock lock = redisson.getLock("myLock");
+
+RExecutorService executor = redisson.getExecutorService("myExecutorService");
+
+// over 30 different objects and services ...
+
+```
+
+Downloads
+===============================
+   
+[Redisson 2.4.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.4.0&e=jar)  
+[Redisson node 2.4.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.4.0&e=jar)  
 
 ### Supported by
 

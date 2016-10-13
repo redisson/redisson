@@ -26,11 +26,11 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.RPromise;
 import org.redisson.remote.RemoteServiceRequest;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 /**
  * 
@@ -60,17 +60,17 @@ public class ExecutorRemoteService extends BaseRemoteService {
     }
 
     @Override
-    protected final Future<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue,
+    protected final RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue,
             RemoteServiceRequest request, RemotePromise<Object> result) {
-        final Promise<Boolean> promise = commandExecutor.getConnectionManager().newPromise();
-        Future<Boolean> future = addAsync(requestQueue, request);
+        final RPromise<Boolean> promise = commandExecutor.getConnectionManager().newPromise();
+        RFuture<Boolean> future = addAsync(requestQueue, request);
         result.setAddFuture(future);
         
         future.addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
                 if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
+                    promise.tryFailure(future.cause());
                     return;
                 }
 
@@ -79,7 +79,7 @@ public class ExecutorRemoteService extends BaseRemoteService {
                     return;
                 }
                 
-                promise.setSuccess(true);
+                promise.trySuccess(true);
             }
         });
         

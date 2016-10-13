@@ -21,6 +21,12 @@ import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 
+/**
+ * Connection pool for slave node
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SlaveConnectionPool extends ConnectionPool<RedisConnection> {
 
     public SlaveConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager,

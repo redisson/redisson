@@ -15,10 +15,10 @@
  */
 package org.redisson.client;
 
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
 
 public interface ReconnectListener {
 
-    void onReconnect(RedisConnection redisConnection, Promise<RedisConnection> connectionFuture) throws RedisException;
+    void onReconnect(RedisConnection redisConnection, RPromise<RedisConnection> connectionFuture) throws RedisException;
 
 }

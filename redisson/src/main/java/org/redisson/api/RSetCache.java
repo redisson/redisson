@@ -29,11 +29,10 @@ import java.util.concurrent.TimeUnit;
  * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
- * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonSet}.</p>
+ * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>
  *
  * @author Nikita Koksharov
  *
- * @param <K> key
  * @param <V> value
  */
 public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
@@ -42,11 +41,10 @@ public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
      * Stores value with specified time to live.
      * Value expires after specified time to live.
      *
-     * @param key
-     * @param value
+     * @param value to add
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
-     * @param unit
+     * @param unit - time unit
      * @return <code>true</code> if value has been added. <code>false</code>
      *          if value already been in collection.
      */
@@ -57,6 +55,7 @@ public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
      * This number can reflects expired elements too
      * due to non realtime cleanup process.
      *
+     * @return size of set
      */
     @Override
     int size();
@@ -64,7 +63,7 @@ public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
     /**
      * Read all elements at once
      *
-     * @return
+     * @return values
      */
     Set<V> readAll();
 

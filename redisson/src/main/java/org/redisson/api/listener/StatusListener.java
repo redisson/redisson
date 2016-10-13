@@ -30,14 +30,14 @@ public interface StatusListener extends EventListener {
      * Executes then Redisson successfully subscribed to channel.
      * Invoked during re-connection
      * 
-     * @param channel
+     * @param channel to subscribe
      */
     void onSubscribe(String channel);
 
     /**
      * Executes then Redisson successfully unsubscribed from channel.
      * 
-     * @param channel
+     * @param channel to unsubscribe
      */
     void onUnsubscribe(String channel);
 

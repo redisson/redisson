@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -7,8 +9,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RScoredSortedSetReactive;
@@ -42,7 +42,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add(0.7, "g"));
 
         Assert.assertEquals(2, sync(set.removeRangeByScore(0.1, false, 0.3, true)).intValue());
-        MatcherAssert.assertThat(sync(set), Matchers.contains("a", "d", "e", "f", "g"));
+        assertThat(sync(set)).containsOnly("a", "d", "e", "f", "g");
     }
 
     @Test
@@ -57,7 +57,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add(0.7, "g"));
 
         Assert.assertEquals(2, sync(set.removeRangeByRank(0, 1)).intValue());
-        MatcherAssert.assertThat(sync(set), Matchers.contains("c", "d", "e", "f", "g"));
+        assertThat(sync(set)).containsOnly("c", "d", "e", "f", "g");
     }
 
     @Test
@@ -92,14 +92,14 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
         Assert.assertTrue(sync(set.remove(1)));
         Assert.assertFalse(sync(set.contains(1)));
-        Assert.assertThat(sync(set), Matchers.contains(3, 7));
+        assertThat(sync(set)).containsExactly(3, 7);
 
         Assert.assertFalse(sync(set.remove(1)));
-        Assert.assertThat(sync(set), Matchers.contains(3, 7));
+        assertThat(sync(set)).containsExactly(3, 7);
 
         sync(set.remove(3));
         Assert.assertFalse(sync(set.contains(3)));
-        Assert.assertThat(sync(set), Matchers.contains(7));
+        assertThat(sync(set)).containsExactly(7);
     }
 
     @Test
@@ -148,7 +148,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         }
 
         Assert.assertTrue(sync(set.retainAll(Arrays.asList(1, 2))));
-        Assert.assertThat(sync(set), Matchers.containsInAnyOrder(1, 2));
+        assertThat(sync(set)).contains(1, 2);
         Assert.assertEquals(2, sync(set.size()).intValue());
     }
 
@@ -160,7 +160,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add(0.3, 3));
 
         Assert.assertTrue(sync(set.removeAll(Arrays.asList(1, 2))));
-        Assert.assertThat(sync(set), Matchers.contains(3));
+        assertThat(sync(set)).contains(3);
         Assert.assertEquals(1, sync(set.size()).intValue());
     }
 
@@ -176,7 +176,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         Assert.assertTrue(sync(set.add(1, -1)));
         Assert.assertTrue(sync(set.add(2, 0)));
 
-        MatcherAssert.assertThat(sync(set), Matchers.contains(-1, 0, 1, 2, 3, 4, 10));
+        assertThat(sync(set)).containsExactly(-1, 0, 1, 2, 3, 4, 10);
 
         Assert.assertEquals(-1, (int)sync(set.first()));
         Assert.assertEquals(10, (int)sync(set.last()));
@@ -194,7 +194,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         Assert.assertFalse(sync(set.remove(0)));
         Assert.assertTrue(sync(set.remove(3)));
 
-        Assert.assertThat(sync(set), Matchers.contains(1, 2, 4, 5));
+        assertThat(sync(set)).containsExactly(1, 2, 4, 5);
     }
 
     @Test
@@ -261,7 +261,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add(4, 5));
 
         Collection<Integer> vals = sync(set.valueRange(0, -1));
-        MatcherAssert.assertThat(vals, Matchers.contains(1, 2, 3, 4, 5));
+        assertThat(sync(set)).containsExactly(1, 2, 3, 4, 5);
     }
 
     @Test
@@ -274,11 +274,11 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         sync(set.add(50, 5));
 
         Collection<ScoredEntry<Integer>> vals = sync(set.entryRange(0, -1));
-        MatcherAssert.assertThat(vals, Matchers.contains(new ScoredEntry<Integer>(10D, 1),
+        assertThat(vals).contains(new ScoredEntry<Integer>(10D, 1),
                 new ScoredEntry<Integer>(20D, 2),
                 new ScoredEntry<Integer>(30D, 3),
                 new ScoredEntry<Integer>(40D, 4),
-                new ScoredEntry<Integer>(50D, 5)));
+                new ScoredEntry<Integer>(50D, 5));
     }
 
     @Test

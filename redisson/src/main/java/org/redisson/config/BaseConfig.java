@@ -15,6 +15,12 @@
  */
 package org.redisson.config;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> config type
+ */
 class BaseConfig<T extends BaseConfig<T>> {
 
     /**
@@ -38,18 +44,18 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Value in milliseconds.
      *
      */
-    private int connectTimeout = 1000;
+    private int connectTimeout = 10000;
 
     /**
      * Redis server response timeout. Starts to countdown when Redis command was succesfully sent.
      * Value in milliseconds.
      *
      */
-    private int timeout = 1000;
+    private int timeout = 3000;
 
     private int retryAttempts = 3;
 
-    private int retryInterval = 1000;
+    private int retryInterval = 1500;
 
     /**
      * Reconnection attempt timeout to Redis server then
@@ -106,7 +112,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Subscriptions per Redis connection limit
      * Default is 5
      *
-     * @param subscriptionsPerConnection
+     * @param subscriptionsPerConnection amount
+     * @return config
      */
     public T setSubscriptionsPerConnection(int subscriptionsPerConnection) {
         this.subscriptionsPerConnection = subscriptionsPerConnection;
@@ -121,7 +128,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Password for Redis authentication. Should be null if not needed
      * Default is <code>null</code>
      *
-     * @param password
+     * @param password for connection
+     * @return config
      */
     public T setPassword(String password) {
         this.password = password;
@@ -135,9 +143,12 @@ class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Error will be thrown if Redis command can't be sended to Redis server after <code>retryAttempts</code>.
      * But if it sent succesfully then <code>timeout</code> will be started.
+     * <p>
+     * Default is <code>3</code> attempts
      *
      * @see #timeout
-     * @param retryAttempts
+     * @param retryAttempts - retry attempts
+     * @return config
      */
     public T setRetryAttempts(int retryAttempts) {
         this.retryAttempts = retryAttempts;
@@ -150,9 +161,12 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Time interval after which another one attempt to send Redis command will be executed.
+     * <p>
+     * Default is <code>1500</code> milliseconds
      *
      * @see retryAttempts
      * @param retryInterval - time in milliseconds
+     * @return config
      */
     public T setRetryInterval(int retryInterval) {
         this.retryInterval = retryInterval;
@@ -165,8 +179,11 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Redis server response timeout.
+     * <p>
+     * Default is <code>3000</code> milliseconds
      *
      * @param timeout in milliseconds
+     * @return config
      */
     public T setTimeout(int timeout) {
         this.timeout = timeout;
@@ -181,7 +198,8 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Setup connection name during connection init
      * via CLIENT SETNAME command
      *
-     * @param name
+     * @param clientName - name of client
+     * @return config
      */
     public T setClientName(String clientName) {
         this.clientName = clientName;
@@ -193,9 +211,10 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation
+     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll</code> operation
      *
-     * @param ping timeout in milliseconds
+     * @param pingTimeout - timeout in milliseconds
+     * @return config
      */
     public T setPingTimeout(int pingTimeout) {
         this.pingTimeout = pingTimeout;
@@ -208,9 +227,11 @@ class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Timeout during connecting to any Redis server.
-     * <p/>
+     * <p>
+     * Default is <code>10000</code> milliseconds.
+     * 
      * @param connectTimeout - timeout in milliseconds
-     * @return
+     * @return config
      */
     public T setConnectTimeout(int connectTimeout) {
         this.connectTimeout = connectTimeout;
@@ -227,7 +248,7 @@ class BaseConfig<T extends BaseConfig<T>> {
      * then it will closed and removed from pool.
      *
      * @param idleConnectionTimeout - timeout in milliseconds
-     * @return
+     * @return config
      */
     public T setIdleConnectionTimeout(int idleConnectionTimeout) {
         this.idleConnectionTimeout = idleConnectionTimeout;
@@ -241,14 +262,16 @@ class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Reconnection attempt timeout to Redis server when
      * it has been excluded from internal list of available servers.
-     * <p/>
+     * <p>
      * On every such timeout event Redisson tries
      * to connect to disconnected Redis server.
-     * <p/>
+     * <p>
      * Default is 3000
      *
      * @see #failedAttempts
      *
+     * @param slaveRetryTimeout - retry timeout in milliseconds
+     * @return config
      */
 
     public T setReconnectionTimeout(int slaveRetryTimeout) {
@@ -264,9 +287,11 @@ class BaseConfig<T extends BaseConfig<T>> {
      * Redis server will be excluded from the internal list of available nodes
      * when sequential unsuccessful execution attempts of any Redis command
      * on this server reaches <code>failedAttempts</code>.
-     * <p/>
+     * <p>
      * Default is 3
      *
+     * @param slaveFailedAttempts - attempts
+     * @return config
      */
     public T setFailedAttempts(int slaveFailedAttempts) {
         this.failedAttempts = slaveFailedAttempts;

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.api.NodeType;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -79,13 +80,13 @@ public class MasterSlaveEntry {
         writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
     }
 
-    public List<Future<Void>> initSlaveBalancer(Collection<URI> disconnectedNodes) {
+    public List<RFuture<Void>> initSlaveBalancer(Collection<URI> disconnectedNodes) {
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
                     && config.getReadMode() == ReadMode.SLAVE
                         && disconnectedNodes.size() < config.getSlaveAddresses().size();
 
-        List<Future<Void>> result = new LinkedList<Future<Void>>();
-        Future<Void> f = addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
+        List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
+        RFuture<Void> f = addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
         result.add(f);
         for (URI address : config.getSlaveAddresses()) {
             f = addSlave(address.getHost(), address.getPort(), disconnectedNodes.contains(address), NodeType.SLAVE);
@@ -94,7 +95,7 @@ public class MasterSlaveEntry {
         return result;
     }
 
-    public Future<Void> setupMasterEntry(String host, int port) {
+    public RFuture<Void> setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(NodeType.MASTER, host, port);
         masterEntry = new ClientConnectionsEntry(client, config.getMasterConnectionMinimumIdleSize(), config.getMasterConnectionPoolSize(),
                                                     0, 0, connectionManager, NodeType.MASTER);
@@ -180,7 +181,7 @@ public class MasterSlaveEntry {
             return;
         }
         
-        Future<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null);
+        RFuture<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null);
         subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
             
             @Override
@@ -203,7 +204,7 @@ public class MasterSlaveEntry {
             final Collection<RedisPubSubListener<?>> listeners) {
         Codec subscribeCodec = connectionManager.punsubscribe(channelName);
         if (!listeners.isEmpty()) {
-            Future<PubSubConnectionEntry> future = connectionManager.psubscribe(channelName, subscribeCodec, null);
+            RFuture<PubSubConnectionEntry> future = connectionManager.psubscribe(channelName, subscribeCodec, null);
             future.addListener(new FutureListener<PubSubConnectionEntry>() {
                 @Override
                 public void operationComplete(Future<PubSubConnectionEntry> future)
@@ -231,7 +232,7 @@ public class MasterSlaveEntry {
             return;
         }
 
-        Future<RedisConnection> newConnection = connectionReadOp();
+        RFuture<RedisConnection> newConnection = connectionReadOp();
         newConnection.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
@@ -268,11 +269,11 @@ public class MasterSlaveEntry {
         });
     }
 
-    public Future<Void> addSlave(String host, int port) {
+    public RFuture<Void> addSlave(String host, int port) {
         return addSlave(host, port, true, NodeType.SLAVE);
     }
 
-    private Future<Void> addSlave(String host, int port, boolean freezed, NodeType mode) {
+    private RFuture<Void> addSlave(String host, int port, boolean freezed, NodeType mode) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, host, port);
         ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                 this.config.getSlaveConnectionMinimumIdleSize(),
@@ -311,7 +312,9 @@ public class MasterSlaveEntry {
      * Freeze slave with <code>host:port</code> from slaves list.
      * Re-attach pub/sub listeners from it to other slave.
      * Shutdown old master client.
-     *
+     * 
+     * @param host of Redis
+     * @param port of Redis
      */
     public void changeMaster(String host, int port) {
         ClientConnectionsEntry oldMaster = masterEntry;
@@ -356,20 +359,19 @@ public class MasterSlaveEntry {
         slaveBalancer.shutdownAsync();
     }
 
-    public Future<RedisConnection> connectionWriteOp() {
+    public RFuture<RedisConnection> connectionWriteOp() {
         return writeConnectionHolder.get();
     }
 
-    public Future<RedisConnection> connectionReadOp() {
+    public RFuture<RedisConnection> connectionReadOp() {
         return slaveBalancer.nextConnection();
     }
 
-    public Future<RedisConnection> connectionReadOp(InetSocketAddress addr) {
+    public RFuture<RedisConnection> connectionReadOp(InetSocketAddress addr) {
         return slaveBalancer.getConnection(addr);
     }
 
-
-    Future<RedisPubSubConnection> nextPubSubConnection() {
+    RFuture<RedisPubSubConnection> nextPubSubConnection() {
         return slaveBalancer.nextPubSubConnection();
     }
 
@@ -381,8 +383,8 @@ public class MasterSlaveEntry {
         writeConnectionHolder.returnConnection(masterEntry, connection);
     }
 
-    public void releaseRead(RedisConnection сonnection) {
-        slaveBalancer.returnConnection(сonnection);
+    public void releaseRead(RedisConnection connection) {
+        slaveBalancer.returnConnection(connection);
     }
 
     public void shutdown() {

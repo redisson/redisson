@@ -28,6 +28,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.Version;
@@ -50,8 +52,8 @@ import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonFuture;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.RedissonThreadFactory;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.TransferListener;
 import org.slf4j.Logger;
@@ -67,10 +69,9 @@ import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -131,7 +132,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Map<Integer, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
 
-    private final Promise<Boolean> shutdownPromise;
+    private final RPromise<Boolean> shutdownPromise;
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
@@ -142,6 +143,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
     
     private final AsyncSemaphore[] locks = new AsyncSemaphore[50];
+    
+    private final ExecutorService executor; 
     
     private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
     
@@ -161,7 +164,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         if (cfg.isUseLinuxNativeEpoll()) {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new EpollEventLoopGroup(cfg.getThreads());
+                this.group = new EpollEventLoopGroup(cfg.getNettyThreads());
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -169,7 +172,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = EpollSocketChannel.class;
         } else {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new NioEventLoopGroup(cfg.getThreads());
+                this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -183,6 +186,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 //
 //            this.socketChannelClass = OioSocketChannel.class;
         }
+        if (cfg.getExecutor() == null) {
+            int threads = Runtime.getRuntime().availableProcessors() * 2;
+            if (cfg.getThreads() != 0) {
+                threads = cfg.getThreads();
+            }
+            executor = Executors.newFixedThreadPool(threads, new DefaultThreadFactory("redisson"));
+        } else {
+            executor = cfg.getExecutor();
+        }
+       
         this.codec = cfg.getCodec();
         this.shutdownPromise = newPromise();
     }
@@ -245,7 +258,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         MasterSlaveEntry entry;
         if (config.getReadMode() == ReadMode.MASTER) {
             entry = new SingleEntry(slots, this, config);
-            Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+            RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
             f.syncUninterruptibly();
         } else {
             entry = createMasterSlaveEntry(config, slots);
@@ -259,11 +272,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<Future<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
-        for (Future<Void> future : fs) {
+        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
+        for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();
         }
-        Future<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
         f.syncUninterruptibly();
         return entry;
     }
@@ -308,7 +321,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public RedisClient createClient(String host, int port, int timeout, int commandTimeout) {
-        return new RedisClient(timer, group, socketChannelClass, host, port, timeout, commandTimeout);
+        return new RedisClient(timer, executor, group, socketChannelClass, host, port, timeout, commandTimeout);
     }
 
     @Override
@@ -322,40 +335,40 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?> listener) {
+    public RFuture<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?> listener) {
         final AsyncSemaphore lock = getSemaphore(channelName);
-        final Promise<PubSubConnectionEntry> result = newPromise();
+        final RPromise<PubSubConnectionEntry> result = newPromise();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
-                Future<PubSubConnectionEntry> future = psubscribe(channelName, codec, listener, lock);
+                RFuture<PubSubConnectionEntry> future = psubscribe(channelName, codec, listener, lock);
                 future.addListener(new TransferListener<PubSubConnectionEntry>(result));
             }
         });
         return result;
     }
     
-    public Future<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
-        Promise<PubSubConnectionEntry> promise = newPromise();
+    public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
+        RPromise<PubSubConnectionEntry> promise = newPromise();
         subscribe(codec, channelName, listener, promise, PubSubType.PSUBSCRIBE, semaphore);
         return promise;
     }
 
-    public Future<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener) {
+    public RFuture<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener) {
         final AsyncSemaphore lock = getSemaphore(channelName);
-        final Promise<PubSubConnectionEntry> result = newPromise();
+        final RPromise<PubSubConnectionEntry> result = newPromise();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
-                Future<PubSubConnectionEntry> future = subscribe(codec, channelName, listener, lock);
+                RFuture<PubSubConnectionEntry> future = subscribe(codec, channelName, listener, lock);
                 future.addListener(new TransferListener<PubSubConnectionEntry>(result));
             }
         });
         return result;
     }
     
-    public Future<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
-        Promise<PubSubConnectionEntry> promise = newPromise();
+    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
+        RPromise<PubSubConnectionEntry> promise = newPromise();
         subscribe(codec, channelName, listener, promise, PubSubType.SUBSCRIBE, semaphore);
         return promise;
     }
@@ -365,15 +378,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     private void subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener, 
-            final Promise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
-        final PubSubConnectionEntry сonnEntry = name2PubSubConnection.get(channelName);
-        if (сonnEntry != null) {
-            сonnEntry.addListener(channelName, listener);
-            сonnEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
+            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
+        final PubSubConnectionEntry connEntry = name2PubSubConnection.get(channelName);
+        if (connEntry != null) {
+            connEntry.addListener(channelName, listener);
+            connEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
                 @Override
                 public void operationComplete(Future<Void> future) throws Exception {
                     lock.release();
-                    promise.trySuccess(сonnEntry);
+                    promise.trySuccess(connEntry);
                 }
             });
             return;
@@ -439,9 +452,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private void connect(final Codec codec, final String channelName, final RedisPubSubListener<?> listener,
-            final Promise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
+            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
         final int slot = calcSlot(channelName);
-        Future<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
+        RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
         connFuture.addListener(new FutureListener<RedisPubSubConnection>() {
 
             @Override
@@ -614,7 +627,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
+    public RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = source.getEntry();
         if (entry == null) {
             entry = getEntry(source);
@@ -640,7 +653,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
+    public RFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = source.getEntry();
         if (entry == null && source.getSlot() != null) {
             entry = getEntry(source.getSlot());
@@ -651,7 +664,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entry.connectionReadOp();
     }
 
-    Future<RedisPubSubConnection> nextPubSubConnection(int slot) {
+    RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {
         return getEntry(slot).nextPubSubConnection();
     }
 
@@ -692,6 +705,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             entry.shutdown();
         }
         timer.stop();
+        
+        executor.shutdown();
+        try {
+            executor.awaitTermination(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
     }
 
@@ -712,17 +732,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public <R> RPromise<R> newPromise() {
-        return new RedissonPromise<R>(ImmediateEventExecutor.INSTANCE.<R>newPromise());
+        return new RedissonPromise<R>();
     }
 
     @Override
     public <R> RFuture<R> newSucceededFuture(R value) {
-        return new RedissonFuture<R>(ImmediateEventExecutor.INSTANCE.<R>newSucceededFuture(value));
+        return RedissonPromise.newSucceededFuture(value);
     }
 
     @Override
     public <R> RFuture<R> newFailedFuture(Throwable cause) {
-        return new RedissonFuture<R>(ImmediateEventExecutor.INSTANCE.<R>newFailedFuture(cause));
+        return RedissonPromise.newFailedFuture(cause);
     }
 
     @Override
@@ -746,7 +766,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public Future<Boolean> getShutdownPromise() {
+    public RFuture<Boolean> getShutdownPromise() {
         return shutdownPromise;
     }
 
@@ -757,11 +777,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected void stopThreads() {
         timer.stop();
+        executor.shutdown();
         try {
-            group.shutdownGracefully().await();
-        } catch (InterruptedException ignored) {
+            executor.awaitTermination(15, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        group.shutdownGracefully().syncUninterruptibly();
+    }
+    
+    public ExecutorService getExecutor() {
+        return executor;
     }
     
     public URI getLastClusterNode() {

@@ -15,6 +15,11 @@
  */
 package org.redisson.client;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class WriteRedisConnectionException extends RedisException {
 
     private static final long serialVersionUID = -4756928186967834601L;

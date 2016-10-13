@@ -45,6 +45,8 @@ import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.redisson.codec.CodecProvider;
+import org.redisson.liveobject.provider.ResolverProvider;
 
 public class ConfigSupport {
 
@@ -201,6 +203,8 @@ public class ConfigSupport {
         mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
         mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);
+        mapper.addMixIn(CodecProvider.class, ClassMixIn.class);
+        mapper.addMixIn(ResolverProvider.class, ClassMixIn.class);
         mapper.addMixIn(Codec.class, ClassMixIn.class);
         mapper.addMixIn(RedissonNodeInitializer.class, ClassMixIn.class);
         mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);

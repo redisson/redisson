@@ -31,6 +31,8 @@ public interface PatternMessageListener<M> extends EventListener {
     /**
      * Invokes on every message in topic
      *
+     * @param pattern of channel name
+     * @param channel of topic
      * @param msg topic message
      */
     void onMessage(String pattern, String channel, M msg);

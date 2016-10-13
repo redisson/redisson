@@ -18,11 +18,10 @@ package org.redisson.command;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
-
-import io.netty.util.concurrent.Future;
 
 /**
  *
@@ -31,7 +30,7 @@ import io.netty.util.concurrent.Future;
  */
 public interface CommandSyncExecutor {
 
-    <V> V get(Future<V> future);
+    <V> V get(RFuture<V> future);
 
     <T, R> R write(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
 

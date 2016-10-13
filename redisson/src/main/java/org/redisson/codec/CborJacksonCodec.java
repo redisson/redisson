@@ -21,7 +21,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 /**
  *
  * @author Faye Li
- * @date 2015-10-16
+ * 
  */
 public class CborJacksonCodec extends JsonJacksonCodec {
     

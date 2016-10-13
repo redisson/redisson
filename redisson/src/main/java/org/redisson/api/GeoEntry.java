@@ -15,6 +15,11 @@
  */
 package org.redisson.api;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class GeoEntry {
 
     private final double longitude;

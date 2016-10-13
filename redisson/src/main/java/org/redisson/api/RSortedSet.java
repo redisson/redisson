@@ -27,7 +27,7 @@ public interface RSortedSet<V> extends SortedSet<V>, RObject {
     /**
      * Sets new comparator only if current set is empty
      *
-     * @param comparator
+     * @param comparator for values
      * @return <code>true</code> if new comparator setted
      *         <code>false</code> otherwise
      */

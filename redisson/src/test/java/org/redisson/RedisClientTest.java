@@ -18,6 +18,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
@@ -28,10 +29,10 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 public class RedisClientTest {
 
@@ -65,20 +66,20 @@ public class RedisClientTest {
 
     @Test
     public void testConnectAsync() throws InterruptedException {
-        RedisClient c = new RedisClient("localhost", 6379);
-        Future<RedisConnection> f = c.connectAsync();
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RFuture<RedisConnection> f = c.connectAsync();
         final CountDownLatch l = new CountDownLatch(1);
         f.addListener((FutureListener<RedisConnection>) future -> {
             RedisConnection conn = future.get();
             assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
             l.countDown();
         });
-        l.await(10, TimeUnit.SECONDS);
+        assertThat(l.await(10, TimeUnit.SECONDS)).isTrue();
     }
 
     @Test
     public void testSubscribe() throws InterruptedException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedisPubSubConnection pubSubConnection = c.connectPubSub();
         final CountDownLatch latch = new CountDownLatch(2);
         pubSubConnection.addListener(new RedisPubSubListener<Object>() {
@@ -106,7 +107,9 @@ public class RedisClientTest {
 
     @Test
     public void test() throws InterruptedException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerInstance().getRedisServerBindAddress(),
+                RedisRunner.getDefaultRedisServerInstance().getRedisServerPort(),
+                1000000, 1000000);
         final RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
@@ -128,7 +131,7 @@ public class RedisClientTest {
 
     @Test
     public void testPipeline() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedisConnection conn = c.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
@@ -143,7 +146,7 @@ public class RedisClientTest {
         CommandData<String, String> cmd4 = conn.create(null, RedisCommands.PING);
         commands.add(cmd4);
 
-        Promise<Void> p = c.getBootstrap().group().next().newPromise();
+        RPromise<Void> p = new RedissonPromise<Void>();
         conn.send(new CommandsData(p, commands));
 
         assertThat(cmd1.getPromise().get()).isEqualTo("PONG");
@@ -156,7 +159,7 @@ public class RedisClientTest {
 
     @Test
     public void testBigRequest() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedisConnection conn = c.connect();
 
         for (int i = 0; i < 50; i++) {
@@ -171,7 +174,7 @@ public class RedisClientTest {
 
     @Test
     public void testPipelineBigResponse() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient("localhost", 6379);
+        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedisConnection conn = c.connect();
 
         List<CommandData<?, ?>> commands = new ArrayList<CommandData<?, ?>>();
@@ -180,7 +183,7 @@ public class RedisClientTest {
             commands.add(cmd1);
         }
 
-        Promise<Void> p = c.getBootstrap().group().next().newPromise();
+        RPromise<Void> p = new RedissonPromise<Void>();
         conn.send(new CommandsData(p, commands));
 
         for (CommandData<?, ?> commandData : commands) {

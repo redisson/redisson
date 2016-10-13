@@ -45,7 +45,7 @@ import net.openhft.hashing.LongHashFunction;
  *
  * @author Nikita Koksharov
  *
- * @param <T>
+ * @param <T> type of object
  */
 public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomFilter<T> {
 
@@ -178,9 +178,9 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     @Override
     public int count() {
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
-        Future<Map<String, String>> configFuture = executorService.readAsync(getConfigName(), StringCodec.INSTANCE,
+        RFuture<Map<String, String>> configFuture = executorService.readAsync(getConfigName(), StringCodec.INSTANCE,
                 new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), getConfigName());
-        Future<Long> cardinalityFuture = executorService.readAsync(getName(), codec, RedisCommands.BITCOUNT, getName());
+        RFuture<Long> cardinalityFuture = executorService.readAsync(getName(), codec, RedisCommands.BITCOUNT, getName());
         executorService.execute();
 
         readConfig(configFuture.getNow());
@@ -194,7 +194,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     private void readConfig() {
-        Future<Map<String, String>> future = commandExecutor.readAsync(getConfigName(), StringCodec.INSTANCE,
+        RFuture<Map<String, String>> future = commandExecutor.readAsync(getConfigName(), StringCodec.INSTANCE,
                 new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), getConfigName());
         Map<String, String> config = commandExecutor.get(future);
 

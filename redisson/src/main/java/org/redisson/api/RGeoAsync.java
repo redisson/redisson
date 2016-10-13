@@ -22,14 +22,16 @@ import java.util.Map;
  * 
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> type of value
  */
-public interface RGeoAsync<V> extends RExpirableAsync {
+public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
 
     /**
      * Adds geospatial member.
      * 
-     * @param entries
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param member - object itself
      * @return number of elements added to the sorted set, 
      * not including elements already existing for which 
      * the score was updated
@@ -39,7 +41,7 @@ public interface RGeoAsync<V> extends RExpirableAsync {
     /**
      * Adds geospatial members.
      * 
-     * @param entries
+     * @param entries - objects
      * @return number of elements added to the sorted set, 
      * not including elements already existing for which 
      * the score was updated
@@ -49,28 +51,26 @@ public interface RGeoAsync<V> extends RExpirableAsync {
     /**
      * Returns distance between members in <code>GeoUnit</code> units.
      * 
-     * @see {@link GeoUnit}
-     * 
-     * @param firstMember
-     * @param secondMember
-     * @param geoUnit
-     * @return
+     * @param firstMember - first object
+     * @param secondMember - second object
+     * @param geoUnit - geo unit
+     * @return distance
      */
     RFuture<Double> distAsync(V firstMember, V secondMember, GeoUnit geoUnit);
     
     /**
      * Returns 11 characters Geohash string mapped by defined member.
      * 
-     * @param members
-     * @return
+     * @param members - objects
+     * @return hash mapped by object
      */
     RFuture<Map<V, String>> hashAsync(V... members);
 
     /**
      * Returns geo-position mapped by defined member.
      * 
-     * @param members
-     * @return
+     * @param members - objects
+     * @return geo position mapped by object
      */
     RFuture<Map<V, GeoPosition>> posAsync(V... members);
     
@@ -80,13 +80,60 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units.
      * 
-     * @param longitude
-     * @param latitude
-     * @param radius
-     * @param geoUnit
-     * @return
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return list of objects
      */
     RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
+    
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return list of objects
+     */
+    RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @return list of objects
+     */
+    RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+    
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @param count - result limit
+     * @return list of objects
+     */
+    RFuture<List<V>> radiusAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
  
     /**
      * Returns the distance mapped by member, distance between member and the location. 
@@ -95,14 +142,64 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units.
      * 
-     * @param longitude
-     * @param latitude
-     * @param radius
-     * @param geoUnit
-     * @return
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return distance mapped by object
      */
     RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
+    /**
+     * Returns the distance mapped by member, distance between member and the location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units and limited by count.
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return distance mapped by object
+     */
+    RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+    
+    /**
+     * Returns the distance mapped by member, distance between member and the location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @return distance mapped by object
+     */
+    RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+    
+    /**
+     * Returns the distance mapped by member, distance between member and the location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @param count - result limit
+     * @return distance mapped by object
+     */
+    RFuture<Map<V, Double>> radiusWithDistanceAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    
     /**
      * Returns the geo-position mapped by member. 
      * Members of a sorted set, which are within the 
@@ -110,13 +207,63 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units.
      * 
-     * @param longitude
-     * @param latitude
-     * @param radius
-     * @param geoUnit
-     * @return
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return geo position mapped by object
      */
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return geo position mapped by object
+     */
+    RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @return geo position mapped by object
+     */
+    RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return geo position mapped by object
+     */
+    RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
     /**
      * Returns the members of a sorted set, which are within the 
@@ -124,13 +271,55 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units.
      * 
-     * @param longitude
-     * @param latitude
-     * @param radius
-     * @param geoUnit
-     * @return
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return list of objects
      */
     RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return list of objects
+     */
+    RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @return list of objects
+     */
+    RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return list of objects
+     */
+    RFuture<List<V>> radiusAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
     /**
      * Returns the distance mapped by member, distance between member and the defined member location. 
@@ -139,14 +328,60 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units.
      * 
-     * @param longitude
-     * @param latitude
-     * @param radius
-     * @param geoUnit
-     * @return
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return distance mapped by object
      */
     RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit);
 
+    /**
+     * Returns the distance mapped by member, distance between member and the defined member location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return distance mapped by object
+     */
+    RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the distance mapped by member, distance between member and the defined member location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo
+     * @return distance mapped by object
+     */
+    RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the distance mapped by member, distance between member and the defined member location. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo
+     * @param count - result limit
+     * @return distance mapped by object
+     */
+    RFuture<Map<V, Double>> radiusWithDistanceAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    
     /**
      * Returns the geo-position mapped by member. 
      * Members of a sorted set, which are within the 
@@ -154,12 +389,58 @@ public interface RGeoAsync<V> extends RExpirableAsync {
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units.
      * 
-     * @param longitude
-     * @param latitude
-     * @param radius
-     * @param geoUnit
-     * @return
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return geo position mapped by object
      */
     RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return geo position mapped by object
+     */
+    RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @return geo position mapped by object
+     */
+    RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+
+    /**
+     * Returns the geo-position mapped by member. 
+     * Members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * and limited by count
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return geo position mapped by object
+     */
+    RFuture<Map<V, GeoPosition>> radiusWithPositionAsync(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
 }

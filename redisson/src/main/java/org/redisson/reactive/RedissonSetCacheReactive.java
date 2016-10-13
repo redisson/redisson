@@ -34,7 +34,7 @@ import org.redisson.command.CommandReactiveExecutor;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
- * {@link #put(Object, Object, long, TimeUnit)} method.
+ * {@link #add(Object, long, TimeUnit)} method.
  * And therefore has an complex lua-scripts inside.
  * Uses map(value_hash, value) to tie with sorted set which contains expiration record for every value with TTL.
  * </p>
@@ -46,11 +46,10 @@ import org.redisson.command.CommandReactiveExecutor;
  * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
- * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonSet}.</p>
+ * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>
  *
  * @author Nikita Koksharov
  *
- * @param <K> key
  * @param <V> value
  */
 public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive implements RSetCacheReactive<V> {

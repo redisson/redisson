@@ -28,6 +28,7 @@ import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
+import org.redisson.api.RFuture;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
@@ -44,6 +45,7 @@ import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.codec.CodecProvider;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
@@ -68,8 +70,6 @@ import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.reactive.RedissonTopicReactive;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * Main infrastructure class allows to get access
  * to all Redisson objects on top of Redis server.
@@ -83,7 +83,8 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final CommandReactiveService commandExecutor;
     protected final ConnectionManager connectionManager;
     protected final Config config;
-
+    protected final CodecProvider codecProvider;
+    
     protected RedissonReactive(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
@@ -91,6 +92,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
+        codecProvider = config.getCodecProvider();
     }
 
 
@@ -116,7 +118,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> List<RBucketReactive<V>> findBuckets(String pattern) {
-        Future<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
+        RFuture<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
         Collection<String> keys = commandExecutor.get(r);
 
         List<RBucketReactive<V>> buckets = new ArrayList<RBucketReactive<V>>(keys.size());
@@ -260,7 +262,11 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch() {
-        return new RedissonBatchReactive(evictionScheduler, connectionManager);
+        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager);
+        if (config.isRedissonReferenceEnabled()) {
+            batch.enableRedissonReferenceSupport(this);
+        }
+        return batch;
     }
 
     @Override
@@ -273,6 +279,11 @@ public class RedissonReactive implements RedissonReactiveClient {
         return config;
     }
 
+    @Override
+    public CodecProvider getCodecProvider() {
+        return codecProvider;
+    }
+    
     @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);
@@ -301,5 +312,8 @@ public class RedissonReactive implements RedissonReactiveClient {
         return connectionManager.isShuttingDown();
     }
 
+    protected void enableRedissonReferenceSupport() {
+        this.commandExecutor.enableRedissonReferenceSupport(this);
+    }
 }
 

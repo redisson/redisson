@@ -28,18 +28,26 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author Nikita Koksharov
  *
- * @param <K> key
+ * @param <K> map key
  * @param <V> value
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
 
+    /**
+     * Returns size of value mapped by key in bytes
+     * 
+     * @param key - map key
+     * @return size of value
+     */
+    int valueSize(K key);
+    
     /**
      * Atomically adds the given <code>delta</code> to the current value
      * by mapped <code>key</code>.
      *
      * Works only for <b>numeric</b> values!
      *
-     * @param key
+     * @param key - map key
      * @param delta the value to add
      * @return the updated value
      */
@@ -52,8 +60,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
-     * @param keys map keys
-     * @return
+     * @param keys - map keys
+     * @return Map object
      */
     Map<K, V> getAll(Set<K> keys);
 
@@ -63,7 +71,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * Works faster than <code>RMap.remove</code> but not returning
      * the value associated with <code>key</code>
      *
-     * @param keys
+     * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
     long fastRemove(K ... keys);
@@ -74,8 +82,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * Works faster than <code>RMap.put</code> but not returning
      * the previous value associated with <code>key</code>
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
@@ -86,21 +94,21 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     /**
      * Read all keys at once
      *
-     * @return
+     * @return keys
      */
     Set<K> readAllKeySet();
 
     /**
      * Read all values at once
      *
-     * @return
+     * @return values
      */
     Collection<V> readAllValues();
 
     /**
      * Read all map entries at once
      *
-     * @return
+     * @return entries
      */
     Set<Entry<K, V>> readAllEntrySet();
 

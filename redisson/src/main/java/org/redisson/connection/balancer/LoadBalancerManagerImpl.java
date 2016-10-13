@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
@@ -29,12 +30,12 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SlaveConnectionPool;
+import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 public class LoadBalancerManagerImpl implements LoadBalancerManager {
@@ -52,8 +53,8 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         pubSubConnectionPool = new PubSubConnectionPool(config, connectionManager, entry);
     }
 
-    public Future<Void> add(final ClientConnectionsEntry entry) {
-        final Promise<Void> result = connectionManager.newPromise();
+    public RFuture<Void> add(final ClientConnectionsEntry entry) {
+        final RPromise<Void> result = connectionManager.newPromise();
         FutureListener<Void> listener = new FutureListener<Void>() {
             AtomicInteger counter = new AtomicInteger(2);
             @Override
@@ -64,14 +65,14 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
                 }
                 if (counter.decrementAndGet() == 0) {
                     addr2Entry.put(entry.getClient().getAddr(), entry);
-                    result.setSuccess(null);
+                    result.trySuccess(null);
                 }
             }
         };
 
-        Future<Void> slaveFuture = slaveConnectionPool.add(entry);
+        RFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
         slaveFuture.addListener(listener);
-        Future<Void> pubSubFuture = pubSubConnectionPool.add(entry);
+        RFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
         pubSubFuture.addListener(listener);
         return result;
     }
@@ -136,11 +137,11 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         return connectionEntry;
     }
 
-    public Future<RedisPubSubConnection> nextPubSubConnection() {
+    public RFuture<RedisPubSubConnection> nextPubSubConnection() {
         return pubSubConnectionPool.get();
     }
 
-    public Future<RedisConnection> getConnection(InetSocketAddress addr) {
+    public RFuture<RedisConnection> getConnection(InetSocketAddress addr) {
         ClientConnectionsEntry entry = addr2Entry.get(addr);
         if (entry != null) {
             return slaveConnectionPool.get(entry);
@@ -149,7 +150,7 @@ public class LoadBalancerManagerImpl implements LoadBalancerManager {
         return connectionManager.newFailedFuture(exception);
     }
 
-    public Future<RedisConnection> nextConnection() {
+    public RFuture<RedisConnection> nextConnection() {
         return slaveConnectionPool.get();
     }
 

@@ -1,12 +1,10 @@
 package org.redisson.connection.balancer;
 
-import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.redisson.RedisRunner;
@@ -24,18 +22,18 @@ public class WeightedRoundRobinBalancerTest {
         RedisProcess slave = null;
         RedissonClient client = null;
         try {
-            master = redisTestInstance(6379);
-            slave = redisTestInstance(6380);
+            master = redisTestInstance();
+            slave = redisTestInstance();
 
             Map<String, Integer> weights = new HashMap<>();
-            weights.put("127.0.0.1:6379", 1);
-            weights.put("127.0.0.1:6380", 2);
+            weights.put(master.getRedisServerAddressAndPort(), 1);
+            weights.put(slave.getRedisServerAddressAndPort(), 2);
 
             Config config = new Config();
             config.useMasterSlaveServers()
                 .setReadMode(ReadMode.SLAVE)
-                .setMasterAddress("127.0.0.1:6379")
-                .addSlaveAddress("127.0.0.1:6380")
+                .setMasterAddress(master.getRedisServerAddressAndPort())
+                .addSlaveAddress(slave.getRedisServerAddressAndPort())
                 .setLoadBalancer(new WeightedRoundRobinBalancer(weights, 1));
 
             client = Redisson.create(config);
@@ -60,10 +58,11 @@ public class WeightedRoundRobinBalancerTest {
         }
     }
 
-    private RedisProcess redisTestInstance(int port) throws IOException, InterruptedException {
+    private RedisProcess redisTestInstance() throws IOException, InterruptedException {
         return new RedisRunner()
                 .nosave()
                 .randomDir()
-                .port(port).run();
+                .randomPort()
+                .run();
     }
 }

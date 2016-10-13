@@ -26,8 +26,7 @@ public interface RKeysReactive {
      *
      * Uses <code>SCAN</code> Redis command.
      *
-     * @param pattern
-     * @return
+     * @return all keys
      */
     Publisher<String> getKeys();
 
@@ -41,8 +40,8 @@ public interface RKeysReactive {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern
-     * @return
+     * @param pattern - match pattern
+     * @return keys
      */
     Publisher<String> getKeysByPattern(String pattern);
 
@@ -52,8 +51,8 @@ public interface RKeysReactive {
      *
      * Uses <code>KEYSLOT</code> Redis command.
      *
-     * @param key
-     * @return
+     * @param key - name of key
+     * @return slot number
      */
     Publisher<Integer> getSlot(String key);
 
@@ -67,8 +66,8 @@ public interface RKeysReactive {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern
-     * @return
+     * @param pattern - match pattern
+     * @return collection of keys
      */
     Publisher<Collection<String>> findKeysByPattern(String pattern);
 
@@ -77,7 +76,7 @@ public interface RKeysReactive {
      *
      * Uses <code>RANDOM_KEY</code> Redis command.
      *
-     * @return
+     * @return random key
      */
     Publisher<String> randomKey();
 
@@ -91,8 +90,8 @@ public interface RKeysReactive {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern
-     * @return
+     * @param pattern - match pattern
+     * @return deleted objects amount
      */
     Publisher<Long> deleteByPattern(String pattern);
 
@@ -102,7 +101,7 @@ public interface RKeysReactive {
      * Uses <code>DEL</code> Redis command.
      *
      * @param keys - object names
-     * @return
+     * @return deleted objects amount
      */
     Publisher<Long> delete(String ... keys);
 
@@ -110,7 +109,8 @@ public interface RKeysReactive {
      * Delete all the keys of the currently selected database
      *
      * Uses <code>FLUSHDB</code> Redis command.
-     *
+     * 
+     * @return void
      */
     Publisher<Void> flushdb();
 
@@ -119,6 +119,7 @@ public interface RKeysReactive {
      *
      * Uses <code>FLUSHALL</code> Redis command.
      *
+     * @return void
      */
     Publisher<Void> flushall();
 

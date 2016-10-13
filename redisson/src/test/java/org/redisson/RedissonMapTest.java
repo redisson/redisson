@@ -9,20 +9,21 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonMapTest extends BaseTest {
 
@@ -153,6 +154,15 @@ public class RedissonMapTest extends BaseTest {
         assertThat(mapStr.get("1")).isEqualTo(112);
     }
 
+    @Test
+    public void testValueSize() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
+        RMap<String, String> map = redisson.getMap("getAll");
+        map.put("1", "1234");
+        assertThat(map.valueSize("4")).isZero();
+        assertThat(map.valueSize("1")).isEqualTo(6);
+    }
+    
     @Test
     public void testGetAll() {
         RMap<Integer, Integer> map = redisson.getMap("getAll");
@@ -346,6 +356,37 @@ public class RedissonMapTest extends BaseTest {
         assertThat(map.size()).isEqualTo(1);
     }
 
+    @Test
+    public void testOrdering() {
+        Map<String, String> map = new LinkedHashMap<String, String>();
+
+        // General player data
+        map.put("name", "123");
+        map.put("ip", "4124");
+        map.put("rank", "none");
+        map.put("tokens", "0");
+        map.put("coins", "0");
+
+        // Arsenal player statistics
+        map.put("ar_score", "0");
+        map.put("ar_gameswon", "0");
+        map.put("ar_gameslost", "0");
+        map.put("ar_kills", "0");
+        map.put("ar_deaths", "0");
+
+        RMap<String, String> rmap = redisson.getMap("123");
+        rmap.putAll(map);
+
+        assertThat(rmap.keySet()).containsExactlyElementsOf(map.keySet());
+        assertThat(rmap.readAllKeySet()).containsExactlyElementsOf(map.keySet());
+        
+        assertThat(rmap.values()).containsExactlyElementsOf(map.values());
+        assertThat(rmap.readAllValues()).containsExactlyElementsOf(map.values());
+        
+        assertThat(rmap.entrySet()).containsExactlyElementsOf(map.entrySet());
+        assertThat(rmap.readAllEntrySet()).containsExactlyElementsOf(map.entrySet());
+    }
+    
     @Test
     public void testPutAll() {
         Map<Integer, String> map = redisson.getMap("simple");
@@ -596,12 +637,12 @@ public class RedissonMapTest extends BaseTest {
     @Test
     public void testPutAsync() throws InterruptedException, ExecutionException {
         RMap<Integer, Integer> map = redisson.getMap("simple");
-        Future<Integer> future = map.putAsync(2, 3);
+        RFuture<Integer> future = map.putAsync(2, 3);
         Assert.assertNull(future.get());
 
         Assert.assertEquals((Integer) 3, map.get(2));
 
-        Future<Integer> future1 = map.putAsync(2, 4);
+        RFuture<Integer> future1 = map.putAsync(2, 4);
         Assert.assertEquals((Integer) 3, future1.get());
 
         Assert.assertEquals((Integer) 4, map.get(2));

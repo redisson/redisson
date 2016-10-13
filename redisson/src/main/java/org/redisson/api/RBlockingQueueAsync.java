@@ -32,13 +32,13 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
      *
+     * @param queueNames - names of queue
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
      *        {@code timeout} parameter
      * @return Future object with the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
      */
     RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 
@@ -104,7 +104,6 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      *        {@code timeout} parameter
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
      */
     RFuture<V> pollAsync(long timeout, TimeUnit unit);
 
@@ -113,7 +112,6 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      * until an element becomes available.
      *
      * @return the head of this queue
-     * @throws InterruptedException if interrupted while waiting
      */
     RFuture<V> takeAsync();
 
@@ -122,12 +120,12 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      * for space to become available.
      *
      * @param e the element to add
-     * @throws InterruptedException if interrupted while waiting
      * @throws ClassCastException if the class of the specified element
      *         prevents it from being added to this queue
      * @throws NullPointerException if the specified element is null
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
+     * @return void
      */
     RFuture<Void> putAsync(V e);
 

@@ -17,6 +17,12 @@ package org.redisson.api;
 
 import java.util.Collection;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value
+ */
 public interface RHyperLogLogAsync<V> extends RExpirableAsync {
 
     RFuture<Boolean> addAsync(V obj);

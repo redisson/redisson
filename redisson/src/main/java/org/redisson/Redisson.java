@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.ClusterNodesGroup;
+import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RAtomicDouble;
@@ -42,6 +43,7 @@ import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
 import org.redisson.api.RListMultimapCache;
 import org.redisson.api.RLiveObjectService;
+import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
@@ -53,6 +55,7 @@ import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RScript;
 import org.redisson.api.RSemaphore;
+import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetCache;
 import org.redisson.api.RSetMultimap;
@@ -67,13 +70,12 @@ import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.liveobject.provider.CodecProvider;
-import org.redisson.liveobject.provider.DefaultCodecProvider;
-import org.redisson.liveobject.provider.DefaultResolverProvider;
+import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.misc.RedissonObjectFactory;
 
 /**
  * Main infrastructure class allows to get access
@@ -84,13 +86,18 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class Redisson implements RedissonClient {
 
+    static {
+        RedissonObjectFactory.warmUp();
+        RedissonReference.warmUp();
+    }
+    
     protected final EvictionScheduler evictionScheduler;
     protected final CommandExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
     
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = PlatformDependent.newConcurrentHashMap();
-    protected final CodecProvider liveObjectDefaultCodecProvider = new DefaultCodecProvider();
-    protected final ResolverProvider liveObjectDefaultResolverProvider = new DefaultResolverProvider();
+    protected final CodecProvider codecProvider;
+    protected final ResolverProvider resolverProvider;
     protected final Config config;
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
@@ -103,6 +110,8 @@ public class Redisson implements RedissonClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandSyncService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
+        codecProvider = config.getCodecProvider();
+        resolverProvider = config.getResolverProvider();
     }
     
     ConnectionManager getConnectionManager() {
@@ -126,11 +135,15 @@ public class Redisson implements RedissonClient {
     /**
      * Create sync/async Redisson instance with provided config
      *
-     * @param config
+     * @param config for Redisson
      * @return Redisson instance
      */
     public static RedissonClient create(Config config) {
-        return new Redisson(config);
+        Redisson redisson = new Redisson(config);
+        if (config.isRedissonReferenceEnabled()) {
+            redisson.enableRedissonReferenceSupport();
+        }
+        return redisson;
     }
 
     /**
@@ -150,10 +163,15 @@ public class Redisson implements RedissonClient {
     /**
      * Create reactive Redisson instance with provided config
      *
+     * @param config for Redisson
      * @return Redisson instance
      */
     public static RedissonReactiveClient createReactive(Config config) {
-        return new RedissonReactive(config);
+        RedissonReactive react = new RedissonReactive(config);
+        if (config.isRedissonReferenceEnabled()) {
+            react.enableRedissonReferenceSupport();
+        }
+        return react;
     }
     
     @Override
@@ -214,6 +232,16 @@ public class Redisson implements RedissonClient {
     @Override
     public <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec) {
         return new RedissonListMultimap<K, V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions options) {
+        return new RedissonLocalCachedMap<K, V>(this, commandExecutor, name, options);
+    }
+
+    @Override
+    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions options) {
+        return new RedissonLocalCachedMap<K, V>(this, codec, commandExecutor, name, options);
     }
 
     @Override
@@ -317,22 +345,22 @@ public class Redisson implements RedissonClient {
     }
     
     @Override
-    public RRemoteService getRemoteSerivce() {
+    public RRemoteService getRemoteService() {
         return new RedissonRemoteService(this, commandExecutor);
     }
 
     @Override
-    public RRemoteService getRemoteSerivce(String name) {
+    public RRemoteService getRemoteService(String name) {
         return new RedissonRemoteService(this, name, commandExecutor);
     }
     
     @Override
-    public RRemoteService getRemoteSerivce(Codec codec) {
+    public RRemoteService getRemoteService(Codec codec) {
         return new RedissonRemoteService(codec, this, commandExecutor);
     }
     
     @Override
-    public RRemoteService getRemoteSerivce(String name, Codec codec) {
+    public RRemoteService getRemoteService(String name, Codec codec) {
         return new RedissonRemoteService(codec, this, name, commandExecutor);
     }
 
@@ -455,6 +483,11 @@ public class Redisson implements RedissonClient {
     public RSemaphore getSemaphore(String name) {
         return new RedissonSemaphore(commandExecutor, name, semaphorePubSub);
     }
+    
+    public RPermitExpirableSemaphore getPermitExpirableSemaphore(String name) {
+        return new RedissonPermitExpirableSemaphore(commandExecutor, name, semaphorePubSub);
+    }
+
 
     @Override
     public <V> RBloomFilter<V> getBloomFilter(String name) {
@@ -473,16 +506,15 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RBatch createBatch() {
-        return new RedissonBatch(evictionScheduler, connectionManager);
+        RedissonBatch batch = new RedissonBatch(evictionScheduler, connectionManager);
+        if (config.isRedissonReferenceEnabled()) {
+            batch.enableRedissonReferenceSupport(this);
+        }
+        return batch;
     }
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, liveObjectDefaultCodecProvider, liveObjectDefaultResolverProvider);
-    }
-    
-    @Override
-    public RLiveObjectService getLiveObjectService(CodecProvider codecProvider, ResolverProvider resolverProvider) {
         return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider, resolverProvider);
     }
     
@@ -500,6 +532,16 @@ public class Redisson implements RedissonClient {
     @Override
     public Config getConfig() {
         return config;
+    }
+
+    @Override
+    public CodecProvider getCodecProvider() {
+        return codecProvider;
+    }
+    
+    @Override
+    public ResolverProvider getResolverProvider() {
+        return resolverProvider;
     }
 
     @Override
@@ -523,6 +565,10 @@ public class Redisson implements RedissonClient {
     @Override
     public boolean isShuttingDown() {
         return connectionManager.isShuttingDown();
+    }
+
+    protected void enableRedissonReferenceSupport() {
+        this.commandExecutor.enableRedissonReferenceSupport(this);
     }
 
 }

@@ -31,13 +31,13 @@ public interface RBlockingDequeAsync<V> extends RDequeAsync<V>, RBlockingQueueAs
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
      *
+     * @param queueNames - names of queue
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
      *        {@code timeout} parameter
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
      */
     RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 
@@ -45,14 +45,14 @@ public interface RBlockingDequeAsync<V> extends RDequeAsync<V>, RBlockingQueueAs
      * Retrieves and removes first available tail element of <b>any</b> queue in async mode,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue own.
-     *
+     * 
+     * @param queueNames - names of queue
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
      *        {@code timeout} parameter
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
      */
     RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 

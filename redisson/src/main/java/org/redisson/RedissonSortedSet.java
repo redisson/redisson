@@ -44,7 +44,7 @@ import io.netty.channel.EventLoopGroup;
  *
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> value
  */
 public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V> {
 
@@ -177,42 +177,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return binarySearch((V)o, codec).getIndex() >= 0;
     }
 
+    @Override
     public Iterator<V> iterator() {
-        final int ind = 0;
-        return new Iterator<V>() {
-
-            private int currentIndex = ind - 1;
-            private V currentElement;
-            private boolean removeExecuted;
-
-            @Override
-            public boolean hasNext() {
-                int size = size();
-                return currentIndex+1 < size && size > 0;
-            }
-
-            @Override
-            public V next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No such element at index " + currentIndex);
-                }
-                currentIndex++;
-                removeExecuted = false;
-                currentElement = RedissonSortedSet.this.list.getValue(currentIndex);
-                return currentElement;
-            }
-
-            @Override
-            public void remove() {
-                if (removeExecuted) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-                RedissonSortedSet.this.remove(currentElement);
-                currentIndex--;
-                removeExecuted = true;
-            }
-
-        };
+        return list.iterator();
     }
 
     @Override
@@ -277,9 +244,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             public void run() {
                 try {
                     boolean res = add(value);
-                    promise.setSuccess(res);
+                    promise.trySuccess(res);
                 } catch (Exception e) {
-                    promise.setFailure(e);
+                    promise.tryFailure(e);
                 }
             }
         });
@@ -296,9 +263,9 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             public void run() {
                 try {
                     boolean result = remove(value);
-                    promise.setSuccess(result);
+                    promise.trySuccess(result);
                 } catch (Exception e) {
-                    promise.setFailure(e);
+                    promise.tryFailure(e);
                 }
             }
         });

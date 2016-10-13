@@ -21,22 +21,28 @@ import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.misc.RPromise;
 
-import io.netty.util.concurrent.Promise;
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> input type
+ * @param <R> output type
+ */
 public class CommandData<T, R> implements QueueCommand {
 
-    final Promise<R> promise;
+    final RPromise<R> promise;
     final RedisCommand<T> command;
     final Object[] params;
     final Codec codec;
     final MultiDecoder<Object> messageDecoder;
 
-    public CommandData(Promise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
+    public CommandData(RPromise<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
         this(promise, null, codec, command, params);
     }
 
-    public CommandData(Promise<R> promise, MultiDecoder<Object> messageDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
+    public CommandData(RPromise<R> promise, MultiDecoder<Object> messageDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
         this.promise = promise;
         this.command = command;
         this.params = params;
@@ -56,7 +62,7 @@ public class CommandData<T, R> implements QueueCommand {
         return messageDecoder;
     }
 
-    public Promise<R> getPromise() {
+    public RPromise<R> getPromise() {
         return promise;
     }
     

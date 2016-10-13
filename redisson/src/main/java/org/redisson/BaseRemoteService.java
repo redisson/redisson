@@ -33,6 +33,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.executor.RemotePromise;
+import org.redisson.misc.RPromise;
 import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceAck;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
@@ -47,7 +48,6 @@ import org.slf4j.LoggerFactory;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
@@ -200,7 +200,7 @@ public abstract class BaseRemoteService {
                         }
                         
                         if (optionsCopy.isAckExpected()) {
-                            Future<Boolean> future = commandExecutor.evalWriteAsync(responseName, LongCodec.INSTANCE,
+                            RFuture<Boolean> future = commandExecutor.evalWriteAsync(responseName, LongCodec.INSTANCE,
                                     RedisCommands.EVAL_BOOLEAN,
                                     "if redis.call('setnx', KEYS[1], 1) == 1 then "
                                         + "redis.call('pexpire', KEYS[1], ARGV[2]);"
@@ -250,7 +250,7 @@ public abstract class BaseRemoteService {
 
                 result.setRequestId(requestId);
                 
-                Future<Boolean> addFuture = addAsync(requestQueue, request, result);
+                RFuture<Boolean> addFuture = addAsync(requestQueue, request, result);
                 addFuture.addListener(new FutureListener<Boolean>() {
 
                     @Override
@@ -262,7 +262,7 @@ public abstract class BaseRemoteService {
 
                         if (optionsCopy.isAckExpected()) {
                             final RBlockingQueue<RemoteServiceAck> responseQueue = redisson.getBlockingQueue(responseName, getCodec());
-                            Future<RemoteServiceAck> ackFuture = responseQueue.pollAsync(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
+                            RFuture<RemoteServiceAck> ackFuture = responseQueue.pollAsync(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
                             ackFuture.addListener(new FutureListener<RemoteServiceAck>() {
                                 @Override
                                 public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
@@ -273,7 +273,7 @@ public abstract class BaseRemoteService {
 
                                     RemoteServiceAck ack = future.getNow();
                                     if (ack == null) {
-                                        Future<RemoteServiceAck> ackFutureAttempt = 
+                                        RFuture<RemoteServiceAck> ackFutureAttempt = 
                                                                     tryPollAckAgainAsync(optionsCopy, responseQueue, ackName);
                                         ackFutureAttempt.addListener(new FutureListener<RemoteServiceAck>() {
 
@@ -318,7 +318,7 @@ public abstract class BaseRemoteService {
 
     private void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
             final RemoteServiceRequest request, final String responseName, final String ackName) {
-        Future<Boolean> deleteFuture = redisson.getBucket(ackName).deleteAsync();
+        RFuture<Boolean> deleteFuture = redisson.getBucket(ackName).deleteAsync();
         deleteFuture.addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
@@ -340,7 +340,7 @@ public abstract class BaseRemoteService {
         }
         
         RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseName, getCodec());
-        Future<RRemoteServiceResponse> responseFuture = responseQueue
+        RFuture<RRemoteServiceResponse> responseFuture = responseQueue
                 .pollAsync(optionsCopy.getExecutionTimeoutInMillis(), TimeUnit.MILLISECONDS);
         responseFuture.addListener(new FutureListener<RRemoteServiceResponse>() {
             
@@ -448,7 +448,7 @@ public abstract class BaseRemoteService {
     private RemoteServiceAck tryPollAckAgain(RemoteInvocationOptions optionsCopy,
             RBlockingQueue<? extends RRemoteServiceResponse> responseQueue, String ackName)
             throws InterruptedException {
-        Future<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
                         + "return 0;" 
@@ -464,11 +464,11 @@ public abstract class BaseRemoteService {
         return null;
     }
 
-    private Future<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
+    private RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
             final RBlockingQueue<RemoteServiceAck> responseQueue, String ackName)
             throws InterruptedException {
-        final Promise<RemoteServiceAck> promise = commandExecutor.getConnectionManager().newPromise();
-        Future<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        final RPromise<RemoteServiceAck> promise = commandExecutor.getConnectionManager().newPromise();
+        RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
                         + "return 0;" 
@@ -480,25 +480,25 @@ public abstract class BaseRemoteService {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
                 if (!future.isSuccess()) {
-                    promise.setFailure(future.cause());
+                    promise.tryFailure(future.cause());
                     return;
                 }
 
                 if (future.getNow()) {
-                    Future<RemoteServiceAck> pollFuture = responseQueue.pollAsync();
+                    RFuture<RemoteServiceAck> pollFuture = responseQueue.pollAsync();
                     pollFuture.addListener(new FutureListener<RemoteServiceAck>() {
                         @Override
                         public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
                             if (!future.isSuccess()) {
-                                promise.setFailure(future.cause());
+                                promise.tryFailure(future.cause());
                                 return;
                             }
 
-                            promise.setSuccess(future.getNow());
+                            promise.trySuccess(future.getNow());
                         }
                     });
                 } else {
-                    promise.setSuccess(null);
+                    promise.trySuccess(null);
                 }
             }
         });
@@ -512,9 +512,9 @@ public abstract class BaseRemoteService {
         return ByteBufUtil.hexDump(id);
     }
 
-    protected Future<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request,
+    protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request,
             RemotePromise<Object> result) {
-        Future<Boolean> future = requestQueue.addAsync(request);
+        RFuture<Boolean> future = requestQueue.addAsync(request);
         result.setAddFuture(future);
         return future;
     }

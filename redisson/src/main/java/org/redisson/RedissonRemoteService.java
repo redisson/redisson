@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.api.RBatch;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBlockingQueueAsync;
+import org.redisson.api.RFuture;
 import org.redisson.api.RRemoteService;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
@@ -82,7 +83,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     @Override
     public <T> void register(Class<T> remoteInterface, T object, int workers) {
-        register(remoteInterface, object, workers, null);
+        register(remoteInterface, object, workers, commandExecutor.getConnectionManager().getExecutor());
     }
 
     @Override
@@ -107,7 +108,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     private <T> void subscribe(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue,
             final ExecutorService executor) {
-        Future<RemoteServiceRequest> take = requestQueue.takeAsync();
+        RFuture<RemoteServiceRequest> take = requestQueue.takeAsync();
         take.addListener(new FutureListener<RemoteServiceRequest>() {
             @Override
             public void operationComplete(Future<RemoteServiceRequest> future) throws Exception {
@@ -139,7 +140,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 // send the ack only if expected
                 if (request.getOptions().isAckExpected()) {
                     String ackName = getAckName(remoteInterface, request.getRequestId());
-                    Future<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(responseName,
+                    RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(responseName,
                             LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                                 "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                                     + "redis.call('pexpire', KEYS[1], ARGV[2]);"
@@ -185,52 +186,47 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         final RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName()));
         final String responseName = getResponseQueueName(remoteInterface, request.getRequestId());
         
-        if (executor != null) {
-            RBlockingQueue<RemoteServiceCancelRequest> cancelRequestQueue = 
-                    redisson.getBlockingQueue(getCancelRequestQueueName(remoteInterface, request.getRequestId()), getCodec());
-            final Future<RemoteServiceCancelRequest> cancelRequestFuture = cancelRequestQueue.takeAsync();
+        RBlockingQueue<RemoteServiceCancelRequest> cancelRequestQueue = 
+                redisson.getBlockingQueue(getCancelRequestQueueName(remoteInterface, request.getRequestId()), getCodec());
+        final RFuture<RemoteServiceCancelRequest> cancelRequestFuture = cancelRequestQueue.takeAsync();
 
-            final AtomicReference<RRemoteServiceResponse> responseHolder = new AtomicReference<RRemoteServiceResponse>();
-            
-            final java.util.concurrent.Future<?> submitFuture = executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor,
-                            cancelRequestFuture, responseHolder);
+        final AtomicReference<RRemoteServiceResponse> responseHolder = new AtomicReference<RRemoteServiceResponse>();
+        
+        final java.util.concurrent.Future<?> submitFuture = executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor,
+                        cancelRequestFuture, responseHolder);
+            }
+        });
+        
+        cancelRequestFuture.addListener(new FutureListener<RemoteServiceCancelRequest>() {
+            @Override
+            public void operationComplete(Future<RemoteServiceCancelRequest> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
                 }
-            });
-            
-            cancelRequestFuture.addListener(new FutureListener<RemoteServiceCancelRequest>() {
-                @Override
-                public void operationComplete(Future<RemoteServiceCancelRequest> future) throws Exception {
-                    if (!future.isSuccess()) {
-                        return;
-                    }
 
-                    boolean res = submitFuture.cancel(future.getNow().isMayInterruptIfRunning());
-                    if (res) {
-                        RemoteServiceCancelResponse response = new RemoteServiceCancelResponse();
-                        if (!responseHolder.compareAndSet(null, response)) {
-                            response = new RemoteServiceCancelResponse(false);
-                        }
-                        // could be removed not from future object
-                        if (future.getNow().getResponseId() != null) {
-                            String cancelResponseName = getResponseQueueName(remoteInterface, future.getNow().getResponseId());
-                            send(60 * 1000, cancelResponseName, response);
-                        }
+                boolean res = submitFuture.cancel(future.getNow().isMayInterruptIfRunning());
+                if (res) {
+                    RemoteServiceCancelResponse response = new RemoteServiceCancelResponse();
+                    if (!responseHolder.compareAndSet(null, response)) {
+                        response = new RemoteServiceCancelResponse(false);
+                    }
+                    // could be removed not from future object
+                    if (future.getNow().getResponseId() != null) {
+                        String cancelResponseName = getResponseQueueName(remoteInterface, future.getNow().getResponseId());
+                        send(60 * 1000, cancelResponseName, response);
                     }
                 }
-            });
-        } else {
-            final AtomicReference<RRemoteServiceResponse> responseHolder = new AtomicReference<RRemoteServiceResponse>();
-            invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor, null, responseHolder);
-        }
+            }
+        });
     }
 
     private <T> void invokeMethod(final Class<T> remoteInterface,
             final RBlockingQueue<RemoteServiceRequest> requestQueue, final RemoteServiceRequest request,
             RemoteServiceMethod method, String responseName, final ExecutorService executor,
-            Future<RemoteServiceCancelRequest> cancelRequestFuture, final AtomicReference<RRemoteServiceResponse> responseHolder) {
+            RFuture<RemoteServiceCancelRequest> cancelRequestFuture, final AtomicReference<RRemoteServiceResponse> responseHolder) {
         try {
             if (method.getBean() instanceof RemoteParams) {
                 ((RemoteParams)method.getBean()).setRequestId(request.getRequestId());
@@ -258,7 +254,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 timeout = request.getOptions().getExecutionTimeoutInMillis();
             }
             
-            Future<List<?>> clientsFuture = send(timeout, responseName,
+            RFuture<List<?>> clientsFuture = send(timeout, responseName,
                     responseHolder.get());
             clientsFuture.addListener(new FutureListener<List<?>>() {
                 @Override
@@ -282,7 +278,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         }
     }
 
-    private <T extends RRemoteServiceResponse> Future<List<?>> send(long timeout, String responseName, T response) {
+    private <T extends RRemoteServiceResponse> RFuture<List<?>> send(long timeout, String responseName, T response) {
         RBatch batch = redisson.createBatch();
         RBlockingQueueAsync<T> queue = batch.getBlockingQueue(responseName, getCodec());
         queue.putAsync(response);

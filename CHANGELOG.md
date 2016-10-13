@@ -2,6 +2,57 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####27-Sep-2016 - version 2.4.0 released
+Includes all code changes from __2.2.25__ version
+
+Feature - __new object added__ `RPermitExpirableSemaphore`. More info about it [here](https://github.com/redisson/redisson/wiki/8.-distributed-locks-and-synchronizers#87-permitexpirablesemaphore)  
+Feature - __new object added__ `RLocalCachedMap`. More info about it [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#712-map-local-cache)  
+Feature - __references support__ (thanks to Rui Gu) More info about it [here](https://github.com/redisson/redisson/wiki/10.-Additional-features#102-references-to-redisson-objects)  
+Feature - __Docker support__ More info about it [here](https://github.com/redisson/redisson/wiki/12.-Standalone-node#126-how-to-run-using-docker)  
+Feature -  `RSemaphore.reducePermits` method added  
+Feature - `nettyThreads` and `executor` settings added  
+Feature - `valueRangeReversed`, `entryRangeReversed`, `union` and `intersection` methods added to `RScoredSortedSet` object  
+Feature - `Node.time` method added  
+Feature - `RMap.valueSize` method added  
+Feature - `RBucket.size` method added  
+Feature - `RBatch.executeSkipResult` method added  
+Improvement - Redisson Node could be created with existing Redisson instance  
+Improvement - `RMultimap.get` should return `RSet` or `RList` interface instead of `Set` and `List`  
+Fixed - `RExecutorService` should reject non-static inner task class  
+Fixed - wrong object encoding in `RScoredSortedSet.addScore` method  
+
+####27-Sep-2016 - version 2.2.25 released
+Improvement - log unexpected errors in netty handlers  
+Improvement - `Not all slots are covered` error should be more informative  
+Improvement - implement random wait time in `lock` method of `RedissonRedLock` and `RedissonMultiLock` objects  
+Fixed - `ClassCastException` error when there are no slaves in sentinel mode  
+Fixed - keep RMap insertion ordering while iteration  
+Fixed - thread stuck at `lock` method of `RedissonRedLock` and `RedissonMultiLock` objects  
+Fixed - incorrect `tryLock` behaviour of `RedissonRedLock` and `RedissonMultiLock` objects  
+Fixed - connection shouldn't be closed on exceptionCaught  
+Fixed - Jackson 2.8.x compatibility  
+Fixed - TRYAGAIN error handling in cluster mode  
+Fixed - sync commands in connectionListener leads to connection timeout exception  
+Fixed - can't find slave error in cluster mode if failed slave hasn't been added before  
+
+####24-Aug-2016 - version 2.3.0 released
+Starting from this version Redisson could be run as standalone node to execute distributed tasks. More features will be added to it in future. Read docs about it [here](https://github.com/mrniko/redisson/wiki/12.-Standalone-node)
+
+Feature - __new service added__ `RExecutorService`. More info about it [here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-distributed-executor-service)  
+Feature - __new service added__ `RScheduledExecutorService`. More info about it
+[here](https://github.com/mrniko/redisson/wiki/9.-distributed-services#94-distributed-scheduled-executor-service)  
+Feature - __new service added__ `RLiveObjectService`. More info about it
+[here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#92-live-object-service) (big thanks to Rui Gu for this amazing feature)  
+Feature - __new object added__ `RBoundedBlockingQueue`. More info about it [here](https://github.com/mrniko/redisson/wiki/7.-distributed-collections/#711-bounded-blocking-queue)  
+Feature - __Redis deployment tool__. More info about it
+[here](https://github.com/mrniko/redisson/wiki/13.-Tools#131-redis-deployment-tool)  
+Feature - __Cluster management tool__. More info about it [here](https://github.com/mrniko/redisson/wiki/13.-Tools#132-cluster-management-tool)  
+Feature - Avro and Smile codecs added  
+__Breaking api change__ - all config classes moved to `org.redisson.config` package  
+__Breaking api change__ - all classes moved from `org.redisson.core` to `org.redisson.api` package  
+__Breaking api change__ - switched from `io.netty.util.concurrent.Future` to `org.redisson.api.RFuture` interface  
+Fixed - division by zero in WeightedRoundRobinBalancer (thanks to Shailender R Bathula)
+
 ####08-Aug-2016 - version 2.2.24 released
 Fixed - PubSub connection in cluster mode should be connected to node according slot derived from channel name  
 Fixed - `RLock.tryLock` could block forever under some conditions  

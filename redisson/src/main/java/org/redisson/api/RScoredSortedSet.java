@@ -20,8 +20,20 @@ import java.util.Map;
 
 import org.redisson.client.protocol.ScoredEntry;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value
+ */
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable {
 
+    public enum Aggregate {
+        
+        SUM, MAX, MIN
+        
+    }
+    
     V pollFirst();
 
     V pollLast();
@@ -39,7 +51,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Returns rank of value, with the scores ordered from low to high.
      * 
-     * @param o
+     * @param o - object
      * @return rank or <code>null</code> if value does not exist
      */
     Integer rank(V o);
@@ -47,7 +59,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Returns rank of value, with the scores ordered from high to low.
      * 
-     * @param o
+     * @param o - object
      * @return rank or <code>null</code> if value does not exist
      */
     Integer revRank(V o);
@@ -57,19 +69,19 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Adds element to this set, overrides previous score if it has been already added.
      *
-     * @param score
-     * @param object
+     * @param score - object score
+     * @param object - object itself
      * @return <code>true</code> if element has added and <code>false</code> if not.
      */
     boolean add(double score, V object);
 
     /**
      * Adds element to this set only if has not been added before.
-     * <p/>
+     * <p>
      * Works only with <b>Redis 3.0.2 and higher.</b>
      *
-     * @param score
-     * @param object
+     * @param score - object score
+     * @param object - object itself
      * @return <code>true</code> if element has added and <code>false</code> if not.
      */
     boolean tryAdd(double score, V object);
@@ -97,8 +109,12 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Double addScore(V object, Number value);
 
     Collection<V> valueRange(int startIndex, int endIndex);
+    
+    Collection<V> valueRangeReversed(int startIndex, int endIndex);
 
     Collection<ScoredEntry<V>> entryRange(int startIndex, int endIndex);
+    
+    Collection<ScoredEntry<V>> entryRangeReversed(int startIndex, int endIndex);
 
     Collection<V> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -117,19 +133,97 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Returns the number of elements with a score between <code>startScore</code> and <code>endScore</code>.
      * 
-     * @param startScore
-     * @param startScoreInclusive
-     * @param endScore
-     * @param endScoreInclusive
-     * @return
+     * @param startScore - start score
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     * @param endScoreInclusive - end score inclusive
+     * @return count of elements
      */
     Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
     
     /**
      * Read all values at once.
      * 
-     * @return
+     * @return values
      */
     Collection<V> readAll();
+
+    /**
+     * Intersect provided ScoredSortedSets 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param names - names of ScoredSortedSet
+     * @return length of intersection
+     */
+    int intersection(String... names);
+
+    /**
+     * Intersect provided ScoredSortedSets with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return length of intersection
+     */
+    int intersection(Aggregate aggregate, String... names);
+
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of intersection
+     */
+    int intersection(Map<String, Double> nameWithWeight);
+
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of intersection
+     */
+    int intersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    int union(String... names);
+
+    /**
+     * Union provided ScoredSortedSets with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    int union(Aggregate aggregate, String... names);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    int union(Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * with defined aggregation method 
+     * and store result to current ScoredSortedSet
+     * 
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    int union(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
 }

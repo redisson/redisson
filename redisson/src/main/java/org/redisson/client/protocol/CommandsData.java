@@ -18,23 +18,38 @@ package org.redisson.client.protocol;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class CommandsData implements QueueCommand {
 
     private final List<CommandData<?, ?>> commands;
-    private final Promise<Void> promise;
+    private final RPromise<Void> promise;
+    private final boolean noResult;
 
-    public CommandsData(Promise<Void> promise, List<CommandData<?, ?>> commands) {
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands) {
+        this(promise, commands, false);
+    }
+    
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean noResult) {
         super();
         this.promise = promise;
         this.commands = commands;
+        this.noResult = noResult;
     }
 
-    public Promise<Void> getPromise() {
+    public RPromise<Void> getPromise() {
         return promise;
     }
 
+    public boolean isNoResult() {
+        return noResult;
+    }
+    
     public List<CommandData<?, ?>> getCommands() {
         return commands;
     }
@@ -48,6 +63,11 @@ public class CommandsData implements QueueCommand {
             }
         }
         return result;
+    }
+
+    @Override
+    public boolean tryFailure(Throwable cause) {
+        return promise.tryFailure(cause);
     }
 
 }

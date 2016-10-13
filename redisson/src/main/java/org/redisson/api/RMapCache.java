@@ -41,18 +41,18 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
-     * <p/>
+     * <p>
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
-     * @param ttlUnit
+     * @param ttlUnit - time unit
      * @return previous associated value
      */
     V putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit);
@@ -60,22 +60,22 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
-     * <p/>
+     * <p>
      * Stores value mapped by key with specified time to live and max idle time.
      * Entry expires when specified time to live or max idle time has expired.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then time to live doesn't affect entry expiration.
-     * @param ttlUnit
+     * @param ttlUnit - time unit
      * @param maxIdleTime - max idle time for key\value entry.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
-     * @param maxIdleUnit
-     * <p/>
+     * @param maxIdleUnit - time unit
+     * <p>
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
      *
@@ -86,15 +86,15 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
-     * @param unit
+     * @param unit - time unit
      * @return previous associated value
      */
     V put(K key, V value, long ttl, TimeUnit unit);
@@ -102,19 +102,19 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * Stores value mapped by key with specified time to live and max idle time.
      * Entry expires when specified time to live or max idle time has expired.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then time to live doesn't affect entry expiration.
-     * @param ttlUnit
+     * @param ttlUnit - time unit
      * @param maxIdleTime - max idle time for key\value entry.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
-     * @param maxIdleUnit
-     * <p/>
+     * @param maxIdleUnit - time unit
+     * <p>
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
      *
@@ -125,41 +125,41 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     /**
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
-     * <p/>
+     * <p>
      * Works faster than usual {@link #put(Object, Object, long, TimeUnit)}
      * as it not returns previous value.
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
-     * @param unit
-     * @return previous associated value
+     * @param ttlUnit - time unit
+     * @return <code>true</code> if value has been set successfully
      */
     boolean fastPut(K key, V value, long ttl, TimeUnit ttlUnit);
 
     /**
      * Stores value mapped by key with specified time to live and max idle time.
      * Entry expires when specified time to live or max idle time has expired.
-     * <p/>
+     * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
-     * <p/>
+     * <p>
      * Works faster than usual {@link #put(Object, Object, long, TimeUnit, long, TimeUnit)}
      * as it not returns previous value.
      *
-     * @param key
-     * @param value
+     * @param key - map key
+     * @param value - map value
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then time to live doesn't affect entry expiration.
-     * @param ttlUnit
+     * @param ttlUnit - time unit
      * @param maxIdleTime - max idle time for key\value entry.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
-     * @param maxIdleUnit
-     * <p/>
+     * @param maxIdleUnit - time unit
+     * <p>
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
 

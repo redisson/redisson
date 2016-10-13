@@ -1,5 +1,6 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -8,8 +9,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RSortedSet;
@@ -41,7 +40,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 
         Collections.sort(elements);
         Integer[] p = elements.toArray(new Integer[elements.size()]);
-        MatcherAssert.assertThat(map, Matchers.contains(p));
+        assertThat(map).containsExactly(p);
 
         map.clear();
         r.shutdown();

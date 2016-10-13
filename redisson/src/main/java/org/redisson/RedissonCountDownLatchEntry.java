@@ -15,18 +15,17 @@
  */
 package org.redisson;
 
+import org.redisson.misc.RPromise;
 import org.redisson.misc.ReclosableLatch;
-
-import io.netty.util.concurrent.Promise;
 
 public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDownLatchEntry> {
 
     private int counter;
 
     private final ReclosableLatch latch;
-    private final Promise<RedissonCountDownLatchEntry> promise;
+    private final RPromise<RedissonCountDownLatchEntry> promise;
 
-    public RedissonCountDownLatchEntry(Promise<RedissonCountDownLatchEntry> promise) {
+    public RedissonCountDownLatchEntry(RPromise<RedissonCountDownLatchEntry> promise) {
         super();
         this.latch = new ReclosableLatch();
         this.promise = promise;
@@ -40,7 +39,7 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
         return --counter;
     }
 
-    public Promise<RedissonCountDownLatchEntry> getPromise() {
+    public RPromise<RedissonCountDownLatchEntry> getPromise() {
         return promise;
     }
 

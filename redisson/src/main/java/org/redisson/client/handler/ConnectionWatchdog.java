@@ -23,6 +23,8 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +40,6 @@ import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
 
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
@@ -65,13 +65,15 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
-        connection.onDisconnect();
-        if (!connection.isClosed()) {
-            if (connection.isFastReconnect()) {
-                tryReconnect(connection, 1);
-                connection.clearFastReconnect();
-            } else {
-                reconnect(connection, 1);
+        if (connection != null) {
+            connection.onDisconnect();
+            if (!connection.isClosed()) {
+                if (connection.isFastReconnect()) {
+                    tryReconnect(connection, 1);
+                    connection.clearFastReconnect();
+                } else {
+                    reconnect(connection, 1);
+                }
             }
         }
         ctx.fireChannelInactive();
@@ -125,7 +127,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         if (connection.getReconnectListener() != null) {
             // new connection used only for channel init
             RedisConnection rc = new RedisConnection(connection.getRedisClient(), channel);
-            Promise<RedisConnection> connectionFuture = ImmediateEventExecutor.INSTANCE.newPromise();
+            RPromise<RedisConnection> connectionFuture = new RedissonPromise<RedisConnection>();
             connection.getReconnectListener().onReconnect(rc, connectionFuture);
             connectionFuture.addListener(new FutureListener<RedisConnection>() {
                 @Override
@@ -150,11 +152,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                 conn.psubscribe(entry.getValue(), entry.getKey());
             }
         }
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        ctx.channel().close();
     }
 
     private void refresh(RedisConnection connection, Channel channel) {

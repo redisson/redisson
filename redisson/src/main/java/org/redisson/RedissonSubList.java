@@ -323,7 +323,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return get(f);
     }
 
-    private <R> RFuture<R> indexOfAsync(Object o, Convertor<R> convertor) {
+    public <R> RFuture<R> indexOfAsync(Object o, Convertor<R> convertor) {
         return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<R>("EVAL", convertor, 4),
                 "local items = redis.call('lrange', KEYS[1], tonumber(ARGV[2]), tonumber(ARGV[3])) " +
                 "for i=1,#items do " +
@@ -470,7 +470,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
     @Override
-    public RFuture<Void> trimAsync(int fromIndex, int toIndex) {
+    public RFuture<Void> trimAsync(long fromIndex, long toIndex) {
         if (fromIndex < this.fromIndex || toIndex >= this.toIndex.get()) {
             throw new IndexOutOfBoundsException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
         }

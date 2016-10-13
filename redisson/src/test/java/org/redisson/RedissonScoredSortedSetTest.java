@@ -16,13 +16,11 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.redisson.api.RFuture;
 import org.redisson.api.RLexSortedSet;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSortedSet;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
@@ -206,9 +204,9 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
-        Future<Boolean> future = set.addAsync(0.323, 2);
+        RFuture<Boolean> future = set.addAsync(0.323, 2);
         Assert.assertTrue(future.get());
-        Future<Boolean> future2 = set.addAsync(0.323, 2);
+        RFuture<Boolean> future2 = set.addAsync(0.323, 2);
         Assert.assertFalse(future2.get());
 
         Assert.assertTrue(set.contains(2));
@@ -544,6 +542,21 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Collection<Integer> vals = set.valueRange(0, -1);
         assertThat(vals).containsExactly(1, 2, 3, 4, 5);
     }
+    
+    @Test
+    public void testValueRangeReversed() {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        set.add(0, 1);
+        set.add(1, 2);
+        set.add(2, 3);
+        set.add(3, 4);
+        set.add(4, 5);
+        set.add(4, 5);
+
+        Collection<Integer> vals = set.valueRangeReversed(0, -1);
+        assertThat(vals).containsExactly(5, 4, 3, 2, 1);
+    }
+
 
     @Test
     public void testEntryRange() {
@@ -561,6 +574,26 @@ public class RedissonScoredSortedSetTest extends BaseTest {
                 new ScoredEntry<Integer>(40D, 4),
                 new ScoredEntry<Integer>(50D, 5));
     }
+    
+    @Test
+    public void testEntryRangeReversed() {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        set.add(10, 1);
+        set.add(20, 2);
+        set.add(30, 3);
+        set.add(40, 4);
+        set.add(50, 5);
+
+        Collection<ScoredEntry<Integer>> vals = set.entryRangeReversed(0, -1);
+        assertThat(vals).containsExactly(
+                new ScoredEntry<Integer>(50D, 5),
+                new ScoredEntry<Integer>(40D, 4),
+                new ScoredEntry<Integer>(30D, 3),
+                new ScoredEntry<Integer>(20D, 2),
+                new ScoredEntry<Integer>(10D, 1)
+                );
+    }
+
 
     @Test
     public void testLexSortedSet() {
@@ -736,24 +769,109 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertEquals("c", a[0].getValue());
         Assert.assertEquals("d", a[1].getValue());
     }
-
+    
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
-        set.add(1, 100);
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(1, "100");
 
-        Double res = set.addScore(100, 11);
+        Double res = set.addScore("100", 11);
         Assert.assertEquals(12, (double)res, 0);
-        Double score = set.getScore(100);
+        Double score = set.getScore("100");
         Assert.assertEquals(12, (double)score, 0);
 
-        RScoredSortedSet<Integer> set2 = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
-        set2.add(100.2, 1);
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple");
+        set2.add(100.2, "1");
 
-        Double res2 = set2.addScore(1, new Double(12.1));
+        Double res2 = set2.addScore("1", new Double(12.1));
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
-        res2 = set2.getScore(1);
+        res2 = set2.getScore("1");
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
     }
 
+    @Test
+    public void testIntersection() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        assertThat(out.intersection(set1.getName(), set2.getName())).isEqualTo(2);
+
+        assertThat(out.readAll()).containsOnly("one", "two");
+        assertThat(out.getScore("one")).isEqualTo(2);
+        assertThat(out.getScore("two")).isEqualTo(4);
+    }
+    
+    @Test
+    public void testIntersectionWithWeight() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        Map<String, Double> nameWithWeight = new HashMap<>();
+        nameWithWeight.put(set1.getName(), 2D);
+        nameWithWeight.put(set2.getName(), 3D);
+        assertThat(out.intersection(nameWithWeight)).isEqualTo(2);
+
+        assertThat(out.readAll()).containsOnly("one", "two");
+        assertThat(out.getScore("one")).isEqualTo(5);
+        assertThat(out.getScore("two")).isEqualTo(10);
+    }
+
+    @Test
+    public void testUnion() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        assertThat(out.union(set1.getName(), set2.getName())).isEqualTo(3);
+
+        assertThat(out.readAll()).containsOnly("one", "two", "three");
+        assertThat(out.getScore("one")).isEqualTo(2);
+        assertThat(out.getScore("two")).isEqualTo(4);
+        assertThat(out.getScore("three")).isEqualTo(3);
+    }
+    
+    @Test
+    public void testUnionWithWeight() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        Map<String, Double> nameWithWeight = new HashMap<>();
+        nameWithWeight.put(set1.getName(), 2D);
+        nameWithWeight.put(set2.getName(), 3D);
+        assertThat(out.union(nameWithWeight)).isEqualTo(3);
+
+        assertThat(out.readAll()).containsOnly("one", "two", "three");
+        assertThat(out.getScore("one")).isEqualTo(5);
+        assertThat(out.getScore("two")).isEqualTo(10);
+        assertThat(out.getScore("three")).isEqualTo(9);
+    }
+
+    
 }

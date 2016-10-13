@@ -18,6 +18,7 @@ package org.redisson.client;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.protocol.CommandData;
@@ -26,13 +27,14 @@ import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -49,7 +51,7 @@ public class RedisConnection implements RedisCommands {
     private ReconnectListener reconnectListener;
     private long lastUsageTime;
 
-    private final Future<?> acquireFuture = ImmediateEventExecutor.INSTANCE.newSucceededFuture(this);
+    private final RFuture<?> acquireFuture = RedissonPromise.newSucceededFuture(this);
     
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
@@ -109,7 +111,7 @@ public class RedisConnection implements RedisCommands {
         return redisClient;
     }
 
-    public <R> R await(Future<R> future) {
+    public <R> R await(RFuture<R> future) {
         final CountDownLatch l = new CountDownLatch(1);
         future.addListener(new FutureListener<R>() {
             @Override
@@ -120,9 +122,9 @@ public class RedisConnection implements RedisCommands {
         
         try {
             if (!l.await(redisClient.getCommandTimeout(), TimeUnit.MILLISECONDS)) {
-                Promise<R> promise = (Promise<R>)future;
+                RPromise<R> promise = (RPromise<R>)future;
                 RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
-                promise.setFailure(ex);
+                promise.tryFailure(ex);
                 throw ex;
             }
             if (!future.isSuccess()) {
@@ -151,25 +153,25 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+        RPromise<R> promise = new RedissonPromise<R>();
         send(new CommandData<T, R>(promise, encoder, command, params));
         return await(promise);
     }
 
-    public <T, R> Future<R> async(RedisCommand<T> command, Object ... params) {
+    public <T, R> RFuture<R> async(RedisCommand<T> command, Object ... params) {
         return async(null, command, params);
     }
     
-    public <T, R> Future<R> async(long timeout, RedisCommand<T> command, Object ... params) {
+    public <T, R> RFuture<R> async(long timeout, RedisCommand<T> command, Object ... params) {
         return async(null, command, params);
     }
 
-    public <T, R> Future<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
+    public <T, R> RFuture<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
         return async(-1, encoder, command, params);
     }
 
-    public <T, R> Future<R> async(long timeout, Codec encoder, RedisCommand<T> command, Object ... params) {
-        final Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+    public <T, R> RFuture<R> async(long timeout, Codec encoder, RedisCommand<T> command, Object ... params) {
+        final RPromise<R> promise = new RedissonPromise<R>();
         if (timeout == -1) {
             timeout = redisClient.getCommandTimeout();
         }
@@ -193,7 +195,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> CommandData<T, R> create(Codec encoder, RedisCommand<T> command, Object ... params) {
-        Promise<R> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+        RPromise<R> promise = new RedissonPromise<R>();
         return new CommandData<T, R>(promise, encoder, command, params);
     }
 
@@ -221,7 +223,8 @@ public class RedisConnection implements RedisCommands {
     /**
      * Access to Netty channel.
      * This method is provided to use in debug info only.
-     *
+     * 
+     * @return channel
      */
     public Channel getChannel() {
         return channel;
@@ -237,7 +240,7 @@ public class RedisConnection implements RedisCommands {
         return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + "]";
     }
 
-    public Future<?> getAcquireFuture() {
+    public RFuture<?> getAcquireFuture() {
         return acquireFuture;
     }
 

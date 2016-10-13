@@ -35,7 +35,7 @@ public interface RListMultimap<K, V> extends RMultimap<K, V> {
      * specified in the {@link RMultimap} interface.
      */
     @Override
-    List<V> get(K key);
+    RList<V> get(K key);
 
     /**
      * {@inheritDoc}

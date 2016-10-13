@@ -15,16 +15,18 @@
  */
 package org.redisson.connection;
 
-import io.netty.util.concurrent.Promise;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Map;
 
 import org.redisson.api.ClusterNode;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisException;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-
-import java.net.InetSocketAddress;
-import java.util.Map;
+import org.redisson.misc.RPromise;
 
 public class RedisClientEntry implements ClusterNode {
 
@@ -55,7 +57,7 @@ public class RedisClientEntry implements ClusterNode {
 
     private RedisConnection connect() {
         RedisConnection c = client.connect();
-        Promise<RedisConnection> future = manager.newPromise();
+        RPromise<RedisConnection> future = manager.newPromise();
         manager.getConnectListener().onConnect(future, c, null, manager.getConfig());
         future.syncUninterruptibly();
         return future.getNow();
@@ -101,6 +103,21 @@ public class RedisClientEntry implements ClusterNode {
         return true;
     }
 
+    public long time() {
+        RedisConnection c = null;
+        try {
+            c = connect();
+            List<String> parts = c.sync(RedisCommands.TIME);
+            return Long.valueOf(parts.get(0));
+        } catch (Exception e) {
+            throw new RedisException(e.getMessage(), e);
+        } finally {
+            if (c != null) {
+                c.closeAsync();
+            }
+        }
+    }
+    
     @Override
     public Map<String, String> info() {
         RedisConnection c = null;

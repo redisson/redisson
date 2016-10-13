@@ -15,13 +15,12 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.RList;
 import org.redisson.api.RListMultimapCache;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -50,31 +49,26 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     }
 
     public RFuture<Boolean> containsKeyAsync(Object key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
 
-            String valuesName = getValuesName(keyHash);
-            
-            return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "local value = redis.call('hget', KEYS[1], ARGV[2]); " +
-                    "if value ~= false then " +
-                          "local expireDate = 92233720368547758; " +
-                          "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
-                        + "if expireDateScore ~= false then "
-                            + "expireDate = tonumber(expireDateScore) "
-                        + "end; "
-                        + "if expireDate <= tonumber(ARGV[1]) then "
-                            + "return 0;"
-                        + "end; "
-                        + "return redis.call('llen', ARGV[3]) > 0 and 1 or 0;" +
-                    "end;" +
-                    "return 0; ",
-                   Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis(), keyState, valuesName);
-            
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        String valuesName = getValuesName(keyHash);
+        
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local value = redis.call('hget', KEYS[1], ARGV[2]); " +
+                "if value ~= false then " +
+                      "local expireDate = 92233720368547758; " +
+                      "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                    + "if expireDateScore ~= false then "
+                        + "expireDate = tonumber(expireDateScore) "
+                    + "end; "
+                    + "if expireDate <= tonumber(ARGV[1]) then "
+                        + "return 0;"
+                    + "end; "
+                    + "return redis.call('llen', ARGV[3]) > 0 and 1 or 0;" +
+                "end;" +
+                "return 0; ",
+               Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis(), keyState, valuesName);
     }
     
     String getTimeoutSetName() {
@@ -83,119 +77,97 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
 
 
     public RFuture<Boolean> containsValueAsync(Object value) {
-        try {
-            byte[] valueState = codec.getMapValueEncoder().encode(value);
+        byte[] valueState = encodeMapValue(value);
 
-            return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "local keys = redis.call('hgetall', KEYS[1]); " +
-                    "for i, v in ipairs(keys) do " +
-                        "if i % 2 == 0 then " +
-                            "local expireDate = 92233720368547758; " +
-                            "local expireDateScore = redis.call('zscore', KEYS[2], keys[i-1]); "
-                          + "if expireDateScore ~= false then "
-                              + "expireDate = tonumber(expireDateScore) "
-                          + "end; "
-                          + "if expireDate > tonumber(ARGV[2]) then " +
-                                "local name = '{' .. KEYS[1] .. '}:' .. v; " +
-                          
-                                "local items = redis.call('lrange', name, 0, -1) " +
-                                "for i=1,#items do " +
-                                    "if items[i] == ARGV[1] then " +
-                                        "return 1; " +
-                                    "end; " +
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local keys = redis.call('hgetall', KEYS[1]); " +
+                "for i, v in ipairs(keys) do " +
+                    "if i % 2 == 0 then " +
+                        "local expireDate = 92233720368547758; " +
+                        "local expireDateScore = redis.call('zscore', KEYS[2], keys[i-1]); "
+                      + "if expireDateScore ~= false then "
+                          + "expireDate = tonumber(expireDateScore) "
+                      + "end; "
+                      + "if expireDate > tonumber(ARGV[2]) then " +
+                            "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                      
+                            "local items = redis.call('lrange', name, 0, -1) " +
+                            "for i=1,#items do " +
+                                "if items[i] == ARGV[1] then " +
+                                    "return 1; " +
                                 "end; " +
-                              
                             "end; " +
-                        "end;" +
-                    "end; " +
-                    "return 0; ",
-                    Arrays.<Object>asList(getName(), getTimeoutSetName()), valueState, System.currentTimeMillis());
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+                          
+                        "end; " +
+                    "end;" +
+                "end; " +
+                "return 0; ",
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), valueState, System.currentTimeMillis());
     }
 
     public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
-            byte[] valueState = codec.getMapValueEncoder().encode(value);
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
+        byte[] valueState = encodeMapValue(value);
 
-            String valuesName = getValuesName(keyHash);
-            return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                    "local expireDate = 92233720368547758; " +
-                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
-                  + "if expireDateScore ~= false then "
-                      + "expireDate = tonumber(expireDateScore) "
-                  + "end; "
-                  + "if expireDate > tonumber(ARGV[1]) then " +
-                      "local items = redis.call('lrange', KEYS[1], 0, -1); " +
-                      "for i = 1, #items do " +
-                          "if items[i] == ARGV[3] then " +
-                              "return 1; " +
-                          "end; " +
+        String valuesName = getValuesName(keyHash);
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local expireDate = 92233720368547758; " +
+                "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+              + "if expireDateScore ~= false then "
+                  + "expireDate = tonumber(expireDateScore) "
+              + "end; "
+              + "if expireDate > tonumber(ARGV[1]) then " +
+                  "local items = redis.call('lrange', KEYS[1], 0, -1); " +
+                  "for i = 1, #items do " +
+                      "if items[i] == ARGV[3] then " +
+                          "return 1; " +
                       "end; " +
-                    "end; " +
-                    "return 0; ",
-                    Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState, valueState);
-            
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+                  "end; " +
+                "end; " +
+                "return 0; ",
+                Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState, valueState);
     }
 
     @Override
-    public List<V> get(K key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
-            String valuesName = getValuesName(keyHash);
+    public RList<V> get(K key) {
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
+        String valuesName = getValuesName(keyHash);
 
-            return new RedissonListMultimapValues<V>(codec, commandExecutor, valuesName, getTimeoutSetName(), key);
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
+        return new RedissonListMultimapValues<V>(codec, commandExecutor, valuesName, getTimeoutSetName(), key);
     }
 
     public RFuture<Collection<V>> getAllAsync(K key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
-            String valuesName = getValuesName(keyHash);
-            
-            return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
-                    "local expireDate = 92233720368547758; " +
-                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
-                  + "if expireDateScore ~= false then "
-                      + "expireDate = tonumber(expireDateScore) "
-                  + "end; "
-                  + "if expireDate > tonumber(ARGV[1]) then " +
-                       "return redis.call('lrange', KEYS[1], 0, -1); " +
-                    "end; " +
-                    "return {}; ",
-                Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
+        String valuesName = getValuesName(keyHash);
+        
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
+                "local expireDate = 92233720368547758; " +
+                "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+              + "if expireDateScore ~= false then "
+                  + "expireDate = tonumber(expireDateScore) "
+              + "end; "
+              + "if expireDate > tonumber(ARGV[1]) then " +
+                   "return redis.call('lrange', KEYS[1], 0, -1); " +
+                "end; " +
+                "return {}; ",
+            Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState);
     }
 
     public RFuture<Collection<V>> removeAllAsync(Object key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            String keyHash = hash(keyState);
+        byte[] keyState = encodeMapKey(key);
+        String keyHash = hash(keyState);
 
-            String valuesName = getValuesName(keyHash);
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_SET,
-                    "redis.call('hdel', KEYS[1], ARGV[1]); " +
-                    "local members = redis.call('lrange', KEYS[2], 0, -1); " +
-                    "redis.call('del', KEYS[2]); " +
-                    "redis.call('zrem', KEYS[3], ARGV[1]); " +
-                    "return members; ",
-                Arrays.<Object>asList(getName(), valuesName, getTimeoutSetName()), keyState);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        String valuesName = getValuesName(keyHash);
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_SET,
+                "redis.call('hdel', KEYS[1], ARGV[1]); " +
+                "local members = redis.call('lrange', KEYS[2], 0, -1); " +
+                "redis.call('del', KEYS[2]); " +
+                "redis.call('zrem', KEYS[3], ARGV[1]); " +
+                "return members; ",
+            Arrays.<Object>asList(getName(), valuesName, getTimeoutSetName()), keyState);
     }
 
     @Override

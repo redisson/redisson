@@ -29,42 +29,42 @@ public interface Codec {
     /**
      * Returns object decoder used for hash map values in HMAP Redis structure
      *
-     * @return
+     * @return decoder
      */
     Decoder<Object> getMapValueDecoder();
 
     /**
      * Returns object encoder used for hash map values in HMAP Redis structure
      *
-     * @return
+     * @return encoder
      */
     Encoder getMapValueEncoder();
 
     /**
      * Returns object decoder used for hash map keys in HMAP Redis structure
      *
-     * @return
+     * @return decoder
      */
     Decoder<Object> getMapKeyDecoder();
 
     /**
      * Returns object encoder used for hash map keys in HMAP Redis structure
      *
-     * @return
+     * @return encoder
      */
     Encoder getMapKeyEncoder();
 
     /**
      * Returns object decoder used for any objects stored Redis structure except HMAP
      *
-     * @return
+     * @return decoder
      */
     Decoder<Object> getValueDecoder();
 
     /**
      * Returns object encoder used for any objects stored Redis structure except HMAP
      *
-     * @return
+     * @return encoder
      */
     Encoder getValueEncoder();
 

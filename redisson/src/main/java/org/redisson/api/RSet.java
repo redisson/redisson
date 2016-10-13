@@ -29,14 +29,14 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
     /**
      * Removes and returns random element from set
      *
-     * @return
+     * @return value
      */
     V removeRandom();
 
     /**
      * Returns random element from set
      *
-     * @return
+     * @return value
      */
     V random();
 
@@ -53,7 +53,7 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
     /**
      * Read all elements at once
      *
-     * @return
+     * @return values
      */
     Set<V> readAll();
 
@@ -61,17 +61,17 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
      * Union sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of union
      */
     int union(String... names);
 
     /**
-     * Union sets specified by name with current set.
-     * Without current set state change.
-     *
-     * @param names
-     * @return
+     * Union sets specified by name with current set
+     * without current set state change.
+     * 
+     * @param names - name of sets
+     * @return values
      */
     Set<V> readUnion(String... names);
 
@@ -79,17 +79,17 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
      * Diff sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return values
      */
     int diff(String... names);
 
     /**
      * Diff sets specified by name with current set.
      * Without current set state change.
-     *
-     * @param names
-     * @return
+     * 
+     * @param names - name of sets
+     * @return values
      */
 
     Set<V> readDiff(String... names);
@@ -97,17 +97,17 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V> {
      * Intersection sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
-     * @param names
-     * @return
+     * @param names - name of sets
+     * @return size of intersection
      */
     int intersection(String... names);
 
     /**
-     * Intersection sets specified by name with current set.
-     * Without current set state change.
-     *
-     * @param names
-     * @return
+     * Intersection sets specified by name with current set
+     * without current set state change.
+     * 
+     * @param names - name of sets
+     * @return values
      */
     Set<V> readIntersection(String... names);
 

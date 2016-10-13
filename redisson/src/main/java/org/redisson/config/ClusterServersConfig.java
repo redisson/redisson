@@ -46,7 +46,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      * Add Redis cluster node address. Use follow format -- <code>host:port</code>
      *
      * @param addresses in <code>host:port</code> format
-     * @return
+     * @return config
      */
     public ClusterServersConfig addNodeAddress(String ... addresses) {
         for (String address : addresses) {
@@ -68,7 +68,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      * Redis cluster scan interval in milliseconds
      *
      * @param scanInterval in milliseconds
-     * @return
+     * @return config
      */
     public ClusterServersConfig setScanInterval(int scanInterval) {
         this.scanInterval = scanInterval;

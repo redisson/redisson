@@ -17,6 +17,12 @@ package org.redisson.api;
 
 import java.util.Collection;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> type of value
+ */
 public interface RCollectionAsync<V> extends RExpirableAsync {
 
     /**
@@ -81,7 +87,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
     /**
      * Returns the number of elements in this collection.
      *
-     * @return
+     * @return size of collection
      */
     RFuture<Integer> sizeAsync();
 

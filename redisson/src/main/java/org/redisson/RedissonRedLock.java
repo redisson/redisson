@@ -15,10 +15,7 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,36 +38,17 @@ public class RedissonRedLock extends RedissonMultiLock {
      * Creates instance with multiple {@link RLock} objects.
      * Each RLock object could be created by own Redisson instance.
      *
-     * @param locks
+     * @param locks - array of locks
      */
     public RedissonRedLock(RLock... locks) {
         super(locks);
     }
-    
-    protected boolean sync(Map<RLock, Future<Boolean>> tryLockFutures) {
-        List<RLock> lockedLocks = new ArrayList<RLock>(tryLockFutures.size());
-        RuntimeException latestException = null;
-        for (Entry<RLock, Future<Boolean>> entry : tryLockFutures.entrySet()) {
-            try {
-                if (entry.getValue().syncUninterruptibly().getNow()) {
-                    lockedLocks.add(entry.getKey());
-                }
-            } catch (RuntimeException e) {
-                latestException = e;
-            }
-        }
-        
-        if (lockedLocks.size() < minLocksAmount(locks)) {
-            unlockInner(lockedLocks);
-            if (latestException != null) {
-                throw latestException;
-            }
-            return false;
-        }
-        
-        return true;
-    }
 
+    @Override
+    protected int failedLocksLimit() {
+        return locks.size() - minLocksAmount(locks);
+    }
+    
     protected int minLocksAmount(final List<RLock> locks) {
         return locks.size()/2 + 1;
     }

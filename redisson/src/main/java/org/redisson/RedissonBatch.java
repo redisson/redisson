@@ -45,8 +45,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 
-import io.netty.util.concurrent.Future;
-
 /**
  *
  *
@@ -58,7 +56,7 @@ public class RedissonBatch implements RBatch {
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
 
-    public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+    protected RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.executorService = new CommandBatchService(connectionManager);
         this.evictionScheduler = evictionScheduler;
     }
@@ -229,6 +227,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public void executeSkipResult() {
+        executorService.executeSkipResult();
+    }
+    
+    @Override
+    public RFuture<Void> executeSkipResultAsync() {
+        return executorService.executeSkipResultAsync();
+    }
+    
+    @Override
     public RFuture<List<?>> executeAsync() {
         return executorService.executeAsync();
     }
@@ -283,5 +291,8 @@ public class RedissonBatch implements RBatch {
         return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
     }
 
+    protected void enableRedissonReferenceSupport(Redisson redisson) {
+        this.executorService.enableRedissonReferenceSupport(redisson);
+    }
 
 }

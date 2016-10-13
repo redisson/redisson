@@ -18,11 +18,10 @@ package org.redisson.connection;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisConnection;
 import org.redisson.config.MasterSlaveServersConfig;
-
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
 
 public interface ConnectionInitializer {
 
-    <T extends RedisConnection> void onConnect(Promise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config);
+    <T extends RedisConnection> void onConnect(RPromise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config);
 
 }

@@ -13,24 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.resolver;
-
-import java.util.UUID;
-
-import org.redisson.api.RedissonClient;
-import org.redisson.api.annotation.RId;
+package org.redisson.api;
 
 /**
+ * 
+ * @author Nikita Koksharov
  *
- * @author Rui Gu (https://github.com/jackygurui)
  */
-public class RandomUUIDIdStringGenerator implements RIdResolver<RId, String>{
+public enum RCascadeType {
 
-    public static final RandomUUIDIdStringGenerator INSTANCE = new RandomUUIDIdStringGenerator();
+    ALL,
+    PERSIST,
+    DETACH,
+    MERGE,
+    DELETE
     
-    @Override
-    public String resolve(Class value, RId id, String idFieldName, RedissonClient redisson) {
-        return UUID.randomUUID().toString();
-    }
     
 }

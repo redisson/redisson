@@ -16,15 +16,14 @@
 package org.redisson.pubsub;
 
 import org.redisson.RedissonLockEntry;
-
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
 
 public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
 
     public static final Long unlockMessage = 0L;
 
     @Override
-    protected RedissonLockEntry createEntry(Promise<RedissonLockEntry> newPromise) {
+    protected RedissonLockEntry createEntry(RPromise<RedissonLockEntry> newPromise) {
         return new RedissonLockEntry(newPromise);
     }
 
@@ -33,14 +32,23 @@ public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
         if (message.equals(unlockMessage)) {
             value.getLatch().release();
 
-            synchronized (value) {
-                Runnable runnable = value.getListeners().poll();
-                if (runnable != null) {
-                    if (value.getLatch().tryAcquire()) {
-                        runnable.run();
-                    } else {
-                        value.getListeners().add(runnable);
+            while (true) {
+                Runnable runnableToExecute = null;
+                synchronized (value) {
+                    Runnable runnable = value.getListeners().poll();
+                    if (runnable != null) {
+                        if (value.getLatch().tryAcquire()) {
+                            runnableToExecute = runnable;
+                        } else {
+                            value.addListener(runnable);
+                        }
                     }
+                }
+                
+                if (runnableToExecute != null) {
+                    runnableToExecute.run();
+                } else {
+                    return;
                 }
             }
         }

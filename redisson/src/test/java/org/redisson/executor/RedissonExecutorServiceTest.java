@@ -14,12 +14,16 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.junit.After;
 
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.BaseTest;
+import static org.redisson.BaseTest.createConfig;
 import org.redisson.RedissonNode;
+import org.redisson.RedissonRuntimeEnvironment;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.config.Config;
@@ -32,21 +36,45 @@ public class RedissonExecutorServiceTest extends BaseTest {
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         BaseTest.beforeClass();
-        
-        Config config = createConfig();
-        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
-        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
-        node = RedissonNode.create(nodeConfig);
-        node.start();
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            Config config = createConfig();
+            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+            node = RedissonNode.create(nodeConfig);
+            node.start();
+        }
     }
     
     @AfterClass
     public static void afterClass() throws IOException, InterruptedException {
         BaseTest.afterClass();
-        
-        node.shutdown();
+        if (!RedissonRuntimeEnvironment.isTravis) {
+            node.shutdown();
+        }
     }
-    
+
+    @Before
+    @Override
+    public void before() throws IOException, InterruptedException {
+        super.before();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            Config config = createConfig();
+            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+            node = RedissonNode.create(nodeConfig);
+            node.start();
+        }
+    }
+
+    @After
+    @Override
+    public void after() throws InterruptedException {
+        super.after();
+        if (RedissonRuntimeEnvironment.isTravis) {
+            node.shutdown();
+        }
+    }
+
     private void cancel(ScheduledFuture<?> future1) throws InterruptedException, ExecutionException {
         assertThat(future1.cancel(true)).isTrue();
         boolean canceled = false;
@@ -238,6 +266,61 @@ public class RedissonExecutorServiceTest extends BaseTest {
                 return null;
             }
         });
+    }
+    
+    public class TaskCallableClass implements Callable<String> {
+
+        @Override
+        public String call() throws Exception {
+            return "123";
+        }
+
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testNonStaticInnerClassCallable() {
+        redisson.getExecutorService("test").submit(new TaskCallableClass());
+    }
+
+    public static class TaskStaticCallableClass implements Callable<String> {
+
+        @Override
+        public String call() throws Exception {
+            return "123";
+        }
+        
+    }
+
+    @Test
+    public void testInnerClassCallable() throws InterruptedException, ExecutionException {
+        String res = redisson.getExecutorService("test").submit(new TaskStaticCallableClass()).get();
+        assertThat(res).isEqualTo("123");
+    }
+    
+    public class TaskRunnableClass implements Runnable {
+
+        @Override
+        public void run() {
+        }
+
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testNonStaticInnerClassRunnable() {
+        redisson.getExecutorService("test").submit(new TaskRunnableClass());
+    }
+
+    public static class TaskStaticRunnableClass implements Runnable {
+
+        @Override
+        public void run() {
+        }
+
+    }
+
+    @Test
+    public void testInnerClassRunnable() throws InterruptedException, ExecutionException {
+        redisson.getExecutorService("test").submit(new TaskStaticRunnableClass()).get();
     }
 
     @Test(expected = IllegalArgumentException.class)

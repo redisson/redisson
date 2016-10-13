@@ -36,7 +36,6 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
-import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
@@ -74,7 +73,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
 
     private static final RedisCommand<MapScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapScanResult<Object, Object>>("EVAL", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
     private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<Long> EVAL_REMOVE_VALUE = new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5, ValueType.MAP);
+    private static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.MAP);
     private static final RedisCommand<Object> EVAL_PUT_TTL = new RedisCommand<Object>("EVAL", 6, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<List<Object>> EVAL_GET_TTL = new RedisCommand<List<Object>>("EVAL", new TTLMapValueReplayDecoder<Object>(), 5, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_KEY);
@@ -225,7 +224,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
     }
 
     @Override
-    public Publisher<Long> remove(Object key, Object value) {
+    public Publisher<Boolean> remove(Object key, Object value) {
         return commandExecutor.evalWriteReactive(getName(), codec, EVAL_REMOVE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                         + "redis.call('zrem', KEYS[2], ARGV[1]); "

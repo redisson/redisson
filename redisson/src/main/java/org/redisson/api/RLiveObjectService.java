@@ -27,22 +27,13 @@ package org.redisson.api;
 public interface RLiveObjectService {
 
     /**
-     * Find or create the entity from Redis with the id.
-     *
-     * The entityClass should have a field annotated with RId, and the
-     * entityClass itself should have REntity annotated. The type of the RId can
-     * be anything <b>except</b> the followings:
-     * <ol>
-     * <li>An array i.e. byte[], int[], Integer[], etc.</li>
-     * <li>or a RObject i.e. RedissonMap</li>
-     * <li>or a Class with REntity annotation.</li>
-     * </ol>
-     *
+     * Use {@link #persist(Object)} method instead
      *
      * @param entityClass Entity class
      * @param <T> Entity type
      * @return Always returns a proxied object. Even it does not exist in redis.
      */
+    @Deprecated
     <T> T create(Class<T> entityClass);
 
     /**
@@ -67,17 +58,7 @@ public interface RLiveObjectService {
     <T, K> T get(Class<T> entityClass, K id);
 
     /**
-     * Find or create the entity from Redis with the id.
-     *
-     * The entityClass should have a field annotated with RId, and the
-     * entityClass itself should have REntity annotated. The type of the RId can
-     * be anything <b>except</b> the followings:
-     * <ol>
-     * <li>An array i.e. byte[], int[], Integer[], etc.</li>
-     * <li>or a RObject i.e. RedissonMap</li>
-     * <li>or a Class with REntity annotation.</li>
-     * </ol>
-     *
+     * Use {@link #persist(Object)} method instead
      *
      * @param entityClass Entity class
      * @param id identifier
@@ -85,6 +66,7 @@ public interface RLiveObjectService {
      * @param <K> Key type
      * @return Always returns a proxied object. Even it does not exist in redis.
      */
+    @Deprecated
     <T, K> T getOrCreate(Class<T> entityClass, K id);
 
     /**
@@ -98,8 +80,8 @@ public interface RLiveObjectService {
      * with the same RId field value will be created.
      *
      * @param <T> Entity type
-     * @param detachedObject
-     * @return
+     * @param detachedObject - not proxied object
+     * @return proxied object
      * @throws IllegalArgumentException if the object is is a RLiveObject instance.
      */
     <T> T attach(T detachedObject);
@@ -116,8 +98,8 @@ public interface RLiveObjectService {
      * store it.
      *
      * @param <T> Entity type
-     * @param detachedObject
-     * @return
+     * @param detachedObject - not proxied object
+     * @return proxied object
      * @throws IllegalArgumentException if the object is is a RLiveObject instance.
      */
     <T> T merge(T detachedObject);
@@ -127,15 +109,12 @@ public interface RLiveObjectService {
      * <b>NON NULL</b> field values to the redis server. Only when the it does
      * not already exist.
      * 
-     * The class representing this object should have a field annotated with
-     * RId, and the object should hold a non null value in that field.
-     *
      * If this object is not in redis then a new hash key will be created to
      * store it.
      *
      * @param <T> Entity type
-     * @param detachedObject
-     * @return
+     * @param detachedObject - not proxied object
+     * @return proxied object
      */
     <T> T persist(T detachedObject);
 
@@ -143,8 +122,8 @@ public interface RLiveObjectService {
      * Returns unproxied detached object for the attached object.
      *
      * @param <T> Entity type
-     * @param attachedObject
-     * @return
+     * @param attachedObject - proxied object
+     * @return proxied object
      */
     <T> T detach(T attachedObject);
 
@@ -152,7 +131,7 @@ public interface RLiveObjectService {
      * Deletes attached object including all nested objects.
      *
      * @param <T> Entity type
-     * @param attachedObject
+     * @param attachedObject - proxied object
      */
     <T> void delete(T attachedObject);
 
@@ -161,26 +140,46 @@ public interface RLiveObjectService {
      *
      * @param <T> Entity type
      * @param <K> Key type
-     * @param entityClass
-     * @param id
+     * @param entityClass - object class
+     * @param id - object id
      */
     <T, K> void delete(Class<T> entityClass, K id);
 
     /**
      * To cast the instance to RLiveObject instance.
      * 
-     * @param <T>
-     * @param instance
-     * @return
+     * @param <T> type of instance
+     * @param instance - live object
+     * @return RLiveObject compatible object
      */
     <T> RLiveObject asLiveObject(T instance);
 
     /**
+     * To cast the instance to RExpirable instance.
+     * 
+     * @param <T> type of instance
+     * @param instance - live object
+     * @return RExpirable compatible object
+     */
+    <T> RExpirable asRExpirable(T instance);
+
+    /**
+     * To cast the instance to RMap instance.
+     * 
+     * @param <T> type of instance
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param instance - live object
+     * @return RMap compatible object
+     */
+    <T, K, V> RMap<K, V> asRMap(T instance);
+
+    /**
      * Returns true if the instance is a instance of RLiveObject.
      * 
-     * @param <T>
-     * @param instance
-     * @return
+     * @param <T> type of instance
+     * @param instance - live object
+     * @return <code>true</code> object is RLiveObject
      */
     <T> boolean isLiveObject(T instance);
     
@@ -188,9 +187,9 @@ public interface RLiveObjectService {
      * Returns true if the RLiveObject does not yet exist in redis. Also true if
      * the passed object is not a RLiveObject.
      * 
-     * @param <T>
-     * @param instance
-     * @return
+     * @param <T> type of instance
+     * @param instance - live object
+     * @return <code>true</code> object exists
      */
     <T> boolean isExists(T instance);
     
@@ -206,7 +205,7 @@ public interface RLiveObjectService {
      * accessible in another RLiveObjectService instance so long as they are 
      * created by the same RedissonClient instance.
      * 
-     * @param cls 
+     * @param cls - class 
      */
     void registerClass(Class<?> cls);
     
@@ -239,8 +238,8 @@ public interface RLiveObjectService {
      * accessible in another RLiveObjectService instance so long as they are 
      * created by the same RedissonClient instance.
      * 
-     * @param cls
-     * @return 
+     * @param cls - type of instance
+     * @return <code>true</code> if class already registered
      */
     boolean isClassRegistered(Class<?> cls);
 }

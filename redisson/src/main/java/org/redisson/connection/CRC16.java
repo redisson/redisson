@@ -46,12 +46,6 @@ public class CRC16 {
     private CRC16() {
     }
 
-    /**
-     * Create a CRC16 checksum from the bytes.
-     *
-     * @param bytes
-     * @return CRC16 as interger value
-     */
     public static int crc16(byte[] bytes) {
         int crc = 0x0000;
 

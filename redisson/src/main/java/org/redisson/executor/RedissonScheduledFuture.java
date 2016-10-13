@@ -19,15 +19,15 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RScheduledFuture;
-import org.redisson.misc.RedissonFuture;
+import org.redisson.misc.PromiseDelegator;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> value
  */
-public class RedissonScheduledFuture<V> extends RedissonFuture<V> implements RScheduledFuture<V> {
+public class RedissonScheduledFuture<V> extends PromiseDelegator<V> implements RScheduledFuture<V> {
 
     private final long scheduledExecutionTime;
     private final String taskId;
