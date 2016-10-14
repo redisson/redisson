@@ -218,8 +218,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             final String slaveAddr = ip + ":" + port;
 
             // to avoid addition twice
-            if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() != ReadMode.MASTER) {
-                RFuture<Void> future = getEntry(singleSlotRange.getStartSlot()).addSlave(ip, Integer.valueOf(port));
+            if (slaves.putIfAbsent(slaveAddr, true) == null) {
+                final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
+                RFuture<Void> future = entry.addSlave(ip, Integer.valueOf(port));
                 future.addListener(new FutureListener<Void>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {
@@ -229,7 +230,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             return;
                         }
 
-                        if (getEntry(singleSlotRange.getStartSlot()).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+                        if (entry.slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
                             String slaveAddr = ip + ":" + port;
                             log.info("slave: {} added", slaveAddr);
                         }
@@ -266,12 +267,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String ip = parts[2];
                 String port = parts[3];
 
-                MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-                if (entry.getFreezeReason() != FreezeReason.MANAGER) {
-                    entry.freeze();
-                    String addr = ip + ":" + port;
-                    log.warn("master: {} has down", addr);
-                }
+//                should be resolved by master switch event
+//
+//                MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
+//                if (entry.getFreezeReason() != FreezeReason.MANAGER) {
+//                    entry.freeze();
+//                    String addr = ip + ":" + port;
+//                    log.warn("master: {} has down", addr);
+//                }
             }
         } else {
             log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, sentinelAddr.getHost(), sentinelAddr.getPort());

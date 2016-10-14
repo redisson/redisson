@@ -34,8 +34,6 @@ import io.netty.util.concurrent.Future;
 
 public class PubSubConnectionEntry {
 
-    public enum Status {ACTIVE, INACTIVE}
-
     private final AtomicInteger subscribedChannelsAmount;
     private final RedisPubSubConnection conn;
 
