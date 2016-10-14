@@ -151,13 +151,12 @@ public class AccessorInterceptor {
     }
 
     private boolean isGetter(Method method, String fieldName) {
-        return (method.getName().startsWith("get") || method.getName().startsWith("is"))
-                && method.getName().endsWith(getFieldNameSuffix(fieldName));
+        return method.getName().equals("get" + getFieldNameSuffix(fieldName))
+                || method.getName().equals("is" + getFieldNameSuffix(fieldName));
     }
 
     private boolean isSetter(Method method, String fieldName) {
-        return method.getName().startsWith("set")
-                && method.getName().endsWith(getFieldNameSuffix(fieldName));
+        return method.getName().equals("set" + getFieldNameSuffix(fieldName));
     }
 
     private static String getFieldNameSuffix(String fieldName) {
