@@ -588,7 +588,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private <T, K> T instantiate(Class<T> cls, K id) throws Exception {
         for (Constructor<?> constructor : cls.getDeclaredConstructors()) {
-            if (constructor.getParameterCount() == 0) {
+            if (constructor.getParameterTypes().length == 0) {
                 constructor.setAccessible(true);
                 return (T) constructor.newInstance();
             }
