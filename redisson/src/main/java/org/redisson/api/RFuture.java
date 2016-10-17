@@ -96,10 +96,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     boolean await(long timeoutMillis) throws InterruptedException;
     
     /**
-     * Adds the specified listener to this future.  The
-     * specified listener is notified when this future is
-     * {@linkplain #isDone() done}.  If this future is already
-     * completed, the specified listener is notified immediately.
+     * Use methods from {@link CompletionStage} interface
      * 
      * @param listener - listener for future object
      * @return Future object
@@ -108,10 +105,7 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     RFuture<V> addListener(FutureListener<? super V> listener);
 
     /**
-     * Adds the specified listeners to this future.  The
-     * specified listeners are notified when this future is
-     * {@linkplain #isDone() done}.  If this future is already
-     * completed, the specified listeners are notified immediately.
+     * Use methods from {@link CompletionStage} interface
      * 
      * @param listeners - listeners for future object
      * @return Future object
@@ -119,29 +113,9 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     @Deprecated
     RFuture<V> addListeners(FutureListener<? super V>... listeners);
 
-    /**
-     * Removes the first occurrence of the specified listener from this future.
-     * The specified listener is no longer notified when this
-     * future is {@linkplain #isDone() done}.  If the specified
-     * listener is not associated with this future, this method
-     * does nothing and returns silently.
-     * 
-     * @param listener - listener for future object
-     * @return Future object
-     */
     @Deprecated
     RFuture<V> removeListener(FutureListener<? super V> listener);
 
-    /**
-     * Removes the first occurrence for each of the listeners from this future.
-     * The specified listeners are no longer notified when this
-     * future is {@linkplain #isDone() done}.  If the specified
-     * listeners are not associated with this future, this method
-     * does nothing and returns silently.
-     * 
-     * @param listeners - listeners for future object
-     * @return Future object
-     */
     @Deprecated
     RFuture<V> removeListeners(FutureListener<? super V>... listeners);
 
