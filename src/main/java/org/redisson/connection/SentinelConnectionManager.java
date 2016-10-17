@@ -217,7 +217,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             final String slaveAddr = ip + ":" + port;
 
             // to avoid addition twice
-            if (slaves.putIfAbsent(slaveAddr, true) == null && config.getReadMode() != ReadMode.MASTER) {
+            if (slaves.putIfAbsent(slaveAddr, true) == null) {
                 Future<Void> future = getEntry(singleSlotRange.getStartSlot()).addSlave(ip, Integer.valueOf(port));
                 future.addListener(new FutureListener<Void>() {
                     @Override
@@ -262,15 +262,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     log.warn("sentinel: {} has down", addr);
                 }
             } else if ("master".equals(parts[0])) {
-                String ip = parts[2];
-                String port = parts[3];
-
-                MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-                if (entry.getFreezeReason() != FreezeReason.MANAGER) {
-                    entry.freeze();
-                    String addr = ip + ":" + port;
-                    log.warn("master: {} has down", addr);
-                }
             }
         } else {
             log.warn("onSlaveDown. Invalid message: {} from Sentinel {}:{}", msg, sentinelAddr.getHost(), sentinelAddr.getPort());

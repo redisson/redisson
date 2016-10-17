@@ -106,9 +106,9 @@ public interface ConnectionManager {
 
     Codec unsubscribe(String channelName, AsyncSemaphore lock);
     
-    Codec unsubscribe(String channelName);
+    Future<Codec> unsubscribe(String channelName, boolean temporaryDown);
 
-    Codec punsubscribe(String channelName);
+    Future<Codec> punsubscribe(String channelName, boolean temporaryDown);
 
     Codec punsubscribe(String channelName, AsyncSemaphore lock);
     

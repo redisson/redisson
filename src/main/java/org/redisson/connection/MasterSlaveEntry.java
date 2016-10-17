@@ -108,7 +108,7 @@ public class MasterSlaveEntry {
             return false;
         }
         
-        return slaveDown(e);
+        return slaveDown(e, freezeReason == FreezeReason.SYSTEM);
     }
     
     public boolean slaveDown(String host, int port, FreezeReason freezeReason) {
@@ -117,10 +117,10 @@ public class MasterSlaveEntry {
             return false;
         }
         
-        return slaveDown(entry);
+        return slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
     }
 
-    private boolean slaveDown(ClientConnectionsEntry entry) {
+    private boolean slaveDown(ClientConnectionsEntry entry, boolean temporaryDown) {
         // add master as slave if no more slaves available
         if (config.getReadMode() == ReadMode.SLAVE && slaveBalancer.getAvailableClients() == 0) {
             InetSocketAddress addr = masterEntry.getClient().getAddr();
@@ -154,33 +154,45 @@ public class MasterSlaveEntry {
         }
         
         for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
-            reattachPubSub(connection);
+            reattachPubSub(connection, temporaryDown);
         }
         entry.getAllSubscribeConnections().clear();
         
         return true;
     }
     
-    private void reattachPubSub(RedisPubSubConnection redisPubSubConnection) {
+    private void reattachPubSub(RedisPubSubConnection redisPubSubConnection, boolean temporaryDown) {
         for (String channelName : redisPubSubConnection.getChannels().keySet()) {
             PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
             Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
-            reattachPubSubListeners(channelName, listeners);
+            reattachPubSubListeners(channelName, listeners, temporaryDown);
         }
 
         for (String channelName : redisPubSubConnection.getPatternChannels().keySet()) {
             PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
             Collection<RedisPubSubListener> listeners = pubSubEntry.getListeners(channelName);
-            reattachPatternPubSubListeners(channelName, listeners);
+            reattachPatternPubSubListeners(channelName, listeners, temporaryDown);
         }
     }
 
-    private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener> listeners) {
-        Codec subscribeCodec = connectionManager.unsubscribe(channelName);
+    private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener> listeners, boolean temporaryDown) {
+        Future<Codec> subscribeCodec = connectionManager.unsubscribe(channelName, temporaryDown);
         if (listeners.isEmpty()) {
             return;
         }
-        
+
+        subscribeCodec.addListener(new FutureListener<Codec>() {
+            @Override
+            public void operationComplete(Future<Codec> future) throws Exception {
+                Codec subscribeCodec = future.get();
+                subscribe(channelName, listeners, subscribeCodec);
+            }
+
+        });        
+    }
+
+    private void subscribe(final String channelName, final Collection<RedisPubSubListener> listeners,
+            final Codec subscribeCodec) {
         Future<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null);
         subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
             
@@ -188,42 +200,55 @@ public class MasterSlaveEntry {
             public void operationComplete(Future<PubSubConnectionEntry> future)
                     throws Exception {
                 if (!future.isSuccess()) {
-                    log.error("Can't resubscribe topic channel: " + channelName);
+                    subscribe(channelName, listeners, subscribeCodec);
                     return;
                 }
                 PubSubConnectionEntry newEntry = future.getNow();
-                for (RedisPubSubListener redisPubSubListener : listeners) {
+                for (RedisPubSubListener<?> redisPubSubListener : listeners) {
                     newEntry.addListener(channelName, redisPubSubListener);
                 }
-                log.debug("resubscribed listeners for '{}' channel", channelName);
+                log.debug("resubscribed listeners of '{}' channel to {}", channelName, newEntry.getConnection().getRedisClient());
             }
         });
     }
 
     private void reattachPatternPubSubListeners(final String channelName,
-            final Collection<RedisPubSubListener> listeners) {
-        Codec subscribeCodec = connectionManager.punsubscribe(channelName);
-        if (!listeners.isEmpty()) {
-            Future<PubSubConnectionEntry> future = connectionManager.psubscribe(channelName, subscribeCodec, null);
-            future.addListener(new FutureListener<PubSubConnectionEntry>() {
-                @Override
-                public void operationComplete(Future<PubSubConnectionEntry> future)
-                        throws Exception {
-                    if (!future.isSuccess()) {
-                        log.error("Can't resubscribe topic channel: " + channelName);
-                        return;
-                    }
-
-                    PubSubConnectionEntry newEntry = future.getNow();
-                    for (RedisPubSubListener redisPubSubListener : listeners) {
-                        newEntry.addListener(channelName, redisPubSubListener);
-                    }
-                    log.debug("resubscribed listeners for '{}' channel-pattern", channelName);
-                }
-            });
+            final Collection<RedisPubSubListener> listeners, boolean temporaryDown) {
+        Future<Codec> subscribeCodec = connectionManager.punsubscribe(channelName, temporaryDown);
+        if (listeners.isEmpty()) {
+            return;
         }
+        
+        subscribeCodec.addListener(new FutureListener<Codec>() {
+            @Override
+            public void operationComplete(Future<Codec> future) throws Exception {
+                Codec subscribeCodec = future.get();
+                psubscribe(channelName, listeners, subscribeCodec);
+            }
+        });
     }
-    
+
+    private void psubscribe(final String channelName, final Collection<RedisPubSubListener> listeners,
+            final Codec subscribeCodec) {
+        Future<PubSubConnectionEntry> subscribeFuture = connectionManager.psubscribe(channelName, subscribeCodec, null);
+        subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
+            @Override
+            public void operationComplete(Future<PubSubConnectionEntry> future)
+                    throws Exception {
+                if (!future.isSuccess()) {
+                    psubscribe(channelName, listeners, subscribeCodec);
+                    return;
+                }
+                
+                PubSubConnectionEntry newEntry = future.getNow();
+                for (RedisPubSubListener<?> redisPubSubListener : listeners) {
+                    newEntry.addListener(channelName, redisPubSubListener);
+                }
+                log.debug("resubscribed listeners for '{}' channel-pattern", channelName);
+            }
+        });
+    }
+
     private void reattachBlockingQueue(RedisConnection connection) {
         final CommandData<?, ?> commandData = connection.getCurrentCommand();
 
