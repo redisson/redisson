@@ -411,13 +411,15 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts) {
         if (data == null) {
-            if (parts.size() == 2 && parts.get(0).equals("message")) {
-                String channelName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(channelName);
-            }
-            if (parts.size() == 3 && parts.get(0).equals("pmessage")) {
-                String patternName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(patternName);
+            if (parts != null) {
+                if (parts.size() == 2 && "message".equals(parts.get(0))) {
+                    String channelName = (String) parts.get(1);
+                    return pubSubMessageDecoders.get(channelName);
+                }
+                if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
+                    String patternName = (String) parts.get(1);
+                    return pubSubMessageDecoders.get(patternName);
+                }
             }
             return StringCodec.INSTANCE.getValueDecoder();
         }
