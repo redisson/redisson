@@ -109,9 +109,9 @@ public interface ConnectionManager {
 
     Codec unsubscribe(String channelName, AsyncSemaphore lock);
     
-    Codec unsubscribe(String channelName);
+    RFuture<Codec> unsubscribe(String channelName, boolean temporaryDown);
 
-    Codec punsubscribe(String channelName);
+    RFuture<Codec> punsubscribe(String channelName, boolean temporaryDown);
 
     Codec punsubscribe(String channelName, AsyncSemaphore lock);
     

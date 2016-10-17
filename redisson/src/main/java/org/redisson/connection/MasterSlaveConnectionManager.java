@@ -53,7 +53,6 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.RedissonThreadFactory;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.TransferListener;
 import org.slf4j.Logger;
@@ -540,16 +539,32 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     @Override
-    public Codec unsubscribe(String channelName) {
+    public RFuture<Codec> unsubscribe(final String channelName, boolean temporaryDown) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return null;
         }
+        freePubSubConnections.remove(entry);
         
-        Codec entryCodec = entry.getConnection().getChannels().get(channelName);
+        final Codec entryCodec = entry.getConnection().getChannels().get(channelName);
+        if (temporaryDown) {
+            final RPromise<Codec> result = newPromise();
+            entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
+                
+                @Override
+                public boolean onStatus(PubSubType type, String channel) {
+                    if (type == PubSubType.UNSUBSCRIBE && channel.equals(channelName)) {
+                        result.trySuccess(entryCodec);
+                        return true;
+                    }
+                    return false;
+                }
+                
+            });
+            return result;
+        }
         entry.unsubscribe(channelName, null);
-        
-        return entryCodec;
+        return newSucceededFuture(entryCodec);
     }
     
     public Codec punsubscribe(final String channelName, final AsyncSemaphore lock) {
@@ -583,16 +598,32 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     
     @Override
-    public Codec punsubscribe(final String channelName) {
+    public RFuture<Codec> punsubscribe(final String channelName, boolean temporaryDown) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return null;
         }
+        freePubSubConnections.remove(entry);
         
-        Codec entryCodec = entry.getConnection().getPatternChannels().get(channelName);
+        final Codec entryCodec = entry.getConnection().getChannels().get(channelName);
+        if (temporaryDown) {
+            final RPromise<Codec> result = newPromise();
+            entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
+                
+                @Override
+                public boolean onStatus(PubSubType type, String channel) {
+                    if (type == PubSubType.PUNSUBSCRIBE && channel.equals(channelName)) {
+                        result.trySuccess(entryCodec);
+                        return true;
+                    }
+                    return false;
+                }
+                
+            });
+            return result;
+        }
         entry.punsubscribe(channelName, null);
-        
-        return entryCodec;
+        return newSucceededFuture(entryCodec);
     }
 
     @Override
