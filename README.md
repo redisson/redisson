@@ -4,7 +4,12 @@ Redis based In-Memory Data Grid for Java. Redisson.
 [![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
-Redis 2.8+ and JDK 1.6+ compatible.
+Redis 2.8+ compatible.
+
+| Stable Release Version | JDK Version compatibility | Release Date |
+| ------------- | ------------- | ------------|
+| 3.0.0  | 1.8+ | 17.10.2016 |
+| 2.5.0 | 1.6+ | 17.10.2016 |
 
 Please read [documentation](https://github.com/mrniko/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
@@ -61,6 +66,7 @@ Articles
 ================================
 
 [Java data structures powered by Redis. Introduction to Redisson (pdf)](http://redisson.org/Redisson.pdf)  
+[A Look at the Java Distributed In-Memory Data Model (Powered by Redis)](https://dzone.com/articles/java-distributed-in-memory-data-model-powered-by-r)
 [Distributed tasks Execution and Scheduling in Java, powered by Redis](https://dzone.com/articles/distributed-tasks-execution-and-scheduling-in-java)  
 [Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
 [Java Remote Method Invocation with Redisson](https://dzone.com/articles/java-remote-method-invocation-with-redisson)  
@@ -71,17 +77,28 @@ Quick start
 ===============================
 
 #### Maven 
-
+    <!-- JDK 1.8+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.4.0</version>
+       <version>3.0.0</version>
+    </dependency>  
+
+    <!-- JDK 1.6+ compatible -->
+    <dependency>
+       <groupId>org.redisson</groupId>
+       <artifactId>redisson</artifactId>
+       <version>2.5.0</version>
     </dependency>
 
-#### Gradle
 
-    compile 'org.redisson:redisson:2.4.0'
-    
+#### Gradle
+    // JDK 1.8+ compatible
+    compile 'org.redisson:redisson:3.0.0'  
+
+    // JDK 1.6+ compatible
+    compile 'org.redisson:redisson:2.5.0'
+
 #### Java
 
 ```java
@@ -105,8 +122,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 2.4.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.4.0&e=jar)  
-[Redisson node 2.4.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.4.0&e=jar)  
+[Redisson 3.0.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.0.0&e=jar),
+[Redisson node 3.0.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.0.0&e=jar)  
+
+[Redisson 2.5.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.5.0&e=jar),
+[Redisson node 2.5.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.5.0&e=jar)  
 
 ### Supported by
 
