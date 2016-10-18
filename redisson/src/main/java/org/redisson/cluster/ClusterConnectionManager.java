@@ -74,6 +74,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         connectListener = new ClusterConnectionListener(cfg.getReadMode() != ReadMode.MASTER);
 
         this.config = create(cfg);
+        initTimer(this.config);
         init(this.config);
 
         Throwable lastException = null;

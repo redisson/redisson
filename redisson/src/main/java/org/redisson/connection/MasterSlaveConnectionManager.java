@@ -155,6 +155,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         this(config);
+        initTimer(cfg);
         init(cfg);
     }
 
@@ -224,6 +225,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
+        connectionWatcher = new IdleConnectionWatcher(this, config);
+
+        try {
+            initEntry(config);
+        } catch (RuntimeException e) {
+            stopThreads();
+            throw e;
+        }
+    }
+
+    protected void initTimer(MasterSlaveServersConfig config) {
         int[] timeouts = new int[]{config.getRetryInterval(), config.getTimeout(), config.getReconnectionTimeout()};
         Arrays.sort(timeouts);
         int minTimeout = timeouts[0];
@@ -235,15 +247,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             minTimeout = 100;
         }
         timer = new HashedWheelTimer(minTimeout, TimeUnit.MILLISECONDS);
-
-        connectionWatcher = new IdleConnectionWatcher(this, config);
-
-        try {
-            initEntry(config);
-        } catch (RuntimeException e) {
-            stopThreads();
-            throw e;
-        }
     }
 
     public ConnectionInitializer getConnectListener() {

@@ -114,6 +114,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         if (currentMaster.get() == null) {
             throw new RedisConnectionException("Can't connect to servers!");
         }
+        initTimer(c);
         init(c);
 
         List<RFuture<RedisPubSubConnection>> connectionFutures = new ArrayList<RFuture<RedisPubSubConnection>>(cfg.getSentinelAddresses().size());
