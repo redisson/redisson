@@ -97,7 +97,11 @@ public class RedisClient {
 
     public RedisClient(final Timer timer, ExecutorService executor, EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, 
                         int connectTimeout, int commandTimeout) {
+        if (timer == null) {
+            throw new NullPointerException("timer param can't be null");
+        }
         this.executor = executor;
+        this.timer = timer;
         addr = new InetSocketAddress(host, port);
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
         bootstrap.handler(new ChannelInitializer<Channel>() {
