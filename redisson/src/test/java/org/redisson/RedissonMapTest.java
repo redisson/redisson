@@ -291,21 +291,16 @@ public class RedissonMapTest extends BaseTest {
         assertThat(counter).isEqualTo(size);
    }
 
-    @Test
-    public void testNull() {
+    @Test(expected = NullPointerException.class)
+    public void testNullValue() {
         Map<Integer, String> map = redisson.getMap("simple12");
         map.put(1, null);
-        map.put(2, null);
-        map.put(3, "43");
-
-        assertThat(map.size()).isEqualTo(3);
-
-        String val = map.get(2);
-        assertThat(val).isNull();
-        String val2 = map.get(1);
-        assertThat(val2).isNull();
-        String val3 = map.get(3);
-        assertThat(val3).isEqualTo("43");
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void testNullKey() {
+        Map<Integer, String> map = redisson.getMap("simple12");
+        map.put(null, "1");
     }
 
     @Test
