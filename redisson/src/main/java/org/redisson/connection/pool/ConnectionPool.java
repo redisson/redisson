@@ -221,6 +221,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise) {
+        if (promise.isDone()) {
+            return;
+        }
         T conn = poll(entry);
         if (conn != null) {
             if (!conn.isActive()) {
@@ -228,8 +231,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 return;
             }
 
-            entry.resetFailedAttempts();
-            promise.trySuccess(conn);
+            connectedSuccessful(entry, promise, conn);
             return;
         }
 
