@@ -27,12 +27,12 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RPromise;
+import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 public class ClientConnectionsEntry {
 
@@ -40,10 +40,10 @@ public class ClientConnectionsEntry {
 
     private final Queue<RedisPubSubConnection> allSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
-    private final AtomicInteger freeSubscribeConnectionsCounter = new AtomicInteger();
+    private final AsyncSemaphore freeSubscribeConnectionsCounter;
 
     private final Queue<RedisConnection> freeConnections = new ConcurrentLinkedQueue<RedisConnection>();
-    private final AtomicInteger freeConnectionsCounter = new AtomicInteger();
+    private final AsyncSemaphore freeConnectionsCounter;
 
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
 
@@ -59,10 +59,10 @@ public class ClientConnectionsEntry {
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
             ConnectionManager connectionManager, NodeType serverMode) {
         this.client = client;
-        this.freeConnectionsCounter.set(poolMaxSize);
+        this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize);
         this.connectionManager = connectionManager;
         this.nodeType = serverMode;
-        this.freeSubscribeConnectionsCounter.set(subscribePoolMaxSize);
+        this.freeSubscribeConnectionsCounter = new AsyncSemaphore(subscribePoolMaxSize);
 
         if (subscribePoolMaxSize > 0) {
             connectionManager.getConnectionWatcher().add(subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter);
@@ -107,27 +107,15 @@ public class ClientConnectionsEntry {
     }
 
     public int getFreeAmount() {
-        return freeConnectionsCounter.get();
+        return freeConnectionsCounter.getCounter();
     }
 
-    private boolean tryAcquire(AtomicInteger counter) {
-        while (true) {
-            int value = counter.get();
-            if (value == 0) {
-                return false;
-            }
-            if (counter.compareAndSet(value, value - 1)) {
-                return true;
-            }
-        }
-    }
-
-    public boolean tryAcquireConnection() {
-        return tryAcquire(freeConnectionsCounter);
+    public void acquireConnection(Runnable runnable) {
+        freeConnectionsCounter.acquire(runnable);
     }
 
     public void releaseConnection() {
-        freeConnectionsCounter.incrementAndGet();
+        freeConnectionsCounter.release();
     }
 
     public RedisConnection pollConnection() {
@@ -228,12 +216,12 @@ public class ClientConnectionsEntry {
         freeSubscribeConnections.add(connection);
     }
 
-    public boolean tryAcquireSubscribeConnection() {
-        return tryAcquire(freeSubscribeConnectionsCounter);
+    public void acquireSubscribeConnection(Runnable runnable) {
+        freeSubscribeConnectionsCounter.acquire(runnable);
     }
 
     public void releaseSubscribeConnection() {
-        freeSubscribeConnectionsCounter.incrementAndGet();
+        freeSubscribeConnectionsCounter.release();
     }
 
     public boolean freezeMaster(FreezeReason reason) {
