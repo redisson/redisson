@@ -63,6 +63,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         super(config);
 
         final MasterSlaveServersConfig c = create(cfg);
+        initTimer(c);
 
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());
@@ -114,7 +115,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         if (currentMaster.get() == null) {
             throw new RedisConnectionException("Can't connect to servers!");
         }
-        initTimer(c);
         init(c);
 
         List<RFuture<RedisPubSubConnection>> connectionFutures = new ArrayList<RFuture<RedisPubSubConnection>>(cfg.getSentinelAddresses().size());
