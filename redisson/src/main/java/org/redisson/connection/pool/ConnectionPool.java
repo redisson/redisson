@@ -109,7 +109,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
             
             @Override
             public void run() {
-                RFuture<T> promise = createConnection(entry, null);
+                RPromise<T> promise = connectionManager.newPromise();
+                createConnection(entry, promise);
                 promise.addListener(new FutureListener<T>() {
                     @Override
                     public void operationComplete(Future<T> future) throws Exception {
@@ -159,7 +160,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     public RFuture<T> get() {
         for (int j = entries.size() - 1; j >= 0; j--) {
-            ClientConnectionsEntry entry = getEntry();
+            final ClientConnectionsEntry entry = getEntry();
             if (!entry.isFreezed() 
                     && tryAcquireConnection(entry)) {
                 final RPromise<T> result = connectionManager.newPromise();
@@ -238,13 +239,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         createConnection(entry, promise);
     }
 
-    private RFuture<T> createConnection(final ClientConnectionsEntry entry, RPromise<T> ppromise) {
-        final RPromise<T> promise;
-        if (ppromise != null) {
-            promise = ppromise;
-        } else {
-            promise = connectionManager.newPromise();
-        }
+    private void createConnection(final ClientConnectionsEntry entry, final RPromise<T> promise) {
         RFuture<T> connFuture = connect(entry);
         connFuture.addListener(new FutureListener<T>() {
             @Override
@@ -263,7 +258,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 connectedSuccessful(entry, promise, conn);
             }
         });
-        return promise;
     }
 
     private void connectedSuccessful(ClientConnectionsEntry entry, RPromise<T> promise, T conn) {
