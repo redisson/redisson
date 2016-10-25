@@ -223,6 +223,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private void connectTo(ClientConnectionsEntry entry, RPromise<T> promise) {
         if (promise.isDone()) {
+            releaseConnection(entry);
             return;
         }
         T conn = poll(entry);
