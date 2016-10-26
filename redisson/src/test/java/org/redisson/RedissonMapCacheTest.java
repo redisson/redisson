@@ -655,6 +655,15 @@ public class RedissonMapCacheTest extends BaseTest {
         SimpleValue value1 = new SimpleValue("4");
         assertThat(map.fastPutIfAbsent(key1, value1)).isTrue();
         assertThat(map.get(key1)).isEqualTo(value1);
+        
+        SimpleKey key2 = new SimpleKey("3");
+        map.put(key2, new SimpleValue("31"), 500, TimeUnit.MILLISECONDS);
+        assertThat(map.fastPutIfAbsent(key2, new SimpleValue("32"))).isFalse();
+        
+        Thread.sleep(500);
+        assertThat(map.fastPutIfAbsent(key2, new SimpleValue("32"))).isTrue();
+        assertThat(map.get(key2)).isEqualTo(new SimpleValue("32"));
+
     }
 
     @Test
