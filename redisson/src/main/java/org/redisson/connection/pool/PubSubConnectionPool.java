@@ -50,10 +50,10 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
     }
 
     @Override
-    protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
-        return entry.tryAcquireSubscribeConnection();
+    protected void acquireConnection(ClientConnectionsEntry entry, Runnable runnable) {
+        entry.acquireSubscribeConnection(runnable);
     }
-
+    
     @Override
     protected void releaseConnection(ClientConnectionsEntry entry) {
         entry.releaseSubscribeConnection();

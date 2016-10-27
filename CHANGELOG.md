@@ -2,6 +2,41 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####17-Oct-2016 - version 3.0.0 released
+Fully compatible with JDK 8. Includes all code changes from __2.5.0__ version
+
+Feature - `RFeature` extends `CompletionStage`
+
+####17-Oct-2016 - version 2.5.0 released
+This version brings greatly improved version of `RLiveObjectService` and adds cascade handling, cyclic dependency resolving, simplified object creation. Read more in this [article](https://dzone.com/articles/java-distributed-in-memory-data-model-powered-by-r)
+
+Includes all code changes from __2.2.26__ version
+
+Feautre - COUNT and ASC/DESC support for `RGeo` radius methods  
+Feature - `RGeo` extends `RScoredSortedSet`  
+Feature - `RCascade` annotation support LiveObjectService  
+Improvement - `RId` generator should be empty by default  
+Improvement - support setter/getter with protected visibility scope for LiveObject  
+Fixed - `RMapCache` doesn't keep entries insertion order during iteration  
+Fixed - `@RId` is returned/overwritten by similarly named methods (thanks to Rui Gu)  
+Fixed - typo `getRemoteSerivce` -> `getRemoteService` (thanks to Slava Rosin)  
+Fixed - `RPermitExpirableSemaphore.availablePermits` doesn't return actual permits account under certain conditions  
+Fixed - `readAllValues` and `readAllEntrySet` methods of `RLocalCacheMap` return wrong values  
+Fixed - setter for collection field of LiveObject entity should rewrite collection content  
+Fixed - `RSetCache` TTL not updated if element already present  
+Fixed - `RLiveObjectService` swallow exceptions during `merge` or `persist` operation
+Fixed - `RLiveObjectService` doesn't support protected constructors  
+Fixed - object with cyclic dependencies lead to stackoverflow during `RLiveObjectService.detach` process  
+Fixed - not persisted `REntity` object allowed to store automatically  
+Fixed - `RLexSortedSet.addAll` doesn't work  
+Fixed - `RLiveObjectService` can't detach content of List object  
+Fixed - `RLiveObjectService` doesn't create objects mapped to Redisson objects in runtime during getter accesss  
+Fixed - `RLiveObjectService` can't recognize id field of object without setter  
+
+####17-Oct-2016 - version 2.2.26 released
+Fixed - NPE in CommandDecoder  
+Fixed - PubSub connection re-subscription doesn't work in case when there is only one slave available
+
 ####27-Sep-2016 - version 2.4.0 released
 Includes all code changes from __2.2.25__ version
 

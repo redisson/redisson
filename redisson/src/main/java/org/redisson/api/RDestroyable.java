@@ -23,7 +23,7 @@ package org.redisson.api;
 public interface RDestroyable {
 
     /**
-     * Allows to destroy object then it's not necessary anymore.
+     * Destroys object when it's not necessary anymore.
      */
     void destroy();
     

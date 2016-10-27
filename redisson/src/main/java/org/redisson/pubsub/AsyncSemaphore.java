@@ -74,6 +74,10 @@ public class AsyncSemaphore {
         }
     }
 
+    public int getCounter() {
+        return counter;
+    }
+    
     public void release() {
         Runnable runnable = null;
         

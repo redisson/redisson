@@ -63,6 +63,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         super(config);
 
         final MasterSlaveServersConfig c = create(cfg);
+        initTimer(c);
 
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = createClient(addr.getHost(), addr.getPort(), c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());

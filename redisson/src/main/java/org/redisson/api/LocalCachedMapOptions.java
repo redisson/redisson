@@ -86,7 +86,7 @@ public class LocalCachedMapOptions {
     }
 
     /**
-     * Sets cache size. If size is <code>0</code> then cache is unbounded.
+     * Sets cache size. If size is <code>0</code> then local cache is unbounded.
      * 
      * @param cacheSize - size of cache
      * @return LocalCachedMapOptions instance

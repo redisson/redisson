@@ -65,6 +65,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         super(config);
 
         this.config = create(cfg);
+        initTimer(this.config);
 
         for (URI addr : cfg.getNodeAddresses()) {
             RedisConnection connection = connect(cfg, addr);
