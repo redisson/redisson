@@ -30,6 +30,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+import org.redisson.pubsub.AsyncSemaphore;
+
 public class IdleConnectionWatcher {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -38,10 +40,10 @@ public class IdleConnectionWatcher {
 
         private final int minimumAmount;
         private final int maximumAmount;
-        private final AtomicInteger freeConnectionsCounter;
+        private final AsyncSemaphore freeConnectionsCounter;
         private final Collection<? extends RedisConnection> connections;
 
-        public Entry(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AtomicInteger freeConnectionsCounter) {
+        public Entry(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AsyncSemaphore freeConnectionsCounter) {
             super();
             this.minimumAmount = minimumAmount;
             this.maximumAmount = maximumAmount;
@@ -84,10 +86,10 @@ public class IdleConnectionWatcher {
     }
 
     private boolean validateAmount(Entry entry) {
-        return entry.maximumAmount - entry.freeConnectionsCounter.get() + entry.connections.size() > entry.minimumAmount;
+        return entry.maximumAmount - entry.freeConnectionsCounter.getCounter() + entry.connections.size() > entry.minimumAmount;
     }
 
-    public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AtomicInteger freeConnectionsCounter) {
+    public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AsyncSemaphore freeConnectionsCounter) {
         entries.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter));
     }
 
