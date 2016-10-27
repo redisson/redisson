@@ -8,8 +8,8 @@ Redis 2.8+ compatible.
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.0.0  | 1.8+ | 17.10.2016 |
-| 2.5.0 | 1.6+ | 17.10.2016 |
+| 3.0.1  | 1.8+ | 27.10.2016 |
+| 2.5.1 | 1.6+ | 27.10.2016 |
 
 Please read [documentation](https://github.com/mrniko/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
@@ -81,23 +81,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.0.0</version>
+       <version>3.0.1</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.5.0</version>
+       <version>2.5.1</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.0.0'  
+    compile 'org.redisson:redisson:3.0.1'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.5.0'
+    compile 'org.redisson:redisson:2.5.1'
 
 #### Java
 
@@ -122,11 +122,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.0.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.0.0&e=jar),
-[Redisson node 3.0.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.0.0&e=jar)  
+[Redisson 3.0.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.0.1&e=jar),
+[Redisson node 3.0.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.0.1&e=jar)  
 
-[Redisson 2.5.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.5.0&e=jar),
-[Redisson node 2.5.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.5.0&e=jar)  
+[Redisson 2.5.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.5.1&e=jar),
+[Redisson node 2.5.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.5.1&e=jar)  
 
 ### Supported by
 
