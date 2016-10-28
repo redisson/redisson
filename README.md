@@ -1,8 +1,6 @@
 Redis based In-Memory Data Grid for Java. Redisson.
 ====
 
-[![Maven Central](https://img.shields.io/maven-central/v/org.redisson/redisson.svg?style=flat-square)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/) 
-
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 Redis 2.8+ compatible.
 
