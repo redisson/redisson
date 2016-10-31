@@ -231,14 +231,14 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 + 
                 
                 "if (redis.call('del', KEYS[1]) == 1) then " + 
-                    "local nextThreadId = redis.call('lindex', KEYS[3], 0); " + 
+                    "local nextThreadId = redis.call('lindex', KEYS[2], 0); " + 
                     "if nextThreadId ~= false then " +
-                        "redis.call('publish', KEYS[2] .. ':' .. nextThreadId, ARGV[1]); " +
+                        "redis.call('publish', KEYS[3] .. ':' .. nextThreadId, ARGV[1]); " +
                     "end; " + 
                     "return 1 " + 
                 "end " + 
                 "return 0;",
-                Arrays.<Object>asList(getName(), getChannelName(), getThreadsQueueName()), LockPubSub.unlockMessage);
+                Arrays.<Object>asList(getName(), getThreadsQueueName(), getChannelName()), LockPubSub.unlockMessage);
     }
 
 }
