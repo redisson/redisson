@@ -16,7 +16,8 @@ Licensed under the Apache License 2.0.
 
 Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-####Try [Redisson PRO](http://redisson.pro) version
+####Try [Redisson PRO](http://redisson.pro) version.  
+####Redisson team offers commercial support. Please contact sales@redisson.pro for details.
 
 Features
 ================================
