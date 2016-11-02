@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 
 /**
@@ -85,7 +86,7 @@ public class CommandData<T, R> implements QueueCommand {
     @Override
     public String toString() {
         return "CommandData [promise=" + promise + ", command=" + command + ", params="
-                + Arrays.toString(params) + ", codec=" + codec + "]";
+                + LogHelper.toString(params) + ", codec=" + codec + "]";
     }
 
     @Override

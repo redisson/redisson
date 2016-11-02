@@ -45,6 +45,7 @@ import org.redisson.client.protocol.pubsub.Message;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -203,11 +204,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             RPromise<Void> promise = commandBatch.getPromise();
             if (error != null) {
                 if (!promise.tryFailure(error) && promise.cause() instanceof RedisTimeoutException) {
-                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+                    log.warn("response has been skipped due to timeout! channel: {}, command: {}",ctx.channel(), LogHelper.toString(data));
                 }
             } else {
                 if (!promise.trySuccess(null) && promise.cause() instanceof RedisTimeoutException) {
-                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), LogHelper.toString(data));
                 }
             }
             
