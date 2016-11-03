@@ -206,23 +206,6 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testNull() {
-        RMapReactive<Integer, String> map = redisson.getMap("simple12");
-        sync(map.put(1, null));
-        sync(map.put(2, null));
-        sync(map.put(3, "43"));
-
-        Assert.assertEquals(3, sync(map.size()).intValue());
-
-        String val = sync(map.get(2));
-        Assert.assertNull(val);
-        String val2 = sync(map.get(1));
-        Assert.assertNull(val2);
-        String val3 = sync(map.get(3));
-        Assert.assertEquals("43", val3);
-    }
-
-    @Test
     public void testSimpleTypes() {
         RMapReactive<Integer, String> map = redisson.getMap("simple12");
         sync(map.put(1, "12"));
