@@ -501,7 +501,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     protected Iterator<K> keyIterator() {
         return new RedissonMapIterator<K, V, K>(RedissonMap.this) {
             @Override
-            K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+            protected K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (K) entry.getKey().getObj();
             }
         };
@@ -539,7 +539,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     protected Iterator<V> valueIterator() {
         return new RedissonMapIterator<K, V, V>(RedissonMap.this) {
             @Override
-            V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+            protected V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (V) entry.getValue().getObj();
             }
         };

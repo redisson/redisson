@@ -114,7 +114,15 @@ public class Redisson implements RedissonClient {
         resolverProvider = config.getResolverProvider();
     }
     
-    ConnectionManager getConnectionManager() {
+    public EvictionScheduler getEvictionScheduler() {
+        return evictionScheduler;
+    }
+    
+    public CommandExecutor getCommandExecutor() {
+        return commandExecutor;
+    }
+    
+    public ConnectionManager getConnectionManager() {
         return connectionManager;
     }
 

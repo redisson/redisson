@@ -31,11 +31,11 @@ import org.redisson.misc.RPromise;
  * @author Nikita Koksharov
  *
  */
-abstract class RedissonObject implements RObject {
+public abstract class RedissonObject implements RObject {
 
-    final CommandAsyncExecutor commandExecutor;
+    protected final CommandAsyncExecutor commandExecutor;
     private final String name;
-    final Codec codec;
+    protected final Codec codec;
 
     public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.codec = codec;

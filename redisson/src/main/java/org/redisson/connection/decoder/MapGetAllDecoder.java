@@ -30,10 +30,16 @@ public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
 
     private final int shiftIndex;
     private final List<Object> args;
+    private final boolean allowNulls;
 
     public MapGetAllDecoder(List<Object> args, int shiftIndex) {
+        this(args, shiftIndex, false);
+    }
+    
+    public MapGetAllDecoder(List<Object> args, int shiftIndex, boolean allowNulls) {
         this.args = args;
         this.shiftIndex = shiftIndex;
+        this.allowNulls = allowNulls;
     }
 
     @Override
@@ -54,7 +60,7 @@ public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
         Map<Object, Object> result = new HashMap<Object, Object>(parts.size());
         for (int index = 0; index < args.size()-shiftIndex; index++) {
             Object value = parts.get(index);
-            if (value == null) {
+            if (!allowNulls && value == null) {
                 continue;
             }
             result.put(args.get(index+shiftIndex), value);
