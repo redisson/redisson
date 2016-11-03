@@ -253,6 +253,9 @@ public interface RedisCommands {
     RedisStrictCommand<Long> GET_LONG = new RedisStrictCommand<Long>("GET", new LongReplayConvertor());
     RedisStrictCommand<Integer> GET_INTEGER = new RedisStrictCommand<Integer>("GET", new IntegerReplayConvertor());
     RedisCommand<Object> GETSET = new RedisCommand<Object>("GETSET", 2);
+    RedisCommand<Object> GETRANGE = new RedisCommand<Object>("GETRANGE");
+    RedisCommand<Object> APPEND = new RedisCommand<Object>("APPEND");
+    RedisCommand<Object> SETRANGE = new RedisCommand<Object>("SETRANGE");
     RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor(), 2);
     RedisCommand<Boolean> SETPXNX = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor(), 2);
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor(), 2);
