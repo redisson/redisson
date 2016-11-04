@@ -19,15 +19,27 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Binary stream holder
+ * Binary stream holder. Maximum size of stream is limited by available memory of Redis master node.
  * 
  * @author Nikita Koksharov
  *
  */
 public interface RBinaryStream extends RBucket<byte[]> {
 
+    /**
+     * Returns inputStream which reads binary stream.
+     * This stream isn't thread-safe.
+     * 
+     * @return stream
+     */
     InputStream getInputStream();
-    
+
+    /**
+     * Returns outputStream which writes binary stream.
+     * This stream isn't thread-safe.
+     * 
+     * @return stream
+     */
     OutputStream getOutputStream();
     
 }

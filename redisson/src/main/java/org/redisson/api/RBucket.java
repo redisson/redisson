@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Any object holder
+ * Any object holder. Max size of object is 512MB
  *
  * @author Nikita Koksharov
  *
@@ -31,7 +31,7 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
      * 
      * @return object size
      */
-    int size();
+    long size();
     
     V get();
 
