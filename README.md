@@ -38,7 +38,6 @@ Features
     5. automatic sentinel servers discovery  
 * Master with Slave servers mode  
 * Single server mode  
-
 * Asynchronous interface for each object  
 * Asynchronous connection pool  
 * Thread-safe implementation  
