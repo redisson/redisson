@@ -124,7 +124,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
                 throw new IndexOutOfBoundsException();
             }
             
-            return get(commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Integer>("EVAL", new Decoder<Integer>() {
+            return (Integer)get(commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Integer>("EVAL", new Decoder<Integer>() {
                                 @Override
                                 public Integer decode(ByteBuf buf, State state) {
                                     if (buf.readableBytes() == 0) {

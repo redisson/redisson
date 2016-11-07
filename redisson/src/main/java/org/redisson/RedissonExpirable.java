@@ -25,6 +25,11 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     RedissonExpirable(CommandAsyncExecutor connectionManager, String name) {
