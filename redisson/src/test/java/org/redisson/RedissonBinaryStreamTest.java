@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -71,6 +72,17 @@ public class RedissonBinaryStreamTest extends BaseTest {
         }
     }
 
+    @Test
+    public void testSkip() throws IOException {
+        RBinaryStream t = redisson.getBinaryStream("test");
+        t.set(new byte[] {1, 2, 3, 4, 5, 6});
+        
+        InputStream is = t.getInputStream();
+        is.skip(3);
+        byte[] b = new byte[6];
+        is.read(b);
+        assertThat(b).isEqualTo(new byte[] {4, 5, 6, 0, 0, 0});
+    }
     
     @Test
     public void testLimit512by1024() throws IOException, NoSuchAlgorithmException {
