@@ -17,7 +17,6 @@ package org.redisson.misc;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
-import java.util.Objects;
 
 /**
  * @author Philipp Marx
@@ -40,7 +39,7 @@ public class LogHelper {
         } else if (object instanceof Collection) {
             return toCollectionString((Collection<?>) object);
         } else {
-            return Objects.toString(object);
+            return String.valueOf(object);
         }
     }
 
@@ -53,7 +52,30 @@ public class LogHelper {
     }
 
     private static String toCollectionString(Collection<?> collection) {
-        return toArrayString(collection.toArray(new Object[collection.size()]));
+        if (collection.isEmpty()) {
+            return "[]";
+        }
+
+        StringBuilder b = new StringBuilder(collection.size() * 3);
+        b.append('[');
+        int i = 0;
+        for (Object object : collection) {
+            b.append(toString(object));
+            i++;
+
+            if (i == collection.size()) {
+                b.append(']');
+                break;
+            }
+            b.append(", ");
+            
+            if (i == MAX_COLLECTION_LOG_SIZE) {
+                b.append("...]");
+                break;
+            }
+        }
+        
+        return b.toString();
     }
 
     private static String toArrayString(Object array) {
