@@ -19,8 +19,10 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
@@ -34,6 +36,8 @@ import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
@@ -42,11 +46,12 @@ import io.netty.util.concurrent.ScheduledFuture;
  * of the replication group to this manager, the role of each node can be polled to determine
  * if a failover has occurred resulting in a new master.
  *
+ * @author Nikita Koksharov
  * @author Steve Ungerer
  */
 public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
 
-    private static final String ROLE_KEY = "role:";
+    private static final String ROLE_KEY = "role";
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -68,12 +73,14 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         initTimer(this.config);
 
         for (URI addr : cfg.getNodeAddresses()) {
-            RedisConnection connection = connect(cfg, addr);
+            RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
+            connectionFuture.awaitUninterruptibly();
+            RedisConnection connection = connectionFuture.getNow();
             if (connection == null) {
                 continue;
             }
 
-            Role role = determineRole(connection.sync(RedisCommands.INFO_REPLICATION));
+            Role role = Role.valueOf(connection.sync(RedisCommands.INFO_REPLICATION).get(ROLE_KEY));
             if (Role.master.equals(role)) {
                 if (currentMaster.get() != null) {
                     throw new RedisException("Multiple masters detected");
@@ -93,7 +100,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
 
         init(this.config);
 
-        monitorRoleChange(cfg);
+        scheduleMasterChangeCheck(cfg);
     }
 
     @Override
@@ -102,65 +109,107 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         res.setDatabase(((ElasticacheServersConfig)cfg).getDatabase());
         return res;
     }
-
-    private RedisConnection connect(ElasticacheServersConfig cfg, URI addr) {
+    
+    private RFuture<RedisConnection> connect(BaseMasterSlaveServersConfig<?> cfg, final URI addr) {
         RedisConnection connection = nodeConnections.get(addr);
         if (connection != null) {
-            return connection;
+            return newSucceededFuture(connection);
         }
+
         RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
-        try {
-            connection = client.connect();
-            RPromise<RedisConnection> future = newPromise();
-            connectListener.onConnect(future, connection, null, config);
-            future.syncUninterruptibly();
-            nodeConnections.put(addr, connection);
-        } catch (RedisConnectionException e) {
-            log.warn(e.getMessage(), e);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return connection;
-    }
-
-    private void monitorRoleChange(final ElasticacheServersConfig cfg) {
-        monitorFuture = GlobalEventExecutor.INSTANCE.scheduleWithFixedDelay(new Runnable() {
+        final RPromise<RedisConnection> result = newPromise();
+        RFuture<RedisConnection> future = client.connectAsync();
+        future.addListener(new FutureListener<RedisConnection>() {
             @Override
-            public void run() {
-                try {
-                    URI master = currentMaster.get();
-                    log.debug("Current master: {}", master);
-                    for (URI addr : cfg.getNodeAddresses()) {
-                        RedisConnection connection = connect(cfg, addr);
-                        String replInfo = connection.sync(RedisCommands.INFO_REPLICATION);
-                        log.trace("{} repl info: {}", addr, replInfo);
+            public void operationComplete(Future<RedisConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
 
-                        Role role = determineRole(replInfo);
-                        log.debug("node {} is {}", addr, role);
+                RedisConnection connection = future.getNow();
+                RPromise<RedisConnection> promise = newPromise();
+                connectListener.onConnect(promise, connection, null, config);
+                promise.addListener(new FutureListener<RedisConnection>() {
+                    @Override
+                    public void operationComplete(Future<RedisConnection> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            result.tryFailure(future.cause());
+                            return;
+                        }
 
-                        if (Role.master.equals(role) && master.equals(addr)) {
-                            log.debug("Current master {} unchanged", master);
-                        } else if (Role.master.equals(role) && !master.equals(addr) && currentMaster.compareAndSet(master, addr)) {
-                            log.info("Master has changed from {} to {}", master, addr);
-                            changeMaster(singleSlotRange.getStartSlot(), addr.getHost(), addr.getPort());
-                            break;
+                        RedisConnection connection = future.getNow();
+                        if (connection.isActive()) {
+                            nodeConnections.put(addr, connection);
+                            result.trySuccess(connection);
+                        } else {
+                            connection.closeAsync();
+                            result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
                         }
                     }
-                } catch (Exception e) {
-                    log.error(e.getMessage(), e);
+                });
+            }
+        });
+
+        return result;
+    }
+
+    private void scheduleMasterChangeCheck(final ElasticacheServersConfig cfg) {
+        monitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
+            @Override
+            public void run() {
+                final URI master = currentMaster.get();
+                log.debug("Current master: {}", master);
+                
+                final AtomicInteger count = new AtomicInteger(cfg.getNodeAddresses().size());
+                for (final URI addr : cfg.getNodeAddresses()) {
+                    RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
+                    connectionFuture.addListener(new FutureListener<RedisConnection>() {
+                        @Override
+                        public void operationComplete(Future<RedisConnection> future) throws Exception {
+                            if (!future.isSuccess()) {
+                                log.error(future.cause().getMessage(), future.cause());
+                                if (count.decrementAndGet() == 0) {
+                                    scheduleMasterChangeCheck(cfg);
+                                }
+                                return;
+                            }
+                            
+                            RedisConnection connection = future.getNow();
+                            RFuture<Map<String, String>> result = connection.async(RedisCommands.INFO_REPLICATION);
+                            result.addListener(new FutureListener<Map<String, String>>() {
+                                @Override
+                                public void operationComplete(Future<Map<String, String>> future)
+                                        throws Exception {
+                                    if (!future.isSuccess()) {
+                                        log.error(future.cause().getMessage(), future.cause());
+                                        if (count.decrementAndGet() == 0) {
+                                            scheduleMasterChangeCheck(cfg);
+                                        }
+                                        return;
+                                    }
+                                    
+                                    Role role = Role.valueOf(future.getNow().get(ROLE_KEY));
+                                    if (Role.master.equals(role)) {
+                                        if (master.equals(addr)) {
+                                            log.debug("Current master {} unchanged", master);
+                                        } else if (currentMaster.compareAndSet(master, addr)) {
+                                            log.info("Master has changed from {} to {}", master, addr);
+                                            changeMaster(singleSlotRange.getStartSlot(), addr.getHost(), addr.getPort());
+                                        }
+                                    }
+                                    
+                                    if (count.decrementAndGet() == 0) {
+                                        scheduleMasterChangeCheck(cfg);
+                                    }
+                                }
+                            });
+                        }
+                    });
                 }
             }
 
-        }, cfg.getScanInterval(), cfg.getScanInterval(), TimeUnit.MILLISECONDS);
-    }
-
-    private Role determineRole(String data) {
-        for (String s : data.split("\\r\\n")) {
-            if (s.startsWith(ROLE_KEY)) {
-                return Role.valueOf(s.substring(ROLE_KEY.length()));
-            }
-        }
-        throw new RedisException("Cannot determine node role from provided 'INFO replication' data");
+        }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
     @Override
