@@ -674,14 +674,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (source.getRedirect() != null) {
             MasterSlaveEntry e = getEntry(source.getAddr());
             if (e == null) {
-                throw new RedisNodeNotFoundException("No node for slot: " + source.getAddr());
+                throw new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
             }
             return e;
         }
         
         MasterSlaveEntry e = getEntry(source.getSlot());
         if (e == null) {
-            throw new RedisNodeNotFoundException("No node with slot: " + source.getSlot());
+            throw new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
         }
         return e;
     }
