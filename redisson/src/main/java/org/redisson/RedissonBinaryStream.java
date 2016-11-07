@@ -75,7 +75,10 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         public long skip(long n) throws IOException {
             long k = size() - index;
             if (n < k) {
-                k = n < 0 ? 0 : n;
+                k = n;
+                if (n < 0) {
+                    k = 0;
+                }
             }
 
             index += k;
