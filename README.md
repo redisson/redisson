@@ -6,8 +6,8 @@ Redis 2.8+ compatible.
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.0.1  | 1.8+ | 27.10.2016 |
-| 2.5.1 | 1.6+ | 27.10.2016 |
+| 3.1.0  | 1.8+ | 27.10.2016 |
+| 2.6.0 | 1.6+ | 27.10.2016 |
 
 Please read [documentation](https://github.com/mrniko/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
@@ -38,6 +38,7 @@ Features
     5. automatic sentinel servers discovery  
 * Master with Slave servers mode  
 * Single server mode  
+
 * Asynchronous interface for each object  
 * Asynchronous connection pool  
 * Thread-safe implementation  
@@ -48,14 +49,15 @@ Features
 * [Distributed services](https://github.com/mrniko/redisson/wiki/9.-distributed-services)
 * [Spring cache](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) integration  
 * [Hibernate](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
-* [Reactive Streams](https://github.com/mrniko/redisson/wiki/3.-operations-execution#32-reactive-way)
-* [Redis pipelining](https://github.com/mrniko/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)  
+* [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation) implementation  
+* [Reactive Streams](https://github.com/mrniko/redisson/wiki/3.-operations-execution#32-reactive-way)  
+* [Redis pipelining](https://github.com/mrniko/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)
 * Supports Android platform  
 * Supports auto-reconnect  
 * Supports failed to send command auto-retry  
 * Supports OSGi  
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
-* With over 900 unit tests  
+* With over 1000 unit tests  
 
 Projects using Redisson
 ================================
@@ -80,23 +82,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.0.1</version>
+       <version>3.1.0</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.5.1</version>
+       <version>2.6.0</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.0.1'  
+    compile 'org.redisson:redisson:3.1.0'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.5.1'
+    compile 'org.redisson:redisson:2.6.0'
 
 #### Java
 
@@ -121,11 +123,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.0.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.0.1&e=jar),
-[Redisson node 3.0.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.0.1&e=jar)  
+[Redisson 3.1.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.1.0&e=jar),
+[Redisson node 3.1.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.1.0&e=jar)  
 
-[Redisson 2.5.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.5.1&e=jar),
-[Redisson node 2.5.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.5.1&e=jar)  
+[Redisson 2.6.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.6.0&e=jar),
+[Redisson node 2.6.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.6.0&e=jar)  
 
 ### Supported by
 
