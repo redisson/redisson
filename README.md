@@ -9,8 +9,8 @@ Redis 2.8+ compatible.
 | 3.1.0  | 1.8+ | 07.11.2016 |
 | 2.6.0 | 1.6+ | 07.11.2016 |
 
-Please read [documentation](https://github.com/mrniko/redisson/wiki) for more details.  
-Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
+Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
+Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md).
 
 Licensed under the Apache License 2.0.
 
@@ -43,15 +43,15 @@ Features
 * Asynchronous connection pool  
 * Thread-safe implementation  
 * Lua scripting  
-* [Distributed objects](https://github.com/mrniko/redisson/wiki/6.-Distributed-objects)
-* [Distributed collections](https://github.com/mrniko/redisson/wiki/7.-Distributed-collections)
-* [Distributed locks and synchronizers](https://github.com/mrniko/redisson/wiki/8.-Distributed-locks-and-synchronizers)
-* [Distributed services](https://github.com/mrniko/redisson/wiki/9.-distributed-services)
-* [Spring cache](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) integration  
-* [Hibernate](https://github.com/mrniko/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
+* [Distributed objects](https://github.com/redisson/redisson/wiki/6.-Distributed-objects)
+* [Distributed collections](https://github.com/redisson/redisson/wiki/7.-Distributed-collections)
+* [Distributed locks and synchronizers](https://github.com/redisson/redisson/wiki/8.-Distributed-locks-and-synchronizers)
+* [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)
+* [Spring cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) integration  
+* [Hibernate](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
 * [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation) implementation  
-* [Reactive Streams](https://github.com/mrniko/redisson/wiki/3.-operations-execution#32-reactive-way)  
-* [Redis pipelining](https://github.com/mrniko/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)
+* [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way)  
+* [Redis pipelining](https://github.com/redisson/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)
 * Supports Android platform  
 * Supports auto-reconnect  
 * Supports failed to send command auto-retry  
