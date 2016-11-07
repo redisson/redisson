@@ -6,8 +6,8 @@ Redis 2.8+ compatible.
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.1.0  | 1.8+ | 27.10.2016 |
-| 2.6.0 | 1.6+ | 27.10.2016 |
+| 3.1.0  | 1.8+ | 07.11.2016 |
+| 2.6.0 | 1.6+ | 07.11.2016 |
 
 Please read [documentation](https://github.com/mrniko/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/mrniko/redisson/blob/master/CHANGELOG.md).
