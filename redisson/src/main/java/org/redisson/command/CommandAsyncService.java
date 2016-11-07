@@ -49,6 +49,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
+import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -520,7 +521,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Command execution timeout for command: " + command + " with params: " + Arrays.toString(details.getParams())));
+                        details.setException(new RedisTimeoutException("Command execution timeout for command: " + command + " with params: " + LogHelper.toString(details.getParams())));
                     }
                     details.getAttemptPromise().tryFailure(details.getException());
                     return;
@@ -605,7 +606,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         if (!future.isSuccess()) {
             details.setException(new WriteRedisConnectionException(
-                    "Can't write command: " + details.getCommand() + ", params: " + Arrays.toString(details.getParams()) + " to channel: " + future.channel(), future.cause()));
+                    "Can't write command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()) + " to channel: " + future.channel(), future.cause()));
             return;
         }
 
@@ -629,7 +630,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             public void run(Timeout timeout) throws Exception {
                 details.getAttemptPromise().tryFailure(
                         new RedisTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured for command: " + details.getCommand()
-                                + " with params: " + Arrays.toString(details.getParams()) + " channel: " + connection.getChannel()));
+                                + " with params: " + LogHelper.toString(details.getParams()) + " channel: " + connection.getChannel()));
             }
         };
 
