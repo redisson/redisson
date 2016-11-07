@@ -24,6 +24,12 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     protected RedissonBucket(CommandAsyncExecutor connectionManager, String name) {
@@ -97,12 +103,12 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
     
     @Override
-    public int size() {
+    public long size() {
         return get(sizeAsync());
     }
     
     @Override
-    public RFuture<Integer> sizeAsync() {
+    public RFuture<Long> sizeAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.STRLEN, getName());
     }
 

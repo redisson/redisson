@@ -13,38 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.jcache;
 
-import java.util.concurrent.TimeUnit;
+import javax.cache.Cache;
 
 /**
- * Any object holder. Max size of object is 512MB
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <V> - the type of object
+ * @param <K> key
+ * @param <V> value
  */
-public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
+public class JCacheEntry<K, V> implements Cache.Entry<K, V> {
 
-    /**
-     * Returns size of object in bytes
-     * 
-     * @return object size
-     */
-    long size();
+    private final K key;
+    private final V value;
     
-    V get();
+    public JCacheEntry(K key, V value) {
+        super();
+        this.key = key;
+        this.value = value;
+    }
 
-    boolean trySet(V value);
+    @Override
+    public K getKey() {
+        return key;
+    }
 
-    boolean trySet(V value, long timeToLive, TimeUnit timeUnit);
+    @Override
+    public V getValue() {
+        return value;
+    }
 
-    boolean compareAndSet(V expect, V update);
+    @Override
+    public <T> T unwrap(Class<T> clazz) {
+        if (clazz.isAssignableFrom(getClass())) {
+            return clazz.cast(this);
+        }
 
-    V getAndSet(V newValue);
-
-    void set(V value);
-
-    void set(V value, long timeToLive, TimeUnit timeUnit);
+        return null;
+    }
 
 }

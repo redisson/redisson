@@ -17,8 +17,21 @@ package org.redisson.api;
 
 import java.util.Collection;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RKeysAsync {
 
+    /**
+     * Checks if provided keys exist
+     * 
+     * @param names of keys
+     * @return amount of existing keys
+     */
+    RFuture<Long> isExistsAsync(String... names);
+    
     /**
      * Get Redis object type by key
      * 

@@ -16,6 +16,17 @@ import org.redisson.api.RType;
 public class RedissonKeysTest extends BaseTest {
 
     @Test
+    public void testExists() {
+        redisson.getSet("test").add("1");
+        redisson.getSet("test10").add("1");
+        
+        assertThat(redisson.getKeys().isExists("test")).isEqualTo(1);
+        assertThat(redisson.getKeys().isExists("test", "test2")).isEqualTo(1);
+        assertThat(redisson.getKeys().isExists("test3", "test2")).isEqualTo(0);
+        assertThat(redisson.getKeys().isExists("test3", "test10", "test")).isEqualTo(2);
+    }
+    
+    @Test
     public void testType() {
         redisson.getSet("test").add("1");
         

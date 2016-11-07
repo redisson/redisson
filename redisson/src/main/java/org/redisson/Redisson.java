@@ -26,6 +26,7 @@ import org.redisson.api.NodesGroup;
 import org.redisson.api.RAtomicDouble;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBatch;
+import org.redisson.api.RBinaryStream;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
@@ -114,7 +115,15 @@ public class Redisson implements RedissonClient {
         resolverProvider = config.getResolverProvider();
     }
     
-    ConnectionManager getConnectionManager() {
+    public EvictionScheduler getEvictionScheduler() {
+        return evictionScheduler;
+    }
+    
+    public CommandExecutor getCommandExecutor() {
+        return commandExecutor;
+    }
+    
+    public ConnectionManager getConnectionManager() {
         return connectionManager;
     }
 
@@ -172,6 +181,11 @@ public class Redisson implements RedissonClient {
             react.enableRedissonReferenceSupport();
         }
         return react;
+    }
+    
+    @Override
+    public RBinaryStream getBinaryStream(String name) {
+        return new RedissonBinaryStream(commandExecutor, name);
     }
     
     @Override

@@ -13,38 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
-
-import java.util.concurrent.TimeUnit;
+package org.redisson.jcache.bean;
 
 /**
- * Any object holder. Max size of object is 512MB
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <V> - the type of object
  */
-public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
+public class EmptyStatisticsMXBean extends JCacheStatisticsMXBean {
 
-    /**
-     * Returns size of object in bytes
-     * 
-     * @return object size
-     */
-    long size();
+    @Override
+    public void addEvictions(long value) {
+    }
     
-    V get();
-
-    boolean trySet(V value);
-
-    boolean trySet(V value, long timeToLive, TimeUnit timeUnit);
-
-    boolean compareAndSet(V expect, V update);
-
-    V getAndSet(V newValue);
-
-    void set(V value);
-
-    void set(V value, long timeToLive, TimeUnit timeUnit);
-
+    @Override
+    public void addGetTime(long value) {
+    }
+    
+    @Override
+    public void addHits(long value) {
+    }
+    
+    @Override
+    public void addMisses(long value) {
+    }
+    
+    @Override
+    public void addPuts(long value) {
+    }
+    
+    @Override
+    public void addPutTime(long value) {
+    }
+    
+    @Override
+    public void addRemovals(long value) {
+    }
+    
+    @Override
+    public void addRemoveTime(long value) {
+    }
+    
 }

@@ -15,36 +15,31 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
- * Async object functions
- *
+ * Binary stream holder. Maximum size of stream is limited by available memory of Redis master node.
+ * 
  * @author Nikita Koksharov
  *
- * @param <V> - the type of object
  */
-public interface RBucketAsync<V> extends RExpirableAsync {
+public interface RBinaryStream extends RBucket<byte[]> {
 
     /**
-     * Returns size of object in bytes
+     * Returns inputStream which reads binary stream.
+     * This stream isn't thread-safe.
      * 
-     * @return object size
+     * @return stream
      */
-    RFuture<Long> sizeAsync();
+    InputStream getInputStream();
+
+    /**
+     * Returns outputStream which writes binary stream.
+     * This stream isn't thread-safe.
+     * 
+     * @return stream
+     */
+    OutputStream getOutputStream();
     
-    RFuture<V> getAsync();
-
-    RFuture<Boolean> trySetAsync(V value);
-
-    RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
-
-    RFuture<Boolean> compareAndSetAsync(V expect, V update);
-
-    RFuture<V> getAndSetAsync(V newValue);
-
-    RFuture<Void> setAsync(V value);
-
-    RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
-
 }

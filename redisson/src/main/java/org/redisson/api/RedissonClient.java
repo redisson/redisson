@@ -32,6 +32,14 @@ import org.redisson.liveobject.provider.ResolverProvider;
 public interface RedissonClient {
 
     /**
+     * Returns binary stream holder instance by <code>name</code>
+     * 
+     * @param name of binary stream
+     * @return BinaryStream object 
+     */
+    RBinaryStream getBinaryStream(String name);
+    
+    /**
      * Returns geospatial items holder instance by <code>name</code>.
      * 
      * @param <V> type of value

@@ -31,6 +31,11 @@ import org.slf4j.LoggerFactory;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());

@@ -41,6 +41,7 @@ import io.netty.util.internal.PlatformDependent;
  * @author Nikita Koksharov
  *
  */
+// TODO refactor it!
 public class EvictionScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(EvictionScheduler.class);
@@ -50,6 +51,7 @@ public class EvictionScheduler {
         final String name;
         final String timeoutSetName;
         final String maxIdleSetName;
+        final String expiredChannelName;
         final boolean multimap;
         final Deque<Integer> sizeHistory = new LinkedList<Integer>();
         int delay = 10;
@@ -58,11 +60,12 @@ public class EvictionScheduler {
         final int maxDelay = 2*60*60;
         final int keysLimit = 300;
 
-        public RedissonCacheTask(String name, String timeoutSetName, String maxIdleSetName, boolean multimap) {
+        public RedissonCacheTask(String name, String timeoutSetName, String maxIdleSetName, boolean multimap, String expiredChannelName) {
             this.name = name;
             this.timeoutSetName = timeoutSetName;
             this.maxIdleSetName = maxIdleSetName;
             this.multimap = multimap;
+            this.expiredChannelName = expiredChannelName;
         }
 
         public void schedule() {
@@ -71,7 +74,7 @@ public class EvictionScheduler {
 
         @Override
         public void run() {
-            RFuture<Integer> future = cleanupExpiredEntires(name, timeoutSetName, maxIdleSetName, keysLimit, multimap);
+            RFuture<Integer> future = cleanupExpiredEntires(name, timeoutSetName, maxIdleSetName, keysLimit, multimap, expiredChannelName);
 
             future.addListener(new FutureListener<Integer>() {
                 @Override
@@ -127,7 +130,15 @@ public class EvictionScheduler {
     }
 
     public void scheduleCleanMultimap(String name, String timeoutSetName) {
-        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, null, true);
+        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, null, true, null);
+        RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
+        if (prevTask == null) {
+            task.schedule();
+        }
+    }
+    
+    public void scheduleJCache(String name, String timeoutSetName, String expiredChannelName) {
+        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, null, false, expiredChannelName);
         RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();
@@ -135,7 +146,7 @@ public class EvictionScheduler {
     }
     
     public void schedule(String name, String timeoutSetName) {
-        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, null, false);
+        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, null, false, null);
         RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();
@@ -147,7 +158,7 @@ public class EvictionScheduler {
     }
 
     public void schedule(String name, String timeoutSetName, String maxIdleSetName) {
-        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, maxIdleSetName, false);
+        RedissonCacheTask task = new RedissonCacheTask(name, timeoutSetName, maxIdleSetName, false, null);
         RedissonCacheTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();
@@ -170,7 +181,7 @@ public class EvictionScheduler {
             return;
         }
 
-        RFuture<Integer> future = cleanupExpiredEntires(name, timeoutSetName, null, valuesAmountToClean, false);
+        RFuture<Integer> future = cleanupExpiredEntires(name, timeoutSetName, null, valuesAmountToClean, false, null);
 
         future.addListener(new FutureListener<Integer>() {
             @Override
@@ -190,7 +201,7 @@ public class EvictionScheduler {
         });
     }
 
-    private RFuture<Integer> cleanupExpiredEntires(String name, String timeoutSetName, String maxIdleSetName, int keysLimit, boolean multimap) {
+    private RFuture<Integer> cleanupExpiredEntires(String name, String timeoutSetName, String maxIdleSetName, int keysLimit, boolean multimap, String expiredChannelName) {
         if (multimap) {
             return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                     "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
@@ -231,6 +242,22 @@ public class EvictionScheduler {
         
         if (timeoutSetName == null) {
             return executor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.ZREMRANGEBYSCORE, name, 0, System.currentTimeMillis());
+        }
+        
+        if (expiredChannelName != null) {
+            return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                    "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+                  + "for i, k in ipairs(expiredKeys) do "
+                      + "local v = redis.call('hget', KEYS[1], k);"
+                      + "local msg = struct.pack('Lc0Lc0', string.len(tostring(k)), tostring(k), string.len(tostring(v)), tostring(v));"
+                      + "redis.call('publish', KEYS[3], msg);"
+                  + "end; "
+                  + "if #expiredKeys > 0 then "
+                      + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
+                      + "redis.call('hdel', KEYS[1], unpack(expiredKeys)); "
+                  + "end; "
+                  + "return #expiredKeys;",
+                  Arrays.<Object>asList(name, timeoutSetName, expiredChannelName), System.currentTimeMillis(), keysLimit);
         }
         
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,

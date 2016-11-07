@@ -2,6 +2,19 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####27-Oct-2016 - version 2.5.1 and 3.0.1 released
+
+Include all code changes from __2.2.27__ version
+
+Fixed - RMapCache.fastPutIfAbsentAsync doesn't take in account expiration  
+Fixed - timer field of RedisClient hasn't been initialized properly in some cases  
+
+####27-Oct-2016 - version 2.2.27 released
+
+This version fixes old and annonying problem with `ConnectionPool exhusted` error. From this moment connection pool waits for free connection instead of throwing pool exhausted error. This leads to more effective Redis connection utilization.
+
+Improvement - remove `Connection pool exhausted` exception  
+
 ####17-Oct-2016 - version 3.0.0 released
 Fully compatible with JDK 8. Includes all code changes from __2.5.0__ version
 
