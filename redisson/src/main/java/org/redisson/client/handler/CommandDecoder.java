@@ -381,7 +381,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            if (!data.getPromise().trySuccess(result) && data.cause() instanceof RedisTimeoutException) {
+            if (data != null && !data.getPromise().trySuccess(result) && data.cause() instanceof RedisTimeoutException) {
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, data, result);
             }
         }
