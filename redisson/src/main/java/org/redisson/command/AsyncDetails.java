@@ -28,7 +28,6 @@ import org.redisson.misc.RPromise;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.util.Timeout;
-import io.netty.util.concurrent.Future;
 
 public class AsyncDetails<V, R> {
 

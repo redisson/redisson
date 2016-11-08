@@ -35,7 +35,6 @@ import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.command.CommandBatchService;
 import org.redisson.command.CommandExecutor;
 
-import io.netty.util.concurrent.Future;
 import net.openhft.hashing.LongHashFunction;
 
 /**

@@ -18,7 +18,6 @@ package org.redisson.reactive;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
@@ -29,7 +28,6 @@ import org.redisson.api.RKeysReactive;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.connection.MasterSlaveEntry;
 

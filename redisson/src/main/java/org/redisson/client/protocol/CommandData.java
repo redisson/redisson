@@ -15,7 +15,6 @@
  */
 package org.redisson.client.protocol;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 

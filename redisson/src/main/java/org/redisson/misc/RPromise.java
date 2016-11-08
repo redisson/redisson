@@ -18,7 +18,6 @@ package org.redisson.misc;
 import org.redisson.api.RFuture;
 
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 /**
  * 
