@@ -1,33 +1,35 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
+import static org.redisson.rule.TestUtil.toIterator;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
-import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RListReactive;
 import org.redisson.client.RedisException;
-
 import reactor.rx.Promise;
 
-public class RedissonListReactiveTest extends BaseReactiveTest {
-
+public class RedissonListReactiveTest extends AbstractBaseTest {
+    
     @Test
     public void testEquals() {
-        RListReactive<String> list1 = redisson.getList("list1");
+        RListReactive<String> list1 = redissonRule.getSharedReactiveClient().getList("list1");
         sync(list1.add("1"));
         sync(list1.add("2"));
         sync(list1.add("3"));
 
-        RListReactive<String> list2 = redisson.getList("list2");
+        RListReactive<String> list2 = redissonRule.getSharedReactiveClient().getList("list2");
         sync(list2.add("1"));
         sync(list2.add("2"));
         sync(list2.add("3"));
 
-        RListReactive<String> list3 = redisson.getList("list3");
+        RListReactive<String> list3 = redissonRule.getSharedReactiveClient().getList("list3");
         sync(list3.add("0"));
         sync(list3.add("2"));
         sync(list3.add("3"));
@@ -38,7 +40,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testHashCode() throws InterruptedException {
-        RListReactive<String> list = redisson.getList("list");
+        RListReactive<String> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add("a"));
         sync(list.add("b"));
         sync(list.add("c"));
@@ -48,7 +50,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddByIndex() {
-        RListReactive<String> test2 = redisson.getList("test2");
+        RListReactive<String> test2 = redissonRule.getSharedReactiveClient().getList("test2");
         sync(test2.add("foo"));
         sync(test2.add(0, "bar"));
 
@@ -57,21 +59,21 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddAllReactive() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
         sync(list.add(4));
         sync(list.add(5));
 
-        RListReactive<Integer> list2 = redisson.getList("list2");
+        RListReactive<Integer> list2 = redissonRule.getSharedReactiveClient().getList("list2");
         Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
         Assert.assertEquals(5, sync(list2.size()).intValue());
     }
 
     @Test
     public void testAddAllWithIndex() throws InterruptedException {
-        final RListReactive<Long> list = redisson.getList("list");
+        final RListReactive<Long> list = redissonRule.getSharedReactiveClient().getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
         list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe(new Promise<Long>() {
 
@@ -103,7 +105,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAdd() throws InterruptedException {
-        final RListReactive<Long> list = redisson.getList("list");
+        final RListReactive<Long> list = redissonRule.getSharedReactiveClient().getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
         list.add(1L).subscribe(new Promise<Long>() {
             @Override
@@ -134,7 +136,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLong() {
-        RListReactive<Long> list = redisson.getList("list");
+        RListReactive<Long> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1L));
         sync(list.add(2L));
 
@@ -143,7 +145,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testListIteratorIndex() {
-        RListReactive<Integer> list = redisson.getList("list2");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list2");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -172,7 +174,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testListIteratorPrevious() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -201,7 +203,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLastIndexOfNone() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -213,7 +215,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLastIndexOf2() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -231,7 +233,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLastIndexOf1() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -249,7 +251,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLastIndexOf() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -267,7 +269,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testIndexOf() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         for (int i = 1; i < 200; i++) {
             sync(list.add(i));
         }
@@ -280,7 +282,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemove() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -295,7 +297,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testSet() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -309,7 +311,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test(expected = RedisException.class)
     public void testSetFail() throws InterruptedException {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -321,7 +323,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveAllEmpty() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -334,7 +336,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveAll() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -357,7 +359,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAll() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -372,7 +374,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testFastSet() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
 
@@ -382,7 +384,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAllEmpty() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -395,7 +397,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAllNoModify() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
 
@@ -405,13 +407,13 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test(expected = RedisException.class)
     public void testAddAllIndexError() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.addAll(2, Arrays.asList(7, 8, 9)));
     }
 
     @Test
     public void testAddAllIndex() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -437,7 +439,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddAll() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
@@ -453,14 +455,14 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddAllEmpty() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         Assert.assertEquals(0, sync(list.addAll(Collections.<Integer>emptyList())).intValue());
         Assert.assertEquals(0, sync(list.size()).intValue());
     }
 
     @Test
     public void testContainsAll() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         for (int i = 0; i < 200; i++) {
             sync(list.add(i));
         }
@@ -472,7 +474,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContainsAllEmpty() {
-        RListReactive<Integer> list = redisson.getList("list");
+        RListReactive<Integer> list = redissonRule.getSharedReactiveClient().getList("list");
         for (int i = 0; i < 200; i++) {
             sync(list.add(i));
         }
@@ -483,7 +485,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testIteratorSequence() {
-        RListReactive<String> list = redisson.getList("list2");
+        RListReactive<String> list = redissonRule.getSharedReactiveClient().getList("list2");
         sync(list.add("1"));
         sync(list.add("4"));
         sync(list.add("2"));
@@ -510,7 +512,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContains() {
-        RListReactive<String> list = redisson.getList("list");
+        RListReactive<String> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add("1"));
         sync(list.add("4"));
         sync(list.add("2"));
@@ -524,14 +526,14 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
 //    @Test(expected = RedisException.class)
 //    public void testGetFail() {
-//        RListReactive<String> list = redisson.getList("list");
+//        RListReactive<String> list = redissonRule.getSharedReactiveClient().getList("list");
 //
 //        sync(list.get(0));
 //    }
 
     @Test
     public void testAddGet() {
-        RListReactive<String> list = redisson.getList("list");
+        RListReactive<String> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add("1"));
         sync(list.add("4"));
         sync(list.add("2"));
@@ -547,7 +549,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testDuplicates() {
-        RListReactive<TestObject> list = redisson.getList("list");
+        RListReactive<TestObject> list = redissonRule.getSharedReactiveClient().getList("list");
 
         sync(list.add(new TestObject("1", "2")));
         sync(list.add(new TestObject("1", "2")));
@@ -560,7 +562,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testSize() {
-        RListReactive<String> list = redisson.getList("list");
+        RListReactive<String> list = redissonRule.getSharedReactiveClient().getList("list");
 
         sync(list.add("1"));
         sync(list.add("2"));
@@ -579,7 +581,7 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testCodec() {
-        RListReactive<Object> list = redisson.getList("list");
+        RListReactive<Object> list = redissonRule.getSharedReactiveClient().getList("list");
         sync(list.add(1));
         sync(list.add(2L));
         sync(list.add("3"));

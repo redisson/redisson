@@ -7,14 +7,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
+import org.redisson.AbstractBaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 
-public class WeightedRoundRobinBalancerTest {
+public class WeightedRoundRobinBalancerTest extends AbstractBaseTest {
 
     @Test
     public void testUseMasterForReadsIfNoConnectionsToSlaves() throws IOException, InterruptedException {
@@ -36,7 +36,7 @@ public class WeightedRoundRobinBalancerTest {
                 .addSlaveAddress(slave.getRedisServerAddressAndPort())
                 .setLoadBalancer(new WeightedRoundRobinBalancer(weights, 1));
 
-            client = Redisson.create(config);
+            client = redissonRule.createClient(config);
 
             // To simulate network connection issues to slave, stop the slave
             // after creating the client. Cannot create the client without the
@@ -51,9 +51,6 @@ public class WeightedRoundRobinBalancerTest {
             }
             if (slave != null) {
                 slave.stop();
-            }
-            if (client != null) {
-                client.shutdown();
             }
         }
     }

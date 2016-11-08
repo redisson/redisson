@@ -1,9 +1,9 @@
 package org.redisson;
 
-import java.io.IOException;
-import org.junit.After;
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -13,16 +13,9 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
-import org.redisson.config.Config;
-
-import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import static org.redisson.BaseTest.createInstance;
 
 @RunWith(Parameterized.class)
-public class RedissonTwoLockedThread {
+public class RedissonTwoLockedThread extends AbstractBaseTest {
 
     @Parameterized.Parameters(name= "{index} - {0}")
     public static Iterable<Object[]> data() {
@@ -31,42 +24,7 @@ public class RedissonTwoLockedThread {
 
     @Parameterized.Parameter(0)
     public Codec codec;
-
-    private RedissonClient redisson;
-
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-    }
-
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-
-    @Before
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            redisson = createInstance();
-        }
-        Config config = BaseTest.createConfig();
-        config.setCodec(codec);
-        redisson = Redisson.create(config);
-    }
-
-    @After
-    public void after() throws InterruptedException {
-        redisson.shutdown();
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-
+    
     @Test(timeout = 3000)
     public void testLock() throws InterruptedException {
         final String lockName = "lock1";
@@ -77,6 +35,8 @@ public class RedissonTwoLockedThread {
 
         System.out.println("configure");
 
+        RedissonClient redisson = redissonRule.createClient(redissonRule.getSharedConfig().setCodec(codec));
+        
         final long millis = System.currentTimeMillis();
 
         new Thread() {
@@ -135,6 +95,8 @@ public class RedissonTwoLockedThread {
         final CountDownLatch completeSignal = new CountDownLatch(2);
 
         System.out.println("configure");
+        
+        RedissonClient redisson = redissonRule.createClient(redissonRule.getSharedConfig().setCodec(codec));
 
         final long millis = System.currentTimeMillis();
 

@@ -25,7 +25,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 
-public class RedissonMapTest extends BaseTest {
+public class RedissonMapTest extends AbstractBaseTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -126,12 +126,11 @@ public class RedissonMapTest extends BaseTest {
                 return false;
             return true;
         }
-
     }
-
+    
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RMap<Integer, Integer> map = redisson.getMap("getAll");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("getAll");
         map.put(1, 100);
 
         Integer res = map.addAndGet(1, 12);
@@ -139,7 +138,7 @@ public class RedissonMapTest extends BaseTest {
         res = map.get(1);
         assertThat(res).isEqualTo(112);
 
-        RMap<Integer, Double> map2 = redisson.getMap("getAll2");
+        RMap<Integer, Double> map2 = redissonRule.getSharedClient().getMap("getAll2");
         map2.put(1, new Double(100.2));
 
         Double res2 = map2.addAndGet(1, new Double(12.1));
@@ -147,7 +146,7 @@ public class RedissonMapTest extends BaseTest {
         res2 = map2.get(1);
         assertThat(res2).isEqualTo(112.3);
 
-        RMap<String, Integer> mapStr = redisson.getMap("mapStr");
+        RMap<String, Integer> mapStr = redissonRule.getSharedClient().getMap("mapStr");
         assertThat(mapStr.put("1", 100)).isNull();
 
         assertThat(mapStr.addAndGet("1", 12)).isEqualTo(112);
@@ -157,7 +156,7 @@ public class RedissonMapTest extends BaseTest {
     @Test
     public void testValueSize() {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
-        RMap<String, String> map = redisson.getMap("getAll");
+        RMap<String, String> map = redissonRule.getSharedClient().getMap("getAll");
         map.put("1", "1234");
         assertThat(map.valueSize("4")).isZero();
         assertThat(map.valueSize("1")).isEqualTo(6);
@@ -165,7 +164,7 @@ public class RedissonMapTest extends BaseTest {
     
     @Test
     public void testGetAll() {
-        RMap<Integer, Integer> map = redisson.getMap("getAll");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("getAll");
         map.put(1, 100);
         map.put(2, 200);
         map.put(3, 300);
@@ -181,7 +180,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testGetAllWithStringKeys() {
-        RMap<String, Integer> map = redisson.getMap("getAllStrings");
+        RMap<String, Integer> map = redissonRule.getSharedClient().getMap("getAllStrings");
         map.put("A", 100);
         map.put("B", 200);
         map.put("C", 300);
@@ -197,9 +196,9 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testStringCodec() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(StringCodec.INSTANCE);
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
 
         RMap<String, String> rmap = redisson.getMap("TestRMap01");
         rmap.put("A", "1");
@@ -210,13 +209,11 @@ public class RedissonMapTest extends BaseTest {
             Map.Entry<String, String> next = iterator.next();
             assertThat(next).isIn(new AbstractMap.SimpleEntry("A", "1"), new AbstractMap.SimpleEntry("B", "2"));
         }
-
-        redisson.shutdown();
     }
 
     @Test
     public void testInteger() {
-        Map<Integer, Integer> map = redisson.getMap("test_int");
+        Map<Integer, Integer> map = redissonRule.getSharedClient().getMap("test_int");
         map.put(1, 2);
         map.put(3, 4);
 
@@ -231,7 +228,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testLong() {
-        Map<Long, Long> map = redisson.getMap("test_long");
+        Map<Long, Long> map = redissonRule.getSharedClient().getMap("test_long");
         map.put(1L, 2L);
         map.put(3L, 4L);
 
@@ -246,7 +243,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testIteratorRemoveHighVolume() throws InterruptedException {
-        RMap<Integer, Integer> map = redisson.getMap("simpleMap");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simpleMap");
         for (int i = 0; i < 10000; i++) {
             map.put(i, i*10);
         }
@@ -266,7 +263,7 @@ public class RedissonMapTest extends BaseTest {
     
     @Test
     public void testIterator() {
-        RMap<Integer, Integer> rMap = redisson.getMap("123");
+        RMap<Integer, Integer> rMap = redissonRule.getSharedClient().getMap("123");
 
         int size = 1000;
         for (int i = 0; i < size; i++) {
@@ -293,19 +290,19 @@ public class RedissonMapTest extends BaseTest {
 
     @Test(expected = NullPointerException.class)
     public void testNullValue() {
-        Map<Integer, String> map = redisson.getMap("simple12");
+        Map<Integer, String> map = redissonRule.getSharedClient().getMap("simple12");
         map.put(1, null);
     }
     
     @Test(expected = NullPointerException.class)
     public void testNullKey() {
-        Map<Integer, String> map = redisson.getMap("simple12");
+        Map<Integer, String> map = redissonRule.getSharedClient().getMap("simple12");
         map.put(null, "1");
     }
 
     @Test
     public void testEntrySet() {
-        Map<Integer, String> map = redisson.getMap("simple12");
+        Map<Integer, String> map = redissonRule.getSharedClient().getMap("simple12");
         map.put(1, "12");
         map.put(2, "33");
         map.put(3, "43");
@@ -317,7 +314,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testReadAllEntrySet() {
-        RMap<Integer, String> map = redisson.getMap("simple12");
+        RMap<Integer, String> map = redissonRule.getSharedClient().getMap("simple12");
         map.put(1, "12");
         map.put(2, "33");
         map.put(3, "43");
@@ -329,7 +326,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testSimpleTypes() {
-        Map<Integer, String> map = redisson.getMap("simple12");
+        Map<Integer, String> map = redissonRule.getSharedClient().getMap("simple12");
         map.put(1, "12");
         map.put(2, "33");
         map.put(3, "43");
@@ -340,7 +337,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        Map<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -369,7 +366,7 @@ public class RedissonMapTest extends BaseTest {
         map.put("ar_kills", "0");
         map.put("ar_deaths", "0");
 
-        RMap<String, String> rmap = redisson.getMap("123");
+        RMap<String, String> rmap = redissonRule.getSharedClient().getMap("123");
         rmap.putAll(map);
 
         assertThat(rmap.keySet()).containsExactlyElementsOf(map.keySet());
@@ -384,7 +381,7 @@ public class RedissonMapTest extends BaseTest {
     
     @Test
     public void testPutAll() {
-        Map<Integer, String> map = redisson.getMap("simple");
+        Map<Integer, String> map = redissonRule.getSharedClient().getMap("simple");
         map.put(1, "1");
         map.put(2, "2");
         map.put(3, "3");
@@ -400,7 +397,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testKeySet() {
-        Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        Map<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -411,7 +408,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testReadAllKeySet() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -423,7 +420,7 @@ public class RedissonMapTest extends BaseTest {
     
     @Test
     public void testReadAllKeySetHighAmount() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         for (int i = 0; i < 1000; i++) {
             map.put(new SimpleKey("" + i), new SimpleValue("" + i));
         }
@@ -435,7 +432,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testReadAllValues() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -447,7 +444,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testContainsValue() {
-        Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        Map<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -459,7 +456,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testContainsKey() {
-        Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        Map<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -470,7 +467,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testRemoveValue() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.remove(new SimpleKey("1"), new SimpleValue("2"));
@@ -484,7 +481,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testRemoveValueFail() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.remove(new SimpleKey("2"), new SimpleValue("1"));
@@ -500,7 +497,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testReplaceOldValueFail() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.replace(new SimpleKey("1"), new SimpleValue("43"), new SimpleValue("31"));
@@ -512,7 +509,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testReplaceOldValueSuccess() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         boolean res = map.replace(new SimpleKey("1"), new SimpleValue("2"), new SimpleValue("3"));
@@ -527,7 +524,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testReplaceValue() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
@@ -540,7 +537,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testReplace() {
-        Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        Map<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -555,7 +552,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testPutGet() {
-        Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        Map<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
@@ -569,7 +566,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testPutIfAbsent() throws Exception {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        ConcurrentMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         SimpleKey key = new SimpleKey("1");
         SimpleValue value = new SimpleValue("2");
         map.put(key, value);
@@ -584,7 +581,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testFastPutIfAbsent() throws Exception {
-        RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
         SimpleKey key = new SimpleKey("1");
         SimpleValue value = new SimpleValue("2");
         map.put(key, value);
@@ -599,7 +596,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testSize() {
-        Map<SimpleKey, SimpleValue> map = redisson.getMap("simple");
+        Map<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getMap("simple");
 
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
@@ -623,7 +620,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testEmptyRemove() {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         Assert.assertFalse(map.remove(1, 3));
         map.put(4, 5);
         Assert.assertTrue(map.remove(4, 5));
@@ -631,7 +628,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testPutAsync() throws InterruptedException, ExecutionException {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         RFuture<Integer> future = map.putAsync(2, 3);
         Assert.assertNull(future.get());
 
@@ -645,7 +642,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testRemoveAsync() throws InterruptedException, ExecutionException {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         map.put(1, 3);
         map.put(3, 5);
         map.put(7, 8);
@@ -658,7 +655,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testFastRemoveAsync() throws InterruptedException, ExecutionException {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         map.put(1, 3);
         map.put(3, 5);
         map.put(4, 6);
@@ -671,7 +668,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testKeyIterator() {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         map.put(1, 0);
         map.put(3, 5);
         map.put(4, 6);
@@ -691,7 +688,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testValueIterator() {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         map.put(1, 0);
         map.put(3, 5);
         map.put(4, 6);
@@ -711,7 +708,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testFastPut() throws Exception {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         Assert.assertTrue(map.fastPut(1, 2));
         Assert.assertFalse(map.fastPut(1, 3));
         Assert.assertEquals(1, map.size());
@@ -719,7 +716,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testEquals() {
-        RMap<String, String> map = redisson.getMap("simple");
+        RMap<String, String> map = redissonRule.getSharedClient().getMap("simple");
         map.put("1", "7");
         map.put("2", "4");
         map.put("3", "5");
@@ -735,7 +732,7 @@ public class RedissonMapTest extends BaseTest {
 
     @Test
     public void testFastRemoveEmpty() throws Exception {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         map.put(1, 3);
 
         assertThat(map.fastRemove()).isZero();
@@ -744,9 +741,9 @@ public class RedissonMapTest extends BaseTest {
 
     @Test(timeout = 5000)
     public void testDeserializationErrorReturnsErrorImmediately() throws Exception {
-        redisson.getConfig().setCodec(new JsonJacksonCodec());
+        redissonRule.getSharedClient().getConfig().setCodec(new JsonJacksonCodec());
 
-        RMap<String, SimpleObjectWithoutDefaultConstructor> map = redisson.getMap("deserializationFailure");
+        RMap<String, SimpleObjectWithoutDefaultConstructor> map = redissonRule.getSharedClient().getMap("deserializationFailure");
         SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
 
         Assert.assertEquals("test-val", object.getTestField());

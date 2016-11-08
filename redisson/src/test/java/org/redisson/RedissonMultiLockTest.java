@@ -1,21 +1,21 @@
 package org.redisson;
 
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
-
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.netty.channel.nio.NioEventLoopGroup;
 
-public class RedissonMultiLockTest {
+public class RedissonMultiLockTest extends AbstractBaseTest {
 
     @Test
     public void testMultiThreads() throws IOException, InterruptedException {
@@ -23,7 +23,7 @@ public class RedissonMultiLockTest {
         
         Config config1 = new Config();
         config1.useSingleServer().setAddress(redis1.getRedisServerAddressAndPort());
-        RedissonClient client = Redisson.create(config1);
+        RedissonClient client = redissonRule.createClient(config1);
         
         RLock lock1 = client.getLock("lock1");
         RLock lock2 = client.getLock("lock2");
@@ -96,15 +96,11 @@ public class RedissonMultiLockTest {
         assertThat(redis3.stop()).isEqualTo(0);
     }
 
-    private RedissonClient createClient(String host) {
-        return createClient(null, host);
-    }
-
     private RedissonClient createClient(NioEventLoopGroup group, String host) {
         Config config1 = new Config();
         config1.useSingleServer().setAddress(host);
         config1.setEventLoopGroup(group);
-        RedissonClient client1 = Redisson.create(config1);
+        RedissonClient client1 = redissonRule.createClient(config1);
         client1.getKeys().flushdb();
         return client1;
     }
@@ -116,5 +112,4 @@ public class RedissonMultiLockTest {
                 .randomPort()
                 .run();
     }
-    
 }

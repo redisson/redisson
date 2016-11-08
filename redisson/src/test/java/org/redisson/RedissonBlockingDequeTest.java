@@ -9,16 +9,16 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RBlockingDeque;
 
-public class RedissonBlockingDequeTest extends BaseTest {
-
+public class RedissonBlockingDequeTest extends AbstractBaseTest {
+    
     @Test
     public void testPollLastFromAny() throws InterruptedException {
-        final RBlockingDeque<Integer> queue1 = redisson.getBlockingDeque("deque:pollany");
+        final RBlockingDeque<Integer> queue1 = redissonRule.getSharedClient().getBlockingDeque("deque:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
             @Override
             public void run() {
-                RBlockingDeque<Integer> queue2 = redisson.getBlockingDeque("deque:pollany1");
-                RBlockingDeque<Integer> queue3 = redisson.getBlockingDeque("deque:pollany2");
+                RBlockingDeque<Integer> queue2 = redissonRule.getSharedClient().getBlockingDeque("deque:pollany1");
+                RBlockingDeque<Integer> queue3 = redissonRule.getSharedClient().getBlockingDeque("deque:pollany2");
                 try {
                     queue3.put(2);
                     queue1.put(1);
@@ -38,7 +38,7 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testFirstLast() throws InterruptedException {
-        RBlockingDeque<Integer> deque = redisson.getBlockingDeque("deque");
+        RBlockingDeque<Integer> deque = redissonRule.getSharedClient().getBlockingDeque("deque");
         deque.putFirst(1);
         deque.putFirst(2);
         deque.putLast(3);
@@ -49,7 +49,7 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testOfferFirstLast() throws InterruptedException {
-        RBlockingDeque<Integer> deque = redisson.getBlockingDeque("deque");
+        RBlockingDeque<Integer> deque = redissonRule.getSharedClient().getBlockingDeque("deque");
         deque.offerFirst(1);
         deque.offerFirst(2);
         deque.offerLast(3);
@@ -60,7 +60,7 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testTakeFirst() throws InterruptedException {
-        RBlockingDeque<Integer> deque = redisson.getBlockingDeque("queue:take");
+        RBlockingDeque<Integer> deque = redissonRule.getSharedClient().getBlockingDeque("queue:take");
 
         deque.offerFirst(1);
         deque.offerFirst(2);
@@ -76,7 +76,7 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testTakeLast() throws InterruptedException {
-        RBlockingDeque<Integer> deque = redisson.getBlockingDeque("queue:take");
+        RBlockingDeque<Integer> deque = redissonRule.getSharedClient().getBlockingDeque("queue:take");
 
         deque.offerFirst(1);
         deque.offerFirst(2);
@@ -93,9 +93,9 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testTakeFirstAwait() throws InterruptedException {
-        RBlockingDeque<Integer> deque = redisson.getBlockingDeque("queue:take");
+        RBlockingDeque<Integer> deque = redissonRule.getSharedClient().getBlockingDeque("queue:take");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            RBlockingDeque<Integer> deque1 = redisson.getBlockingDeque("queue:take");
+            RBlockingDeque<Integer> deque1 = redissonRule.getSharedClient().getBlockingDeque("queue:take");
             try {
                 deque1.putFirst(1);
                 deque1.putFirst(2);
@@ -118,9 +118,9 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testTakeLastAwait() throws InterruptedException {
-        RBlockingDeque<Integer> deque = redisson.getBlockingDeque("queue:take");
+        RBlockingDeque<Integer> deque = redissonRule.getSharedClient().getBlockingDeque("queue:take");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            RBlockingDeque<Integer> deque1 = redisson.getBlockingDeque("queue:take");
+            RBlockingDeque<Integer> deque1 = redissonRule.getSharedClient().getBlockingDeque("queue:take");
             try {
                 deque1.putFirst(1);
                 deque1.putFirst(2);
@@ -143,7 +143,7 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testPollFirst() throws InterruptedException {
-        RBlockingDeque<Integer> queue1 = redisson.getBlockingDeque("queue1");
+        RBlockingDeque<Integer> queue1 = redissonRule.getSharedClient().getBlockingDeque("queue1");
         queue1.put(1);
         queue1.put(2);
         queue1.put(3);
@@ -159,7 +159,7 @@ public class RedissonBlockingDequeTest extends BaseTest {
 
     @Test
     public void testPollLast() throws InterruptedException {
-        RBlockingDeque<Integer> queue1 = redisson.getBlockingDeque("queue1");
+        RBlockingDeque<Integer> queue1 = redissonRule.getSharedClient().getBlockingDeque("queue1");
         queue1.putLast(1);
         queue1.putLast(2);
         queue1.putLast(3);

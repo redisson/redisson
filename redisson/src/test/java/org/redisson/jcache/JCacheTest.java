@@ -20,10 +20,10 @@ import javax.cache.expiry.Duration;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.BaseTest;
+import org.redisson.AbstractBaseTest;
 
-public class JCacheTest extends BaseTest {
-
+public class JCacheTest extends AbstractBaseTest {
+    
     @Test
     public void test() throws InterruptedException, IllegalArgumentException, URISyntaxException {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
@@ -63,8 +63,6 @@ public class JCacheTest extends BaseTest {
             this.value = value;
         }
 
-
-
         @Override
         public void onExpired(Iterable<CacheEntryEvent<? extends String, ? extends String>> events)
                 throws CacheEntryListenerException {
@@ -74,8 +72,5 @@ public class JCacheTest extends BaseTest {
             assertThat(entry.getValue()).isEqualTo(value);
             latch.countDown();
         }
-
-        
     }
-    
 }

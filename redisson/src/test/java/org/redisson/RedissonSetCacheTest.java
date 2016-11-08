@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.redisson.api.RSetCache;
 import org.redisson.codec.MsgPackJacksonCodec;
 
-public class RedissonSetCacheTest extends BaseTest {
+public class RedissonSetCacheTest extends AbstractBaseTest {
 
     public static class SimpleBean implements Serializable {
 
@@ -31,12 +31,11 @@ public class RedissonSetCacheTest extends BaseTest {
         public void setLng(Long lng) {
             this.lng = lng;
         }
-
     }
     
     @Test
     public void testRemoveAll() {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         set.add(1);
         set.add(2, 10, TimeUnit.SECONDS);
         set.add(3);
@@ -48,7 +47,7 @@ public class RedissonSetCacheTest extends BaseTest {
     
     @Test
     public void testDelete() {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         assertThat(set.delete()).isFalse();
         set.add(1, 1, TimeUnit.SECONDS);
         assertThat(set.delete()).isTrue();
@@ -57,13 +56,13 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testEmptyReadAll() {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         assertThat(set.readAll()).isEmpty();
     }
     
     @Test
     public void testAddBigBean() {
-        RSetCache<Map<Integer, Integer>> set = redisson.getSetCache("simple");
+        RSetCache<Map<Integer, Integer>> set = redissonRule.getSharedClient().getSetCache("simple");
         Map<Integer, Integer> map = new HashMap<Integer, Integer>();
         for (int i = 0; i < 150; i++) {
             map.put(i, i);
@@ -78,14 +77,14 @@ public class RedissonSetCacheTest extends BaseTest {
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
-        RSetCache<SimpleBean> set = redisson.getSetCache("simple");
+        RSetCache<SimpleBean> set = redissonRule.getSharedClient().getSetCache("simple");
         assertThat(set.add(sb)).isTrue();
         Assert.assertEquals(sb.getLng(), set.iterator().next().getLng());
     }
 
     @Test
     public void testAddExpire() throws InterruptedException, ExecutionException {
-        RSetCache<String> set = redisson.getSetCache("simple3");
+        RSetCache<String> set = redissonRule.getSharedClient().getSetCache("simple3");
         assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
         assertThat(set).contains("123");
 
@@ -100,7 +99,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testAddOverrideExpiration() throws InterruptedException {
-        RSetCache<String> set = redisson.getSetCache("simple31");
+        RSetCache<String> set = redissonRule.getSharedClient().getSetCache("simple31");
         assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
         Thread.sleep(400);
         assertThat(set.add("123", 3, TimeUnit.SECONDS)).isFalse();
@@ -110,7 +109,7 @@ public class RedissonSetCacheTest extends BaseTest {
     
     @Test
     public void testAddExpireTwise() throws InterruptedException, ExecutionException {
-        RSetCache<String> set = redisson.getSetCache("simple31");
+        RSetCache<String> set = redissonRule.getSharedClient().getSetCache("simple31");
         assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
         Thread.sleep(1000);
 
@@ -124,7 +123,7 @@ public class RedissonSetCacheTest extends BaseTest {
     
     @Test
     public void testAddExpireThenAdd() throws InterruptedException, ExecutionException {
-        RSetCache<String> set = redisson.getSetCache("simple31");
+        RSetCache<String> set = redissonRule.getSharedClient().getSetCache("simple31");
         assertThat(set.add("123", 500, TimeUnit.MILLISECONDS)).isTrue();
         
         Thread.sleep(500);
@@ -141,7 +140,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testExpireOverwrite() throws InterruptedException, ExecutionException {
-        RSetCache<String> set = redisson.getSetCache("simple");
+        RSetCache<String> set = redissonRule.getSharedClient().getSetCache("simple");
         assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
 
         Thread.sleep(800);
@@ -158,7 +157,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testRemove() throws InterruptedException, ExecutionException {
-        RSetCache<Integer> set = redisson.getSetCache("simple");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("simple");
         set.add(1, 1, TimeUnit.SECONDS);
         set.add(3, 2, TimeUnit.SECONDS);
         set.add(7, 3, TimeUnit.SECONDS);
@@ -178,7 +177,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testIteratorRemove() throws InterruptedException {
-        RSetCache<String> set = redisson.getSetCache("list");
+        RSetCache<String> set = redissonRule.getSharedClient().getSetCache("list");
         set.add("1");
         set.add("4", 1, TimeUnit.SECONDS);
         set.add("2");
@@ -211,7 +210,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testIteratorSequence() {
-        RSetCache<Long> set = redisson.getSetCache("set");
+        RSetCache<Long> set = redissonRule.getSharedClient().getSetCache("set");
         for (int i = 0; i < 1000; i++) {
             set.add(Long.valueOf(i));
         }
@@ -237,7 +236,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testRetainAll() throws InterruptedException {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         for (int i = 0; i < 10000; i++) {
             set.add(i);
             set.add(i*10, 15, TimeUnit.SECONDS);
@@ -251,7 +250,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testIteratorRemoveHighVolume() throws InterruptedException {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         for (int i = 1; i <= 5000; i++) {
             set.add(i);
             set.add(i*100000, 20, TimeUnit.SECONDS);
@@ -270,7 +269,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testContainsAll() {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         for (int i = 0; i < 200; i++) {
             set.add(i);
         }
@@ -282,7 +281,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testToArray() throws InterruptedException {
-        RSetCache<String> set = redisson.getSetCache("set");
+        RSetCache<String> set = redissonRule.getSharedClient().getSetCache("set");
         set.add("1");
         set.add("4");
         set.add("2", 1, TimeUnit.SECONDS);
@@ -299,7 +298,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testContains() throws InterruptedException {
-        RSetCache<TestObject> set = redisson.getSetCache("set");
+        RSetCache<TestObject> set = redissonRule.getSharedClient().getSetCache("set");
 
         set.add(new TestObject("1", "2"));
         set.add(new TestObject("1", "2"));
@@ -316,7 +315,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testDuplicates() {
-        RSetCache<TestObject> set = redisson.getSetCache("set");
+        RSetCache<TestObject> set = redissonRule.getSharedClient().getSetCache("set");
 
         set.add(new TestObject("1", "2"));
         set.add(new TestObject("1", "2"));
@@ -329,7 +328,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testSize() {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         set.add(1);
         set.add(2);
         set.add(3);
@@ -343,7 +342,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testReadAllExpired() throws InterruptedException {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         set.add(1, 1, TimeUnit.SECONDS);
         Thread.sleep(1005);
         assertThat(set.readAll()).isEmpty();
@@ -351,7 +350,7 @@ public class RedissonSetCacheTest extends BaseTest {
     
     @Test
     public void testReadAll() {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         set.add(1, 2, TimeUnit.MINUTES);
         set.add(2);
         set.add(3);
@@ -363,7 +362,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testRetainAllEmpty() {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         set.add(1);
         set.add(2);
         set.add(3);
@@ -376,7 +375,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testRetainAllNoModify() {
-        RSetCache<Integer> set = redisson.getSetCache("set");
+        RSetCache<Integer> set = redissonRule.getSharedClient().getSetCache("set");
         set.add(1);
         set.add(2);
 
@@ -386,7 +385,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testExpiredIterator() throws InterruptedException {
-        RSetCache<String> cache = redisson.getSetCache("simple");
+        RSetCache<String> cache = redissonRule.getSharedClient().getSetCache("simple");
         cache.add("0");
         cache.add("1", 1, TimeUnit.SECONDS);
         cache.add("2", 3, TimeUnit.SECONDS);
@@ -400,7 +399,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testExpire() throws InterruptedException {
-        RSetCache<String> cache = redisson.getSetCache("simple");
+        RSetCache<String> cache = redissonRule.getSharedClient().getSetCache("simple");
         cache.add("8", 1, TimeUnit.SECONDS);
 
         cache.expire(100, TimeUnit.MILLISECONDS);
@@ -412,7 +411,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testExpireAt() throws InterruptedException {
-        RSetCache<String> cache = redisson.getSetCache("simple");
+        RSetCache<String> cache = redissonRule.getSharedClient().getSetCache("simple");
         cache.add("8", 1, TimeUnit.SECONDS);
 
         cache.expireAt(System.currentTimeMillis() + 100);
@@ -424,7 +423,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testClearExpire() throws InterruptedException {
-        RSetCache<String> cache = redisson.getSetCache("simple");
+        RSetCache<String> cache = redissonRule.getSharedClient().getSetCache("simple");
         cache.add("8", 1, TimeUnit.SECONDS);
 
         cache.expireAt(System.currentTimeMillis() + 100);
@@ -438,7 +437,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RSetCache<String> cache = redisson.getSetCache("simple33", new MsgPackJacksonCodec());
+        RSetCache<String> cache = redissonRule.getSharedClient().getSetCache("simple33", new MsgPackJacksonCodec());
         Assert.assertFalse(cache.contains("33"));
 
         Assert.assertTrue(cache.add("33", 5, TimeUnit.SECONDS));
@@ -446,7 +445,5 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(11000);
 
         Assert.assertEquals(0, cache.size());
-
     }
-
 }

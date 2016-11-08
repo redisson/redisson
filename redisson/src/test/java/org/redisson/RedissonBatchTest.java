@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -21,17 +22,17 @@ import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 
-public class RedissonBatchTest extends BaseTest {
+public class RedissonBatchTest extends AbstractBaseTest {
 
 //    @Test
     public void testBatchRedirect() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redissonRule.getSharedClient().createBatch();
         for (int i = 0; i < 5; i++) {
             batch.getMap("" + i).fastPutAsync("" + i, i);
         }
         batch.execute();
 
-        batch = redisson.createBatch();
+        batch = redissonRule.getSharedClient().createBatch();
         for (int i = 0; i < 1; i++) {
             batch.getMap("" + i).sizeAsync();
             batch.getMap("" + i).containsValueAsync("" + i);
@@ -44,7 +45,7 @@ public class RedissonBatchTest extends BaseTest {
     @Test
     public void testSkipResult() {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redissonRule.getSharedClient().createBatch();
         batch.getBucket("A1").setAsync("001");
         batch.getBucket("A2").setAsync("001");
         batch.getBucket("A3").setAsync("001");
@@ -52,13 +53,13 @@ public class RedissonBatchTest extends BaseTest {
         batch.getKeys().deleteAsync("A2");
         batch.executeSkipResult();
         
-        assertThat(redisson.getBucket("A1").isExists()).isFalse();
-        assertThat(redisson.getBucket("A3").isExists()).isTrue();
+        assertThat(redissonRule.getSharedClient().getBucket("A1").isExists()).isFalse();
+        assertThat(redissonRule.getSharedClient().getBucket("A3").isExists()).isTrue();
     }
     
     @Test
     public void testBatchNPE() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redissonRule.getSharedClient().createBatch();
         batch.getBucket("A1").setAsync("001");
         batch.getBucket("A2").setAsync("001");
         batch.getBucket("A3").setAsync("001");
@@ -69,7 +70,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testDifferentCodecs() {
-        RBatch b = redisson.createBatch();
+        RBatch b = redissonRule.getSharedClient().createBatch();
         b.getMap("test1").putAsync("1", "2");
         b.getMap("test2", StringCodec.INSTANCE).putAsync("21", "3");
         RFuture<Object> val1 = b.getMap("test1").getAsync("1");
@@ -82,7 +83,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testBatchList() {
-        RBatch b = redisson.createBatch();
+        RBatch b = redissonRule.getSharedClient().createBatch();
         RListAsync<Integer> listAsync = b.getList("list");
         for (int i = 1; i < 540; i++) {
             listAsync.addAsync(i);
@@ -93,7 +94,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testBatchBigRequest() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redissonRule.getSharedClient().createBatch();
         for (int i = 0; i < 210; i++) {
             batch.getMap("test").fastPutAsync("1", "2");
             batch.getMap("test").fastPutAsync("2", "3");
@@ -107,7 +108,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test(expected=RedisException.class)
     public void testExceptionHandling() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redissonRule.getSharedClient().createBatch();
         batch.getMap("test").putAsync("1", "2");
         batch.getScript().evalAsync(Mode.READ_WRITE, "wrong_code", RScript.ReturnType.VALUE);
         batch.execute();
@@ -115,7 +116,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test(expected=IllegalStateException.class)
     public void testTwice() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redissonRule.getSharedClient().createBatch();
         batch.getMap("test").putAsync("1", "2");
         batch.execute();
         batch.execute();
@@ -124,14 +125,14 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testEmpty() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redissonRule.getSharedClient().createBatch();
         batch.execute();
     }
     
     @Test
     public void testOrdering() throws InterruptedException {
         ExecutorService e = Executors.newFixedThreadPool(16);
-        final RBatch batch = redisson.createBatch();
+        final RBatch batch = redissonRule.getSharedClient().createBatch();
         final AtomicLong index = new AtomicLong(-1);
         final List<RFuture<Long>> futures = new CopyOnWriteArrayList<>();
         for (int i = 0; i < 500; i++) {
@@ -165,7 +166,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void test() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redissonRule.getSharedClient().createBatch();
         batch.getMap("test").fastPutAsync("1", "2");
         batch.getMap("test").fastPutAsync("2", "3");
         batch.getMap("test").putAsync("2", "5");
@@ -183,9 +184,9 @@ public class RedissonBatchTest extends BaseTest {
         Map<String, String> map = new HashMap<String, String>();
         map.put("1", "2");
         map.put("2", "5");
-        Assert.assertEquals(map, redisson.getMap("test"));
+        Assert.assertEquals(map, redissonRule.getSharedClient().getMap("test"));
 
-        Assert.assertEquals(redisson.getAtomicLong("counter").get(), 2);
+        Assert.assertEquals(redissonRule.getSharedClient().getAtomicLong("counter").get(), 2);
     }
 
 }

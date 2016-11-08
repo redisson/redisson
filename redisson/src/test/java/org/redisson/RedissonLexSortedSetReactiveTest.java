@@ -1,29 +1,31 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLexSortedSetReactive;
 
-public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
+public class RedissonLexSortedSetReactiveTest extends AbstractBaseTest {
 
     @Test
     public void testAddAllReactive() {
-        RLexSortedSetReactive list = redisson.getLexSortedSet("set");
+        RLexSortedSetReactive list = redissonRule.getSharedReactiveClient().getLexSortedSet("set");
         Assert.assertTrue(sync(list.add("1")) == 1);
         Assert.assertTrue(sync(list.add("2"))  == 1);
         Assert.assertTrue(sync(list.add("3")) == 1);
         Assert.assertTrue(sync(list.add("4")) == 1);
         Assert.assertTrue(sync(list.add("5")) == 1);
 
-        RLexSortedSetReactive list2 = redisson.getLexSortedSet("set2");
+        RLexSortedSetReactive list2 = redissonRule.getSharedReactiveClient().getLexSortedSet("set2");
         Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
         Assert.assertEquals(5, sync(list2.size()).intValue());
     }
 
     @Test
     public void testRemoveLexRangeTail() {
-        RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
+        RLexSortedSetReactive set = redissonRule.getSharedReactiveClient().getLexSortedSet("simple");
         Assert.assertTrue(sync(set.add("a")) == 1);
         Assert.assertFalse(sync(set.add("a")) == 1);
         Assert.assertTrue(sync(set.add("b"))  == 1);
@@ -44,7 +46,7 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveLexRangeHead() {
-        RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
+        RLexSortedSetReactive set = redissonRule.getSharedReactiveClient().getLexSortedSet("simple");
         sync(set.add("a"));
         sync(set.add("b"));
         sync(set.add("c"));
@@ -61,7 +63,7 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveLexRange() {
-        RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
+        RLexSortedSetReactive set = redissonRule.getSharedReactiveClient().getLexSortedSet("simple");
         sync(set.add("a"));
         sync(set.add("b"));
         sync(set.add("c"));
@@ -77,7 +79,7 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLexRangeTail() {
-        RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
+        RLexSortedSetReactive set = redissonRule.getSharedReactiveClient().getLexSortedSet("simple");
         Assert.assertTrue(sync(set.add("a")) == 1);
         Assert.assertFalse(sync(set.add("a")) == 1);
         Assert.assertTrue(sync(set.add("b")) == 1);
@@ -94,7 +96,7 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLexRangeHead() {
-        RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
+        RLexSortedSetReactive set = redissonRule.getSharedReactiveClient().getLexSortedSet("simple");
         sync(set.add("a"));
         sync(set.add("b"));
         sync(set.add("c"));
@@ -110,7 +112,7 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLexRange() {
-        RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
+        RLexSortedSetReactive set = redissonRule.getSharedReactiveClient().getLexSortedSet("simple");
         sync(set.add("a"));
         sync(set.add("b"));
         sync(set.add("c"));
@@ -124,7 +126,7 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLexCount() {
-        RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
+        RLexSortedSetReactive set = redissonRule.getSharedReactiveClient().getLexSortedSet("simple");
         sync(set.add("a"));
         sync(set.add("b"));
         sync(set.add("c"));

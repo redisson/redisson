@@ -1,9 +1,18 @@
 package org.redisson;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.JsonJacksonMapValueCodec;
 import org.redisson.codec.CborJacksonCodec;
@@ -16,17 +25,10 @@ import org.redisson.codec.SerializationCodec;
 import org.redisson.codec.SmileJacksonCodec;
 import org.redisson.codec.SnappyCodec;
 import org.redisson.config.Config;
+import com.fasterxml.jackson.core.type.TypeReference;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class RedissonCodecTest extends BaseTest {
+public class RedissonCodecTest extends AbstractBaseTest {
+    
     private Codec avroCodec = new SmileJacksonCodec();
     private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
@@ -42,100 +44,90 @@ public class RedissonCodecTest extends BaseTest {
 
     @Test
     public void testLZ4() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(lz4Codec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
 
     @Test
     public void testJdk() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(codec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
     
     @Test
     public void testMsgPack() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(msgPackCodec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
     
     @Test
     public void testSmile() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(smileCodec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
 
     @Test
     public void testAvro() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(avroCodec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
 
     @Test
     public void testFst() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(fstCodec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
 
     @Test
     public void testSnappy() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(snappyCodec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
 
     @Test
     public void testJson() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(jsonCodec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
 
     @Test
     public void testKryo() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(kryoCodec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
     }
 
     @Test
     public void testCbor() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(cborCodec);
-        redisson = Redisson.create(config);
 
-        test();
+        test(config);
 
     }
 
     @Test
     public void testListOfStrings() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(new JsonJacksonCodec());
-        redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
 
         RMap<String, List<String>> map = redisson.getMap("list of strings", jsonListOfStringCodec);
         map.put("foo", new ArrayList<String>(Arrays.asList("bar")));
@@ -145,7 +137,8 @@ public class RedissonCodecTest extends BaseTest {
         assertThat(map2).isEqualTo(map);
     }
 
-    public void test() {
+    public void test(Config config) {
+        RedissonClient redisson = redissonRule.createClient(config);
         RMap<Integer, Map<String, Object>> map = redisson.getMap("getAll");
         Map<String, Object> a = new HashMap<String, Object>();
         a.put("double", new Double(100000.0));

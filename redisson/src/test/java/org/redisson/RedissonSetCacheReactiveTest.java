@@ -1,6 +1,8 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
+import static org.redisson.rule.TestUtil.toIterator;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -16,7 +18,7 @@ import org.junit.Test;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.codec.MsgPackJacksonCodec;
 
-public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
+public class RedissonSetCacheReactiveTest extends AbstractBaseTest {
 
     public static class SimpleBean implements Serializable {
 
@@ -29,21 +31,20 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
         public void setLng(Long lng) {
             this.lng = lng;
         }
-
     }
-
+    
     @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
-        RSetCacheReactive<SimpleBean> set = redisson.getSetCache("simple");
+        RSetCacheReactive<SimpleBean> set = redissonRule.getSharedReactiveClient().getSetCache("simple");
         sync(set.add(sb));
         Assert.assertEquals(sb.getLng(), toIterator(set.iterator()).next().getLng());
     }
 
     @Test
     public void testAddExpire() throws InterruptedException, ExecutionException {
-        RSetCacheReactive<String> set = redisson.getSetCache("simple3");
+        RSetCacheReactive<String> set = redissonRule.getSharedReactiveClient().getSetCache("simple3");
         sync(set.add("123", 1, TimeUnit.SECONDS));
         assertThat(sync(set)).containsOnly("123");
 
@@ -54,7 +55,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddExpireTwise() throws InterruptedException, ExecutionException {
-        RSetCacheReactive<String> set = redisson.getSetCache("simple31");
+        RSetCacheReactive<String> set = redissonRule.getSharedReactiveClient().getSetCache("simple31");
         sync(set.add("123", 1, TimeUnit.SECONDS));
         Thread.sleep(1000);
 
@@ -68,7 +69,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testExpireOverwrite() throws InterruptedException, ExecutionException {
-        RSetCacheReactive<String> set = redisson.getSetCache("simple");
+        RSetCacheReactive<String> set = redissonRule.getSharedReactiveClient().getSetCache("simple");
         assertThat(sync(set.add("123", 1, TimeUnit.SECONDS))).isTrue();
 
         Thread.sleep(800);
@@ -85,7 +86,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemove() throws InterruptedException, ExecutionException {
-        RSetCacheReactive<Integer> set = redisson.getSetCache("simple");
+        RSetCacheReactive<Integer> set = redissonRule.getSharedReactiveClient().getSetCache("simple");
         set.add(1, 1, TimeUnit.SECONDS);
         set.add(3, 2, TimeUnit.SECONDS);
         set.add(7, 3, TimeUnit.SECONDS);
@@ -105,7 +106,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testIteratorSequence() {
-        RSetCacheReactive<Long> set = redisson.getSetCache("set");
+        RSetCacheReactive<Long> set = redissonRule.getSharedReactiveClient().getSetCache("set");
         for (int i = 0; i < 1000; i++) {
             sync(set.add(Long.valueOf(i)));
         }
@@ -131,7 +132,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAll() {
-        RSetCacheReactive<Integer> set = redisson.getSetCache("set");
+        RSetCacheReactive<Integer> set = redissonRule.getSharedReactiveClient().getSetCache("set");
         for (int i = 0; i < 10000; i++) {
             sync(set.add(i));
             sync(set.add(i*10, 10, TimeUnit.SECONDS));
@@ -144,7 +145,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContainsAll() {
-        RSetCacheReactive<Integer> set = redisson.getSetCache("set");
+        RSetCacheReactive<Integer> set = redissonRule.getSharedReactiveClient().getSetCache("set");
         for (int i = 0; i < 200; i++) {
             sync(set.add(i));
         }
@@ -156,7 +157,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContains() throws InterruptedException {
-        RSetCacheReactive<TestObject> set = redisson.getSetCache("set");
+        RSetCacheReactive<TestObject> set = redissonRule.getSharedReactiveClient().getSetCache("set");
 
         sync(set.add(new TestObject("1", "2")));
         sync(set.add(new TestObject("1", "2")));
@@ -173,7 +174,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testDuplicates() {
-        RSetCacheReactive<TestObject> set = redisson.getSetCache("set");
+        RSetCacheReactive<TestObject> set = redissonRule.getSharedReactiveClient().getSetCache("set");
 
         sync(set.add(new TestObject("1", "2")));
         sync(set.add(new TestObject("1", "2")));
@@ -186,7 +187,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testSize() {
-        RSetCacheReactive<Integer> set = redisson.getSetCache("set");
+        RSetCacheReactive<Integer> set = redissonRule.getSharedReactiveClient().getSetCache("set");
         Assert.assertEquals(1, sync(set.add(1)).intValue());
         Assert.assertEquals(1, sync(set.add(2)).intValue());
         Assert.assertEquals(1, sync(set.add(3)).intValue());
@@ -202,7 +203,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAllEmpty() {
-        RSetCacheReactive<Integer> set = redisson.getSetCache("set");
+        RSetCacheReactive<Integer> set = redissonRule.getSharedReactiveClient().getSetCache("set");
         sync(set.add(1));
         sync(set.add(2));
         sync(set.add(3));
@@ -215,7 +216,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAllNoModify() {
-        RSetCacheReactive<Integer> set = redisson.getSetCache("set");
+        RSetCacheReactive<Integer> set = redissonRule.getSharedReactiveClient().getSetCache("set");
         sync(set.add(1));
         sync(set.add(2));
 
@@ -225,7 +226,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testExpiredIterator() throws InterruptedException {
-        RSetCacheReactive<String> cache = redisson.getSetCache("simple");
+        RSetCacheReactive<String> cache = redissonRule.getSharedReactiveClient().getSetCache("simple");
         sync(cache.add("0"));
         sync(cache.add("1", 1, TimeUnit.SECONDS));
         sync(cache.add("2", 3, TimeUnit.SECONDS));
@@ -239,7 +240,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testExpire() throws InterruptedException {
-        RSetCacheReactive<String> cache = redisson.getSetCache("simple");
+        RSetCacheReactive<String> cache = redissonRule.getSharedReactiveClient().getSetCache("simple");
         sync(cache.add("8", 1, TimeUnit.SECONDS));
 
         sync(cache.expire(100, TimeUnit.MILLISECONDS));
@@ -251,7 +252,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testExpireAt() throws InterruptedException {
-        RSetCacheReactive<String> cache = redisson.getSetCache("simple");
+        RSetCacheReactive<String> cache = redissonRule.getSharedReactiveClient().getSetCache("simple");
         sync(cache.add("8", 1, TimeUnit.SECONDS));
 
         sync(cache.expireAt(System.currentTimeMillis() + 100));
@@ -263,7 +264,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testClearExpire() throws InterruptedException {
-        RSetCacheReactive<String> cache = redisson.getSetCache("simple");
+        RSetCacheReactive<String> cache = redissonRule.getSharedReactiveClient().getSetCache("simple");
         cache.add("8", 1, TimeUnit.SECONDS);
 
         cache.expireAt(System.currentTimeMillis() + 100);
@@ -277,7 +278,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RSetCacheReactive<String> cache = redisson.getSetCache("simple33", new MsgPackJacksonCodec());
+        RSetCacheReactive<String> cache = redissonRule.getSharedReactiveClient().getSetCache("simple33", new MsgPackJacksonCodec());
         Assert.assertFalse(sync(cache.contains("33")));
 
         Assert.assertTrue(sync(cache.add("33", 5, TimeUnit.SECONDS)));

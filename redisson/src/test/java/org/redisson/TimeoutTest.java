@@ -9,13 +9,11 @@ import org.redisson.api.RMap;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
 
-import io.netty.util.concurrent.Future;
-
-public class TimeoutTest extends BaseTest {
+public class TimeoutTest extends AbstractBaseTest {
 
 //    @Test
     public void testBrokenSlave() throws InterruptedException {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         for (int i = 0; i < 1000; i++) {
             map.put(i, i * 1000);
             Thread.sleep(1000);
@@ -26,7 +24,7 @@ public class TimeoutTest extends BaseTest {
 
 //    @Test
     public void testPubSub() throws InterruptedException, ExecutionException {
-        RTopic<String> topic = redisson.getTopic("simple");
+        RTopic<String> topic = redissonRule.getSharedClient().getTopic("simple");
         topic.addListener(new MessageListener<String>() {
             @Override
             public void onMessage(String channel, String msg) {
@@ -42,7 +40,7 @@ public class TimeoutTest extends BaseTest {
 
 //    @Test
     public void testReplaceTimeout() throws InterruptedException, ExecutionException {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         for (int i = 0; i < 1000; i++) {
             map.put(i, i * 1000);
             map.replace(i, i * 1000 + 1);
@@ -58,7 +56,7 @@ public class TimeoutTest extends BaseTest {
 
 //    @Test
     public void testPutAsyncTimeout() throws InterruptedException, ExecutionException {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         List<RFuture<Integer>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             RFuture<Integer> future = map.putAsync(i, i*1000);
@@ -79,7 +77,7 @@ public class TimeoutTest extends BaseTest {
 
 //    @Test
     public void testGetAsyncTimeout() throws InterruptedException, ExecutionException {
-        RMap<Integer, Integer> map = redisson.getMap("simple");
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getMap("simple");
         List<RFuture<Integer>> futures = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             map.put(i, i*1000);
@@ -96,7 +94,5 @@ public class TimeoutTest extends BaseTest {
             Integer res = future.get();
             System.out.println(res);
         }
-
     }
-
 }

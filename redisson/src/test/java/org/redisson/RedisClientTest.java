@@ -2,7 +2,6 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,10 +12,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
@@ -34,35 +29,7 @@ import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.concurrent.FutureListener;
 
-public class RedisClientTest {
-
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-    }
-
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-
-    @Before
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-    }
-
-    @After
-    public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
+public class RedisClientTest extends AbstractBaseTest {
 
     @Test
     public void testConnectAsync() throws InterruptedException {

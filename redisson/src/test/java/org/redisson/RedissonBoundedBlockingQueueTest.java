@@ -28,13 +28,11 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.config.Config;
 
-import io.netty.util.concurrent.Future;
-
-public class RedissonBoundedBlockingQueueTest extends BaseTest {
+public class RedissonBoundedBlockingQueueTest extends AbstractBaseTest {
 
     @Test
     public void testOfferTimeout() throws InterruptedException {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("bounded-queue");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue");
         queue.trySetCapacity(5);
         queue.add(1);
         queue.add(2);
@@ -52,7 +50,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
             @Override
             public void run() {
-                RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue");
+                RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue");
                 assertThat(queue1.remove()).isEqualTo(1);
                 executed.set(true);
             }
@@ -73,7 +71,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testAddAll() {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("bounded-queue");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue");
         queue.trySetCapacity(11);
         queue.add(1);
         queue.add(2);
@@ -93,7 +91,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testRemoveAll() {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("bounded-queue");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue");
         queue.trySetCapacity(5);
         queue.add(1);
         queue.add(2);
@@ -119,7 +117,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testPut() throws InterruptedException {
-        final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue");
+        final RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue");
         queue1.trySetCapacity(3);
         queue1.add(1);
         queue1.add(2);
@@ -133,7 +131,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
             @Override
             public void run() {
-                RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue");
+                RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue");
                 assertThat(queue1.poll()).isEqualTo(1);
                 executed.set(true);
             }
@@ -152,7 +150,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testConcurrentPut() throws InterruptedException {
-        final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:testConcurrentPut");
+        final RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue:testConcurrentPut");
         assertThat(queue1.trySetCapacity(10000)).isTrue();
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         for (int i = 0; i < 10000; i++) {
@@ -173,7 +171,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testRemainingCapacity() {
-        RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:testRemainingCapacity");
+        RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue:testRemainingCapacity");
         assertThat(queue1.trySetCapacity(3)).isTrue();
         assertThat(queue1.remainingCapacity()).isEqualTo(3);
         assertThat(queue1.add(1)).isTrue();
@@ -186,7 +184,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testAddFullQueueError() {
-        RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:testAddFullQueueError");
+        RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue:testAddFullQueueError");
         assertThat(queue1.trySetCapacity(1)).isTrue();
         assertThat(queue1.add(1)).isTrue();
         try {
@@ -198,7 +196,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testAddRemoveFullQueueError() {
-        RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:testAddRemoveFullQueueError");
+        RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue:testAddRemoveFullQueueError");
         assertThat(queue1.trySetCapacity(1)).isTrue();
         assertThat(queue1.add(12)).isTrue();
         assertThat(queue1.remove()).isEqualTo(12);
@@ -213,7 +211,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test(expected = RedisException.class)
     public void testInitCapacityError() {
-        RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:testInitCapacityError");
+        RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("bounded-queue:testInitCapacityError");
         queue1.add(1);
     }
     
@@ -227,7 +225,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         Config config = new Config();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:pollTimeout");
         assertThat(queue1.trySetCapacity(5)).isTrue();
         RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
@@ -250,7 +248,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         Config config = new Config();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         redisson.getKeys().flushall();
         
         final AtomicBoolean executed = new AtomicBoolean();
@@ -305,7 +303,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         Config config = new Config();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
         RFuture<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
@@ -342,7 +340,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         Config config = new Config();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         redisson.getKeys().flushall();
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeReattach");
@@ -372,10 +370,10 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testTakeAsyncCancel() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         redisson.getKeys().flushall();
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("testTakeAsyncCancel");
@@ -387,16 +385,14 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue1.add(1)).isTrue();
         assertThat(queue1.add(2)).isTrue();
         assertThat(queue1.size()).isEqualTo(2);
-        
-        redisson.shutdown();
     }
     
     @Test
     public void testPollAsyncCancel() {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         redisson.getKeys().flushall();
         
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
@@ -408,19 +404,17 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue1.add(1)).isTrue();
         assertThat(queue1.add(2)).isTrue();
         assertThat(queue1.size()).isEqualTo(2);
-        
-        redisson.shutdown();
     }
 
     @Test
     public void testPollFromAny() throws InterruptedException {
-        final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:pollany");
+        final RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue:pollany");
         assertThat(queue1.trySetCapacity(10)).isTrue();
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         executor.schedule(() -> {
-            RBoundedBlockingQueue<Integer> queue2 = redisson.getBoundedBlockingQueue("queue:pollany1");
+            RBoundedBlockingQueue<Integer> queue2 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue:pollany1");
             assertThat(queue2.trySetCapacity(10)).isTrue();
-            RBoundedBlockingQueue<Integer> queue3 = redisson.getBoundedBlockingQueue("queue:pollany2");
+            RBoundedBlockingQueue<Integer> queue3 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue:pollany2");
             assertThat(queue3.trySetCapacity(10)).isTrue();
             try {
                 queue3.put(2);
@@ -443,11 +437,11 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testTake() throws InterruptedException {
-        RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue:take");
+        RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue:take");
         assertThat(queue1.trySetCapacity(10)).isTrue();
         
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("queue:take");
+            RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("queue:take");
             try {
                 queue.put(3);
             } catch (InterruptedException e) {
@@ -465,7 +459,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testPoll() throws InterruptedException {
-        RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue1");
+        RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue1");
         assertThat(queue1.trySetCapacity(10)).isTrue();
         queue1.put(1);
         Assert.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
@@ -476,7 +470,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     }
     @Test
     public void testAwait() throws InterruptedException {
-        RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("queue1");
+        RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue1");
         assertThat(queue1.trySetCapacity(10)).isTrue();
         queue1.put(1);
 
@@ -485,7 +479,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
-        final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("{queue}1");
+        final RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("{queue}1");
         queue1.trySetCapacity(10);
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
             try {
@@ -496,7 +490,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
             }
         }, 10, TimeUnit.SECONDS);
 
-        RBoundedBlockingQueue<Integer> queue2 = redisson.getBoundedBlockingQueue("{queue}2");
+        RBoundedBlockingQueue<Integer> queue2 = redissonRule.getSharedClient().getBoundedBlockingQueue("{queue}2");
         queue2.trySetCapacity(10);
         queue2.put(4);
         queue2.put(5);
@@ -508,7 +502,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testOffer() {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("blocking:queue");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("blocking:queue");
         assertThat(queue.trySetCapacity(2)).isTrue();
         assertThat(queue.offer(1)).isTrue();
         assertThat(queue.offer(2)).isTrue();
@@ -518,7 +512,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testAddOffer() {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("blocking:queue");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("blocking:queue");
         assertThat(queue.trySetCapacity(10)).isTrue();
         assertThat(queue.add(1)).isTrue();
         assertThat(queue.offer(2)).isTrue();
@@ -533,7 +527,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("blocking:queue");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("blocking:queue");
         assertThat(queue.trySetCapacity(10)).isTrue();
         assertThat(queue.add(1)).isTrue();
         assertThat(queue.add(2)).isTrue();
@@ -552,14 +546,14 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test(expected = NoSuchElementException.class)
     public void testRemoveEmpty() {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("blocking:queue");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("blocking:queue");
         queue.trySetCapacity(10);
         queue.remove();
     }
 
     @Test
     public void testDrainTo() {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("queue");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("queue");
         queue.trySetCapacity(100);
         for (int i = 0 ; i < 100; i++) {
             assertThat(queue.offer(i)).isTrue();
@@ -584,7 +578,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     @Test
     public void testBlockingQueue() {
 
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("test_:blocking:queue:");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("test_:blocking:queue:");
         queue.trySetCapacity(10);
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -594,7 +588,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         for (int i = 0; i < total; i++) {
             // runnable won't be executed in any particular order, and hence, int value as well.
             executor.submit(() -> {
-                redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
+                redissonRule.getSharedClient().getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
             });
         }
         int count = 0;
@@ -615,7 +609,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testDrainToCollection() throws Exception {
-        RBoundedBlockingQueue<Object> queue1 = redisson.getBoundedBlockingQueue("queue1");
+        RBoundedBlockingQueue<Object> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue1");
         assertThat(queue1.trySetCapacity(10)).isTrue();
         queue1.put(1);
         queue1.put(2L);
@@ -630,7 +624,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testDrainToCollectionLimited() throws Exception {
-        RBoundedBlockingQueue<Object> queue1 = redisson.getBoundedBlockingQueue("queue1");
+        RBoundedBlockingQueue<Object> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue1");
         assertThat(queue1.trySetCapacity(10)).isTrue();
         queue1.put(1);
         queue1.put(2L);
@@ -665,7 +659,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         try {
             for (int i = 0; i < 10; i++) {
                 System.out.println("Iteration: " + i);
-                RBoundedBlockingQueue<String> q = redisson.getBoundedBlockingQueue(String.valueOf(i));
+                RBoundedBlockingQueue<String> q = redissonRule.getSharedClient().getBoundedBlockingQueue(String.valueOf(i));
                 q.trySetCapacity(10);
                 q.add(value);
                 System.out.println("Message added to [" + i + "]");
@@ -682,7 +676,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     
     @Test
     public void testExpire() throws InterruptedException {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("queue1");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("queue1");
         queue.trySetCapacity(10);
         queue.add(1);
         queue.add(2);
@@ -697,7 +691,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testExpireAt() throws InterruptedException {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("queue1");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("queue1");
         queue.trySetCapacity(10);
         queue.add(1);
         queue.add(2);
@@ -712,7 +706,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
     @Test
     public void testClearExpire() throws InterruptedException {
-        RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("queue1");
+        RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("queue1");
         queue.trySetCapacity(10);
         queue.add(1);
         queue.add(2);

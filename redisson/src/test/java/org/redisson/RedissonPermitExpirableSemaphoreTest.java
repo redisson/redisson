@@ -1,6 +1,8 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.testMultiInstanceConcurrency;
+import static org.redisson.rule.TestUtil.testSingleInstanceConcurrency;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,11 +13,11 @@ import org.junit.Test;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.client.RedisException;
 
-public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
+public class RedissonPermitExpirableSemaphoreTest extends AbstractBaseTest {
 
     @Test
     public void testAvailablePermits() throws InterruptedException {
-        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test-semaphore");
+        RPermitExpirableSemaphore semaphore = redissonRule.getSharedClient().getPermitExpirableSemaphore("test-semaphore");
         assertThat(semaphore.trySetPermits(2)).isTrue();
         Assert.assertEquals(2, semaphore.availablePermits());
         String acquire1 = semaphore.tryAcquire(200, 1000, TimeUnit.MILLISECONDS);
@@ -34,7 +36,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     
     @Test
     public void testExpire() throws InterruptedException {
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         s.trySetPermits(1);
         String permitId = s.acquire(2, TimeUnit.SECONDS);
 
@@ -42,7 +44,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         AtomicBoolean bool = new AtomicBoolean();
         Thread t = new Thread() {
             public void run() {
-                RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+                RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
                 try {
                     String permitId = s.acquire();
                     long spendTime = System.currentTimeMillis() - startTime;
@@ -65,7 +67,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
 
     @Test
     public void testExpireTryAcquire() throws InterruptedException {
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         s.trySetPermits(1);
         String permitId = s.tryAcquire(100, 2, TimeUnit.SECONDS);
 
@@ -73,7 +75,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         AtomicBoolean bool = new AtomicBoolean();
         Thread t = new Thread() {
             public void run() {
-                RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+                RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
                 try {
                     String permitId = s.acquire();
                     long spendTime = System.currentTimeMillis() - startTime;
@@ -97,7 +99,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     
     @Test
     public void testTrySetPermits() {
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         assertThat(s.trySetPermits(10)).isTrue();
         assertThat(s.availablePermits()).isEqualTo(10);
         assertThat(s.trySetPermits(15)).isFalse();
@@ -106,7 +108,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     
     @Test
     public void testAddPermits() throws InterruptedException {
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         s.trySetPermits(10);
         
         s.addPermits(5);
@@ -117,7 +119,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     
     @Test
     public void testBlockingAcquire() throws InterruptedException {
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         s.trySetPermits(1);
         String permitId = s.acquire();
         assertThat(permitId).hasSize(32);
@@ -125,7 +127,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         Thread t = new Thread() {
             @Override
             public void run() {
-                RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+                RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -147,7 +149,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
 
     @Test
     public void testTryAcquire() throws InterruptedException {
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         s.trySetPermits(1);
         String permitId = s.tryAcquire();
         assertThat(permitId).hasSize(32);
@@ -155,7 +157,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         Thread t = new Thread() {
             @Override
             public void run() {
-                RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+                RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
@@ -180,7 +182,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
 
     @Test(expected = RedisException.class)
     public void testReleaseWithoutPermits() {
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         s.release("1234");
     }
 
@@ -188,12 +190,12 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
     public void testConcurrency_SingleInstance() throws InterruptedException {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         s.trySetPermits(1);
 
         int iterations = 100;
-        testSingleInstanceConcurrency(iterations, r -> {
-            RPermitExpirableSemaphore s1 = redisson.getPermitExpirableSemaphore("test");
+        testSingleInstanceConcurrency(redissonRule, iterations, r -> {
+            RPermitExpirableSemaphore s1 = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
             try {
                 String permitId = s1.acquire();
             int value = lockedCounter.get();
@@ -213,10 +215,10 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         final int iterations = 100;
         final AtomicInteger lockedCounter = new AtomicInteger();
 
-        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        RPermitExpirableSemaphore s = redissonRule.getSharedClient().getPermitExpirableSemaphore("test");
         s.trySetPermits(1);
 
-        testMultiInstanceConcurrency(16, r -> {
+        testMultiInstanceConcurrency(redissonRule, 16, r -> {
             for (int i = 0; i < iterations; i++) {
                 try {
                     String permitId = r.getPermitExpirableSemaphore("test").acquire();

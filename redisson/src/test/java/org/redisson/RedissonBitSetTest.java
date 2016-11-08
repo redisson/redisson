@@ -1,16 +1,17 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.BitSet;
 
-import static org.assertj.core.api.Assertions.*;
 import org.junit.Test;
 import org.redisson.api.RBitSet;
 
-public class RedissonBitSetTest extends BaseTest {
+public class RedissonBitSetTest extends AbstractBaseTest {
 
     @Test
     public void testIndexRange() {
-        RBitSet bs = redisson.getBitSet("testbitset");
+        RBitSet bs = redissonRule.getSharedClient().getBitSet("testbitset");
         long topIndex = Integer.MAX_VALUE*2L;
         assertThat(bs.get(topIndex)).isFalse();
         bs.set(topIndex);
@@ -19,7 +20,7 @@ public class RedissonBitSetTest extends BaseTest {
 
     @Test
     public void testLength() {
-        RBitSet bs = redisson.getBitSet("testbitset");
+        RBitSet bs = redissonRule.getSharedClient().getBitSet("testbitset");
         bs.set(0, 5);
         bs.clear(0, 1);
         assertThat(bs.length()).isEqualTo(5);
@@ -47,7 +48,7 @@ public class RedissonBitSetTest extends BaseTest {
 
     @Test
     public void testClear() {
-        RBitSet bs = redisson.getBitSet("testbitset");
+        RBitSet bs = redissonRule.getSharedClient().getBitSet("testbitset");
         bs.set(0, 8);
         bs.clear(0, 3);
         assertThat(bs.toString()).isEqualTo("{3, 4, 5, 6, 7}");
@@ -55,7 +56,7 @@ public class RedissonBitSetTest extends BaseTest {
 
     @Test
     public void testNot() {
-        RBitSet bs = redisson.getBitSet("testbitset");
+        RBitSet bs = redissonRule.getSharedClient().getBitSet("testbitset");
         bs.set(3);
         bs.set(5);
         bs.not();
@@ -64,7 +65,7 @@ public class RedissonBitSetTest extends BaseTest {
 
     @Test
     public void testSet() {
-        RBitSet bs = redisson.getBitSet("testbitset");
+        RBitSet bs = redissonRule.getSharedClient().getBitSet("testbitset");
         bs.set(3);
         bs.set(5);
         assertThat(bs.toString()).isEqualTo("{3, 5}");
@@ -74,13 +75,13 @@ public class RedissonBitSetTest extends BaseTest {
         bs1.set(10);
         bs.set(bs1);
 
-        bs = redisson.getBitSet("testbitset");
+        bs = redissonRule.getSharedClient().getBitSet("testbitset");
         assertThat(bs.toString()).isEqualTo("{1, 10}");
     }
 
     @Test
     public void testSetGet() {
-        RBitSet bitset = redisson.getBitSet("testbitset");
+        RBitSet bitset = redissonRule.getSharedClient().getBitSet("testbitset");
         assertThat(bitset.cardinality()).isZero();
         assertThat(bitset.size()).isZero();
 
@@ -95,7 +96,7 @@ public class RedissonBitSetTest extends BaseTest {
 
     @Test
     public void testSetRange() {
-        RBitSet bs = redisson.getBitSet("testbitset");
+        RBitSet bs = redissonRule.getSharedClient().getBitSet("testbitset");
         bs.set(3, 10);
         assertThat(bs.cardinality()).isEqualTo(7);
         assertThat(bs.size()).isEqualTo(16);
@@ -103,7 +104,7 @@ public class RedissonBitSetTest extends BaseTest {
 
     @Test
     public void testAsBitSet() {
-        RBitSet bs = redisson.getBitSet("testbitset");
+        RBitSet bs = redissonRule.getSharedClient().getBitSet("testbitset");
         bs.set(3, true);
         bs.set(41, true);
         assertThat(bs.size()).isEqualTo(48);
@@ -116,12 +117,12 @@ public class RedissonBitSetTest extends BaseTest {
 
     @Test
     public void testAnd() {
-        RBitSet bs1 = redisson.getBitSet("testbitset1");
+        RBitSet bs1 = redissonRule.getSharedClient().getBitSet("testbitset1");
         bs1.set(3, 5);
         assertThat(bs1.cardinality()).isEqualTo(2);
         assertThat(bs1.size()).isEqualTo(8);
 
-        RBitSet bs2 = redisson.getBitSet("testbitset2");
+        RBitSet bs2 = redissonRule.getSharedClient().getBitSet("testbitset2");
         bs2.set(4);
         bs2.set(10);
         bs1.and(bs2.getName());
@@ -133,6 +134,4 @@ public class RedissonBitSetTest extends BaseTest {
         assertThat(bs1.cardinality()).isEqualTo(1);
         assertThat(bs1.size()).isEqualTo(16);
     }
-
-
 }

@@ -7,19 +7,21 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.redisson.BaseTest;
+import org.redisson.AbstractBaseTest;
 import org.redisson.RedisRunner;
-import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RedissonClient;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -28,7 +30,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
 
 @RunWith(Parameterized.class)
-public class RedissonSpringCacheTest {
+public class RedissonSpringCacheTest extends AbstractBaseTest {
 
     public static class SampleObject {
 
@@ -51,7 +53,6 @@ public class RedissonSpringCacheTest {
         public String getValue() {
             return value;
         }
-
     }
 
     @Service
@@ -80,9 +81,8 @@ public class RedissonSpringCacheTest {
         public SampleObject readNull(String key) {
             return null;
         }
-
     }
-
+    
     @Configuration
     @ComponentScan
     @EnableCaching
@@ -90,7 +90,7 @@ public class RedissonSpringCacheTest {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
-            return BaseTest.createInstance();
+            return redissonRule.createClient();
         }
 
         @Bean
@@ -109,36 +109,40 @@ public class RedissonSpringCacheTest {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
-            return BaseTest.createInstance();
+            return redissonRule.createClient();
         }
 
         @Bean
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
             return new RedissonSpringCacheManager(redissonClient, "classpath:/org/redisson/spring/cache/cache-config.json");
         }
-
     }
-
-    private static RedisProcess p;
 
     @Parameterized.Parameters(name = "{index} - {0}")
     public static Iterable<Object[]> data() throws IOException, InterruptedException {
-        if (p == null) {
-            p = RedisRunner.startDefaultRedisServerInstance();
-        }
         return Arrays.asList(new Object[][]{
-            {new AnnotationConfigApplicationContext(Application.class)},
-            {new AnnotationConfigApplicationContext(JsonConfigApplication.class)}
+            {"org.redisson.spring.cache.RedissonSpringCacheTest$Application"},
+            {"org.redisson.spring.cache.RedissonSpringCacheTest$JsonConfigApplication"}
         });
     }
 
     @Parameterized.Parameter(0)
-    public AnnotationConfigApplicationContext context;
-
-    @AfterClass
-    public static void after() throws InterruptedException, IOException {
-        RedissonSpringCacheTest.data().forEach(e -> ((ConfigurableApplicationContext) e[0]).close());
-        RedisRunner.shutDownDefaultRedisServerInstance();
+    public String contextStr;
+    
+    private ApplicationContext context;
+    
+    @Before
+    public void setup() {
+        try {
+            context = new AnnotationConfigApplicationContext(Class.forName(contextStr));
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    @After
+    public void tearDown() {
+        ((ConfigurableApplicationContext) context).close();
     }
 
     @Test
@@ -173,5 +177,4 @@ public class RedissonSpringCacheTest {
         SampleBean bean = context.getBean(SampleBean.class);
         bean.read("object2");
     }
-
 }

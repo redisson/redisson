@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.redisson.rule.TestUtil.sync;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,14 +16,14 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RBlockingQueueReactive;
 
-public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
+public class RedissonBlockingQueueReactiveTest extends AbstractBaseTest {
 
     @Test
     public void testPollFromAny() throws InterruptedException {
-        final RBlockingQueueReactive<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        final RBlockingQueueReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            RBlockingQueueReactive<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
-            RBlockingQueueReactive<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+            RBlockingQueueReactive<Integer> queue2 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:pollany1");
+            RBlockingQueueReactive<Integer> queue3 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:pollany2");
             sync(queue3.put(2));
             sync(queue1.put(1));
             sync(queue2.put(3));
@@ -37,9 +38,9 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testTake() throws InterruptedException {
-        RBlockingQueueReactive<Integer> queue1 = redisson.getBlockingQueue("queue:take");
+        RBlockingQueueReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:take");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("queue:take");
+            RBlockingQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:take");
             sync(queue.put(3));
         }, 10, TimeUnit.SECONDS);
 
@@ -52,7 +53,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testPoll() throws InterruptedException {
-        RBlockingQueueReactive<Integer> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueueReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue1");
         sync(queue1.put(1));
         Assert.assertEquals((Integer)1, sync(queue1.poll(2, TimeUnit.SECONDS)));
 
@@ -62,7 +63,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
     }
     @Test
     public void testAwait() throws InterruptedException {
-        RBlockingQueueReactive<Integer> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueueReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue1");
         sync(queue1.put(1));
 
         Assert.assertEquals((Integer)1, sync(queue1.poll(10, TimeUnit.SECONDS)));
@@ -70,12 +71,12 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
-        RBlockingQueueReactive<Integer> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueueReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue1");
         sync(queue1.put(1));
         sync(queue1.put(2));
         sync(queue1.put(3));
 
-        RBlockingQueueReactive<Integer> queue2 = redisson.getBlockingQueue("queue2");
+        RBlockingQueueReactive<Integer> queue2 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue2");
         sync(queue2.put(4));
         sync(queue2.put(5));
         sync(queue2.put(6));
@@ -86,7 +87,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddOffer() {
-        RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("blocking:queue");
+        RBlockingQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getBlockingQueue("blocking:queue");
         sync(queue.add(1));
         sync(queue.offer(2));
         sync(queue.add(3));
@@ -100,7 +101,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemove() {
-        RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("blocking:queue");
+        RBlockingQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getBlockingQueue("blocking:queue");
         sync(queue.add(1));
         sync(queue.add(2));
         sync(queue.add(3));
@@ -118,13 +119,13 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveEmpty() {
-        RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("blocking:queue");
+        RBlockingQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getBlockingQueue("blocking:queue");
         Assert.assertNull(sync(queue.poll()));
     }
 
     @Test
     public void testDrainTo() {
-        RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("queue");
+        RBlockingQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getBlockingQueue("queue");
         for (int i = 0 ; i < 100; i++) {
             sync(queue.offer(i));
         }
@@ -143,7 +144,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
     @Test
     public void testBlockingQueue() {
 
-        RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("test_:blocking:queue:");
+        RBlockingQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getBlockingQueue("test_:blocking:queue:");
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
 
@@ -152,7 +153,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
         for (int i = 0; i < total; i++) {
             // runnable won't be executed in any particular order, and hence, int value as well.
             executor.submit(() -> {
-                redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
+                redissonRule.getSharedReactiveClient().getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
             });
         }
         int count = 0;
@@ -167,7 +168,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testDrainToCollection() throws Exception {
-        RBlockingQueueReactive<Object> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueueReactive<Object> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue1");
         sync(queue1.put(1));
         sync(queue1.put(2L));
         sync(queue1.put("e"));
@@ -180,7 +181,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testDrainToCollectionLimited() throws Exception {
-        RBlockingQueueReactive<Object> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueueReactive<Object> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue1");
         sync(queue1.put(1));
         sync(queue1.put(2L));
         sync(queue1.put("e"));

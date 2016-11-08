@@ -1,16 +1,17 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RQueueReactive;
 
-public class RedissonQueueReactiveTest extends BaseReactiveTest {
+public class RedissonQueueReactiveTest extends AbstractBaseTest {
 
     @Test
     public void testAddOffer() {
-        RQueueReactive<Integer> queue = redisson.getQueue("queue");
+        RQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getQueue("queue");
         sync(queue.add(1));
         sync(queue.offer(2));
         sync(queue.add(3));
@@ -24,7 +25,7 @@ public class RedissonQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemove() {
-        RQueueReactive<Integer> queue = redisson.getQueue("queue");
+        RQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getQueue("queue");
         sync(queue.add(1));
         sync(queue.add(2));
         sync(queue.add(3));
@@ -42,7 +43,7 @@ public class RedissonQueueReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveEmpty() {
-        RQueueReactive<Integer> queue = redisson.getQueue("queue");
+        RQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getQueue("queue");
         Assert.assertNull(sync(queue.poll()));
     }
 
