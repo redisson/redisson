@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -168,7 +169,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         if (cfg.isUseLinuxNativeEpoll()) {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new EpollEventLoopGroup(cfg.getNettyThreads());
+                this.group = new EpollEventLoopGroup(cfg.getNettyThreads(),
+                        new DefaultThreadFactory(Optional.ofNullable(cfg.getEventLoopGroupThreadPrefix()).orElse("redisson-netty")));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -176,7 +178,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             this.socketChannelClass = EpollSocketChannel.class;
         } else {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                this.group = new NioEventLoopGroup(cfg.getNettyThreads(),
+                        new DefaultThreadFactory(Optional.ofNullable(cfg.getEventLoopGroupThreadPrefix()).orElse("redisson-netty")));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -195,7 +198,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             if (cfg.getThreads() != 0) {
                 threads = cfg.getThreads();
             }
-            executor = Executors.newFixedThreadPool(threads, new DefaultThreadFactory("redisson"));
+            executor = Executors.newFixedThreadPool(threads,
+                    new DefaultThreadFactory(Optional.ofNullable(cfg.getExecutorThreadPrefix()).orElse("redisson")));
         } else {
             executor = cfg.getExecutor();
         }
