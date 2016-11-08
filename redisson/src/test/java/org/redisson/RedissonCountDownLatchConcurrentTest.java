@@ -42,6 +42,7 @@ public class RedissonCountDownLatchConcurrentTest extends AbstractBaseTest {
             });
         }
 
+        countDownExecutor.shutdown();
         executor.shutdown();
         Assert.assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
     }

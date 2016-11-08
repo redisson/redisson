@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -208,7 +209,8 @@ public class RedissonBlockingQueueTest extends AbstractBaseTest {
     @Test
     public void testPollFromAny() throws InterruptedException {
         final RBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBlockingQueue("queue:pollany");
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             RBlockingQueue<Integer> queue2 = redissonRule.getSharedClient().getBlockingQueue("queue:pollany1");
             RBlockingQueue<Integer> queue3 = redissonRule.getSharedClient().getBlockingQueue("queue:pollany2");
             try {
@@ -225,12 +227,16 @@ public class RedissonBlockingQueueTest extends AbstractBaseTest {
 
         Assert.assertEquals(2, l);
         Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
     public void testTake() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBlockingQueue("queue:take");
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             RBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBlockingQueue("queue:take");
             try {
                 queue.put(3);
@@ -245,6 +251,9 @@ public class RedissonBlockingQueueTest extends AbstractBaseTest {
 
         Assert.assertEquals(3, l);
         Assert.assertTrue(System.currentTimeMillis() - s > 9000);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
@@ -268,7 +277,8 @@ public class RedissonBlockingQueueTest extends AbstractBaseTest {
     @Test
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
         final RBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBlockingQueue("{queue}1");
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             try {
                 queue1.put(3);
             } catch (InterruptedException e) {
@@ -284,6 +294,9 @@ public class RedissonBlockingQueueTest extends AbstractBaseTest {
 
         queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
         assertThat(queue2).containsExactly(3, 4, 5, 6);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
@@ -403,6 +416,7 @@ public class RedissonBlockingQueueTest extends AbstractBaseTest {
 
         assertThat(counter.get()).isEqualTo(total);
         queue.delete();
+        executor.shutdown();
     }
 
     @Test

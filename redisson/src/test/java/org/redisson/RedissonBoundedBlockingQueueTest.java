@@ -440,7 +440,8 @@ public class RedissonBoundedBlockingQueueTest extends AbstractBaseTest {
         RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("queue:take");
         assertThat(queue1.trySetCapacity(10)).isTrue();
         
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             RBoundedBlockingQueue<Integer> queue = redissonRule.getSharedClient().getBoundedBlockingQueue("queue:take");
             try {
                 queue.put(3);
@@ -455,6 +456,9 @@ public class RedissonBoundedBlockingQueueTest extends AbstractBaseTest {
 
         Assert.assertEquals(3, l);
         Assert.assertTrue(System.currentTimeMillis() - s > 9000);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
@@ -481,7 +485,8 @@ public class RedissonBoundedBlockingQueueTest extends AbstractBaseTest {
     public void testPollLastAndOfferFirstTo() throws InterruptedException {
         final RBoundedBlockingQueue<Integer> queue1 = redissonRule.getSharedClient().getBoundedBlockingQueue("{queue}1");
         queue1.trySetCapacity(10);
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             try {
                 queue1.put(3);
             } catch (InterruptedException e) {
@@ -498,6 +503,9 @@ public class RedissonBoundedBlockingQueueTest extends AbstractBaseTest {
 
         queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
         assertThat(queue2).containsExactly(3, 4, 5, 6);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
@@ -605,6 +613,8 @@ public class RedissonBoundedBlockingQueueTest extends AbstractBaseTest {
 
         assertThat(counter.get()).isEqualTo(total);
         queue.delete();
+        
+        executor.shutdown();
     }
 
     @Test

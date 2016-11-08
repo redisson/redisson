@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,7 +22,8 @@ public class RedissonBlockingQueueReactiveTest extends AbstractBaseTest {
     @Test
     public void testPollFromAny() throws InterruptedException {
         final RBlockingQueueReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:pollany");
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             RBlockingQueueReactive<Integer> queue2 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:pollany1");
             RBlockingQueueReactive<Integer> queue3 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:pollany2");
             sync(queue3.put(2));
@@ -34,12 +36,16 @@ public class RedissonBlockingQueueReactiveTest extends AbstractBaseTest {
 
         Assert.assertEquals(2, l);
         Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
     public void testTake() throws InterruptedException {
         RBlockingQueueReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:take");
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             RBlockingQueueReactive<Integer> queue = redissonRule.getSharedReactiveClient().getBlockingQueue("queue:take");
             sync(queue.put(3));
         }, 10, TimeUnit.SECONDS);
@@ -49,6 +55,9 @@ public class RedissonBlockingQueueReactiveTest extends AbstractBaseTest {
 
         Assert.assertEquals(3, l);
         Assert.assertTrue(System.currentTimeMillis() - s > 9000);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
@@ -164,6 +173,8 @@ public class RedissonBlockingQueueReactiveTest extends AbstractBaseTest {
         }
 
         assertThat(counter.get()).isEqualTo(total);
+        
+        executor.shutdown();
     }
 
     @Test

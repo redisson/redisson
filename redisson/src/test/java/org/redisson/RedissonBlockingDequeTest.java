@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
@@ -14,7 +15,8 @@ public class RedissonBlockingDequeTest extends AbstractBaseTest {
     @Test
     public void testPollLastFromAny() throws InterruptedException {
         final RBlockingDeque<Integer> queue1 = redissonRule.getSharedClient().getBlockingDeque("deque:pollany");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(new Runnable() {
             @Override
             public void run() {
                 RBlockingDeque<Integer> queue2 = redissonRule.getSharedClient().getBlockingDeque("deque:pollany1");
@@ -34,6 +36,9 @@ public class RedissonBlockingDequeTest extends AbstractBaseTest {
 
         assertThat(l).isEqualTo(2);
         assertThat(System.currentTimeMillis() - s).isGreaterThan(2000);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
@@ -94,7 +99,8 @@ public class RedissonBlockingDequeTest extends AbstractBaseTest {
     @Test
     public void testTakeFirstAwait() throws InterruptedException {
         RBlockingDeque<Integer> deque = redissonRule.getSharedClient().getBlockingDeque("queue:take");
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             RBlockingDeque<Integer> deque1 = redissonRule.getSharedClient().getBlockingDeque("queue:take");
             try {
                 deque1.putFirst(1);
@@ -114,12 +120,16 @@ public class RedissonBlockingDequeTest extends AbstractBaseTest {
         assertThat(deque.takeFirst()).isEqualTo(2);
         assertThat(deque.takeFirst()).isEqualTo(3);
         assertThat(deque.takeFirst()).isEqualTo(4);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
     public void testTakeLastAwait() throws InterruptedException {
         RBlockingDeque<Integer> deque = redissonRule.getSharedClient().getBlockingDeque("queue:take");
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(() -> {
             RBlockingDeque<Integer> deque1 = redissonRule.getSharedClient().getBlockingDeque("queue:take");
             try {
                 deque1.putFirst(1);
@@ -139,6 +149,9 @@ public class RedissonBlockingDequeTest extends AbstractBaseTest {
         assertThat(deque.takeLast()).isEqualTo(4);
         assertThat(deque.takeLast()).isEqualTo(3);
         assertThat(deque.takeLast()).isEqualTo(2);
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
     }
 
     @Test
