@@ -256,7 +256,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else {
             minTimeout = 100;
         }
-        timer = new HashedWheelTimer(minTimeout, TimeUnit.MILLISECONDS);
+        timer = new HashedWheelTimer(new DefaultThreadFactory("connection-hash-wheel-timer"), minTimeout, TimeUnit.MILLISECONDS);
     }
 
     public ConnectionInitializer getConnectListener() {
