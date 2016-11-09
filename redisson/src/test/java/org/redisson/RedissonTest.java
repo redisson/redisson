@@ -305,8 +305,8 @@ public class RedissonTest extends AbstractBaseTest {
         Assume.assumeFalse(RedissonRuntimeEnvironment.isTravis);
         Config redisConfig = new Config();
         redisConfig.useSingleServer()
-        .setConnectionMinimumIdleSize(10000)
-        .setConnectionPoolSize(10000)
+        .setConnectionMinimumIdleSize(9000)
+        .setConnectionPoolSize(9000)
         .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedissonClient r = redissonRule.createClient(redisConfig);
     }

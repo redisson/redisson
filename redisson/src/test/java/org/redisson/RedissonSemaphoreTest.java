@@ -242,8 +242,7 @@ public class RedissonSemaphoreTest extends AbstractBaseTest {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            int value = lockedCounter.get();
-            lockedCounter.set(value + 1);
+            lockedCounter.incrementAndGet();
             s1.release();
         });
 
@@ -259,19 +258,16 @@ public class RedissonSemaphoreTest extends AbstractBaseTest {
         RSemaphore s = redissonRule.getSharedClient().getSemaphore("test");
         s.trySetPermits(10);
 
-        final AtomicInteger checkPermits = new AtomicInteger(s.availablePermits());
-        final CyclicBarrier barrier = new CyclicBarrier(s.availablePermits());
+        final CyclicBarrier barrier1 = new CyclicBarrier(s.availablePermits());
+        final CyclicBarrier barrier2 = new CyclicBarrier(s.availablePermits());
         testMultiInstanceConcurrencySequentiallyLaunched(redissonRule, iterations, r -> {
             RSemaphore s1 = r.getSemaphore("test");
             try {
                 s1.acquire();
-                barrier.await();
-                if (checkPermits.decrementAndGet() > 0) {
-                    assertThat(s1.availablePermits()).isEqualTo(0);
-                    assertThat(s1.tryAcquire()).isFalse();
-                } else {
-                    Thread.sleep(50);
-                }
+                barrier1.await();
+                assertThat(s1.availablePermits()).isEqualTo(0);
+                assertThat(s1.tryAcquire()).isFalse();
+                barrier2.await();
             }catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -279,14 +275,13 @@ public class RedissonSemaphoreTest extends AbstractBaseTest {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            int value = lockedCounter.get();
-            lockedCounter.set(value + 1);
+            lockedCounter.incrementAndGet();
             s1.release();
         });
 
         System.out.println(lockedCounter.get());
         
-        assertThat(lockedCounter.get()).isLessThan(iterations);
+        assertThat(lockedCounter.get()).isEqualTo(iterations);
     }
 
 }

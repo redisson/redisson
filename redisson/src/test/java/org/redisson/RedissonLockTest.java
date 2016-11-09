@@ -84,6 +84,7 @@ public class RedissonLockTest extends AbstractBaseTest {
                 RLock lock = r.getLock("lock");
                 lock.lock();
                 latch.countDown();
+                r.shutdown();
                 try {
                     Thread.sleep(15000);
                 } catch (InterruptedException e) {
@@ -97,6 +98,7 @@ public class RedissonLockTest extends AbstractBaseTest {
 
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redissonRule.getSharedClient().getLock("lock");
+        Assert.assertTrue("Transient lock has not expired automatically", lock.isLocked());
         t.join();
         Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS));
         Assert.assertFalse("Transient lock has not expired automatically", lock.isLocked());

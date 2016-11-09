@@ -79,7 +79,7 @@ public class RedissonSetCacheReactiveTest extends AbstractBaseTest {
         Thread.sleep(50);
         assertThat(sync(set.contains("123"))).isTrue();
 
-        Thread.sleep(150);
+        Thread.sleep(1050);
 
         assertThat(sync(set.contains("123"))).isFalse();
     }
