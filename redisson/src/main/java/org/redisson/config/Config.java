@@ -440,7 +440,9 @@ public class Config {
      * Use external ExecutorService. ExecutorService processes 
      * all listeners of <code>RTopic</code>, 
      * <code>RRemoteService</code> invocation handlers  
-     * and <code>RExecutorService</code> tasks. 
+     * and <code>RExecutorService</code> tasks.
+     * <p>
+     * The caller is responsible for closing the ExecutorService.
      * 
      * @param executor object
      * @return config
@@ -463,6 +465,8 @@ public class Config {
      * <p>
      * Only {@link io.netty.channel.epoll.EpollEventLoopGroup} or
      * {@link io.netty.channel.nio.NioEventLoopGroup} can be used.
+     * <p>
+     * The caller is responsible for closing the EventLoopGroup.
      *
      * @param eventLoopGroup object
      * @return config
