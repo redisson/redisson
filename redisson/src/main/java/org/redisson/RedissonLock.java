@@ -77,10 +77,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     String getChannelName() {
-        if (getName().contains("{")) {
-            return "redisson_lock__channel:" + getName();
-        }
-        return "redisson_lock__channel__{" + getName() + "}";
+        return prefixName("redisson_lock__channel", getName());
     }
 
     String getLockName(long threadId) {
@@ -351,25 +348,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void unlock() {
-        Boolean opStatus = commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "if (redis.call('exists', KEYS[1]) == 0) then " +
-                            "redis.call('publish', KEYS[2], ARGV[1]); " +
-                            "return 1; " +
-                        "end;" +
-                        "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
-                            "return nil;" +
-                        "end; " +
-                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
-                        "if (counter > 0) then " +
-                            "redis.call('pexpire', KEYS[1], ARGV[2]); " +
-                            "return 0; " +
-                        "else " +
-                            "redis.call('del', KEYS[1]); " +
-                            "redis.call('publish', KEYS[2], ARGV[1]); " +
-                            "return 1; "+
-                        "end; " +
-                        "return nil;",
-                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(Thread.currentThread().getId()));
+        Boolean opStatus = get(unlockInnerAsync(Thread.currentThread().getId()));
         if (opStatus == null) {
             throw new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
@@ -419,6 +398,11 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     @Override
+    public RFuture<Boolean> isExistsAsync() {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.EXISTS, getName());
+    }
+
+    @Override
     public boolean isHeldByCurrentThread() {
         return commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(Thread.currentThread().getId()));
     }
@@ -442,27 +426,32 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return unlockAsync(threadId);
     }
 
+    protected RFuture<Boolean> unlockInnerAsync(long threadId) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "if (redis.call('exists', KEYS[1]) == 0) then " +
+                    "redis.call('publish', KEYS[2], ARGV[1]); " +
+                    "return 1; " +
+                "end;" +
+                "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
+                    "return nil;" +
+                "end; " +
+                "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
+                "if (counter > 0) then " +
+                    "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                    "return 0; " +
+                "else " +
+                    "redis.call('del', KEYS[1]); " +
+                    "redis.call('publish', KEYS[2], ARGV[1]); " +
+                    "return 1; "+
+                "end; " +
+                "return nil;",
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId));
+
+    }
+    
     public RFuture<Void> unlockAsync(final long threadId) {
         final RPromise<Void> result = newPromise();
-        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "if (redis.call('exists', KEYS[1]) == 0) then " +
-                            "redis.call('publish', KEYS[2], ARGV[1]); " +
-                            "return 1; " +
-                        "end;" +
-                        "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
-                            "return nil;" +
-                        "end; " +
-                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
-                        "if (counter > 0) then " +
-                            "redis.call('pexpire', KEYS[1], ARGV[2]); " +
-                            "return 0; " +
-                        "else " +
-                            "redis.call('del', KEYS[1]); " +
-                            "redis.call('publish', KEYS[2], ARGV[1]); " +
-                            "return 1; "+
-                        "end; " +
-                        "return nil;",
-                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId));
+        RFuture<Boolean> future = unlockInnerAsync(threadId);
 
         future.addListener(new FutureListener<Boolean>() {
             @Override

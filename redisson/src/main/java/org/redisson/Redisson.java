@@ -29,6 +29,7 @@ import org.redisson.api.RBatch;
 import org.redisson.api.RBinaryStream;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RBlockingDeque;
+import org.redisson.api.RBlockingFairQueue;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RBoundedBlockingQueue;
@@ -92,6 +93,7 @@ public class Redisson implements RedissonClient {
         RedissonReference.warmUp();
     }
     
+    protected final QueueTransferService queueTransferService = new QueueTransferService();
     protected final EvictionScheduler evictionScheduler;
     protected final CommandExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
@@ -423,6 +425,16 @@ public class Redisson implements RedissonClient {
         return new RedissonPatternTopic<M>(codec, commandExecutor, pattern);
     }
 
+    @Override
+    public <V> RBlockingFairQueue<V> getBlockingFairQueue(String name) {
+        return new RedissonBlockingFairQueue<V>(queueTransferService, commandExecutor, name, id);
+    }
+    
+    @Override
+    public <V> RBlockingFairQueue<V> getBlockingFairQueue(String name, Codec codec) {
+        return new RedissonBlockingFairQueue<V>(queueTransferService, codec, commandExecutor, name, id);
+    }
+    
     @Override
     public <V> RQueue<V> getQueue(String name) {
         return new RedissonQueue<V>(commandExecutor, name);

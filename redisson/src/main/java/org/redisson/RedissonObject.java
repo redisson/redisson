@@ -51,6 +51,13 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.await(future, timeout, timeoutUnit);
     }
     
+    protected String prefixName(String prefix, String name) {
+        if (getName().contains("{")) {
+            return prefix + ":" + name;
+        }
+        return prefix + ":{" + getName() + "}";
+    }
+
     protected <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);
     }
