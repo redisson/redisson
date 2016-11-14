@@ -36,6 +36,7 @@ import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RCountDownLatch;
+import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RDeque;
 import org.redisson.api.RGeo;
 import org.redisson.api.RHyperLogLog;
@@ -427,12 +428,20 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <V> RBlockingFairQueue<V> getBlockingFairQueue(String name) {
-        return new RedissonBlockingFairQueue<V>(queueTransferService, commandExecutor, name, id);
+        return new RedissonBlockingFairQueue<V>(commandExecutor, name, id);
     }
     
     @Override
     public <V> RBlockingFairQueue<V> getBlockingFairQueue(String name, Codec codec) {
-        return new RedissonBlockingFairQueue<V>(queueTransferService, codec, commandExecutor, name, id);
+        return new RedissonBlockingFairQueue<V>(codec, commandExecutor, name, id);
+    }
+    
+    @Override
+    public <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue) {
+        if (destinationQueue == null) {
+            throw new NullPointerException();
+        }
+        return new RedissonDelayedQueue<V>(queueTransferService, destinationQueue.getCodec(), commandExecutor, destinationQueue.getName());
     }
     
     @Override

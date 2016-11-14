@@ -19,7 +19,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingFairQueue;
-import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -37,20 +36,17 @@ import io.netty.util.concurrent.FutureListener;
 public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> implements RBlockingFairQueue<V> {
 
     private final RedissonFairLock fairLock;
-    private final QueueTransferService queueTransferService;
     
-    protected RedissonBlockingFairQueue(QueueTransferService queueTransferService, CommandExecutor commandExecutor, String name, UUID id) {
+    protected RedissonBlockingFairQueue(CommandExecutor commandExecutor, String name, UUID id) {
         super(commandExecutor, name);
         String lockName = prefixName("redisson_bfq_lock", name);
         fairLock = new RedissonFairLock(commandExecutor, lockName, id);
-        this.queueTransferService = queueTransferService;
     }
 
-    protected RedissonBlockingFairQueue(QueueTransferService queueTransferService, Codec codec, CommandExecutor commandExecutor, String name, UUID id) {
+    protected RedissonBlockingFairQueue(Codec codec, CommandExecutor commandExecutor, String name, UUID id) {
         super(codec, commandExecutor, name);
         String lockName = prefixName("redisson_bfq_lock", name);
         fairLock = new RedissonFairLock(commandExecutor, lockName, id);
-        this.queueTransferService = queueTransferService;
     }
     
     @Override
@@ -333,8 +329,4 @@ public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> imple
         return promise;
     }
 
-    public RDelayedQueue<V> getDealyedQueue() {
-        return null;
-    }
-    
 }

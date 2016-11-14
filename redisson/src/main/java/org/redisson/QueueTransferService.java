@@ -15,6 +15,10 @@
  */
 package org.redisson;
 
+import java.util.concurrent.ConcurrentMap;
+
+import io.netty.util.internal.PlatformDependent;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -22,11 +26,27 @@ package org.redisson;
  */
 public class QueueTransferService {
 
-    public void schedule(String name, Object task) {
-//        QueueTransferTask oldTask = tasks.putIfAbsent(name, task);
-//        if (oldTask == null) {
-//            task.start();
-//        }
+    private final ConcurrentMap<String, QueueTransferTask> tasks = PlatformDependent.newConcurrentHashMap();
+    
+    public synchronized void schedule(String name, QueueTransferTask task) {
+        QueueTransferTask oldTask = tasks.putIfAbsent(name, task);
+        if (oldTask == null) {
+            task.start();
+        } else {
+            oldTask.incUsage();
+        }
     }
+    
+    public synchronized void remove(String name) {
+        QueueTransferTask task = tasks.get(name);
+        if (task != null) {
+            if (task.decUsage() == 0) {
+                tasks.remove(name, task);
+                task.stop();
+            }
+        }
+    }
+    
+    
 
 }

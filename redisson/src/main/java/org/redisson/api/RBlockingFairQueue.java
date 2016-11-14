@@ -25,6 +25,4 @@ package org.redisson.api;
  */
 public interface RBlockingFairQueue<V> extends RBlockingQueue<V> {
 
-    RDelayedQueue<V> getDealyedQueue();
-    
 }
