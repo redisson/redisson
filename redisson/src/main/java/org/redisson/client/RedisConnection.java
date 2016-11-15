@@ -18,6 +18,7 @@ package org.redisson.client;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.CommandsQueue;
@@ -174,6 +175,11 @@ public class RedisConnection implements RedisCommands {
         final RPromise<R> promise = new RedissonPromise<R>();
         if (timeout == -1) {
             timeout = redisClient.getCommandTimeout();
+        }
+        
+        if (redisClient.getBootstrap().group().isShuttingDown()) {
+            RedissonShutdownException cause = new RedissonShutdownException("Redisson is shutdown");
+            return RedissonPromise.newFailedFuture(cause);
         }
         
         final ScheduledFuture<?> scheduledFuture = redisClient.getBootstrap().group().next().schedule(new Runnable() {
