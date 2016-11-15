@@ -21,9 +21,14 @@ Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](h
 
 Features
 ================================
-* [AWS ElastiCache](https://aws.amazon.com/elasticache/) servers mode:
-    1. automatic new master server discovery
-    2. automatic new slave servers discovery
+* [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) master/slave servers mode:
+    1. automatic master server change discovery
+* [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) servers mode:
+    1. automatic master and slave servers discovery
+    2. automatic new master server discovery
+    3. automatic new slave servers discovery
+    4. automatic slave servers offline/online discovery
+    5. automatic slots change discovery
 * Cluster servers mode:
     1. automatic master and slave servers discovery
     2. automatic new master server discovery
