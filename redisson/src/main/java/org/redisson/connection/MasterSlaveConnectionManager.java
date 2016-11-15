@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -166,7 +165,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (cfg.isUseLinuxNativeEpoll()) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new EpollEventLoopGroup(cfg.getNettyThreads(),
-                        new DefaultThreadFactory(Optional.ofNullable(cfg.getEventLoopGroupThreadPrefix()).orElse("redisson-netty")));
+                        new DefaultThreadFactory(cfg.getEventLoopGroupThreadPrefix() != null ?
+                                cfg.getEventLoopGroupThreadPrefix() : "redisson-netty"));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -175,7 +175,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(),
-                        new DefaultThreadFactory(Optional.ofNullable(cfg.getEventLoopGroupThreadPrefix()).orElse("redisson-netty")));
+                        new DefaultThreadFactory(cfg.getEventLoopGroupThreadPrefix() != null ?
+                                cfg.getEventLoopGroupThreadPrefix() : "redisson-netty"));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -195,7 +196,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 threads = cfg.getThreads();
             }
             executor = Executors.newFixedThreadPool(threads,
-                    new DefaultThreadFactory(Optional.ofNullable(cfg.getExecutorThreadPrefix()).orElse("redisson")));
+                    new DefaultThreadFactory(cfg.getExecutorThreadPrefix() != null ?
+                            cfg.getExecutorThreadPrefix() : "redisson"));
         } else {
             executor = cfg.getExecutor();
         }
@@ -250,7 +252,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else {
             minTimeout = 100;
         }
-        timer = new HashedWheelTimer(minTimeout, TimeUnit.MILLISECONDS);
+        timer = new HashedWheelTimer(new DefaultThreadFactory("connection-hash-wheel-timer"), minTimeout, TimeUnit.MILLISECONDS);
     }
 
     public ConnectionInitializer getConnectListener() {
