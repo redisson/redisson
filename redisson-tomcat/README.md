@@ -11,7 +11,7 @@ Usage
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
 	         configPath="${catalina.base}/redisson.conf" />
    ```
-   `configPath` - path to Redisson JSON or YAML config
+   `configPath` - path to Redisson JSON or YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
 
 2. Copy two jars into `TOMCAT_BASE/lib` directory:
   
