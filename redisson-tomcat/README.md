@@ -1,7 +1,8 @@
 Redis based Tomcat Session Manager
 ===
 
-Implements non-sticky session management backed by Redis. Supports Tomcat 6.x, 7.x, 8.x
+Implements non-sticky session management backed by Redis.  
+Supports Tomcat 6.x, 7.x, 8.x
 
 Usage
 ===
