@@ -12,7 +12,7 @@ Usage
 
 2. Copy two jars into `TOMCAT_BASE/lib` directory:
   
-  1. For JDK 1.8+  
+  1. __For JDK 1.8+__  
       [redisson-all-3.2.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.2.0&e=jar)
   
       for Tomcat 6.x  
@@ -22,7 +22,7 @@ Usage
       for Tomcat 8.x  
       [redisson-tomcat-8-3.2.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.2.0&e=jar)
   
-  1. For JDK 1.6+  
+  1. __For JDK 1.6+__  
       [redisson-all-2.7.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.7.0&e=jar)
   
       for Tomcat 6.x  
