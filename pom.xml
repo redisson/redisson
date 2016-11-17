@@ -51,6 +51,7 @@
     <modules>
         <module>redisson</module>
         <module>redisson-all</module>
+        <module>redisson-tomcat</module>
     </modules>
 
     <profiles>
