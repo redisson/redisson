@@ -7,7 +7,7 @@ Supports Tomcat 6.x, 7.x, 8.x
 Advantages
 ===
 
-Current implementation differs from any other Tomcat Session Manager in terms of efficient storage and update speed. Each session attribute is written into Redis during each `setAttribute` invocation. While other solutions serialize all session each time.
+Current implementation differs from any other Tomcat Session Manager in terms of efficient storage and update. Each session attribute is written into Redis during each `setAttribute` invocation. While other solutions serialize all session each time.
 
 Usage
 ===
