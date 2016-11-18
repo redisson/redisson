@@ -606,5 +606,11 @@ public class Redisson implements RedissonClient {
         this.commandExecutor.enableRedissonReferenceSupport(this);
     }
 
+    @Override
+    protected void finalize() throws Throwable {
+        if (!isShutdown() && !isShuttingDown()) {
+            shutdown();
+        }
+    }
 }
 
