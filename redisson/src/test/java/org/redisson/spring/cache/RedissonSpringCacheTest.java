@@ -100,8 +100,7 @@ public class RedissonSpringCacheTest {
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
             Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
             config.put("testMap", new CacheConfig(24 * 60 * 1000, 12 * 60 * 1000));
-            RedissonSpringCacheManager cm = new RedissonSpringCacheManager(redissonClient, config);
-            return cm;
+            return new RedissonSpringCacheManager(redissonClient, config);
         }
 
     }
