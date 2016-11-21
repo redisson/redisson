@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+import org.junit.After;
 
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -97,7 +100,8 @@ public class RedissonSpringCacheTest {
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
             Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
             config.put("testMap", new CacheConfig(24 * 60 * 1000, 12 * 60 * 1000));
-            return new RedissonSpringCacheManager(redissonClient, config);
+            RedissonSpringCacheManager cm = new RedissonSpringCacheManager(redissonClient, config);
+            return cm;
         }
 
     }
@@ -118,7 +122,43 @@ public class RedissonSpringCacheTest {
         }
 
     }
+    
+    @Configuration
+    @ComponentScan
+    @EnableCaching
+    public static class RegExpConfigApplication {
 
+        @Bean(destroyMethod = "shutdown")
+        RedissonClient redisson() {
+            return BaseTest.createInstance();
+        }
+
+        @Bean
+        CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
+            Map<Pattern, CacheConfig> config = new LinkedHashMap<Pattern, CacheConfig>();
+            config.put(Pattern.compile("test.*"), new CacheConfig(24 * 60 * 1000, 12 * 60 * 1000));
+            return new RedissonSpringCacheManager(redissonClient, null, config);
+        }
+
+    }
+
+    @Configuration
+    @ComponentScan
+    @EnableCaching
+    public static class JsonRegExpConfigApplication {
+
+        @Bean(destroyMethod = "shutdown")
+        RedissonClient redisson() {
+            return BaseTest.createInstance();
+        }
+
+        @Bean
+        CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
+            return new RedissonSpringCacheManager(redissonClient, null, "classpath:/org/redisson/spring/cache/regexp-cache-config.json");
+        }
+
+    }
+    
     private static RedisProcess p;
 
     @Parameterized.Parameters(name = "{index} - {0}")
@@ -128,7 +168,9 @@ public class RedissonSpringCacheTest {
         }
         return Arrays.asList(new Object[][]{
             {new AnnotationConfigApplicationContext(Application.class)},
-            {new AnnotationConfigApplicationContext(JsonConfigApplication.class)}
+            {new AnnotationConfigApplicationContext(JsonConfigApplication.class)},
+            {new AnnotationConfigApplicationContext(RegExpConfigApplication.class)},
+            {new AnnotationConfigApplicationContext(JsonRegExpConfigApplication.class)}
         });
     }
 
@@ -141,6 +183,12 @@ public class RedissonSpringCacheTest {
         RedisRunner.shutDownDefaultRedisServerInstance();
     }
 
+    @After
+    public void afterEach() throws Exception {
+        RedissonClient redisson = context.getBean(RedissonClient.class);
+        redisson.getKeys().flushdb();
+    }
+    
     @Test
     public void testNull() {
         SampleBean bean = context.getBean(SampleBean.class);
@@ -173,5 +221,5 @@ public class RedissonSpringCacheTest {
         SampleBean bean = context.getBean(SampleBean.class);
         bean.read("object2");
     }
-
+    
 }
