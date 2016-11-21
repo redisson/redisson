@@ -209,7 +209,12 @@
             <version>[3.1,)</version>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session</artifactId>
+            <version>1.2.2.RELEASE</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -381,7 +386,7 @@
                 <version>2.11</version>
                 <configuration>
                     <basedir>${basedir}</basedir>
-                    <header>${basedir}/header.txt</header>
+                    <header>${basedir}/../header.txt</header>
                     <quiet>false</quiet>
                     <failIfMissing>true</failIfMissing>
                     <aggregate>false</aggregate>
