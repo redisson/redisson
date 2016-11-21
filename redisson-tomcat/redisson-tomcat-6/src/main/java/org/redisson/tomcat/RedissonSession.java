@@ -15,6 +15,8 @@
  */
 package org.redisson.tomcat;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -51,9 +53,11 @@ public class RedissonSession extends StandardSession {
         super.setCreationTime(time);
 
         if (map != null) {
-            map.fastPut("session:creationTime", creationTime);
-            map.fastPut("session:lastAccessedTime", lastAccessedTime);
-            map.fastPut("session:thisAccessedTime", thisAccessedTime);
+            Map<String, Object> newMap = new HashMap<String, Object>(3);
+            newMap.put("session:creationTime", creationTime);
+            newMap.put("session:lastAccessedTime", lastAccessedTime);
+            newMap.put("session:thisAccessedTime", thisAccessedTime);
+            map.putAll(newMap);
         }
     }
     
@@ -62,8 +66,10 @@ public class RedissonSession extends StandardSession {
         super.access();
         
         if (map != null) {
-            map.fastPut("session:lastAccessedTime", lastAccessedTime);
-            map.fastPut("session:thisAccessedTime", thisAccessedTime);
+            Map<String, Object> newMap = new HashMap<String, Object>(2);
+            newMap.put("session:lastAccessedTime", lastAccessedTime);
+            newMap.put("session:thisAccessedTime", thisAccessedTime);
+            map.putAll(newMap);
             if (getMaxInactiveInterval() >= 0) {
                 map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
             }
@@ -123,32 +129,32 @@ public class RedissonSession extends StandardSession {
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
         
-        if (getId() != null) {
-            RMap<String, Object> map = redissonManager.getMap(getId());
+        if (map != null) {
             map.fastRemove(name);
         }
     }
     
     public void save() {
-        RMap<String, Object> map = redissonManager.getMap(getId());
-        map.fastPut("session:creationTime", creationTime);
-        map.fastPut("session:lastAccessedTime", lastAccessedTime);
-        map.fastPut("session:thisAccessedTime", thisAccessedTime);
-        map.fastPut("session:maxInactiveInterval", maxInactiveInterval);
-        map.fastPut("session:isValid", isValid);
-        map.fastPut("session:isNew", isNew);
+        Map<String, Object> newMap = new HashMap<String, Object>();
+        newMap.put("session:creationTime", creationTime);
+        newMap.put("session:lastAccessedTime", lastAccessedTime);
+        newMap.put("session:thisAccessedTime", thisAccessedTime);
+        newMap.put("session:maxInactiveInterval", maxInactiveInterval);
+        newMap.put("session:isValid", isValid);
+        newMap.put("session:isNew", isNew);
         
         for (Entry<String, Object> entry : attributes.entrySet()) {
-            map.fastPut(entry.getKey(), entry.getValue());
+            newMap.put(entry.getKey(), entry.getValue());
+        }
+        
+        map.putAll(newMap);
+        
+        if (maxInactiveInterval >= 0) {
+            map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
         }
     }
     
     public void load() {
-        RMap<String, Object> map = redissonManager.getMap(getId());
-        if (!map.isExists()) {
-            return;
-        }
-        
         Set<Entry<String, Object>> entrySet = map.readAllEntrySet();
         for (Entry<String, Object> entry : entrySet) {
             if ("session:creationTime".equals(entry.getKey())) {
