@@ -308,11 +308,6 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         session.delete();
     }
     
-    public static void main(String[] args) {
-        String[] s = "__keyspace@0__:foo".split(":");
-        System.out.println(s[1]);
-    }
-    
     public void setKeyPrefix(String keyPrefix) {
         this.keyPrefix = keyPrefix;
     }
