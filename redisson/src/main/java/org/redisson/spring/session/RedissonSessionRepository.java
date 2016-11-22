@@ -67,13 +67,17 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             newMap.put("session:maxInactiveInterval", delegate.getMaxInactiveIntervalInSeconds());
             map.putAll(newMap);
 
-            if (delegate.getMaxInactiveIntervalInSeconds() >= 0) {
-                map.expire(delegate.getMaxInactiveIntervalInSeconds(), TimeUnit.SECONDS);
-            }
+            updateExpiration();
             
             String channelName = getEventsChannelName(delegate.getId());
             RTopic<String> topic = redisson.getTopic(channelName, StringCodec.INSTANCE);
             topic.publish(delegate.getId());
+        }
+
+        private void updateExpiration() {
+            if (delegate.getMaxInactiveIntervalInSeconds() >= 0) {
+                map.expire(delegate.getMaxInactiveIntervalInSeconds(), TimeUnit.SECONDS);
+            }
         }
         
         public RedissonSession(String sessionId) {
@@ -177,6 +181,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
             if (map != null) {
                 map.fastPut("session:lastAccessedTime", lastAccessedTime);
+                updateExpiration();
             }
         }
 
@@ -189,9 +194,9 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         public void setMaxInactiveIntervalInSeconds(int interval) {
             delegate.setMaxInactiveIntervalInSeconds(interval);
 
-            map.fastPut("session:maxInactiveInterval", interval);
-            if (interval >= 0) {
-                map.expire(interval, TimeUnit.SECONDS);
+            if (map != null) {
+                map.fastPut("session:maxInactiveInterval", interval);
+                updateExpiration();
             }
         }
 
