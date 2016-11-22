@@ -54,6 +54,7 @@ public class TomcatServer {
 
         tomcat.stop();
         tomcat.destroy();
+        tomcat.getServer().await();
         isRunning = false;
     }
 
