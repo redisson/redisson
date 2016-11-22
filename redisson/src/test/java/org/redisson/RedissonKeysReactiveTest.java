@@ -1,23 +1,26 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
+import static org.redisson.rule.TestUtil.toIterator;
+
 import java.util.Iterator;
 
-import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RMapReactive;
 
-public class RedissonKeysReactiveTest extends BaseReactiveTest {
+public class RedissonKeysReactiveTest extends AbstractBaseTest {
 
     @Test
     public void testKeysIterablePattern() {
-        redisson.getBucket("test1").set("someValue");
-        redisson.getBucket("test2").set("someValue");
+        redissonRule.getSharedReactiveClient().getBucket("test1").set("someValue");
+        redissonRule.getSharedReactiveClient().getBucket("test2").set("someValue");
 
-        redisson.getBucket("test12").set("someValue");
+        redissonRule.getSharedReactiveClient().getBucket("test12").set("someValue");
 
-        Iterator<String> iterator = toIterator(redisson.getKeys().getKeysByPattern("test?"));
+        Iterator<String> iterator = toIterator(redissonRule.getSharedReactiveClient().getKeys().getKeysByPattern("test?"));
         for (; iterator.hasNext();) {
             String key = iterator.next();
             assertThat(key).isIn("test1", "test2");
@@ -26,38 +29,37 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRandomKey() {
-        RBucketReactive<String> bucket = redisson.getBucket("test1");
+        RBucketReactive<String> bucket = redissonRule.getSharedReactiveClient().getBucket("test1");
         sync(bucket.set("someValue1"));
 
-        RBucketReactive<String> bucket2 = redisson.getBucket("test2");
+        RBucketReactive<String> bucket2 = redissonRule.getSharedReactiveClient().getBucket("test2");
         sync(bucket2.set("someValue2"));
 
-        assertThat(sync(redisson.getKeys().randomKey())).isIn("test1", "test2");
-        sync(redisson.getKeys().delete("test1"));
-        Assert.assertEquals("test2", sync(redisson.getKeys().randomKey()));
-        sync(redisson.getKeys().flushdb());
-        Assert.assertNull(sync(redisson.getKeys().randomKey()));
+        assertThat(sync(redissonRule.getSharedReactiveClient().getKeys().randomKey())).isIn("test1", "test2");
+        sync(redissonRule.getSharedReactiveClient().getKeys().delete("test1"));
+        Assert.assertEquals("test2", sync(redissonRule.getSharedReactiveClient().getKeys().randomKey()));
+        sync(redissonRule.getSharedReactiveClient().getKeys().flushdb());
+        Assert.assertNull(sync(redissonRule.getSharedReactiveClient().getKeys().randomKey()));
     }
 
     @Test
     public void testDeleteByPattern() {
-        RBucketReactive<String> bucket = redisson.getBucket("test1");
+        RBucketReactive<String> bucket = redissonRule.getSharedReactiveClient().getBucket("test1");
         sync(bucket.set("someValue"));
-        RMapReactive<String, String> map = redisson.getMap("test2");
+        RMapReactive<String, String> map = redissonRule.getSharedReactiveClient().getMap("test2");
         sync(map.fastPut("1", "2"));
 
-        Assert.assertEquals(2, sync(redisson.getKeys().deleteByPattern("test?")).intValue());
+        Assert.assertEquals(2, sync(redissonRule.getSharedReactiveClient().getKeys().deleteByPattern("test?")).intValue());
     }
 
     @Test
     public void testMassDelete() {
-        RBucketReactive<String> bucket = redisson.getBucket("test");
+        RBucketReactive<String> bucket = redissonRule.getSharedReactiveClient().getBucket("test");
         sync(bucket.set("someValue"));
-        RMapReactive<String, String> map = redisson.getMap("map2");
+        RMapReactive<String, String> map = redissonRule.getSharedReactiveClient().getMap("map2");
         sync(map.fastPut("1", "2"));
 
-        Assert.assertEquals(2, sync(redisson.getKeys().delete("test", "map2")).intValue());
-        Assert.assertEquals(0, sync(redisson.getKeys().delete("test", "map2")).intValue());
+        Assert.assertEquals(2, sync(redissonRule.getSharedReactiveClient().getKeys().delete("test", "map2")).intValue());
+        Assert.assertEquals(0, sync(redissonRule.getSharedReactiveClient().getKeys().delete("test", "map2")).intValue());
     }
-
 }

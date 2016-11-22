@@ -22,11 +22,11 @@ import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSortedSet;
 import org.redisson.client.protocol.ScoredEntry;
 
-public class RedissonScoredSortedSetTest extends BaseTest {
+public class RedissonScoredSortedSetTest extends AbstractBaseTest {
 
     @Test
     public void testCount() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0, "1");
         set.add(1, "4");
         set.add(2, "2");
@@ -38,7 +38,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testReadAll() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0, "1");
         set.add(1, "4");
         set.add(2, "2");
@@ -50,7 +50,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testAddAll() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         Map<String, Double> objects = new HashMap<String, Double>();
         objects.put("1", 0.1);
@@ -64,7 +64,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     @Test
     public void testTryAdd() {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.0.2") >= 0);
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         assertThat(set.tryAdd(123.81, "1980")).isTrue();
         assertThat(set.tryAdd(99, "1980")).isFalse();
@@ -73,7 +73,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testPollLast() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         Assert.assertNull(set.pollLast());
 
         set.add(0.1, "a");
@@ -86,7 +86,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testPollFirst() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         Assert.assertNull(set.pollFirst());
 
         set.add(0.1, "a");
@@ -99,7 +99,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testFirstLast() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.1, "a");
         set.add(0.2, "b");
         set.add(0.3, "c");
@@ -112,7 +112,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRemoveRangeByScore() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.1, "a");
         set.add(0.2, "b");
         set.add(0.3, "c");
@@ -127,7 +127,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRemoveRangeByScoreNegativeInf() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.1, "a");
         set.add(0.2, "b");
         set.add(0.3, "c");
@@ -142,7 +142,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testRemoveRangeByScorePositiveInf() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.1, "a");
         set.add(0.2, "b");
         set.add(0.3, "c");
@@ -157,7 +157,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRemoveRangeByRank() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.1, "a");
         set.add(0.2, "b");
         set.add(0.3, "c");
@@ -172,7 +172,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRank() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.1, "a");
         set.add(0.2, "b");
         set.add(0.3, "c");
@@ -187,7 +187,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testRevRank() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.1, "a");
         set.add(0.2, "b");
         set.add(0.3, "c");
@@ -203,7 +203,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         RFuture<Boolean> future = set.addAsync(0.323, 2);
         Assert.assertTrue(future.get());
         RFuture<Boolean> future2 = set.addAsync(0.323, 2);
@@ -214,7 +214,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRemoveAsync() throws InterruptedException, ExecutionException {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.11, 1);
         set.add(0.22, 3);
         set.add(0.33, 7);
@@ -233,7 +233,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testIteratorNextNext() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(1, "1");
         set.add(2, "4");
 
@@ -245,7 +245,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testIteratorRemove() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(1, "1");
         set.add(2, "4");
         set.add(3, "2");
@@ -276,7 +276,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testIteratorSequence() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         for (int i = 0; i < 1000; i++) {
             set.add(i, Integer.valueOf(i));
         }
@@ -302,7 +302,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRetainAll() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         for (int i = 0; i < 20000; i++) {
             set.add(i*10, i);
         }
@@ -316,7 +316,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRemoveAll() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0.1, 1);
         set.add(0.2, 2);
         set.add(0.3, 3);
@@ -329,7 +329,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
 //    @Test(expected = IllegalArgumentException.class)
     public void testTailSet() {
-        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
 
         set.add(1);
         set.add(2);
@@ -356,7 +356,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
 //    @Test(expected = IllegalArgumentException.class)
     public void testHeadSet() {
-        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
 
         set.add(1);
         set.add(2);
@@ -434,7 +434,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testSort() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         Assert.assertTrue(set.add(4, 2));
         Assert.assertTrue(set.add(5, 3));
         Assert.assertTrue(set.add(3, 1));
@@ -448,7 +448,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(4, 5);
         set.add(2, 3);
         set.add(0, 1);
@@ -463,7 +463,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testContainsAll() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         for (int i = 0; i < 200; i++) {
             set.add(i, i);
         }
@@ -474,7 +474,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testToArray() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0, "1");
         set.add(1, "4");
         set.add(2, "2");
@@ -489,7 +489,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testContains() {
-        RScoredSortedSet<TestObject> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<TestObject> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         set.add(0, new TestObject("1", "2"));
         set.add(1, new TestObject("1", "2"));
@@ -504,7 +504,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testDuplicates() {
-        RScoredSortedSet<TestObject> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<TestObject> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         Assert.assertTrue(set.add(0, new TestObject("1", "2")));
         Assert.assertFalse(set.add(0, new TestObject("1", "2")));
@@ -517,7 +517,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testSize() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0, 1);
         set.add(1, 2);
         set.add(2, 3);
@@ -531,7 +531,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testValueRange() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0, 1);
         set.add(1, 2);
         set.add(2, 3);
@@ -545,7 +545,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testValueRangeReversed() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(0, 1);
         set.add(1, 2);
         set.add(2, 3);
@@ -560,7 +560,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testEntryRange() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(10, 1);
         set.add(20, 2);
         set.add(30, 3);
@@ -577,7 +577,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testEntryRangeReversed() {
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<Integer> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(10, 1);
         set.add(20, 2);
         set.add(30, 3);
@@ -597,7 +597,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testLexSortedSet() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
 
         set.add("a");
         set.add("b");
@@ -612,7 +612,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testScoredSortedSetValueRangeLimit() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -626,7 +626,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testScoredSortedSetValueRange() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -640,7 +640,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testScoredSortedSetValueRangeReversedLimit() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -654,7 +654,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testScoredSortedSetValueRangeReversed() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -668,7 +668,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testScoredSortedSetValueRangeNegativeInf() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().<String>getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -683,7 +683,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testScoredSortedSetValueRangePositiveInf() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().<String>getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -698,7 +698,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testScoredSortedSetEntryRange() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -717,7 +717,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testScoredSortedSetEntryRangeReversed() {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -736,7 +736,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testScoredSortedSetEntryRangeNegativeInf() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().<String>getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -754,7 +754,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testScoredSortedSetEntryRangePositiveInf() {
-        RScoredSortedSet<String> set = redisson.<String>getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().<String>getScoredSortedSet("simple");
 
         set.add(0, "a");
         set.add(1, "b");
@@ -772,7 +772,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set.add(1, "100");
 
         Double res = set.addScore("100", 11);
@@ -780,7 +780,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Double score = set.getScore("100");
         Assert.assertEquals(12, (double)score, 0);
 
-        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set2 = redissonRule.getSharedClient().getScoredSortedSet("simple");
         set2.add(100.2, "1");
 
         Double res2 = set2.addScore("1", new Double(12.1));
@@ -791,16 +791,16 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testIntersection() {
-        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        RScoredSortedSet<String> set1 = redissonRule.getSharedClient().getScoredSortedSet("simple1");
         set1.add(1, "one");
         set1.add(2, "two");
 
-        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        RScoredSortedSet<String> set2 = redissonRule.getSharedClient().getScoredSortedSet("simple2");
         set2.add(1, "one");
         set2.add(2, "two");
         set2.add(3, "three");
         
-        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        RScoredSortedSet<String> out = redissonRule.getSharedClient().getScoredSortedSet("out");
         assertThat(out.intersection(set1.getName(), set2.getName())).isEqualTo(2);
 
         assertThat(out.readAll()).containsOnly("one", "two");
@@ -810,16 +810,16 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testIntersectionWithWeight() {
-        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        RScoredSortedSet<String> set1 = redissonRule.getSharedClient().getScoredSortedSet("simple1");
         set1.add(1, "one");
         set1.add(2, "two");
 
-        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        RScoredSortedSet<String> set2 = redissonRule.getSharedClient().getScoredSortedSet("simple2");
         set2.add(1, "one");
         set2.add(2, "two");
         set2.add(3, "three");
         
-        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        RScoredSortedSet<String> out = redissonRule.getSharedClient().getScoredSortedSet("out");
         Map<String, Double> nameWithWeight = new HashMap<>();
         nameWithWeight.put(set1.getName(), 2D);
         nameWithWeight.put(set2.getName(), 3D);
@@ -832,16 +832,16 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testUnion() {
-        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        RScoredSortedSet<String> set1 = redissonRule.getSharedClient().getScoredSortedSet("simple1");
         set1.add(1, "one");
         set1.add(2, "two");
 
-        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        RScoredSortedSet<String> set2 = redissonRule.getSharedClient().getScoredSortedSet("simple2");
         set2.add(1, "one");
         set2.add(2, "two");
         set2.add(3, "three");
         
-        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        RScoredSortedSet<String> out = redissonRule.getSharedClient().getScoredSortedSet("out");
         assertThat(out.union(set1.getName(), set2.getName())).isEqualTo(3);
 
         assertThat(out.readAll()).containsOnly("one", "two", "three");
@@ -852,16 +852,16 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testUnionWithWeight() {
-        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        RScoredSortedSet<String> set1 = redissonRule.getSharedClient().getScoredSortedSet("simple1");
         set1.add(1, "one");
         set1.add(2, "two");
 
-        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        RScoredSortedSet<String> set2 = redissonRule.getSharedClient().getScoredSortedSet("simple2");
         set2.add(1, "one");
         set2.add(2, "two");
         set2.add(3, "three");
         
-        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        RScoredSortedSet<String> out = redissonRule.getSharedClient().getScoredSortedSet("out");
         Map<String, Double> nameWithWeight = new HashMap<>();
         nameWithWeight.put(set1.getName(), 2D);
         nameWithWeight.put(set2.getName(), 3D);
@@ -872,6 +872,4 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(out.getScore("two")).isEqualTo(10);
         assertThat(out.getScore("three")).isEqualTo(9);
     }
-
-    
 }

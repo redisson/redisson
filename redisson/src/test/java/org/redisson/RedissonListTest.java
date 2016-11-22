@@ -15,11 +15,11 @@ import org.junit.Test;
 import org.redisson.api.RList;
 import org.redisson.client.RedisException;
 
-public class RedissonListTest extends BaseTest {
+public class RedissonListTest extends AbstractBaseTest {
 
     @Test
     public void testAddBefore() {
-        RList<String> list = redisson.getList("list");
+        RList<String> list = redissonRule.getSharedClient().getList("list");
         list.add("1");
         list.add("2");
         list.add("3");
@@ -31,7 +31,7 @@ public class RedissonListTest extends BaseTest {
     
     @Test
     public void testAddAfter() {
-        RList<String> list = redisson.getList("list");
+        RList<String> list = redissonRule.getSharedClient().getList("list");
         list.add("1");
         list.add("2");
         list.add("3");
@@ -44,7 +44,7 @@ public class RedissonListTest extends BaseTest {
     
     @Test
     public void testTrim() {
-        RList<String> list = redisson.getList("list1");
+        RList<String> list = redissonRule.getSharedClient().getList("list1");
         list.add("1");
         list.add("2");
         list.add("3");
@@ -58,7 +58,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testAddAllBigList() {
-        RList<String> list = redisson.getList("list1");
+        RList<String> list = redissonRule.getSharedClient().getList("list1");
         List<String> newList = new ArrayList<String>();
         for (int i = 0; i < 10000; i++) {
             newList.add("" + i);
@@ -70,17 +70,17 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testEquals() {
-        RList<String> list1 = redisson.getList("list1");
+        RList<String> list1 = redissonRule.getSharedClient().getList("list1");
         list1.add("1");
         list1.add("2");
         list1.add("3");
 
-        RList<String> list2 = redisson.getList("list2");
+        RList<String> list2 = redissonRule.getSharedClient().getList("list2");
         list2.add("1");
         list2.add("2");
         list2.add("3");
 
-        RList<String> list3 = redisson.getList("list3");
+        RList<String> list3 = redissonRule.getSharedClient().getList("list3");
         list3.add("0");
         list3.add("2");
         list3.add("3");
@@ -91,7 +91,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testHashCode() {
-        RList<String> list = redisson.getList("list");
+        RList<String> list = redissonRule.getSharedClient().getList("list");
         list.add("a");
         list.add("b");
         list.add("c");
@@ -101,7 +101,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testAddByIndex() {
-        RList<String> test2 = redisson.getList("test2");
+        RList<String> test2 = redissonRule.getSharedClient().getList("test2");
         test2.add("foo");
         test2.add(0, "bar");
 
@@ -110,7 +110,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLong() {
-        List<Long> list = redisson.getList("list");
+        List<Long> list = redissonRule.getSharedClient().getList("list");
         list.add(1L);
         list.add(2L);
 
@@ -131,7 +131,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testListIteratorSetFail() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
 
         ListIterator<Integer> iterator = list.listIterator();
@@ -143,7 +143,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testListIteratorSetFail2() {
-        List<Integer> list = redisson.getList("simpleList");
+        List<Integer> list = redissonRule.getSharedClient().getList("simpleList");
         list.add(1);
 
         ListIterator<Integer> iterator = list.listIterator();
@@ -154,7 +154,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorOK() {
-        List<Integer> list = redisson.getList("simpleList");
+        List<Integer> list = redissonRule.getSharedClient().getList("simpleList");
         list.add(1);
 
         ListIterator<Integer> iterator = list.listIterator();
@@ -192,7 +192,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorGetSet() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -286,7 +286,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorIndex() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -319,7 +319,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testListIteratorPrevious() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -354,7 +354,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLastIndexOfNone() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -366,7 +366,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLastIndexOf2() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -384,7 +384,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLastIndexOf1() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -402,7 +402,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testLastIndexOf() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -420,7 +420,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSubListMiddle() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -445,7 +445,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSubListHead() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -470,7 +470,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSubListHeadIterator() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -497,7 +497,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSubListMiddleIterator() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -529,7 +529,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testIndexOf() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         for (int i = 1; i < 200; i++) {
             list.add(i);
         }
@@ -543,7 +543,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -562,7 +562,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSubListRemove() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -588,7 +588,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSet() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -602,7 +602,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testSetFail() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -629,7 +629,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testRemoveAllEmpty() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -642,7 +642,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testRemoveAll() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -665,7 +665,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testRetainAll() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -680,7 +680,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testFastSet() {
-        RList<Integer> list = redisson.getList("list");
+        RList<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
 
@@ -690,7 +690,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testRetainAllEmpty() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -703,7 +703,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testRetainAllNoModify() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
 
@@ -713,13 +713,13 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = RedisException.class)
     public void testAddAllIndexError() {
-        RList<Integer> list = redisson.getList("list");
+        RList<Integer> list = redissonRule.getSharedClient().getList("list");
         list.addAll(2, Arrays.asList(7, 8, 9));
     }
 
     @Test
     public void testAddAllIndex() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -770,7 +770,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testAddAll() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -786,14 +786,14 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testAddAllEmpty() throws Exception {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         Assert.assertFalse(list.addAll(Collections.<Integer>emptyList()));
         Assert.assertEquals(0, list.size());
     }
 
     @Test
     public void testContainsAll() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         for (int i = 0; i < 200; i++) {
             list.add(i);
         }
@@ -805,7 +805,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testContainsAllEmpty() {
-        List<Integer> list = redisson.getList("list");
+        List<Integer> list = redissonRule.getSharedClient().getList("list");
         for (int i = 0; i < 200; i++) {
             list.add(i);
         }
@@ -816,7 +816,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testToArray() {
-        List<String> list = redisson.getList("list");
+        List<String> list = redissonRule.getSharedClient().getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -832,7 +832,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testIteratorRemove() {
-        List<String> list = redisson.getList("list");
+        List<String> list = redissonRule.getSharedClient().getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -863,7 +863,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testIteratorSequence() {
-        List<String> list = redisson.getList("list");
+        List<String> list = redissonRule.getSharedClient().getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -890,7 +890,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testContains() {
-        List<String> list = redisson.getList("list");
+        List<String> list = redissonRule.getSharedClient().getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -904,14 +904,14 @@ public class RedissonListTest extends BaseTest {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testGetFail() {
-        List<String> list = redisson.getList("list");
+        List<String> list = redissonRule.getSharedClient().getList("list");
 
         list.get(0);
     }
 
     @Test
     public void testAddGet() {
-        List<String> list = redisson.getList("list");
+        List<String> list = redissonRule.getSharedClient().getList("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -927,7 +927,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testDuplicates() {
-        List<TestObject> list = redisson.getList("list");
+        List<TestObject> list = redissonRule.getSharedClient().getList("list");
 
         list.add(new TestObject("1", "2"));
         list.add(new TestObject("1", "2"));
@@ -940,7 +940,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testSize() {
-        List<String> list = redisson.getList("list");
+        List<String> list = redissonRule.getSharedClient().getList("list");
 
         list.add("1");
         list.add("2");
@@ -962,7 +962,7 @@ public class RedissonListTest extends BaseTest {
 
     @Test
     public void testCodec() {
-        List<Object> list = redisson.getList("list");
+        List<Object> list = redissonRule.getSharedClient().getList("list");
         list.add(1);
         list.add(2L);
         list.add("3");

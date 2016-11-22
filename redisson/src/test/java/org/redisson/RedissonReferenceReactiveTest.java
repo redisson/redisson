@@ -1,7 +1,11 @@
 package org.redisson;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.redisson.rule.TestUtil.sync;
+
 import java.util.List;
-import static org.junit.Assert.*;
+
 import org.junit.Test;
 import org.redisson.api.RBatch;
 import org.redisson.api.RBatchReactive;
@@ -14,19 +18,19 @@ import org.redisson.reactive.RedissonMapCacheReactive;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class RedissonReferenceReactiveTest extends BaseReactiveTest {
+public class RedissonReferenceReactiveTest extends AbstractBaseTest {
     
     @Test
     public void test() throws InterruptedException {
-        RBucketReactive<Object> b1 = redisson.getBucket("b1");
-        RBucketReactive<Object> b2 = redisson.getBucket("b2");
-        RBucketReactive<Object> b3 = redisson.getBucket("b3");
+        RBucketReactive<Object> b1 = redissonRule.getSharedReactiveClient().getBucket("b1");
+        RBucketReactive<Object> b2 = redissonRule.getSharedReactiveClient().getBucket("b2");
+        RBucketReactive<Object> b3 = redissonRule.getSharedReactiveClient().getBucket("b3");
         sync(b2.set(b3));
-        sync(b1.set(redisson.getBucket("b2")));
+        sync(b1.set(redissonRule.getSharedReactiveClient().getBucket("b2")));
         assertTrue(sync(b1.get()).getClass().equals(RedissonBucketReactive.class));
         assertEquals("b3", ((RBucketReactive) sync(((RBucketReactive) sync(b1.get())).get())).getName());
-        RBucketReactive<Object> b4 = redisson.getBucket("b4");
-        sync(b4.set(redisson.getMapCache("testCache")));
+        RBucketReactive<Object> b4 = redissonRule.getSharedReactiveClient().getBucket("b4");
+        sync(b4.set(redissonRule.getSharedReactiveClient().getMapCache("testCache")));
         assertTrue(sync(b4.get()) instanceof RedissonMapCacheReactive);
         sync(((RedissonMapCacheReactive) sync(b4.get())).fastPut(b1, b2));
         assertEquals("b2", ((RBucketReactive) sync(((RedissonMapCacheReactive) sync(b4.get())).get(b1))).getName());
@@ -34,7 +38,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
     
     @Test
     public void testBatch() throws InterruptedException {
-        RBatchReactive batch = redisson.createBatch();
+        RBatchReactive batch = redissonRule.getSharedReactiveClient().createBatch();
         RBucketReactive<Object> b1 = batch.getBucket("b1");
         RBucketReactive<Object> b2 = batch.getBucket("b2");
         RBucketReactive<Object> b3 = batch.getBucket("b3");
@@ -43,7 +47,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         b3.set(b1);
         sync(batch.execute());
         
-        batch = redisson.createBatch();
+        batch = redissonRule.getSharedReactiveClient().createBatch();
         batch.getBucket("b1").get();
         batch.getBucket("b2").get();
         batch.getBucket("b3").get();
@@ -55,7 +59,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
     
     @Test
     public void testReactiveToNormal() throws InterruptedException {
-        RBatchReactive batch = redisson.createBatch();
+        RBatchReactive batch = redissonRule.getSharedReactiveClient().createBatch();
         RBucketReactive<Object> b1 = batch.getBucket("b1");
         RBucketReactive<Object> b2 = batch.getBucket("b2");
         RBucketReactive<Object> b3 = batch.getBucket("b3");
@@ -64,7 +68,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         b3.set(b1);
         sync(batch.execute());
         
-        RBatch b = Redisson.create(redisson.getConfig()).createBatch();
+        RBatch b = redissonRule.getSharedClient().createBatch();
         b.getBucket("b1").getAsync();
         b.getBucket("b2").getAsync();
         b.getBucket("b3").getAsync();

@@ -8,11 +8,11 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.redisson.api.RMultimapCache;
 
-public class RedissonListMultimapCacheTest extends BaseTest {
-
+public class RedissonListMultimapCacheTest extends AbstractBaseTest {
+    
     @Test
     public void testContains() {
-        RMultimapCache<String, String> multimap = redisson.getListMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getListMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -31,7 +31,7 @@ public class RedissonListMultimapCacheTest extends BaseTest {
 
     @Test
     public void testContainsExpired() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getListMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getListMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -53,7 +53,7 @@ public class RedissonListMultimapCacheTest extends BaseTest {
 
     @Test
     public void testGetAll() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getListMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getListMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -63,7 +63,7 @@ public class RedissonListMultimapCacheTest extends BaseTest {
 
     @Test
     public void testGetAllExpired() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getListMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getListMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -76,7 +76,7 @@ public class RedissonListMultimapCacheTest extends BaseTest {
 
     @Test
     public void testValues() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getListMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getListMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -96,7 +96,7 @@ public class RedissonListMultimapCacheTest extends BaseTest {
     
     @Test
     public void testValuesExpired() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getListMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getListMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -115,7 +115,7 @@ public class RedissonListMultimapCacheTest extends BaseTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RMultimapCache<String, String> cache = redisson.getListMultimapCache("simple33");
+        RMultimapCache<String, String> cache = redissonRule.getSharedClient().getListMultimapCache("simple33");
         assertThat(cache.put("1", "1")).isTrue();
         assertThat(cache.put("1", "2")).isTrue();
         assertThat(cache.put("1", "3")).isTrue();

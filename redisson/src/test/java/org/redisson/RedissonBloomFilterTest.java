@@ -1,15 +1,15 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.Test;
 import org.redisson.api.RBloomFilter;
 
-import static org.assertj.core.api.Assertions.*;
-
-public class RedissonBloomFilterTest extends BaseTest {
+public class RedissonBloomFilterTest extends AbstractBaseTest {
 
     @Test
     public void testConfig() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        RBloomFilter<String> filter = redissonRule.getSharedClient().getBloomFilter("filter");
         filter.tryInit(100, 0.03);
         assertThat(filter.getExpectedInsertions()).isEqualTo(100);
         assertThat(filter.getFalseProbability()).isEqualTo(0.03);
@@ -19,7 +19,7 @@ public class RedissonBloomFilterTest extends BaseTest {
 
     @Test
     public void testInit() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        RBloomFilter<String> filter = redissonRule.getSharedClient().getBloomFilter("filter");
         assertThat(filter.tryInit(55000000L, 0.03)).isTrue();
         assertThat(filter.tryInit(55000001L, 0.03)).isFalse();
 
@@ -30,28 +30,28 @@ public class RedissonBloomFilterTest extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testNotInitializedOnExpectedInsertions() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        RBloomFilter<String> filter = redissonRule.getSharedClient().getBloomFilter("filter");
 
         filter.getExpectedInsertions();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testNotInitializedOnContains() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        RBloomFilter<String> filter = redissonRule.getSharedClient().getBloomFilter("filter");
 
         filter.contains("32");
     }
 
     @Test(expected = IllegalStateException.class)
     public void testNotInitializedOnAdd() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        RBloomFilter<String> filter = redissonRule.getSharedClient().getBloomFilter("filter");
 
         filter.add("123");
     }
 
     @Test
     public void test() {
-        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        RBloomFilter<String> filter = redissonRule.getSharedClient().getBloomFilter("filter");
         filter.tryInit(550000000L, 0.03);
 
         assertThat(filter.contains("123")).isFalse();

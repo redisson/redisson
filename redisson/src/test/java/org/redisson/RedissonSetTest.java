@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 
-public class RedissonSetTest extends BaseTest {
+public class RedissonSetTest extends AbstractBaseTest {
 
     public static class SimpleBean implements Serializable {
 
@@ -28,12 +28,11 @@ public class RedissonSetTest extends BaseTest {
         public void setLng(Long lng) {
             this.lng = lng;
         }
-
     }
-
+    
     @Test
     public void testRemoveRandom() {
-        RSet<Integer> set = redisson.getSet("simple");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("simple");
         set.add(1);
         set.add(2);
         set.add(3);
@@ -46,7 +45,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testRandom() {
-        RSet<Integer> set = redisson.getSet("simple");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("simple");
         set.add(1);
         set.add(2);
         set.add(3);
@@ -61,7 +60,7 @@ public class RedissonSetTest extends BaseTest {
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
-        RSet<SimpleBean> set = redisson.getSet("simple");
+        RSet<SimpleBean> set = redissonRule.getSharedClient().getSet("simple");
         set.add(sb);
         Assert.assertEquals(sb.getLng(), set.iterator().next().getLng());
     }
@@ -70,7 +69,7 @@ public class RedissonSetTest extends BaseTest {
     public void testAddLong() throws InterruptedException, ExecutionException {
         Long sb = 1l;
 
-        RSet<Long> set = redisson.getSet("simple_longs");
+        RSet<Long> set = redissonRule.getSharedClient().getSet("simple_longs");
         set.add(sb);
 
         for (Long l : set) {
@@ -86,7 +85,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
-        RSet<Integer> set = redisson.getSet("simple");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("simple");
         RFuture<Boolean> future = set.addAsync(2);
         Assert.assertTrue(future.get());
 
@@ -95,7 +94,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testRemoveAsync() throws InterruptedException, ExecutionException {
-        RSet<Integer> set = redisson.getSet("simple");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("simple");
         set.add(1);
         set.add(3);
         set.add(7);
@@ -114,7 +113,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testIteratorRemove() {
-        Set<String> list = redisson.getSet("list");
+        Set<String> list = redissonRule.getSharedClient().getSet("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -145,7 +144,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testIteratorSequence() {
-        Set<Long> set = redisson.getSet("set");
+        Set<Long> set = redissonRule.getSharedClient().getSet("set");
         for (int i = 0; i < 1000; i++) {
             set.add(Long.valueOf(i));
         }
@@ -171,7 +170,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testLong() {
-        Set<Long> set = redisson.getSet("set");
+        Set<Long> set = redissonRule.getSharedClient().getSet("set");
         set.add(1L);
         set.add(2L);
 
@@ -180,7 +179,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testRetainAll() {
-        Set<Integer> set = redisson.getSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSet("set");
         for (int i = 0; i < 20000; i++) {
             set.add(i);
         }
@@ -192,7 +191,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testIteratorRemoveHighVolume() throws InterruptedException {
-        Set<Integer> set = redisson.getSet("set") /*new HashSet<Integer>()*/;
+        Set<Integer> set = redissonRule.getSharedClient().getSet("set") /*new HashSet<Integer>()*/;
         for (int i = 0; i < 10000; i++) {
             set.add(i);
         }
@@ -210,7 +209,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testContainsAll() {
-        Set<Integer> set = redisson.getSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSet("set");
         for (int i = 0; i < 200; i++) {
             set.add(i);
         }
@@ -222,7 +221,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testToArray() {
-        Set<String> set = redisson.getSet("set");
+        Set<String> set = redissonRule.getSharedClient().getSet("set");
         set.add("1");
         set.add("4");
         set.add("2");
@@ -237,7 +236,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testContains() {
-        Set<TestObject> set = redisson.getSet("set");
+        Set<TestObject> set = redissonRule.getSharedClient().getSet("set");
 
         set.add(new TestObject("1", "2"));
         set.add(new TestObject("1", "2"));
@@ -252,7 +251,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testDuplicates() {
-        Set<TestObject> set = redisson.getSet("set");
+        Set<TestObject> set = redissonRule.getSharedClient().getSet("set");
 
         set.add(new TestObject("1", "2"));
         set.add(new TestObject("1", "2"));
@@ -265,7 +264,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testSize() {
-        Set<Integer> set = redisson.getSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(1);
         set.add(2);
         set.add(3);
@@ -280,7 +279,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testRetainAllEmpty() {
-        Set<Integer> set = redisson.getSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(1);
         set.add(2);
         set.add(3);
@@ -293,7 +292,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testRetainAllNoModify() {
-        Set<Integer> set = redisson.getSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(1);
         set.add(2);
 
@@ -303,13 +302,13 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testUnion() {
-        RSet<Integer> set = redisson.getSet("set");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(5);
         set.add(6);
-        RSet<Integer> set1 = redisson.getSet("set1");
+        RSet<Integer> set1 = redissonRule.getSharedClient().getSet("set1");
         set1.add(1);
         set1.add(2);
-        RSet<Integer> set2 = redisson.getSet("set2");
+        RSet<Integer> set2 = redissonRule.getSharedClient().getSet("set2");
         set2.add(3);
         set2.add(4);
 
@@ -319,13 +318,13 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testReadUnion() {
-        RSet<Integer> set = redisson.getSet("set");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(5);
         set.add(6);
-        RSet<Integer> set1 = redisson.getSet("set1");
+        RSet<Integer> set1 = redissonRule.getSharedClient().getSet("set1");
         set1.add(1);
         set1.add(2);
-        RSet<Integer> set2 = redisson.getSet("set2");
+        RSet<Integer> set2 = redissonRule.getSharedClient().getSet("set2");
         set2.add(3);
         set2.add(4);
 
@@ -335,14 +334,14 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testDiff() {
-        RSet<Integer> set = redisson.getSet("set");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(5);
         set.add(6);
-        RSet<Integer> set1 = redisson.getSet("set1");
+        RSet<Integer> set1 = redissonRule.getSharedClient().getSet("set1");
         set1.add(1);
         set1.add(2);
         set1.add(3);
-        RSet<Integer> set2 = redisson.getSet("set2");
+        RSet<Integer> set2 = redissonRule.getSharedClient().getSet("set2");
         set2.add(3);
         set2.add(4);
         set2.add(5);
@@ -353,15 +352,15 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testReadDiff() {
-        RSet<Integer> set = redisson.getSet("set");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(5);
         set.add(7);
         set.add(6);
-        RSet<Integer> set1 = redisson.getSet("set1");
+        RSet<Integer> set1 = redissonRule.getSharedClient().getSet("set1");
         set1.add(1);
         set1.add(2);
         set1.add(5);
-        RSet<Integer> set2 = redisson.getSet("set2");
+        RSet<Integer> set2 = redissonRule.getSharedClient().getSet("set2");
         set2.add(3);
         set2.add(4);
         set2.add(5);
@@ -372,14 +371,14 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testIntersection() {
-        RSet<Integer> set = redisson.getSet("set");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(5);
         set.add(6);
-        RSet<Integer> set1 = redisson.getSet("set1");
+        RSet<Integer> set1 = redissonRule.getSharedClient().getSet("set1");
         set1.add(1);
         set1.add(2);
         set1.add(3);
-        RSet<Integer> set2 = redisson.getSet("set2");
+        RSet<Integer> set2 = redissonRule.getSharedClient().getSet("set2");
         set2.add(3);
         set2.add(4);
         set2.add(5);
@@ -390,15 +389,15 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testReadIntersection() {
-        RSet<Integer> set = redisson.getSet("set");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("set");
         set.add(5);
         set.add(7);
         set.add(6);
-        RSet<Integer> set1 = redisson.getSet("set1");
+        RSet<Integer> set1 = redissonRule.getSharedClient().getSet("set1");
         set1.add(1);
         set1.add(2);
         set1.add(5);
-        RSet<Integer> set2 = redisson.getSet("set2");
+        RSet<Integer> set2 = redissonRule.getSharedClient().getSet("set2");
         set2.add(3);
         set2.add(4);
         set2.add(5);
@@ -410,8 +409,8 @@ public class RedissonSetTest extends BaseTest {
     
     @Test
     public void testMove() throws Exception {
-        RSet<Integer> set = redisson.getSet("set");
-        RSet<Integer> otherSet = redisson.getSet("otherSet");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("set");
+        RSet<Integer> otherSet = redissonRule.getSharedClient().getSet("otherSet");
 
         set.add(1);
         set.add(2);
@@ -427,8 +426,8 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testMoveNoMember() throws Exception {
-        RSet<Integer> set = redisson.getSet("set");
-        RSet<Integer> otherSet = redisson.getSet("otherSet");
+        RSet<Integer> set = redissonRule.getSharedClient().getSet("set");
+        RSet<Integer> otherSet = redissonRule.getSharedClient().getSet("otherSet");
 
         set.add(1);
 
@@ -441,7 +440,7 @@ public class RedissonSetTest extends BaseTest {
     
     @Test
     public void testRemoveAllEmpty() {
-        Set<Integer> list = redisson.getSet("list");
+        Set<Integer> list = redissonRule.getSharedClient().getSet("list");
         list.add(1);
         list.add(2);
         list.add(3);
@@ -454,7 +453,7 @@ public class RedissonSetTest extends BaseTest {
 
     @Test
     public void testRemoveAll() {
-        Set<Integer> list = redisson.getSet("list");
+        Set<Integer> list = redissonRule.getSharedClient().getSet("list");
         list.add(1);
         list.add(2);
         list.add(3);

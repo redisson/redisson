@@ -52,7 +52,7 @@ import org.redisson.liveobject.resolver.UUIDGenerator;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class RedissonLiveObjectServiceTest extends BaseTest {
+public class RedissonLiveObjectServiceTest extends AbstractBaseTest {
 
     @REntity
     public static class TestREntity implements Comparable<TestREntity>, Serializable {
@@ -282,33 +282,33 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testBasics() {
-        RLiveObjectService s = redisson.getLiveObjectService();
+        RLiveObjectService s = redissonRule.getSharedClient().getLiveObjectService();
         TestREntity t = new TestREntity("1");
         t = s.persist(t);
         assertEquals("1", t.getName());
         
-        assertTrue(redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "1")).isExists());
+        assertTrue(redissonRule.getSharedClient().getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "1")).isExists());
         t.setName("3333");
         
         assertEquals("3333", t.getName());
-        assertTrue(redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "3333")).isExists());
+        assertTrue(redissonRule.getSharedClient().getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "3333")).isExists());
         t.setValue("111");
         assertEquals("111", t.getValue());
-        assertTrue(redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "3333")).isExists());
-        assertTrue(!redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "1")).isExists());
-        assertEquals("111", redisson.getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "3333")).get("value"));
+        assertTrue(redissonRule.getSharedClient().getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "3333")).isExists());
+        assertTrue(!redissonRule.getSharedClient().getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "1")).isExists());
+        assertEquals("111", redissonRule.getSharedClient().getMap(DefaultNamingScheme.INSTANCE.getName(TestREntity.class, String.class, "name", "3333")).get("value"));
         
 //        ((RLiveObject) t).getLiveObjectLiveMap().put("value", "555");
-//        assertEquals("555", redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
+//        assertEquals("555", redissonRule.getSharedClient().getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
 //        assertEquals("3333", ((RObject) t).getName());//field access takes priority over the implemented interface.
     }
 
     @Test
     public void testLiveObjectWithCollection() {
-        RLiveObjectService s = redisson.getLiveObjectService();
+        RLiveObjectService s = redissonRule.getSharedClient().getLiveObjectService();
         TestREntityWithMap t = new TestREntityWithMap("2");
         t = s.persist(t);
-        RMap<String, String> map = redisson.<String, String>getMap("testMap");
+        RMap<String, String> map = redissonRule.getSharedClient().<String, String>getMap("testMap");
         t.setValue(map);
         map.put("field", "123");
         
@@ -332,11 +332,11 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithRObject() {
-        RLiveObjectService s = redisson.getLiveObjectService();
+        RLiveObjectService s = redissonRule.getSharedClient().getLiveObjectService();
         TestREntityWithRMap t = new TestREntityWithRMap("2");
         t = s.persist(t);
 
-        RMap<String, String> map = redisson.<String, String>getMap("testMap");
+        RMap<String, String> map = redissonRule.getSharedClient().<String, String>getMap("testMap");
         t.setValue(map);
         map.put("field", "123");
         assertEquals("123",
@@ -351,7 +351,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithNestedLiveObjectAsId() {
-        RLiveObjectService s = redisson.getLiveObjectService();
+        RLiveObjectService s = redissonRule.getSharedClient().getLiveObjectService();
         TestREntity t1 = new TestREntity("1");
         t1 = s.persist(t1);
         
@@ -365,7 +365,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testLiveObjectWithNestedLiveObjectAsValue() throws Exception {
-        RLiveObjectService s = redisson.getLiveObjectService();
+        RLiveObjectService s = redissonRule.getSharedClient().getLiveObjectService();
         
         TestREntityWithRMap t1 = new TestREntityWithRMap("111");
         t1 = s.persist(t1);
@@ -373,7 +373,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         TestREntityValueNested t2 = new TestREntityValueNested("122");
         t2 = s.persist(t2);
 
-        RMap<String, String> map = redisson.<String, String>getMap("32123");
+        RMap<String, String> map = redissonRule.getSharedClient().<String, String>getMap("32123");
         t2.setValue(t1);
         t2.getValue().setValue(map);
         map.put("field", "123");
@@ -507,7 +507,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testSerializerable() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass t = new TestClass("55555");
         t = service.persist(t);
         assertTrue(Objects.equals("55555", t.getId()));
@@ -563,9 +563,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         Order order2 = new Order(customer);
         customer.getOrders().add(order2);
 
-        redisson.getLiveObjectService().merge(customer);
+        redissonRule.getSharedClient().getLiveObjectService().merge(customer);
         
-        Customer mergedCustomer = redisson.getLiveObjectService().get(Customer.class, "12");
+        Customer mergedCustomer = redissonRule.getSharedClient().getLiveObjectService().get(Customer.class, "12");
         assertThat(mergedCustomer.getOrders().size()).isEqualTo(2);
         for (Order orderElement : mergedCustomer.getOrders()) {
             assertThat(orderElement.getId()).isNotNull();
@@ -573,7 +573,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
 
         try {
-            redisson.getLiveObjectService().persist(customer);
+            redissonRule.getSharedClient().getLiveObjectService().persist(customer);
             fail("Should not be here");
         } catch (Exception e) {
             assertEquals("This REntity already exists.", e.getMessage());
@@ -589,9 +589,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         Order order2 = new Order(customer);
         customer.getOrders().add(order2);
 
-        redisson.getLiveObjectService().persist(customer);
+        redissonRule.getSharedClient().getLiveObjectService().persist(customer);
         
-        customer = redisson.getLiveObjectService().get(Customer.class, "12");
+        customer = redissonRule.getSharedClient().getLiveObjectService().get(Customer.class, "12");
         assertThat(customer.getOrders().size()).isEqualTo(2);
         for (Order orderElement : customer.getOrders()) {
             assertThat(orderElement.getId()).isNotNull();
@@ -601,14 +601,14 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         
     @Test
     public void testPersist() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setValue("VALUE");
         ts.setContent(new TestREntity("123"));
         TestClass persisted = service.persist(ts);
         
-        assertEquals(2, redisson.getKeys().count());
+        assertEquals(2, redissonRule.getSharedClient().getKeys().count());
         assertEquals("123", ((TestREntity)persisted.getContent()).getName());
         assertEquals(new ObjectId(100), persisted.getId());
         assertEquals("VALUE", persisted.getValue());
@@ -622,7 +622,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testMerge() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setValue("VALUE");
         TestClass merged = service.merge(ts);
@@ -644,7 +644,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testDetach() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setValue("VALUE");
         ts.setCode("CODE");
@@ -657,7 +657,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testIsPhantom() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         assertFalse(service.isExists(new Object()));
         TestClass ts = new TestClass(new ObjectId(100));
         assertFalse(service.isExists(service.get(TestClass.class, new ObjectId(100))));
@@ -672,7 +672,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testIsLiveObject() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass ts = new TestClass(new ObjectId(100));
         assertFalse(service.isLiveObject(ts));
         TestClass persisted = service.persist(ts);
@@ -682,7 +682,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testAsLiveObject() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass instance = new TestClass(new ObjectId(100));
         instance = service.persist(instance);
         
@@ -698,23 +698,23 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testClassRegistration() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         service.registerClass(TestClass.class);
         assertTrue(service.isClassRegistered(TestClass.class));
-        RLiveObjectService newService = redisson.getLiveObjectService();
+        RLiveObjectService newService = redissonRule.getSharedClient().getLiveObjectService();
         assertTrue(newService.isClassRegistered(TestClass.class));
-        RedissonClient newRedisson = Redisson.create(redisson.getConfig());
+        RedissonClient newRedisson = redissonRule.createClient();
         assertFalse(newRedisson.getLiveObjectService().isClassRegistered(TestClass.class));
         newRedisson.shutdown(1, 5, TimeUnit.SECONDS);
     }
 
     @Test
     public void testClassUnRegistration() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         service.registerClass(TestClass.class);
         assertTrue(service.isClassRegistered(TestClass.class));
-        RLiveObjectService newService = redisson.getLiveObjectService();
-        RedissonClient newRedisson = Redisson.create(redisson.getConfig());
+        RLiveObjectService newService = redissonRule.getSharedClient().getLiveObjectService();
+        RedissonClient newRedisson = redissonRule.createClient();
         newRedisson.getLiveObjectService().registerClass(TestClass.class);
         newService.unregisterClass(TestClass.class);
         assertFalse(service.isClassRegistered(TestClass.class));
@@ -727,7 +727,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testGet() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         assertNull(service.get(TestClass.class, new ObjectId(100)));
         TestClass ts = new TestClass(new ObjectId(100));
         TestClass persisted = service.persist(ts);
@@ -738,7 +738,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testRemoveByInstance() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
@@ -749,7 +749,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testRemoveById() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
@@ -798,7 +798,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testCreate() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass ts = new TestClass();
         ts = service.persist(ts);
         UUID uuid = UUID.fromString(ts.getId().toString());
@@ -814,7 +814,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testTransformation() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass ts = new TestClass();
         ts = service.persist(ts);
 
@@ -936,7 +936,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testNoTransformation() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClassNoTransformation ts = new TestClassNoTransformation();
         ts = service.persist(ts);
 
@@ -1025,7 +1025,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void test() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
 
         MyObject object = new MyObject(20L);
         try {
@@ -1037,7 +1037,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testExpirable() throws InterruptedException {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass myObject = new TestClass();
         myObject = service.persist(myObject);
         myObject.setValue("123345");
@@ -1049,7 +1049,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testMap() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass myObject = new TestClass();
         myObject = service.persist(myObject);
 
@@ -1061,7 +1061,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     
     @Test
     public void testRObject() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass myObject = new TestClass();
         myObject = service.persist(myObject);
         try {
@@ -1123,7 +1123,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
     @Test
     public void testStoreInnerObject() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         ObjectWithList so = new ObjectWithList();
         so = service.persist(so);
 
@@ -1134,42 +1134,42 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(s.getId()).isNotNull();
         so.getObjects().add(s);
         
-        so = redisson.getLiveObjectService().detach(so);
+        so = redissonRule.getSharedClient().getLiveObjectService().detach(so);
         assertThat(so.getSo().getId()).isEqualTo(s.getId());
         assertThat(so.getObjects().get(0).getId()).isEqualTo(so.getSo().getId());
     }
     
     @Test
     public void testFieldWithoutIdSetter() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         SimpleObject so = new SimpleObject();
         so = service.persist(so);
         so.setValue(10L);
 
-        so = redisson.getLiveObjectService().detach(so);
+        so = redissonRule.getSharedClient().getLiveObjectService().detach(so);
         assertThat(so.getId()).isNotNull();
         assertThat(so.getValue()).isEqualTo(10L);
         
-        so = redisson.getLiveObjectService().get(SimpleObject.class, so.getId());
+        so = redissonRule.getSharedClient().getLiveObjectService().get(SimpleObject.class, so.getId());
         assertThat(so.getId()).isNotNull();
         assertThat(so.getValue()).isEqualTo(10L);
     }
     
     @Test
     public void testCreateObjectsInRuntime() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         
         TestREntityWithMap so = new TestREntityWithMap();
         so = service.persist(so);
         
         so.getValue().put("1", "2");
         
-        so = redisson.getLiveObjectService().detach(so);
+        so = redissonRule.getSharedClient().getLiveObjectService().detach(so);
         assertThat(so.getName()).isNotNull();
         assertThat(so.getValue()).containsKey("1");
         assertThat(so.getValue()).containsValue("2");
         
-        so = redisson.getLiveObjectService().get(TestREntityWithMap.class, so.getName());
+        so = redissonRule.getSharedClient().getLiveObjectService().get(TestREntityWithMap.class, so.getName());
         assertThat(so.getName()).isNotNull();
         assertThat(so.getValue()).containsKey("1");
         assertThat(so.getValue()).containsValue("2");
@@ -1177,7 +1177,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     
     @Test
     public void testFieldAccessor() {
-        RLiveObjectService service = redisson.getLiveObjectService();
+        RLiveObjectService service = redissonRule.getSharedClient().getLiveObjectService();
         TestClass myObject = new TestClass();
         myObject = service.persist(myObject);
 
@@ -1201,25 +1201,25 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @Test
     public void testCollectionRewrite() {
         Customer c = new Customer("123");
-        c = redisson.getLiveObjectService().merge(c);
+        c = redissonRule.getSharedClient().getLiveObjectService().merge(c);
         
         Order o1 = new Order(c);
-        o1 = redisson.getLiveObjectService().merge(o1);
+        o1 = redissonRule.getSharedClient().getLiveObjectService().merge(o1);
         assertThat(o1.getId()).isEqualTo(1);
         c.getOrders().add(o1);
         
         Order o2 = new Order(c);
-        o2 = redisson.getLiveObjectService().merge(o2);
+        o2 = redissonRule.getSharedClient().getLiveObjectService().merge(o2);
         assertThat(o2.getId()).isEqualTo(2);
         c.getOrders().add(o2);
         
         assertThat(c.getOrders().size()).isEqualTo(2);
 
-        assertThat(redisson.getKeys().count()).isEqualTo(5);
+        assertThat(redissonRule.getSharedClient().getKeys().count()).isEqualTo(5);
         
         List<Order> list = new ArrayList<>();
         Order o3 = new Order(c);
-        o3 = redisson.getLiveObjectService().merge(o3);
+        o3 = redissonRule.getSharedClient().getLiveObjectService().merge(o3);
         assertThat(o3.getId()).isEqualTo(3);
         list.add(o3);
         c.setOrders(list);
@@ -1325,16 +1325,16 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @Test
     public void testSetterEncapsulation() {
         SetterEncapsulation se = new SetterEncapsulation();
-        se = redisson.getLiveObjectService().persist(se);
+        se = redissonRule.getSharedClient().getLiveObjectService().persist(se);
         
-        assertThat(redisson.getKeys().count()).isEqualTo(2);
+        assertThat(redissonRule.getSharedClient().getKeys().count()).isEqualTo(2);
         
         se.addItem("1", 1);
         se.addItem("2", 2);
         
-        assertThat(redisson.getKeys().count()).isEqualTo(3);
+        assertThat(redissonRule.getSharedClient().getKeys().count()).isEqualTo(3);
         
-        se = redisson.getLiveObjectService().get(SetterEncapsulation.class, se.getId());
+        se = redissonRule.getSharedClient().getLiveObjectService().get(SetterEncapsulation.class, se.getId());
         
         assertThat(se.getItem("1")).isEqualTo(1);
         assertThat(se.getItem("2")).isEqualTo(2);
@@ -1343,7 +1343,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @Test(expected = RedisException.class)
     public void testObjectShouldNotBeAttached() {
         Customer customer = new Customer("12");
-        customer = redisson.getLiveObjectService().persist(customer);
+        customer = redissonRule.getSharedClient().getLiveObjectService().persist(customer);
         Order order = new Order();
         customer.getOrders().add(order);
     }
@@ -1352,7 +1352,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     public void testObjectShouldNotBeAttached2() {
         Customer customer = new Customer("12");
         Order order = new Order(customer);
-        order = redisson.getLiveObjectService().persist(order);
+        order = redissonRule.getSharedClient().getLiveObjectService().persist(order);
     }
 
     @Test
@@ -1363,11 +1363,11 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         Order order2 = new Order(customer);
         customer.getOrders().add(order2);
 
-        order = redisson.getLiveObjectService().persist(order);
-        assertThat(redisson.getKeys().count()).isEqualTo(5);
+        order = redissonRule.getSharedClient().getLiveObjectService().persist(order);
+        assertThat(redissonRule.getSharedClient().getKeys().count()).isEqualTo(5);
         
-        redisson.getLiveObjectService().delete(order.getCustomer());
-        assertThat(redisson.getKeys().count()).isEqualTo(1);
+        redissonRule.getSharedClient().getLiveObjectService().delete(order.getCustomer());
+        assertThat(redissonRule.getSharedClient().getKeys().count()).isEqualTo(1);
     }
 
     
@@ -1375,32 +1375,32 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     public void testDelete() {
         Customer customer = new Customer("12");
         Order order = new Order(customer);
-        order = redisson.getLiveObjectService().persist(order);
-        assertThat(redisson.getKeys().count()).isEqualTo(3);
+        order = redissonRule.getSharedClient().getLiveObjectService().persist(order);
+        assertThat(redissonRule.getSharedClient().getKeys().count()).isEqualTo(3);
         
         Customer persistedCustomer = order.getCustomer();
-        redisson.getLiveObjectService().delete(order);
-        assertThat(redisson.getKeys().count()).isEqualTo(2);
+        redissonRule.getSharedClient().getLiveObjectService().delete(order);
+        assertThat(redissonRule.getSharedClient().getKeys().count()).isEqualTo(2);
         
-        redisson.getLiveObjectService().delete(persistedCustomer);
-        assertThat(redisson.getKeys().count()).isEqualTo(1);
+        redissonRule.getSharedClient().getLiveObjectService().delete(persistedCustomer);
+        assertThat(redissonRule.getSharedClient().getKeys().count()).isEqualTo(1);
     }
     
     @Test
     public void testObjectShouldBeAttached() {
         Customer customer = new Customer("12");
-        customer = redisson.getLiveObjectService().persist(customer);
+        customer = redissonRule.getSharedClient().getLiveObjectService().persist(customer);
         Order order = new Order();
-        order = redisson.getLiveObjectService().persist(order);
+        order = redissonRule.getSharedClient().getLiveObjectService().persist(order);
         customer.getOrders().add(order);
         
-        customer = redisson.getLiveObjectService().detach(customer);
+        customer = redissonRule.getSharedClient().getLiveObjectService().detach(customer);
         assertThat(customer.getClass()).isSameAs(Customer.class);
         assertThat(customer.getId()).isNotNull();
         List<Order> orders = customer.getOrders();
         assertThat(orders.get(0)).isNotNull();
 
-        customer = redisson.getLiveObjectService().get(Customer.class, customer.getId());
+        customer = redissonRule.getSharedClient().getLiveObjectService().get(Customer.class, customer.getId());
         assertThat(customer.getId()).isNotNull();
         assertThat(customer.getOrders().get(0)).isNotNull();
     }
@@ -1408,20 +1408,20 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @Test
     public void testCyclicRefsDuringDetach() {
         Customer customer = new Customer("12");
-        customer = redisson.getLiveObjectService().persist(customer);
+        customer = redissonRule.getSharedClient().getLiveObjectService().persist(customer);
         Order order = new Order();
-        order = redisson.getLiveObjectService().persist(order);
+        order = redissonRule.getSharedClient().getLiveObjectService().persist(order);
         order.setCustomer(customer);
         customer.getOrders().add(order);
         
-        customer = redisson.getLiveObjectService().detach(customer);
+        customer = redissonRule.getSharedClient().getLiveObjectService().detach(customer);
 
         assertThat(customer.getClass()).isSameAs(Customer.class);
         assertThat(customer.getId()).isNotNull();
         List<Order> orders = customer.getOrders();
         assertThat(orders.get(0).getCustomer()).isSameAs(customer);
         
-        customer = redisson.getLiveObjectService().get(Customer.class, customer.getId());
+        customer = redissonRule.getSharedClient().getLiveObjectService().get(Customer.class, customer.getId());
         
         assertThat(customer.getId()).isNotNull();
         Order o = customer.getOrders().get(0);
@@ -1453,14 +1453,13 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @Test
     public void testWithoutIdSetterGetter() {
         ClassWithoutIdSetterGetter sg = new ClassWithoutIdSetterGetter();
-        sg = redisson.getLiveObjectService().persist(sg);
+        sg = redissonRule.getSharedClient().getLiveObjectService().persist(sg);
     }
 
     @Test
     public void testProtectedConstructor() {
         ClassWithoutIdSetterGetter sg = new ClassWithoutIdSetterGetter("1234");
-        sg = redisson.getLiveObjectService().persist(sg);
+        sg = redissonRule.getSharedClient().getLiveObjectService().persist(sg);
         assertThat(sg.getName()).isEqualTo("1234");
     }
-    
 }

@@ -1,6 +1,8 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
+import static org.redisson.rule.TestUtil.toIterator;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,11 +17,11 @@ import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
 
-public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
-
+public class RedissonScoredSortedSetReactiveTest extends AbstractBaseTest {
+    
     @Test
     public void testFirstLast() {
-        RScoredSortedSetReactive<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<String> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(0.1, "a"));
         sync(set.add(0.2, "b"));
         sync(set.add(0.3, "c"));
@@ -32,7 +34,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveRangeByScore() {
-        RScoredSortedSetReactive<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<String> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(0.1, "a"));
         sync(set.add(0.2, "b"));
         sync(set.add(0.3, "c"));
@@ -47,7 +49,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveRangeByRank() {
-        RScoredSortedSetReactive<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<String> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(0.1, "a"));
         sync(set.add(0.2, "b"));
         sync(set.add(0.3, "c"));
@@ -62,7 +64,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRank() {
-        RScoredSortedSetReactive<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<String> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(0.1, "a"));
         sync(set.add(0.2, "b"));
         sync(set.add(0.3, "c"));
@@ -76,7 +78,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         Assert.assertTrue(sync(set.add(0.323, 2)));
         Assert.assertFalse(sync(set.add(0.323, 2)));
 
@@ -85,7 +87,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveAsync() throws InterruptedException, ExecutionException {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         set.add(0.11, 1);
         set.add(0.22, 3);
         set.add(0.33, 7);
@@ -104,7 +106,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testIteratorNextNext() {
-        RScoredSortedSetReactive<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<String> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(1, "1"));
         sync(set.add(2, "4"));
 
@@ -116,7 +118,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testIteratorSequence() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         for (int i = 0; i < 1000; i++) {
             sync(set.add(i, Integer.valueOf(i)));
         }
@@ -142,7 +144,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAll() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         for (int i = 0; i < 20000; i++) {
             sync(set.add(i, i));
         }
@@ -154,7 +156,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveAll() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(0.1, 1));
         sync(set.add(0.2, 2));
         sync(set.add(0.3, 3));
@@ -167,7 +169,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testSort() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         Assert.assertTrue(sync(set.add(4, 2)));
         Assert.assertTrue(sync(set.add(5, 3)));
         Assert.assertTrue(sync(set.add(3, 1)));
@@ -184,7 +186,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemove() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(4, 5));
         sync(set.add(2, 3));
         sync(set.add(0, 1));
@@ -199,7 +201,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContainsAll() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         for (int i = 0; i < 200; i++) {
             sync(set.add(i, i));
         }
@@ -210,7 +212,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContains() {
-        RScoredSortedSetReactive<TestObject> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<TestObject> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
 
         sync(set.add(0, new TestObject("1", "2")));
         sync(set.add(1, new TestObject("1", "2")));
@@ -225,7 +227,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testDuplicates() {
-        RScoredSortedSetReactive<TestObject> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<TestObject> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
 
         Assert.assertTrue(sync(set.add(0, new TestObject("1", "2"))));
         Assert.assertFalse(sync(set.add(0, new TestObject("1", "2"))));
@@ -238,7 +240,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testSize() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(0, 1));
         sync(set.add(1, 2));
         sync(set.add(2, 3));
@@ -252,7 +254,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testValueRange() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(0, 1));
         sync(set.add(1, 2));
         sync(set.add(2, 3));
@@ -266,7 +268,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testEntryRange() {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple");
         sync(set.add(10, 1));
         sync(set.add(20, 2));
         sync(set.add(30, 3));
@@ -283,7 +285,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testScoredSortedSetValueRange() {
-        RScoredSortedSetReactive<String> set = redisson.<String>getScoredSortedSet("simple");
+        RScoredSortedSetReactive<String> set = redissonRule.getSharedReactiveClient().<String>getScoredSortedSet("simple");
 
         sync(set.add(0, "a"));
         sync(set.add(1, "b"));
@@ -298,7 +300,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testScoredSortedSetEntryRange() {
-        RScoredSortedSetReactive<String> set = redisson.<String>getScoredSortedSet("simple");
+        RScoredSortedSetReactive<String> set = redissonRule.getSharedReactiveClient().<String>getScoredSortedSet("simple");
 
         sync(set.add(0, "a"));
         sync(set.add(1, "b"));
@@ -316,7 +318,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
+        RScoredSortedSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple", StringCodec.INSTANCE);
         set.add(1, 100);
 
         Double res = sync(set.addScore(100, 11));
@@ -324,7 +326,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         Double score = sync(set.getScore(100));
         Assert.assertEquals(12, (double)score, 0);
 
-        RScoredSortedSetReactive<Integer> set2 = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
+        RScoredSortedSetReactive<Integer> set2 = redissonRule.getSharedReactiveClient().getScoredSortedSet("simple", StringCodec.INSTANCE);
         sync(set2.add(100.2, 1));
 
         Double res2 = sync(set2.addScore(1, new Double(12.1)));

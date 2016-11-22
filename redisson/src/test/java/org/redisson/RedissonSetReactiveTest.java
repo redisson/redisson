@@ -1,5 +1,9 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
+import static org.redisson.rule.TestUtil.toIterator;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,13 +11,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RSetReactive;
 
-public class RedissonSetReactiveTest extends BaseReactiveTest {
+public class RedissonSetReactiveTest extends AbstractBaseTest {
 
     public static class SimpleBean implements Serializable {
 
@@ -26,26 +29,25 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
         public void setLng(Long lng) {
             this.lng = lng;
         }
-
     }
 
     @Test
     public void testAddAllReactive() {
-        RSetReactive<Integer> list = redisson.getSet("set");
+        RSetReactive<Integer> list = redissonRule.getSharedReactiveClient().getSet("set");
         sync(list.add(1));
         sync(list.add(2));
         sync(list.add(3));
         sync(list.add(4));
         sync(list.add(5));
 
-        RSetReactive<Integer> list2 = redisson.getSet("set2");
+        RSetReactive<Integer> list2 = redissonRule.getSharedReactiveClient().getSet("set2");
         Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
         Assert.assertEquals(5, sync(list2.size()).intValue());
     }
 
     @Test
     public void testRemoveRandom() {
-        RSetReactive<Integer> set = redisson.getSet("simple");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("simple");
         sync(set.add(1));
         sync(set.add(2));
         sync(set.add(3));
@@ -58,7 +60,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRandom() {
-        RSetReactive<Integer> set = redisson.getSet("simple");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("simple");
         sync(set.add(1));
         sync(set.add(2));
         sync(set.add(3));
@@ -74,7 +76,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();
         sb.setLng(1L);
-        RSetReactive<SimpleBean> set = redisson.getSet("simple");
+        RSetReactive<SimpleBean> set = redissonRule.getSharedReactiveClient().getSet("simple");
         sync(set.add(sb));
         Assert.assertEquals(sb.getLng(), toIterator(set.iterator()).next().getLng());
     }
@@ -83,7 +85,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
     public void testAddLong() throws InterruptedException, ExecutionException {
         Long sb = 1l;
 
-        RSetReactive<Long> set = redisson.getSet("simple_longs");
+        RSetReactive<Long> set = redissonRule.getSharedReactiveClient().getSet("simple_longs");
         sync(set.add(sb));
 
         for (Long l : sync(set)) {
@@ -93,7 +95,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemove() throws InterruptedException, ExecutionException {
-        RSetReactive<Integer> set = redisson.getSet("simple");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("simple");
         sync(set.add(1));
         sync(set.add(3));
         sync(set.add(7));
@@ -112,7 +114,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testIteratorSequence() {
-        RSetReactive<Long> set = redisson.getSet("set");
+        RSetReactive<Long> set = redissonRule.getSharedReactiveClient().getSet("set");
         for (int i = 0; i < 1000; i++) {
             sync(set.add(Long.valueOf(i)));
         }
@@ -138,7 +140,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testLong() {
-        RSetReactive<Long> set = redisson.getSet("set");
+        RSetReactive<Long> set = redissonRule.getSharedReactiveClient().getSet("set");
         sync(set.add(1L));
         sync(set.add(2L));
 
@@ -147,7 +149,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAll() {
-        RSetReactive<Integer> set = redisson.getSet("set");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("set");
         for (int i = 0; i < 20000; i++) {
             sync(set.add(i));
         }
@@ -159,7 +161,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContainsAll() {
-        RSetReactive<Integer> set = redisson.getSet("set");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("set");
         for (int i = 0; i < 200; i++) {
             sync(set.add(i));
         }
@@ -171,7 +173,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testContains() {
-        RSetReactive<TestObject> set = redisson.getSet("set");
+        RSetReactive<TestObject> set = redissonRule.getSharedReactiveClient().getSet("set");
 
         sync(set.add(new TestObject("1", "2")));
         sync(set.add(new TestObject("1", "2")));
@@ -186,7 +188,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testDuplicates() {
-        RSetReactive<TestObject> set = redisson.getSet("set");
+        RSetReactive<TestObject> set = redissonRule.getSharedReactiveClient().getSet("set");
 
         sync(set.add(new TestObject("1", "2")));
         sync(set.add(new TestObject("1", "2")));
@@ -199,7 +201,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testSize() {
-        RSetReactive<Integer> set = redisson.getSet("set");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("set");
         sync(set.add(1));
         sync(set.add(2));
         sync(set.add(3));
@@ -214,7 +216,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAllEmpty() {
-        RSetReactive<Integer> set = redisson.getSet("set");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("set");
         sync(set.add(1));
         sync(set.add(2));
         sync(set.add(3));
@@ -227,7 +229,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRetainAllNoModify() {
-        RSetReactive<Integer> set = redisson.getSet("set");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("set");
         sync(set.add(1));
         sync(set.add(2));
 
@@ -238,8 +240,8 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testMove() throws Exception {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("set");
+        RSetReactive<Integer> otherSet = redissonRule.getSharedReactiveClient().getSet("otherSet");
 
         sync(set.add(1));
         sync(set.add(2));
@@ -255,8 +257,8 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testMoveNoMember() throws Exception {
-        RSetReactive<Integer> set = redisson.getSet("set");
-        RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
+        RSetReactive<Integer> set = redissonRule.getSharedReactiveClient().getSet("set");
+        RSetReactive<Integer> otherSet = redissonRule.getSharedReactiveClient().getSet("otherSet");
 
         set.add(1);
 

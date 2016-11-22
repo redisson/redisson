@@ -8,11 +8,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLexSortedSet;
 
-public class RedissonLexSortedSetTest extends BaseTest {
-
+public class RedissonLexSortedSetTest extends AbstractBaseTest {
+    
     @Test
     public void testAll() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         set.addAll(Arrays.asList("foo", "bar"));
         assertThat(set.contains("foo")).isTrue();
         assertThat(set.contains("bar")).isTrue();
@@ -21,7 +21,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
     
     @Test
     public void testPollLast() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         Assert.assertNull(set.pollLast());
 
         set.add("a");
@@ -34,7 +34,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
 
     @Test
     public void testPollFirst() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         Assert.assertNull(set.pollFirst());
 
         set.add("a");
@@ -47,7 +47,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
 
     @Test
     public void testFirstLast() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         set.add("a");
         set.add("b");
         set.add("c");
@@ -59,7 +59,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
     
     @Test
     public void testRemoveLexRangeTail() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         Assert.assertTrue(set.add("a"));
         Assert.assertFalse(set.add("a"));
         Assert.assertTrue(set.add("b"));
@@ -80,7 +80,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
 
     @Test
     public void testRemoveLexRangeHead() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         set.add("a");
         set.add("b");
         set.add("c");
@@ -97,7 +97,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
 
     @Test
     public void testRemoveLexRange() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         set.add("a");
         set.add("b");
         set.add("c");
@@ -113,7 +113,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
 
     @Test
     public void testLexRangeTail() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         Assert.assertTrue(set.add("a"));
         Assert.assertFalse(set.add("a"));
         Assert.assertTrue(set.add("b"));
@@ -130,7 +130,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
 
     @Test
     public void testLexRangeHead() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         set.add("a");
         set.add("b");
         set.add("c");
@@ -146,7 +146,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
 
     @Test
     public void testLexRange() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         set.add("a");
         set.add("b");
         set.add("c");
@@ -160,7 +160,7 @@ public class RedissonLexSortedSetTest extends BaseTest {
 
     @Test
     public void testLexCount() {
-        RLexSortedSet set = redisson.getLexSortedSet("simple");
+        RLexSortedSet set = redissonRule.getSharedClient().getLexSortedSet("simple");
         set.add("a");
         set.add("b");
         set.add("c");

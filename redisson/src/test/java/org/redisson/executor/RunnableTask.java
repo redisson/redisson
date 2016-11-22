@@ -1,7 +1,5 @@
 package org.redisson.executor;
 
-import java.io.Serializable;
-
 public class RunnableTask implements Runnable {
 
     private static final long serialVersionUID = 2105094575950438867L;

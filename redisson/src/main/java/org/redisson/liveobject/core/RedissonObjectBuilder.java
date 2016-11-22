@@ -16,7 +16,6 @@
 package org.redisson.liveobject.core;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;

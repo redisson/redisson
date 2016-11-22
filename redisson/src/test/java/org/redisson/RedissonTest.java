@@ -1,5 +1,8 @@
 package org.redisson;
 
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -8,13 +11,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.After;
-import org.junit.AfterClass;
 
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.ClusterNode;
@@ -29,14 +28,7 @@ import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.ConnectionListener;
 
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.redisson.BaseTest.createInstance;
-
-public class RedissonTest {
-
-    protected RedissonClient redisson;
-    protected static RedissonClient defaultRedisson;
+public class RedissonTest extends AbstractBaseTest {
 
     @Test
     public void testIterator() {
@@ -64,43 +56,6 @@ public class RedissonTest {
         Assert.assertFalse(iter.hasNext());
     }
     
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            defaultRedisson = BaseTest.createInstance();
-        }
-    }
-
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-            defaultRedisson.shutdown();
-        }
-    }
-
-    @Before
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            redisson = createInstance();
-        } else {
-            if (redisson == null) {
-                redisson = defaultRedisson;
-            }
-            redisson.getKeys().flushall();
-        }
-    }
-
-    @After
-    public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            redisson.shutdown();
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-    
     public static class Dummy {
         private String field;
     }
@@ -110,7 +65,7 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         config.setCodec(new SerializationCodec());
-        RedissonClient r = Redisson.create(config);
+        RedissonClient r = redissonRule.createClient(config);
         r.getMap("test").put("1", new Dummy());
     }
     
@@ -122,7 +77,7 @@ public class RedissonTest {
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
         try {
-            RedissonClient r = Redisson.create(config);
+            RedissonClient r = redissonRule.createClient(config);
             r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").put("" + i, "" + i);
@@ -140,7 +95,7 @@ public class RedissonTest {
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
         try {
-            RedissonClient r = Redisson.create(config);
+            RedissonClient r = redissonRule.createClient(config);
             r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").fastPut("" + i, "" + i);
@@ -156,7 +111,7 @@ public class RedissonTest {
         redissonConfig.useSingleServer()
         .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort())
         .setConnectionPoolSize(2);
-        Redisson.create(redissonConfig);        
+        redissonRule.createClient(redissonConfig);        
     }
     
     @Test
@@ -170,7 +125,7 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort());
 
-        RedissonClient r = Redisson.create(config);
+        RedissonClient r = redissonRule.createClient(config);
 
         int id = r.getNodesGroup().addConnectionListener(new ConnectionListener() {
 
@@ -205,8 +160,6 @@ public class RedissonTest {
 
         r.getBucket("1").get();
 
-        r.shutdown();
-
         Assert.assertEquals(0, pp.stop());
 
         await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
@@ -218,7 +171,7 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
 
-        RedissonClient r = Redisson.create(config);
+        RedissonClient r = redissonRule.createClient(config);
         Assert.assertFalse(r.isShuttingDown());
         Assert.assertFalse(r.isShutdown());
         r.shutdown();
@@ -228,7 +181,7 @@ public class RedissonTest {
 
     @Test
     public void testTime() {
-        NodesGroup<Node> nodes = redisson.getNodesGroup();
+        NodesGroup<Node> nodes = redissonRule.getSharedClient().getNodesGroup();
         Assert.assertEquals(1, nodes.getNodes().size());
         Iterator<Node> iter = nodes.getNodes().iterator();
 
@@ -238,7 +191,7 @@ public class RedissonTest {
 
     @Test
     public void testPing() {
-        NodesGroup<Node> nodes = redisson.getNodesGroup();
+        NodesGroup<Node> nodes = redissonRule.getSharedClient().getNodesGroup();
         Assert.assertEquals(1, nodes.getNodes().size());
         Iterator<Node> iter = nodes.getNodes().iterator();
 
@@ -250,7 +203,7 @@ public class RedissonTest {
 
 //    @Test
     public void testSentinel() {
-        NodesGroup<Node> nodes = redisson.getNodesGroup();
+        NodesGroup<Node> nodes = redissonRule.getSharedClient().getNodesGroup();
         Assert.assertEquals(5, nodes.getNodes().size());
 
         nodes.getNodes().stream().forEach((node) -> {
@@ -272,7 +225,7 @@ public class RedissonTest {
 
     @Test
     public void testSingleConfig() throws IOException {
-        RedissonClient r = BaseTest.createInstance();
+        RedissonClient r = redissonRule.getSharedClient();
         String t = r.getConfig().toJSON();
         Config c = Config.fromJSON(t);
         assertThat(c.toJSON()).isEqualTo(t);
@@ -290,7 +243,7 @@ public class RedissonTest {
 
 //    @Test
     public void testCluster() {
-        NodesGroup<ClusterNode> nodes = redisson.getClusterNodesGroup();
+        NodesGroup<ClusterNode> nodes = redissonRule.getSharedClient().getClusterNodesGroup();
         Assert.assertEquals(2, nodes.getNodes().size());
 
         nodes.getNodes().stream().forEach((node) -> {
@@ -306,7 +259,7 @@ public class RedissonTest {
     public void testSingleConnectionFail() throws InterruptedException {
         Config config = new Config();
         config.useSingleServer().setAddress("127.99.0.1:1111");
-        Redisson.create(config);
+        redissonRule.createClient(config);
 
         Thread.sleep(1500);
     }
@@ -315,7 +268,7 @@ public class RedissonTest {
     public void testClusterConnectionFail() throws InterruptedException {
         Config config = new Config();
         config.useClusterServers().addNodeAddress("127.99.0.1:1111");
-        Redisson.create(config);
+        redissonRule.createClient(config);
 
         Thread.sleep(1500);
     }
@@ -324,7 +277,7 @@ public class RedissonTest {
     public void testElasticacheConnectionFail() throws InterruptedException {
         Config config = new Config();
         config.useElasticacheServers().addNodeAddress("127.99.0.1:1111");
-        Redisson.create(config);
+        redissonRule.createClient(config);
 
         Thread.sleep(1500);
     }
@@ -333,7 +286,7 @@ public class RedissonTest {
     public void testMasterSlaveConnectionFail() throws InterruptedException {
         Config config = new Config();
         config.useMasterSlaveServers().setMasterAddress("127.99.0.1:1111");
-        Redisson.create(config);
+        redissonRule.createClient(config);
 
         Thread.sleep(1500);
     }
@@ -342,7 +295,7 @@ public class RedissonTest {
     public void testSentinelConnectionFail() throws InterruptedException {
         Config config = new Config();
         config.useSentinelServers().addSentinelAddress("127.99.0.1:1111");
-        Redisson.create(config);
+        redissonRule.createClient(config);
 
         Thread.sleep(1500);
     }
@@ -352,11 +305,10 @@ public class RedissonTest {
         Assume.assumeFalse(RedissonRuntimeEnvironment.isTravis);
         Config redisConfig = new Config();
         redisConfig.useSingleServer()
-        .setConnectionMinimumIdleSize(10000)
-        .setConnectionPoolSize(10000)
+        .setConnectionMinimumIdleSize(9000)
+        .setConnectionPoolSize(9000)
         .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        RedissonClient r = Redisson.create(redisConfig);
-        r.shutdown();
+        RedissonClient r = redissonRule.createClient(redisConfig);
     }
 
     private RedisProcess redisTestSmallMemory() throws IOException, InterruptedException {

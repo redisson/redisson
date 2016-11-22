@@ -20,7 +20,7 @@ import org.redisson.config.Config;
 import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonRedLockTest {
+public class RedissonRedLockTest extends AbstractBaseTest {
 
     @Test
     public void testLockLeasetime() throws IOException, InterruptedException {
@@ -238,7 +238,7 @@ public class RedissonRedLockTest {
         
         Config config1 = new Config();
         config1.useSingleServer().setAddress(redis1.getRedisServerAddressAndPort());
-        RedissonClient client = Redisson.create(config1);
+        RedissonClient client = redissonRule.createClient(config1);
         
         RLock lock1 = client.getLock("lock1");
         RLock lock2 = client.getLock("lock2");
@@ -319,7 +319,7 @@ public class RedissonRedLockTest {
         Config config1 = new Config();
         config1.useSingleServer().setAddress(host);
         config1.setEventLoopGroup(group);
-        RedissonClient client1 = Redisson.create(config1);
+        RedissonClient client1 = redissonRule.createClient(config1);
         client1.getKeys().flushdb();
         return client1;
     }

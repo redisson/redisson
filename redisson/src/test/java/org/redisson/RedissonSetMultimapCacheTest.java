@@ -9,11 +9,11 @@ import org.junit.Test;
 import org.redisson.api.RMultimapCache;
 import org.redisson.api.RSetMultimap;
 
-public class RedissonSetMultimapCacheTest extends BaseTest {
+public class RedissonSetMultimapCacheTest extends AbstractBaseTest {
 
     @Test
     public void testContains() {
-        RMultimapCache<String, String> multimap = redisson.getSetMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getSetMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -32,7 +32,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testContainsExpired() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getSetMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getSetMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -54,7 +54,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testGetAll() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getSetMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getSetMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -64,7 +64,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testGetAllExpired() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getSetMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getSetMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -77,7 +77,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testValues() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getSetMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getSetMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -96,7 +96,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
     
     @Test
     public void testValuesExpired() throws InterruptedException {
-        RMultimapCache<String, String> multimap = redisson.getSetMultimapCache("test");
+        RMultimapCache<String, String> multimap = redissonRule.getSharedClient().getSetMultimapCache("test");
         multimap.put("1", "1");
         multimap.put("1", "2");
         multimap.put("1", "3");
@@ -115,7 +115,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RMultimapCache<String, String> cache = redisson.getSetMultimapCache("simple33");
+        RMultimapCache<String, String> cache = redissonRule.getSharedClient().getSetMultimapCache("simple33");
         assertThat(cache.put("1", "1")).isTrue();
         assertThat(cache.put("1", "2")).isTrue();
         assertThat(cache.put("1", "3")).isTrue();
@@ -137,7 +137,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testExpire() throws InterruptedException {
-        RSetMultimap<String, String> map = redisson.getSetMultimapCache("simple");
+        RSetMultimap<String, String> map = redissonRule.getSharedClient().getSetMultimapCache("simple");
         map.put("1", "2");
         map.put("2", "3");
 
@@ -150,7 +150,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testExpireAt() throws InterruptedException {
-        RSetMultimap<String, String> map = redisson.getSetMultimapCache("simple");
+        RSetMultimap<String, String> map = redissonRule.getSharedClient().getSetMultimapCache("simple");
         map.put("1", "2");
         map.put("2", "3");
 
@@ -163,7 +163,7 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testClearExpire() throws InterruptedException {
-        RSetMultimap<String, String> map = redisson.getSetMultimapCache("simple");
+        RSetMultimap<String, String> map = redissonRule.getSharedClient().getSetMultimapCache("simple");
         map.put("1", "2");
         map.put("2", "3");
 
@@ -178,12 +178,12 @@ public class RedissonSetMultimapCacheTest extends BaseTest {
 
     @Test
     public void testDelete() {
-        RSetMultimap<String, String> map = redisson.getSetMultimapCache("simple");
+        RSetMultimap<String, String> map = redissonRule.getSharedClient().getSetMultimapCache("simple");
         map.put("1", "2");
         map.put("2", "3");
         assertThat(map.delete()).isTrue();
         
-        RSetMultimap<String, String> map2 = redisson.getSetMultimapCache("simple1");
+        RSetMultimap<String, String> map2 = redissonRule.getSharedClient().getSetMultimapCache("simple1");
         assertThat(map2.delete()).isFalse();
     }
     

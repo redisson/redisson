@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -9,13 +11,12 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
-import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSortedSet;
 
-public class RedissonSortedSetTest extends BaseTest {
+public class RedissonSortedSetTest extends AbstractBaseTest {
 
     @Test
     public void testReadAll() {
@@ -30,7 +31,7 @@ public class RedissonSortedSetTest extends BaseTest {
     
     @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
-        RSortedSet<Integer> set = redisson.getSortedSet("simple");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("simple");
         RFuture<Boolean> future = set.addAsync(2);
         Assert.assertTrue(future.get());
 
@@ -39,7 +40,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testRemoveAsync() throws InterruptedException, ExecutionException {
-        RSortedSet<Integer> set = redisson.getSortedSet("simple");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("simple");
         set.add(1);
         set.add(3);
         set.add(7);
@@ -58,7 +59,7 @@ public class RedissonSortedSetTest extends BaseTest {
     
     @Test
     public void testIteratorNextNext() {
-        RSortedSet<String> list = redisson.getSortedSet("simple");
+        RSortedSet<String> list = redissonRule.getSharedClient().getSortedSet("simple");
         list.add("1");
         list.add("4");
 
@@ -70,7 +71,7 @@ public class RedissonSortedSetTest extends BaseTest {
     
     @Test
     public void testIteratorRemove() {
-        RSortedSet<String> list = redisson.getSortedSet("list");
+        RSortedSet<String> list = redissonRule.getSharedClient().getSortedSet("list");
         list.add("1");
         list.add("4");
         list.add("2");
@@ -101,7 +102,7 @@ public class RedissonSortedSetTest extends BaseTest {
     
     @Test
     public void testIteratorSequence() {
-        Set<Integer> set = redisson.getSortedSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
         for (int i = 0; i < 1000; i++) {
             set.add(Integer.valueOf(i));
         }
@@ -127,7 +128,7 @@ public class RedissonSortedSetTest extends BaseTest {
     
     @Test
     public void testTrySetComparator() {
-        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
 
         boolean setRes = set.trySetComparator(Collections.reverseOrder());
         Assert.assertTrue(setRes);
@@ -167,7 +168,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
 //    @Test(expected = IllegalArgumentException.class)
     public void testTailSet() {
-        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
 
         set.add(1);
         set.add(2);
@@ -194,7 +195,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
 //    @Test(expected = IllegalArgumentException.class)
     public void testHeadSet() {
-        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
 
         set.add(1);
         set.add(2);
@@ -272,7 +273,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testSort() {
-        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
         Assert.assertTrue(set.add(2));
         Assert.assertTrue(set.add(3));
         Assert.assertTrue(set.add(1));
@@ -289,7 +290,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        RSortedSet<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
         set.add(5);
         set.add(3);
         set.add(1);
@@ -304,7 +305,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testRetainAll() {
-        Set<Integer> set = redisson.getSortedSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
         for (int i = 0; i < 200; i++) {
             set.add(i);
         }
@@ -315,7 +316,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testContainsAll() {
-        Set<Integer> set = redisson.getSortedSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
         for (int i = 0; i < 200; i++) {
             set.add(i);
         }
@@ -326,7 +327,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testToArray() {
-        Set<String> set = redisson.getSortedSet("set");
+        Set<String> set = redissonRule.getSharedClient().getSortedSet("set");
         set.add("1");
         set.add("4");
         set.add("2");
@@ -341,7 +342,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testContains() {
-        Set<TestObject> set = redisson.getSortedSet("set");
+        Set<TestObject> set = redissonRule.getSharedClient().getSortedSet("set");
 
         set.add(new TestObject("1", "2"));
         set.add(new TestObject("1", "2"));
@@ -356,7 +357,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testDuplicates() {
-        Set<TestObject> set = redisson.getSortedSet("set");
+        Set<TestObject> set = redissonRule.getSharedClient().getSortedSet("set");
 
         Assert.assertTrue(set.add(new TestObject("1", "2")));
         Assert.assertFalse(set.add(new TestObject("1", "2")));
@@ -369,7 +370,7 @@ public class RedissonSortedSetTest extends BaseTest {
 
     @Test
     public void testSize() {
-        Set<Integer> set = redisson.getSortedSet("set");
+        Set<Integer> set = redissonRule.getSharedClient().getSortedSet("set");
         set.add(1);
         set.add(2);
         set.add(3);
@@ -380,6 +381,4 @@ public class RedissonSortedSetTest extends BaseTest {
 
         Assert.assertEquals(5, set.size());
     }
-
-
 }

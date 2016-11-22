@@ -1,18 +1,20 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
+import static org.redisson.rule.TestUtil.toIterator;
+
 import java.util.Arrays;
-import java.util.Iterator;
-import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RDequeReactive;
 
-public class RedissonDequeReactiveTest extends BaseReactiveTest {
+public class RedissonDequeReactiveTest extends AbstractBaseTest {
 
     @Test
     public void testRemoveLastOccurrence() {
-        RDequeReactive<Integer> queue1 = redisson.getDeque("deque1");
+        RDequeReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getDeque("deque1");
         sync(queue1.addFirst(3));
         sync(queue1.addFirst(1));
         sync(queue1.addFirst(2));
@@ -25,7 +27,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveFirstOccurrence() {
-        RDequeReactive<Integer> queue1 = redisson.getDeque("deque1");
+        RDequeReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getDeque("deque1");
         sync(queue1.addFirst(3));
         sync(queue1.addFirst(1));
         sync(queue1.addFirst(2));
@@ -38,7 +40,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveLast() {
-        RDequeReactive<Integer> queue1 = redisson.getDeque("deque1");
+        RDequeReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getDeque("deque1");
         sync(queue1.addFirst(1));
         sync(queue1.addFirst(2));
         sync(queue1.addFirst(3));
@@ -50,7 +52,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testRemoveFirst() {
-        RDequeReactive<Integer> queue1 = redisson.getDeque("deque1");
+        RDequeReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getDeque("deque1");
         sync(queue1.addFirst(1));
         sync(queue1.addFirst(2));
         sync(queue1.addFirst(3));
@@ -62,7 +64,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testPeek() {
-        RDequeReactive<Integer> queue1 = redisson.getDeque("deque1");
+        RDequeReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getDeque("deque1");
         Assert.assertNull(sync(queue1.peekFirst()));
         Assert.assertNull(sync(queue1.peekLast()));
         sync(queue1.addFirst(2));
@@ -72,12 +74,12 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testPollLastAndOfferFirstTo() {
-        RDequeReactive<Integer> queue1 = redisson.getDeque("deque1");
+        RDequeReactive<Integer> queue1 = redissonRule.getSharedReactiveClient().getDeque("deque1");
         sync(queue1.addFirst(3));
         sync(queue1.addFirst(2));
         sync(queue1.addFirst(1));
 
-        RDequeReactive<Integer> queue2 = redisson.getDeque("deque2");
+        RDequeReactive<Integer> queue2 = redissonRule.getSharedReactiveClient().getDeque("deque2");
         sync(queue2.addFirst(6));
         sync(queue2.addFirst(5));
         sync(queue2.addFirst(4));
@@ -88,7 +90,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddFirst() {
-        RDequeReactive<Integer> queue = redisson.getDeque("deque");
+        RDequeReactive<Integer> queue = redissonRule.getSharedReactiveClient().getDeque("deque");
         sync(queue.addFirst(1));
         sync(queue.addFirst(2));
         sync(queue.addFirst(3));
@@ -98,7 +100,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testAddLast() {
-        RDequeReactive<Integer> queue = redisson.getDeque("deque");
+        RDequeReactive<Integer> queue = redissonRule.getSharedReactiveClient().getDeque("deque");
         sync(queue.addLast(1));
         sync(queue.addLast(2));
         sync(queue.addLast(3));
@@ -108,7 +110,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testOfferFirst() {
-        RDequeReactive<Integer> queue = redisson.getDeque("deque");
+        RDequeReactive<Integer> queue = redissonRule.getSharedReactiveClient().getDeque("deque");
         sync(queue.offerFirst(1));
         sync(queue.offerFirst(2));
         sync(queue.offerFirst(3));
@@ -118,7 +120,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testDescendingIterator() {
-        final RDequeReactive<Integer> queue = redisson.getDeque("deque");
+        final RDequeReactive<Integer> queue = redissonRule.getSharedReactiveClient().getDeque("deque");
         sync(queue.addAll(Arrays.asList(1, 2, 3)));
 
         assertThat(toIterator(queue.descendingIterator())).containsExactly(3, 2, 1);

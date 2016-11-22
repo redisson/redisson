@@ -15,7 +15,6 @@
  */
 package org.redisson.liveobject.core;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.FieldValue;

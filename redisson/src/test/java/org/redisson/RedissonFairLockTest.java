@@ -1,28 +1,30 @@
 package org.redisson;
 
+import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.testMultiInstanceConcurrency;
+import static org.redisson.rule.TestUtil.testSingleInstanceConcurrency;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
-import static com.jayway.awaitility.Awaitility.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLock;
 
-public class RedissonFairLockTest extends BaseConcurrentTest {
+public class RedissonFairLockTest extends AbstractBaseTest {
 
     @Test
     public void testTryLockWait() throws InterruptedException {
-        testSingleInstanceConcurrency(1, r -> {
+        testSingleInstanceConcurrency(redissonRule, 1, r -> {
             RLock lock = r.getFairLock("lock");
             lock.lock();
         });
 
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         
         long startTime = System.currentTimeMillis();
         lock.tryLock(3, TimeUnit.SECONDS);
@@ -31,7 +33,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
     
     @Test
     public void testDelete() {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         Assert.assertFalse(lock.delete());
 
         lock.lock();
@@ -40,24 +42,24 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
     public void testForceUnlock() {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         lock.lock();
         lock.forceUnlock();
         Assert.assertFalse(lock.isLocked());
 
-        lock = redisson.getFairLock("lock");
+        lock = redissonRule.getSharedClient().getFairLock("lock");
         Assert.assertFalse(lock.isLocked());
     }
 
     @Test
     public void testExpire() throws InterruptedException {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         lock.lock(2, TimeUnit.SECONDS);
 
         final long startTime = System.currentTimeMillis();
         Thread t = new Thread() {
             public void run() {
-                RLock lock1 = redisson.getFairLock("lock");
+                RLock lock1 = redissonRule.getSharedClient().getFairLock("lock");
                 System.out.println("0");
                 lock1.lock();
                 System.out.println("1");
@@ -78,21 +80,21 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
     @Test
     public void testAutoExpire() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        testSingleInstanceConcurrency(1, r -> {
+        testSingleInstanceConcurrency(redissonRule, 1, r -> {
             RLock lock = r.getFairLock("lock");
             lock.lock();
             latch.countDown();
         });
 
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS + 1));
         Assert.assertFalse("Transient lock has not expired automatically", lock.isLocked());
     }
 
     @Test
     public void testGetHoldCount() {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         Assert.assertEquals(0, lock.getHoldCount());
         lock.lock();
         Assert.assertEquals(1, lock.getHoldCount());
@@ -110,12 +112,12 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
     public void testIsHeldByCurrentThreadOtherThread() throws InterruptedException {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         lock.lock();
 
         Thread t = new Thread() {
             public void run() {
-                RLock lock = redisson.getFairLock("lock");
+                RLock lock = redissonRule.getSharedClient().getFairLock("lock");
                 Assert.assertFalse(lock.isHeldByCurrentThread());
             };
         };
@@ -126,7 +128,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
         Thread t2 = new Thread() {
             public void run() {
-                RLock lock = redisson.getFairLock("lock");
+                RLock lock = redissonRule.getSharedClient().getFairLock("lock");
                 Assert.assertFalse(lock.isHeldByCurrentThread());
             };
         };
@@ -137,7 +139,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
     public void testIsHeldByCurrentThread() {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         Assert.assertFalse(lock.isHeldByCurrentThread());
         lock.lock();
         Assert.assertTrue(lock.isHeldByCurrentThread());
@@ -147,12 +149,12 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
     public void testIsLockedOtherThread() throws InterruptedException {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         lock.lock();
 
         Thread t = new Thread() {
             public void run() {
-                RLock lock = redisson.getFairLock("lock");
+                RLock lock = redissonRule.getSharedClient().getFairLock("lock");
                 Assert.assertTrue(lock.isLocked());
             };
         };
@@ -163,7 +165,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
         Thread t2 = new Thread() {
             public void run() {
-                RLock lock = redisson.getFairLock("lock");
+                RLock lock = redissonRule.getSharedClient().getFairLock("lock");
                 Assert.assertFalse(lock.isLocked());
             };
         };
@@ -174,7 +176,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
     public void testIsLocked() {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         Assert.assertFalse(lock.isLocked());
         lock.lock();
         Assert.assertTrue(lock.isLocked());
@@ -184,10 +186,10 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test(expected = IllegalMonitorStateException.class)
     public void testUnlockFail() throws InterruptedException {
-        RLock lock = redisson.getFairLock("lock");
+        RLock lock = redissonRule.getSharedClient().getFairLock("lock");
         Thread t = new Thread() {
             public void run() {
-                RLock lock = redisson.getFairLock("lock");
+                RLock lock = redissonRule.getSharedClient().getFairLock("lock");
                 lock.lock();
 
                 try {
@@ -215,7 +217,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
     public void testLockUnlock() {
-        Lock lock = redisson.getFairLock("lock1");
+        Lock lock = redissonRule.getSharedClient().getFairLock("lock1");
         lock.lock();
         lock.unlock();
 
@@ -225,7 +227,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
     public void testReentrancy() throws InterruptedException {
-        Lock lock = redisson.getFairLock("lock1");
+        Lock lock = redissonRule.getSharedClient().getFairLock("lock1");
         Assert.assertTrue(lock.tryLock());
         Assert.assertTrue(lock.tryLock());
         lock.unlock();
@@ -234,7 +236,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Thread thread1 = new Thread() {
             @Override
             public void run() {
-                RLock lock1 = redisson.getFairLock("lock1");
+                RLock lock1 = redissonRule.getSharedClient().getFairLock("lock1");
                 Assert.assertFalse(lock1.tryLock());
             }
         };
@@ -249,7 +251,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         final AtomicInteger lockedCounter = new AtomicInteger();
 
         int iterations = 15;
-        testSingleInstanceConcurrency(iterations, r -> {
+        testSingleInstanceConcurrency(redissonRule, iterations, r -> {
             Lock lock = r.getFairLock("testConcurrency_SingleInstance");
             lock.lock();
             lockedCounter.incrementAndGet();
@@ -264,7 +266,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         final int iterations = 100;
         final AtomicInteger lockedCounter = new AtomicInteger();
 
-        testMultiInstanceConcurrency(16, r -> {
+        testMultiInstanceConcurrency(redissonRule, 16, r -> {
             for (int i = 0; i < iterations; i++) {
                 r.getFairLock("testConcurrency_MultiInstance1").lock();
                 try {
@@ -285,7 +287,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         int iterations = 100;
         final AtomicInteger lockedCounter = new AtomicInteger();
 
-        testMultiInstanceConcurrency(iterations, r -> {
+        testMultiInstanceConcurrency(redissonRule, iterations, r -> {
             Lock lock = r.getFairLock("testConcurrency_MultiInstance2");
             lock.lock();
             lockedCounter.incrementAndGet();
@@ -303,7 +305,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         int totalThreads = Runtime.getRuntime().availableProcessors()*2;
         for (int i = 0; i < totalThreads; i++) {
             Thread t1 = new Thread(() -> {
-                Lock lock = redisson.getFairLock("testConcurrency_MultiInstance2");
+                Lock lock = redissonRule.getSharedClient().getFairLock("testConcurrency_MultiInstance2");
                 queue.add(Thread.currentThread());
                 lock.lock();
                 Thread t = queue.poll();

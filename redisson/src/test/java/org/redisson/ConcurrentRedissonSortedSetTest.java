@@ -1,6 +1,8 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.testSingleInstanceConcurrency;
+
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -14,13 +16,13 @@ import org.junit.Test;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
 
-public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
+public class ConcurrentRedissonSortedSetTest extends AbstractBaseTest {
 
     @Test
     public void testAdd_SingleInstance() throws InterruptedException {
         final String name = "testAdd_SingleInstance";
 
-        RedissonClient r = BaseTest.createInstance();
+        RedissonClient r = redissonRule.createClient();
         RSortedSet<Integer> map = r.getSortedSet(name);
         map.clear();
 
@@ -31,7 +33,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
         }
         Collections.shuffle(elements);
         final AtomicInteger counter = new AtomicInteger(-1);
-        testSingleInstanceConcurrency(length, rc -> {
+        testSingleInstanceConcurrency(redissonRule, length, rc -> {
             RSortedSet<Integer> set = rc.getSortedSet(name);
             int c = counter.incrementAndGet();
             Integer element = elements.get(c);
@@ -43,14 +45,13 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
         assertThat(map).containsExactly(p);
 
         map.clear();
-        r.shutdown();
     }
 
     @Test
     public void testAddRemove_SingleInstance() throws InterruptedException, NoSuchAlgorithmException {
         final String name = "testAddNegative_SingleInstance";
 
-        RedissonClient r = BaseTest.createInstance();
+        RedissonClient r = redissonRule.createClient();
         RSortedSet<Integer> map = r.getSortedSet(name);
         map.clear();
         int length = 1000;
@@ -60,7 +61,7 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
 
         final AtomicInteger counter = new AtomicInteger(length);
         final Random rnd = SecureRandom.getInstanceStrong();
-        testSingleInstanceConcurrency(length, rc -> {
+        testSingleInstanceConcurrency(redissonRule, length, rc -> {
             RSortedSet<Integer> set = rc.getSortedSet(name);
             int c = counter.incrementAndGet();
             Assert.assertTrue(set.add(c));
@@ -79,8 +80,5 @@ public class ConcurrentRedissonSortedSetTest extends BaseConcurrentTest {
                 Assert.fail();
             }
         }
-        
-        r.shutdown();
     }
-
 }

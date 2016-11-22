@@ -1,6 +1,7 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.rule.TestUtil.sync;
 
 import java.util.Collections;
 import java.util.List;
@@ -11,18 +12,18 @@ import org.redisson.api.RScript;
 import org.redisson.api.RScriptReactive;
 import org.redisson.client.RedisException;
 
-public class RedissonScriptReactiveTest extends BaseReactiveTest {
-
+public class RedissonScriptReactiveTest extends AbstractBaseTest {
+    
     @Test
     public void testEval() {
-        RScriptReactive script = redisson.getScript();
+        RScriptReactive script = redissonRule.getSharedReactiveClient().getScript();
         List<Object> res = sync(script.<List<Object>>eval(RScript.Mode.READ_ONLY, "return {1,2,3.3333,'\"foo\"',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList()));
         assertThat(res).containsExactly(1L, 2L, 3L, "foo");
     }
 
     @Test
     public void testScriptExists() {
-        RScriptReactive s = redisson.getScript();
+        RScriptReactive s = redissonRule.getSharedReactiveClient().getScript();
         String r = sync(s.scriptLoad("return redis.call('get', 'foo')"));
         Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
 
@@ -39,15 +40,15 @@ public class RedissonScriptReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testScriptFlush() {
-        redisson.getBucket("foo").set("bar");
-        String r = sync(redisson.getScript().scriptLoad("return redis.call('get', 'foo')"));
+        redissonRule.getSharedReactiveClient().getBucket("foo").set("bar");
+        String r = sync(redissonRule.getSharedReactiveClient().getScript().scriptLoad("return redis.call('get', 'foo')"));
         Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
-        String r1 = sync(redisson.getScript().<String>evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
+        String r1 = sync(redissonRule.getSharedReactiveClient().getScript().<String>evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
         Assert.assertEquals("bar", r1);
-        sync(redisson.getScript().scriptFlush());
+        sync(redissonRule.getSharedReactiveClient().getScript().scriptFlush());
 
         try {
-            sync(redisson.getScript().evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
+            sync(redissonRule.getSharedReactiveClient().getScript().evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
         } catch (Exception e) {
             Assert.assertEquals(RedisException.class, e.getClass());
         }
@@ -55,20 +56,20 @@ public class RedissonScriptReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testScriptLoad() {
-        sync(redisson.getBucket("foo").set("bar"));
-        String r = sync(redisson.getScript().scriptLoad("return redis.call('get', 'foo')"));
+        sync(redissonRule.getSharedReactiveClient().getBucket("foo").set("bar"));
+        String r = sync(redissonRule.getSharedReactiveClient().getScript().scriptLoad("return redis.call('get', 'foo')"));
         Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", r);
-        String r1 = sync(redisson.getScript().<String>evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
+        String r1 = sync(redissonRule.getSharedReactiveClient().getScript().<String>evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
         Assert.assertEquals("bar", r1);
     }
 
     @Test
     public void testEvalSha() {
-        RScriptReactive s = redisson.getScript();
+        RScriptReactive s = redissonRule.getSharedReactiveClient().getScript();
         String res = sync(s.scriptLoad("return redis.call('get', 'foo')"));
         Assert.assertEquals("282297a0228f48cd3fc6a55de6316f31422f5d17", res);
 
-        sync(redisson.getBucket("foo").set("bar"));
+        sync(redissonRule.getSharedReactiveClient().getBucket("foo").set("bar"));
         String r1 = sync(s.<String>evalSha(RScript.Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList()));
         Assert.assertEquals("bar", r1);
     }

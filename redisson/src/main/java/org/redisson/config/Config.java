@@ -82,6 +82,10 @@ public class Config {
     private boolean useLinuxNativeEpoll;
 
     private EventLoopGroup eventLoopGroup;
+    
+    private String eventLoopGroupThreadPrefix;
+
+    private String executorThreadPrefix;
 
     public Config() {
     }
@@ -89,6 +93,7 @@ public class Config {
     public Config(Config oldConf) {
         setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());
         setExecutor(oldConf.getExecutor());
+        setExecutorThreadPrefix(oldConf.getExecutorThreadPrefix());
 
         if (oldConf.getCodec() == null) {
             // use it by default
@@ -102,6 +107,7 @@ public class Config {
         setResolverProvider(oldConf.getResolverProvider());
         setRedissonReferenceEnabled(oldConf.redissonReferenceEnabled);
         setEventLoopGroup(oldConf.getEventLoopGroup());
+        setEventLoopGroupThreadPrefix(oldConf.getEventLoopGroupThreadPrefix());
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
         }
@@ -455,6 +461,23 @@ public class Config {
     public ExecutorService getExecutor() {
         return executor;
     }
+    
+    /**
+     * If the ExecutorService is created by the Redisson client it will use
+     * this prefix for the {@link Thread}s created. This will default to
+     * <em>redisson</em>.
+     * 
+     * @param executorThreadPrefix the prefix to use
+     * @return config
+     */
+    public Config setExecutorThreadPrefix(String executorThreadPrefix) {
+        this.executorThreadPrefix = executorThreadPrefix;
+        return this;
+    }
+    
+    public String getExecutorThreadPrefix() {
+        return executorThreadPrefix;
+    }
 
     /**
      * Use external EventLoopGroup. EventLoopGroup processes all
@@ -478,6 +501,23 @@ public class Config {
 
     public EventLoopGroup getEventLoopGroup() {
         return eventLoopGroup;
+    }
+    
+    /**
+     * If the EventLoopGroup is created by the Redisson client it will use
+     * this prefix for the {@link Thread}s created. This will default to
+     * <em>redisson-netty</em>.
+     * 
+     * @param eventLoopGroupThreadPrefix the prefix to use
+     * @return config
+     */
+    public Config setEventLoopGroupThreadPrefix(String eventLoopGroupThreadPrefix) {
+        this.eventLoopGroupThreadPrefix = eventLoopGroupThreadPrefix;
+        return this;
+    }
+    
+    public String getEventLoopGroupThreadPrefix() {
+        return eventLoopGroupThreadPrefix;
     }
 
     /**

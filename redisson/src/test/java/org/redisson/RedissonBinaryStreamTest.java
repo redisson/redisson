@@ -2,7 +2,6 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,16 +14,16 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Test;
 import org.redisson.api.RBinaryStream;
 
-public class RedissonBinaryStreamTest extends BaseTest {
+public class RedissonBinaryStreamTest extends AbstractBaseTest {
 
     @Test
     public void testEmptyRead() throws IOException {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
         assertThat(stream.getInputStream().read()).isEqualTo(-1);
     }
     
     private void testLimit(int sizeInMBs, int chunkSize) throws IOException, NoSuchAlgorithmException {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
         
         MessageDigest hash = MessageDigest.getInstance("SHA-1");
         hash.reset();
@@ -60,21 +59,21 @@ public class RedissonBinaryStreamTest extends BaseTest {
         assertThat(stream.size()).isEqualTo(sizeInMBs*chunkSize);
         
         assertThat(stream.size()).isEqualTo(sizeInMBs*chunkSize);
-        assertThat(redisson.getBucket("test").isExists()).isTrue();
+        assertThat(redissonRule.getSharedClient().getBucket("test").isExists()).isTrue();
         if (sizeInMBs*chunkSize <= 512*1024*1024) {
-            assertThat(redisson.getBucket("test:parts").isExists()).isFalse();
-            assertThat(redisson.getBucket("test:1").isExists()).isFalse();
+            assertThat(redissonRule.getSharedClient().getBucket("test:parts").isExists()).isFalse();
+            assertThat(redissonRule.getSharedClient().getBucket("test:1").isExists()).isFalse();
         } else {
             int parts = (sizeInMBs*chunkSize)/(512*1024*1024);
             for (int i = 1; i < parts-1; i++) {
-                assertThat(redisson.getBucket("test:" + i).isExists()).isTrue();
+                assertThat(redissonRule.getSharedClient().getBucket("test:" + i).isExists()).isTrue();
             }
         }
     }
 
     @Test
     public void testSkip() throws IOException {
-        RBinaryStream t = redisson.getBinaryStream("test");
+        RBinaryStream t = redissonRule.getSharedClient().getBinaryStream("test");
         t.set(new byte[] {1, 2, 3, 4, 5, 6});
         
         InputStream is = t.getInputStream();
@@ -96,7 +95,7 @@ public class RedissonBinaryStreamTest extends BaseTest {
 
     @Test
     public void testSet100() {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
 
         byte[] bytes = new byte[100*1024*1024];
         ThreadLocalRandom.current().nextBytes(bytes);
@@ -108,16 +107,16 @@ public class RedissonBinaryStreamTest extends BaseTest {
     
     @Test
     public void testSet1024() {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
 
         byte[] bytes = new byte[1024*1024*1024];
         ThreadLocalRandom.current().nextBytes(bytes);
         stream.set(bytes);
         
         assertThat(stream.size()).isEqualTo(bytes.length);
-        assertThat(redisson.getBucket("test:parts").isExists()).isTrue();
-        assertThat(redisson.getBucket("test").size()).isEqualTo(512*1024*1024);
-        assertThat(redisson.getBucket("test:1").size()).isEqualTo(bytes.length - 512*1024*1024);
+        assertThat(redissonRule.getSharedClient().getBucket("test:parts").isExists()).isTrue();
+        assertThat(redissonRule.getSharedClient().getBucket("test").size()).isEqualTo(512*1024*1024);
+        assertThat(redissonRule.getSharedClient().getBucket("test:1").size()).isEqualTo(bytes.length - 512*1024*1024);
     }
     
     @Test
@@ -127,7 +126,7 @@ public class RedissonBinaryStreamTest extends BaseTest {
     
     @Test
     public void testRead() throws IOException {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
         byte[] value = {1, 2, 3, 4, 5, (byte)0xFF};
         stream.set(value);
         
@@ -149,7 +148,7 @@ public class RedissonBinaryStreamTest extends BaseTest {
     
     @Test
     public void testReadArray() throws IOException {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
         byte[] value = {1, 2, 3, 4, 5, 6};
         stream.set(value);
         
@@ -163,7 +162,7 @@ public class RedissonBinaryStreamTest extends BaseTest {
     
     @Test
     public void testReadArrayWithOffset() throws IOException {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
         byte[] value = {1, 2, 3, 4, 5, 6};
         stream.set(value);
 
@@ -177,7 +176,7 @@ public class RedissonBinaryStreamTest extends BaseTest {
 
     @Test
     public void testWriteArray() throws IOException {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
         OutputStream os = stream.getOutputStream();
         byte[] value = {1, 2, 3, 4, 5, 6};
         os.write(value);
@@ -188,7 +187,7 @@ public class RedissonBinaryStreamTest extends BaseTest {
     
     @Test
     public void testWriteArrayWithOffset() throws IOException {
-        RBinaryStream stream = redisson.getBinaryStream("test");
+        RBinaryStream stream = redissonRule.getSharedClient().getBinaryStream("test");
         OutputStream os = stream.getOutputStream();
 
         byte[] value = {1, 2, 3, 4, 5, 6};

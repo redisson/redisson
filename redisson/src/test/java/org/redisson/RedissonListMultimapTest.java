@@ -12,7 +12,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.redisson.api.RListMultimap;
 
-public class RedissonListMultimapTest extends BaseTest {
+public class RedissonListMultimapTest extends AbstractBaseTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -113,12 +113,11 @@ public class RedissonListMultimapTest extends BaseTest {
                 return false;
             return true;
         }
-
     }
-
+    
     @Test
     public void testSize() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("1"), new SimpleValue("4"));
@@ -134,7 +133,7 @@ public class RedissonListMultimapTest extends BaseTest {
     
     @Test
     public void testKeySize() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("1"), new SimpleValue("4"));
@@ -151,7 +150,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testPut() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
@@ -172,7 +171,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testRemoveAll() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
@@ -188,7 +187,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testFastRemove() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("1"))).isTrue();
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("2"))).isTrue();
         assertThat(map.put(new SimpleKey("0"), new SimpleValue("2"))).isTrue();
@@ -201,7 +200,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testContainsKey() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         assertThat(map.containsKey(new SimpleKey("0"))).isTrue();
         assertThat(map.containsKey(new SimpleKey("1"))).isFalse();
@@ -209,7 +208,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testContainsValue() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
 
         assertThat(map.containsValue(new SimpleValue("1"))).isTrue();
@@ -218,7 +217,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testContainsEntry() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
 
         assertThat(map.containsEntry(new SimpleKey("0"), new SimpleValue("1"))).isTrue();
@@ -227,7 +226,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
@@ -240,7 +239,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testPutAll() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         List<SimpleValue> values = Arrays.asList(new SimpleValue("1"), new SimpleValue("2"), new SimpleValue("3"), new SimpleValue("3"));
         assertThat(map.putAll(new SimpleKey("0"), values)).isTrue();
         assertThat(map.putAll(new SimpleKey("0"), Arrays.asList(new SimpleValue("1")))).isTrue();
@@ -251,7 +250,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testKeySet() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
@@ -261,7 +260,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testValues() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
@@ -274,7 +273,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testEntrySet() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
@@ -289,7 +288,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testReplaceValues() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("3"), new SimpleValue("4"));
 
@@ -300,6 +299,4 @@ public class RedissonListMultimapTest extends BaseTest {
         List<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
         assertThat(allValues).containsExactlyElementsOf(values);
     }
-
-
 }

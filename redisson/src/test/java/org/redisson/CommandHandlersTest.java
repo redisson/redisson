@@ -5,28 +5,27 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.config.Config;
 
-public class CommandHandlersTest extends BaseTest {
+public class CommandHandlersTest extends AbstractBaseTest {
 
     @Test(expected = RedisException.class)
     public void testEncoder() throws InterruptedException {
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(new ErrorsCodec());
         
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         
         redisson.getBucket("1234").set("1234");
     }
     
     @Test(expected = RedisException.class)
     public void testDecoder() {
-        redisson.getBucket("1234").set("1234");
+        redissonRule.getSharedClient().getBucket("1234").set("1234");
         
-        Config config = createConfig();
+        Config config = redissonRule.getSharedConfig();
         config.setCodec(new ErrorsCodec());
         
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         
         redisson.getBucket("1234").get();
     }
-    
 }

@@ -10,7 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RQueue;
 
-public class RedissonQueueTest extends BaseTest {
+public class RedissonQueueTest extends AbstractBaseTest {
 
     @Test
     public void testAddOfferOrigin() {
@@ -28,7 +28,7 @@ public class RedissonQueueTest extends BaseTest {
 
     @Test
     public void testAddOffer() {
-        RQueue<Integer> queue = redisson.getQueue("queue");
+        RQueue<Integer> queue = redissonRule.getSharedClient().getQueue("queue");
         queue.add(1);
         queue.offer(2);
         queue.add(3);
@@ -60,7 +60,7 @@ public class RedissonQueueTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RQueue<Integer> queue = redisson.getQueue("queue");
+        RQueue<Integer> queue = redissonRule.getSharedClient().getQueue("queue");
         queue.add(1);
         queue.add(2);
         queue.add(3);
@@ -78,8 +78,7 @@ public class RedissonQueueTest extends BaseTest {
 
     @Test(expected = NoSuchElementException.class)
     public void testRemoveEmpty() {
-        RQueue<Integer> queue = redisson.getQueue("queue");
+        RQueue<Integer> queue = redissonRule.getSharedClient().getQueue("queue");
         queue.remove();
     }
-
 }

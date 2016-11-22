@@ -19,13 +19,14 @@ import org.redisson.api.RSemaphore;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @RunWith(Parameterized.class)
-public class RedissonLockHeavyTest extends BaseTest {
+public class RedissonLockHeavyTest extends AbstractBaseTest {
+    
     @Parameters
     public static Collection<Object[]> data() {
 
         return Arrays.asList(new Object[][] { { 2, 5000 }, { 2, 50000 }, { 5, 50000 }, { 10, 50000 }, { 20, 50000 }, });
     }
-
+    
     private ExecutorService executor;
     private int threads;
     private int loops;
@@ -45,12 +46,12 @@ public class RedissonLockHeavyTest extends BaseTest {
                 @Override
                 public void run() {
                     for (int j = 0; j < loops; j++) {
-                        RLock lock = redisson.getLock("RLOCK_" + j);
+                        RLock lock = redissonRule.getSharedClient().getLock("RLOCK_" + j);
                         lock.lock();
                         try {
-                            RBucket<String> bucket = redisson.getBucket("RBUCKET_" + j);
+                            RBucket<String> bucket = redissonRule.getSharedClient().getBucket("RBUCKET_" + j);
                             bucket.set("TEST", 30, TimeUnit.SECONDS);
-                            RSemaphore semaphore = redisson.getSemaphore("SEMAPHORE_" + j);
+                            RSemaphore semaphore = redissonRule.getSharedClient().getSemaphore("SEMAPHORE_" + j);
                             semaphore.release();
                             try {
                                 semaphore.acquire();
@@ -79,13 +80,13 @@ public class RedissonLockHeavyTest extends BaseTest {
                 @Override
                 public void run() {
                     for (int j = 0; j < loops; j++) {
-                        RLock lock = redisson.getLock("RLOCK_" + j);
+                        RLock lock = redissonRule.getSharedClient().getLock("RLOCK_" + j);
                         try {
                             if (lock.tryLock(ThreadLocalRandom.current().nextInt(10), TimeUnit.MILLISECONDS)) {
                                 try {
-                                    RBucket<String> bucket = redisson.getBucket("RBUCKET_" + j);
+                                    RBucket<String> bucket = redissonRule.getSharedClient().getBucket("RBUCKET_" + j);
                                     bucket.set("TEST", 30, TimeUnit.SECONDS);
-                                    RSemaphore semaphore = redisson.getSemaphore("SEMAPHORE_" + j);
+                                    RSemaphore semaphore = redissonRule.getSharedClient().getSemaphore("SEMAPHORE_" + j);
                                     semaphore.release();
                                     try {
                                         semaphore.acquire();

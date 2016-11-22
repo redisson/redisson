@@ -10,11 +10,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RDeque;
 
-public class RedissonDequeTest extends BaseTest {
+public class RedissonDequeTest extends AbstractBaseTest {
 
     @Test
     public void testRemoveLastOccurrence() {
-        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        RDeque<Integer> queue1 = redissonRule.getSharedClient().getDeque("deque1");
         queue1.addFirst(3);
         queue1.addFirst(1);
         queue1.addFirst(2);
@@ -27,7 +27,7 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testRemoveFirstOccurrence() {
-        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        RDeque<Integer> queue1 = redissonRule.getSharedClient().getDeque("deque1");
         queue1.addFirst(3);
         queue1.addFirst(1);
         queue1.addFirst(2);
@@ -40,7 +40,7 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testRemoveLast() {
-        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        RDeque<Integer> queue1 = redissonRule.getSharedClient().getDeque("deque1");
         queue1.addFirst(1);
         queue1.addFirst(2);
         queue1.addFirst(3);
@@ -52,7 +52,7 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testRemoveFirst() {
-        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        RDeque<Integer> queue1 = redissonRule.getSharedClient().getDeque("deque1");
         queue1.addFirst(1);
         queue1.addFirst(2);
         queue1.addFirst(3);
@@ -64,7 +64,7 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testPeek() {
-        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        RDeque<Integer> queue1 = redissonRule.getSharedClient().getDeque("deque1");
         Assert.assertNull(queue1.peekFirst());
         Assert.assertNull(queue1.peekLast());
         queue1.addFirst(2);
@@ -74,12 +74,12 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testPollLastAndOfferFirstTo() {
-        RDeque<Integer> queue1 = redisson.getDeque("deque1");
+        RDeque<Integer> queue1 = redissonRule.getSharedClient().getDeque("deque1");
         queue1.addFirst(3);
         queue1.addFirst(2);
         queue1.addFirst(1);
 
-        RDeque<Integer> queue2 = redisson.getDeque("deque2");
+        RDeque<Integer> queue2 = redissonRule.getSharedClient().getDeque("deque2");
         queue2.addFirst(6);
         queue2.addFirst(5);
         queue2.addFirst(4);
@@ -100,7 +100,7 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testAddFirst() {
-        RDeque<Integer> queue = redisson.getDeque("deque");
+        RDeque<Integer> queue = redissonRule.getSharedClient().getDeque("deque");
         queue.addFirst(1);
         queue.addFirst(2);
         queue.addFirst(3);
@@ -120,7 +120,7 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testAddLast() {
-        RDeque<Integer> queue = redisson.getDeque("deque");
+        RDeque<Integer> queue = redissonRule.getSharedClient().getDeque("deque");
         queue.addLast(1);
         queue.addLast(2);
         queue.addLast(3);
@@ -140,7 +140,7 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testOfferFirst() {
-        RDeque<Integer> queue = redisson.getDeque("deque");
+        RDeque<Integer> queue = redissonRule.getSharedClient().getDeque("deque");
         queue.offerFirst(1);
         queue.offerFirst(2);
         queue.offerFirst(3);
@@ -170,7 +170,7 @@ public class RedissonDequeTest extends BaseTest {
 
     @Test
     public void testDescendingIterator() {
-        final RDeque<Integer> queue = redisson.getDeque("deque");
+        final RDeque<Integer> queue = redissonRule.getSharedClient().getDeque("deque");
         queue.addAll(Arrays.asList(1, 2, 3));
 
         assertThat(queue.descendingIterator()).containsExactly(3, 2, 1);

@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -20,19 +19,17 @@ import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
 import org.redisson.misc.Cache;
-
 import mockit.Deencapsulation;
 
-public class RedissonLocalCachedMapTest extends BaseTest {
+public class RedissonLocalCachedMapTest extends AbstractBaseTest {
 
 //    @Test
     public void testPerf() {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(100000).invalidateEntryOnChange(true);
-        Map<String, Integer> map = redisson.getLocalCachedMap("test", options);
+        Map<String, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         
-//        Map<String, Integer> map = redisson.getMap("test");
+//        Map<String, Integer> map = redissonRule.getSharedClient().getMap("test");
 
         
         for (int i = 0; i < 100000; i++) {
@@ -51,7 +48,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testReadValuesAndEntries() {
-        RLocalCachedMap<Object, Object> m = redisson.getLocalCachedMap("testValuesWithNearCache2",
+        RLocalCachedMap<Object, Object> m = redissonRule.getSharedClient().getLocalCachedMap("testValuesWithNearCache2",
                 LocalCachedMapOptions.defaults());
         m.clear();
         m.put("a", 1);
@@ -73,7 +70,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testClearEmpty() {
-        RLocalCachedMap<Object, Object> localCachedMap = redisson.getLocalCachedMap("udi-test",
+        RLocalCachedMap<Object, Object> localCachedMap = redissonRule.getSharedClient().getLocalCachedMap("udi-test",
                         LocalCachedMapOptions.defaults());
 
         localCachedMap.clear();
@@ -81,7 +78,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testDelete() {
-        RLocalCachedMap<String, String> localCachedMap = redisson.getLocalCachedMap("udi-test",
+        RLocalCachedMap<String, String> localCachedMap = redissonRule.getSharedClient().getLocalCachedMap("udi-test",
                         LocalCachedMapOptions.defaults());
 
         assertThat(localCachedMap.delete()).isFalse();
@@ -92,10 +89,10 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     @Test
     public void testInvalidationOnClear() throws InterruptedException {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(true);
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map1 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map2 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
         
         map1.put("1", 1);
@@ -126,10 +123,10 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     @Test
     public void testInvalidationOnUpdate() throws InterruptedException {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(true);
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map1 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map2 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
         
         map1.put("1", 1);
@@ -152,10 +149,10 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     @Test
     public void testNoInvalidationOnUpdate() throws InterruptedException {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(false);
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map1 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map2 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
         
         map1.put("1", 1);
@@ -178,10 +175,10 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     @Test
     public void testNoInvalidationOnRemove() throws InterruptedException {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(false);
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map1 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map2 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
         
         map1.put("1", 1);
@@ -204,10 +201,10 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     @Test
     public void testInvalidationOnRemove() throws InterruptedException {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(true);
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map1 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        RLocalCachedMap<String, Integer> map2 = redissonRule.getSharedClient().getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
         
         map1.put("1", 1);
@@ -229,7 +226,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testLFU() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5));
+        RLocalCachedMap<String, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("test", LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5));
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         map.put("12", 1);
@@ -247,7 +244,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testLRU() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LRU).cacheSize(5));
+        RLocalCachedMap<String, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("test", LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LRU).cacheSize(5));
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         map.put("12", 1);
@@ -265,7 +262,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testSize() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("test", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         map.put("12", 1);
@@ -279,7 +276,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testPut() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("test", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         map.put("12", 1);
@@ -291,7 +288,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(map.get("14")).isEqualTo(2);
         assertThat(map.get("15")).isEqualTo(3);
         
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, Integer> map1 = redissonRule.getSharedClient().getLocalCachedMap("test", LocalCachedMapOptions.defaults());
         
         assertThat(map1.get("12")).isEqualTo(1);
         assertThat(map1.get("14")).isEqualTo(2);
@@ -300,7 +297,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testGetAll() {
-        RMap<String, Integer> map = redisson.getLocalCachedMap("getAll", LocalCachedMapOptions.defaults());
+        RMap<String, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("getAll", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put("1", 100);
         map.put("2", 200);
@@ -315,7 +312,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         expectedMap.put("3", 300);
         assertThat(filtered).isEqualTo(expectedMap);
         
-        RMap<String, Integer> map1 = redisson.getLocalCachedMap("getAll", LocalCachedMapOptions.defaults());
+        RMap<String, Integer> map1 = redissonRule.getSharedClient().getLocalCachedMap("getAll", LocalCachedMapOptions.defaults());
         
         Map<String, Integer> filtered1 = map1.getAll(new HashSet<String>(Arrays.asList("2", "3", "5")));
 
@@ -324,8 +321,8 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testPutAll() {
-        Map<Integer, String> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
-        Map<Integer, String> map1 = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        Map<Integer, String> map = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        Map<Integer, String> map1 = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         map.put(1, "1");
@@ -350,7 +347,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RMap<Integer, Integer> map = redisson.getLocalCachedMap("getAll", LocalCachedMapOptions.defaults());
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("getAll", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(1, 100);
 
@@ -360,7 +357,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         res = map.get(1);
         assertThat(res).isEqualTo(112);
 
-        RMap<Integer, Double> map2 = redisson.getLocalCachedMap("getAll2", LocalCachedMapOptions.defaults());
+        RMap<Integer, Double> map2 = redissonRule.getSharedClient().getLocalCachedMap("getAll2", LocalCachedMapOptions.defaults());
         map2.put(1, new Double(100.2));
 
         Double res2 = map2.addAndGet(1, new Double(12.1));
@@ -368,7 +365,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         res2 = map2.get(1);
         assertThat(res2).isEqualTo(112.3);
 
-        RMap<String, Integer> mapStr = redisson.getLocalCachedMap("mapStr", LocalCachedMapOptions.defaults());
+        RMap<String, Integer> mapStr = redissonRule.getSharedClient().getLocalCachedMap("mapStr", LocalCachedMapOptions.defaults());
         assertThat(mapStr.put("1", 100)).isNull();
 
         assertThat(mapStr.addAndGet("1", 12)).isEqualTo(112);
@@ -378,7 +375,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testFastPutIfAbsent() throws Exception {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         
         SimpleKey key = new SimpleKey("1");
@@ -397,7 +394,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testReadAllEntrySet() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
         map.put(new SimpleKey("33"), new SimpleValue("44"));
@@ -408,13 +405,13 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
         assertThat(map.readAllEntrySet()).containsOnlyElementsOf(testMap.entrySet());
         
-        RMap<SimpleKey, SimpleValue> map2 = redisson.getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map2 = redissonRule.getSharedClient().getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
         assertThat(map2.readAllEntrySet()).containsOnlyElementsOf(testMap.entrySet());
     }
     
     @Test
     public void testPutIfAbsent() throws Exception {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         SimpleKey key = new SimpleKey("1");
@@ -432,7 +429,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testRemoveValue() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -448,7 +445,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testRemoveValueFail() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -465,7 +462,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testReplaceOldValueFail() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -479,7 +476,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testReplaceOldValueSuccess() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -496,7 +493,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testReplaceValue() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
@@ -510,7 +507,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testReadAllValues() {
-        RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         
         map.put(new SimpleKey("1"), new SimpleValue("2"));
@@ -522,14 +519,14 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         Map<SimpleKey, SimpleValue> testMap = new HashMap<>(map);
         assertThat(map.readAllValues()).containsOnlyElementsOf(testMap.values());
         
-        RMap<SimpleKey, SimpleValue> map2 = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        RMap<SimpleKey, SimpleValue> map2 = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         assertThat(map2.readAllValues()).containsOnlyElementsOf(testMap.values());
     }
 
     
     @Test
     public void testFastRemoveAsync() throws InterruptedException, ExecutionException {
-        RMap<Integer, Integer> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
+        RMap<Integer, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(1, 3);
         map.put(3, 5);
@@ -543,7 +540,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testRemove() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("test", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put("12", 1);
 
@@ -558,7 +555,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testFastRemove() throws InterruptedException, ExecutionException {
-        RLocalCachedMap<Integer, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<Integer, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("test", LocalCachedMapOptions.defaults());
         map.put(1, 3);
         map.put(2, 4);
         map.put(7, 8);
@@ -570,13 +567,11 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testFastPut() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, Integer> map = redissonRule.getSharedClient().getLocalCachedMap("test", LocalCachedMapOptions.defaults());
         Assert.assertTrue(map.fastPut("1", 2));
         assertThat(map.get("1")).isEqualTo(2);
         Assert.assertFalse(map.fastPut("1", 3));
         assertThat(map.get("1")).isEqualTo(3);
         Assert.assertEquals(1, map.size());
     }
-
-    
 }

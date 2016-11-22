@@ -16,7 +16,7 @@ import org.redisson.api.GeoPosition;
 import org.redisson.api.GeoUnit;
 import org.redisson.api.RGeo;
 
-public class RedissonGeoTest extends BaseTest {
+public class RedissonGeoTest extends AbstractBaseTest {
 
     @BeforeClass
     public static void checkRedisVersion() throws IOException, InterruptedException {
@@ -32,19 +32,19 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testAdd() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         assertThat(geo.add(2.51, 3.12, "city1")).isEqualTo(1);
     }
 
     @Test
     public void testAddEntries() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         assertThat(geo.add(new GeoEntry(3.11, 9.10321, "city1"), new GeoEntry(81.1231, 38.65478, "city2"))).isEqualTo(2);
     }
     
     @Test
     public void testDist() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
         
         assertThat(geo.dist("Palermo", "Catania", GeoUnit.METERS)).isEqualTo(166274.1516D);
@@ -52,14 +52,14 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testDistEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         
         assertThat(geo.dist("Palermo", "Catania", GeoUnit.METERS)).isNull();
     }
     
     @Test
     public void testHash() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
         
         Map<String, String> expected = new LinkedHashMap<String, String>();
@@ -70,7 +70,7 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testHashEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         
         assertThat(geo.hash("Palermo", "Catania")).isEmpty();
     }
@@ -78,7 +78,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testPos() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
         
         Map<String, GeoPosition> expected = new LinkedHashMap<String, GeoPosition>();
@@ -89,14 +89,14 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testPosEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         
         assertThat(geo.pos("test2", "Palermo", "test3", "Catania", "test1")).isEmpty();
     }
     
     @Test
     public void testRadius() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS)).containsExactly("Palermo", "Catania");
@@ -104,7 +104,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS, 1)).containsExactly("Catania");
@@ -112,7 +112,7 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testRadiusOrder() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC)).containsExactly("Palermo", "Catania");
@@ -121,7 +121,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusOrderCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).containsExactly("Palermo");
@@ -130,14 +130,14 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
 
         assertThat(geo.radius(15, 37, 200, GeoUnit.KILOMETERS)).isEmpty();
     }
 
     @Test
     public void testRadiusWithDistance() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, Double> expected = new HashMap<String, Double>();
@@ -148,7 +148,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithDistanceCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, Double> expected = new HashMap<String, Double>();
@@ -158,7 +158,7 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testRadiusWithDistanceOrder() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, Double> descExpected = new LinkedHashMap<String, Double>();
@@ -176,7 +176,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithDistanceOrderCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, Double> descExpected = new LinkedHashMap<String, Double>();
@@ -193,7 +193,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithDistanceHugeAmount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
 
         for (int i = 0; i < 10000; i++) {
             geo.add(10 + 0.000001*i, 11 + 0.000001*i, "" + i);
@@ -205,7 +205,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithPositionHugeAmount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
 
         for (int i = 0; i < 10000; i++) {
             geo.add(10 + 0.000001*i, 11 + 0.000001*i, "" + i);
@@ -218,7 +218,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithDistanceBigObject() {
-        RGeo<Map<String, String>> geo = redisson.getGeo("test");
+        RGeo<Map<String, String>> geo = redissonRule.getSharedClient().getGeo("test");
 
         Map<String, String> map = new HashMap<String, String>();
         for (int i = 0; i < 150; i++) {
@@ -248,14 +248,14 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithDistanceEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
 
         assertThat(geo.radiusWithDistance(15, 37, 200, GeoUnit.KILOMETERS)).isEmpty();
     }
 
     @Test
     public void testRadiusWithPosition() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, GeoPosition> expected = new HashMap<String, GeoPosition>();
@@ -266,7 +266,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithPositionCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, GeoPosition> expected = new HashMap<String, GeoPosition>();
@@ -278,7 +278,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithPositionOrder() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, GeoPosition> descExpected = new LinkedHashMap<String, GeoPosition>();
@@ -294,7 +294,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusWithPositionOrderCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, GeoPosition> descExpected = new LinkedHashMap<String, GeoPosition>();
@@ -309,14 +309,14 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testRadiusWithPositionEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
 
         assertThat(geo.radiusWithPosition(15, 37, 200, GeoUnit.KILOMETERS)).isEmpty();
     }
     
     @Test
     public void testRadiusMember() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS)).containsExactly("Palermo", "Catania");
@@ -324,7 +324,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusMemberCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS, 1)).containsExactly("Palermo");
@@ -332,7 +332,7 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testRadiusMemberOrder() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC)).containsExactly("Catania", "Palermo");
@@ -341,7 +341,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusMemberOrderCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).containsExactly("Catania");
@@ -351,14 +351,14 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusMemberEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
 
         assertThat(geo.radius("Palermo", 200, GeoUnit.KILOMETERS)).isEmpty();
     }
 
     @Test
     public void testRadiusMemberWithDistance() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, Double> expected = new HashMap<String, Double>();
@@ -369,7 +369,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusMemberWithDistanceCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, Double> expected = new HashMap<String, Double>();
@@ -381,7 +381,7 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testRadiusMemberWithDistanceOrder() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, Double> ascExpected = new LinkedHashMap<String, Double>();
@@ -397,7 +397,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusMemberWithDistanceOrderCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, Double> ascExpected = new LinkedHashMap<String, Double>();
@@ -411,14 +411,14 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusMemberWithDistanceEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
 
         assertThat(geo.radiusWithDistance("Palermo", 200, GeoUnit.KILOMETERS)).isEmpty();
     }
 
     @Test
     public void testRadiusMemberWithPosition() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, GeoPosition> expected = new HashMap<String, GeoPosition>();
@@ -429,7 +429,7 @@ public class RedissonGeoTest extends BaseTest {
     
     @Test
     public void testRadiusMemberWithPositionCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, GeoPosition> expected = new HashMap<String, GeoPosition>();
@@ -441,7 +441,7 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testRadiusMemberWithPositionOrder() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, GeoPosition> ascExpected = new LinkedHashMap<String, GeoPosition>();
@@ -457,7 +457,7 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testRadiusMemberWithPositionOrderCount() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
         geo.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
         Map<String, GeoPosition> ascExpected = new LinkedHashMap<String, GeoPosition>();
@@ -471,7 +471,7 @@ public class RedissonGeoTest extends BaseTest {
 
     @Test
     public void testRadiusMemberWithPositionEmpty() {
-        RGeo<String> geo = redisson.getGeo("test");
+        RGeo<String> geo = redissonRule.getSharedClient().getGeo("test");
 
         assertThat(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS)).isEmpty();
     }

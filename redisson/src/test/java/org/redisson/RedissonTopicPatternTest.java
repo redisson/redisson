@@ -14,11 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RPatternTopic;
@@ -29,35 +25,7 @@ import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.config.Config;
 
-public class RedissonTopicPatternTest {
-
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-    }
-
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
-
-    @Before
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-        }
-    }
-
-    @After
-    public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
-    }
+public class RedissonTopicPatternTest extends AbstractBaseTest {
 
     public static class Message {
 
@@ -96,12 +64,12 @@ public class RedissonTopicPatternTest {
             return "Message{" + "name='" + name + '\'' + '}';
         }
     }
-
+    
     @Test
     public void testUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
-        RedissonClient redisson = BaseTest.createInstance();
+        RedissonClient redisson = redissonRule.createClient();
         RPatternTopic<Message> topic1 = redisson.getPatternTopic("topic1.*");
         int listenerId = topic1.addListener((pattern, channel, msg) -> {
             Assert.fail();
@@ -118,15 +86,13 @@ public class RedissonTopicPatternTest {
         redisson.getTopic("topic1.t3").publish(new Message("123"));
 
         Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
-
-        redisson.shutdown();
     }
 
     @Test
     public void testLazyUnsubscribe() throws InterruptedException {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
-        RedissonClient redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = redissonRule.createClient();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
         int listenerId = topic1.addListener((pattern, channel, msg) -> {
             Assert.fail();
@@ -136,7 +102,7 @@ public class RedissonTopicPatternTest {
         topic1.removeListener(listenerId);
         Thread.sleep(1000);
 
-        RedissonClient redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = redissonRule.createClient();
         RPatternTopic<Message> topic2 = redisson2.getPatternTopic("topic.*");
         topic2.addListener((pattern, channel, msg) -> {
             Assert.assertEquals("topic.*", pattern);
@@ -149,9 +115,6 @@ public class RedissonTopicPatternTest {
         topic3.publish(new Message("123"));
 
         messageRecieved.await();
-
-        redisson1.shutdown();
-        redisson2.shutdown();
     }
 
     @Test
@@ -159,7 +122,7 @@ public class RedissonTopicPatternTest {
         final CountDownLatch messageRecieved = new CountDownLatch(5);
 
         final CountDownLatch statusRecieved = new CountDownLatch(1);
-        RedissonClient redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = redissonRule.createClient();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
         topic1.addListener(new BasePatternStatusListener() {
             @Override
@@ -173,7 +136,7 @@ public class RedissonTopicPatternTest {
             messageRecieved.countDown();
         });
 
-        RedissonClient redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = redissonRule.createClient();
         RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
         topic2.addListener((channel, msg) -> {
             Assert.assertEquals(new Message("123"), msg);
@@ -192,14 +155,11 @@ public class RedissonTopicPatternTest {
 
         statusRecieved.await();
         Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
-
-        redisson1.shutdown();
-        redisson2.shutdown();
     }
 
     @Test
     public void testListenerRemove() throws InterruptedException {
-        RedissonClient redisson1 = BaseTest.createInstance();
+        RedissonClient redisson1 = redissonRule.createClient();
         RPatternTopic<Message> topic1 = redisson1.getPatternTopic("topic.*");
         final CountDownLatch l = new CountDownLatch(1);
         topic1.addListener(new BasePatternStatusListener() {
@@ -213,19 +173,15 @@ public class RedissonTopicPatternTest {
             Assert.fail();
         });
 
-        RedissonClient redisson2 = BaseTest.createInstance();
+        RedissonClient redisson2 = redissonRule.createClient();
         RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
         topic1.removeListener(id);
         topic2.publish(new Message("123"));
-
-        redisson1.shutdown();
-        redisson2.shutdown();
     }
 
     @Test
     public void testConcurrentTopic() throws Exception {
-        Config config = BaseTest.createConfig();
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient();
         
         int threads = 30;
         int loops = 50000;
@@ -263,8 +219,6 @@ public class RedissonTopicPatternTest {
         for (Future<?> future : futures) {
             future.get();
         }
-        
-        redisson.shutdown();
     }
 
     @Test
@@ -277,7 +231,7 @@ public class RedissonTopicPatternTest {
         
         Config config = new Config();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
+        RedissonClient redisson = redissonRule.createClient(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
         
@@ -307,5 +261,4 @@ public class RedissonTopicPatternTest {
         
         runner.stop();
     }
-    
 }

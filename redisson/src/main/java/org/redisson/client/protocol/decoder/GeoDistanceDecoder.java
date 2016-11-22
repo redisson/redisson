@@ -23,7 +23,6 @@ import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 public class GeoDistanceDecoder implements MultiDecoder<List<Object>> {
 

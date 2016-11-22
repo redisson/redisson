@@ -226,7 +226,7 @@ public class RedisRunner {
             } catch (IOException ex) {
                 System.out.println("Exception: " + ex.getLocalizedMessage());
             }
-        }).start();
+        }, "redis-process-reader").start();
         Thread.sleep(1500);
         return new RedisProcess(p, runner);
     }
