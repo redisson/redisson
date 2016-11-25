@@ -7,6 +7,7 @@ import org.redisson.api.RBatch;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBucketReactive;
+import org.redisson.api.RedissonClient;
 import org.redisson.reactive.RedissonBucketReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
 
@@ -64,7 +65,8 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         b3.set(b1);
         sync(batch.execute());
         
-        RBatch b = Redisson.create(redisson.getConfig()).createBatch();
+        RedissonClient lredisson = Redisson.create(redisson.getConfig());
+        RBatch b = lredisson.createBatch();
         b.getBucket("b1").getAsync();
         b.getBucket("b2").getAsync();
         b.getBucket("b3").getAsync();
@@ -72,5 +74,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         assertEquals("b2", result.get(0).getName());
         assertEquals("b3", result.get(1).getName());
         assertEquals("b1", result.get(2).getName());
+        
+        lredisson.shutdown();
     }
 }

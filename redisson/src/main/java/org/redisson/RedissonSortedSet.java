@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.SortedSet;
 
 import org.redisson.api.RBucket;
@@ -162,6 +163,16 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         }
     }
 
+    @Override
+    public Set<V> readAll() {
+        return get(readAllAsync());
+    }
+
+    @Override
+    public RFuture<Set<V>> readAllAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.LRANGE_SET, getName(), 0, -1);
+    }
+    
     @Override
     public int size() {
         return list.size();
@@ -316,7 +327,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     @Override
     public boolean retainAll(Collection<?> c) {
         boolean changed = false;
-        for (Iterator iterator = iterator(); iterator.hasNext();) {
+        for (Iterator<?> iterator = iterator(); iterator.hasNext();) {
             Object object = (Object) iterator.next();
             if (!c.contains(object)) {
                 iterator.remove();

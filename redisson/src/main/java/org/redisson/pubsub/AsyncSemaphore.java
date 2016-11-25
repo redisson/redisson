@@ -49,6 +49,19 @@ public class AsyncSemaphore {
         }
     }
     
+    public boolean tryAcquire() {
+        synchronized (this) {
+            if (counter == 0) {
+                return false;
+            }
+            if (counter > 0) {
+                counter--;
+                return true;
+            }
+            throw new IllegalStateException();
+        }
+    }
+    
     public void acquire(Runnable listener) {
         boolean run = false;
         

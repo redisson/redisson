@@ -147,6 +147,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
     
+    private final boolean sharedEventLoopGroup;
+
+    private final boolean sharedExecutor;
+    
     {
         for (int i = 0; i < locks.length; i++) {
             locks[i] = new AsyncSemaphore(1);
@@ -198,6 +202,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
        
         this.codec = cfg.getCodec();
         this.shutdownPromise = newPromise();
+        this.sharedEventLoopGroup = cfg.getEventLoopGroup() != null;
+        this.sharedExecutor = cfg.getExecutor() != null;
     }
 
     public boolean isClusterMode() {
@@ -740,13 +746,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         timer.stop();
         
-        executor.shutdown();
-        try {
-            executor.awaitTermination(timeout, unit);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        if (!sharedExecutor) {
+            executor.shutdown();
+            try {
+                executor.awaitTermination(timeout, unit);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
-        group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
+        
+        if (!sharedEventLoopGroup) {
+            group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
+        }
     }
 
     @Override

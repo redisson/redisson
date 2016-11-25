@@ -23,7 +23,12 @@ public class URIBuilder {
         String[] parts = uri.split(":");
         if (parts.length-1 >= 3) {
             String port = parts[parts.length-1];
-            uri = "[" + uri.replace(":" + port, "") + "]:" + port;
+            String newPort = port.split("[^\\d]")[0];
+            uri = "[" + uri.replace(":" + port, "") + "]:" + newPort;
+        } else {
+            String port = parts[parts.length-1];
+            String newPort = port.split("[^\\d]")[0];
+            uri = uri.replace(":" + port, "") + ":" + newPort;
         }
 
         return URI.create("//" + uri);

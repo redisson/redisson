@@ -87,7 +87,7 @@ public class RedisRunner {
         SLOWLOG_LOG_SLOWER_THAN,
         SLOWLOG_MAX_LEN,
         LATENCY_MONITOR_THRESHOLD,
-        NOFITY_KEYSPACE_EVENTS,
+        NOTIFY_KEYSPACE_EVENTS,
         HASH_MAX_ZIPLIST_ENTRIES,
         HASH_MAX_ZIPLIST_VALUE,
         LIST_MAX_ZIPLIST_ENTRIES,
@@ -172,7 +172,7 @@ public class RedisRunner {
     }
 
     private final LinkedHashMap<REDIS_OPTIONS, String> options = new LinkedHashMap<>();
-    private static RedisRunner.RedisProcess defaultRedisInstance;
+    protected static RedisRunner.RedisProcess defaultRedisInstance;
     private static int defaultRedisInstanceExitCode;
 
     private String defaultDir = Paths.get("").toString();
@@ -618,12 +618,16 @@ public class RedisRunner {
         return this;
     }
 
-    public RedisRunner notifyKeyspaceEvents(KEYSPACE_EVENTS_OPTIONS notifyKeyspaceEvents) {
-        String existing = this.options.getOrDefault(REDIS_OPTIONS.CLUSTER_CONFIG_FILE, "");
-        addConfigOption(REDIS_OPTIONS.CLUSTER_CONFIG_FILE,
-                existing.contains(notifyKeyspaceEvents.toString())
+    public RedisRunner notifyKeyspaceEvents(KEYSPACE_EVENTS_OPTIONS... notifyKeyspaceEvents) {
+        String existing = this.options.getOrDefault(REDIS_OPTIONS.NOTIFY_KEYSPACE_EVENTS, "");
+        
+        String events = Arrays.stream(notifyKeyspaceEvents)
+                            .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append).toString();
+        
+        addConfigOption(REDIS_OPTIONS.NOTIFY_KEYSPACE_EVENTS,
+                existing.contains(events)
                 ? existing
-                : (existing + notifyKeyspaceEvents.toString()));
+                : (existing + events));
         return this;
     }
 

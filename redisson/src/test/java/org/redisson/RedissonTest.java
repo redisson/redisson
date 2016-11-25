@@ -5,6 +5,8 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,6 +22,7 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
+import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
@@ -38,6 +41,39 @@ public class RedissonTest {
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
 
+    @Test
+    public void testSmallPool() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer()
+              .setConnectionMinimumIdleSize(3)
+              .setConnectionPoolSize(3)
+              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient localRedisson = Redisson.create(config);
+        
+        RMap<String, String> map = localRedisson.getMap("test");
+        
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
+        long start = System.currentTimeMillis();
+        int iterations = 500_000;
+        for (int i = 0; i < iterations; i++) {
+            final int j = i;
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    map.put("" + j, "" + j);
+                }
+            });
+        }
+        
+        executor.shutdown();
+        Assert.assertTrue(executor.awaitTermination(10, TimeUnit.MINUTES));
+        
+        assertThat(map.size()).isEqualTo(iterations);
+        
+        localRedisson.shutdown();
+    }
+    
     @Test
     public void testIterator() {
         RedissonBaseIterator iter = new RedissonBaseIterator() {
@@ -121,13 +157,15 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
+        RedissonClient r = null;
         try {
-            RedissonClient r = Redisson.create(config);
+            r = Redisson.create(config);
             r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").put("" + i, "" + i);
             }
         } finally {
+            r.shutdown();
             p.stop();
         }
     }
@@ -139,13 +177,15 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
+        RedissonClient r = null;
         try {
-            RedissonClient r = Redisson.create(config);
+            r = Redisson.create(config);
             r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").fastPut("" + i, "" + i);
             }
         } finally {
+            r.shutdown();
             p.stop();
         }
     }

@@ -48,11 +48,11 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
     
     String getThreadsQueueName() {
-        return "redisson_lock_queue:{" + getName() + "}";
+        return prefixName("redisson_lock_queue", getName());
     }
     
-    String getThreadElementName(long threadId) {
-        return "redisson_lock_thread:{" + getName() + "}:" + getLockName(threadId);
+    String getTimeoutSetName() {
+        return prefixName("redisson_lock_timeout", getName());
     }
     
     @Override
@@ -77,6 +77,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
         internalLockLeaseTime = unit.toMillis(leaseTime);
         long threadWaitTime = 5000;
 
+        long currentTime = System.currentTimeMillis();
         if (command == RedisCommands.EVAL_NULL_BOOLEAN) {
             return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, command,
                     // remove stale threads
@@ -85,7 +86,9 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     + "if firstThreadId2 == false then "
                         + "break;"
                     + "end; "
-                    + "if redis.call('exists', 'redisson_lock_thread:{' .. KEYS[1] .. '}:' .. firstThreadId2) == 0 then "
+                    + "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));"
+                    + "if timeout <= tonumber(ARGV[3]) then "
+                        + "redis.call('zrem', KEYS[3], firstThreadId2); "
                         + "redis.call('lpop', KEYS[2]); "
                     + "else "
                         + "break;"
@@ -96,7 +99,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "if (redis.call('exists', KEYS[1]) == 0) and ((redis.call('exists', KEYS[2]) == 0) "
                             + "or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then " +
                             "redis.call('lpop', KEYS[2]); " +
-                            "redis.call('del', KEYS[3]); " +
+                            "redis.call('zrem', KEYS[3], ARGV[2]); " +
                             "redis.call('hset', KEYS[1], ARGV[2], 1); " +
                             "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                             "return nil; " +
@@ -107,7 +110,8 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                             "return nil; " +
                         "end; " +
                         "return 1;", 
-                    Arrays.<Object>asList(getName(), getThreadsQueueName(), getThreadElementName(threadId)), internalLockLeaseTime, getLockName(threadId));
+                    Arrays.<Object>asList(getName(), getThreadsQueueName(), getTimeoutSetName()), 
+                    internalLockLeaseTime, getLockName(threadId), currentTime);
         }
         
         if (command == RedisCommands.EVAL_LONG) {
@@ -118,17 +122,19 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     + "if firstThreadId2 == false then "
                         + "break;"
                     + "end; "
-                    + "if redis.call('exists', 'redisson_lock_thread:{' .. KEYS[1] .. '}:' .. firstThreadId2) == 0 then "
+                    + "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));"
+                    + "if timeout <= tonumber(ARGV[4]) then "
+                        + "redis.call('zrem', KEYS[3], firstThreadId2); "
                         + "redis.call('lpop', KEYS[2]); "
                     + "else "
                         + "break;"
                     + "end; "
                   + "end;"
-                    + 
-                        "if (redis.call('exists', KEYS[1]) == 0) and ((redis.call('exists', KEYS[2]) == 0) "
+                    
+                      + "if (redis.call('exists', KEYS[1]) == 0) and ((redis.call('exists', KEYS[2]) == 0) "
                             + "or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then " +
                             "redis.call('lpop', KEYS[2]); " +
-                            "redis.call('del', KEYS[3]); " +
+                            "redis.call('zrem', KEYS[3], ARGV[2]); " +
                             "redis.call('hset', KEYS[1], ARGV[2], 1); " +
                             "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                             "return nil; " +
@@ -138,19 +144,22 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                             "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                             "return nil; " +
                         "end; " +
-                        "local firstThreadId = redis.call('lindex', KEYS[2], 0)" +
-                        "local ttl = redis.call('pttl', KEYS[1]); " + 
+                            
+                        "local firstThreadId = redis.call('lindex', KEYS[2], 0); " +
+                        "local ttl; " + 
                         "if firstThreadId ~= false and firstThreadId ~= ARGV[2] then " + 
-                            "ttl = redis.call('pttl', 'redisson_lock_thread:{' .. KEYS[1] .. '}:' .. firstThreadId);" + 
+                            "ttl = tonumber(redis.call('zscore', KEYS[3], firstThreadId)) - tonumber(ARGV[4]);" + 
+                        "else "
+                          + "ttl = redis.call('pttl', KEYS[1]);" + 
                         "end; " + 
-                        "if redis.call('exists', KEYS[3]) == 0 then " +
+                            
+                        "local timeout = ttl + tonumber(ARGV[3]);" + 
+                        "if redis.call('zadd', KEYS[3], timeout, ARGV[2]) == 1 then " +
                             "redis.call('rpush', KEYS[2], ARGV[2]);" +
-                            "redis.call('set', KEYS[3], 1);" +
                         "end; " +
-                        "redis.call('pexpire', KEYS[3], ttl + tonumber(ARGV[3]));" +
                         "return ttl;", 
-                        Arrays.<Object>asList(getName(), getThreadsQueueName(), getThreadElementName(threadId)), 
-                                    internalLockLeaseTime, getLockName(threadId), threadWaitTime);
+                        Arrays.<Object>asList(getName(), getThreadsQueueName(), getTimeoutSetName()), 
+                                    internalLockLeaseTime, getLockName(threadId), currentTime + threadWaitTime, currentTime);
         }
         
         throw new IllegalArgumentException();
@@ -158,25 +167,39 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     
     @Override
     public void unlock() {
-        Boolean opStatus = commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        Boolean opStatus = get(unlockInnerAsync(Thread.currentThread().getId()));
+        
+        if (opStatus == null) {
+            throw new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
+                    + id + " thread-id: " + Thread.currentThread().getId());
+        }
+        if (opStatus) {
+            cancelExpirationRenewal();
+        }
+    }
+
+    @Override
+    protected RFuture<Boolean> unlockInnerAsync(long threadId) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads
                 "while true do "
                 + "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);"
                 + "if firstThreadId2 == false then "
                     + "break;"
                 + "end; "
-                + "if redis.call('exists', 'redisson_lock_thread:{' .. KEYS[1] .. '}:' .. firstThreadId2) == 0 then "
+                + "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));"
+                + "if timeout <= tonumber(ARGV[4]) then "
+                    + "redis.call('zrem', KEYS[3], firstThreadId2); "
                     + "redis.call('lpop', KEYS[2]); "
                 + "else "
                     + "break;"
                 + "end; "
               + "end;"
-                + 
                 
-                "if (redis.call('exists', KEYS[1]) == 0) then " + 
-                    "local nextThreadId = redis.call('lindex', KEYS[3], 0); " + 
+              + "if (redis.call('exists', KEYS[1]) == 0) then " + 
+                    "local nextThreadId = redis.call('lindex', KEYS[2], 0); " + 
                     "if nextThreadId ~= false then " +
-                        "redis.call('publish', KEYS[2] .. ':' .. nextThreadId, ARGV[1]); " +
+                        "redis.call('publish', KEYS[4] .. ':' .. nextThreadId, ARGV[1]); " +
                     "end; " +
                     "return 1; " +
                 "end;" +
@@ -189,29 +212,27 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     "return 0; " +
                 "else " +
                     "redis.call('del', KEYS[1]); " +
-                    "local nextThreadId = redis.call('lindex', KEYS[3], 0); " + 
+                    "local nextThreadId = redis.call('lindex', KEYS[2], 0); " + 
                     "if nextThreadId ~= false then " +
-                        "redis.call('publish', KEYS[2] .. ':' .. nextThreadId, ARGV[1]); " +
+                        "redis.call('publish', KEYS[4] .. ':' .. nextThreadId, ARGV[1]); " +
                     "end; " +
                     "return 1; "+
                 "end; " +
                 "return nil;",
-                Arrays.<Object>asList(getName(), getChannelName(), getThreadsQueueName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(Thread.currentThread().getId()));
-        
-        if (opStatus == null) {
-            throw new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
-                    + id + " thread-id: " + Thread.currentThread().getId());
-        }
-        if (opStatus) {
-            cancelExpirationRenewal();
-        }
+                Arrays.<Object>asList(getName(), getThreadsQueueName(), getTimeoutSetName(), getChannelName()), 
+                LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId), System.currentTimeMillis());
     }
-
+    
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), getThreadsQueueName(), getTimeoutSetName());
+    }
+    
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal();
@@ -222,7 +243,9 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 + "if firstThreadId2 == false then "
                     + "break;"
                 + "end; "
-                + "if redis.call('exists', 'redisson_lock_thread:{' .. KEYS[1] .. '}:' .. firstThreadId2) == 0 then "
+                + "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));"
+                + "if timeout <= tonumber(ARGV[2]) then "
+                    + "redis.call('zrem', KEYS[3], firstThreadId2); "
                     + "redis.call('lpop', KEYS[2]); "
                 + "else "
                     + "break;"
@@ -233,12 +256,13 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 "if (redis.call('del', KEYS[1]) == 1) then " + 
                     "local nextThreadId = redis.call('lindex', KEYS[2], 0); " + 
                     "if nextThreadId ~= false then " +
-                        "redis.call('publish', KEYS[3] .. ':' .. nextThreadId, ARGV[1]); " +
+                        "redis.call('publish', KEYS[4] .. ':' .. nextThreadId, ARGV[1]); " +
                     "end; " + 
-                    "return 1 " + 
-                "end " + 
+                    "return 1; " + 
+                "end; " + 
                 "return 0;",
-                Arrays.<Object>asList(getName(), getThreadsQueueName(), getChannelName()), LockPubSub.unlockMessage);
+                Arrays.<Object>asList(getName(), getThreadsQueueName(), getTimeoutSetName(), getChannelName()), 
+                LockPubSub.unlockMessage, System.currentTimeMillis());
     }
 
 }

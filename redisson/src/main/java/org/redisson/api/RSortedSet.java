@@ -16,10 +16,15 @@
 package org.redisson.api;
 
 import java.util.Comparator;
+import java.util.Set;
 import java.util.SortedSet;
 
 public interface RSortedSet<V> extends SortedSet<V>, RObject {
 
+    Set<V> readAll();
+    
+    RFuture<Set<V>> readAllAsync();
+    
     RFuture<Boolean> addAsync(V value);
     
     RFuture<Boolean> removeAsync(V value);

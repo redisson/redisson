@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.util.List;
+
 /**
  * {@link java.util.Queue} backed by Redis
  *
@@ -32,4 +34,6 @@ public interface RQueueAsync<V> extends RCollectionAsync<V> {
 
     RFuture<V> pollLastAndOfferFirstToAsync(String queueName);
 
+    RFuture<List<V>> readAllAsync();
+    
 }

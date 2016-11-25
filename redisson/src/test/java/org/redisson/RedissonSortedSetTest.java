@@ -18,6 +18,17 @@ import org.redisson.api.RSortedSet;
 public class RedissonSortedSetTest extends BaseTest {
 
     @Test
+    public void testReadAll() {
+        RSortedSet<Integer> set = redisson.getSortedSet("simple");
+        set.add(2);
+        set.add(0);
+        set.add(1);
+        set.add(5);
+        
+        assertThat(set.readAll()).containsExactly(0, 1, 2, 5);
+    }
+    
+    @Test
     public void testAddAsync() throws InterruptedException, ExecutionException {
         RSortedSet<Integer> set = redisson.getSortedSet("simple");
         RFuture<Boolean> future = set.addAsync(2);

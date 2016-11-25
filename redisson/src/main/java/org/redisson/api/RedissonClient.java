@@ -505,13 +505,34 @@ public interface RedissonClient {
     <M> RPatternTopic<M> getPatternTopic(String pattern, Codec codec);
 
     /**
+     * Returns unbounded fair queue instance by name.
+     * 
+     * @param name of queue
+     * @return queue
+     */
+    <V> RBlockingFairQueue<V> getBlockingFairQueue(String name);
+    
+    <V> RBlockingFairQueue<V> getBlockingFairQueue(String name, Codec codec);
+    
+    /**
      * Returns unbounded queue instance by name.
      *
      * @param <V> type of value
-     * @param name - name of object
-     * @return Queue object
+     * @param name of object
+     * @return queue object
      */
     <V> RQueue<V> getQueue(String name);
+    
+    /**
+     * Returns unbounded delayed queue instance by name.
+     * <p>
+     * Could be attached to destination queue only.
+     * All elements are inserted with transfer delay to destination queue.
+     * 
+     * @param destinationQueue - destination queue
+     * @return delayed queue
+     */
+    <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue);
 
     /**
      * Returns unbounded queue instance by name

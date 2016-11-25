@@ -21,13 +21,6 @@
        <url>http://redisson.org/</url>
     </organization>
 
-    <properties>
-        <maven.test.skip>true</maven.test.skip>
-        <source.version>1.8</source.version>
-        <test.source.version>1.8</test.source.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <profiles>
         <profile>
             <id>unit-test</id>
@@ -111,6 +104,43 @@
            <artifactId>jmockit</artifactId>
            <version>1.28</version>
            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>7.0.73</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-logging-juli</artifactId>
+            <version>7.0.73</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
+            <version>7.0.73</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-jasper</artifactId>
+            <version>7.0.73</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+            <version>4.5.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>[3.1,)</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -209,7 +239,12 @@
             <version>[3.1,)</version>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session</artifactId>
+            <version>1.2.2.RELEASE</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -381,7 +416,7 @@
                 <version>2.11</version>
                 <configuration>
                     <basedir>${basedir}</basedir>
-                    <header>${basedir}/header.txt</header>
+                    <header>${basedir}/../header.txt</header>
                     <quiet>false</quiet>
                     <failIfMissing>true</failIfMissing>
                     <aggregate>false</aggregate>

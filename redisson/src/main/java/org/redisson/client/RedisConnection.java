@@ -18,6 +18,7 @@ package org.redisson.client;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.CommandsQueue;
@@ -35,7 +36,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
 
 public class RedisConnection implements RedisCommands {
@@ -51,14 +51,16 @@ public class RedisConnection implements RedisCommands {
     private ReconnectListener reconnectListener;
     private long lastUsageTime;
 
-    private final RFuture<?> acquireFuture = RedissonPromise.newSucceededFuture(this);
-    
     public RedisConnection(RedisClient redisClient, Channel channel) {
         super();
         this.redisClient = redisClient;
 
         updateChannel(channel);
         lastUsageTime = System.currentTimeMillis();
+    }
+    
+    protected RedisConnection() {
+        redisClient = null;
     }
 
     public static <C extends RedisConnection> C getFrom(Channel channel) {
@@ -176,6 +178,11 @@ public class RedisConnection implements RedisCommands {
             timeout = redisClient.getCommandTimeout();
         }
         
+        if (redisClient.getBootstrap().group().isShuttingDown()) {
+            RedissonShutdownException cause = new RedissonShutdownException("Redisson is shutdown");
+            return RedissonPromise.newFailedFuture(cause);
+        }
+        
         final ScheduledFuture<?> scheduledFuture = redisClient.getBootstrap().group().next().schedule(new Runnable() {
             @Override
             public void run() {
@@ -238,10 +245,6 @@ public class RedisConnection implements RedisCommands {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + "]";
-    }
-
-    public RFuture<?> getAcquireFuture() {
-        return acquireFuture;
     }
 
     public void onDisconnect() {
