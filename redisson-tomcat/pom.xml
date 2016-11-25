@@ -22,6 +22,31 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <source>${source.version}</source>
+                    <target>${source.version}</target>
+                    <optimize>true</optimize>
+                    <showDeprecations>true</showDeprecations>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <fork>true</fork>
+                            <source>${test.source.version}</source>
+                            <target>${test.source.version}</target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
          	<version>2.10.4</version>
