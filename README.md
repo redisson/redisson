@@ -10,7 +10,8 @@ Redis 2.8+ compatible.
 | 2.6.0 | 1.6+ | 07.11.2016 |
 
 Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
-Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md).
+Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md)  
+Checkout more [code examples](https://github.com/redisson/redisson-examples)  
 
 Licensed under the Apache License 2.0.
 
