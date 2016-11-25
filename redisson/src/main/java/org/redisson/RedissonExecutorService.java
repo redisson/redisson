@@ -171,7 +171,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                       + "end "
                       + "return nil;",
                       Arrays.<Object>asList(requestQueueName, schedulerQueueName, schedulerTasksName), 
-                      System.currentTimeMillis(), 10);
+                      System.currentTimeMillis(), 100);
             }
         };
         scheduler.start();
