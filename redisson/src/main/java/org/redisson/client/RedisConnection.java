@@ -58,6 +58,10 @@ public class RedisConnection implements RedisCommands {
         updateChannel(channel);
         lastUsageTime = System.currentTimeMillis();
     }
+    
+    protected RedisConnection() {
+        redisClient = null;
+    }
 
     public static <C extends RedisConnection> C getFrom(Channel channel) {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
