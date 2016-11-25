@@ -157,13 +157,15 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
+        RedissonClient r = null;
         try {
-            RedissonClient r = Redisson.create(config);
+            r = Redisson.create(config);
             r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").put("" + i, "" + i);
             }
         } finally {
+            r.shutdown();
             p.stop();
         }
     }
@@ -175,13 +177,15 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
+        RedissonClient r = null;
         try {
-            RedissonClient r = Redisson.create(config);
+            r = Redisson.create(config);
             r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").fastPut("" + i, "" + i);
             }
         } finally {
+            r.shutdown();
             p.stop();
         }
     }

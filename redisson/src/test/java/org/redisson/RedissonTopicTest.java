@@ -463,6 +463,7 @@ public class RedissonTopicTest {
         
         await().atMost(5, TimeUnit.SECONDS).untilTrue(executed);
         
+        redisson.shutdown();
         runner.stop();
     }
 

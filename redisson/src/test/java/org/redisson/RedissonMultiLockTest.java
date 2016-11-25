@@ -49,6 +49,8 @@ public class RedissonMultiLockTest {
         lock.lock();
         lock.unlock();
         
+        client.shutdown();
+        
         assertThat(redis1.stop()).isEqualTo(0);
     }
     
@@ -89,6 +91,10 @@ public class RedissonMultiLockTest {
 
         lock.unlock();
 
+        client1.shutdown();
+        client2.shutdown();
+        client3.shutdown();
+        
         assertThat(redis1.stop()).isEqualTo(0);
 
         assertThat(redis2.stop()).isEqualTo(0);
