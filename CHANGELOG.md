@@ -2,6 +2,18 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####26-Nov-2016 - version 2.7.0 and 3.2.0 released
+
+Feature - __Spring Session implementation__. More details [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#145-spring-session)  
+Feature - __Tomcat Session Manager implementation__. More details [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#144-tomcat-redis-session-manager)  
+Feature - __RDelayedQueue object added__. More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#714-delayed-queue)  
+Feature - __RBlockingFairQueue object added__. More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#713-blocking-fair-queue)  
+Feature - `RSortedSet.readAll` and `RQueue.readAll` methods added  
+Fixed - `RMap.getAll` doesn't not preserve the order of elements  
+Fixed - Wrong nodes parsing in result of cluster info command  
+Fixed - NullPointerException in CommandDecoder.handleResult  
+Fixed - Redisson shutdown status should be checked during async command invocation  
+
 ####07-Nov-2016 - version 2.6.0 and 3.1.0 released
 
 Feature - __JCache API (JSR-107) implementation__ . More info about it [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation)  
