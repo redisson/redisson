@@ -6,8 +6,10 @@ Redis 2.8+ compatible.
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.1.0  | 1.8+ | 07.11.2016 |
-| 2.6.0 | 1.6+ | 07.11.2016 |
+| 3.2.0  | 1.8+ | 26.11.2016 |
+| 2.7.0 | 1.6+ | 26.11.2016 |
+
+__NOTE__: Both version lines have same features except `CompletionStage` interface support added in 3.x.x
 
 Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md)  
