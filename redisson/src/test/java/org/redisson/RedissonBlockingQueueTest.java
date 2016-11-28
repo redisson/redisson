@@ -52,6 +52,13 @@ public class RedissonBlockingQueueTest extends BaseTest {
         redisson.shutdown();
     }
     
+    @Test(timeout = 3000)
+    public void testShortPoll() throws InterruptedException {
+        RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue:pollany");
+        queue.poll(500, TimeUnit.MILLISECONDS);
+        queue.poll(10, TimeUnit.MICROSECONDS);
+    }
+    
     @Test
     public void testPollReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
         RedisProcess runner = new RedisRunner()

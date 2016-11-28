@@ -11,6 +11,13 @@ import org.redisson.api.RBlockingDeque;
 
 public class RedissonBlockingDequeTest extends BaseTest {
 
+    @Test(timeout = 3000)
+    public void testShortPoll() throws InterruptedException {
+        RBlockingDeque<Integer> queue = redisson.getBlockingDeque("queue:pollany");
+        queue.pollLastAsync(500, TimeUnit.MILLISECONDS);
+        queue.pollFirstAsync(10, TimeUnit.MICROSECONDS);
+    }
+    
     @Test
     public void testPollLastFromAny() throws InterruptedException {
         final RBlockingDeque<Integer> queue1 = redisson.getBlockingDeque("deque:pollany");
