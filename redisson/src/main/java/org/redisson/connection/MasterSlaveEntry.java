@@ -37,7 +37,7 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.balancer.LoadBalancerManager;
-import org.redisson.connection.balancer.LoadBalancerManagerImpl;
+import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +76,7 @@ public class MasterSlaveEntry {
         this.connectionManager = connectionManager;
         this.config = config;
 
-        slaveBalancer = new LoadBalancerManagerImpl(config, connectionManager, this);
+        slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
         writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
     }
 
