@@ -744,7 +744,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
-        timer.stop();
         
         if (!sharedExecutor) {
             executor.shutdown();
@@ -758,6 +757,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (!sharedEventLoopGroup) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
         }
+        timer.stop();
     }
 
     @Override
