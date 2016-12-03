@@ -27,6 +27,15 @@ import java.util.Set;
 public interface RSetAsync<V> extends RCollectionAsync<V> {
 
     /**
+     * Removes and returns random elements from set
+     * in async mode
+     * 
+     * @param amount of random values
+     * @return random values
+     */
+    RFuture<Set<V>> removeRandomAsync(int amount);
+    
+    /**
      * Removes and returns random element from set
      * in async mode
      * 

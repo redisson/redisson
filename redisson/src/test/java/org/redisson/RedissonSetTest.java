@@ -43,6 +43,23 @@ public class RedissonSetTest extends BaseTest {
         assertThat(set.removeRandom()).isIn(1, 2, 3);
         assertThat(set.removeRandom()).isNull();
     }
+    
+    @Test
+    public void testRemoveRandomAmount() {
+        RSet<Integer> set = redisson.getSet("simple");
+        set.add(1);
+        set.add(2);
+        set.add(3);
+        set.add(4);
+        set.add(5);
+        set.add(6);
+
+        assertThat(set.removeRandom(3)).isSubsetOf(1, 2, 3, 4, 5, 6).hasSize(3);
+        assertThat(set.removeRandom(2)).isSubsetOf(1, 2, 3, 4, 5, 6).hasSize(2);
+        assertThat(set.removeRandom(1)).isSubsetOf(1, 2, 3, 4, 5, 6).hasSize(1);
+        assertThat(set.removeRandom(4)).isEmpty();
+    }
+
 
     @Test
     public void testRandom() {
