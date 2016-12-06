@@ -44,22 +44,22 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
      */
-    private int slaveConnectionMinimumIdleSize = 5;
+    private int slaveConnectionMinimumIdleSize = 10;
 
     /**
      * Redis 'slave' node maximum connection pool size for <b>each</b> slave node
      */
-    private int slaveConnectionPoolSize = 250;
+    private int slaveConnectionPoolSize = 64;
 
     /**
      * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
      */
-    private int masterConnectionMinimumIdleSize = 5;
+    private int masterConnectionMinimumIdleSize = 10;
 
     /**
      * Redis 'master' node maximum connection pool size
      */
-    private int masterConnectionPoolSize = 250;
+    private int masterConnectionPoolSize = 64;
 
     private ReadMode readMode = ReadMode.SLAVE;
 
@@ -81,7 +81,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'slave' servers connection pool size for <b>each</b> slave node.
      * <p>
-     * Default is <code>250</code>
+     * Default is <code>64</code>
      * <p>
      * @see #setSlaveConnectionMinimumIdleSize(int)
      *
@@ -99,7 +99,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'master' server connection pool size.
      * <p>
-     * Default is <code>250</code>
+     * Default is <code>64</code>
      *
      * @see #setMasterConnectionMinimumIdleSize(int)
      * 
@@ -155,7 +155,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
      * <p>
-     * Default is <code>5</code>
+     * Default is <code>10</code>
      * <p>
      * @see #setSlaveConnectionPoolSize(int)
      * 
@@ -173,7 +173,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
      * <p>
-     * Default is <code>5</code>
+     * Default is <code>10</code>
      * <p>
      * @see #setMasterConnectionPoolSize(int)
      * 

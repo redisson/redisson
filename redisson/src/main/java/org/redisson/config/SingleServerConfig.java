@@ -48,12 +48,12 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Minimum idle Redis connection amount
      */
-    private int connectionMinimumIdleSize = 5;
+    private int connectionMinimumIdleSize = 10;
 
     /**
      * Redis connection maximum pool size
      */
-    private int connectionPoolSize = 250;
+    private int connectionPoolSize = 64;
 
     /**
      * Database index used for Redis connection
@@ -92,7 +92,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Redis connection pool size
      * <p>
-     * Default is <code>250</code>
+     * Default is <code>64</code>
      *
      * @param connectionPoolSize - pool size
      * @return config
@@ -197,7 +197,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Minimum idle Redis connection amount.
      * <p>
-     * Default is 5
+     * Default is <code>10</code>
      *
      * @param connectionMinimumIdleSize - connections amount
      * @return config
