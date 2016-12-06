@@ -48,17 +48,10 @@ public class AsyncSemaphore {
             Thread.currentThread().interrupt();
         }
     }
-    
-    public boolean tryAcquire() {
+
+    public int queueSize() {
         synchronized (this) {
-            if (counter == 0) {
-                return false;
-            }
-            if (counter > 0) {
-                counter--;
-                return true;
-            }
-            throw new IllegalStateException();
+            return listeners.size();
         }
     }
     
