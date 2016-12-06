@@ -21,8 +21,8 @@ import javax.cache.processor.MutableEntry;
  * 
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> key
+ * @param <V> value
  */
 public class JMutableEntry<K, V> implements MutableEntry<K, V> {
 
