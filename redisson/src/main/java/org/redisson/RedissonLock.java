@@ -118,7 +118,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
         long threadId = Thread.currentThread().getId();
         RFuture<RedissonLockEntry> future = subscribe(threadId);
-        get(future);
+        commandExecutor.syncSubscription(future);
 
         try {
             while (true) {

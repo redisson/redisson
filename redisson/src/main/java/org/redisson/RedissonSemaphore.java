@@ -79,7 +79,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         }
 
         RFuture<RedissonLockEntry> future = subscribe();
-        get(future);
+        commandExecutor.syncSubscription(future);
         try {
             while (true) {
                 if (tryAcquire(permits)) {

@@ -91,7 +91,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
 
         RFuture<RedissonLockEntry> future = subscribe();
-        get(future);
+        commandExecutor.syncSubscription(future);
         try {
             while (true) {
                 final Long nearestTimeout;

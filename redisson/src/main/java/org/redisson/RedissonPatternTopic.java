@@ -64,7 +64,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
         RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().psubscribe(name, codec, pubSubListener);
-        future.syncUninterruptibly();
+        commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
 

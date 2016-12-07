@@ -48,6 +48,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
+import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
@@ -70,6 +71,7 @@ import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RedissonObjectFactory;
 
 /**
@@ -115,6 +117,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public boolean isRedissonReferenceSupportEnabled() {
         return redisson != null || redissonReactive != null;
+    }
+    
+    @Override
+    public void syncSubscription(RFuture<?> future) {
+        MasterSlaveServersConfig config = connectionManager.getConfig();
+        try {
+            int timeout = config.getTimeout() + config.getRetryInterval()*config.getRetryAttempts();
+            if (!future.await(timeout)) {
+                throw new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms)");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        future.syncUninterruptibly();
     }
     
     @Override
