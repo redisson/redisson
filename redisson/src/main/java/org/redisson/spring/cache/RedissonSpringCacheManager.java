@@ -155,11 +155,22 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     public Cache getCache(String name) {
         CacheConfig config = configMap.get(name);
         if (config == null) {
-            config = new CacheConfig();
-            configMap.put(name, config);
+            // check name consistent with regular expressions
+            for (String key : configMap.keySet()) {
+                Pattern _p = Pattern.compile(key);
+                if (_p.matcher(name).matches()) {
+                    config = configMap.get(key);
+                    break;
+                }
+            }
+            // config always null ,  create a default config
+            if (config == null) {
+                config = new CacheConfig();
+                configMap.put(name, config);
 
-            RMap<Object, Object> map = createMap(name);
-            return new RedissonCache(redisson, map);
+                RMap<Object, Object> map = createMap(name);
+                return new RedissonCache(redisson, map);
+            }
         }
         if (config.getMaxIdleTime() == 0 && config.getTTL() == 0) {
             RMap<Object, Object> map = createMap(name);
