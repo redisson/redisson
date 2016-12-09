@@ -23,6 +23,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.cache.CacheException;
 import javax.cache.CacheManager;
 import javax.cache.configuration.OptionalFeature;
 import javax.cache.spi.CachingProvider;
@@ -60,6 +61,10 @@ public class JCachingProvider implements CachingProvider {
         if (uri == null) {
             uri = getDefaultURI();
         }
+        if (uri == null) {
+            throw new CacheException("Uri is not defined. Can't load default configuration");
+        }
+        
         if (classLoader == null) {
             classLoader = getDefaultClassLoader();
         }
