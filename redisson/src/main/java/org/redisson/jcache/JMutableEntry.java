@@ -34,12 +34,13 @@ public class JMutableEntry<K, V> implements MutableEntry<K, V> {
 
     Action action = Action.SKIPPED;
     V value;
+    boolean isValueRead;
     
-    public JMutableEntry(JCache<K, V> jCache, V value, K key, boolean isReadThrough) {
+    public JMutableEntry(JCache<K, V> jCache, K key, V value, boolean isReadThrough) {
         super();
         this.jCache = jCache;
-        this.value = value;
         this.key = key;
+        this.value = value;
         this.isReadThrough = isReadThrough;
     }
 
@@ -53,6 +54,12 @@ public class JMutableEntry<K, V> implements MutableEntry<K, V> {
         if (action != Action.SKIPPED) {
             return value;
         }
+        
+        if (!isValueRead) {
+            value = jCache.getValueLocked(key);
+            isValueRead = true;
+        }
+        
         if (value != null) {
             action = Action.READ;
         } else if (isReadThrough) {
@@ -64,7 +71,7 @@ public class JMutableEntry<K, V> implements MutableEntry<K, V> {
         }
         return value;
     }
-
+    
     @Override
     public <T> T unwrap(Class<T> clazz) {
         return (T)this;
@@ -92,7 +99,7 @@ public class JMutableEntry<K, V> implements MutableEntry<K, V> {
         }
         
         if (action != Action.CREATED) {
-            if (exists()) {
+            if (jCache.containsKey(key)) {
                 action = Action.UPDATED;
             } else {
                 action = Action.CREATED;
