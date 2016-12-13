@@ -16,7 +16,7 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,7 +31,7 @@ import org.redisson.client.handler.ConnectionWatchdog;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.URLBuilder;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -70,15 +70,15 @@ public class RedisClient {
     private boolean hasOwnGroup;
 
     public RedisClient(String address) {
-        this(URIBuilder.create(address));
+        this(URLBuilder.create(address));
     }
     
-    public RedisClient(URI address) {
+    public RedisClient(URL address) {
         this(new HashedWheelTimer(), Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2), new NioEventLoopGroup(), address);
         hasOwnGroup = true;
     }
 
-    public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, URI address) {
+    public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, URL address) {
         this(timer, executor, group, address.getHost(), address.getPort());
     }
     

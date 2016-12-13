@@ -47,7 +47,13 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
+import org.redisson.misc.URLBuilder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ConfigSupport {
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
@@ -111,6 +117,10 @@ public class ConfigSupport {
     private final ObjectMapper jsonMapper = createMapper(null);
     private final ObjectMapper yamlMapper = createMapper(new YAMLFactory());
 
+    public ConfigSupport() {
+        URLBuilder.init();
+    }
+    
     public <T> T fromJSON(String content, Class<T> configType) throws IOException {
         return jsonMapper.readValue(content, configType);
     }

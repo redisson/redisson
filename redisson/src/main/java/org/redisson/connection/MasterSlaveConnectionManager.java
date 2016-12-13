@@ -16,7 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -280,7 +280,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
+        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URL>emptySet());
         for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();
         }
@@ -835,7 +835,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return executor;
     }
     
-    public URI getLastClusterNode() {
+    public URL getLastClusterNode() {
         return null;
     }
 }

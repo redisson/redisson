@@ -15,7 +15,7 @@
  */
 package org.redisson.connection;
 
-import java.net.URI;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -55,9 +55,9 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private AtomicReference<URI> currentMaster = new AtomicReference<URI>();
+    private AtomicReference<URL> currentMaster = new AtomicReference<URL>();
 
-    private final Map<URI, RedisConnection> nodeConnections = new HashMap<URI, RedisConnection>();
+    private final Map<URL, RedisConnection> nodeConnections = new HashMap<URL, RedisConnection>();
 
     private ScheduledFuture<?> monitorFuture;
 
@@ -72,7 +72,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         this.config = create(cfg);
         initTimer(this.config);
 
-        for (URI addr : cfg.getNodeAddresses()) {
+        for (URL addr : cfg.getNodeAddresses()) {
             RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
             connectionFuture.awaitUninterruptibly();
             RedisConnection connection = connectionFuture.getNow();
@@ -110,7 +110,7 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         return res;
     }
     
-    private RFuture<RedisConnection> connect(BaseMasterSlaveServersConfig<?> cfg, final URI addr) {
+    private RFuture<RedisConnection> connect(BaseMasterSlaveServersConfig<?> cfg, final URL addr) {
         RedisConnection connection = nodeConnections.get(addr);
         if (connection != null) {
             return newSucceededFuture(connection);
@@ -158,11 +158,11 @@ public class ElasticacheConnectionManager extends MasterSlaveConnectionManager {
         monitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
             @Override
             public void run() {
-                final URI master = currentMaster.get();
+                final URL master = currentMaster.get();
                 log.debug("Current master: {}", master);
                 
                 final AtomicInteger count = new AtomicInteger(cfg.getNodeAddresses().size());
-                for (final URI addr : cfg.getNodeAddresses()) {
+                for (final URL addr : cfg.getNodeAddresses()) {
                     RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
                     connectionFuture.addListener(new FutureListener<RedisConnection>() {
                         @Override

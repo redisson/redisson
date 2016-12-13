@@ -16,7 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -36,7 +36,6 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
-import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.slf4j.Logger;
@@ -80,7 +79,7 @@ public class MasterSlaveEntry {
         writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
     }
 
-    public List<RFuture<Void>> initSlaveBalancer(Collection<URI> disconnectedNodes) {
+    public List<RFuture<Void>> initSlaveBalancer(Collection<URL> disconnectedNodes) {
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
                     && config.getReadMode() == ReadMode.SLAVE
                         && disconnectedNodes.size() < config.getSlaveAddresses().size();
@@ -88,7 +87,7 @@ public class MasterSlaveEntry {
         List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
         RFuture<Void> f = addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
         result.add(f);
-        for (URI address : config.getSlaveAddresses()) {
+        for (URL address : config.getSlaveAddresses()) {
             f = addSlave(address.getHost(), address.getPort(), disconnectedNodes.contains(address), NodeType.SLAVE);
             result.add(f);
         }
