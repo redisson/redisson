@@ -4,6 +4,10 @@ Redisson Releases History
 
 ####14-Dec-2016 - versions 2.7.1 and 3.2.1 released
 
+Url format used in config files has changed. For example:
+
+"//127.0.0.1:6739" now should be written as "redis://127.0.0.1:6739"
+
 Feature - `RSet.removeRandom` allows to remove several members at once  
 Fixed - exceptions during shutdown  
 Fixed - redis url couldn't contain underscore in host name  
