@@ -16,7 +16,7 @@
 package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.connection.ClientConnectionsEntry;
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.URLBuilder;
 
 import io.netty.util.internal.PlatformDependent;
 
@@ -78,7 +78,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
      */
     public WeightedRoundRobinBalancer(Map<String, Integer> weights, int defaultWeight) {
         for (Entry<String, Integer> entry : weights.entrySet()) {
-            URI uri = URIBuilder.create(entry.getKey());
+            URL uri = URLBuilder.create(entry.getKey());
             InetSocketAddress addr = new InetSocketAddress(uri.getHost(), uri.getPort());
             if (entry.getValue() <= 0) {
                 throw new IllegalArgumentException("Weight can't be less than or equal zero");

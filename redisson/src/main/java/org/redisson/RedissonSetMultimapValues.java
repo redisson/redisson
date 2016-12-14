@@ -244,6 +244,16 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
+    public Set<V> removeRandom(int amount) {
+        return get(removeRandomAsync(amount));
+    }
+
+    @Override
+    public RFuture<Set<V>> removeRandomAsync(int amount) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SPOP, getName(), amount);
+    }
+    
+    @Override
     public V random() {
         return get(randomAsync());
     }

@@ -50,6 +50,8 @@ public interface CommandAsyncExecutor {
 
     boolean await(RFuture<?> RFuture, long timeout, TimeUnit timeoutUnit) throws InterruptedException;
     
+    void syncSubscription(RFuture<?> future);
+    
     <V> V get(RFuture<V> RFuture);
 
     <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params);

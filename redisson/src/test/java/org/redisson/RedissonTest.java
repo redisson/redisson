@@ -1,5 +1,6 @@
 package org.redisson;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -40,7 +41,7 @@ public class RedissonTest {
 
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
-
+    
     @Test
     public void testSmallPool() throws InterruptedException {
         Config config = new Config();
@@ -311,23 +312,40 @@ public class RedissonTest {
     }
 
     @Test
-    public void testSingleConfig() throws IOException {
+    public void testSingleConfigJSON() throws IOException {
         RedissonClient r = BaseTest.createInstance();
         String t = r.getConfig().toJSON();
         Config c = Config.fromJSON(t);
         assertThat(c.toJSON()).isEqualTo(t);
     }
+    
+    @Test
+    public void testSingleConfigYAML() throws IOException {
+        RedissonClient r = BaseTest.createInstance();
+        String t = r.getConfig().toYAML();
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+
 
     @Test
-    public void testMasterSlaveConfig() throws IOException {
+    public void testMasterSlaveConfigJSON() throws IOException {
         Config c2 = new Config();
         c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
-
         String t = c2.toJSON();
         Config c = Config.fromJSON(t);
         assertThat(c.toJSON()).isEqualTo(t);
     }
 
+    @Test
+    public void testMasterSlaveConfigYAML() throws IOException {
+        Config c2 = new Config();
+        c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
+        String t = c2.toYAML();
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+    
 //    @Test
     public void testCluster() {
         NodesGroup<ClusterNode> nodes = redisson.getClusterNodesGroup();

@@ -389,6 +389,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts, Channel channel) {
         if (data == null) {
+            if (parts.isEmpty()) {
+                return null;
+            }
             String command = parts.get(0).toString();
             if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(command)) {
                 String channelName = parts.get(1).toString();

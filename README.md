@@ -6,8 +6,10 @@ Redis 2.8+ compatible.
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.1.0  | 1.8+ | 07.11.2016 |
-| 2.6.0 | 1.6+ | 07.11.2016 |
+| 3.2.0  | 1.8+ | 26.11.2016 |
+| 2.7.0 | 1.6+ | 26.11.2016 |
+
+__NOTE__: Both version lines have same features except `CompletionStage` interface support added in 3.x.x
 
 Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md)  
@@ -48,14 +50,19 @@ Features
 * Asynchronous connection pool  
 * Thread-safe implementation  
 * Lua scripting  
-* [Distributed objects](https://github.com/redisson/redisson/wiki/6.-Distributed-objects)
-* [Distributed collections](https://github.com/redisson/redisson/wiki/7.-Distributed-collections)
-* [Distributed locks and synchronizers](https://github.com/redisson/redisson/wiki/8.-Distributed-locks-and-synchronizers)
-* [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)
-* [Spring cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) integration  
-* [Hibernate](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate) integration  
-* [Tomcat Session Manager](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#144-tomcat-redis-session-manager)
-* [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation) implementation  
+* [Distributed objects](https://github.com/redisson/redisson/wiki/6.-Distributed-objects)  
+    Object holder, Binary stream holder, Geospatial holder, BitSet, AtomicLong, AtomicDouble, PublishSubscribe,
+    Bloom filter, HyperLogLog
+* [Distributed collections](https://github.com/redisson/redisson/wiki/7.-Distributed-collections)  
+    Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, Queue, Deque, Blocking Queue, Bounded Blocking Queue, Blocking Deque, Delayed Queue
+* [Distributed locks and synchronizers](https://github.com/redisson/redisson/wiki/8.-Distributed-locks-and-synchronizers)  
+    Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
+* [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)  
+    Remote service, Live Object service, Executor service, Scheduler service
+* [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) implementation  
+* [Hibernate Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate-cache) implementation  
+* [Tomcat Session Manager](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#144-tomcat-redis-session-manager) implementation  
+* [Spring Session](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#145-spring-session) implementation  
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way)  
 * [Redis pipelining](https://github.com/redisson/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)
 * Supports Android platform  
@@ -65,9 +72,9 @@ Features
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
 * With over 1000 unit tests  
 
-Projects using Redisson
+Who uses Redisson
 ================================
-[Infor](http://www.infor.com/), [New Relic Synthetics](https://newrelic.com/synthetics), [Singtel](http://singtel.com), [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/)
+[Infor](http://www.infor.com/), [New Relic Synthetics](https://newrelic.com/synthetics), [Singtel](http://singtel.com), [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/), [Azar](http://azarlive.com/)
 
 Articles
 ================================
@@ -88,23 +95,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.1.0</version>
+       <version>3.2.0</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.6.0</version>
+       <version>2.7.0</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.1.0'  
+    compile 'org.redisson:redisson:3.2.0'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.6.0'
+    compile 'org.redisson:redisson:2.7.0'
 
 #### Java
 
@@ -129,11 +136,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.1.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.1.0&e=jar),
-[Redisson node 3.1.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.1.0&e=jar)  
+[Redisson 3.2.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.2.0&e=jar),
+[Redisson node 3.2.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.2.0&e=jar)  
 
-[Redisson 2.6.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.6.0&e=jar),
-[Redisson node 2.6.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.6.0&e=jar)  
+[Redisson 2.7.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.7.0&e=jar),
+[Redisson node 2.7.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.7.0&e=jar)  
 
 ### Supported by
 

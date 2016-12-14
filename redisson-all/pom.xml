@@ -4,7 +4,6 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-
         <version>3.2.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
@@ -88,7 +87,7 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
             <classifier>linux-x86_64</classifier>
-            <version>4.0.41.Final</version>
+            <version>4.1.6.Final</version>
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>

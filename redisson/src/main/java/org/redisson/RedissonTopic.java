@@ -79,7 +79,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
         RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
-        future.syncUninterruptibly();
+        commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
 

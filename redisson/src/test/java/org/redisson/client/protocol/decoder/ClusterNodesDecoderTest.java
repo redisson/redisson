@@ -28,6 +28,7 @@ public class ClusterNodesDecoderTest {
         buf.writeBytes(src);
         List<ClusterNodeInfo> nodes = decoder.decode(buf, null);
         ClusterNodeInfo node = nodes.get(0);
+        Assert.assertEquals("192.168.234.129", node.getAddress().getHost());
         Assert.assertEquals(7001, node.getAddress().getPort());
     }
     

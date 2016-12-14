@@ -83,17 +83,17 @@ public class RedisPubSubConnection extends RedisConnection {
     }
 
     public void subscribe(Codec codec, String ... channel) {
-        async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channel);
         for (String ch : channel) {
             channels.put(ch, codec);
         }
+        async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channel);
     }
 
     public void psubscribe(Codec codec, String ... channel) {
-        async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channel);
         for (String ch : channel) {
             patternChannels.put(ch, codec);
         }
+        async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channel);
     }
 
     public void unsubscribe(final String ... channels) {

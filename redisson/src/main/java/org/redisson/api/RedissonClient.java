@@ -507,6 +507,7 @@ public interface RedissonClient {
     /**
      * Returns unbounded fair queue instance by name.
      * 
+     * @param <V> type of value
      * @param name of queue
      * @return queue
      */
@@ -529,6 +530,7 @@ public interface RedissonClient {
      * Could be attached to destination queue only.
      * All elements are inserted with transfer delay to destination queue.
      * 
+     * @param <V> type of value
      * @param destinationQueue - destination queue
      * @return delayed queue
      */
