@@ -30,7 +30,6 @@ Fixed - Redisson shutdown status should be checked during async command invocati
 
 ####07-Nov-2016 - versions 2.6.0 and 3.1.0 released
 
-Feature - __JCache API (JSR-107) implementation__ . More info about it [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation)  
 Feature - __new object added__ `RBinaryStream`. More info about it [here](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#62-binary-stream-holder)  
 Improvement - limit Payload String on RedisTimeoutException  
 Improvement - Elasticache master node change detection process optimization  
