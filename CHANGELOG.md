@@ -2,6 +2,16 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####12-Dec-2016 - versions 2.7.1 and 3.2.1 released
+
+Feature - `RSet.removeRandom` allows to remove several members at once  
+Fixed - exceptions during shutdown  
+Fixed - redis url couldn't contain underscore in host name  
+Fixed - IndexOutOfBoundsException during response decoding  
+Fixed - command timeout didn't respect during topic subscription  
+Fixed - possible PublishSubscribe race-condition  
+Fixed - blocking queue/deque poll method blocks infinitely if delay less than 1 second  
+
 ####26-Nov-2016 - versions 2.7.0 and 3.2.0 released
 
 Feature - __Spring Session implementation__. More details [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#145-spring-session)  
