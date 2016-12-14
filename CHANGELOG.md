@@ -2,7 +2,7 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
-####12-Dec-2016 - versions 2.7.1 and 3.2.1 released
+####14-Dec-2016 - versions 2.7.1 and 3.2.1 released
 
 Feature - `RSet.removeRandom` allows to remove several members at once  
 Fixed - exceptions during shutdown  
