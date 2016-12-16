@@ -636,7 +636,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     
     @Override
     public RFuture<List<V>> readSortAsync(SortOrder order) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT, getName(), order);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_LIST, getName(), order);
     }
 
     @Override
@@ -646,7 +646,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     
     @Override
     public RFuture<List<V>> readSortAsync(SortOrder order, int offset, int count) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT, getName(), "LIMIT", offset, count, order);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_LIST, getName(), "LIMIT", offset, count, order);
     }
 
     @Override
@@ -656,7 +656,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     
     @Override
     public RFuture<List<V>> readSortAsync(String byPattern, SortOrder order) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT, getName(), "BY", byPattern, order);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_LIST, getName(), "BY", byPattern, order);
     }
     
     @Override
@@ -666,7 +666,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     
     @Override
     public RFuture<List<V>> readSortAsync(String byPattern, SortOrder order, int offset, int count) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT, getName(), "BY", byPattern, "LIMIT", offset, count, order);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_LIST, getName(), "BY", byPattern, "LIMIT", offset, count, order);
     }
 
     @Override
@@ -707,7 +707,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         }
         params.add(order);
         
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT, params.toArray());
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_LIST, params.toArray());
     }
     
     @Override
@@ -790,7 +790,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         params.add("STORE");
         params.add(destName);
         
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_TO, params.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SORT_TO, params.toArray());
     }
 
 }

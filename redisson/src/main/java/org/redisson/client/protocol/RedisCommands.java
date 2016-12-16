@@ -184,7 +184,8 @@ public interface RedisCommands {
     RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");
     RedisStrictCommand<Void> PFMERGE = new RedisStrictCommand<Void>("PFMERGE", new VoidReplayConvertor());
 
-    RedisCommand<List<Object>> SORT = new RedisCommand<List<Object>>("SORT", new ObjectListReplayDecoder<Object>());
+    RedisCommand<List<Object>> SORT_LIST = new RedisCommand<List<Object>>("SORT", new ObjectListReplayDecoder<Object>());
+    RedisCommand<Set<Object>> SORT_SET = new RedisCommand<Set<Object>>("SORT", new ObjectSetReplayDecoder<Object>());
     RedisCommand<Integer> SORT_TO = new RedisCommand<Integer>("SORT", new IntegerReplayConvertor());
     
     RedisStrictCommand<Long> RPOP = new RedisStrictCommand<Long>("RPOP");
