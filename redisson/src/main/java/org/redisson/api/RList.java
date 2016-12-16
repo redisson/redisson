@@ -25,7 +25,7 @@ import java.util.RandomAccess;
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAccess {
+public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<List<V>>, RandomAccess {
 
     /**
      * Add <code>element</code> after <code>elementToFind</code>
@@ -34,7 +34,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
      * @param element - object to add
      * @return new list size
      */
-    Integer addAfter(V elementToFind, V element);
+    int addAfter(V elementToFind, V element);
     
     /**
      * Add <code>element</code> before <code>elementToFind</code>
@@ -43,7 +43,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RandomAcce
      * @param element - object to add
      * @return new list size
      */
-    Integer addBefore(V elementToFind, V element);
+    int addBefore(V elementToFind, V element);
     
     /**
      * Set <code>element</code> at <code>index</code>.
