@@ -19,6 +19,11 @@ import org.redisson.RedissonCountDownLatch;
 import org.redisson.RedissonCountDownLatchEntry;
 import org.redisson.misc.RPromise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class CountDownLatchPubSub extends PublishSubscribe<RedissonCountDownLatchEntry> {
 
     @Override

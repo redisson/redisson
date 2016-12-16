@@ -428,12 +428,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <V> RBlockingFairQueue<V> getBlockingFairQueue(String name) {
-        return new RedissonBlockingFairQueue<V>(commandExecutor, name, id);
+        return new RedissonBlockingFairQueue<V>(commandExecutor, name, semaphorePubSub, id);
     }
     
     @Override
     public <V> RBlockingFairQueue<V> getBlockingFairQueue(String name, Codec codec) {
-        return new RedissonBlockingFairQueue<V>(codec, commandExecutor, name, id);
+        return new RedissonBlockingFairQueue<V>(codec, commandExecutor, name, semaphorePubSub, id);
     }
     
     @Override
