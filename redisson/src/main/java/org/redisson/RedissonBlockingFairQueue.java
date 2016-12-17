@@ -15,23 +15,20 @@
  */
 package org.redisson;
 
-import static org.redisson.client.protocol.RedisCommands.LREM_SINGLE;
-
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.RBlockingFairQueue;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.pubsub.SemaphorePubSub;
-
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -40,40 +37,42 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> implements RBlockingFairQueue<V> {
 
-    private final Set<String> usedIds = Collections.newSetFromMap(PlatformDependent.<String, Boolean>newConcurrentHashMap());
     private final UUID id;
+    private final AtomicInteger instances = new AtomicInteger();
     private final SemaphorePubSub semaphorePubSub;
     
     protected RedissonBlockingFairQueue(CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub, UUID id) {
         super(commandExecutor, name);
         this.semaphorePubSub = semaphorePubSub;
         this.id = id;
+        instances.incrementAndGet();
     }
 
     protected RedissonBlockingFairQueue(Codec codec, CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub, UUID id) {
         super(codec, commandExecutor, name);
         this.semaphorePubSub = semaphorePubSub;
         this.id = id;
+        instances.incrementAndGet();
     }
     
     private String getIdsListName() {
-        return "{" + getName() + "}:list";
+        return suffixName(getName(), "list");
     }
     
     private String getChannelName() {
-        return "{" + getName() + "}:" + getCurrentId() + ":channel";
+        return suffixName(getName(), getCurrentId() + ":channel");
     }
     
     private RedissonLockEntry getEntry() {
-        return semaphorePubSub.getEntry(getName() + ":" + getCurrentId());
+        return semaphorePubSub.getEntry(getName());
     }
 
     private RFuture<RedissonLockEntry> subscribe() {
-        return semaphorePubSub.subscribe(getName() + ":" + getCurrentId(), getChannelName(), commandExecutor.getConnectionManager());
+        return semaphorePubSub.subscribe(getName(), getChannelName(), commandExecutor.getConnectionManager());
     }
 
     private void unsubscribe(RFuture<RedissonLockEntry> future) {
-        semaphorePubSub.unsubscribe(future.getNow(), getName() + ":" + getCurrentId(), getChannelName(), commandExecutor.getConnectionManager());
+        semaphorePubSub.unsubscribe(future.getNow(), getName(), getChannelName(), commandExecutor.getConnectionManager());
     }
     
     @Override
@@ -96,7 +95,7 @@ public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> imple
                     "end; " +
                 "end; "
                 + "if found == false then "
-                    + "redis.call('rpush', KEYS[2], ARGV[1]); "
+                    + "redis.call('lpush', KEYS[2], ARGV[1]); "
                 + "end; "
                 + "local value = redis.call('lindex', KEYS[2], 0); "
                 + "local size = redis.call('llen', KEYS[2]); "
@@ -114,9 +113,7 @@ public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> imple
     }
 
     private String getCurrentId() {
-        String currentId = id + "-" + Thread.currentThread().getId();
-        usedIds.add(currentId);
-        return currentId;
+        return id.toString();
     }
 
     
@@ -143,11 +140,13 @@ public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> imple
     
     @Override
     public void destroy() {
-        commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID_WITH_VALUES,
-                 "for i = 1, #ARGV, 1 do "
-                    + "redis.call('lrem', KEYS[1], 0, ARGV[i]);"
-                +"end; ",
-        Collections.<Object>singletonList(getIdsListName()), usedIds.toArray());
+        if (instances.decrementAndGet() == 0) {
+            get(commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID_WITH_VALUES,
+                    "for i = 1, #ARGV, 1 do "
+                        + "redis.call('lrem', KEYS[1], 0, ARGV[i]);"
+                    +"end; ",
+            Collections.<Object>singletonList(getIdsListName()), getCurrentId()));
+        }
     }
     
 //    @Override
@@ -287,7 +286,11 @@ public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> imple
                     return null;
                 }
 
-                getEntry().getLatch().acquire(1);
+                long spentTime = System.currentTimeMillis() - startTime;
+                long remainTime = unit.toMillis(timeout) - spentTime;
+                if (remainTime <= 0 || !getEntry().getLatch().tryAcquire(remainTime, TimeUnit.MILLISECONDS)) {
+                    return null;
+                }
             }
         } finally {
             unsubscribe(future);
