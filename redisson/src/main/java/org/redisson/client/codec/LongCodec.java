@@ -22,6 +22,11 @@ import org.redisson.client.protocol.Decoder;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class LongCodec extends StringCodec {
 
     public static final LongCodec INSTANCE = new LongCodec();

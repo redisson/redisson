@@ -17,6 +17,11 @@ package org.redisson.client.codec;
 
 import org.redisson.client.protocol.Encoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ScoredCodec extends StringCodec {
 
     private final Codec delegate;
