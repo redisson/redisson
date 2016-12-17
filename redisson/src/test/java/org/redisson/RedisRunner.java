@@ -12,11 +12,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 
@@ -778,7 +780,10 @@ public class RedisRunner {
 
         public RedisVersion getRedisVersion() {
             if (redisVersion == null) {
-                redisVersion = new RedisVersion(createRedisClientInstance().serverInfo().get("redis_version"));
+                RedisConnection c = createRedisClientInstance().connect();
+                Map<String, String> serverMap = c.sync(RedisCommands.INFO_SERVER);
+                redisVersion = new RedisVersion(serverMap.get("redis_version"));
+                c.closeAsync();
             }
             return redisVersion;
         }

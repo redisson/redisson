@@ -231,11 +231,7 @@ public class RedisClient {
         return channels.close();
     }
 
-    /**
-     * Execute INFO SERVER operation.
-     *
-     * @return Map extracted from each response line splitting by ':' symbol
-     */
+    @Deprecated
     public Map<String, String> serverInfo() {
         try {
             return serverInfoAsync().sync().get();
@@ -244,15 +240,10 @@ public class RedisClient {
         }
     }
 
-    /**
-     * Asynchronously execute INFO SERVER operation.
-     *
-     * @return A future for a map extracted from each response line splitting by
-     * ':' symbol
-     */
+    @Deprecated
     public RFuture<Map<String, String>> serverInfoAsync() {
         final RedisConnection connection = connect();
-        RFuture<Map<String, String>> async = connection.async(RedisCommands.SERVER_INFO);
+        RFuture<Map<String, String>> async = connection.async(RedisCommands.INFO_SERVER);
         async.addListener(new FutureListener<Map<String, String>>() {
             @Override
             public void operationComplete(Future<Map<String, String>> future) throws Exception {

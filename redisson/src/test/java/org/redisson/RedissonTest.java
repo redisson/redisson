@@ -1,6 +1,9 @@
 package org.redisson;
 
-import java.io.File;
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.BaseTest.createInstance;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -11,9 +14,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.After;
 import org.junit.AfterClass;
-
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -22,6 +25,7 @@ import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
+import org.redisson.api.Node.InfoSection;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -32,10 +36,6 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.ConnectionListener;
-
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.redisson.BaseTest.createInstance;
 
 public class RedissonTest {
 
@@ -267,6 +267,53 @@ public class RedissonTest {
         Assert.assertTrue(r.isShutdown());
     }
 
+    @Test
+    public void testNode() {
+        Node node = redisson.getNodesGroup().getNode(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        assertThat(node).isNotNull();
+    }
+    
+    @Test
+    public void testInfo() {
+        Node node = redisson.getNodesGroup().getNodes().iterator().next();
+
+        Map<String, String> allResponse = node.info(InfoSection.ALL);
+        assertThat(allResponse).containsKeys("redis_version", "connected_clients");
+        
+        Map<String, String> defaultResponse = node.info(InfoSection.DEFAULT);
+        assertThat(defaultResponse).containsKeys("redis_version", "connected_clients");
+        
+        Map<String, String> serverResponse = node.info(InfoSection.SERVER);
+        assertThat(serverResponse).containsKey("redis_version");
+        
+        Map<String, String> clientsResponse = node.info(InfoSection.CLIENTS);
+        assertThat(clientsResponse).containsKey("connected_clients");
+
+        Map<String, String> memoryResponse = node.info(InfoSection.MEMORY);
+        assertThat(memoryResponse).containsKey("used_memory_human");
+        
+        Map<String, String> persistenceResponse = node.info(InfoSection.PERSISTENCE);
+        assertThat(persistenceResponse).containsKey("rdb_last_save_time");
+
+        Map<String, String> statsResponse = node.info(InfoSection.STATS);
+        assertThat(statsResponse).containsKey("pubsub_patterns");
+        
+        Map<String, String> replicationResponse = node.info(InfoSection.REPLICATION);
+        assertThat(replicationResponse).containsKey("repl_backlog_first_byte_offset");
+        
+        Map<String, String> cpuResponse = node.info(InfoSection.CPU);
+        assertThat(cpuResponse).containsKey("used_cpu_sys");
+
+        Map<String, String> commandStatsResponse = node.info(InfoSection.COMMANDSTATS);
+        assertThat(commandStatsResponse).containsKey("cmdstat_flushall");
+
+        Map<String, String> clusterResponse = node.info(InfoSection.CLUSTER);
+        assertThat(clusterResponse).containsKey("cluster_enabled");
+
+        Map<String, String> keyspaceResponse = node.info(InfoSection.KEYSPACE);
+        assertThat(keyspaceResponse).isEmpty();
+    }
+    
     @Test
     public void testTime() {
         NodesGroup<Node> nodes = redisson.getNodesGroup();

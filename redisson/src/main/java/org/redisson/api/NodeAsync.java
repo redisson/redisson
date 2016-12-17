@@ -17,23 +17,22 @@ package org.redisson.api;
 
 import java.util.Map;
 
+import org.redisson.api.Node.InfoSection;
+
 /**
- * Redis cluster node interface
+ * Redis node interface
  *
  * @author Nikita Koksharov
  *
  */
-public interface ClusterNode extends Node {
+public interface NodeAsync {
 
-    // Use {@link #clusterInfo()}
-    @Deprecated
-    Map<String, String> info();
+    RFuture<Map<String, String>> infoAsync(InfoSection section);
+    
+    RFuture<Long> timeAsync();
+    
+    RFuture<Boolean> pingAsync();
 
-    /**
-     * Execute CLUSTER INFO operation.
-     *
-     * @return value mapped by field
-     */
-    Map<String, String> clusterInfo();
+    RFuture<Map<String, String>> clusterInfoAsync();
     
 }

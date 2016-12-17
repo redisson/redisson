@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -33,10 +34,17 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.RedisClientEntry;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.URLBuilder;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <N> node type
+ */
 public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
     final ConnectionManager connectionManager;
@@ -45,6 +53,18 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         this.connectionManager = connectionManager;
     }
 
+    @Override
+    public N getNode(String address) {
+        Collection<N> clients = (Collection<N>) connectionManager.getClients();
+        InetSocketAddress addr = URLBuilder.toAddress(address);
+        for (N node : clients) {
+            if (node.getAddr().equals(addr)) {
+                return node;
+            }
+        }
+        return null;
+    }
+    
     @Override
     public Collection<N> getNodes(NodeType type) {
         Collection<N> clients = (Collection<N>) connectionManager.getClients();

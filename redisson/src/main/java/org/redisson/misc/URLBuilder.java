@@ -16,6 +16,7 @@
 package org.redisson.misc;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -65,6 +66,21 @@ public class URLBuilder {
                 return null;
             }
         });
+    }
+
+    public static InetSocketAddress toAddress(String url) {
+        String[] parts = url.split(":");
+        if (parts.length-1 >= 3) {
+            String port = parts[parts.length-1];
+            String newPort = port.split("[^\\d]")[0];
+            String host = url.replace(":" + port, "");
+            return new InetSocketAddress(host, Integer.valueOf(newPort));
+        } else {
+            String port = parts[parts.length-1];
+            String newPort = port.split("[^\\d]")[0];
+            String host = url.replace(":" + port, "");
+            return new InetSocketAddress(host, Integer.valueOf(newPort));
+        }
     }
     
     public static URL create(String url) {

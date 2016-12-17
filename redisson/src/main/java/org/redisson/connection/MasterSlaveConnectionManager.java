@@ -45,6 +45,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.command.CommandSyncService;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -150,6 +151,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final boolean sharedEventLoopGroup;
 
     private final boolean sharedExecutor;
+
+    private final CommandSyncService commandExecutor;
     
     {
         for (int i = 0; i < locks.length; i++) {
@@ -204,10 +207,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this.shutdownPromise = newPromise();
         this.sharedEventLoopGroup = cfg.getEventLoopGroup() != null;
         this.sharedExecutor = cfg.getExecutor() != null;
+        this.commandExecutor = new CommandSyncService(this);
     }
 
     public boolean isClusterMode() {
         return false;
+    }
+    
+    public CommandSyncService getCommandExecutor() {
+        return commandExecutor;
     }
 
     public IdleConnectionWatcher getConnectionWatcher() {
@@ -318,12 +326,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public RedisClient createClient(NodeType type, String host, int port) {
         RedisClient client = createClient(host, port, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
-        clients.add(new RedisClientEntry(client, this, type));
+        clients.add(new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
 
     public void shutdownAsync(RedisClient client) {
-        clients.remove(new RedisClientEntry(client, this, null));
+        clients.remove(new RedisClientEntry(client, commandExecutor, null));
         client.shutdownAsync();
     }
 
