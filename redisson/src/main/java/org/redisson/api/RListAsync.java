@@ -26,7 +26,7 @@ import java.util.RandomAccess;
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
+public interface RListAsync<V> extends RCollectionAsync<V>, RSortableAsync<List<V>>, RandomAccess {
 
     /**
      * Add <code>element</code> after <code>elementToFind</code>
@@ -82,7 +82,7 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RandomAccess {
      * @param toIndex - to index
      * @return void
      */
-    RFuture<Void> trimAsync(long fromIndex, long toIndex);
+    RFuture<Void> trimAsync(int fromIndex, int toIndex);
 
     RFuture<Void> fastRemoveAsync(long index);
 

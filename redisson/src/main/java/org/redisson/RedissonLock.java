@@ -658,12 +658,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         long elapsed = System.currentTimeMillis() - current;
                         time.addAndGet(-elapsed);
                         
-                        if (time.get() <= 0) {
-                            unsubscribe(subscribeFuture, currentThreadId);
-                            result.trySuccess(false);
-                            return;
-                        }
-
                         tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
                     }
                 });

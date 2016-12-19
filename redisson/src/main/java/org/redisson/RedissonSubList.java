@@ -470,7 +470,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
     @Override
-    public RFuture<Void> trimAsync(long fromIndex, long toIndex) {
+    public RFuture<Void> trimAsync(int fromIndex, int toIndex) {
         if (fromIndex < this.fromIndex || toIndex >= this.toIndex.get()) {
             throw new IndexOutOfBoundsException("fromIndex: " + fromIndex + " toIndex: " + toIndex);
         }

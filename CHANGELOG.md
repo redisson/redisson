@@ -2,6 +2,20 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####14-Dec-2016 - versions 2.7.1 and 3.2.1 released
+
+Url format used in config files __has changed__. For example:
+
+"//127.0.0.1:6739" now should be written as "redis://127.0.0.1:6739"
+
+Feature - `RSet.removeRandom` allows to remove several members at once  
+Fixed - exceptions during shutdown  
+Fixed - redis url couldn't contain underscore in host name  
+Fixed - IndexOutOfBoundsException during response decoding  
+Fixed - command timeout didn't respect during topic subscription  
+Fixed - possible PublishSubscribe race-condition  
+Fixed - blocking queue/deque poll method blocks infinitely if delay less than 1 second  
+
 ####26-Nov-2016 - versions 2.7.0 and 3.2.0 released
 
 Feature - __Spring Session implementation__. More details [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#145-spring-session)  
@@ -16,7 +30,6 @@ Fixed - Redisson shutdown status should be checked during async command invocati
 
 ####07-Nov-2016 - versions 2.6.0 and 3.1.0 released
 
-Feature - __JCache API (JSR-107) implementation__ . More info about it [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation)  
 Feature - __new object added__ `RBinaryStream`. More info about it [here](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#62-binary-stream-holder)  
 Improvement - limit Payload String on RedisTimeoutException  
 Improvement - Elasticache master node change detection process optimization  

@@ -13,33 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection.decoder;
+package org.redisson.client.protocol.convertor;
 
 import java.util.List;
 
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
 
-import io.netty.buffer.ByteBuf;
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 
-public class ListFirstObjectDecoder implements MultiDecoder<Object> {
-
-    @Override
-    public Object decode(ByteBuf buf, State state) {
-        throw new UnsupportedOperationException();
-    }
+public class LongListObjectDecoder extends ListFirstObjectDecoder {
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (!parts.isEmpty()) {
-            return parts.get(0);
+        Object result = super.decode(parts, state);
+        if (result != null) {
+            return Long.valueOf(result.toString());
         }
-        return null;
+        return result;
     }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
-    }
-
+    
 }

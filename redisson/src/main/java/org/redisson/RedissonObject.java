@@ -57,6 +57,13 @@ public abstract class RedissonObject implements RObject {
         }
         return prefix + ":{" + getName() + "}";
     }
+    
+    protected String suffixName(String name, String suffix) {
+        if (getName().contains("{")) {
+            return name + ":" + suffix;
+        }
+        return "{" + getName() + "}:" + suffix;
+    }
 
     protected <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);

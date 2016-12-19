@@ -18,6 +18,11 @@ package org.redisson.pubsub;
 import org.redisson.RedissonLockEntry;
 import org.redisson.misc.RPromise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
 
     public static final Long unlockMessage = 0L;

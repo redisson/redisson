@@ -30,6 +30,12 @@ import org.redisson.misc.RPromise;
 
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <E>
+ */
 abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     private final ConcurrentMap<String, E> entries = PlatformDependent.newConcurrentHashMap();

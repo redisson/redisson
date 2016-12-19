@@ -23,6 +23,6 @@ package org.redisson.api;
  *
  * @param <V> value
  */
-public interface RBlockingFairQueue<V> extends RBlockingQueue<V> {
+public interface RBlockingFairQueue<V> extends RBlockingQueue<V>, RDestroyable {
 
 }

@@ -25,10 +25,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.SortOrder;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
@@ -41,6 +43,12 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RScoredSortedSet<V> {
 
     public RedissonScoredSortedSet(CommandAsyncExecutor commandExecutor, String name) {
@@ -627,5 +635,168 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZUNIONSTORE_INT, args.toArray());
     }
 
+    @Override
+    public Set<V> readSort(SortOrder order) {
+        return get(readSortAsync(order));
+    }
+    
+    @Override
+    public RFuture<Set<V>> readSortAsync(SortOrder order) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_SET, getName(), order);
+    }
+
+    @Override
+    public Set<V> readSort(SortOrder order, int offset, int count) {
+        return get(readSortAsync(order, offset, count));
+    }
+    
+    @Override
+    public RFuture<Set<V>> readSortAsync(SortOrder order, int offset, int count) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_SET, getName(), "LIMIT", offset, count, order);
+    }
+
+    @Override
+    public Set<V> readSort(String byPattern, SortOrder order) {
+        return get(readSortAsync(byPattern, order));
+    }
+    
+    @Override
+    public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_SET, getName(), "BY", byPattern, order);
+    }
+    
+    @Override
+    public Set<V> readSort(String byPattern, SortOrder order, int offset, int count) {
+        return get(readSortAsync(byPattern, order, offset, count));
+    }
+    
+    @Override
+    public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order, int offset, int count) {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_SET, getName(), "BY", byPattern, "LIMIT", offset, count, order);
+    }
+
+    @Override
+    public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
+        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order));
+    }
+    
+    @Override
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order) {
+        return readSortAsync(byPattern, getPatterns, order, -1, -1);
+    }
+    
+    @Override
+    public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order, offset, count));
+    }
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        List<Object> params = new ArrayList<Object>();
+        params.add(getName());
+        if (byPattern != null) {
+            params.add("BY");
+            params.add(byPattern);
+        }
+        if (offset != -1 && count != -1) {
+            params.add("LIMIT");
+        }
+        if (offset != -1) {
+            params.add(offset);
+        }
+        if (count != -1) {
+            params.add(count);
+        }
+        for (String pattern : getPatterns) {
+            params.add("GET");
+            params.add(pattern);
+        }
+        params.add(order);
+        
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_SET, params.toArray());
+    }
+    
+    @Override
+    public int sortTo(String destName, SortOrder order) {
+        return get(sortToAsync(destName, order));
+    }
+    
+    @Override
+    public RFuture<Integer> sortToAsync(String destName, SortOrder order) {
+        return sortToAsync(destName, null, Collections.<String>emptyList(), order, -1, -1);
+    }
+    
+    @Override
+    public int sortTo(String destName, SortOrder order, int offset, int count) {
+        return get(sortToAsync(destName, order, offset, count));
+    }
+    
+    @Override
+    public RFuture<Integer> sortToAsync(String destName, SortOrder order, int offset, int count) {
+        return sortToAsync(destName, null, Collections.<String>emptyList(), order, offset, count);
+    }
+
+    @Override
+    public int sortTo(String destName, String byPattern, SortOrder order, int offset, int count) {
+        return get(sortToAsync(destName, byPattern, order, offset, count));
+    }
+    
+    @Override
+    public int sortTo(String destName, String byPattern, SortOrder order) {
+        return get(sortToAsync(destName, byPattern, order));
+    }
+
+    @Override
+    public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order) {
+        return sortToAsync(destName, byPattern, Collections.<String>emptyList(), order, -1, -1);
+    }
+
+    @Override
+    public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order, int offset, int count) {
+        return sortToAsync(destName, byPattern, Collections.<String>emptyList(), order, offset, count);
+    }
+
+    @Override
+    public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
+        return get(sortToAsync(destName, byPattern, getPatterns, order));
+    }
+    
+    @Override
+    public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
+        return sortToAsync(destName, byPattern, getPatterns, order, -1, -1);
+    }
+    
+    @Override
+    public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        return get(sortToAsync(destName, byPattern, getPatterns, order, offset, count));
+    }
+
+    @Override
+    public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        List<Object> params = new ArrayList<Object>();
+        params.add(getName());
+        if (byPattern != null) {
+            params.add("BY");
+            params.add(byPattern);
+        }
+        if (offset != -1 && count != -1) {
+            params.add("LIMIT");
+        }
+        if (offset != -1) {
+            params.add(offset);
+        }
+        if (count != -1) {
+            params.add(count);
+        }
+        for (String pattern : getPatterns) {
+            params.add("GET");
+            params.add(pattern);
+        }
+        params.add(order);
+        params.add("STORE");
+        params.add(destName);
+        
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SORT_TO, params.toArray());
+    }
     
 }

@@ -17,6 +17,11 @@ package org.redisson.client.codec;
 
 import org.redisson.client.protocol.Decoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class DelegateDecoderCodec extends StringCodec {
 
     private final Codec delegate;

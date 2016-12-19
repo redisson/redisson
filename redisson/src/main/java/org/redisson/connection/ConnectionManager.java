@@ -29,6 +29,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.command.CommandSyncService;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
@@ -44,6 +45,8 @@ import io.netty.util.TimerTask;
  *
  */
 public interface ConnectionManager {
+    
+    CommandSyncService getCommandExecutor();
     
     ExecutorService getExecutor();
     

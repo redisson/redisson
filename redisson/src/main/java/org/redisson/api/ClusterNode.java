@@ -25,12 +25,15 @@ import java.util.Map;
  */
 public interface ClusterNode extends Node {
 
+    // Use {@link #clusterInfo()}
+    @Deprecated
+    Map<String, String> info();
+
     /**
      * Execute CLUSTER INFO operation.
      *
-     * @return Map extracted via each response line splitting
-     *         by ':' symbol
+     * @return value mapped by field
      */
-    Map<String, String> info();
-
+    Map<String, String> clusterInfo();
+    
 }
