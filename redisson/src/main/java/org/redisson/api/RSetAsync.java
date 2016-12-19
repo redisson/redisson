@@ -24,7 +24,7 @@ import java.util.Set;
  *
  * @param <V> value
  */
-public interface RSetAsync<V> extends RCollectionAsync<V> {
+public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>> {
 
     /**
      * Removes and returns random elements from set
