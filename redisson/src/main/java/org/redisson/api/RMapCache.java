@@ -24,12 +24,11 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>Current redis implementation doesnt have map entry eviction functionality.
  * Thus entries are checked for TTL expiration during any key/value/entry read operation.
- * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
- * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
+ * If key/value/entry expired then it doesn't returns.
+ * Expired tasks cleaned by {@link org.redisson.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
- * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
+ * <p>If eviction is not required then it's better to use {@link org.redisson.RedissonMap}.</p>
  *
  * @author Nikita Koksharov
  *
@@ -44,9 +43,6 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * <p>
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
-     * <p>
-     * If the map previously contained a mapping for
-     * the key, the old value is replaced by the specified value.
      *
      * @param key - map key
      * @param value - map value
@@ -63,9 +59,6 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * <p>
      * Stores value mapped by key with specified time to live and max idle time.
      * Entry expires when specified time to live or max idle time has expired.
-     * <p>
-     * If the map previously contained a mapping for
-     * the key, the old value is replaced by the specified value.
      *
      * @param key - map key
      * @param value - map value
