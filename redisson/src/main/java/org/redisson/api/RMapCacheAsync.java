@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
- * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)}
+ * {@link RMapCache#put(Object, Object, long, TimeUnit)} or {@link RMapCache#putIfAbsent(Object, Object, long, TimeUnit)}
  * And therefore has an complex lua-scripts inside.</p>
  *
  * <p>Current redis implementation doesnt have map entry eviction functionality.

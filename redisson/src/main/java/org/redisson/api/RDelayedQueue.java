@@ -42,6 +42,7 @@ public interface RDelayedQueue<V> extends RQueue<V>, RDestroyable {
      * @param e the element to add
      * @param delay for transition
      * @param timeUnit for delay
+     * @return void
      */
     RFuture<Void> offerAsync(V e, long delay, TimeUnit timeUnit);
     
