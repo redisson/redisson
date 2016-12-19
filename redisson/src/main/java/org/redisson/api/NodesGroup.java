@@ -46,7 +46,7 @@ public interface NodesGroup<N extends Node> {
      * Get Redis node by address in format: <code>host:port</code>
      * 
      * @param address
-     * @return
+     * @return node
      */
     N getNode(String address);
     

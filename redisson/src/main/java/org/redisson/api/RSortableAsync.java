@@ -21,7 +21,8 @@ import java.util.List;
 /**
  * 
  * @author Nikita Koksharov
- *
+ * 
+ * @param <V> object type
  */
 public interface RSortableAsync<V> {
 
@@ -66,6 +67,7 @@ public interface RSortableAsync<V> {
     /**
      * Read data in sorted view
      * 
+     * @param <T> object type 
      * @param byPattern that is used to generate the keys that are used for sorting
      * @param getPatterns that is used to load values by keys in sorted view
      * @param order for sorted data
@@ -76,6 +78,7 @@ public interface RSortableAsync<V> {
     /**
      * Read data in sorted view
      * 
+     * @param <T> object type
      * @param byPattern that is used to generate the keys that are used for sorting
      * @param getPatterns that is used to load values by keys in sorted view
      * @param order for sorted data
