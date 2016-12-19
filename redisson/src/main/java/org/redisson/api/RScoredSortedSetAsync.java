@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
@@ -27,7 +28,7 @@ import org.redisson.client.protocol.ScoredEntry;
  *
  * @param <V> value
  */
-public interface RScoredSortedSetAsync<V> extends RExpirableAsync {
+public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsync<Set<V>> {
 
     RFuture<V> pollLastAsync();
 

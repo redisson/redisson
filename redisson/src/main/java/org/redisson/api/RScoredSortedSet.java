@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 import org.redisson.client.protocol.ScoredEntry;
 
@@ -26,7 +27,7 @@ import org.redisson.client.protocol.ScoredEntry;
  *
  * @param <V> value
  */
-public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable {
+public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable, RSortable<Set<V>> {
 
     public enum Aggregate {
         
