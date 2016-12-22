@@ -9,7 +9,7 @@ Redis 2.8+ compatible.
 | 3.2.2  | 1.8+ | 19.12.2016 |
 | 2.7.2 | 1.6+ | 19.12.2016 |
 
-__NOTE__: Both version lines have same features except `CompletionStage` interface support added in 3.x.x
+__NOTE__: Both version lines have same features except `CompletionStage` interface supported by 3.x.x line
 
 Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md)  
