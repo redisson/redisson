@@ -52,7 +52,13 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     private String configLocation;
 
-    public RedissonSpringCacheManager() {
+    /**
+     * Creates CacheManager supplied by Redisson instance
+     *
+     * @param redisson object
+     */
+    public RedissonSpringCacheManager(RedissonClient redisson) {
+        this(redisson, (String)null, null);
     }
 
     /**
