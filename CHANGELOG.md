@@ -2,6 +2,14 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####19-Dec-2016 - versions 2.7.2 and 3.2.2 released
+
+Feature - `RList`, `RSet` and `RScoredSortedSet` implements `RSortable` interface with SORT command support  
+Feature - `NodeAsync` interface  
+Feature - `Node.info`, `Node.getNode` methods added  
+Fixed - elements distribution of `RBlockingFairQueue` across consumers  
+Fixed - `factory already defined` error during Redisson initialization under Apache Tomcat  
+
 ####14-Dec-2016 - versions 2.7.1 and 3.2.1 released
 
 Url format used in config files __has changed__. For example:
