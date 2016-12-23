@@ -27,16 +27,6 @@ package org.redisson.api;
 public interface RLiveObjectService {
 
     /**
-     * Use {@link #persist(Object)} method instead
-     *
-     * @param entityClass Entity class
-     * @param <T> Entity type
-     * @return Always returns a proxied object. Even it does not exist in redis.
-     */
-    @Deprecated
-    <T> T create(Class<T> entityClass);
-
-    /**
      * Finds the entity from Redis with the id.
      *
      * The entityClass should have a field annotated with RId, and the
@@ -56,18 +46,6 @@ public interface RLiveObjectService {
      * @return a proxied object if it exists in redis, or null if not.
      */
     <T, K> T get(Class<T> entityClass, K id);
-
-    /**
-     * Use {@link #persist(Object)} method instead
-     *
-     * @param entityClass Entity class
-     * @param id identifier
-     * @param <T> Entity type
-     * @param <K> Key type
-     * @return Always returns a proxied object. Even it does not exist in redis.
-     */
-    @Deprecated
-    <T, K> T getOrCreate(Class<T> entityClass, K id);
 
     /**
      * Returns proxied object for the detached object. Discard all the

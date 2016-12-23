@@ -300,7 +300,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             
             decodeList(in, data, parts, channel, size, respParts);
         } else {
-            throw new IllegalStateException("Can't decode replay " + (char)code);
+            String dataStr = in.toString(0, in.writerIndex(), CharsetUtil.UTF_8);
+            throw new IllegalStateException("Can't decode replay: " + dataStr);
         }
     }
 
