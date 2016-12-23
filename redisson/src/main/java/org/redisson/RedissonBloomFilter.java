@@ -35,7 +35,6 @@ import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.command.CommandBatchService;
 import org.redisson.command.CommandExecutor;
 
-import io.netty.util.concurrent.Future;
 import net.openhft.hashing.LongHashFunction;
 
 /**
@@ -212,9 +211,19 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean tryInit(long expectedInsertions, double falseProbability) {
+        if (falseProbability > 1) {
+            throw new IllegalArgumentException("Bloom filter false probability can't be greater than 1");
+        }
+        if (falseProbability < 0) {
+            throw new IllegalArgumentException("Bloom filter false probability can't be negative");
+        }
+
         size = optimalNumOfBits(expectedInsertions, falseProbability);
+        if (size == 0) {
+            throw new IllegalArgumentException("Bloom filter calculated size is " + size);
+        }
         if (size > MAX_SIZE) {
-            throw new IllegalArgumentException("Bloom filter can't be greater than " + MAX_SIZE + ". But calculated size is " + size);
+            throw new IllegalArgumentException("Bloom filter size can't be greater than " + MAX_SIZE + ". But calculated size is " + size);
         }
         hashIterations = optimalNumOfHashFunctions(expectedInsertions, size);
 
