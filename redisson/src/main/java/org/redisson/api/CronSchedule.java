@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.api;
 
-import org.redisson.api.RScheduledExecutorService;
 import org.redisson.executor.CronExpression;
 
 /**
@@ -27,7 +26,7 @@ import org.redisson.executor.CronExpression;
  * @author Nikita Koksharov
  *
  */
-public class CronSchedule {
+public final class CronSchedule {
 
     private CronExpression expression;
     

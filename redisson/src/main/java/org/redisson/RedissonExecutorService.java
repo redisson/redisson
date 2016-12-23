@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.CronSchedule;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScheduledFuture;
