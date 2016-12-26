@@ -26,6 +26,7 @@ import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
@@ -158,19 +159,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return config.getLoadBalancer().getEntry(entries);
     }
 
-    public RFuture<T> get() {
+    public RFuture<T> get(RedisCommand<?> command) {
         for (int j = entries.size() - 1; j >= 0; j--) {
             final ClientConnectionsEntry entry = getEntry();
             if (!entry.isFreezed() 
                     && tryAcquireConnection(entry)) {
-                final RPromise<T> result = connectionManager.newPromise();
-                acquireConnection(entry, new Runnable() {
-                    @Override
-                    public void run() {
-                        connectTo(entry, result);
-                    }
-                });
-                return result;
+                return acquireConnection(command, entry);
             }
         }
         
@@ -196,17 +190,26 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return connectionManager.newFailedFuture(exception);
     }
 
-    public RFuture<T> get(ClientConnectionsEntry entry) {
+    public RFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
         if (((entry.getNodeType() == NodeType.MASTER && entry.getFreezeReason() == FreezeReason.SYSTEM) || !entry.isFreezed())
                 && tryAcquireConnection(entry)) {
-            RPromise<T> result = connectionManager.newPromise();
-            connectTo(entry, result);
-            return result;
+            return acquireConnection(command, entry);
         }
 
         RedisConnectionException exception = new RedisConnectionException(
                 "Can't aquire connection to " + entry.getClient().getAddr());
         return connectionManager.newFailedFuture(exception);
+    }
+
+    private RFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry) {
+        final RPromise<T> result = connectionManager.newPromise();
+        acquireConnection(entry, new Runnable() {
+            @Override
+            public void run() {
+                connectTo(entry, result);
+            }
+        });
+        return result;
     }
 
     protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {

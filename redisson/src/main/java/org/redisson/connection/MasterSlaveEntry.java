@@ -32,6 +32,8 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
@@ -255,7 +257,7 @@ public class MasterSlaveEntry {
             return;
         }
 
-        RFuture<RedisConnection> newConnection = connectionReadOp();
+        RFuture<RedisConnection> newConnection = connectionReadOp(RedisCommands.BLPOP_VALUE);
         newConnection.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
@@ -387,16 +389,16 @@ public class MasterSlaveEntry {
         slaveBalancer.shutdownAsync();
     }
 
-    public RFuture<RedisConnection> connectionWriteOp() {
-        return writeConnectionHolder.get();
+    public RFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
+        return writeConnectionHolder.get(command);
     }
 
-    public RFuture<RedisConnection> connectionReadOp() {
-        return slaveBalancer.nextConnection();
+    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
+        return slaveBalancer.nextConnection(command);
     }
 
-    public RFuture<RedisConnection> connectionReadOp(InetSocketAddress addr) {
-        return slaveBalancer.getConnection(addr);
+    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, InetSocketAddress addr) {
+        return slaveBalancer.getConnection(command, addr);
     }
 
     RFuture<RedisPubSubConnection> nextPubSubConnection() {

@@ -15,7 +15,6 @@
  */
 package org.redisson.client.protocol;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -91,14 +90,14 @@ public class CommandData<T, R> implements QueueCommand {
 
     @Override
     public List<CommandData<Object, Object>> getPubSubOperations() {
-        if (PUBSUB_COMMANDS.contains(getCommand().getName())) {
+        if (RedisCommands.PUBSUB_COMMANDS.contains(getCommand().getName())) {
             return Collections.singletonList((CommandData<Object, Object>)this);
         }
         return Collections.emptyList();
     }
     
     public boolean isBlockingCommand() {
-        return QueueCommand.TIMEOUTLESS_COMMANDS.contains(command.getName()) && !promise.isDone();
+        return RedisCommands.BLOCKING_COMMANDS.contains(command.getName()) && !promise.isDone();
     }
 
 }

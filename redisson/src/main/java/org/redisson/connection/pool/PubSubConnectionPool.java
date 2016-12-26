@@ -17,6 +17,8 @@ package org.redisson.connection.pool;
 
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
@@ -34,6 +36,10 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
         super(config, connectionManager, masterSlaveEntry);
     }
 
+    public RFuture<RedisPubSubConnection> get() {
+        return get(RedisCommands.PUBLISH);
+    }
+    
     @Override
     protected RedisPubSubConnection poll(ClientConnectionsEntry entry) {
         return entry.pollSubscribeConnection();

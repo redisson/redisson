@@ -36,6 +36,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
@@ -345,11 +346,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
             PubSubKey key = new PubSubKey(channelName, operation);
             CommandData<Object, Object> d = pubSubChannels.get(key);
-            if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(d.getCommand().getName())) {
+            if (Arrays.asList(RedisCommands.PSUBSCRIBE.getName(), RedisCommands.SUBSCRIBE.getName()).contains(d.getCommand().getName())) {
                 pubSubChannels.remove(key);
                 pubSubMessageDecoders.put(channelName, d.getMessageDecoder());
             }
-            if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(d.getCommand().getName())) {
+            if (Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName()).contains(d.getCommand().getName())) {
                 pubSubChannels.remove(key);
                 pubSubMessageDecoders.remove(channelName);
             }

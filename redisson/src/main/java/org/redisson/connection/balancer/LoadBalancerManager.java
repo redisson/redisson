@@ -23,6 +23,7 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
@@ -141,17 +142,17 @@ public class LoadBalancerManager {
         return pubSubConnectionPool.get();
     }
 
-    public RFuture<RedisConnection> getConnection(InetSocketAddress addr) {
+    public RFuture<RedisConnection> getConnection(RedisCommand<?> command, InetSocketAddress addr) {
         ClientConnectionsEntry entry = addr2Entry.get(addr);
         if (entry != null) {
-            return slaveConnectionPool.get(entry);
+            return slaveConnectionPool.get(command, entry);
         }
         RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr);
         return connectionManager.newFailedFuture(exception);
     }
 
-    public RFuture<RedisConnection> nextConnection() {
-        return slaveConnectionPool.get();
+    public RFuture<RedisConnection> nextConnection(RedisCommand<?> command) {
+        return slaveConnectionPool.get(command);
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
