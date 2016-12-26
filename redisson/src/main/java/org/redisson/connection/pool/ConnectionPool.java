@@ -199,8 +199,13 @@ abstract class ConnectionPool<T extends RedisConnection> {
     public RFuture<T> get(ClientConnectionsEntry entry) {
         if (((entry.getNodeType() == NodeType.MASTER && entry.getFreezeReason() == FreezeReason.SYSTEM) || !entry.isFreezed())
                 && tryAcquireConnection(entry)) {
-            RPromise<T> result = connectionManager.newPromise();
-            connectTo(entry, result);
+            final RPromise<T> result = connectionManager.newPromise();
+            acquireConnection(entry, new Runnable() {
+                @Override
+                public void run() {
+                    connectTo(entry, result);
+                }
+            });
             return result;
         }
 
