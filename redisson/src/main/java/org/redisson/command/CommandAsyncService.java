@@ -20,7 +20,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -28,9 +30,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedisClientResult;
+import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
@@ -42,16 +47,20 @@ import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
-import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
-import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,17 +71,6 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import java.util.HashMap;
-import java.util.Map;
-import org.redisson.RedissonReference;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.misc.RedissonObjectFactory;
 
 /**
  *
@@ -629,7 +627,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.getTimeout().cancel();
 
         long timeoutTime = connectionManager.getConfig().getTimeout();
-        if (QueueCommand.TIMEOUTLESS_COMMANDS.contains(details.getCommand().getName())) {
+        if (RedisCommands.BLOCKING_COMMANDS.contains(details.getCommand().getName())) {
             Long popTimeout = Long.valueOf(details.getParams()[details.getParams().length - 1].toString());
             handleBlockingOperations(details, connection, popTimeout);
             if (popTimeout == 0) {

@@ -22,6 +22,12 @@ import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.EmptyConvertor;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <R> return type
+ */
 public class RedisCommand<R> {
 
     public enum ValueType {OBJECT, OBJECTS, MAP_VALUE, MAP_KEY, MAP, BINARY, STRING}

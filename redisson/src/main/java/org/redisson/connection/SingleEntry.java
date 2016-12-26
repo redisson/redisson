@@ -24,6 +24,7 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.pool.PubSubConnectionPool;
@@ -82,13 +83,13 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public RFuture<RedisConnection> connectionReadOp(InetSocketAddress addr) {
-        return super.connectionWriteOp();
+    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, InetSocketAddress addr) {
+        return super.connectionWriteOp(command);
     }
 
     @Override
-    public RFuture<RedisConnection> connectionReadOp() {
-        return super.connectionWriteOp();
+    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
+        return super.connectionWriteOp(command);
     }
 
     @Override

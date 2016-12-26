@@ -680,7 +680,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             entry = getEntry(source);
         }
-        return entry.connectionWriteOp();
+        return entry.connectionWriteOp(command);
     }
 
     private MasterSlaveEntry getEntry(NodeSource source) {
@@ -707,9 +707,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             entry = getEntry(source.getSlot());
         }
         if (source.getAddr() != null) {
-            return entry.connectionReadOp(source.getAddr());
+            return entry.connectionReadOp(command, source.getAddr());
         }
-        return entry.connectionReadOp();
+        return entry.connectionReadOp(command);
     }
 
     RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {

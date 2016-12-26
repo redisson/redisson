@@ -58,7 +58,7 @@ public class CommandsData implements QueueCommand {
     public List<CommandData<Object, Object>> getPubSubOperations() {
         List<CommandData<Object, Object>> result = new ArrayList<CommandData<Object, Object>>();
         for (CommandData<?, ?> commandData : commands) {
-            if (PUBSUB_COMMANDS.equals(commandData.getCommand().getName())) {
+            if (RedisCommands.PUBSUB_COMMANDS.equals(commandData.getCommand().getName())) {
                 result.add((CommandData<Object, Object>)commandData);
             }
         }
