@@ -39,13 +39,11 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.RPromise;
 
-import io.netty.channel.EventLoopGroup;
-
 /**
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> value type
  */
 public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V> {
 
@@ -251,7 +249,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     public RFuture<Boolean> addAsync(final V value) {
         final RPromise<Boolean> promise = newPromise();
-        commandExecutor.getConnectionManager().getGroup().execute(new Runnable() {
+        commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             public void run() {
                 try {
                     boolean res = add(value);
@@ -266,10 +264,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public RFuture<Boolean> removeAsync(final V value) {
-        EventLoopGroup group = commandExecutor.getConnectionManager().getGroup();
         final RPromise<Boolean> promise = newPromise();
-
-        group.execute(new Runnable() {
+        commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
