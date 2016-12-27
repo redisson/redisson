@@ -52,15 +52,14 @@ public class RedisConnection implements RedisCommands {
     private long lastUsageTime;
 
     public RedisConnection(RedisClient redisClient, Channel channel) {
-        super();
-        this.redisClient = redisClient;
+        this(redisClient);
 
         updateChannel(channel);
         lastUsageTime = System.currentTimeMillis();
     }
     
-    protected RedisConnection() {
-        redisClient = null;
+    protected RedisConnection(RedisClient redisClient) {
+        this.redisClient = redisClient;
     }
 
     public static <C extends RedisConnection> C getFrom(Channel channel) {
