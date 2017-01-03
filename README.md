@@ -14,6 +14,7 @@ __NOTE__: Both version lines have same features except `CompletionStage` interfa
 Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md)  
 Checkout more [code examples](https://github.com/redisson/redisson-examples)  
+Browse [javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.2.2)
 
 Licensed under the Apache License 2.0.
 
