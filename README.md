@@ -14,6 +14,7 @@ __NOTE__: Both version lines have same features except `CompletionStage` interfa
 Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md)  
 Checkout more [code examples](https://github.com/redisson/redisson-examples)  
+Browse [javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.2.2)
 
 Licensed under the Apache License 2.0.
 
@@ -61,6 +62,7 @@ Features
     Remote service, Live Object service, Executor service, Scheduler service
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) implementation  
 * [Hibernate Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate-cache) implementation  
+* [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation) implementation  
 * [Tomcat Session Manager](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#144-tomcat-redis-session-manager) implementation  
 * [Spring Session](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#145-spring-session) implementation  
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way)  
@@ -80,6 +82,7 @@ Articles
 ================================
 
 [Java data structures powered by Redis. Introduction to Redisson (pdf)](http://redisson.org/Redisson.pdf)  
+[Moving from Hazelcast to Redis](https://engineering.datorama.com/moving-from-hazelcast-to-redis-b90a0769d1cb)  
 [A Look at the Java Distributed In-Memory Data Model (Powered by Redis)](https://dzone.com/articles/java-distributed-in-memory-data-model-powered-by-r)  
 [Distributed tasks Execution and Scheduling in Java, powered by Redis](https://dzone.com/articles/distributed-tasks-execution-and-scheduling-in-java)  
 [Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
