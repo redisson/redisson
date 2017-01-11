@@ -15,7 +15,6 @@
  */
 package org.redisson.spring.cache;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +23,6 @@ import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
-import org.redisson.misc.Hash;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -126,8 +124,7 @@ public class RedissonCache implements Cache {
     public <T> T get(Object key, Callable<T> valueLoader) {
         Object value = map.get(key);
         if (value == null) {
-            String lockName = getLockName(key);
-            RLock lock = redisson.getLock(lockName);
+            RLock lock = map.getLock(key);
             lock.lock();
             try {
                 value = map.get(key);
@@ -152,15 +149,6 @@ public class RedissonCache implements Cache {
         }
         
         return (T) fromStoreValue(value);
-    }
-
-    private String getLockName(Object key) {
-        try {
-            byte[] keyState = redisson.getConfig().getCodec().getMapKeyEncoder().encode(key);
-            return "{" + map.getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     protected Object fromStoreValue(Object storeValue) {

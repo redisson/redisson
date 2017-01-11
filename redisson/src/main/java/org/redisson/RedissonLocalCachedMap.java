@@ -190,12 +190,12 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private int invalidationListenerId;
 
     protected RedissonLocalCachedMap(RedissonClient redisson, CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions options) {
-        super(commandExecutor, name);
+        super(redisson, commandExecutor, name);
         init(redisson, name, options);
     }
 
     protected RedissonLocalCachedMap(RedissonClient redisson, Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions options) {
-        super(codec, connectionManager, name);
+        super(redisson, codec, connectionManager, name);
         init(redisson, name, options);
     }
 

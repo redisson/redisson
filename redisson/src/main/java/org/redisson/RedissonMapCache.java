@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapCache;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScanCodec;
@@ -84,13 +85,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private static final RedisCommand<Boolean> EVAL_CONTAINS_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7, ValueType.MAP_VALUE);
     private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
 
-    protected RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+    protected RedissonMapCache(RedissonClient redisson, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
+        super(redisson, commandExecutor, name);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName());
     }
 
-    public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
+    public RedissonMapCache(RedissonClient redisson, Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
+        super(redisson, codec, commandExecutor, name);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName());
     }
 
