@@ -201,7 +201,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return connectionManager.newFailedFuture(exception);
     }
 
-    private RFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry) {
+    private RFuture<T> acquireConnection(RedisCommand<?> command, final ClientConnectionsEntry entry) {
         final RPromise<T> result = connectionManager.newPromise();
         acquireConnection(entry, new Runnable() {
             @Override
