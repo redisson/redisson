@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.AbstractCollection;
 import java.util.AbstractMap;
@@ -65,11 +66,11 @@ import io.netty.util.internal.ThreadLocalRandom;
  */
 public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements RLocalCachedMap<K, V> {
 
-    public static class LocalCachedMapClear {
+    public static class LocalCachedMapClear implements Serializable {
         
     }
     
-    public static class LocalCachedMapInvalidate {
+    public static class LocalCachedMapInvalidate implements Serializable {
         
         private byte[] excludedId;
         private byte[] keyHash;
@@ -93,7 +94,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         
     }
     
-    public static class CacheKey {
+    public static class CacheKey implements Serializable {
         
         private final byte[] keyHash;
 
@@ -135,7 +136,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         
     }
     
-    public static class CacheValue {
+    public static class CacheValue implements Serializable {
         
         private final Object key;
         private final Object value;
