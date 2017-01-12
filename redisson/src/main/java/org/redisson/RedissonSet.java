@@ -28,11 +28,13 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.SortOrder;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -81,8 +83,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return getName();
     }
 
-    ListScanResult<V> scanIterator(String name, InetSocketAddress client, long startPos) {
-        RFuture<ListScanResult<V>> f = commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos);
+    ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
+        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.SSCAN, name, startPos);
         return get(f);
     }
 
@@ -91,7 +93,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
                 return scanIterator(getName(), client, nextIterPos);
             }
 

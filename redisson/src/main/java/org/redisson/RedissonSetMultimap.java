@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -47,12 +48,12 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
     private static final RedisStrictCommand<Boolean> SCARD_VALUE = new RedisStrictCommand<Boolean>("SCARD", new BooleanAmountReplayConvertor());
     private static final RedisCommand<Boolean> SISMEMBER_VALUE = new RedisCommand<Boolean>("SISMEMBER", new BooleanReplayConvertor());
 
-    RedissonSetMultimap(CommandAsyncExecutor connectionManager, String name) {
-        super(connectionManager, name);
+    RedissonSetMultimap(RedissonClient client, CommandAsyncExecutor connectionManager, String name) {
+        super(client, connectionManager, name);
     }
 
-    RedissonSetMultimap(Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(codec, connectionManager, name);
+    RedissonSetMultimap(RedissonClient client, Codec codec, CommandAsyncExecutor connectionManager, String name) {
+        super(client, codec, connectionManager, name);
     }
 
     @Override

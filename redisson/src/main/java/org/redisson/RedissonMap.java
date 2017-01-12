@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
@@ -29,9 +30,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
 import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.ScanCodec;
+import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -42,6 +45,7 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
+import org.redisson.misc.Hash;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
@@ -60,14 +64,33 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.MAP);
     static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
 
-    protected RedissonMap(CommandAsyncExecutor commandExecutor, String name) {
+    private final RedissonClient client;
+    
+    protected RedissonMap(RedissonClient client, CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        this.client = client;
     }
 
-    public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonMap(RedissonClient client, Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        this.client = client;
     }
 
+    @Override
+    public RLock getLock(K key) {
+        String lockName = getLockName(key);
+        return client.getLock(lockName);
+    }
+    
+    private String getLockName(Object key) {
+        try {
+            byte[] keyState = codec.getMapKeyEncoder().encode(key);
+            return "{" + getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+    
     @Override
     public int size() {
         return get(sizeAsync());
@@ -431,7 +454,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
         RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
-            = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.HSCAN, name, startPos);
+            = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);
         return get(f);
     }
 

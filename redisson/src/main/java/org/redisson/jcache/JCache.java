@@ -58,7 +58,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.client.codec.ScanCodec;
+import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -2089,7 +2089,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
         RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
-            = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.HSCAN, name, startPos);
+            = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);
         return get(f);
     }
 

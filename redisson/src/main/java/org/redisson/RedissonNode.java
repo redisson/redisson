@@ -147,7 +147,7 @@ public class RedissonNode {
     private void retrieveAdresses() {
         ConnectionManager connectionManager = ((Redisson)redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            RFuture<RedisConnection> readFuture = entry.connectionReadOp(RedisCommands.PUBLISH);
+            RFuture<RedisConnection> readFuture = entry.connectionReadOp(null);
             if (readFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout()) 
                     && readFuture.isSuccess()) {
                 RedisConnection connection = readFuture.getNow();
@@ -156,7 +156,7 @@ public class RedissonNode {
                 localAddress = (InetSocketAddress) connection.getChannel().localAddress();
                 return;
             }
-            RFuture<RedisConnection> writeFuture = entry.connectionWriteOp(RedisCommands.PUBLISH);
+            RFuture<RedisConnection> writeFuture = entry.connectionWriteOp(null);
             if (writeFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout())
                     && writeFuture.isSuccess()) {
                 RedisConnection connection = writeFuture.getNow();

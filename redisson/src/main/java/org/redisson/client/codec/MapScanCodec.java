@@ -30,24 +30,23 @@ import io.netty.buffer.Unpooled;
  * @author Nikita Koksharov
  *
  */
-public class ScanCodec implements Codec {
+public class MapScanCodec implements Codec {
 
     private final Codec delegate;
+    private final Codec mapValueCodec;
 
-    public ScanCodec(Codec delegate) {
+    public MapScanCodec(Codec delegate) {
+        this(delegate, null);
+    }
+
+    public MapScanCodec(Codec delegate, Codec mapValueCodec) {
         this.delegate = delegate;
+        this.mapValueCodec = mapValueCodec;
     }
 
     @Override
     public Decoder<Object> getValueDecoder() {
-        return new Decoder<Object>() {
-            @Override
-            public Object decode(ByteBuf buf, State state) throws IOException {
-                ByteBuf b = Unpooled.copiedBuffer(buf);
-                Object val = delegate.getValueDecoder().decode(buf, state);
-                return new ScanObjectEntry(b, val);
-            }
-        };
+        return delegate.getValueDecoder();
     }
 
     @Override
@@ -57,17 +56,40 @@ public class ScanCodec implements Codec {
 
     @Override
     public Decoder<Object> getMapValueDecoder() {
-        return delegate.getMapValueDecoder();
+        return new Decoder<Object>() {
+            @Override
+            public Object decode(ByteBuf buf, State state) throws IOException {
+                ByteBuf b = Unpooled.copiedBuffer(buf);
+                Codec c = delegate;
+                if (mapValueCodec != null) {
+                    c = mapValueCodec;
+                }
+                Object val = c.getMapValueDecoder().decode(buf, state);
+                return new ScanObjectEntry(b, val);
+            }
+        };
     }
 
     @Override
     public Encoder getMapValueEncoder() {
-        return delegate.getMapValueEncoder();
+        Codec c = delegate;
+        if (mapValueCodec != null) {
+            c = mapValueCodec;
+        }
+
+        return c.getMapValueEncoder();
     }
 
     @Override
     public Decoder<Object> getMapKeyDecoder() {
-        return delegate.getMapKeyDecoder();
+        return new Decoder<Object>() {
+            @Override
+            public Object decode(ByteBuf buf, State state) throws IOException {
+                ByteBuf b = Unpooled.copiedBuffer(buf);
+                Object val = delegate.getMapKeyDecoder().decode(buf, state);
+                return new ScanObjectEntry(b, val);
+            }
+        };
     }
 
     @Override

@@ -34,6 +34,14 @@ import java.util.concurrent.ConcurrentMap;
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
 
     /**
+     * Returns <code>RLock</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return lock
+     */
+    RLock getLock(K key);
+    
+    /**
      * Returns size of value mapped by key in bytes
      * 
      * @param key - map key

@@ -240,12 +240,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RListMultimap<K, V> getListMultimap(String name) {
-        return new RedissonListMultimap<K, V>(connectionManager.getCommandExecutor(), name);
+        return new RedissonListMultimap<K, V>(this, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec) {
-        return new RedissonListMultimap<K, V>(codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonListMultimap<K, V>(this, codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
@@ -260,37 +260,37 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
-        return new RedissonMap<K, V>(connectionManager.getCommandExecutor(), name);
+        return new RedissonMap<K, V>(this, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RSetMultimap<K, V> getSetMultimap(String name) {
-        return new RedissonSetMultimap<K, V>(connectionManager.getCommandExecutor(), name);
+        return new RedissonSetMultimap<K, V>(this, connectionManager.getCommandExecutor(), name);
     }
     
     @Override
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name) {
-        return new RedissonSetMultimapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name);
+        return new RedissonSetMultimapCache<K, V>(this, evictionScheduler, connectionManager.getCommandExecutor(), name);
     }
     
     @Override
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name, Codec codec) {
-        return new RedissonSetMultimapCache<K, V>(evictionScheduler, codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonSetMultimapCache<K, V>(this, evictionScheduler, codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name) {
-        return new RedissonListMultimapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name);
+        return new RedissonListMultimapCache<K, V>(this, evictionScheduler, connectionManager.getCommandExecutor(), name);
     }
     
     @Override
     public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name, Codec codec) {
-        return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonListMultimapCache<K, V>(this, evictionScheduler, codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec) {
-        return new RedissonSetMultimap<K, V>(codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonSetMultimap<K, V>(this, codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
@@ -305,17 +305,17 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
-        return new RedissonMapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name);
+        return new RedissonMapCache<K, V>(this, evictionScheduler, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCache<K, V>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name);
+        return new RedissonMapCache<K, V>(this, codec, evictionScheduler, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name, Codec codec) {
-        return new RedissonMap<K, V>(codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonMap<K, V>(this, codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
@@ -538,7 +538,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RBatch createBatch() {
-        RedissonBatch batch = new RedissonBatch(evictionScheduler, connectionManager);
+        RedissonBatch batch = new RedissonBatch(this, evictionScheduler, connectionManager);
         if (config.isRedissonReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }

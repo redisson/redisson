@@ -15,6 +15,7 @@
  */
 package org.redisson.tomcat;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,11 +34,18 @@ import org.redisson.api.RMap;
 public class RedissonSession extends StandardSession {
 
     private final RedissonSessionManager redissonManager;
+    private final Map<String, Object> attrs;
     private RMap<String, Object> map;
     
     public RedissonSession(RedissonSessionManager manager) {
         super(manager);
         this.redissonManager = manager;
+        try {
+            Field attr = StandardSession.class.getDeclaredField("attributes");
+            attrs = (Map<String, Object>) attr.get(this);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static final long serialVersionUID = -2518607181636076487L;
@@ -143,7 +151,7 @@ public class RedissonSession extends StandardSession {
         newMap.put("session:isValid", isValid);
         newMap.put("session:isNew", isNew);
         
-        for (Entry<String, Object> entry : attributes.entrySet()) {
+        for (Entry<String, Object> entry : attrs.entrySet()) {
             newMap.put(entry.getKey(), entry.getValue());
         }
         

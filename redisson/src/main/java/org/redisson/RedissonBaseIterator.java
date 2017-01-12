@@ -22,12 +22,15 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
+
+import io.netty.buffer.ByteBuf;
 
 abstract class RedissonBaseIterator<V> implements Iterator<V> {
 
-    private List<V> firstValues;
-    private List<V> lastValues;
-    private Iterator<V> lastIter;
+    private List<ByteBuf> firstValues;
+    private List<ByteBuf> lastValues;
+    private Iterator<ScanObjectEntry> lastIter;
     protected long nextIterPos;
     protected InetSocketAddress client;
 
@@ -40,6 +43,8 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
     public boolean hasNext() {
         if (lastIter == null || !lastIter.hasNext()) {
             if (finished) {
+                free(firstValues);
+                free(lastValues);
 
                 currentElementRemoved = false;
                 removeExecuted = false;
@@ -56,8 +61,12 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
             long prevIterPos;
             do {
                 prevIterPos = nextIterPos;
-                ListScanResult<V> res = iterator(client, nextIterPos);
-                lastValues = new ArrayList<V>(res.getValues());
+                ListScanResult<ScanObjectEntry> res = iterator(client, nextIterPos);
+                if (lastValues != null) {
+                    free(lastValues);
+                }
+                
+                lastValues = convert(res.getValues());
                 client = res.getRedisClient();
 
                 if (nextIterPos == 0 && firstValues == null) {
@@ -87,6 +96,9 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                             }
                         }
                     } else if (lastValues.removeAll(firstValues)) {
+                        free(firstValues);
+                        free(lastValues);
+
                         currentElementRemoved = false;
                         removeExecuted = false;
                         client = null;
@@ -111,11 +123,28 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
         return lastIter.hasNext();
     }
     
+    private List<ByteBuf> convert(List<ScanObjectEntry> list) {
+        List<ByteBuf> result = new ArrayList<ByteBuf>(list.size());
+        for (ScanObjectEntry entry : list) {
+            result.add(entry.getBuf());
+        }
+        return result;
+    }
+    
+    private void free(List<ByteBuf> list) {
+        if (list == null) {
+            return;
+        }
+        for (ByteBuf byteBuf : list) {
+            byteBuf.release();
+        }
+    }
+    
     protected boolean tryAgain() {
         return false;
     }
 
-    abstract ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos);
+    abstract ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos);
 
     @Override
     public V next() {
@@ -123,7 +152,7 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
             throw new NoSuchElementException("No such element");
         }
 
-        value = lastIter.next();
+        value = (V) lastIter.next().getObj();
         currentElementRemoved = false;
         return value;
     }

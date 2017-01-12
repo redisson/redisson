@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.redisson.EvictionScheduler;
-import org.redisson.Redisson;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;

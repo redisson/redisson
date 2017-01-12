@@ -30,6 +30,7 @@ import org.redisson.api.RSetCacheReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
 /**
@@ -76,7 +77,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         return reactive(instance.containsAsync(o));
     }
 
-    Publisher<ListScanResult<V>> scanIterator(InetSocketAddress client, long startPos) {
+    Publisher<ListScanResult<ScanObjectEntry>> scanIterator(InetSocketAddress client, long startPos) {
         return reactive(instance.scanIteratorAsync(client, startPos));
     }
 
@@ -84,7 +85,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     public Publisher<V> iterator() {
         return new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
+            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
                 return RedissonSetCacheReactive.this.scanIterator(client, nextIterPos);
             }
         };

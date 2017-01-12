@@ -34,6 +34,7 @@ import org.redisson.api.SortOrder;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -41,6 +42,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -259,8 +261,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANK_INT, getName(), o);
     }
 
-    private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        RFuture<ListScanResult<V>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
+    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
+        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new ScanCodec(codec), RedisCommands.ZSCAN, getName(), startPos);
         return get(f);
     }
 
@@ -269,7 +271,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
                 return scanIterator(client, nextIterPos);
             }
 
