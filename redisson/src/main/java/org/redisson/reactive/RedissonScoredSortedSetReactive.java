@@ -23,6 +23,7 @@ import java.util.Collections;
 import org.reactivestreams.Publisher;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -30,6 +31,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
 public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactive implements RScoredSortedSetReactive<V> {
@@ -122,15 +124,15 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
         return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANK, getName(), o);
     }
 
-    private Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
+    private Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+        return commandExecutor.readReactive(client, getName(), new ScanCodec(codec), RedisCommands.ZSCAN, getName(), startPos);
     }
 
     @Override
     public Publisher<V> iterator() {
         return new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
+            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
                 return RedissonScoredSortedSetReactive.this.scanIteratorReactive(client, nextIterPos);
             }
         };

@@ -34,7 +34,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.ScanCodec;
+import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -454,7 +454,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
         RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
-            = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.HSCAN, name, startPos);
+            = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);
         return get(f);
     }
 

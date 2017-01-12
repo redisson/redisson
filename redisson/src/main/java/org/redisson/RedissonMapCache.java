@@ -30,7 +30,7 @@ import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.ScanCodec;
+import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -531,7 +531,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
         RedisCommand<MapCacheScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL", 
-                new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapDecoder(new ScanCodec(codec)), new ObjectListDecoder(codec), new MapCacheScanResultReplayDecoder()), ValueType.MAP);
+                new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapDecoder(new MapScanCodec(codec)), new ObjectListDecoder(codec), new MapCacheScanResultReplayDecoder()), ValueType.MAP);
         RFuture<MapCacheScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_HSCAN,
                 "local result = {}; "
                 + "local idleKeys = {}; "

@@ -29,6 +29,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.SortOrder;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -39,6 +40,7 @@ import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -161,8 +163,8 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          Arrays.<Object>asList(timeoutSetName, getName()), System.currentTimeMillis(), key, o);
     }
 
-    private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        RFuture<ListScanResult<V>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_SSCAN,
+    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
+        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), new ScanCodec(codec), EVAL_SSCAN,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
               + "if expireDateScore ~= false then "
@@ -182,7 +184,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
                 return scanIterator(client, nextIterPos);
             }
 

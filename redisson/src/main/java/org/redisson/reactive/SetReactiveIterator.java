@@ -16,13 +16,16 @@
 package org.redisson.reactive;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
+import io.netty.buffer.ByteBuf;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -32,28 +35,27 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
     public void subscribe(final Subscriber<? super V> t) {
         t.onSubscribe(new ReactiveSubscription<V>(this, t) {
 
-            private List<V> firstValues;
+            private List<ByteBuf> firstValues;
+            private List<ByteBuf> lastValues;
             private long nextIterPos;
             private InetSocketAddress client;
 
-            private long currentIndex;
+            private boolean finished;
 
             @Override
             protected void onRequest(long n) {
-                currentIndex = n;
-
                 nextValues();
             }
 
-            private void handle(List<V> vals) {
-                for (V val : vals) {
-                    onNext(val);
+            private void handle(List<ScanObjectEntry> vals) {
+                for (ScanObjectEntry val : vals) {
+                    onNext((V)val.getObj());
                 }
             }
 
             protected void nextValues() {
                 final ReactiveSubscription<V> m = this;
-                scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<V>>() {
+                scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<ScanObjectEntry>>() {
 
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -61,32 +63,68 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
                     }
 
                     @Override
-                    public void onNext(ListScanResult<V> res) {
-                        client = res.getRedisClient();
+                    public void onNext(ListScanResult<ScanObjectEntry> res) {
+                        if (finished) {
+                            free(firstValues);
+                            free(lastValues);
 
-                        long prevIterPos = nextIterPos;
-                        if (nextIterPos == 0 && firstValues == null) {
-                            firstValues = res.getValues();
-                        } else if (res.getValues().equals(firstValues)) {
-                            m.onComplete();
-                            currentIndex = 0;
+                            client = null;
+                            firstValues = null;
+                            lastValues = null;
+                            nextIterPos = 0;
                             return;
                         }
 
-                        nextIterPos = res.getPos();
-                        if (prevIterPos == nextIterPos) {
-                            nextIterPos = -1;
+                        long prevIterPos = nextIterPos;
+                        if (lastValues != null) {
+                            free(lastValues);
+                        }
+                        
+                        lastValues = convert(res.getValues());
+                        client = res.getRedisClient();
+                        
+                        if (nextIterPos == 0 && firstValues == null) {
+                            firstValues = lastValues;
+                            lastValues = null;
+                            if (firstValues.isEmpty()) {
+                                client = null;
+                                firstValues = null;
+                                nextIterPos = 0;
+                                prevIterPos = -1;
+                            }
+                        } else { 
+                            if (firstValues.isEmpty()) {
+                                firstValues = lastValues;
+                                lastValues = null;
+                                if (firstValues.isEmpty()) {
+                                    if (res.getPos() == 0) {
+                                        finished = true;
+                                        m.onComplete();
+                                        return;
+                                    }
+                                }
+                            } else if (lastValues.removeAll(firstValues)) {
+                                free(firstValues);
+                                free(lastValues);
+
+                                client = null;
+                                firstValues = null;
+                                lastValues = null;
+                                nextIterPos = 0;
+                                prevIterPos = -1;
+                                finished = true;
+                                m.onComplete();
+                                return;
+                            }
                         }
 
                         handle(res.getValues());
 
-                        if (currentIndex == 0) {
-                            return;
-                        }
-
-                        if (nextIterPos == -1) {
+                        nextIterPos = res.getPos();
+                        
+                        if (prevIterPos == nextIterPos) {
+                            finished = true;
                             m.onComplete();
-                            currentIndex = 0;
                         }
                     }
 
@@ -97,7 +135,7 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
 
                     @Override
                     public void onComplete() {
-                        if (currentIndex == 0) {
+                        if (finished) {
                             return;
                         }
                         nextValues();
@@ -106,7 +144,24 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
             }
         });
     }
+    
+    private void free(List<ByteBuf> list) {
+        if (list == null) {
+            return;
+        }
+        for (ByteBuf byteBuf : list) {
+            byteBuf.release();
+        }
+    }
+    
+    private List<ByteBuf> convert(List<ScanObjectEntry> list) {
+        List<ByteBuf> result = new ArrayList<ByteBuf>(list.size());
+        for (ScanObjectEntry entry : list) {
+            result.add(entry.getBuf());
+        }
+        return result;
+    }
 
-    protected abstract Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long nextIterPos);
+    protected abstract Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos);
 
 }

@@ -28,12 +28,14 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSetCache;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -102,13 +104,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                Arrays.<Object>asList(getName()), System.currentTimeMillis(), o);
     }
 
-    ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        RFuture<ListScanResult<V>> f = scanIteratorAsync(client, startPos);
+    ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
+        RFuture<ListScanResult<ScanObjectEntry>> f = scanIteratorAsync(client, startPos);
         return get(f);
     }
 
-    public RFuture<ListScanResult<V>> scanIteratorAsync(InetSocketAddress client, long startPos) {
-        return commandExecutor.evalReadAsync(client, getName(), codec, RedisCommands.EVAL_ZSCAN,
+    public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(InetSocketAddress client, long startPos) {
+        return commandExecutor.evalReadAsync(client, getName(), new ScanCodec(codec), RedisCommands.EVAL_ZSCAN,
                   "local result = {}; "
                 + "local res = redis.call('zscan', KEYS[1], ARGV[1]); "
                 + "for i, value in ipairs(res[2]) do "
@@ -127,7 +129,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
                 return scanIterator(client, nextIterPos);
             }
 

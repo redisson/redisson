@@ -804,22 +804,47 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <R, V> void handleReference(RPromise<R> mainPromise, R res) {
-        if (res instanceof List || res instanceof ListScanResult) {
-            List r = res instanceof ListScanResult ? ((ListScanResult)res).getValues() : (List) res;
+        if (res instanceof List) {
+            List<Object> r = (List<Object>)res;
             for (int i = 0; i < r.size(); i++) {
                 if (r.get(i) instanceof RedissonReference) {
                     try {
-                        r.set(i ,(redisson != null
-                                ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) r.get(i))
-                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) r.get(i))));
+                        r.set(i, redisson != null
+                                ? RedissonObjectFactory.fromReference(redisson, (RedissonReference) r.get(i))
+                                : RedissonObjectFactory.fromReference(redissonReactive, (RedissonReference) r.get(i)));
                     } catch (Exception exception) {//skip and carry on to next one.
                     }
                 } else if (r.get(i) instanceof ScoredEntry && ((ScoredEntry) r.get(i)).getValue() instanceof RedissonReference) {
                     try {
-                        ScoredEntry se = ((ScoredEntry) r.get(i));
-                        r.set(i ,new ScoredEntry(se.getScore(), redisson != null
+                        ScoredEntry<?> se = ((ScoredEntry<?>) r.get(i));
+                        se = new ScoredEntry(se.getScore(), redisson != null
                                 ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) se.getValue())
-                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) se.getValue())));
+                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) se.getValue()));
+                        r.set(i, se);
+                    } catch (Exception exception) {//skip and carry on to next one.
+                    }
+                }
+            }
+            mainPromise.trySuccess(res);
+        } else if (res instanceof ListScanResult) {
+            List<ScanObjectEntry> r = ((ListScanResult)res).getValues();
+            for (int i = 0; i < r.size(); i++) {
+                ScanObjectEntry e = r.get(i);
+                if (e.getObj() instanceof RedissonReference) {
+                    try {
+                        r.set(i , new ScanObjectEntry(e.getBuf(), redisson != null
+                                ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) e.getObj())
+                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) e.getObj())));
+                    } catch (Exception exception) {//skip and carry on to next one.
+                    }
+                } else if (e.getObj() instanceof ScoredEntry && ((ScoredEntry<?>) e.getObj()).getValue() instanceof RedissonReference) {
+                    try {
+                        ScoredEntry<?> se = ((ScoredEntry<?>) e.getObj());
+                        se = new ScoredEntry(se.getScore(), redisson != null
+                                ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) se.getValue())
+                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) se.getValue()));
+                        
+                        r.set(i, new ScanObjectEntry(e.getBuf(), se));
                     } catch (Exception exception) {//skip and carry on to next one.
                     }
                 }
