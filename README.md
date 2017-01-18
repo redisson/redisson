@@ -82,13 +82,17 @@ Articles
 ================================
 
 [Java data structures powered by Redis. Introduction to Redisson (pdf)](https://redisson.org/Redisson.pdf)  
-[Moving from Hazelcast to Redis](https://engineering.datorama.com/moving-from-hazelcast-to-redis-b90a0769d1cb)  
 [A Look at the Java Distributed In-Memory Data Model (Powered by Redis)](https://dzone.com/articles/java-distributed-in-memory-data-model-powered-by-r)  
 [Distributed tasks Execution and Scheduling in Java, powered by Redis](https://dzone.com/articles/distributed-tasks-execution-and-scheduling-in-java)  
 [Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
 [Java Remote Method Invocation with Redisson](https://dzone.com/articles/java-remote-method-invocation-with-redisson)  
 [Java Multimaps With Redis](https://dzone.com/articles/multimaps-with-redis)  
 [Distributed lock with Redis](https://evuvatech.com/2016/02/05/distributed-lock-with-redis/)
+
+Success stories
+================================
+
+[Moving from Hazelcast to Redis](https://engineering.datorama.com/moving-from-hazelcast-to-redis-b90a0769d1cb)  
 
 Quick start
 ===============================
