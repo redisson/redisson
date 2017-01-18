@@ -2,6 +2,7 @@ package org.redisson;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
@@ -42,5 +43,10 @@ public class RedissonLocalCachedMapSerializationCodecTest extends RedissonLocalC
             }
             redisson.getKeys().flushall();
         }
+    }
+
+    @Test @Override
+    public void testAddAndGet() throws InterruptedException {
+        // this method/test won't work with Java Serialization
     }
 }
