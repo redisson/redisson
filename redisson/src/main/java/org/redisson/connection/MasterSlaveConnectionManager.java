@@ -707,6 +707,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             entry = getEntry(source.getSlot());
         }
         if (source.getAddr() != null) {
+            entry = getEntry(source.getAddr());
+            if (entry == null) {
+                for (MasterSlaveEntry e : getEntrySet()) {
+                    if (e.hasSlave(source.getAddr())) {
+                        entry = e;
+                        break;
+                    }
+                }
+            }
             return entry.connectionReadOp(command, source.getAddr());
         }
         return entry.connectionReadOp(command);
