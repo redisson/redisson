@@ -27,7 +27,7 @@ import mockit.Deencapsulation;
 
 public class RedissonLocalCachedMapTest extends BaseTest {
 
-//    @Test
+    //    @Test
     public void testPerf() {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(100000).invalidateEntryOnChange(true);
         Map<String, Integer> map = redisson.getLocalCachedMap("test", options);

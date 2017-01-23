@@ -2,6 +2,21 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+####19-Jan-2016 - versions 2.7.3 and 3.2.3 released
+
+Redisson Team is pleased to announce __ULTRA-FAST__ Redisson PRO edition.  
+Performance measure results available in [Benchmark whitepaper](https://redisson.pro/Redisson%20PRO%20benchmark%20whitepaper.pdf)
+
+Feature - `RMap.getLock(key)` and `RMultimap.getLock(key)` methods added  
+Improvement - `RedissonSpringCacheManager` constructor with Redisson instance only added  
+Improvement - `CronSchedule` moved to `org.redisson.api` package  
+Fixed - RedissonBaseIterator.hasNext() doesn't return false in some cases  
+Fixed - NoSuchFieldError exception in `redisson-tomcat` modules  
+Fixed - ConnectionPool size not respected during redirect of cluster request  
+Fixed - `RSortedSet.removeAsync` and `RSortedSet.addAsync`  
+Fixed - `RBloomFilter.tryInit` were not validated properly  
+Fixed - CommandDecoder should print all replay body on error  
+
 ####19-Dec-2016 - versions 2.7.2 and 3.2.2 released
 
 Feature - `RList`, `RSet` and `RScoredSortedSet` implements `RSortable` interface with SORT command support  
