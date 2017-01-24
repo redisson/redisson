@@ -42,21 +42,6 @@ public class JCacheTest extends BaseTest {
     }
 
     @Test
-    public void testMapPutGet2() throws InterruptedException, IllegalArgumentException, URISyntaxException {
-        RMap<String, String> cache = redisson.getMap("test");
-        
-        long startTime = System.nanoTime();
-        cache.put("123", "90");
-        long spentTime = System.nanoTime() - startTime;
-        System.out.println("put spentTime: " + spentTime);
-        
-        startTime = System.nanoTime();
-        cache.get("123");
-        spentTime = System.nanoTime() - startTime;
-        System.out.println("get spentTime: " + spentTime);
-    }
-    
-//    @Test
     public void testExpiration() throws InterruptedException, IllegalArgumentException, URISyntaxException {
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
