@@ -31,22 +31,23 @@ import java.net.URLStreamHandlerFactory;
  */
 public class URLBuilder {
 
-    private static volatile boolean init = false; 
+    private static URLStreamHandlerFactory currentFactory;
     
-    static {
-        init();
-    }
-    
-    public static void init() {
-        if (init) {
-            return;
-        }
-        init = true;
-        
+    public static void restoreURLFactory() {
         try {
             Field field = URL.class.getDeclaredField("factory");
             field.setAccessible(true);
-            final URLStreamHandlerFactory currentFactory = (URLStreamHandlerFactory) field.get(null);
+            field.set(null, currentFactory);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+    
+    public static void replaceURLFactory() {
+        try {
+            Field field = URL.class.getDeclaredField("factory");
+            field.setAccessible(true);
+            currentFactory = (URLStreamHandlerFactory) field.get(null);
             if (currentFactory != null) {
                 field.set(null, null);
             }
@@ -100,6 +101,7 @@ public class URLBuilder {
     }
     
     public static URL create(String url) {
+        replaceURLFactory();
         try {
             String[] parts = url.split(":");
             if (parts.length-1 >= 3) {
@@ -115,6 +117,8 @@ public class URLBuilder {
             }
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException(e);
+        } finally {
+            restoreURLFactory();
         }
     }
 

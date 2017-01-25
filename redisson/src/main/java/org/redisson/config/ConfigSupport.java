@@ -117,56 +117,112 @@ public class ConfigSupport {
     private final ObjectMapper jsonMapper = createMapper(null);
     private final ObjectMapper yamlMapper = createMapper(new YAMLFactory());
 
-    public ConfigSupport() {
-        URLBuilder.init();
-    }
-    
     public <T> T fromJSON(String content, Class<T> configType) throws IOException {
-        return jsonMapper.readValue(content, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return jsonMapper.readValue(content, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromJSON(File file, Class<T> configType) throws IOException {
-        return jsonMapper.readValue(file, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return jsonMapper.readValue(file, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromJSON(URL url, Class<T> configType) throws IOException {
-        return jsonMapper.readValue(url, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return jsonMapper.readValue(url, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromJSON(Reader reader, Class<T> configType) throws IOException {
-        return jsonMapper.readValue(reader, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return jsonMapper.readValue(reader, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromJSON(InputStream inputStream, Class<T> configType) throws IOException {
-        return jsonMapper.readValue(inputStream, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return jsonMapper.readValue(inputStream, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public String toJSON(Config config) throws IOException {
-        return jsonMapper.writeValueAsString(config);
+        URLBuilder.replaceURLFactory();
+        try {
+            return jsonMapper.writeValueAsString(config);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromYAML(String content, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(content, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return yamlMapper.readValue(content, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromYAML(File file, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(file, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return yamlMapper.readValue(file, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromYAML(URL url, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(url, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return yamlMapper.readValue(url, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromYAML(Reader reader, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(reader, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return yamlMapper.readValue(reader, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public <T> T fromYAML(InputStream inputStream, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(inputStream, configType);
+        URLBuilder.replaceURLFactory();
+        try {
+            return yamlMapper.readValue(inputStream, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
 
     public String toYAML(Config config) throws IOException {
-        return yamlMapper.writeValueAsString(config);
+        URLBuilder.replaceURLFactory();
+        try {
+            return yamlMapper.writeValueAsString(config);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
     }
     
     public static ConnectionManager createConnectionManager(Config configCopy) {
