@@ -76,7 +76,7 @@ Features
 
 Who uses Redisson
 ================================
-[Baidu](http://baidu.com), [Infor](http://www.infor.com/), [New Relic Synthetics](https://newrelic.com/synthetics), [Singtel](http://singtel.com), [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/), [Azar](http://azarlive.com/), [Snapfish](http://snapfish.com)
+[Electronic Arts](http://ea.com), [Baidu](http://baidu.com), [Infor](http://www.infor.com/), [New Relic Synthetics](https://newrelic.com/synthetics), [Singtel](http://singtel.com), [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/), [Azar](http://azarlive.com/), [Snapfish](http://snapfish.com)
 
 Articles
 ================================
