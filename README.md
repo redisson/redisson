@@ -7,7 +7,7 @@ Redis 2.8+ compatible.
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
 | 3.2.3  | 1.8+ | 19.01.2017 |
-| 2.7.3 | 1.6+ | 19.01.2017 |
+| 2.7.3 | 1.6, 1.7, 1.8 and Android | 19.01.2017 |
 
 __NOTE__: Both version lines have same features except `CompletionStage` interface supported by 3.x.x line
 
