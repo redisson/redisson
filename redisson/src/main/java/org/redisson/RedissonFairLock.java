@@ -73,6 +73,14 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
 
     @Override
+    protected RFuture<Void> acquireFailedAsync(long threadId) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                    "redis.call('zrem', KEYS[2], ARGV[1]); " +
+                    "redis.call('lrem', KEYS[1], 0, ARGV[1]); ",
+                    Arrays.<Object>asList(getThreadsQueueName(), getTimeoutSetName()), getLockName(threadId));
+    }
+    
+    @Override
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
         long threadWaitTime = 5000;
