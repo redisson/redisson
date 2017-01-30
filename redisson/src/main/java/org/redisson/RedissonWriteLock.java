@@ -53,6 +53,11 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     }
 
     @Override
+    String getLockName(long threadId) {
+        return super.getLockName(threadId) + ":write";
+    }
+    
+    @Override
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
@@ -96,7 +101,10 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                                             "redis.call('hdel', KEYS[1], ARGV[3]); " +
                                             "if (redis.call('hlen', KEYS[1]) == 1) then " +
                                                 "redis.call('del', KEYS[1]); " +
-                                                "redis.call('publish', KEYS[2], ARGV[1]); " +
+                                                "redis.call('publish', KEYS[2], ARGV[1]); " + 
+                                            "else " +
+                                                // has unlocked read-locks
+                                                "redis.call('hset', KEYS[1], 'mode', 'read'); " +
                                             "end; " +
                                             "return 1; "+
                                         "end; " +
@@ -146,20 +154,6 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     public boolean isLocked() {
         String res = commandExecutor.write(getName(), StringCodec.INSTANCE, RedisCommands.HGET, getName(), "mode");
         return "write".equals(res);
-    }
-
-    @Override
-    public boolean isHeldByCurrentThread() {
-        return commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(Thread.currentThread().getId()));
-    }
-
-    @Override
-    public int getHoldCount() {
-        Long res = commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName(Thread.currentThread().getId()));
-        if (res == null) {
-            return 0;
-        }
-        return res.intValue();
     }
 
 }
