@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.Arrays;
@@ -171,7 +172,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         if (cfg.isUseLinuxNativeEpoll()) {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new EpollEventLoopGroup(cfg.getNettyThreads());
+                this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -260,7 +261,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else {
             minTimeout = 100;
         }
-        timer = new HashedWheelTimer(minTimeout, TimeUnit.MILLISECONDS);
+        
+        timer = new HashedWheelTimer(Executors.defaultThreadFactory(), minTimeout, TimeUnit.MILLISECONDS, 1024);
+        
+        // to avoid assertion error during timer.stop invocation
+        try {
+            Field leakField = HashedWheelTimer.class.getDeclaredField("leak");
+            leakField.setAccessible(true);
+            leakField.set(timer, null);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        
     }
 
     public ConnectionInitializer getConnectListener() {
