@@ -108,10 +108,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private CacheLoader<K, V> cacheLoader;
     private CacheWriter<K, V> cacheWriter;
     private boolean closed;
+    private boolean hasOwnRedisson;
     
-    public JCache(JCacheManager cacheManager, Redisson redisson, String name, JCacheConfiguration<K, V> config) {
+    public JCache(JCacheManager cacheManager, Redisson redisson, String name, JCacheConfiguration<K, V> config, boolean hasOwnRedisson) {
         super(redisson.getConfig().getCodec(), redisson.getCommandExecutor(), name);
         
+        this.hasOwnRedisson = hasOwnRedisson;
         this.redisson = redisson;
         
         Factory<CacheLoader<K, V>> cacheLoaderFactory = config.getCacheLoaderFactory();
@@ -2240,6 +2242,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         
         synchronized (cacheManager) {
             if (!isClosed()) {
+                if (hasOwnRedisson) {
+                    redisson.shutdown();
+                }
                 cacheManager.closeCache(this);
                 for (CacheEntryListenerConfiguration<K, V> config : listeners.keySet()) {
                     deregisterCacheEntryListener(config);

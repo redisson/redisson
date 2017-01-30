@@ -2,14 +2,17 @@ package org.redisson.jcache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.cache.Cache;
 import javax.cache.Caching;
+import javax.cache.configuration.Configuration;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import javax.cache.configuration.MutableConfiguration;
@@ -22,27 +25,56 @@ import javax.cache.expiry.Duration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.BaseTest;
-import org.redisson.api.RMap;
+import org.redisson.RedisRunner;
+import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.config.Config;
+import org.redisson.jcache.configuration.RedissonConfiguration;
 
 public class JCacheTest extends BaseTest {
 
     @Test
-    public void testMapPutGet() throws InterruptedException, IllegalArgumentException, URISyntaxException {
-        MutableConfiguration<String, String> config = new MutableConfiguration<>();
-        config.setStoreByValue(true);
+    public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
         
-        URI configUri = getClass().getResource("redisson-jcache.json").toURI();
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
-
-        long startTime = System.nanoTime();
-        cache.get("123");
-        long spentTime = System.nanoTime() - startTime;
-        System.out.println("get spentTime: " + spentTime);
+        
+        cache.put("1", "2");
+        Assert.assertEquals("2", cache.get("1"));
+        
+        cache.close();
+        runner.stop();
+    }
+    
+    @Test
+    public void testRedissonInstance() throws InterruptedException, IllegalArgumentException, URISyntaxException {
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+        
+        cache.put("1", "2");
+        Assert.assertEquals("2", cache.get("1"));
+        
+        cache.close();
     }
 
     @Test
-    public void testExpiration() throws InterruptedException, IllegalArgumentException, URISyntaxException {
+    public void testExpiration() throws InterruptedException, IllegalArgumentException, URISyntaxException, FailedToStartRedisException, IOException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
         MutableConfiguration<String, String> config = new MutableConfiguration<>();
         config.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
         config.setStoreByValue(true);
@@ -65,6 +97,9 @@ public class JCacheTest extends BaseTest {
         latch.await();
         
         Assert.assertNull(cache.get(key));
+        
+        cache.close();
+        runner.stop();
     }
     
     public static class ExpiredListener implements CacheEntryExpiredListener<String, String>, Serializable {
