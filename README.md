@@ -7,7 +7,7 @@ Redis 2.8+ compatible.
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
 | 3.2.3  | 1.8+ | 19.01.2017 |
-| 2.7.3 | 1.6+ | 19.01.2017 |
+| 2.7.3 | 1.6, 1.7, 1.8 and Android | 19.01.2017 |
 
 __NOTE__: Both version lines have same features except `CompletionStage` interface supported by 3.x.x line
 
@@ -21,7 +21,6 @@ Licensed under the Apache License 2.0.
 Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ####Try ultra-fast [Redisson PRO](https://redisson.pro) version.  
-####Redisson team offers commercial support. Please contact sales@redisson.pro for details.
 
 Features
 ================================
@@ -76,7 +75,7 @@ Features
 
 Who uses Redisson
 ================================
-[Baidu](http://baidu.com), [Infor](http://www.infor.com/), [New Relic Synthetics](https://newrelic.com/synthetics), [Singtel](http://singtel.com), [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Brookhaven National Laboratory](http://bnl.gov/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/), [Azar](http://azarlive.com/), [Snapfish](http://snapfish.com)
+[Electronic Arts](http://ea.com), [Baidu](http://baidu.com), [New Relic Synthetics](https://newrelic.com/synthetics), [National Australia Bank](https://www.nab.com.au/), [Brookhaven National Laboratory](http://bnl.gov/), [Singtel](http://singtel.com), [Infor](http://www.infor.com/), [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/), [Azar](http://azarlive.com/), [Snapfish](http://snapfish.com), [Crimson Hexagon](http://www.crimsonhexagon.com)
 
 Articles
 ================================
