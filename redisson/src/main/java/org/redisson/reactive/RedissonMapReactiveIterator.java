@@ -33,9 +33,9 @@ import reactor.rx.subscription.ReactiveSubscription;
 
 public class RedissonMapReactiveIterator<K, V, M> {
 
-    private final RedissonMapReactive<K, V> map;
+    private final MapReactive<K, V> map;
 
-    public RedissonMapReactiveIterator(RedissonMapReactive<K, V> map) {
+    public RedissonMapReactiveIterator(MapReactive<K, V> map) {
         this.map = map;
     }
 

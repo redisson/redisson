@@ -44,7 +44,7 @@ import reactor.rx.Streams;
  * @param <K> key
  * @param <V> value
  */
-public class RedissonMapReactive<K, V> extends RedissonExpirableReactive implements RMapReactive<K, V> {
+public class RedissonMapReactive<K, V> extends RedissonExpirableReactive implements RMapReactive<K, V>, MapReactive<K, V> {
 
     private final RedissonMap<K, V> instance;
 
@@ -129,7 +129,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         return reactive(instance.fastRemoveAsync(keys));
     }
 
-    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
         return commandExecutor.readReactive(client, getName(), new MapScanCodec(codec), RedisCommands.HSCAN, getName(), startPos);
     }
 

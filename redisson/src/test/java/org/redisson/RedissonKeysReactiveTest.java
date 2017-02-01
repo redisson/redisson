@@ -12,10 +12,10 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testKeysIterablePattern() {
-        redisson.getBucket("test1").set("someValue");
-        redisson.getBucket("test2").set("someValue");
+        sync(redisson.getBucket("test1").set("someValue"));
+        sync(redisson.getBucket("test2").set("someValue"));
 
-        redisson.getBucket("test12").set("someValue");
+        sync(redisson.getBucket("test12").set("someValue"));
 
         Iterator<String> iterator = toIterator(redisson.getKeys().getKeysByPattern("test?"));
         for (; iterator.hasNext();) {

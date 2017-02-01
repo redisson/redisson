@@ -829,6 +829,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } else if (res instanceof ListScanResult) {
             List<ScanObjectEntry> r = ((ListScanResult)res).getValues();
             for (int i = 0; i < r.size(); i++) {
+                Object obj = r.get(i);
+                if (!(obj instanceof ScanObjectEntry)) {
+                    break;
+                }
                 ScanObjectEntry e = r.get(i);
                 if (e.getObj() instanceof RedissonReference) {
                     try {

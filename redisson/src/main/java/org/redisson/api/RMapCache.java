@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * <p>Current redis implementation doesnt have map entry eviction functionality.
  * Thus entries are checked for TTL expiration during any key/value/entry read operation.
  * If key/value/entry expired then it doesn't returns.
- * Expired tasks cleaned by {@link org.redisson.EvictionScheduler}. This scheduler
+ * Expired tasks cleaned by {@link org.redisson.eviction.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.RedissonMap}.</p>

@@ -55,7 +55,7 @@ public class RedissonKeysReactive implements RKeysReactive {
     }
 
     @Override
-    public Publisher<String> getKeysByPattern(final String pattern) {
+    public Publisher<String> getKeysByPattern(String pattern) {
         List<Publisher<String>> publishers = new ArrayList<Publisher<String>>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
             publishers.add(createKeysIterator(entry, pattern));

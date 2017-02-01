@@ -27,12 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMultimap;
-import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.MapScanCodec;
@@ -42,6 +42,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Hash;
 
 /**
@@ -52,22 +53,22 @@ import org.redisson.misc.Hash;
  */
 public abstract class RedissonMultimap<K, V> extends RedissonExpirable implements RMultimap<K, V> {
 
-    private final RedissonClient client;
+    private final UUID id;
     
-    RedissonMultimap(RedissonClient client, CommandAsyncExecutor connectionManager, String name) {
+    RedissonMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
-        this.client = client;
+        this.id = id;
     }
 
-    RedissonMultimap(RedissonClient client, Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    RedissonMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
-        this.client = client;
+        this.id = id;
     }
 
     @Override
     public RLock getLock(K key) {
         String lockName = getLockName(key);
-        return client.getLock(lockName);
+        return new RedissonLock((CommandExecutor)commandExecutor, lockName, id);
     }
     
     private String getLockName(Object key) {
