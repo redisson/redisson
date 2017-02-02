@@ -2,7 +2,21 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
-####19-Jan-2016 - versions 2.7.3 and 3.2.3 released
+Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
+
+####02-Feb-2017 - versions 2.7.4 and 3.2.4 released
+
+Feature - Allow to specify Redisson instance/config during JCache cache creation  
+Fixed - `ByteBuf.release` method invocation is missed in `LZ4Codec` and `SnappyCodec`  
+Fixed - AssertionError during Redisson shutdown  
+Fixed -  `RReadWriteLock.readLock` couldn't be acquired by same thread which has already acquired `writeLock`  
+Fixed -  failed `RFairLock.tryLock` attempt retains caller thread in fairLock queue  
+Fixed - `factory already defined` error  
+Fixed - `JCache` expiration listener doesn't work  
+Fixed - `RLocalCachedMap` doesn't work with `SerializationCodec`  
+Fixed - `Can't find entry` error during operation execution on slave nodes  
+
+####19-Jan-2017 - versions 2.7.3 and 3.2.3 released
 
 Redisson Team is pleased to announce __ULTRA-FAST__ Redisson PRO edition.  
 Performance measure results available in [Benchmark whitepaper](https://redisson.pro/Redisson%20PRO%20benchmark%20whitepaper.pdf)
