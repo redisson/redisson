@@ -28,6 +28,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ElasticacheConnectionManager;
+import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
@@ -111,6 +112,9 @@ public class ConfigSupport {
 
         @JsonProperty
         ElasticacheServersConfig elasticacheServersConfig;
+
+        @JsonProperty
+        ReplicatedServersConfig replicatedServersConfig;
 
     }
 
@@ -241,6 +245,9 @@ public class ConfigSupport {
         } else if (configCopy.getElasticacheServersConfig() != null) {
             validate(configCopy.getElasticacheServersConfig());
             return new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy);
+        } else if (configCopy.getReplicatedServersConfig() != null) {
+            validate(configCopy.getReplicatedServersConfig());
+            return new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy);
         } else {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
