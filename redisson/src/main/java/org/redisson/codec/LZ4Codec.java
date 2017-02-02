@@ -63,7 +63,11 @@ public class LZ4Codec implements Codec {
             LZ4SafeDecompressor decompressor = factory.safeDecompressor();
             bytes = decompressor.decompress(bytes, bytes.length*3);
             ByteBuf bf = Unpooled.wrappedBuffer(bytes);
-            return innerCodec.getValueDecoder().decode(bf, state);
+            try {
+                return innerCodec.getValueDecoder().decode(bf, state);
+            } finally {
+                bf.release();
+            }
         }
     };
 

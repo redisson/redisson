@@ -17,15 +17,16 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimapCache;
-import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.eviction.EvictionScheduler;
 
 /**
  * @author Nikita Koksharov
@@ -37,14 +38,14 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     private final RedissonMultimapCache<K> baseCache;
     
-    RedissonSetMultimapCache(RedissonClient client, EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
-        super(client, connectionManager, name);
+    RedissonSetMultimapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
+        super(id, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
         baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
     }
 
-    RedissonSetMultimapCache(RedissonClient client, EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(client, codec, connectionManager, name);
+    RedissonSetMultimapCache(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
+        super(id, codec, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
         baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
     }

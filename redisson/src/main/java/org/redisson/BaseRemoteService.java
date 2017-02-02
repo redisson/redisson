@@ -243,7 +243,7 @@ public abstract class BaseRemoteService {
                         String canceRequestName = getCancelRequestQueueName(remoteInterface, requestId);
                         cancelExecution(optionsCopy, responseName, request, mayInterruptIfRunning, canceRequestName, this);
 
-                        awaitUninterruptibly();
+                        awaitUninterruptibly(60, TimeUnit.SECONDS);
                         return isCancelled();
                     }
                 };

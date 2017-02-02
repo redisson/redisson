@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.NodeType;
@@ -201,14 +202,29 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return connectionManager.newFailedFuture(exception);
     }
 
+    public static abstract class AcquireCallback<T> implements Runnable, FutureListener<T> {
+        
+    }
+    
     private RFuture<T> acquireConnection(RedisCommand<?> command, final ClientConnectionsEntry entry) {
         final RPromise<T> result = connectionManager.newPromise();
-        acquireConnection(entry, new Runnable() {
+
+        AcquireCallback<T> callback = new AcquireCallback<T>() {
             @Override
             public void run() {
+                result.removeListener(this);
                 connectTo(entry, result);
             }
-        });
+            
+            @Override
+            public void operationComplete(Future<T> future) throws Exception {
+                entry.removeConnection(this);
+            }
+        };
+        
+        result.addListener(callback);
+        acquireConnection(entry, callback);
+        
         return result;
     }
 

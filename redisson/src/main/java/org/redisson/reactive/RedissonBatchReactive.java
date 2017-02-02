@@ -16,9 +16,9 @@
 package org.redisson.reactive;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.reactivestreams.Publisher;
-import org.redisson.EvictionScheduler;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
@@ -41,13 +41,16 @@ import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.eviction.EvictionScheduler;
 
 public class RedissonBatchReactive implements RBatchReactive {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
+    private final UUID id;
 
-    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+    public RedissonBatchReactive(UUID id, EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+        this.id = id;
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandBatchService(connectionManager);
     }
@@ -94,12 +97,12 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(codec, evictionScheduler, executorService, name);
+        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, codec, executorService, name);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(evictionScheduler, executorService, name);
+        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, executorService, name);
     }
 
     @Override

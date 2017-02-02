@@ -108,10 +108,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private CacheLoader<K, V> cacheLoader;
     private CacheWriter<K, V> cacheWriter;
     private boolean closed;
+    private boolean hasOwnRedisson;
     
-    public JCache(JCacheManager cacheManager, Redisson redisson, String name, JCacheConfiguration<K, V> config) {
+    public JCache(JCacheManager cacheManager, Redisson redisson, String name, JCacheConfiguration<K, V> config, boolean hasOwnRedisson) {
         super(redisson.getConfig().getCodec(), redisson.getCommandExecutor(), name);
         
+        this.hasOwnRedisson = hasOwnRedisson;
         this.redisson = redisson;
         
         Factory<CacheLoader<K, V>> cacheLoaderFactory = config.getCacheLoaderFactory();
@@ -155,10 +157,6 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return "jcache_updated_sync_channel:{" + getName() + "}";
     }
 
-    String getExpiredSyncChannelName() {
-        return "jcache_expired_sync_channel:{" + getName() + "}";
-    }
-    
     String getRemovedSyncChannelName() {
         return "jcache_removed_sync_channel:{" + getName() + "}";
     }
@@ -2244,6 +2242,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         
         synchronized (cacheManager) {
             if (!isClosed()) {
+                if (hasOwnRedisson) {
+                    redisson.shutdown();
+                }
                 cacheManager.closeCache(this);
                 for (CacheEntryListenerConfiguration<K, V> config : listeners.keySet()) {
                     deregisterCacheEntryListener(config);
@@ -2365,22 +2366,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
         if (CacheEntryExpiredListener.class.isAssignableFrom(listener.getClass())) {
             String channelName = getExpiredChannelName();
-            if (sync) {
-                channelName = getExpiredSyncChannelName();
-            }
 
-            RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
+            RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, false));
             int listenerId = topic.addListener(new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(String channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.EXPIRED, msg.get(0), msg.get(1));
-                    try {
-                        if (filter == null || filter.evaluate(event)) {
-                            List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
-                            ((CacheEntryExpiredListener<K, V>) listener).onExpired(events);
-                        }
-                    } finally {
-                        sendSync(sync, msg);
+                    if (filter == null || filter.evaluate(event)) {
+                        List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
+                        ((CacheEntryExpiredListener<K, V>) listener).onExpired(events);
                     }
                 }
             });

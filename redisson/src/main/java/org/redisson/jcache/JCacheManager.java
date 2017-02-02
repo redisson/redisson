@@ -38,11 +38,12 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import org.redisson.Redisson;
-
+import org.redisson.api.RedissonClient;
 import org.redisson.jcache.bean.EmptyStatisticsMXBean;
 import org.redisson.jcache.bean.JCacheManagementMXBean;
 import org.redisson.jcache.bean.JCacheStatisticsMXBean;
 import org.redisson.jcache.configuration.JCacheConfiguration;
+import org.redisson.jcache.configuration.RedissonConfiguration;
 
 /**
  * 
@@ -66,7 +67,7 @@ public class JCacheManager implements CacheManager {
     
     private final Redisson redisson;
     
-    public JCacheManager(Redisson redisson, ClassLoader classLoader, CachingProvider cacheProvider, Properties properties, URI uri) {
+    JCacheManager(Redisson redisson, ClassLoader classLoader, CachingProvider cacheProvider, Properties properties, URI uri) {
         super();
         this.classLoader = classLoader;
         this.cacheProvider = cacheProvider;
@@ -105,6 +106,8 @@ public class JCacheManager implements CacheManager {
     public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C configuration)
             throws IllegalArgumentException {
         checkNotClosed();
+        Redisson cacheRedisson = redisson;
+        
         if (cacheName == null) {
             throw new NullPointerException();
         }
@@ -112,8 +115,23 @@ public class JCacheManager implements CacheManager {
             throw new NullPointerException();
         }
         
+        if (cacheRedisson == null && !(configuration instanceof RedissonConfiguration)) {
+            throw new IllegalStateException("Default configuration hasn't been specified!");
+        }
+        
+        boolean hasOwnRedisson = false;
+        if (configuration instanceof RedissonConfiguration) {
+            RedissonConfiguration<K, V> rc = (RedissonConfiguration<K, V>) configuration;
+            if (rc.getConfig() != null) {
+                cacheRedisson = (Redisson) Redisson.create(rc.getConfig());
+                hasOwnRedisson = true;
+            } else {
+                cacheRedisson = (Redisson) rc.getRedisson();
+            }
+        }
+        
         JCacheConfiguration<K, V> cfg = new JCacheConfiguration<K, V>(configuration);
-        JCache<K, V> cache = new JCache<K, V>(this, redisson, cacheName, cfg);
+        JCache<K, V> cache = new JCache<K, V>(this, cacheRedisson, cacheName, cfg, hasOwnRedisson);
         JCache<?, ?> oldCache = caches.putIfAbsent(cacheName, cache);
         if (oldCache != null) {
             throw new CacheException("Cache " + cacheName + " already exists");

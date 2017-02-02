@@ -142,6 +142,10 @@ public class LoadBalancerManager {
         return pubSubConnectionPool.get();
     }
 
+    public boolean contains(InetSocketAddress addr) {
+        return addr2Entry.containsKey(addr);
+    }
+    
     public RFuture<RedisConnection> getConnection(RedisCommand<?> command, InetSocketAddress addr) {
         ClientConnectionsEntry entry = addr2Entry.get(addr);
         if (entry != null) {

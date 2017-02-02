@@ -13,19 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.config;
+package org.redisson.reactive;
+
+import java.net.InetSocketAddress;
+
+import org.reactivestreams.Publisher;
+import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 /**
- * Use {@link org.redisson.config.ReplicatedServersConfig}
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
  */
-@Deprecated
-public class ElasticacheServersConfig extends ReplicatedServersConfig {
+interface MapReactive<K, V> {
 
-    public ElasticacheServersConfig() {
-    }
+    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos);
     
-    public ElasticacheServersConfig(ReplicatedServersConfig config) {
-        super(config);
-    }
-
+    Publisher<V> put(K key, V value);
+    
 }

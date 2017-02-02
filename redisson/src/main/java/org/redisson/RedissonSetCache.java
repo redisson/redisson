@@ -37,6 +37,7 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.eviction.EvictionScheduler;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
@@ -47,7 +48,7 @@ import org.redisson.command.CommandAsyncExecutor;
  * Thus values are checked for TTL expiration during any value read operation.
  * If entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.eviction.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>

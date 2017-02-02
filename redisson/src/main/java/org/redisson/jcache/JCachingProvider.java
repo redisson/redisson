@@ -17,6 +17,8 @@ package org.redisson.jcache;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
@@ -41,18 +43,14 @@ public class JCachingProvider implements CachingProvider {
     private final ConcurrentMap<ClassLoader, ConcurrentMap<URI, CacheManager>> managers = 
                             new ConcurrentHashMap<ClassLoader, ConcurrentMap<URI, CacheManager>>();
     
+    private static final String DEFAULT_URI_PATH = "jsr107-default-config";
     private static URI defaulturi;
     
     static {
         try {
-            defaulturi = JCachingProvider.class.getResource("/redisson-jcache.json").toURI();
-        } catch (Exception e) {
-            // trying next format
-            try {
-                defaulturi = JCachingProvider.class.getResource("/redisson-jcache.yaml").toURI();
-            } catch (Exception e1) {
-                // skip
-            }
+            defaulturi = new URI(DEFAULT_URI_PATH);
+        } catch (URISyntaxException e) {
+            throw new javax.cache.CacheException(e);
         }
     }
     
@@ -80,25 +78,52 @@ public class JCachingProvider implements CachingProvider {
             return manager;
         }
         
-        Config config = null;
-        try {
-            config = Config.fromJSON(uri.toURL());
-        } catch (IOException e) {
-            try {
-                config = Config.fromYAML(uri.toURL());
-            } catch (IOException e2) {
-                throw new IllegalArgumentException("Can't parse config " + uri, e2);
-            }
-        }
+        Config config = loadConfig(uri);
         
-        Redisson redisson = (Redisson) Redisson.create(config);
+        Redisson redisson = null;
+        if (config != null) {
+            redisson = (Redisson) Redisson.create(config);
+        }
         manager = new JCacheManager(redisson, classLoader, this, properties, uri);
         CacheManager oldManager = value.putIfAbsent(uri, manager);
         if (oldManager != null) {
-            redisson.shutdown();
+            if (redisson != null) {
+                redisson.shutdown();
+            }
             manager = oldManager;
         }
         return manager;
+    }
+
+    private Config loadConfig(URI uri) {
+        Config config = null;
+        try {
+            URL jsonUrl = null;
+            if (DEFAULT_URI_PATH.equals(uri.getPath())) {
+                jsonUrl = JCachingProvider.class.getResource("/redisson-jcache.json");
+            } else {
+                jsonUrl = uri.toURL();
+            }
+            if (jsonUrl == null) {
+                throw new IOException();
+            }
+            config = Config.fromJSON(jsonUrl);
+        } catch (IOException e) {
+            try {
+                URL yamlUrl = null;
+                if (DEFAULT_URI_PATH.equals(uri.getPath())) {
+                    yamlUrl = JCachingProvider.class.getResource("/redisson-jcache.yaml");
+                } else {
+                    yamlUrl = uri.toURL();
+                }
+                if (yamlUrl != null) {
+                    config = Config.fromYAML(yamlUrl);
+                }
+            } catch (IOException e2) {
+                // skip
+            }
+        }
+        return config;
     }
 
     @Override

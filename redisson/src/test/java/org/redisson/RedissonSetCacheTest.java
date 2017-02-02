@@ -289,7 +289,7 @@ public class RedissonSetCacheTest extends BaseTest {
         set.add("5");
         set.add("3");
 
-        Thread.sleep(1000);
+        Thread.sleep(1500);
 
         assertThat(set.toArray()).containsOnly("1", "4", "5", "3");
 

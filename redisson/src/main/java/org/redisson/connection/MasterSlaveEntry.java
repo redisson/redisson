@@ -293,6 +293,10 @@ public class MasterSlaveEntry {
             }
         });
     }
+    
+    public boolean hasSlave(InetSocketAddress addr) {
+        return slaveBalancer.contains(addr);
+    }
 
     public RFuture<Void> addSlave(String host, int port) {
         return addSlave(host, port, true, NodeType.SLAVE);

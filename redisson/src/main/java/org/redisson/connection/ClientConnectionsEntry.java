@@ -113,6 +113,10 @@ public class ClientConnectionsEntry {
     public void acquireConnection(Runnable runnable) {
         freeConnectionsCounter.acquire(runnable);
     }
+    
+    public void removeConnection(Runnable runnable) {
+        freeConnectionsCounter.remove(runnable);
+    }
 
     public void releaseConnection() {
         freeConnectionsCounter.release();

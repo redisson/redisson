@@ -23,8 +23,6 @@ import org.redisson.api.RMapCache;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
 
-import io.netty.util.concurrent.Future;
-
 public class RedissonMapCacheTest extends BaseTest {
 
     public static class SimpleKey implements Serializable {

@@ -23,11 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapCache;
-import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.MapScanCodec;
@@ -46,6 +46,7 @@ import org.redisson.client.protocol.decoder.ObjectMapDecoder;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
+import org.redisson.eviction.EvictionScheduler;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -59,7 +60,7 @@ import io.netty.util.concurrent.FutureListener;
  * Thus entries are checked for TTL expiration during any key/value/entry read operation.
  * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.eviction.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.RedissonMap} object.</p>
@@ -85,13 +86,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private static final RedisCommand<Boolean> EVAL_CONTAINS_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7, ValueType.MAP_VALUE);
     private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
 
-    protected RedissonMapCache(RedissonClient redisson, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
-        super(redisson, commandExecutor, name);
+    public RedissonMapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
+        super(id, commandExecutor, name);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName());
     }
 
-    public RedissonMapCache(RedissonClient redisson, Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
-        super(redisson, codec, commandExecutor, name);
+    public RedissonMapCache(UUID id, Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
+        super(id, codec, commandExecutor, name);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName());
     }
 
@@ -530,6 +531,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
+        return get(scanIteratorAsync(name, client, startPos));
+    }
+    
+    public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorAsync(String name, InetSocketAddress client, long startPos) {
         RedisCommand<MapCacheScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL", 
                 new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapDecoder(new MapScanCodec(codec)), new ObjectListDecoder(codec), new MapCacheScanResultReplayDecoder()), ValueType.MAP);
         RFuture<MapCacheScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_HSCAN,
@@ -606,8 +611,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             }
         });
 
-        return get(f);
+        return (RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>>)(Object)f;
     }
+
 
     @Override
     public RFuture<Boolean> fastPutAsync(K key, V value) {
