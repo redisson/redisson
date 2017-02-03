@@ -90,23 +90,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.2.3</version>
+       <version>3.2.4</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.7.3</version>
+       <version>2.7.4</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.2.3'  
+    compile 'org.redisson:redisson:3.2.4'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.7.3'
+    compile 'org.redisson:redisson:2.7.4'
 
 #### Java
 
