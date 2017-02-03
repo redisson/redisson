@@ -502,7 +502,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (final ClusterPartition newPart : newPartitions) {
             boolean masterFound = false;
             for (ClusterPartition currentPart : getLastPartitions()) {
-                if (null != newPart && null != newPart.getMasterAddress() && newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
+                if (null != newPart && null != newPart.getMasterAddress() && !newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
                     continue;
                 }
                 masterFound = true;
