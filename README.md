@@ -131,11 +131,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.2.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.2.3&e=jar),
-[Redisson node 3.2.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.2.3&e=jar)  
+[Redisson 3.2.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.2.4&e=jar),
+[Redisson node 3.2.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.2.4&e=jar)  
 
-[Redisson 2.7.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.7.3&e=jar),
-[Redisson node 2.7.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.7.3&e=jar)  
+[Redisson 2.7.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.7.4&e=jar),
+[Redisson node 2.7.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.7.4&e=jar)  
 
 ### Supported by
 
