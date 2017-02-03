@@ -24,26 +24,15 @@ Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](h
 
 Features
 ================================
-* [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) mode:
+* Replicated servers mode (also supports [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
     1. automatic master server change discovery
-* [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) mode:
+* Cluster servers mode (also supports [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
     1. automatic master and slave servers discovery
-    2. automatic new master server discovery
-    3. automatic new slave servers discovery
-    4. automatic slave servers offline/online discovery
-    5. automatic slots change discovery
-* Cluster servers mode:
-    1. automatic master and slave servers discovery
-    2. automatic new master server discovery
-    3. automatic new slave servers discovery
-    4. automatic slave servers offline/online discovery
-    5. automatic slots change discovery
+    2. automatic status and topology update
+    3. automatic slots change discovery
 * Sentinel servers mode: 
-    1. automatic master and slave servers discovery
-    2. automatic new master server discovery
-    3. automatic new slave servers discovery
-    4. automatic slave servers offline/online discovery  
-    5. automatic sentinel servers discovery  
+    1. automatic master, slave and sentinel servers discovery
+    2. automatic status and topology update
 * Master with Slave servers mode  
 * Single server mode  
 * Asynchronous interface for each object  
