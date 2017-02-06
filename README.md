@@ -20,7 +20,11 @@ Licensed under the Apache License 2.0.
 
 Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-####Try ultra-fast [Redisson PRO](https://redisson.pro) version.  
+<!--
+###Try ultra-fast [Redisson PRO](https://redisson.pro) version.  
+-->
+###Please take part in Redisson PRO's [survey](https://www.surveymonkey.com/r/CJCR7KV)
+
 
 Features
 ================================
