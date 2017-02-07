@@ -20,30 +20,23 @@ Licensed under the Apache License 2.0.
 
 Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-####Try ultra-fast [Redisson PRO](https://redisson.pro) version.  
+<!--
+###Try ultra-fast [Redisson PRO](https://redisson.pro) version.  
+-->
+##Please take part in [Redisson survey](https://www.surveymonkey.com/r/CJCR7KV)
+
 
 Features
 ================================
-* [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) mode:
+* Replicated servers mode (also supports [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
     1. automatic master server change discovery
-* [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) mode:
+* Cluster servers mode (also supports [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
     1. automatic master and slave servers discovery
-    2. automatic new master server discovery
-    3. automatic new slave servers discovery
-    4. automatic slave servers offline/online discovery
-    5. automatic slots change discovery
-* Cluster servers mode:
-    1. automatic master and slave servers discovery
-    2. automatic new master server discovery
-    3. automatic new slave servers discovery
-    4. automatic slave servers offline/online discovery
-    5. automatic slots change discovery
+    2. automatic status and topology update
+    3. automatic slots change discovery
 * Sentinel servers mode: 
-    1. automatic master and slave servers discovery
-    2. automatic new master server discovery
-    3. automatic new slave servers discovery
-    4. automatic slave servers offline/online discovery  
-    5. automatic sentinel servers discovery  
+    1. automatic master, slave and sentinel servers discovery
+    2. automatic status and topology update
 * Master with Slave servers mode  
 * Single server mode  
 * Asynchronous interface for each object  
@@ -101,23 +94,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.2.3</version>
+       <version>3.2.4</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.7.3</version>
+       <version>2.7.4</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.2.3'  
+    compile 'org.redisson:redisson:3.2.4'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.7.3'
+    compile 'org.redisson:redisson:2.7.4'
 
 #### Java
 
@@ -142,11 +135,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.2.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.2.3&e=jar),
-[Redisson node 3.2.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.2.3&e=jar)  
+[Redisson 3.2.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.2.4&e=jar),
+[Redisson node 3.2.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.2.4&e=jar)  
 
-[Redisson 2.7.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.7.3&e=jar),
-[Redisson node 2.7.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.7.3&e=jar)  
+[Redisson 2.7.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.7.4&e=jar),
+[Redisson node 2.7.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.7.4&e=jar)  
 
 ### Supported by
 
