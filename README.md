@@ -23,7 +23,7 @@ Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](h
 <!--
 ###Try ultra-fast [Redisson PRO](https://redisson.pro) version.  
 -->
-###Please take part in Redisson PRO's [survey](https://www.surveymonkey.com/r/CJCR7KV)
+##Please take part in [Redisson survey](https://www.surveymonkey.com/r/CJCR7KV)
 
 
 Features
