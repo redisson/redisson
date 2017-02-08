@@ -216,7 +216,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             cache = new LFUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }
 
-        invalidationTopic = new RedissonTopic<Object>(commandExecutor, name + ":topic");
+        invalidationTopic = new RedissonTopic<Object>(commandExecutor, suffixName(name, "topic"));
         if (options.isInvalidateEntryOnChange()) {
             invalidationListenerId = invalidationTopic.addListener(new MessageListener<Object>() {
                 @Override
