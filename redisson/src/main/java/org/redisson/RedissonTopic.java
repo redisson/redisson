@@ -83,6 +83,24 @@ public class RedissonTopic<M> implements RTopic<M> {
         return System.identityHashCode(pubSubListener);
     }
 
+    public void removeAllListeners() {
+        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        semaphore.acquireUninterruptibly();
+        
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        if (entry == null) {
+            semaphore.release();
+            return;
+        }
+
+        entry.removeAllListeners(name);
+        if (!entry.hasListeners(name)) {
+            commandExecutor.getConnectionManager().unsubscribe(name, semaphore);
+        } else {
+            semaphore.release();
+        }
+    }
+    
     @Override
     public void removeListener(int listenerId) {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
