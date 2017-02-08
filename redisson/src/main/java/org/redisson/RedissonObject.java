@@ -81,6 +81,10 @@ public abstract class RedissonObject implements RObject {
     public String getName() {
         return name;
     }
+    
+    protected String getName(Object o) {
+        return getName();
+    }
 
     @Override
     public void rename(String newName) {

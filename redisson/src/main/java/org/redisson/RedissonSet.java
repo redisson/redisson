@@ -44,7 +44,7 @@ import org.redisson.command.CommandAsyncExecutor;
  *
  * @param <V> value
  */
-public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
+public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIterator {
 
     protected RedissonSet(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -83,7 +83,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V> {
         return getName();
     }
 
-    ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
+    @Override
+    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
         RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.SSCAN, name, startPos);
         return get(f);
     }
