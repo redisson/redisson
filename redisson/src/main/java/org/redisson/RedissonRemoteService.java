@@ -93,7 +93,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         }
         for (Method method : remoteInterface.getMethods()) {
             RemoteServiceMethod value = new RemoteServiceMethod(method, object);
-            RemoteServiceKey key = new RemoteServiceKey(remoteInterface, method.getName());
+            RemoteServiceKey key = new RemoteServiceKey(remoteInterface, method.getName(), getMethodSignatures(method));
             if (beans.put(key, value) != null) {
                 return;
             }
@@ -183,7 +183,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     private <T> void executeMethod(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue,
             final ExecutorService executor, final RemoteServiceRequest request) {
-        final RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName()));
+        final RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName(), request.getSignatures()));
         final String responseName = getResponseQueueName(remoteInterface, request.getRequestId());
         
         RBlockingQueue<RemoteServiceCancelRequest> cancelRequestQueue = 

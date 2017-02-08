@@ -15,6 +15,11 @@
  */
 package org.redisson.remote;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -24,17 +29,23 @@ public class RemoteServiceKey {
 
     private final Class<?> serviceInterface;
     private final String methodName;
-    
-    public RemoteServiceKey(Class<?> serviceInterface, String methodName) {
+    private final List<String> signatures;
+
+    public RemoteServiceKey(Class<?> serviceInterface, String method, List<String> signatures) {
         super();
         this.serviceInterface = serviceInterface;
-        this.methodName = methodName;
+        this.methodName = method;
+        this.signatures = Collections.unmodifiableList(signatures);
     }
     
     public String getMethodName() {
         return methodName;
     }
-    
+
+    public List<String> getSignatures() {
+        return signatures;
+    }
+
     public Class<?> getServiceInterface() {
         return serviceInterface;
     }
@@ -44,6 +55,7 @@ public class RemoteServiceKey {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((methodName == null) ? 0 : methodName.hashCode());
+        result = prime * result + ((signatures == null) ? 0 : signatures.hashCode());
         result = prime * result + ((serviceInterface == null) ? 0 : serviceInterface.getName().hashCode());
         return result;
     }
@@ -60,9 +72,11 @@ public class RemoteServiceKey {
         if (methodName == null) {
             if (other.methodName != null)
                 return false;
-        } else if (!methodName.equals(other.methodName))
+        } else if (!methodName.equals(other.methodName)) {
             return false;
-        if (serviceInterface == null) {
+        } else if (!signatures.equals(other.signatures)) {
+            return false;
+        } if (serviceInterface == null) {
             if (other.serviceInterface != null)
                 return false;
         } else if (!serviceInterface.equals(other.serviceInterface))
