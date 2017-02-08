@@ -416,24 +416,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     
     @Override
-    public void putAll(Map<? extends K, ? extends V> m) {
-        Map<CacheKey, CacheValue> cacheMap = new HashMap<CacheKey, CacheValue>(m.size());
-        for (java.util.Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
-            CacheKey cacheKey = toCacheKey(entry.getKey());
-            CacheValue cacheValue = new CacheValue(entry.getKey(), entry.getValue());
-            cacheMap.put(cacheKey, cacheValue);
-        }
-        cache.putAll(cacheMap);
-        super.putAll(m);
-        
-        if (invalidateEntryOnChange == 1) {
-            for (CacheKey cacheKey : cacheMap.keySet()) {
-                invalidationTopic.publish(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
-            }
-        }
-    }
-
-    @Override
     public RFuture<Boolean> deleteAsync() {
         cache.clear();
         byte[] msgEncoded = encode(new LocalCachedMapClear());
@@ -754,6 +736,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
         params.addAll(msgs);
 
+        final RPromise<Void> result = newPromise();
         RFuture<Void> future = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
                 "redis.call('hmset', KEYS[1], unpack(ARGV, 3, tonumber(ARGV[2]) + 2));"
               + "if ARGV[1] == '1' then "
@@ -771,9 +754,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 }
                 
                 cacheMap(map);
+                result.trySuccess(null);
             }
         });
-        return future;
+        return result;
     }
 
     @Override

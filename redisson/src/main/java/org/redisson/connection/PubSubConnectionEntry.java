@@ -88,6 +88,14 @@ public class PubSubConnectionEntry {
         conn.addListener(listener);
     }
 
+    public boolean removeAllListeners(String channelName) {
+        Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
+        for (RedisPubSubListener<?> listener : listeners) {
+            removeListener(channelName, listener);
+        }
+        return !listeners.isEmpty();
+    }
+    
     // TODO optimize
     public boolean removeListener(String channelName, int listenerId) {
         Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
