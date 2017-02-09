@@ -113,6 +113,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             @Override
             public void operationComplete(Future<RemoteServiceRequest> future) throws Exception {
                 if (!future.isSuccess()) {
+                    log.error("Can't process the remote service request.", future.cause());
                     if (future.cause() instanceof RedissonShutdownException) {
                         return;
                     }
