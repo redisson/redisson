@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -212,12 +211,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             if (res.getIndex() < 0) {
                 int index = -(res.getIndex() + 1);
                 
-                byte[] encodedValue = null;
-                try {
-                    encodedValue = codec.getValueEncoder().encode(value);
-                } catch (IOException e) {
-                    throw new IllegalArgumentException(e);
-                }
+                byte[] encodedValue = encode(value);
                 
                 commandExecutor.evalWrite(getName(), RedisCommands.EVAL_VOID, 
                    "local len = redis.call('llen', KEYS[1]);"
@@ -411,6 +405,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return res;
     }
     
+    // TODO optimize: get three values each time instead of single
     public BinarySearchResult<V> binarySearch(V value, Codec codec) {
         int size = list.size();
         int upperIndex = size - 1;
