@@ -83,6 +83,7 @@ public class RedissonTopic<M> implements RTopic<M> {
         return System.identityHashCode(pubSubListener);
     }
 
+    @Override
     public void removeAllListeners() {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
         semaphore.acquireUninterruptibly();
@@ -99,6 +100,26 @@ public class RedissonTopic<M> implements RTopic<M> {
         } else {
             semaphore.release();
         }
+    }
+    
+    @Override
+    public void removeListener(MessageListener<?> listener) {
+        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        semaphore.acquireUninterruptibly();
+        
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        if (entry == null) {
+            semaphore.release();
+            return;
+        }
+
+        entry.removeListener(name, listener);
+        if (!entry.hasListeners(name)) {
+            commandExecutor.getConnectionManager().unsubscribe(name, semaphore);
+        } else {
+            semaphore.release();
+        }
+
     }
     
     @Override

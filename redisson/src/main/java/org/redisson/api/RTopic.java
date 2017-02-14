@@ -65,6 +65,13 @@ public interface RTopic<M> extends RTopicAsync<M> {
     int addListener(StatusListener listener);
 
     /**
+     * Removes the listener by its instance
+     *
+     * @param listener - listener instance
+     */
+    void removeListener(MessageListener<?> listener);
+    
+    /**
      * Removes the listener by <code>id</code> for listening this topic
      *
      * @param listenerId - listener id

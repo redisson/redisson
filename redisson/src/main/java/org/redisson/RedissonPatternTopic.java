@@ -86,7 +86,46 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
             semaphore.release();
         }
     }
+    
+    @Override
+    public void removeAllListeners() {
+        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        semaphore.acquireUninterruptibly();
+        
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        if (entry == null) {
+            semaphore.release();
+            return;
+        }
 
+        entry.removeAllListeners(name);
+        if (!entry.hasListeners(name)) {
+            commandExecutor.getConnectionManager().punsubscribe(name, semaphore);
+        } else {
+            semaphore.release();
+        }
+    }
+
+    @Override
+    public void removeListener(PatternMessageListener<M> listener) {
+        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        semaphore.acquireUninterruptibly();
+        
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        if (entry == null) {
+            semaphore.release();
+            return;
+        }
+
+        entry.removeListener(name, listener);
+        if (!entry.hasListeners(name)) {
+            commandExecutor.getConnectionManager().punsubscribe(name, semaphore);
+        } else {
+            semaphore.release();
+        }
+
+    }
+    
     @Override
     public List<String> getPatternNames() {
         return Collections.singletonList(name);

@@ -334,6 +334,27 @@ public class RedissonTopicTest {
 
         redisson.shutdown();
     }
+    
+    @Test
+    public void testRemoveByInstance() throws InterruptedException {
+        RedissonClient redisson = BaseTest.createInstance();
+        RTopic<Message> topic1 = redisson.getTopic("topic1");
+        MessageListener listener = new MessageListener() {
+            @Override
+            public void onMessage(String channel, Object msg) {
+                Assert.fail();
+            }
+        };
+        
+        topic1.addListener(listener);
+
+        topic1 = redisson.getTopic("topic1");
+        topic1.removeListener(listener);
+        topic1.publish(new Message("123"));
+
+        redisson.shutdown();
+    }
+
 
     @Test
     public void testLazyUnsubscribe() throws InterruptedException {

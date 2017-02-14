@@ -62,5 +62,18 @@ public interface RPatternTopic<M> {
      * @param listenerId - id of message listener
      */
     void removeListener(int listenerId);
+    
+    /**
+     * Removes the listener by its instance
+     *
+     * @param listener - listener instance
+     */
+    void removeListener(PatternMessageListener<M> listener);
+    
+    /**
+     * Removes all listeners from this topic
+     */
+    void removeAllListeners();
+    
 
 }
