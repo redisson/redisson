@@ -20,11 +20,6 @@ Licensed under the Apache License 2.0.
 
 Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-<!--
-###Try ultra-fast [Redisson PRO](https://redisson.pro) version.  
--->
-##Please take part in [Redisson survey](https://www.surveymonkey.com/r/CJCR7KV)
-
 
 Features
 ================================
@@ -74,6 +69,7 @@ Articles
 ================================
 
 [Java data structures powered by Redis. Introduction to Redisson (pdf)](https://redisson.org/Redisson.pdf)  
+[Redisson PRO vs. Jedis: Which Is Faster?](https://dzone.com/articles/redisson-pro-vs-jedis-which-is-faster)  
 [A Look at the Java Distributed In-Memory Data Model (Powered by Redis)](https://dzone.com/articles/java-distributed-in-memory-data-model-powered-by-r)  
 [Distributed tasks Execution and Scheduling in Java, powered by Redis](https://dzone.com/articles/distributed-tasks-execution-and-scheduling-in-java)  
 [Introducing Redisson Live Objects (Object Hash Mapping)](https://dzone.com/articles/introducing-redisson-live-object-object-hash-mappi)  
