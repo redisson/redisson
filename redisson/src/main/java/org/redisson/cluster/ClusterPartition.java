@@ -30,6 +30,10 @@ import org.redisson.misc.URLBuilder;
  */
 public class ClusterPartition {
 
+    public enum Type {MASTER, SLAVE}
+    
+    private Type type = Type.MASTER;
+    
     private final String nodeId;
     private boolean masterFail;
     private URL masterAddress;
@@ -39,11 +43,29 @@ public class ClusterPartition {
     private final Set<Integer> slots = new HashSet<Integer>();
     private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
 
+    private ClusterPartition parent;
+    
     public ClusterPartition(String nodeId) {
         super();
         this.nodeId = nodeId;
     }
+    
+    public ClusterPartition getParent() {
+        return parent;
+    }
 
+    public void setParent(ClusterPartition parent) {
+        this.parent = parent;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+    
+    public Type getType() {
+        return type;
+    }
+    
     public String getNodeId() {
         return nodeId;
     }
