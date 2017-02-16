@@ -547,7 +547,6 @@ public interface RedissonClient {
      */
     <V> RQueue<V> getQueue(String name, Codec codec);
 
-    
     /**
      * Returns priority unbounded queue instance by name.
      * It uses comparator to sort objects.
@@ -570,6 +569,28 @@ public interface RedissonClient {
      */
     <V> RPriorityQueue<V> getPriorityQueue(String name, Codec codec);
 
+    /**
+     * Returns priority unbounded deque instance by name.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name of object
+     * @return Queue object
+     */
+    <V> RPriorityDeque<V> getPriorityDeque(String name);
+    
+    /**
+     * Returns priority unbounded deque instance by name
+     * using provided codec for queue objects.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Queue object
+     */
+    <V> RPriorityDeque<V> getPriorityDeque(String name, Codec codec);
+    
     /**
      * Returns unbounded blocking queue instance by name.
      * 

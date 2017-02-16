@@ -52,6 +52,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RPermitExpirableSemaphore;
+import org.redisson.api.RPriorityDeque;
 import org.redisson.api.RPriorityQueue;
 import org.redisson.api.RQueue;
 import org.redisson.api.RReadWriteLock;
@@ -614,6 +615,17 @@ public class Redisson implements RedissonClient {
     public <V> RPriorityQueue<V> getPriorityQueue(String name, Codec codec) {
         return new RedissonPriorityQueue<V>(codec, connectionManager.getCommandExecutor(), name, this);
     }
+    
+    @Override
+    public <V> RPriorityDeque<V> getPriorityDeque(String name) {
+        return new RedissonPriorityDeque<V>(connectionManager.getCommandExecutor(), name, this);
+    }
+
+    @Override
+    public <V> RPriorityDeque<V> getPriorityDeque(String name, Codec codec) {
+        return new RedissonPriorityDeque<V>(codec, connectionManager.getCommandExecutor(), name, this);
+    }
+    
 
 }
 
