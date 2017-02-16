@@ -12,9 +12,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Assert;
 import org.junit.Test;
+import static org.redisson.BaseTest.createConfig;
+import static org.redisson.BaseTest.createInstance;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
@@ -119,6 +122,14 @@ public class RedissonRemoteServiceTest extends BaseTest {
         Pojo doSomethingWithPojo(Pojo pojo);
 
         SerializablePojo doSomethingWithSerializablePojo(SerializablePojo pojo);
+        
+        String methodOverload();
+        
+        String methodOverload(String str);
+        
+        String methodOverload(Long lng);
+        
+        String methodOverload(String str, Long lng);
 
     }
     
@@ -183,6 +194,27 @@ public class RedissonRemoteServiceTest extends BaseTest {
         public SerializablePojo doSomethingWithSerializablePojo(SerializablePojo pojo) {
             return pojo;
         }
+
+        @Override
+        public String methodOverload() {
+            return "methodOverload()";
+        }
+
+        @Override
+        public String methodOverload(Long lng) {
+            return "methodOverload(Long lng)";
+        }
+
+        @Override
+        public String methodOverload(String str) {
+            return "methodOverload(String str)";
+        }
+
+        @Override
+        public String methodOverload(String str, Long lng) {
+            return "methodOverload(String str, Long lng)";
+        }
+        
     }
     
     @Test
@@ -693,5 +725,22 @@ public class RedissonRemoteServiceTest extends BaseTest {
             client.shutdown();
             server.shutdown();
         }
+    }
+    
+    @Test
+    public void testMethodOverload() {
+        RedissonClient r1 = createInstance();
+        r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
+        
+        RedissonClient r2 = createInstance();
+        RemoteInterface ri = r2.getRemoteService().get(RemoteInterface.class);
+        
+        assertThat(ri.methodOverload()).isEqualTo("methodOverload()");
+        assertThat(ri.methodOverload(1l)).isEqualTo("methodOverload(Long lng)");
+        assertThat(ri.methodOverload("")).isEqualTo("methodOverload(String str)");
+        assertThat(ri.methodOverload("", 1l)).isEqualTo("methodOverload(String str, Long lng)");
+
+        r1.shutdown();
+        r2.shutdown();
     }
 }
