@@ -15,7 +15,9 @@ Feature - `removeAllListeners` and `removeListener` by instance methods added fo
 Feature - `RLockAsync` interface added  
 Improvement - `RRemoteService` is now able to support method overload  
 Fixed - `RLocalCachedMap` is not Redis cluster compatible  
-
+Fixed - cascade slaves are not supported in cluster mode  
+Fixed - shutdown checking during master change state check added  
+Fixed - master isn't checked during new slave discovery in Sentinel mode  
 
 ####02-Feb-2017 - versions 2.7.4 and 3.2.4 released
 
