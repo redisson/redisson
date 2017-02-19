@@ -35,7 +35,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
-import org.redisson.misc.RPromise;
 
 /**
  *

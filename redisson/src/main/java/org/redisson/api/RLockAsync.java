@@ -19,8 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
- * Implements reentrant lock.
- * Use {@link RLockAsync#getHoldCount()} to get a holds count.
  *
  * @author Nikita Koksharov
  *
