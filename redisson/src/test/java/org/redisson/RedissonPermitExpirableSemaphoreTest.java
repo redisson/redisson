@@ -14,6 +14,12 @@ import org.redisson.client.RedisException;
 public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
 
     @Test
+    public void testNotExistent() {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("testSemaphoreForNPE");
+        Assert.assertEquals(0, semaphore.availablePermits());        
+    }
+    
+    @Test
     public void testAvailablePermits() throws InterruptedException {
         RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("test-semaphore");
         assertThat(semaphore.trySetPermits(2)).isTrue();

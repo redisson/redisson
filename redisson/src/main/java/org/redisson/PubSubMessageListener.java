@@ -64,6 +64,10 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
             return false;
         return true;
     }
+    
+    public MessageListener<V> getListener() {
+        return listener;
+    }
 
     @Override
     public void onMessage(String channel, Object message) {

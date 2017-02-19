@@ -17,6 +17,7 @@ package org.redisson.remote;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.List;
 
 import org.redisson.api.RemoteInvocationOptions;
 
@@ -31,6 +32,7 @@ public class RemoteServiceRequest implements Serializable {
     
     private String requestId;
     private String methodName;
+    private List<String> signatures;
     private Object[] args;
     private RemoteInvocationOptions options;
     private long date;
@@ -43,10 +45,11 @@ public class RemoteServiceRequest implements Serializable {
         this.requestId = requestId;
     }
     
-    public RemoteServiceRequest(String requestId, String methodName, Object[] args, RemoteInvocationOptions options, long date) {
+    public RemoteServiceRequest(String requestId, String methodName, List<String> signatures, Object[] args, RemoteInvocationOptions options, long date) {
         super();
         this.requestId = requestId;
         this.methodName = methodName;
+        this.signatures = signatures;
         this.args = args;
         this.options = options;
         this.date = date;
@@ -64,6 +67,10 @@ public class RemoteServiceRequest implements Serializable {
         return args;
     }
 
+    public List<String> getSignatures() {
+        return signatures;
+    }
+
     public RemoteInvocationOptions getOptions() {
         return options;
     }
@@ -74,7 +81,8 @@ public class RemoteServiceRequest implements Serializable {
 
     @Override
     public String toString() {
-        return "RemoteServiceRequest [requestId=" + requestId + ", methodName=" + methodName + ", args="
+        return "RemoteServiceRequest [requestId=" + requestId + ", methodName=" + methodName + ", signatures=["
+                + Arrays.toString(signatures.toArray()) + "], args="
                 + Arrays.toString(args) + ", options=" + options + ", date=" + date + "]";
     }
 

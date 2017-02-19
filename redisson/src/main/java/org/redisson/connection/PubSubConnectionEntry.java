@@ -17,12 +17,16 @@ package org.redisson.connection;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EventListener;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.redisson.PubSubMessageListener;
+import org.redisson.PubSubPatternMessageListener;
+import org.redisson.api.listener.MessageListener;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
@@ -88,7 +92,34 @@ public class PubSubConnectionEntry {
         conn.addListener(listener);
     }
 
+    public boolean removeAllListeners(String channelName) {
+        Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
+        for (RedisPubSubListener<?> listener : listeners) {
+            removeListener(channelName, listener);
+        }
+        return !listeners.isEmpty();
+    }
+    
     // TODO optimize
+    public boolean removeListener(String channelName, EventListener msgListener) {
+        Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
+        for (RedisPubSubListener<?> listener : listeners) {
+            if (listener instanceof PubSubMessageListener) {
+                if (((PubSubMessageListener)listener).getListener() == msgListener) {
+                    removeListener(channelName, listener);
+                    return true;
+                }
+            }
+            if (listener instanceof PubSubPatternMessageListener) {
+                if (((PubSubPatternMessageListener)listener).getListener() == msgListener) {
+                    removeListener(channelName, listener);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
     public boolean removeListener(String channelName, int listenerId) {
         Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
         for (RedisPubSubListener<?> listener : listeners) {

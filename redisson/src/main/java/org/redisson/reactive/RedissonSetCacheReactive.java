@@ -78,7 +78,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     Publisher<ListScanResult<ScanObjectEntry>> scanIterator(InetSocketAddress client, long startPos) {
-        return reactive(instance.scanIteratorAsync(client, startPos));
+        return reactive(instance.scanIteratorAsync(getName(), client, startPos));
     }
 
     @Override

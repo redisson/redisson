@@ -52,17 +52,17 @@ public abstract class RedissonObject implements RObject {
     }
     
     protected String prefixName(String prefix, String name) {
-        if (getName().contains("{")) {
+        if (name.contains("{")) {
             return prefix + ":" + name;
         }
-        return prefix + ":{" + getName() + "}";
+        return prefix + ":{" + name + "}";
     }
     
     protected String suffixName(String name, String suffix) {
-        if (getName().contains("{")) {
+        if (name.contains("{")) {
             return name + ":" + suffix;
         }
-        return "{" + getName() + "}:" + suffix;
+        return "{" + name + "}:" + suffix;
     }
 
     protected <V> V get(RFuture<V> future) {
@@ -80,6 +80,10 @@ public abstract class RedissonObject implements RObject {
     @Override
     public String getName() {
         return name;
+    }
+    
+    protected String getName(Object o) {
+        return getName();
     }
 
     @Override

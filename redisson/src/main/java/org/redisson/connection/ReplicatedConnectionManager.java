@@ -163,6 +163,10 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 
                 final AtomicInteger count = new AtomicInteger(cfg.getNodeAddresses().size());
                 for (final URL addr : cfg.getNodeAddresses()) {
+                    if (isShuttingDown()) {
+                        return;
+                    }
+
                     RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
                     connectionFuture.addListener(new FutureListener<RedisConnection>() {
                         @Override
@@ -172,6 +176,10 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                 if (count.decrementAndGet() == 0) {
                                     scheduleMasterChangeCheck(cfg);
                                 }
+                                return;
+                            }
+                            
+                            if (isShuttingDown()) {
                                 return;
                             }
                             

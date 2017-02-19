@@ -38,6 +38,7 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
+import org.redisson.cluster.ClusterPartition.Type;
 import org.redisson.config.ClusterServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -676,33 +677,65 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
 
             String id = clusterNodeInfo.getNodeId();
+            ClusterPartition slavePartition = getPartition(partitions, id);
+
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                 id = clusterNodeInfo.getSlaveOf();
             }
 
-
-            ClusterPartition partition = partitions.get(id);
-            if (partition == null) {
-                partition = new ClusterPartition(id);
-                partitions.put(id, partition);
-            }
-
-            if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
-                if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
-                    partition.addFailedSlaveAddress(clusterNodeInfo.getAddress());
-                } else {
-                    partition.setMasterFail(true);
-                }
-            }
+            ClusterPartition partition = getPartition(partitions, id);
 
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
+                slavePartition.setParent(partition);
+                
                 partition.addSlaveAddress(clusterNodeInfo.getAddress());
+                if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
+                    partition.addFailedSlaveAddress(clusterNodeInfo.getAddress());
+                }
             } else {
                 partition.addSlotRanges(clusterNodeInfo.getSlotRanges());
                 partition.setMasterAddress(clusterNodeInfo.getAddress());
+                partition.setType(Type.MASTER);
+                if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
+                    partition.setMasterFail(true);
+                }
             }
         }
+        
+        addCascadeSlaves(partitions);
+        
         return partitions.values();
+    }
+
+    private void addCascadeSlaves(Map<String, ClusterPartition> partitions) {
+        Iterator<ClusterPartition> iter = partitions.values().iterator();
+        while (iter.hasNext()) {
+            ClusterPartition cp = iter.next();
+            if (cp.getType() != Type.SLAVE) {
+                continue;
+            }
+            
+            if (cp.getParent() != null && cp.getParent().getType() == Type.MASTER) {
+                ClusterPartition parent = cp.getParent();
+                for (URL addr : cp.getSlaveAddresses()) {
+                    parent.addSlaveAddress(addr);
+                }
+                for (URL addr : cp.getFailedSlaveAddresses()) {
+                    parent.addFailedSlaveAddress(addr);
+                }
+            }
+            iter.remove();
+        }
+    }
+
+    private ClusterPartition getPartition(Map<String, ClusterPartition> partitions, String id) {
+        ClusterPartition partition = partitions.get(id);
+        if (partition == null) {
+            partition = new ClusterPartition(id);
+            partition.setType(Type.SLAVE);
+            partitions.put(id, partition);
+        }
+        return partition;
     }
 
     @Override

@@ -238,6 +238,8 @@ public class Config {
     /**
      *
      * Use {@link #useReplicatedServers()}
+     * 
+     * @return config object
      */
     @Deprecated
     public ElasticacheServersConfig useElasticacheServers() {

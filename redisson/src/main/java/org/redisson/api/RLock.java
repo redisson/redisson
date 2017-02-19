@@ -27,7 +27,7 @@ import java.util.concurrent.locks.Lock;
  *
  */
 
-public interface RLock extends Lock, RExpirable {
+public interface RLock extends Lock, RExpirable, RLockAsync {
 
     /**
      * Acquires the lock.
@@ -111,19 +111,5 @@ public interface RLock extends Lock, RExpirable {
      * @return holds or <code>0</code> if this lock is not held by current thread
      */
     int getHoldCount();
-
-    RFuture<Boolean> forceUnlockAsync();
-    
-    RFuture<Void> unlockAsync();
-
-    RFuture<Boolean> tryLockAsync();
-
-    RFuture<Void> lockAsync();
-
-    RFuture<Void> lockAsync(long leaseTime, TimeUnit unit);
-
-    RFuture<Boolean> tryLockAsync(long waitTime, TimeUnit unit);
-
-    RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit);
 
 }
