@@ -223,6 +223,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
             final String slaveAddr = ip + ":" + port;
 
+            if (!isUseSameMaster(parts)) {
+                return;
+            }
+            
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null) {
                 final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
@@ -298,6 +302,21 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    private boolean isUseSameMaster(String[] parts) {
+        String ip = parts[2];
+        String port = parts[3];
+
+        String slaveAddr = ip + ":" + port;
+
+        String master = currentMaster.get();
+        String slaveMaster = parts[6] + ":" + parts[7];
+        if (!master.equals(slaveMaster)) {
+            log.warn("Skipped slave up {} for master {} differs from current {}", slaveAddr, slaveMaster, master);
+            return false;
+        }
+        return true;
+    }
+    
     private void onNodeUp(URL addr, String msg) {
         String[] parts = msg.split(" ");
 
@@ -306,6 +325,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String ip = parts[2];
                 String port = parts[3];
 
+                if (!isUseSameMaster(parts)) {
+                    return;
+                }
+                
                 slaveUp(ip, port);
             } else if ("master".equals(parts[0])) {
                 String ip = parts[2];
