@@ -48,12 +48,7 @@ import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.Cache;
-import org.redisson.misc.Hash;
-import org.redisson.misc.LFUCacheMap;
-import org.redisson.misc.LRUCacheMap;
-import org.redisson.misc.NoneCacheMap;
-import org.redisson.misc.RPromise;
+import org.redisson.misc.*;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -214,6 +209,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
         if (options.getEvictionPolicy() == EvictionPolicy.LFU) {
             cache = new LFUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.SOFT) {
+            cache = new SoftCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }
 
         invalidationTopic = new RedissonTopic<Object>(commandExecutor, suffixName(name, "topic"));
