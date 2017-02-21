@@ -37,54 +37,6 @@ import io.netty.util.internal.PlatformDependent;
  */
 public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
-    public static class CachedValue {
-
-        private final Object key;
-        private final Object value;
-        
-        long ttl;
-        long maxIdleTime;
-        
-        long creationTime;
-        long lastAccess;
-
-        public CachedValue(Object key, Object value, long ttl, long maxIdleTime) {
-            this.value = value;
-            this.ttl = ttl;
-            this.key = key;
-            this.maxIdleTime = maxIdleTime;
-            creationTime = System.currentTimeMillis();
-            lastAccess = creationTime;
-        }
-        
-        public boolean isExpired() {
-            boolean result = false;
-            long currentTime = System.currentTimeMillis();
-            if (ttl != 0 && creationTime + ttl < currentTime) {
-                result = true;
-            }
-            if (maxIdleTime != 0 && lastAccess + maxIdleTime < currentTime) {
-                result = true;
-            }
-            return result;
-        }
-        
-        public Object getKey() {
-            return key;
-        }
-        
-        public Object getValue() {
-            lastAccess = System.currentTimeMillis();
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return "CachedValue [key=" + key + ", value=" + value + "]";
-        }
-
-    }
-
     final int size;
     final ConcurrentMap<K, CachedValue> map = PlatformDependent.newConcurrentHashMap();
     private final long timeToLiveInMillis;
@@ -237,7 +189,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     }
 
     protected CachedValue create(K key, V value, long ttl, long maxIdleTime) {
-        return new CachedValue(key, value, ttl, maxIdleTime);        
+        return new StdCachedValue(key, value, ttl, maxIdleTime);
     }
     
     protected void onValueCreate(CachedValue entry) {
