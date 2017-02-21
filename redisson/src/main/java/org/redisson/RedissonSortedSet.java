@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -26,6 +25,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.SortedSet;
 
 import org.redisson.api.RBucket;
@@ -38,13 +38,11 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.RPromise;
 
-import io.netty.channel.EventLoopGroup;
-
 /**
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> value type
  */
 public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V> {
 
@@ -163,6 +161,16 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     @Override
+    public Set<V> readAll() {
+        return get(readAllAsync());
+    }
+
+    @Override
+    public RFuture<Set<V>> readAllAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.LRANGE_SET, getName(), 0, -1);
+    }
+    
+    @Override
     public int size() {
         return list.size();
     }
@@ -203,12 +211,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             if (res.getIndex() < 0) {
                 int index = -(res.getIndex() + 1);
                 
-                byte[] encodedValue = null;
-                try {
-                    encodedValue = codec.getValueEncoder().encode(value);
-                } catch (IOException e) {
-                    throw new IllegalArgumentException(e);
-                }
+                byte[] encodedValue = encode(value);
                 
                 commandExecutor.evalWrite(getName(), RedisCommands.EVAL_VOID, 
                    "local len = redis.call('llen', KEYS[1]);"
@@ -240,7 +243,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     public RFuture<Boolean> addAsync(final V value) {
         final RPromise<Boolean> promise = newPromise();
-        commandExecutor.getConnectionManager().getGroup().execute(new Runnable() {
+        commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             public void run() {
                 try {
                     boolean res = add(value);
@@ -255,10 +258,8 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public RFuture<Boolean> removeAsync(final V value) {
-        EventLoopGroup group = commandExecutor.getConnectionManager().getGroup();
         final RPromise<Boolean> promise = newPromise();
-
-        group.execute(new Runnable() {
+        commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -316,7 +317,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     @Override
     public boolean retainAll(Collection<?> c) {
         boolean changed = false;
-        for (Iterator iterator = iterator(); iterator.hasNext();) {
+        for (Iterator<?> iterator = iterator(); iterator.hasNext();) {
             Object object = (Object) iterator.next();
             if (!c.contains(object)) {
                 iterator.remove();
@@ -404,6 +405,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return res;
     }
     
+    // TODO optimize: get three values each time instead of single
     public BinarySearchResult<V> binarySearch(V value, Codec codec) {
         int size = list.size();
         int upperIndex = size - 1;

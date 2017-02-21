@@ -50,9 +50,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     public void await() throws InterruptedException {
-        RFuture<RedissonCountDownLatchEntry> promise = subscribe();
+        RFuture<RedissonCountDownLatchEntry> future = subscribe();
         try {
-            get(promise);
+            commandExecutor.syncSubscription(future);
 
             while (getCount() > 0) {
                 // waiting for open state
@@ -62,7 +62,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 }
             }
         } finally {
-            unsubscribe(promise);
+            unsubscribe(future);
         }
     }
 

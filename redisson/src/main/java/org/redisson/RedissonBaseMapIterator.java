@@ -28,7 +28,7 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
 
-abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
+public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
     private Map<ByteBuf, ByteBuf> firstValues;
     private Map<ByteBuf, ByteBuf> lastValues;
@@ -151,7 +151,7 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
     @Override
     public M next() {
         if (!hasNext()) {
-            throw new NoSuchElementException("No such element at index");
+            throw new NoSuchElementException();
         }
 
         entry = lastIter.next();
@@ -160,7 +160,7 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
     }
 
     @SuppressWarnings("unchecked")
-    M getValue(final Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+    protected M getValue(final Entry<ScanObjectEntry, ScanObjectEntry> entry) {
         return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey().getObj(), (V)entry.getValue().getObj()) {
 
             @Override
@@ -176,7 +176,7 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
         if (currentElementRemoved) {
             throw new IllegalStateException("Element been already deleted");
         }
-        if (lastIter == null) {
+        if (lastIter == null || entry == null) {
             throw new IllegalStateException();
         }
 
@@ -185,6 +185,7 @@ abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
         removeKey();
         currentElementRemoved = true;
         removeExecuted = true;
+        entry = null;
     }
 
     protected abstract void removeKey();

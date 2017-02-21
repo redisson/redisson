@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.CronSchedule;
-
 /**
  * Distributed implementation of {@link java.util.concurrent.ScheduledExecutorService}
  * 

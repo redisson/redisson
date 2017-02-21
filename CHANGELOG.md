@@ -2,6 +2,138 @@ Redisson Releases History
 ================================
 ####Please Note: trunk is current development branch.
 
+Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
+
+####19-Feb-2017 - versions 2.8.0 and 3.3.0 released
+
+Feature - __`RClusteredLocalCachedMap` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#713-map-data-partitioning)  
+Feature - __`RClusteredMapCache` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#713-map-data-partitioning)  
+Feature - __`RClusteredSetCache` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#732-set-data-partitioning)  
+Feature - __`RPriorityQueue` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#715-priority-queue)  
+Feature - __`RPriorityDeque` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#716-priority-deque)  
+Feature - `removeAllListeners` and `removeListener` by instance methods added for `RTopic` and `RPatternTopic`  
+Feature - `RLockAsync` interface added  
+Improvement - `RRemoteService` is now able to support method overload  
+Fixed - `RLocalCachedMap` is not Redis cluster compatible  
+Fixed - cascade slaves are not supported in cluster mode  
+Fixed - shutdown checking during master change state check added  
+Fixed - master isn't checked during new slave discovery in Sentinel mode  
+
+####02-Feb-2017 - versions 2.7.4 and 3.2.4 released
+
+Feature - Allow to specify Redisson instance/config during JCache cache creation  
+Fixed - `ByteBuf.release` method invocation is missed in `LZ4Codec` and `SnappyCodec`  
+Fixed - AssertionError during Redisson shutdown  
+Fixed -  `RReadWriteLock.readLock` couldn't be acquired by same thread which has already acquired `writeLock`  
+Fixed -  failed `RFairLock.tryLock` attempt retains caller thread in fairLock queue  
+Fixed - `factory already defined` error  
+Fixed - `JCache` expiration listener doesn't work  
+Fixed - `RLocalCachedMap` doesn't work with `SerializationCodec`  
+Fixed - `Can't find entry` error during operation execution on slave nodes  
+
+####19-Jan-2017 - versions 2.7.3 and 3.2.3 released
+
+Redisson Team is pleased to announce __ULTRA-FAST__ Redisson PRO edition.  
+Performance measure results available in [Benchmark whitepaper](https://redisson.pro/Redisson%20PRO%20benchmark%20whitepaper.pdf)
+
+Feature - `RMap.getLock(key)` and `RMultimap.getLock(key)` methods added  
+Improvement - `RedissonSpringCacheManager` constructor with Redisson instance only added  
+Improvement - `CronSchedule` moved to `org.redisson.api` package  
+Fixed - RedissonBaseIterator.hasNext() doesn't return false in some cases  
+Fixed - NoSuchFieldError exception in `redisson-tomcat` modules  
+Fixed - ConnectionPool size not respected during redirect of cluster request  
+Fixed - `RSortedSet.removeAsync` and `RSortedSet.addAsync`  
+Fixed - `RBloomFilter.tryInit` were not validated properly  
+Fixed - CommandDecoder should print all replay body on error  
+
+####19-Dec-2016 - versions 2.7.2 and 3.2.2 released
+
+Feature - `RList`, `RSet` and `RScoredSortedSet` implements `RSortable` interface with SORT command support  
+Feature - `NodeAsync` interface  
+Feature - `Node.info`, `Node.getNode` methods added  
+Fixed - elements distribution of `RBlockingFairQueue` across consumers  
+Fixed - `factory already defined` error during Redisson initialization under Apache Tomcat  
+
+####14-Dec-2016 - versions 2.7.1 and 3.2.1 released
+
+Url format used in config files __has changed__. For example:
+
+"//127.0.0.1:6739" now should be written as "redis://127.0.0.1:6739"
+
+Feature - `RSet.removeRandom` allows to remove several members at once  
+Fixed - exceptions during shutdown  
+Fixed - redis url couldn't contain underscore in host name  
+Fixed - IndexOutOfBoundsException during response decoding  
+Fixed - command timeout didn't respect during topic subscription  
+Fixed - possible PublishSubscribe race-condition  
+Fixed - blocking queue/deque poll method blocks infinitely if delay less than 1 second  
+
+####26-Nov-2016 - versions 2.7.0 and 3.2.0 released
+
+Feature - __Spring Session implementation__. More details [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#145-spring-session)  
+Feature - __Tomcat Session Manager implementation__. More details [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#144-tomcat-redis-session-manager)  
+Feature - __RDelayedQueue object added__. More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#714-delayed-queue)  
+Feature - __RBlockingFairQueue object added__. More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#713-blocking-fair-queue)  
+Feature - `RSortedSet.readAll` and `RQueue.readAll` methods added  
+Fixed - `RMap.getAll` doesn't not preserve the order of elements  
+Fixed - Wrong nodes parsing in result of cluster info command  
+Fixed - NullPointerException in CommandDecoder.handleResult  
+Fixed - Redisson shutdown status should be checked during async command invocation  
+
+####07-Nov-2016 - versions 2.6.0 and 3.1.0 released
+
+Feature - __new object added__ `RBinaryStream`. More info about it [here](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#62-binary-stream-holder)  
+Improvement - limit Payload String on RedisTimeoutException  
+Improvement - Elasticache master node change detection process optimization  
+
+####27-Oct-2016 - versions 2.5.1 and 3.0.1 released
+
+Include all code changes from __2.2.27__ version
+
+Fixed - RMapCache.fastPutIfAbsentAsync doesn't take in account expiration  
+Fixed - timer field of RedisClient hasn't been initialized properly in some cases  
+
+####27-Oct-2016 - version 2.2.27 released
+
+This version fixes old and annonying problem with `ConnectionPool exhusted` error. From this moment connection pool waits for free connection instead of throwing pool exhausted error. This leads to more effective Redis connection utilization.
+
+Improvement - remove `Connection pool exhausted` exception  
+
+####17-Oct-2016 - version 3.0.0 released
+Fully compatible with JDK 8. Includes all code changes from __2.5.0__ version
+
+Feature - `RFeature` extends `CompletionStage`
+
+####17-Oct-2016 - version 2.5.0 released
+This version brings greatly improved version of `RLiveObjectService` and adds cascade handling, cyclic dependency resolving, simplified object creation. Read more in this [article](https://dzone.com/articles/java-distributed-in-memory-data-model-powered-by-r)
+
+Includes all code changes from __2.2.26__ version
+
+Feautre - COUNT and ASC/DESC support for `RGeo` radius methods  
+Feature - `RGeo` extends `RScoredSortedSet`  
+Feature - `RCascade` annotation support LiveObjectService  
+Improvement - `RId` generator should be empty by default  
+Improvement - support setter/getter with protected visibility scope for LiveObject  
+Fixed - `RMapCache` doesn't keep entries insertion order during iteration  
+Fixed - `@RId` is returned/overwritten by similarly named methods (thanks to Rui Gu)  
+Fixed - typo `getRemoteSerivce` -> `getRemoteService` (thanks to Slava Rosin)  
+Fixed - `RPermitExpirableSemaphore.availablePermits` doesn't return actual permits account under certain conditions  
+Fixed - `readAllValues` and `readAllEntrySet` methods of `RLocalCacheMap` return wrong values  
+Fixed - setter for collection field of LiveObject entity should rewrite collection content  
+Fixed - `RSetCache` TTL not updated if element already present  
+Fixed - `RLiveObjectService` swallow exceptions during `merge` or `persist` operation
+Fixed - `RLiveObjectService` doesn't support protected constructors  
+Fixed - object with cyclic dependencies lead to stackoverflow during `RLiveObjectService.detach` process  
+Fixed - not persisted `REntity` object allowed to store automatically  
+Fixed - `RLexSortedSet.addAll` doesn't work  
+Fixed - `RLiveObjectService` can't detach content of List object  
+Fixed - `RLiveObjectService` doesn't create objects mapped to Redisson objects in runtime during getter accesss  
+Fixed - `RLiveObjectService` can't recognize id field of object without setter  
+
+####17-Oct-2016 - version 2.2.26 released
+Fixed - NPE in CommandDecoder  
+Fixed - PubSub connection re-subscription doesn't work in case when there is only one slave available
+
 ####27-Sep-2016 - version 2.4.0 released
 Includes all code changes from __2.2.25__ version
 

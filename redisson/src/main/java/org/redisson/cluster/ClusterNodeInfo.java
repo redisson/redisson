@@ -16,10 +16,11 @@
 package org.redisson.cluster;
 
 import java.net.URI;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.URLBuilder;
 
 /**
  * 
@@ -33,7 +34,7 @@ public class ClusterNodeInfo {
     private final String nodeInfo;
     
     private String nodeId;
-    private URI address;
+    private URL address;
     private final Set<Flag> flags = new HashSet<Flag>();
     private String slaveOf;
 
@@ -50,11 +51,11 @@ public class ClusterNodeInfo {
         this.nodeId = nodeId;
     }
 
-    public URI getAddress() {
+    public URL getAddress() {
         return address;
     }
     public void setAddress(String address) {
-        this.address = URIBuilder.create(address);
+        this.address = URLBuilder.create(address);
     }
 
     public void addSlotRange(ClusterSlotRange range) {

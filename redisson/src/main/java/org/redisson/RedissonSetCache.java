@@ -28,13 +28,16 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSetCache;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.eviction.EvictionScheduler;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
@@ -45,7 +48,7 @@ import org.redisson.command.CommandAsyncExecutor;
  * Thus values are checked for TTL expiration during any value read operation.
  * If entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.eviction.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>
@@ -54,8 +57,16 @@ import org.redisson.command.CommandAsyncExecutor;
  *
  * @param <V> value
  */
-public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V> {
+public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V>, ScanIterator {
 
+    RedissonSetCache(CommandAsyncExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
+    }
+
+    RedissonSetCache(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+        super(codec, commandExecutor, name);
+    }
+    
     public RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         evictionScheduler.schedule(getName());
@@ -88,7 +99,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
-        return commandExecutor.evalReadAsync(getName(), codec, new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
+        return commandExecutor.evalReadAsync(getName(o), codec, new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
                     "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); " + 
                      "if expireDateScore ~= false then " +
                          "if tonumber(expireDateScore) <= tonumber(ARGV[1]) then " +
@@ -99,16 +110,16 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                      "else " +
                          "return 0;" +
                      "end; ",
-               Arrays.<Object>asList(getName()), System.currentTimeMillis(), o);
+               Arrays.<Object>asList(getName(o)), System.currentTimeMillis(), o);
     }
 
-    ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        RFuture<ListScanResult<V>> f = scanIteratorAsync(client, startPos);
+    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
+        RFuture<ListScanResult<ScanObjectEntry>> f = scanIteratorAsync(name, client, startPos);
         return get(f);
     }
 
-    public RFuture<ListScanResult<V>> scanIteratorAsync(InetSocketAddress client, long startPos) {
-        return commandExecutor.evalReadAsync(client, getName(), codec, RedisCommands.EVAL_ZSCAN,
+    public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, InetSocketAddress client, long startPos) {
+        return commandExecutor.evalReadAsync(client, name, new ScanCodec(codec), RedisCommands.EVAL_ZSCAN,
                   "local result = {}; "
                 + "local res = redis.call('zscan', KEYS[1], ARGV[1]); "
                 + "for i, value in ipairs(res[2]) do "
@@ -119,7 +130,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         + "end; "
                     + "end;"
                 + "end;"
-                + "return {res[1], result};", Arrays.<Object>asList(getName()), startPos, System.currentTimeMillis());
+                + "return {res[1], result};", Arrays.<Object>asList(name), startPos, System.currentTimeMillis());
     }
 
     @Override
@@ -127,8 +138,8 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
-                return scanIterator(client, nextIterPos);
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+                return scanIterator(getName(), client, nextIterPos);
             }
 
             @Override
@@ -146,27 +157,18 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Set<V>> readAllAsync() {
-        return (RFuture<Set<V>>)readAllAsync(RedisCommands.ZRANGEBYSCORE);
-    }
-
-    private RFuture<?> readAllAsync(RedisCommand<? extends Collection<?>> command) {
-        return commandExecutor.readAsync(getName(), codec, command, getName(), System.currentTimeMillis(), 92233720368547758L);
-    }
-
-    
-    private RFuture<List<Object>> readAllasListAsync() {
-        return (RFuture<List<Object>>)readAllAsync(RedisCommands.ZRANGEBYSCORE_LIST);
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGEBYSCORE, getName(), System.currentTimeMillis(), 92233720368547758L);
     }
 
     @Override
     public Object[] toArray() {
-        List<Object> res = get(readAllasListAsync());
+        Set<V> res = get(readAllAsync());
         return res.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        List<Object> res = get(readAllasListAsync());
+        Set<V> res = get(readAllAsync());
         return res.toArray(a);
     }
 
@@ -196,14 +198,14 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         byte[] objectState = encode(value);
 
         long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getName(value), codec, RedisCommands.EVAL_BOOLEAN,
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
                 "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
                 "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then " +
                     "return 0;" +
                 "end; " +
                 "return 1; ",
-                Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, objectState);
+                Arrays.<Object>asList(getName(value)), System.currentTimeMillis(), timeoutDate, objectState);
     }
 
     @Override
@@ -213,7 +215,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREM, getName(), o);
+        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.ZREM, getName(o), o);
     }
 
     @Override

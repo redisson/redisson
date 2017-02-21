@@ -15,12 +15,12 @@
  */
 package org.redisson.client.protocol;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 
 /**
@@ -85,19 +85,19 @@ public class CommandData<T, R> implements QueueCommand {
     @Override
     public String toString() {
         return "CommandData [promise=" + promise + ", command=" + command + ", params="
-                + Arrays.toString(params) + ", codec=" + codec + "]";
+                + LogHelper.toString(params) + ", codec=" + codec + "]";
     }
 
     @Override
     public List<CommandData<Object, Object>> getPubSubOperations() {
-        if (PUBSUB_COMMANDS.contains(getCommand().getName())) {
+        if (RedisCommands.PUBSUB_COMMANDS.contains(getCommand().getName())) {
             return Collections.singletonList((CommandData<Object, Object>)this);
         }
         return Collections.emptyList();
     }
     
     public boolean isBlockingCommand() {
-        return QueueCommand.TIMEOUTLESS_COMMANDS.contains(command.getName()) && !promise.isDone();
+        return RedisCommands.BLOCKING_COMMANDS.contains(command.getName()) && !promise.isDone();
     }
 
 }

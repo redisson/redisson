@@ -30,6 +30,14 @@ import java.util.Set;
 public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
 
     /**
+     * Returns <code>RLock</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return lock
+     */
+    RLock getLock(K key);
+    
+    /**
      * Returns the number of key-value pairs in this multimap.
      *
      * @return size of multimap

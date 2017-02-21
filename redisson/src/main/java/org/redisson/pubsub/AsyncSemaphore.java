@@ -15,8 +15,11 @@
  */
 package org.redisson.pubsub;
 
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -27,7 +30,7 @@ import java.util.concurrent.CountDownLatch;
 public class AsyncSemaphore {
 
     private int counter;
-    private final Queue<Runnable> listeners = new LinkedList<Runnable>();
+    private final Set<Runnable> listeners = new LinkedHashSet<Runnable>();
 
     public AsyncSemaphore(int permits) {
         counter = permits;
@@ -46,6 +49,12 @@ public class AsyncSemaphore {
             latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    public int queueSize() {
+        synchronized (this) {
+            return listeners.size();
         }
     }
     
@@ -74,12 +83,20 @@ public class AsyncSemaphore {
         }
     }
 
+    public int getCounter() {
+        return counter;
+    }
+    
     public void release() {
         Runnable runnable = null;
         
         synchronized (this) {
             counter++;
-            runnable = listeners.poll();
+            Iterator<Runnable> iter = listeners.iterator();
+            if (iter.hasNext()) {
+                runnable = iter.next();
+                iter.remove();
+            }
         }
         
         if (runnable != null) {

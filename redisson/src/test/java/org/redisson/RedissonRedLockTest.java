@@ -63,6 +63,9 @@ public class RedissonRedLockTest {
         assertThat(executor.awaitTermination(2, TimeUnit.MINUTES)).isTrue();
         assertThat(counter.get()).isEqualTo(50);
         
+        client1.shutdown();
+        client2.shutdown();
+        
         assertThat(redis1.stop()).isEqualTo(0);
         assertThat(redis2.stop()).isEqualTo(0);
     }
@@ -106,6 +109,9 @@ public class RedissonRedLockTest {
         assertThat(executor.awaitTermination(2, TimeUnit.MINUTES)).isTrue();
         assertThat(counter.get()).isEqualTo(50);
         
+        client1.shutdown();
+        client2.shutdown();
+        
         assertThat(redis1.stop()).isEqualTo(0);
         assertThat(redis2.stop()).isEqualTo(0);
     }
@@ -143,6 +149,9 @@ public class RedissonRedLockTest {
 
         RedissonMultiLock lock = new RedissonRedLock(lock1, lock2, lock3);
         Assert.assertFalse(lock.tryLock());
+        
+        client1.shutdown();
+        client2.shutdown();
         
         assertThat(redis1.stop()).isEqualTo(0);
         assertThat(redis2.stop()).isEqualTo(0);
@@ -190,6 +199,9 @@ public class RedissonRedLockTest {
         lock.lock();
         lock.unlock();
         
+        client1.shutdown();
+        client2.shutdown();
+        
         assertThat(redis1.stop()).isEqualTo(0);
         assertThat(redis2.stop()).isEqualTo(0);
     }
@@ -228,6 +240,9 @@ public class RedissonRedLockTest {
         lock.lock();
         lock.unlock();
         
+        client1.shutdown();
+        client2.shutdown();
+        
         assertThat(redis1.stop()).isEqualTo(0);
     }
 
@@ -264,6 +279,7 @@ public class RedissonRedLockTest {
         lock.lock();
         lock.unlock();
         
+        client.shutdown();
         assertThat(redis1.stop()).isEqualTo(0);
     }
     

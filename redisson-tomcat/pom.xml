@@ -1,0 +1,86 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-parent</artifactId>
+        <version>2.8.1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-tomcat</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Redisson/Tomcat</name>
+
+    <modules>
+        <module>redisson-tomcat-6</module>
+        <module>redisson-tomcat-7</module>
+        <module>redisson-tomcat-8</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <source>${source.version}</source>
+                    <target>${source.version}</target>
+                    <optimize>true</optimize>
+                    <showDeprecations>true</showDeprecations>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <fork>true</fork>
+                            <source>${test.source.version}</source>
+                            <target>${test.source.version}</target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+         	<groupId>org.apache.maven.plugins</groupId>
+         	<artifactId>maven-javadoc-plugin</artifactId>
+         	<version>2.10.4</version>
+         	<executions>
+                   <execution>
+                     <id>attach-javadocs</id>
+                     <goals>
+                         <goal>jar</goal>
+                     </goals>
+                   </execution>
+         	</executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+            <version>4.5.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

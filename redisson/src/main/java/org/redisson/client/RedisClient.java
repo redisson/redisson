@@ -16,7 +16,7 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,7 +31,7 @@ import org.redisson.client.handler.ConnectionWatchdog;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.URLBuilder;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -70,15 +70,15 @@ public class RedisClient {
     private boolean hasOwnGroup;
 
     public RedisClient(String address) {
-        this(URIBuilder.create(address));
+        this(URLBuilder.create(address));
     }
     
-    public RedisClient(URI address) {
+    public RedisClient(URL address) {
         this(new HashedWheelTimer(), Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2), new NioEventLoopGroup(), address);
         hasOwnGroup = true;
     }
 
-    public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, URI address) {
+    public RedisClient(Timer timer, ExecutorService executor, EventLoopGroup group, URL address) {
         this(timer, executor, group, address.getHost(), address.getPort());
     }
     
@@ -97,7 +97,11 @@ public class RedisClient {
 
     public RedisClient(final Timer timer, ExecutorService executor, EventLoopGroup group, Class<? extends SocketChannel> socketChannelClass, String host, int port, 
                         int connectTimeout, int commandTimeout) {
+        if (timer == null) {
+            throw new NullPointerException("timer param can't be null");
+        }
         this.executor = executor;
+        this.timer = timer;
         addr = new InetSocketAddress(host, port);
         bootstrap = new Bootstrap().channel(socketChannelClass).group(group).remoteAddress(addr);
         bootstrap.handler(new ChannelInitializer<Channel>() {
@@ -227,11 +231,7 @@ public class RedisClient {
         return channels.close();
     }
 
-    /**
-     * Execute INFO SERVER operation.
-     *
-     * @return Map extracted from each response line splitting by ':' symbol
-     */
+    @Deprecated
     public Map<String, String> serverInfo() {
         try {
             return serverInfoAsync().sync().get();
@@ -240,15 +240,10 @@ public class RedisClient {
         }
     }
 
-    /**
-     * Asynchronously execute INFO SERVER operation.
-     *
-     * @return A future for a map extracted from each response line splitting by
-     * ':' symbol
-     */
+    @Deprecated
     public RFuture<Map<String, String>> serverInfoAsync() {
         final RedisConnection connection = connect();
-        RFuture<Map<String, String>> async = connection.async(RedisCommands.SERVER_INFO);
+        RFuture<Map<String, String>> async = connection.async(RedisCommands.INFO_SERVER);
         async.addListener(new FutureListener<Map<String, String>>() {
             @Override
             public void operationComplete(Future<Map<String, String>> future) throws Exception {

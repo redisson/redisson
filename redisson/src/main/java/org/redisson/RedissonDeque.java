@@ -25,8 +25,8 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
+import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.connection.decoder.ListFirstObjectDecoder;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}

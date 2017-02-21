@@ -15,7 +15,6 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,6 +23,12 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> value type
+ */
 public class ObjectSetReplayDecoder<T> implements MultiDecoder<Set<T>> {
 
     @Override

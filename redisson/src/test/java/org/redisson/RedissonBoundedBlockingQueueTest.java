@@ -238,6 +238,8 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         long start = System.currentTimeMillis();
         assertThat(f.get()).isNull();
         assertThat(System.currentTimeMillis() - start).isGreaterThan(3800);
+        
+        redisson.shutdown();
     }
     
     @Test
@@ -292,6 +294,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         await().atMost(5, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
         
+        redisson.shutdown();
         runner.stop();
     }
     
@@ -328,6 +331,8 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         Integer result = f.get(1, TimeUnit.SECONDS);
         assertThat(result).isEqualTo(123);
+        
+        redisson.shutdown();
         runner.stop();
     }
 
@@ -368,6 +373,8 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         Integer result = f.get(1, TimeUnit.SECONDS);
         assertThat(result).isEqualTo(123);
         runner.stop();
+        
+        redisson.shutdown();
     }
     
     @Test

@@ -19,10 +19,10 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.client.RedisConnection;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +38,10 @@ public class IdleConnectionWatcher {
 
         private final int minimumAmount;
         private final int maximumAmount;
-        private final AtomicInteger freeConnectionsCounter;
+        private final AsyncSemaphore freeConnectionsCounter;
         private final Collection<? extends RedisConnection> connections;
 
-        public Entry(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AtomicInteger freeConnectionsCounter) {
+        public Entry(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AsyncSemaphore freeConnectionsCounter) {
             super();
             this.minimumAmount = minimumAmount;
             this.maximumAmount = maximumAmount;
@@ -84,10 +84,10 @@ public class IdleConnectionWatcher {
     }
 
     private boolean validateAmount(Entry entry) {
-        return entry.maximumAmount - entry.freeConnectionsCounter.get() + entry.connections.size() > entry.minimumAmount;
+        return entry.maximumAmount - entry.freeConnectionsCounter.getCounter() + entry.connections.size() > entry.minimumAmount;
     }
 
-    public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AtomicInteger freeConnectionsCounter) {
+    public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AsyncSemaphore freeConnectionsCounter) {
         entries.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter));
     }
 

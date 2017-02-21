@@ -49,6 +49,8 @@ public class Config {
 
     private ElasticacheServersConfig elasticacheServersConfig;
 
+    private ReplicatedServersConfig replicatedServersConfig;
+
     /**
      * Threads amount shared between all redis node clients
      */
@@ -116,6 +118,9 @@ public class Config {
         }
         if (oldConf.getElasticacheServersConfig() != null) {
             setElasticacheServersConfig(new ElasticacheServersConfig(oldConf.getElasticacheServersConfig()));
+        }
+        if (oldConf.getReplicatedServersConfig() != null) {
+            setReplicatedServersConfig(new ReplicatedServersConfig(oldConf.getReplicatedServersConfig()));
         }
 
     }
@@ -214,6 +219,7 @@ public class Config {
         checkSentinelServersConfig();
         checkSingleServerConfig();
         checkElasticacheServersConfig();
+        checkReplicatedServersConfig();
 
         if (clusterServersConfig == null) {
             clusterServersConfig = config;
@@ -230,10 +236,12 @@ public class Config {
     }
 
     /**
-     * Init AWS Elasticache servers configuration.
      *
-     * @return ElasticacheServersConfig
+     * Use {@link #useReplicatedServers()}
+     * 
+     * @return config object
      */
+    @Deprecated
     public ElasticacheServersConfig useElasticacheServers() {
         return useElasticacheServers(new ElasticacheServersConfig());
     }
@@ -259,6 +267,37 @@ public class Config {
     }
 
     /**
+     * Init Replicated servers configuration.
+     * Most used with Azure Redis Cache or AWS Elasticache
+     *
+     * @return ReplicatedServersConfig
+     */
+    public ReplicatedServersConfig useReplicatedServers() {
+        return useReplicatedServers(new ReplicatedServersConfig());
+    }
+
+    ReplicatedServersConfig useReplicatedServers(ReplicatedServersConfig config) {
+        checkClusterServersConfig();
+        checkMasterSlaveServersConfig();
+        checkSentinelServersConfig();
+        checkSingleServerConfig();
+        checkElasticacheServersConfig();
+
+        if (replicatedServersConfig == null) {
+            replicatedServersConfig = new ReplicatedServersConfig();
+        }
+        return replicatedServersConfig;
+    }
+
+    ReplicatedServersConfig getReplicatedServersConfig() {
+        return replicatedServersConfig;
+    }
+
+    void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
+        this.replicatedServersConfig = replicatedServersConfig;
+    }
+
+    /**
      * Init single server configuration.
      *
      * @return SingleServerConfig
@@ -272,6 +311,7 @@ public class Config {
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
         checkElasticacheServersConfig();
+        checkReplicatedServersConfig();
 
         if (singleServerConfig == null) {
             singleServerConfig = config;
@@ -301,6 +341,7 @@ public class Config {
         checkSingleServerConfig();
         checkMasterSlaveServersConfig();
         checkElasticacheServersConfig();
+        checkReplicatedServersConfig();
 
         if (this.sentinelServersConfig == null) {
             this.sentinelServersConfig = sentinelServersConfig;
@@ -330,6 +371,7 @@ public class Config {
         checkSingleServerConfig();
         checkSentinelServersConfig();
         checkElasticacheServersConfig();
+        checkReplicatedServersConfig();
 
         if (masterSlaveServersConfig == null) {
             masterSlaveServersConfig = config;
@@ -400,6 +442,12 @@ public class Config {
         }
     }
 
+    private void checkReplicatedServersConfig() {
+        if (replicatedServersConfig != null) {
+            throw new IllegalStateException("Replication servers config already used!");
+        }
+    }
+
     /**
      * Activates an unix socket if servers binded to loopback interface.
      * Also used for epoll transport activation.
@@ -440,7 +488,9 @@ public class Config {
      * Use external ExecutorService. ExecutorService processes 
      * all listeners of <code>RTopic</code>, 
      * <code>RRemoteService</code> invocation handlers  
-     * and <code>RExecutorService</code> tasks. 
+     * and <code>RExecutorService</code> tasks.
+     * <p>
+     * The caller is responsible for closing the ExecutorService.
      * 
      * @param executor object
      * @return config
@@ -463,6 +513,8 @@ public class Config {
      * <p>
      * Only {@link io.netty.channel.epoll.EpollEventLoopGroup} or
      * {@link io.netty.channel.nio.NioEventLoopGroup} can be used.
+     * <p>
+     * The caller is responsible for closing the EventLoopGroup.
      *
      * @param eventLoopGroup object
      * @return config

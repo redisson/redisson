@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.CronSchedule;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScheduledFuture;
@@ -142,98 +143,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
     }
     
-    private void registerScheduler() {
-        final AtomicReference<Timeout> timeoutReference = new AtomicReference<Timeout>();
-        
-        RTopic<Long> schedulerTopic = redisson.getTopic(schedulerChannelName, LongCodec.INSTANCE);
-        schedulerTopic.addListener(new BaseStatusListener() {
-            @Override
-            public void onSubscribe(String channel) {
-                RFuture<Long> startTimeFuture = commandExecutor.evalReadAsync(schedulerQueueName, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
-                     // get startTime from scheduler queue head task
-                        "local v = redis.call('zrange', KEYS[1], 0, 0, 'WITHSCORES'); "
-                      + "if v[1] ~= nil then "
-                          + "return v[2]; "
-                      + "end "
-                      + "return nil;",
-                      Collections.<Object>singletonList(schedulerQueueName));
-
-                addListener(timeoutReference, startTimeFuture);
-            }
-        });
-        
-        schedulerTopic.addListener(new MessageListener<Long>() {
-            @Override
-            public void onMessage(String channel, Long startTime) {
-                scheduleTask(timeoutReference, startTime);
-            }
-        });
-    }
-
-    private void scheduleTask(final AtomicReference<Timeout> timeoutReference, final Long startTime) {
-        if (startTime == null) {
-            return;
-        }
-        
-        if (timeoutReference.get() != null) {
-            timeoutReference.get().cancel();
-            timeoutReference.set(null);
-        }
-        
-        long delay = startTime - System.currentTimeMillis();
-        if (delay > 10) {
-            Timeout timeout = connectionManager.newTimeout(new TimerTask() {                    
-                @Override
-                public void run(Timeout timeout) throws Exception {
-                    pushTask(timeoutReference, startTime);
-                }
-            }, delay, TimeUnit.MILLISECONDS);
-            timeoutReference.set(timeout);
-        } else {
-            pushTask(timeoutReference, startTime);
-        }
-    }
-
-    private void pushTask(AtomicReference<Timeout> timeoutReference, Long startTime) {
-        RFuture<Long> startTimeFuture = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
-                "local expiredTaskIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
-              + "if #expiredTaskIds > 0 then "
-                  + "redis.call('zrem', KEYS[2], unpack(expiredTaskIds));"
-                  + "local expiredTasks = redis.call('hmget', KEYS[3], unpack(expiredTaskIds));"
-                  + "redis.call('rpush', KEYS[1], unpack(expiredTasks));"
-              + "end; "
-                // get startTime from scheduler queue head task
-              + "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); "
-              + "if v[1] ~= nil then "
-                 + "return v[2]; "
-              + "end "
-              + "return nil;",
-              Arrays.<Object>asList(requestQueueName, schedulerQueueName, schedulerTasksName), 
-              System.currentTimeMillis(), 10);
-
-        addListener(timeoutReference, startTimeFuture);
-    }
-
-    private void addListener(final AtomicReference<Timeout> timeoutReference, RFuture<Long> startTimeFuture) {
-        startTimeFuture.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(io.netty.util.concurrent.Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
-                    if (future.cause() instanceof RedissonShutdownException) {
-                        return;
-                    }
-                    log.error(future.cause().getMessage(), future.cause());
-                    scheduleTask(timeoutReference, System.currentTimeMillis() + 5 * 1000L);
-                    return;
-                }
-                
-                if (future.getNow() != null) {
-                    scheduleTask(timeoutReference, future.getNow());
-                }
-            }
-        });
-    }
-    
     @Override
     public void registerWorkers(int workers) {
         registerWorkers(workers, commandExecutor.getConnectionManager().getExecutor());
@@ -241,7 +150,32 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public void registerWorkers(int workers, ExecutorService executor) {
-        registerScheduler();
+        QueueTransferTask scheduler = new QueueTransferTask(connectionManager) {
+            @Override
+            protected RTopic<Long> getTopic() {
+                return new RedissonTopic<Long>(LongCodec.INSTANCE, commandExecutor, schedulerChannelName);
+            }
+
+            @Override
+            protected RFuture<Long> pushTaskAsync() {
+                return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                        "local expiredTaskIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+                      + "if #expiredTaskIds > 0 then "
+                          + "redis.call('zrem', KEYS[2], unpack(expiredTaskIds));"
+                          + "local expiredTasks = redis.call('hmget', KEYS[3], unpack(expiredTaskIds));"
+                          + "redis.call('rpush', KEYS[1], unpack(expiredTasks));"
+                      + "end; "
+                        // get startTime from scheduler queue head task
+                      + "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); "
+                      + "if v[1] ~= nil then "
+                         + "return v[2]; "
+                      + "end "
+                      + "return nil;",
+                      Arrays.<Object>asList(requestQueueName, schedulerQueueName, schedulerTasksName), 
+                      System.currentTimeMillis(), 100);
+            }
+        };
+        scheduler.start();
         
         RemoteExecutorServiceImpl service = 
                 new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, requestQueueName);

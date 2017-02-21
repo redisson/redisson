@@ -1,16 +1,22 @@
 package org.redisson;
 
+import static com.jayway.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.BaseTest.createInstance;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.After;
 import org.junit.AfterClass;
-
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -19,7 +25,9 @@ import org.junit.Test;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
+import org.redisson.api.Node.InfoSection;
 import org.redisson.api.NodesGroup;
+import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
@@ -29,15 +37,44 @@ import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.ConnectionListener;
 
-import static com.jayway.awaitility.Awaitility.await;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.redisson.BaseTest.createInstance;
-
 public class RedissonTest {
 
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
+    
+    @Test
+    public void testSmallPool() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer()
+              .setConnectionMinimumIdleSize(3)
+              .setConnectionPoolSize(3)
+              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
 
+        RedissonClient localRedisson = Redisson.create(config);
+        
+        RMap<String, String> map = localRedisson.getMap("test");
+        
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()*2);
+        long start = System.currentTimeMillis();
+        int iterations = 500_000;
+        for (int i = 0; i < iterations; i++) {
+            final int j = i;
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    map.put("" + j, "" + j);
+                }
+            });
+        }
+        
+        executor.shutdown();
+        Assert.assertTrue(executor.awaitTermination(10, TimeUnit.MINUTES));
+        
+        assertThat(map.size()).isEqualTo(iterations);
+        
+        localRedisson.shutdown();
+    }
+    
     @Test
     public void testIterator() {
         RedissonBaseIterator iter = new RedissonBaseIterator() {
@@ -121,13 +158,15 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
+        RedissonClient r = null;
         try {
-            RedissonClient r = Redisson.create(config);
+            r = Redisson.create(config);
             r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").put("" + i, "" + i);
             }
         } finally {
+            r.shutdown();
             p.stop();
         }
     }
@@ -139,13 +178,15 @@ public class RedissonTest {
         Config config = new Config();
         config.useSingleServer().setAddress(p.getRedisServerAddressAndPort()).setTimeout(100000);
 
+        RedissonClient r = null;
         try {
-            RedissonClient r = Redisson.create(config);
+            r = Redisson.create(config);
             r.getKeys().flushall();
             for (int i = 0; i < 10000; i++) {
                 r.getMap("test").fastPut("" + i, "" + i);
             }
         } finally {
+            r.shutdown();
             p.stop();
         }
     }
@@ -227,6 +268,53 @@ public class RedissonTest {
     }
 
     @Test
+    public void testNode() {
+        Node node = redisson.getNodesGroup().getNode(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        assertThat(node).isNotNull();
+    }
+    
+    @Test
+    public void testInfo() {
+        Node node = redisson.getNodesGroup().getNodes().iterator().next();
+
+        Map<String, String> allResponse = node.info(InfoSection.ALL);
+        assertThat(allResponse).containsKeys("redis_version", "connected_clients");
+        
+        Map<String, String> defaultResponse = node.info(InfoSection.DEFAULT);
+        assertThat(defaultResponse).containsKeys("redis_version", "connected_clients");
+        
+        Map<String, String> serverResponse = node.info(InfoSection.SERVER);
+        assertThat(serverResponse).containsKey("redis_version");
+        
+        Map<String, String> clientsResponse = node.info(InfoSection.CLIENTS);
+        assertThat(clientsResponse).containsKey("connected_clients");
+
+        Map<String, String> memoryResponse = node.info(InfoSection.MEMORY);
+        assertThat(memoryResponse).containsKey("used_memory_human");
+        
+        Map<String, String> persistenceResponse = node.info(InfoSection.PERSISTENCE);
+        assertThat(persistenceResponse).containsKey("rdb_last_save_time");
+
+        Map<String, String> statsResponse = node.info(InfoSection.STATS);
+        assertThat(statsResponse).containsKey("pubsub_patterns");
+        
+        Map<String, String> replicationResponse = node.info(InfoSection.REPLICATION);
+        assertThat(replicationResponse).containsKey("repl_backlog_first_byte_offset");
+        
+        Map<String, String> cpuResponse = node.info(InfoSection.CPU);
+        assertThat(cpuResponse).containsKey("used_cpu_sys");
+
+        Map<String, String> commandStatsResponse = node.info(InfoSection.COMMANDSTATS);
+        assertThat(commandStatsResponse).containsKey("cmdstat_flushall");
+
+        Map<String, String> clusterResponse = node.info(InfoSection.CLUSTER);
+        assertThat(clusterResponse).containsKey("cluster_enabled");
+
+        Map<String, String> keyspaceResponse = node.info(InfoSection.KEYSPACE);
+        assertThat(keyspaceResponse).isEmpty();
+    }
+    
+    @Test
     public void testTime() {
         NodesGroup<Node> nodes = redisson.getNodesGroup();
         Assert.assertEquals(1, nodes.getNodes().size());
@@ -271,23 +359,40 @@ public class RedissonTest {
     }
 
     @Test
-    public void testSingleConfig() throws IOException {
+    public void testSingleConfigJSON() throws IOException {
         RedissonClient r = BaseTest.createInstance();
         String t = r.getConfig().toJSON();
         Config c = Config.fromJSON(t);
         assertThat(c.toJSON()).isEqualTo(t);
     }
+    
+    @Test
+    public void testSingleConfigYAML() throws IOException {
+        RedissonClient r = BaseTest.createInstance();
+        String t = r.getConfig().toYAML();
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+
 
     @Test
-    public void testMasterSlaveConfig() throws IOException {
+    public void testMasterSlaveConfigJSON() throws IOException {
         Config c2 = new Config();
         c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
-
         String t = c2.toJSON();
         Config c = Config.fromJSON(t);
         assertThat(c.toJSON()).isEqualTo(t);
     }
 
+    @Test
+    public void testMasterSlaveConfigYAML() throws IOException {
+        Config c2 = new Config();
+        c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
+        String t = c2.toYAML();
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+    
 //    @Test
     public void testCluster() {
         NodesGroup<ClusterNode> nodes = redisson.getClusterNodesGroup();
@@ -324,6 +429,15 @@ public class RedissonTest {
     public void testElasticacheConnectionFail() throws InterruptedException {
         Config config = new Config();
         config.useElasticacheServers().addNodeAddress("127.99.0.1:1111");
+        Redisson.create(config);
+
+        Thread.sleep(1500);
+    }
+
+    @Test(expected = RedisConnectionException.class)
+    public void testReplicatedConnectionFail() throws InterruptedException {
+        Config config = new Config();
+        config.useReplicatedServers().addNodeAddress("127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);

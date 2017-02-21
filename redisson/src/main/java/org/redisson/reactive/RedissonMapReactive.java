@@ -24,7 +24,7 @@ import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
 import org.redisson.api.RMapReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.ScanCodec;
+import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -44,18 +44,18 @@ import reactor.rx.Streams;
  * @param <K> key
  * @param <V> value
  */
-public class RedissonMapReactive<K, V> extends RedissonExpirableReactive implements RMapReactive<K, V> {
+public class RedissonMapReactive<K, V> extends RedissonExpirableReactive implements RMapReactive<K, V>, MapReactive<K, V> {
 
     private final RedissonMap<K, V> instance;
 
     public RedissonMapReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        instance = new RedissonMap<K, V>(codec, commandExecutor, name);
+        instance = new RedissonMap<K, V>(null, codec, commandExecutor, name);
     }
 
     public RedissonMapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        instance = new RedissonMap<K, V>(codec, commandExecutor, name);
+        instance = new RedissonMap<K, V>(null, codec, commandExecutor, name);
     }
 
     @Override
@@ -129,8 +129,8 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         return reactive(instance.fastRemoveAsync(keys));
     }
 
-    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), new ScanCodec(codec), RedisCommands.HSCAN, getName(), startPos);
+    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+        return commandExecutor.readReactive(client, getName(), new MapScanCodec(codec), RedisCommands.HSCAN, getName(), startPos);
     }
 
     @Override

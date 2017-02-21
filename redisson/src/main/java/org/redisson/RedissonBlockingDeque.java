@@ -231,7 +231,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
         for (Object name : queueNames) {
             params.add(name);
         }
-        params.add(unit.toSeconds(timeout));
+        params.add(toSeconds(timeout, unit));
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, params.toArray());
     }
 
@@ -243,7 +243,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public RFuture<V> pollLastAsync(long timeout, TimeUnit unit) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, getName(), unit.toSeconds(timeout));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, getName(), toSeconds(timeout, unit));
     }
 
     @Override

@@ -14,6 +14,14 @@ import org.redisson.api.RSemaphore;
 public class RedissonSemaphoreTest extends BaseConcurrentTest {
 
     @Test
+    public void testAcquireWithoutSetPermits() throws InterruptedException {
+        RSemaphore s = redisson.getSemaphore("test");
+        s.release();
+        s.release();
+        s.acquire(2);
+    }
+    
+    @Test
     public void testTrySetPermits() {
         RSemaphore s = redisson.getSemaphore("test");
         assertThat(s.trySetPermits(10)).isTrue();

@@ -57,7 +57,11 @@ public class SnappyCodec implements Codec {
             buf.readBytes(bytes);
             bytes = Snappy.uncompress(bytes);
             ByteBuf bf = Unpooled.wrappedBuffer(bytes);
-            return innerCodec.getValueDecoder().decode(bf, state);
+            try {
+                return innerCodec.getValueDecoder().decode(bf, state);
+            } finally {
+                bf.release();
+            }
         }
     };
 

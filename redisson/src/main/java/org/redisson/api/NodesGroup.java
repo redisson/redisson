@@ -43,7 +43,15 @@ public interface NodesGroup<N extends Node> {
     void removeConnectionListener(int listenerId);
 
     /**
-     * Get all nodes by type
+     * Get Redis node by address in format: <code>host:port</code>
+     * 
+     * @param address of node
+     * @return node
+     */
+    N getNode(String address);
+    
+    /**
+     * Get all Redis nodes by type
      *
      * @param type - type of node
      * @return collection of nodes

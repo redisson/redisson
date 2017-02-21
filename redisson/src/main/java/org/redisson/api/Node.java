@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 
 /**
  * Redis node interface
@@ -23,8 +24,12 @@ import java.net.InetSocketAddress;
  * @author Nikita Koksharov
  *
  */
-public interface Node {
+public interface Node extends NodeAsync {
 
+    enum InfoSection {ALL, DEFAULT, SERVER, CLIENTS, MEMORY, PERSISTENCE, STATS, REPLICATION, CPU, COMMANDSTATS, CLUSTER, KEYSPACE}
+    
+    Map<String, String> info(InfoSection section);
+    
     /**
      * Returns current Redis server time in seconds
      * 
@@ -52,5 +57,5 @@ public interface Node {
      * @return <code>true</code> if PONG received, <code>false</code> otherwise
      */
     boolean ping();
-
+    
 }

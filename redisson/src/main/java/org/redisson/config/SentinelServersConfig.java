@@ -15,15 +15,20 @@
  */
 package org.redisson.config;
 
-import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.URLBuilder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SentinelServersConfig extends BaseMasterSlaveServersConfig<SentinelServersConfig> {
 
-    private List<URI> sentinelAddresses = new ArrayList<URI>();
+    private List<URL> sentinelAddresses = new ArrayList<URL>();
 
     private String masterName;
 
@@ -64,14 +69,14 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      */
     public SentinelServersConfig addSentinelAddress(String ... addresses) {
         for (String address : addresses) {
-            sentinelAddresses.add(URIBuilder.create(address));
+            sentinelAddresses.add(URLBuilder.create(address));
         }
         return this;
     }
-    public List<URI> getSentinelAddresses() {
+    public List<URL> getSentinelAddresses() {
         return sentinelAddresses;
     }
-    void setSentinelAddresses(List<URI> sentinelAddresses) {
+    void setSentinelAddresses(List<URL> sentinelAddresses) {
         this.sentinelAddresses = sentinelAddresses;
     }
 

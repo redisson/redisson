@@ -25,6 +25,11 @@ import org.redisson.client.protocol.Encoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class StringCodec implements Codec {
 
     public static final StringCodec INSTANCE = new StringCodec();

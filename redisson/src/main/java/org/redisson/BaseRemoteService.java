@@ -20,7 +20,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingQueue;
@@ -184,7 +186,7 @@ public abstract class BaseRemoteService {
 
                 final RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName,
                         getCodec());
-                final RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args,
+                final RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), getMethodSignatures(method), args,
                         optionsCopy, System.currentTimeMillis());
 
                 final RemotePromise<Object> result = new RemotePromise<Object>(commandExecutor.getConnectionManager().newPromise()) {
@@ -243,7 +245,7 @@ public abstract class BaseRemoteService {
                         String canceRequestName = getCancelRequestQueueName(remoteInterface, requestId);
                         cancelExecution(optionsCopy, responseName, request, mayInterruptIfRunning, canceRequestName, this);
 
-                        awaitUninterruptibly();
+                        awaitUninterruptibly(60, TimeUnit.SECONDS);
                         return isCancelled();
                     }
                 };
@@ -399,7 +401,7 @@ public abstract class BaseRemoteService {
                 String requestQueueName = getRequestQueueName(remoteInterface);
                 RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName,
                         getCodec());
-                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), args, optionsCopy,
+                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), getMethodSignatures(method), args, optionsCopy,
                         System.currentTimeMillis());
                 requestQueue.add(request);
 
@@ -537,4 +539,11 @@ public abstract class BaseRemoteService {
         }
     }
 
+    protected List<String> getMethodSignatures(Method method) {
+        List<String> list = new ArrayList();
+        for (Class<?> t : method.getParameterTypes()) {
+            list.add(t.getName());
+        }
+        return list;
+    }
 }

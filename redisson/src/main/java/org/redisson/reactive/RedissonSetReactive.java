@@ -26,8 +26,10 @@ import org.reactivestreams.Publisher;
 import org.redisson.RedissonSet;
 import org.redisson.api.RSetReactive;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
 /**
@@ -66,8 +68,8 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
         return reactive(instance.containsAsync(o));
     }
 
-    private Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
+    private Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+        return commandExecutor.readReactive(client, getName(), new ScanCodec(codec), RedisCommands.SSCAN, getName(), startPos);
     }
 
     @Override
@@ -156,7 +158,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     public Publisher<V> iterator() {
         return new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
+            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
                 return RedissonSetReactive.this.scanIteratorReactive(client, nextIterPos);
             }
         };

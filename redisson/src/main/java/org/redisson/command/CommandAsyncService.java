@@ -20,7 +20,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -28,9 +30,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedisClientResult;
+import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
@@ -42,14 +47,20 @@ import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
-import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
+import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,16 +71,6 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import java.util.HashMap;
-import java.util.Map;
-import org.redisson.RedissonReference;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
-import org.redisson.misc.RedissonObjectFactory;
 
 /**
  *
@@ -114,6 +115,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public boolean isRedissonReferenceSupportEnabled() {
         return redisson != null || redissonReactive != null;
+    }
+    
+    @Override
+    public void syncSubscription(RFuture<?> future) {
+        MasterSlaveServersConfig config = connectionManager.getConfig();
+        try {
+            int timeout = config.getTimeout() + config.getRetryInterval()*config.getRetryAttempts();
+            if (!future.await(timeout)) {
+                throw new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms)");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        future.syncUninterruptibly();
     }
     
     @Override
@@ -520,7 +535,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Command execution timeout for command: " + command + " with params: " + Arrays.toString(details.getParams())));
+                        details.setException(new RedisTimeoutException("Command execution timeout for command: " + command + " with params: " + LogHelper.toString(details.getParams())));
                     }
                     details.getAttemptPromise().tryFailure(details.getException());
                     return;
@@ -605,14 +620,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         if (!future.isSuccess()) {
             details.setException(new WriteRedisConnectionException(
-                    "Can't write command: " + details.getCommand() + ", params: " + Arrays.toString(details.getParams()) + " to channel: " + future.channel(), future.cause()));
+                    "Can't write command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()) + " to channel: " + future.channel(), future.cause()));
             return;
         }
 
         details.getTimeout().cancel();
 
         long timeoutTime = connectionManager.getConfig().getTimeout();
-        if (QueueCommand.TIMEOUTLESS_COMMANDS.contains(details.getCommand().getName())) {
+        if (RedisCommands.BLOCKING_COMMANDS.contains(details.getCommand().getName())) {
             Long popTimeout = Long.valueOf(details.getParams()[details.getParams().length - 1].toString());
             handleBlockingOperations(details, connection, popTimeout);
             if (popTimeout == 0) {
@@ -629,7 +644,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             public void run(Timeout timeout) throws Exception {
                 details.getAttemptPromise().tryFailure(
                         new RedisTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured for command: " + details.getCommand()
-                                + " with params: " + Arrays.toString(details.getParams()) + " channel: " + connection.getChannel()));
+                                + " with params: " + LogHelper.toString(details.getParams()) + " channel: " + connection.getChannel()));
             }
         };
 
@@ -789,22 +804,51 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <R, V> void handleReference(RPromise<R> mainPromise, R res) {
-        if (res instanceof List || res instanceof ListScanResult) {
-            List r = res instanceof ListScanResult ? ((ListScanResult)res).getValues() : (List) res;
+        if (res instanceof List) {
+            List<Object> r = (List<Object>)res;
             for (int i = 0; i < r.size(); i++) {
                 if (r.get(i) instanceof RedissonReference) {
                     try {
-                        r.set(i ,(redisson != null
-                                ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) r.get(i))
-                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) r.get(i))));
+                        r.set(i, redisson != null
+                                ? RedissonObjectFactory.fromReference(redisson, (RedissonReference) r.get(i))
+                                : RedissonObjectFactory.fromReference(redissonReactive, (RedissonReference) r.get(i)));
                     } catch (Exception exception) {//skip and carry on to next one.
                     }
                 } else if (r.get(i) instanceof ScoredEntry && ((ScoredEntry) r.get(i)).getValue() instanceof RedissonReference) {
                     try {
-                        ScoredEntry se = ((ScoredEntry) r.get(i));
-                        r.set(i ,new ScoredEntry(se.getScore(), redisson != null
+                        ScoredEntry<?> se = ((ScoredEntry<?>) r.get(i));
+                        se = new ScoredEntry(se.getScore(), redisson != null
                                 ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) se.getValue())
-                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) se.getValue())));
+                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) se.getValue()));
+                        r.set(i, se);
+                    } catch (Exception exception) {//skip and carry on to next one.
+                    }
+                }
+            }
+            mainPromise.trySuccess(res);
+        } else if (res instanceof ListScanResult) {
+            List<ScanObjectEntry> r = ((ListScanResult)res).getValues();
+            for (int i = 0; i < r.size(); i++) {
+                Object obj = r.get(i);
+                if (!(obj instanceof ScanObjectEntry)) {
+                    break;
+                }
+                ScanObjectEntry e = r.get(i);
+                if (e.getObj() instanceof RedissonReference) {
+                    try {
+                        r.set(i , new ScanObjectEntry(e.getBuf(), redisson != null
+                                ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) e.getObj())
+                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) e.getObj())));
+                    } catch (Exception exception) {//skip and carry on to next one.
+                    }
+                } else if (e.getObj() instanceof ScoredEntry && ((ScoredEntry<?>) e.getObj()).getValue() instanceof RedissonReference) {
+                    try {
+                        ScoredEntry<?> se = ((ScoredEntry<?>) e.getObj());
+                        se = new ScoredEntry(se.getScore(), redisson != null
+                                ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) se.getValue())
+                                : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) se.getValue()));
+                        
+                        r.set(i, new ScanObjectEntry(e.getBuf(), se));
                     } catch (Exception exception) {//skip and carry on to next one.
                     }
                 }

@@ -79,10 +79,49 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
         RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
-        future.syncUninterruptibly();
+        commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
 
+    @Override
+    public void removeAllListeners() {
+        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        semaphore.acquireUninterruptibly();
+        
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        if (entry == null) {
+            semaphore.release();
+            return;
+        }
+
+        entry.removeAllListeners(name);
+        if (!entry.hasListeners(name)) {
+            commandExecutor.getConnectionManager().unsubscribe(name, semaphore);
+        } else {
+            semaphore.release();
+        }
+    }
+    
+    @Override
+    public void removeListener(MessageListener<?> listener) {
+        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        semaphore.acquireUninterruptibly();
+        
+        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        if (entry == null) {
+            semaphore.release();
+            return;
+        }
+
+        entry.removeListener(name, listener);
+        if (!entry.hasListeners(name)) {
+            commandExecutor.getConnectionManager().unsubscribe(name, semaphore);
+        } else {
+            semaphore.release();
+        }
+
+    }
+    
     @Override
     public void removeListener(int listenerId) {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);

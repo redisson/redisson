@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -26,19 +27,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
 import org.redisson.api.RMultimap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.ScanCodec;
+import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Hash;
 
 /**
@@ -49,14 +53,33 @@ import org.redisson.misc.Hash;
  */
 public abstract class RedissonMultimap<K, V> extends RedissonExpirable implements RMultimap<K, V> {
 
-    RedissonMultimap(CommandAsyncExecutor connectionManager, String name) {
+    private final UUID id;
+    
+    RedissonMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
+        this.id = id;
     }
 
-    RedissonMultimap(Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    RedissonMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
+        this.id = id;
     }
 
+    @Override
+    public RLock getLock(K key) {
+        String lockName = getLockName(key);
+        return new RedissonLock((CommandExecutor)commandExecutor, lockName, id);
+    }
+    
+    private String getLockName(Object key) {
+        try {
+            byte[] keyState = codec.getMapKeyEncoder().encode(key);
+            return "{" + getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+    
     protected String hash(byte[] objectState) {
         return Hash.hashToBase64(objectState);
     }
@@ -249,7 +272,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     
     
     MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
-        RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new ScanCodec(codec, StringCodec.INSTANCE), RedisCommands.HSCAN, getName(), startPos);
+        RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new MapScanCodec(codec, StringCodec.INSTANCE), RedisCommands.HSCAN, getName(), startPos);
         return get(f);
     }
 
@@ -263,7 +286,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         public Iterator<K> iterator() {
             return new RedissonMultiMapKeysIterator<K, V, K>(RedissonMultimap.this) {
                 @Override
-                K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                protected K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                     return (K) entry.getKey().getObj();
                 }
             };

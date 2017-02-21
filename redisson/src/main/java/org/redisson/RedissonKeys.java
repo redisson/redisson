@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,9 +33,11 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
 import org.redisson.api.RType;
 import org.redisson.client.RedisException;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
@@ -44,6 +47,11 @@ import org.redisson.misc.RPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonKeys implements RKeys {
 
     private final CommandAsyncExecutor commandExecutor;
@@ -98,12 +106,12 @@ public class RedissonKeys implements RKeys {
         return getKeysByPattern(null);
     }
 
-    private ListScanResult<String> scanIterator(InetSocketAddress client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
+    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
         if (pattern == null) {
-            RFuture<ListScanResult<String>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
+            RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, entry, new ScanCodec(StringCodec.INSTANCE), RedisCommands.SCAN, startPos, "COUNT", count);
             return commandExecutor.get(f);
         }
-        RFuture<ListScanResult<String>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
+        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, entry, new ScanCodec(StringCodec.INSTANCE), RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
         return commandExecutor.get(f);
     }
 
@@ -111,7 +119,7 @@ public class RedissonKeys implements RKeys {
         return new RedissonBaseIterator<String>() {
 
             @Override
-            ListScanResult<String> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
                 return RedissonKeys.this.scanIterator(client, entry, nextIterPos, pattern, count);
             }
 
@@ -123,6 +131,18 @@ public class RedissonKeys implements RKeys {
         };
     }
 
+    @Override
+    public Long isExists(String... names) {
+        return commandExecutor.get(isExistsAsync(names));
+    }
+    
+    @Override
+    public RFuture<Long> isExistsAsync(String... names) {
+        Object[] params = Arrays.copyOf(names, names.length, Object[].class);
+        return commandExecutor.readAsync((String)null, null, RedisCommands.EXISTS_LONG, params);
+    }
+
+    
     @Override
     public String randomKey() {
         return commandExecutor.get(randomKeyAsync());

@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
@@ -50,6 +51,7 @@ import org.redisson.command.CommandReactiveService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.eviction.EvictionScheduler;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
@@ -84,6 +86,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final ConnectionManager connectionManager;
     protected final Config config;
     protected final CodecProvider codecProvider;
+    protected final UUID id = UUID.randomUUID();
     
     protected RedissonReactive(Config config) {
         this.config = config;
@@ -98,12 +101,12 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(codec, evictionScheduler, commandExecutor, name);
+        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, codec, commandExecutor, name);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(evictionScheduler, commandExecutor, name);
+        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, commandExecutor, name);
     }
 
     @Override
@@ -262,7 +265,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch() {
-        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager);
+        RedissonBatchReactive batch = new RedissonBatchReactive(id, evictionScheduler, connectionManager);
         if (config.isRedissonReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }

@@ -162,6 +162,31 @@ public class RedissonMapTest extends BaseTest {
         assertThat(map.valueSize("4")).isZero();
         assertThat(map.valueSize("1")).isEqualTo(6);
     }
+
+    @Test
+    public void testGetAllOrder() {
+        RMap<Integer, Integer> map = redisson.getMap("getAll");
+        map.put(1, 100);
+        map.put(2, 200);
+        map.put(3, 300);
+        map.put(4, 400);
+        map.put(5, 500);
+        map.put(6, 600);
+        map.put(7, 700);
+        map.put(8, 800);
+
+        Map<Integer, Integer> filtered = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3, 5, 1, 7, 8)));
+
+        Map<Integer, Integer> expectedMap = new LinkedHashMap<Integer, Integer>();
+        expectedMap.put(1, 100);
+        expectedMap.put(2, 200);
+        expectedMap.put(3, 300);
+        expectedMap.put(5, 500);
+        expectedMap.put(7, 700);
+        expectedMap.put(8, 800);
+        
+        assertThat(filtered.entrySet()).containsExactlyElementsOf(expectedMap.entrySet());
+    }
     
     @Test
     public void testGetAll() {
@@ -291,21 +316,16 @@ public class RedissonMapTest extends BaseTest {
         assertThat(counter).isEqualTo(size);
    }
 
-    @Test
-    public void testNull() {
+    @Test(expected = NullPointerException.class)
+    public void testNullValue() {
         Map<Integer, String> map = redisson.getMap("simple12");
         map.put(1, null);
-        map.put(2, null);
-        map.put(3, "43");
-
-        assertThat(map.size()).isEqualTo(3);
-
-        String val = map.get(2);
-        assertThat(val).isNull();
-        String val2 = map.get(1);
-        assertThat(val2).isNull();
-        String val3 = map.get(3);
-        assertThat(val3).isEqualTo("43");
+    }
+    
+    @Test(expected = NullPointerException.class)
+    public void testNullKey() {
+        Map<Integer, String> map = redisson.getMap("simple12");
+        map.put(null, "1");
     }
 
     @Test

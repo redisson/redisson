@@ -17,6 +17,11 @@ package org.redisson.client.codec;
 
 import org.redisson.client.protocol.Encoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class GeoEntryCodec extends StringCodec {
 
     private final ThreadLocal<Integer> pos = new ThreadLocal<Integer>() {

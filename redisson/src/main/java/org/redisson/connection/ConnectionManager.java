@@ -16,7 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +29,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.command.CommandSyncService;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
@@ -45,9 +46,11 @@ import io.netty.util.TimerTask;
  */
 public interface ConnectionManager {
     
+    CommandSyncService getCommandExecutor();
+    
     ExecutorService getExecutor();
     
-    URI getLastClusterNode();
+    URL getLastClusterNode();
 
     boolean isClusterMode();
 
@@ -109,9 +112,9 @@ public interface ConnectionManager {
 
     Codec unsubscribe(String channelName, AsyncSemaphore lock);
     
-    Codec unsubscribe(String channelName);
+    RFuture<Codec> unsubscribe(String channelName, boolean temporaryDown);
 
-    Codec punsubscribe(String channelName);
+    RFuture<Codec> punsubscribe(String channelName, boolean temporaryDown);
 
     Codec punsubscribe(String channelName, AsyncSemaphore lock);
     

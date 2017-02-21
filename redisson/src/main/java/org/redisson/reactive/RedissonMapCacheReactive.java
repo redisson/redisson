@@ -16,39 +16,31 @@
 package org.redisson.reactive;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
-import org.redisson.EvictionScheduler;
+import org.redisson.RedissonMapCache;
+import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheReactive;
+import org.redisson.api.RMapReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
-import org.redisson.client.protocol.decoder.TTLMapValueReplayDecoder;
 import org.redisson.command.CommandReactiveExecutor;
-import org.redisson.connection.decoder.CacheGetAllDecoder;
+import org.redisson.eviction.EvictionScheduler;
 
-import reactor.rx.Promise;
-import reactor.rx.Promises;
-import reactor.rx.action.support.DefaultSubscriber;
+import reactor.fn.BiFunction;
+import reactor.fn.Function;
+import reactor.rx.Streams;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -59,7 +51,7 @@ import reactor.rx.action.support.DefaultSubscriber;
  * Thus entries are checked for TTL expiration during any key/value/entry read operation.
  * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.eviction.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.reactive.RedissonMapReactive}.</p>
@@ -69,245 +61,56 @@ import reactor.rx.action.support.DefaultSubscriber;
  * @param <K> key
  * @param <V> value
  */
-public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> implements RMapCacheReactive<K, V> {
+public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive implements RMapCacheReactive<K, V>, MapReactive<K, V> {
 
-    private static final RedisCommand<MapScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapScanResult<Object, Object>>("EVAL", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
-    private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.MAP);
-    private static final RedisCommand<Object> EVAL_PUT_TTL = new RedisCommand<Object>("EVAL", 6, ValueType.MAP, ValueType.MAP_VALUE);
-    private static final RedisCommand<List<Object>> EVAL_GET_TTL = new RedisCommand<List<Object>>("EVAL", new TTLMapValueReplayDecoder<Object>(), 5, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<List<Object>> EVAL_CONTAINS_KEY = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_KEY);
-    private static final RedisCommand<List<Object>> EVAL_CONTAINS_VALUE = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 5, ValueType.MAP_VALUE);
-    private static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
+    private static final RedisCommand<MapScanResult<Object, Object>> EVAL_HSCAN = 
+            new RedisCommand<MapScanResult<Object, Object>>("EVAL", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
 
-    private final EvictionScheduler evictionScheduler;
+    private final RMapCache<K, V> mapCache;
 
-    public RedissonMapCacheReactive(EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonMapCacheReactive(UUID id, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.evictionScheduler = evictionScheduler;
-        evictionScheduler.schedule(getName(), getTimeoutSetName());
+        this.mapCache = new RedissonMapCache<K, V>(id, evictionScheduler, commandExecutor, name);
     }
 
-    public RedissonMapCacheReactive(Codec codec, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonMapCacheReactive(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        this.evictionScheduler = evictionScheduler;
-        evictionScheduler.schedule(getName(), getTimeoutSetName());
+        this.mapCache = new RedissonMapCache<K, V>(id, codec, evictionScheduler, commandExecutor, name);
     }
 
     @Override
     public Publisher<Boolean> containsKey(Object key) {
-        Promise<Boolean> result = Promises.prepare();
-
-        Publisher<List<Object>> future = commandExecutor.evalReadReactive(getName(), codec, EVAL_CONTAINS_KEY,
-                "local value = redis.call('hexists', KEYS[1], ARGV[1]); " +
-                "local expireDate = 92233720368547758; " +
-                "if value == 1 then " +
-                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[1]); "
-                    + "if expireDateScore ~= false then "
-                        + "expireDate = tonumber(expireDateScore) "
-                    + "end; " +
-                "end;" +
-                "return {expireDate, value}; ",
-               Arrays.<Object>asList(getName(), getTimeoutSetName()), key);
-
-        addExpireListener(result, future, new BooleanReplayConvertor(), false);
-
-        return result;
+        return reactive(mapCache.containsKeyAsync(key));
     }
 
     @Override
     public Publisher<Boolean> containsValue(Object value) {
-        Promise<Boolean> result = Promises.prepare();
-
-        Publisher<List<Object>> future = commandExecutor.evalReadReactive(getName(), codec, EVAL_CONTAINS_VALUE,
-                        "local s = redis.call('hgetall', KEYS[1]);" +
-                        "for i, v in ipairs(s) do "
-                            + "if i % 2 == 0 and ARGV[1] == v then "
-                                + "local key = s[i-1];"
-                                + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                                + "if expireDate == false then "
-                                    + "expireDate = 92233720368547758 "
-                                + "else "
-                                    + "expireDate = tonumber(expireDate) "
-                                + "end; "
-                                + "return {expireDate, 1}; "
-                            + "end "
-                       + "end;" +
-                     "return {92233720368547758, 0};",
-                 Arrays.<Object>asList(getName(), getTimeoutSetName()), value);
-
-        addExpireListener(result, future, new BooleanReplayConvertor(), false);
-
-        return result;
+        return reactive(mapCache.containsValueAsync(value));
     }
 
     @Override
     public Publisher<Map<K, V>> getAll(Set<K> keys) {
-        if (keys.isEmpty()) {
-            return newSucceeded(Collections.<K, V>emptyMap());
-        }
-
-        List<Object> args = new ArrayList<Object>(keys.size() + 2);
-        args.add(System.currentTimeMillis());
-        args.addAll(keys);
-
-        final Promise<Map<K, V>> result = Promises.prepare();
-        Publisher<List<Object>> publisher = commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<List<Object>>("EVAL", new CacheGetAllDecoder(args), 6, ValueType.MAP_KEY, ValueType.MAP_VALUE),
-                        "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');" +
-                        "local maxDate = table.remove(ARGV, 1); " // index is the first parameter
-                      + "local minExpireDate = 92233720368547758;" +
-                        "if #expireHead == 2 and tonumber(expireHead[2]) <= tonumber(maxDate) then "
-                        + "for i, key in pairs(ARGV) do "
-                            + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                            + "if expireDate ~= false and tonumber(expireDate) <= tonumber(maxDate) then "
-                                + "minExpireDate = math.min(tonumber(expireDate), minExpireDate); "
-                                + "ARGV[i] = ARGV[i] .. '__redisson__skip' "
-                            + "end;"
-                        + "end;"
-                      + "end; " +
-                       "return {minExpireDate, unpack(redis.call('hmget', KEYS[1], unpack(ARGV)))};",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), args.toArray());
-
-        publisher.subscribe(new DefaultSubscriber<List<Object>>() {
-
-            @Override
-            public void onSubscribe(Subscription s) {
-                s.request(1);
-            }
-
-            @Override
-            public void onNext(List<Object> res) {
-                Long expireDate = (Long) res.get(0);
-                long currentDate = System.currentTimeMillis();
-                if (expireDate <= currentDate) {
-                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
-                }
-
-                result.onNext((Map<K, V>) res.get(1));
-                result.onComplete();
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                result.onError(t);
-            }
-
-        });
-
-        return result;
-
+        return reactive(mapCache.getAllAsync(keys));
     }
 
     @Override
     public Publisher<V> putIfAbsent(K key, V value, long ttl, TimeUnit unit) {
-        if (ttl < 0) {
-            throw new IllegalArgumentException("TTL can't be negative");
-        }
-        if (ttl == 0) {
-            return putIfAbsent(key, value);
-        }
-
-        if (unit == null) {
-            throw new NullPointerException("TimeUnit param can't be null");
-        }
-
-        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
-        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_PUT_TTL,
-                "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
-                    + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); "
-                    + "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); "
-                    + "return nil "
-                + "else "
-                    + "return redis.call('hget', KEYS[1], ARGV[2]) "
-                + "end",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), timeoutDate, key, value);
+        return reactive(mapCache.putIfAbsentAsync(key, value, ttl, unit));
     }
 
     @Override
     public Publisher<Boolean> remove(Object key, Object value) {
-        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_REMOVE_VALUE,
-                "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
-                        + "redis.call('zrem', KEYS[2], ARGV[1]); "
-                        + "return redis.call('hdel', KEYS[1], ARGV[1]); "
-                + "else "
-                    + "return 0 "
-                + "end",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), key, value);
+        return reactive(mapCache.removeAsync(key, value));
     }
 
     @Override
     public Publisher<V> get(K key) {
-        Promise<V> result = Promises.prepare();
-
-        Publisher<List<Object>> future = commandExecutor.evalReadReactive(getName(), codec, EVAL_GET_TTL,
-                 "local value = redis.call('hget', KEYS[1], ARGV[1]); " +
-                 "local expireDate = redis.call('zscore', KEYS[2], ARGV[1]); "
-                 + "if expireDate == false then "
-                     + "expireDate = 92233720368547758; "
-                 + "end; " +
-                 "return {expireDate, value}; ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), key);
-
-        addExpireListener(result, future, null, null);
-
-        return result;
-    }
-
-    private <T> void addExpireListener(final Promise<T> result, Publisher<List<Object>> publisher, final Convertor<T> convertor, final T nullValue) {
-        publisher.subscribe(new DefaultSubscriber<List<Object>>() {
-
-            @Override
-            public void onSubscribe(Subscription s) {
-                s.request(1);
-            }
-
-            @Override
-            public void onNext(List<Object> res) {
-                Long expireDate = (Long) res.get(0);
-                long currentDate = System.currentTimeMillis();
-                if (expireDate <= currentDate) {
-                    result.onNext(nullValue);
-                    result.onComplete();
-                    evictionScheduler.runCleanTask(getName(), getTimeoutSetName(), currentDate);
-                    return;
-                }
-
-                if (convertor != null) {
-                    result.onNext((T) convertor.convert(res.get(1)));
-                } else {
-                    result.onNext((T) res.get(1));
-                }
-                result.onComplete();
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                result.onError(t);
-            }
-
-        });
+        return reactive(mapCache.getAsync(key));
     }
 
     @Override
     public Publisher<V> put(K key, V value, long ttl, TimeUnit unit) {
-        if (ttl < 0) {
-            throw new IllegalArgumentException("TTL can't be negative");
-        }
-        if (ttl == 0) {
-            return put(key, value);
-        }
-
-        if (unit == null) {
-            throw new NullPointerException("TimeUnit param can't be null");
-        }
-
-        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
-        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_PUT_TTL,
-                "local v = redis.call('hget', KEYS[1], ARGV[2]); "
-                + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[2]); "
-                + "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); "
-                + "return v",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), timeoutDate, key, value);
+        return reactive(mapCache.putAsync(key, value, ttl, unit));
     }
 
     String getTimeoutSetName() {
@@ -316,78 +119,188 @@ public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> im
 
     @Override
     public Publisher<V> remove(K key) {
-        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_REMOVE,
-                "local v = redis.call('hget', KEYS[1], ARGV[1]); "
-                + "redis.call('zrem', KEYS[2], ARGV[1]); "
-                + "redis.call('hdel', KEYS[1], ARGV[1]); "
-                + "return v",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), key);
+        return reactive(mapCache.removeAsync(key));
     }
 
     @Override
     public Publisher<Long> fastRemove(K ... keys) {
-        if (keys == null || keys.length == 0) {
-            return newSucceeded(0L);
-        }
-
-        return commandExecutor.evalWriteReactive(getName(), codec, EVAL_FAST_REMOVE,
-                "local r = 0;"
-                + "for i=1, #ARGV,5000 do "
-                        + "r += redis.call('hdel', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
-                        + "redis.call('zrem', KEYS[2], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
-                + "end "
-                + "return r;",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), keys);
+        return reactive(mapCache.fastRemoveAsync(keys));
     }
 
     @Override
-    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.evalReadReactive(client, getName(), new ScanCodec(codec), EVAL_HSCAN,
-                "local result = {}; "
-                + "local res = redis.call('hscan', KEYS[1], ARGV[1]); "
-                + "for i, value in ipairs(res[2]) do "
-                    + "if i % 2 == 0 then "
-                        + "local key = res[2][i-1]; "
-                        + "local expireDate = redis.call('zscore', KEYS[2], key); "
-                        + "if (expireDate == false) or (expireDate ~= false and tonumber(expireDate) > tonumber(ARGV[2])) then "
-                            + "table.insert(result, key); "
-                            + "table.insert(result, value); "
-                        + "end; "
-                    + "end; "
-                + "end;"
-                + "return {res[1], result};", Arrays.<Object>asList(getName(), getTimeoutSetName()), startPos, System.currentTimeMillis());
+    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+        return reactive(((RedissonMapCache<K, V>)mapCache).scanIteratorAsync(getName(), client, startPos));
     }
 
     @Override
     public Publisher<Boolean> delete() {
-        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_OBJECTS, getName(), getTimeoutSetName());
+        return reactive(mapCache.deleteAsync());
     }
 
     @Override
     public Publisher<Boolean> expire(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.evalWriteReactive(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
-                "redis.call('pexpire', KEYS[2], ARGV[1]); " +
-                "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), timeUnit.toMillis(timeToLive));
+        return reactive(mapCache.expireAsync(timeToLive, timeUnit));
     }
 
     @Override
     public Publisher<Boolean> expireAt(long timestamp) {
-        return commandExecutor.evalWriteReactive(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag');" +
-                "redis.call('pexpireat', KEYS[2], ARGV[1]); " +
-                "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), timestamp);
+        return reactive(mapCache.expireAtAsync(timestamp));
     }
 
     @Override
     public Publisher<Boolean> clearExpire() {
-        return commandExecutor.evalWriteReactive(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "redis.call('zrem', KEYS[2], 'redisson__expiretag'); " +
-                "redis.call('persist', KEYS[2]); " +
-                "return redis.call('persist', KEYS[1]); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()));
+        return reactive(mapCache.clearExpireAsync());
+    }
+
+    @Override
+    public Publisher<Void> putAll(Map<? extends K, ? extends V> map) {
+        return reactive(mapCache.putAllAsync(map));
+    }
+
+    @Override
+    public Publisher<V> addAndGet(K key, Number delta) {
+        return reactive(mapCache.addAndGetAsync(key, delta));
+    }
+
+    @Override
+    public Publisher<Boolean> fastPut(K key, V value) {
+        return reactive(mapCache.fastPutAsync(key, value));
+    }
+
+    @Override
+    public Publisher<V> put(K key, V value) {
+        return reactive(mapCache.putAsync(key, value));
+    }
+
+    @Override
+    public Publisher<V> replace(K key, V value) {
+        return reactive(mapCache.replaceAsync(key, value));
+    }
+
+    @Override
+    public Publisher<Boolean> replace(K key, V oldValue, V newValue) {
+        return reactive(mapCache.replaceAsync(key, oldValue, newValue));
+    }
+
+    @Override
+    public Publisher<V> putIfAbsent(K key, V value) {
+        return reactive(mapCache.putIfAbsentAsync(key, value));
+    }
+
+    @Override
+    public Publisher<Map.Entry<K, V>> entryIterator() {
+        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>(this).stream();
+    }
+
+    @Override
+    public Publisher<V> valueIterator() {
+        return new RedissonMapReactiveIterator<K, V, V>(this) {
+            @Override
+            V getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (V) entry.getValue().getObj();
+            }
+        }.stream();
+    }
+
+    @Override
+    public Publisher<K> keyIterator() {
+        return new RedissonMapReactiveIterator<K, V, K>(this) {
+            @Override
+            K getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+                return (K) entry.getKey().getObj();
+            }
+        }.stream();
+    }
+
+    @Override
+    public Publisher<Integer> size() {
+        return reactive(mapCache.sizeAsync());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+
+        if (o instanceof Map) {
+            final Map<?,?> m = (Map<?,?>) o;
+            if (m.size() != Streams.create(size()).next().poll()) {
+                return false;
+            }
+
+            return Streams.create(entryIterator()).map(mapFunction(m)).reduce(true, booleanAnd()).next().poll();
+        } else if (o instanceof RMapReactive) {
+            final RMapReactive<Object, Object> m = (RMapReactive<Object, Object>) o;
+            if (Streams.create(m.size()).next().poll() != Streams.create(size()).next().poll()) {
+                return false;
+            }
+
+            return Streams.create(entryIterator()).map(mapFunction(m)).reduce(true, booleanAnd()).next().poll();
+        }
+
+        return true;
+    }
+
+    private BiFunction<Boolean, Boolean, Boolean> booleanAnd() {
+        return new BiFunction<Boolean, Boolean, Boolean>() {
+
+            @Override
+            public Boolean apply(Boolean t, Boolean u) {
+                return t & u;
+            }
+        };
+    }
+
+    private Function<Entry<K, V>, Boolean> mapFunction(final Map<?, ?> m) {
+        return new Function<Map.Entry<K, V>, Boolean>() {
+            @Override
+            public Boolean apply(Entry<K, V> e) {
+                K key = e.getKey();
+                V value = e.getValue();
+                if (value == null) {
+                    if (!(m.get(key)==null && m.containsKey(key)))
+                        return false;
+                } else {
+                    if (!value.equals(m.get(key)))
+                        return false;
+                }
+                return true;
+            }
+        };
+    }
+
+    private Function<Entry<K, V>, Boolean> mapFunction(final RMapReactive<Object, Object> m) {
+        return new Function<Map.Entry<K, V>, Boolean>() {
+            @Override
+            public Boolean apply(Entry<K, V> e) {
+                Object key = e.getKey();
+                Object value = e.getValue();
+                if (value == null) {
+                    if (!(Streams.create(m.get(key)).next().poll() ==null && Streams.create(m.containsKey(key)).next().poll()))
+                        return false;
+                } else {
+                    if (!value.equals(Streams.create(m.get(key)).next().poll()))
+                        return false;
+                }
+                return true;
+            }
+        };
+    }
+
+    @Override
+    public int hashCode() {
+        return Streams.create(entryIterator()).map(new Function<Map.Entry<K, V>, Integer>() {
+            @Override
+            public Integer apply(Entry<K, V> t) {
+                return t.hashCode();
+            }
+        }).reduce(0, new BiFunction<Integer, Integer, Integer>() {
+
+            @Override
+            public Integer apply(Integer t, Integer u) {
+                return t + u;
+            }
+        }).next().poll();
     }
 
 }

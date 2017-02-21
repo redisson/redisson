@@ -141,8 +141,6 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
         Map<Integer, Integer> filteredAgain = sync(map.getAll(new HashSet<Integer>(Arrays.asList(2, 3, 5))));
         Assert.assertTrue(filteredAgain.isEmpty());
-        Thread.sleep(100);
-        Assert.assertEquals(2, sync(map.size()).intValue());
     }
 
     @Test
@@ -164,11 +162,11 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
     @Test
     public void testExpiredIterator() throws InterruptedException {
         RMapCacheReactive<String, String> cache = redisson.getMapCache("simple");
-        cache.put("0", "8");
-        cache.put("1", "6", 1, TimeUnit.SECONDS);
-        cache.put("2", "4", 3, TimeUnit.SECONDS);
-        cache.put("3", "2", 4, TimeUnit.SECONDS);
-        cache.put("4", "4", 1, TimeUnit.SECONDS);
+        sync(cache.put("0", "8"));
+        sync(cache.put("1", "6", 1, TimeUnit.SECONDS));
+        sync(cache.put("2", "4", 3, TimeUnit.SECONDS));
+        sync(cache.put("3", "2", 4, TimeUnit.SECONDS));
+        sync(cache.put("4", "4", 1, TimeUnit.SECONDS));
 
         Thread.sleep(1000);
 
@@ -254,8 +252,6 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
         Thread.sleep(1000);
 
         Assert.assertFalse(sync(map.containsValue(new SimpleValue("44"))));
-        Thread.sleep(50);
-        Assert.assertEquals(0, sync(map.size()).intValue());
     }
 
     @Test
@@ -269,8 +265,6 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
         Thread.sleep(1000);
 
         Assert.assertFalse(sync(map.containsKey(new SimpleKey("33"))));
-        Thread.sleep(50);
-        Assert.assertEquals(0, sync(map.size()).intValue());
     }
 
     @Test
@@ -320,8 +314,6 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
         Thread.sleep(1000);
 
         Assert.assertNull(sync(map.get(new SimpleKey("33"))));
-        Thread.sleep(50);
-        Assert.assertEquals(0, sync(map.size()).intValue());
     }
 
     @Test
@@ -380,7 +372,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testKeyIterator() {
-        RMapReactive<Integer, Integer> map = redisson.getMap("simple");
+        RMapReactive<Integer, Integer> map = redisson.getMapCache("simple");
         sync(map.put(1, 0));
         sync(map.put(3, 5));
         sync(map.put(4, 6));
@@ -399,7 +391,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testValueIterator() {
-        RMapReactive<Integer, Integer> map = redisson.getMap("simple");
+        RMapReactive<Integer, Integer> map = redisson.getMapCache("simple");
         sync(map.put(1, 0));
         sync(map.put(3, 5));
         sync(map.put(4, 6));

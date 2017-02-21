@@ -12,11 +12,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 
@@ -87,7 +89,7 @@ public class RedisRunner {
         SLOWLOG_LOG_SLOWER_THAN,
         SLOWLOG_MAX_LEN,
         LATENCY_MONITOR_THRESHOLD,
-        NOFITY_KEYSPACE_EVENTS,
+        NOTIFY_KEYSPACE_EVENTS,
         HASH_MAX_ZIPLIST_ENTRIES,
         HASH_MAX_ZIPLIST_VALUE,
         LIST_MAX_ZIPLIST_ENTRIES,
@@ -172,7 +174,7 @@ public class RedisRunner {
     }
 
     private final LinkedHashMap<REDIS_OPTIONS, String> options = new LinkedHashMap<>();
-    private static RedisRunner.RedisProcess defaultRedisInstance;
+    protected static RedisRunner.RedisProcess defaultRedisInstance;
     private static int defaultRedisInstanceExitCode;
 
     private String defaultDir = Paths.get("").toString();
@@ -618,12 +620,16 @@ public class RedisRunner {
         return this;
     }
 
-    public RedisRunner notifyKeyspaceEvents(KEYSPACE_EVENTS_OPTIONS notifyKeyspaceEvents) {
-        String existing = this.options.getOrDefault(REDIS_OPTIONS.CLUSTER_CONFIG_FILE, "");
-        addConfigOption(REDIS_OPTIONS.CLUSTER_CONFIG_FILE,
-                existing.contains(notifyKeyspaceEvents.toString())
+    public RedisRunner notifyKeyspaceEvents(KEYSPACE_EVENTS_OPTIONS... notifyKeyspaceEvents) {
+        String existing = this.options.getOrDefault(REDIS_OPTIONS.NOTIFY_KEYSPACE_EVENTS, "");
+        
+        String events = Arrays.stream(notifyKeyspaceEvents)
+                            .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append).toString();
+        
+        addConfigOption(REDIS_OPTIONS.NOTIFY_KEYSPACE_EVENTS,
+                existing.contains(events)
                 ? existing
-                : (existing + notifyKeyspaceEvents.toString()));
+                : (existing + events));
         return this;
     }
 
@@ -774,7 +780,10 @@ public class RedisRunner {
 
         public RedisVersion getRedisVersion() {
             if (redisVersion == null) {
-                redisVersion = new RedisVersion(createRedisClientInstance().serverInfo().get("redis_version"));
+                RedisConnection c = createRedisClientInstance().connect();
+                Map<String, String> serverMap = c.sync(RedisCommands.INFO_SERVER);
+                redisVersion = new RedisVersion(serverMap.get("redis_version"));
+                c.closeAsync();
             }
             return redisVersion;
         }

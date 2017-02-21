@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
@@ -17,11 +18,10 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
+import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
-
-import io.netty.util.concurrent.Future;
 
 public class RedissonMapCacheTest extends BaseTest {
 
@@ -125,6 +125,37 @@ public class RedissonMapCacheTest extends BaseTest {
             return true;
         }
 
+    }
+    
+    @Test
+    public void testOrdering() {
+        Map<String, String> map = new LinkedHashMap<String, String>();
+
+        // General player data
+        map.put("name", "123");
+        map.put("ip", "4124");
+        map.put("rank", "none");
+        map.put("tokens", "0");
+        map.put("coins", "0");
+
+        // Arsenal player statistics
+        map.put("ar_score", "0");
+        map.put("ar_gameswon", "0");
+        map.put("ar_gameslost", "0");
+        map.put("ar_kills", "0");
+        map.put("ar_deaths", "0");
+
+        RMap<String, String> rmap = redisson.getMapCache("123");
+        rmap.putAll(map);
+
+        assertThat(rmap.keySet()).containsExactlyElementsOf(map.keySet());
+        assertThat(rmap.readAllKeySet()).containsExactlyElementsOf(map.keySet());
+        
+        assertThat(rmap.values()).containsExactlyElementsOf(map.values());
+        assertThat(rmap.readAllValues()).containsExactlyElementsOf(map.values());
+        
+        assertThat(rmap.entrySet()).containsExactlyElementsOf(map.entrySet());
+        assertThat(rmap.readAllEntrySet()).containsExactlyElementsOf(map.entrySet());
     }
     
     @Test
@@ -622,6 +653,15 @@ public class RedissonMapCacheTest extends BaseTest {
         SimpleValue value1 = new SimpleValue("4");
         assertThat(map.fastPutIfAbsent(key1, value1)).isTrue();
         assertThat(map.get(key1)).isEqualTo(value1);
+        
+        SimpleKey key2 = new SimpleKey("3");
+        map.put(key2, new SimpleValue("31"), 500, TimeUnit.MILLISECONDS);
+        assertThat(map.fastPutIfAbsent(key2, new SimpleValue("32"))).isFalse();
+        
+        Thread.sleep(500);
+        assertThat(map.fastPutIfAbsent(key2, new SimpleValue("32"))).isTrue();
+        assertThat(map.get(key2)).isEqualTo(new SimpleValue("32"));
+
     }
 
     @Test

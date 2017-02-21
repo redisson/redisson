@@ -1,9 +1,11 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.security.SecureRandom;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -12,10 +14,34 @@ import org.junit.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
 
-import static org.assertj.core.api.Assertions.*;
-
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
+    @Test
+    public void testWriteReadReentrancy() throws InterruptedException {
+        RReadWriteLock readWriteLock = redisson.getReadWriteLock("TEST");
+        readWriteLock.writeLock().lock();
+
+        java.util.concurrent.locks.Lock rLock = readWriteLock.readLock();
+        Assert.assertTrue(rLock.tryLock());
+        
+        AtomicBoolean ref = new AtomicBoolean();
+        Thread t1 = new Thread(() -> {
+            boolean success = readWriteLock.readLock().tryLock();
+            ref.set(success);
+        });
+        t1.start();
+        t1.join();
+        
+        Assert.assertFalse(ref.get());
+        
+        readWriteLock.writeLock().unlock();
+        Assert.assertFalse(readWriteLock.writeLock().tryLock());
+        rLock.unlock();
+
+        Assert.assertTrue(readWriteLock.writeLock().tryLock());
+        readWriteLock.writeLock().unlock();
+    }
+    
     @Test
     public void testWriteLock() throws InterruptedException {
         final RReadWriteLock lock = redisson.getReadWriteLock("lock");
@@ -48,7 +74,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         t.join(50);
 
         writeLock.unlock();
-        Assert.assertFalse(lock.readLock().tryLock());
+        Assert.assertTrue(lock.readLock().tryLock());
         Assert.assertTrue(writeLock.isHeldByCurrentThread());
         writeLock.unlock();
         Thread.sleep(1000);

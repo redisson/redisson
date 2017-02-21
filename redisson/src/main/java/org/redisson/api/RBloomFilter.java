@@ -18,8 +18,6 @@ package org.redisson.api;
 /**
  * Bloom filter based on 64-bit hash derived from 128-bit hash (xxHash + FarmHash).
  *
- * Code parts from Guava BloomFilter
- *
  * @author Nikita Koksharov
  *
  * @param <T> - type of object

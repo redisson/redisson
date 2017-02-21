@@ -31,11 +31,11 @@ import org.redisson.misc.RPromise;
  * @author Nikita Koksharov
  *
  */
-abstract class RedissonObject implements RObject {
+public abstract class RedissonObject implements RObject {
 
-    final CommandAsyncExecutor commandExecutor;
+    protected final CommandAsyncExecutor commandExecutor;
     private final String name;
-    final Codec codec;
+    protected final Codec codec;
 
     public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.codec = codec;
@@ -51,6 +51,20 @@ abstract class RedissonObject implements RObject {
         return commandExecutor.await(future, timeout, timeoutUnit);
     }
     
+    protected String prefixName(String prefix, String name) {
+        if (name.contains("{")) {
+            return prefix + ":" + name;
+        }
+        return prefix + ":{" + name + "}";
+    }
+    
+    protected String suffixName(String name, String suffix) {
+        if (name.contains("{")) {
+            return name + ":" + suffix;
+        }
+        return "{" + name + "}:" + suffix;
+    }
+
     protected <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);
     }
@@ -66,6 +80,10 @@ abstract class RedissonObject implements RObject {
     @Override
     public String getName() {
         return name;
+    }
+    
+    protected String getName(Object o) {
+        return getName();
     }
 
     @Override

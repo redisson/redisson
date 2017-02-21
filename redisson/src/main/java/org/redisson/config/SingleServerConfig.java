@@ -15,11 +15,9 @@
  */
 package org.redisson.config;
 
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
+import java.net.URL;
 
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.URLBuilder;
 
 /**
  * 
@@ -32,7 +30,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * Redis server address
      *
      */
-    private List<URI> address;
+    private URL address;
 
     /**
      * Minimum idle subscription connection amount
@@ -48,12 +46,12 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Minimum idle Redis connection amount
      */
-    private int connectionMinimumIdleSize = 5;
+    private int connectionMinimumIdleSize = 10;
 
     /**
      * Redis connection maximum pool size
      */
-    private int connectionPoolSize = 250;
+    private int connectionPoolSize = 64;
 
     /**
      * Database index used for Redis connection
@@ -92,7 +90,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Redis connection pool size
      * <p>
-     * Default is <code>250</code>
+     * Default is <code>64</code>
      *
      * @param connectionPoolSize - pool size
      * @return config
@@ -129,19 +127,19 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      */
     public SingleServerConfig setAddress(String address) {
         if (address != null) {
-            this.address = Collections.singletonList(URIBuilder.create(address));
+            this.address = URLBuilder.create(address);
         }
         return this;
     }
-    public URI getAddress() {
+    public URL getAddress() {
         if (address != null) {
-            return address.get(0);
+            return address;
         }
         return null;
     }
-    void setAddress(URI address) {
+    void setAddress(URL address) {
         if (address != null) {
-            this.address = Collections.singletonList(address);
+            this.address = address;
         }
     }
 
@@ -197,7 +195,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Minimum idle Redis connection amount.
      * <p>
-     * Default is 5
+     * Default is <code>10</code>
      *
      * @param connectionMinimumIdleSize - connections amount
      * @return config

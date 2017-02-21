@@ -51,6 +51,10 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     String getChannelName() {
         return "redisson_rwlock__{" + getName() + "}";
     }
+    
+    String getWriteLockName(long threadId) {
+        return super.getLockName(threadId) + ":write";
+    }
 
     @Override
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
@@ -64,13 +68,13 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                   "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                                   "return nil; " +
                                 "end; " +
-                                "if (mode == 'read') then " +
+                                "if (mode == 'read') or (mode == 'write' and redis.call('hexists', KEYS[1], ARGV[3]) == 1) then " +
                                   "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
                                   "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                                   "return nil; " +
                                 "end;" +
                                 "return redis.call('pttl', KEYS[1]);",
-                        Arrays.<Object>asList(getName()), internalLockLeaseTime, getLockName(threadId));
+                        Arrays.<Object>asList(getName()), internalLockLeaseTime, getLockName(threadId), getWriteLockName(threadId));
     }
 
     @Override
@@ -80,8 +84,8 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                 "if (mode == false) then " +
                                     "redis.call('publish', KEYS[2], ARGV[1]); " +
                                     "return 1; " +
-                                "end; "
-                              + "if (mode == 'read') then " +
+                                "end; " +
+//                              "if (mode == 'read') then " +
                                     "local lockExists = redis.call('hexists', KEYS[1], ARGV[3]); " +
                                     "if (lockExists == 0) then " +
                                         "return nil;" +
@@ -99,7 +103,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                             "return 1; "+
                                         "end; " +
                                     "end; " +
-                                "end; " +
+//                                "end; " +
                                 "return nil; ",
                         Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(Thread.currentThread().getId()));
         if (opStatus == null) {
@@ -144,20 +148,6 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     public boolean isLocked() {
         String res = commandExecutor.write(getName(), StringCodec.INSTANCE, RedisCommands.HGET, getName(), "mode");
         return "read".equals(res);
-    }
-
-    @Override
-    public boolean isHeldByCurrentThread() {
-        return commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(Thread.currentThread().getId()));
-    }
-
-    @Override
-    public int getHoldCount() {
-        Long res = commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName(Thread.currentThread().getId()));
-        if (res == null) {
-            return 0;
-        }
-        return res.intValue();
     }
 
 }

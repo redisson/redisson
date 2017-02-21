@@ -27,7 +27,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
+import org.redisson.api.SortOrder;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -38,6 +40,7 @@ import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -55,6 +58,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     private static final RedisCommand<Boolean> EVAL_CONTAINS_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 6, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE));
     private static final RedisCommand<Boolean> EVAL_CONTAINS_ALL_WITH_VALUES = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7, ValueType.OBJECTS);
     
+    private final RSet<V> set;
     private final Object key;
     private final String timeoutSetName;
     
@@ -62,6 +66,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         super(codec, commandExecutor, name);
         this.timeoutSetName = timeoutSetName;
         this.key = key;
+        this.set = new RedissonSet<V>(codec, commandExecutor, name);
     }
 
     @Override
@@ -158,8 +163,8 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          Arrays.<Object>asList(timeoutSetName, getName()), System.currentTimeMillis(), key, o);
     }
 
-    private ListScanResult<V> scanIterator(InetSocketAddress client, long startPos) {
-        RFuture<ListScanResult<V>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_SSCAN,
+    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
+        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), new ScanCodec(codec), EVAL_SSCAN,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
               + "if expireDateScore ~= false then "
@@ -179,7 +184,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<V> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
                 return scanIterator(client, nextIterPos);
             }
 
@@ -225,17 +230,17 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
 
     @Override
     public boolean add(V e) {
-        return get(addAsync(e));
+        return set.add(e);
     }
 
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD_SINGLE, getName(), e);
+        return set.addAsync(e);
     }
 
     @Override
     public V removeRandom() {
-        return get(removeRandomAsync());
+        return set.removeRandom();
     }
 
     @Override
@@ -243,6 +248,16 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SPOP_SINGLE, getName());
     }
 
+    @Override
+    public Set<V> removeRandom(int amount) {
+        return get(removeRandomAsync(amount));
+    }
+
+    @Override
+    public RFuture<Set<V>> removeRandomAsync(int amount) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SPOP, getName(), amount);
+    }
+    
     @Override
     public V random() {
         return get(randomAsync());
@@ -505,4 +520,106 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SINTER, args.toArray());
     }
 
+    public RFuture<Set<V>> readSortAsync(SortOrder order) {
+        return set.readSortAsync(order);
+    }
+
+    public Set<V> readSort(SortOrder order) {
+        return set.readSort(order);
+    }
+
+    public RFuture<Set<V>> readSortAsync(SortOrder order, int offset, int count) {
+        return set.readSortAsync(order, offset, count);
+    }
+
+    public Set<V> readSort(SortOrder order, int offset, int count) {
+        return set.readSort(order, offset, count);
+    }
+
+    public Set<V> readSort(String byPattern, SortOrder order) {
+        return set.readSort(byPattern, order);
+    }
+
+    public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order) {
+        return set.readSortAsync(byPattern, order);
+    }
+
+    public Set<V> readSort(String byPattern, SortOrder order, int offset, int count) {
+        return set.readSort(byPattern, order, offset, count);
+    }
+
+    public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order, int offset, int count) {
+        return set.readSortAsync(byPattern, order, offset, count);
+    }
+
+    public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
+        return set.readSort(byPattern, getPatterns, order);
+    }
+
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order) {
+        return set.readSortAsync(byPattern, getPatterns, order);
+    }
+
+    public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset,
+            int count) {
+        return set.readSort(byPattern, getPatterns, order, offset, count);
+    }
+
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order,
+            int offset, int count) {
+        return set.readSortAsync(byPattern, getPatterns, order, offset, count);
+    }
+
+    public int sortTo(String destName, SortOrder order) {
+        return set.sortTo(destName, order);
+    }
+
+    public RFuture<Integer> sortToAsync(String destName, SortOrder order) {
+        return set.sortToAsync(destName, order);
+    }
+
+    public int sortTo(String destName, SortOrder order, int offset, int count) {
+        return set.sortTo(destName, order, offset, count);
+    }
+
+    public RFuture<Integer> sortToAsync(String destName, SortOrder order, int offset, int count) {
+        return set.sortToAsync(destName, order, offset, count);
+    }
+
+    public int sortTo(String destName, String byPattern, SortOrder order) {
+        return set.sortTo(destName, byPattern, order);
+    }
+
+    public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order) {
+        return set.sortToAsync(destName, byPattern, order);
+    }
+
+    public int sortTo(String destName, String byPattern, SortOrder order, int offset, int count) {
+        return set.sortTo(destName, byPattern, order, offset, count);
+    }
+
+    public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order, int offset, int count) {
+        return set.sortToAsync(destName, byPattern, order, offset, count);
+    }
+
+    public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
+        return set.sortTo(destName, byPattern, getPatterns, order);
+    }
+
+    public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
+        return set.sortToAsync(destName, byPattern, getPatterns, order);
+    }
+
+    public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset,
+            int count) {
+        return set.sortTo(destName, byPattern, getPatterns, order, offset, count);
+    }
+
+    public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order,
+            int offset, int count) {
+        return set.sortToAsync(destName, byPattern, getPatterns, order, offset, count);
+    }
+
+    
+    
 }

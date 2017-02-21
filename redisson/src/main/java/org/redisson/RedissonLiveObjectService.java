@@ -110,23 +110,6 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return ClassUtils.getField(proxied, "liveObjectLiveMap");
     }
     
-    @Override
-    public <T> T create(Class<T> entityClass) {
-        validateClass(entityClass);
-        try {
-            Class<? extends T> proxyClass = getProxyClass(entityClass);
-            Object id = generateId(entityClass);
-            T proxied = instantiateLiveObject(proxyClass, id);
-            if (!getMap(proxied).fastPut("redisson_live_object", "1")) {
-                throw new IllegalArgumentException("Object already exists");
-            }
-            return proxied;
-        } catch (Exception ex) {
-            unregisterClass(entityClass);
-            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
-        }
-    }
-
     private <T> Object generateId(Class<T> entityClass) throws NoSuchFieldException {
         String idFieldName = getRIdFieldName(entityClass);
         RId annotation = entityClass
@@ -143,18 +126,6 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         try {
             T proxied = instantiateLiveObject(getProxyClass(entityClass), id);
             return asLiveObject(proxied).isExists() ? proxied : null;
-        } catch (Exception ex) {
-            unregisterClass(entityClass);
-            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
-        }
-    }
-
-    @Override
-    public <T, K> T getOrCreate(Class<T> entityClass, K id) {
-        try {
-            T proxied = instantiateLiveObject(getProxyClass(entityClass), id);
-            getMap(proxied).fastPut("redisson_live_object", "1");
-            return proxied;
         } catch (Exception ex) {
             unregisterClass(entityClass);
             throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
@@ -588,7 +559,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private <T, K> T instantiate(Class<T> cls, K id) throws Exception {
         for (Constructor<?> constructor : cls.getDeclaredConstructors()) {
-            if (constructor.getParameterCount() == 0) {
+            if (constructor.getParameterTypes().length == 0) {
                 constructor.setAccessible(true);
                 return (T) constructor.newInstance();
             }

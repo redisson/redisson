@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -146,7 +147,7 @@ public class RedissonNode {
     private void retrieveAdresses() {
         ConnectionManager connectionManager = ((Redisson)redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            RFuture<RedisConnection> readFuture = entry.connectionReadOp();
+            RFuture<RedisConnection> readFuture = entry.connectionReadOp(null);
             if (readFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout()) 
                     && readFuture.isSuccess()) {
                 RedisConnection connection = readFuture.getNow();
@@ -155,7 +156,7 @@ public class RedissonNode {
                 localAddress = (InetSocketAddress) connection.getChannel().localAddress();
                 return;
             }
-            RFuture<RedisConnection> writeFuture = entry.connectionWriteOp();
+            RFuture<RedisConnection> writeFuture = entry.connectionWriteOp(null);
             if (writeFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout())
                     && writeFuture.isSuccess()) {
                 RedisConnection connection = writeFuture.getNow();

@@ -15,8 +15,9 @@
  */
 package org.redisson.connection;
 
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,6 +46,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.command.CommandSyncService;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -53,7 +55,6 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.RedissonThreadFactory;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.TransferListener;
 import org.slf4j.Logger;
@@ -148,6 +149,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
     
+    private final boolean sharedEventLoopGroup;
+
+    private final boolean sharedExecutor;
+
+    private final CommandSyncService commandExecutor;
+    
     {
         for (int i = 0; i < locks.length; i++) {
             locks[i] = new AsyncSemaphore(1);
@@ -156,6 +163,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         this(config);
+        initTimer(cfg);
         init(cfg);
     }
 
@@ -164,7 +172,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         if (cfg.isUseLinuxNativeEpoll()) {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = new EpollEventLoopGroup(cfg.getNettyThreads());
+                this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
@@ -198,10 +206,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
        
         this.codec = cfg.getCodec();
         this.shutdownPromise = newPromise();
+        this.sharedEventLoopGroup = cfg.getEventLoopGroup() != null;
+        this.sharedExecutor = cfg.getExecutor() != null;
+        this.commandExecutor = new CommandSyncService(this);
     }
 
     public boolean isClusterMode() {
         return false;
+    }
+    
+    public CommandSyncService getCommandExecutor() {
+        return commandExecutor;
     }
 
     public IdleConnectionWatcher getConnectionWatcher() {
@@ -225,6 +240,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void init(MasterSlaveServersConfig config) {
         this.config = config;
 
+        connectionWatcher = new IdleConnectionWatcher(this, config);
+
+        try {
+            initEntry(config);
+        } catch (RuntimeException e) {
+            stopThreads();
+            throw e;
+        }
+    }
+
+    protected void initTimer(MasterSlaveServersConfig config) {
         int[] timeouts = new int[]{config.getRetryInterval(), config.getTimeout(), config.getReconnectionTimeout()};
         Arrays.sort(timeouts);
         int minTimeout = timeouts[0];
@@ -235,16 +261,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else {
             minTimeout = 100;
         }
-        timer = new HashedWheelTimer(minTimeout, TimeUnit.MILLISECONDS);
-
-        connectionWatcher = new IdleConnectionWatcher(this, config);
-
+        
+        timer = new HashedWheelTimer(Executors.defaultThreadFactory(), minTimeout, TimeUnit.MILLISECONDS, 1024);
+        
+        // to avoid assertion error during timer.stop invocation
         try {
-            initEntry(config);
-        } catch (RuntimeException e) {
-            stopThreads();
-            throw e;
+            Field leakField = HashedWheelTimer.class.getDeclaredField("leak");
+            leakField.setAccessible(true);
+            leakField.set(timer, null);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         }
+        
     }
 
     public ConnectionInitializer getConnectListener() {
@@ -272,7 +300,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
+        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URL>emptySet());
         for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();
         }
@@ -310,12 +338,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public RedisClient createClient(NodeType type, String host, int port) {
         RedisClient client = createClient(host, port, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
-        clients.add(new RedisClientEntry(client, this, type));
+        clients.add(new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
 
     public void shutdownAsync(RedisClient client) {
-        clients.remove(new RedisClientEntry(client, this, null));
+        clients.remove(new RedisClientEntry(client, commandExecutor, null));
         client.shutdownAsync();
     }
 
@@ -540,16 +568,32 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     @Override
-    public Codec unsubscribe(String channelName) {
+    public RFuture<Codec> unsubscribe(final String channelName, boolean temporaryDown) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return null;
         }
+        freePubSubConnections.remove(entry);
         
-        Codec entryCodec = entry.getConnection().getChannels().get(channelName);
+        final Codec entryCodec = entry.getConnection().getChannels().get(channelName);
+        if (temporaryDown) {
+            final RPromise<Codec> result = newPromise();
+            entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
+                
+                @Override
+                public boolean onStatus(PubSubType type, String channel) {
+                    if (type == PubSubType.UNSUBSCRIBE && channel.equals(channelName)) {
+                        result.trySuccess(entryCodec);
+                        return true;
+                    }
+                    return false;
+                }
+                
+            });
+            return result;
+        }
         entry.unsubscribe(channelName, null);
-        
-        return entryCodec;
+        return newSucceededFuture(entryCodec);
     }
     
     public Codec punsubscribe(final String channelName, final AsyncSemaphore lock) {
@@ -583,16 +627,32 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     
     @Override
-    public Codec punsubscribe(final String channelName) {
+    public RFuture<Codec> punsubscribe(final String channelName, boolean temporaryDown) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             return null;
         }
+        freePubSubConnections.remove(entry);
         
-        Codec entryCodec = entry.getConnection().getPatternChannels().get(channelName);
+        final Codec entryCodec = entry.getConnection().getChannels().get(channelName);
+        if (temporaryDown) {
+            final RPromise<Codec> result = newPromise();
+            entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
+                
+                @Override
+                public boolean onStatus(PubSubType type, String channel) {
+                    if (type == PubSubType.PUNSUBSCRIBE && channel.equals(channelName)) {
+                        result.trySuccess(entryCodec);
+                        return true;
+                    }
+                    return false;
+                }
+                
+            });
+            return result;
+        }
         entry.punsubscribe(channelName, null);
-        
-        return entryCodec;
+        return newSucceededFuture(entryCodec);
     }
 
     @Override
@@ -632,7 +692,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             entry = getEntry(source);
         }
-        return entry.connectionWriteOp();
+        return entry.connectionWriteOp(command);
     }
 
     private MasterSlaveEntry getEntry(NodeSource source) {
@@ -640,14 +700,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (source.getRedirect() != null) {
             MasterSlaveEntry e = getEntry(source.getAddr());
             if (e == null) {
-                throw new RedisNodeNotFoundException("No node for slot: " + source.getAddr());
+                throw new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
             }
             return e;
         }
         
         MasterSlaveEntry e = getEntry(source.getSlot());
         if (e == null) {
-            throw new RedisNodeNotFoundException("No node with slot: " + source.getSlot());
+            throw new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
         }
         return e;
     }
@@ -659,9 +719,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             entry = getEntry(source.getSlot());
         }
         if (source.getAddr() != null) {
-            return entry.connectionReadOp(source.getAddr());
+            entry = getEntry(source.getAddr());
+            if (entry == null) {
+                for (MasterSlaveEntry e : getEntrySet()) {
+                    if (e.hasSlave(source.getAddr())) {
+                        entry = e;
+                        break;
+                    }
+                }
+            }
+            return entry.connectionReadOp(command, source.getAddr());
         }
-        return entry.connectionReadOp();
+        return entry.connectionReadOp(command);
     }
 
     RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {
@@ -704,15 +773,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
-        timer.stop();
         
-        executor.shutdown();
-        try {
-            executor.awaitTermination(timeout, unit);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        if (!sharedExecutor) {
+            executor.shutdown();
+            try {
+                executor.awaitTermination(timeout, unit);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
-        group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
+        
+        if (!sharedEventLoopGroup) {
+            group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
+        }
+        timer.stop();
     }
 
     @Override
@@ -790,7 +864,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return executor;
     }
     
-    public URI getLastClusterNode() {
+    public URL getLastClusterNode() {
         return null;
     }
 }

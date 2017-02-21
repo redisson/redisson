@@ -91,7 +91,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
 
         RFuture<RedissonLockEntry> future = subscribe();
-        get(future);
+        commandExecutor.syncSubscription(future);
         try {
             while (true) {
                 final Long nearestTimeout;
@@ -672,7 +672,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     "end;" + 
                     "return value; " +
                 "end; " +
-                "return redis.call('get', KEYS[1]); ",
+                "local ret = redis.call('get', KEYS[1]); " + 
+                "return ret == false and 0 or ret;",
                 Arrays.<Object>asList(getName(), timeoutName, getChannelName()), System.currentTimeMillis());
     }
 

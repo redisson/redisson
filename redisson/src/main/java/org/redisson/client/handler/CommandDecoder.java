@@ -36,6 +36,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
@@ -45,6 +46,7 @@ import org.redisson.client.protocol.pubsub.Message;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -203,11 +205,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             RPromise<Void> promise = commandBatch.getPromise();
             if (error != null) {
                 if (!promise.tryFailure(error) && promise.cause() instanceof RedisTimeoutException) {
-                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+                    log.warn("response has been skipped due to timeout! channel: {}, command: {}",ctx.channel(), LogHelper.toString(data));
                 }
             } else {
                 if (!promise.trySuccess(null) && promise.cause() instanceof RedisTimeoutException) {
-                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), data);
+                    log.warn("response has been skipped due to timeout! channel: {}, command: {}", ctx.channel(), LogHelper.toString(data));
                 }
             }
             
@@ -299,7 +301,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             
             decodeList(in, data, parts, channel, size, respParts);
         } else {
-            throw new IllegalStateException("Can't decode replay " + (char)code);
+            String dataStr = in.toString(0, in.writerIndex(), CharsetUtil.UTF_8);
+            throw new IllegalStateException("Can't decode replay: " + dataStr);
         }
     }
 
@@ -328,7 +331,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             // store current message index
             checkpoint();
 
-            handleMultiResult(data, null, channel, result);
+            handlePublishSubscribe(data, null, channel, result);
             // has next messages?
             if (in.writerIndex() > in.readerIndex()) {
                 decode(in, data, null, channel);
@@ -336,18 +339,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    private void handleMultiResult(CommandData<Object, Object> data, List<Object> parts,
+    private void handlePublishSubscribe(CommandData<Object, Object> data, List<Object> parts,
             Channel channel, final Object result) {
         if (result instanceof PubSubStatusMessage) {
             String channelName = ((PubSubStatusMessage) result).getChannel();
             String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
             PubSubKey key = new PubSubKey(channelName, operation);
             CommandData<Object, Object> d = pubSubChannels.get(key);
-            if (Arrays.asList("PSUBSCRIBE", "SUBSCRIBE").contains(d.getCommand().getName())) {
+            if (Arrays.asList(RedisCommands.PSUBSCRIBE.getName(), RedisCommands.SUBSCRIBE.getName()).contains(d.getCommand().getName())) {
                 pubSubChannels.remove(key);
                 pubSubMessageDecoders.put(channelName, d.getMessageDecoder());
             }
-            if (Arrays.asList("PUNSUBSCRIBE", "UNSUBSCRIBE").contains(d.getCommand().getName())) {
+            if (Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName()).contains(d.getCommand().getName())) {
                 pubSubChannels.remove(key);
                 pubSubMessageDecoders.remove(channelName);
             }
@@ -380,7 +383,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            if (!data.getPromise().trySuccess(result) && data.cause() instanceof RedisTimeoutException) {
+            if (data != null && !data.getPromise().trySuccess(result) && data.cause() instanceof RedisTimeoutException) {
                 log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, data, result);
             }
         }
@@ -388,6 +391,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts, Channel channel) {
         if (data == null) {
+            if (parts.isEmpty()) {
+                return null;
+            }
             String command = parts.get(0).toString();
             if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(command)) {
                 String channelName = parts.get(1).toString();
@@ -411,13 +417,15 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts) {
         if (data == null) {
-            if (parts.size() == 2 && parts.get(0).equals("message")) {
-                String channelName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(channelName);
-            }
-            if (parts.size() == 3 && parts.get(0).equals("pmessage")) {
-                String patternName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(patternName);
+            if (parts != null) {
+                if (parts.size() == 2 && "message".equals(parts.get(0))) {
+                    String channelName = (String) parts.get(1);
+                    return pubSubMessageDecoders.get(channelName);
+                }
+                if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
+                    String patternName = (String) parts.get(1);
+                    return pubSubMessageDecoders.get(patternName);
+                }
             }
             return StringCodec.INSTANCE.getValueDecoder();
         }

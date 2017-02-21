@@ -27,7 +27,7 @@ import mockit.Deencapsulation;
 
 public class RedissonLocalCachedMapTest extends BaseTest {
 
-//    @Test
+    //    @Test
     public void testPerf() {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(100000).invalidateEntryOnChange(true);
         Map<String, Integer> map = redisson.getLocalCachedMap("test", options);
@@ -323,7 +323,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     }
 
     @Test
-    public void testPutAll() {
+    public void testPutAll() throws InterruptedException {
         Map<Integer, String> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Map<Integer, String> map1 = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
@@ -343,6 +343,9 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(map.keySet()).containsOnly(1, 2, 3, 4, 5, 6);
         
         map1.putAll(joinMap);
+        
+        // waiting for cache cleanup listeners triggering 
+        Thread.sleep(500);
         
         assertThat(cache.size()).isEqualTo(3);
         assertThat(cache1.size()).isEqualTo(3);

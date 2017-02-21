@@ -24,13 +24,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
-import org.redisson.EvictionScheduler;
 import org.redisson.RedissonSetCache;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
+import org.redisson.eviction.EvictionScheduler;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
@@ -43,7 +44,7 @@ import org.redisson.command.CommandReactiveExecutor;
  * Thus values are checked for TTL expiration during any value read operation.
  * If entry expired then it doesn't returns and clean task runs hronous.
  * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.EvictionScheduler}. This scheduler
+ * In addition there is {@link org.redisson.eviction.EvictionScheduler}. This scheduler
  * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
  *
  * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>
@@ -76,15 +77,15 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         return reactive(instance.containsAsync(o));
     }
 
-    Publisher<ListScanResult<V>> scanIterator(InetSocketAddress client, long startPos) {
-        return reactive(instance.scanIteratorAsync(client, startPos));
+    Publisher<ListScanResult<ScanObjectEntry>> scanIterator(InetSocketAddress client, long startPos) {
+        return reactive(instance.scanIteratorAsync(getName(), client, startPos));
     }
 
     @Override
     public Publisher<V> iterator() {
         return new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<V>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
+            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
                 return RedissonSetCacheReactive.this.scanIterator(client, nextIterPos);
             }
         };

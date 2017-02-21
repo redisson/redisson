@@ -403,7 +403,9 @@ public interface RBatch {
      * Command replies are skipped such approach saves response bandwidth.
      * <p>
      * If cluster configuration used then operations are grouped by slot ids
-     * and may be executed on different servers. Thus command execution order could be changed
+     * and may be executed on different servers. Thus command execution order could be changed.
+     * <p>
+     * NOTE: Redis 3.2+ required
      *
      * @throws RedisException in case of any error
      *
@@ -416,6 +418,8 @@ public interface RBatch {
      * <p>
      * If cluster configuration used then operations are grouped by slot ids
      * and may be executed on different servers. Thus command execution order could be changed
+     * <p>
+     * NOTE: Redis 3.2+ required
      * 
      * @return void
      * @throws RedisException in case of any error

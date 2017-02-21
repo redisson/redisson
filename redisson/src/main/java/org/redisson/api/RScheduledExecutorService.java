@@ -18,8 +18,6 @@ package org.redisson.api;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
-import org.redisson.CronSchedule;
-
 /**
  * Distributed implementation of {@link java.util.concurrent.ScheduledExecutorService}
  * 

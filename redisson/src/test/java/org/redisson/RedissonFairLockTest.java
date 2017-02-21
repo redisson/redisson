@@ -16,6 +16,63 @@ import org.redisson.api.RLock;
 public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
+    public void testTryLockNonDelayed() throws InterruptedException {
+        String LOCK_NAME = "SOME_LOCK";
+        
+        Thread t1 = new Thread(() -> {
+            RLock fairLock = redisson.getFairLock(LOCK_NAME);
+            try {
+                if (fairLock.tryLock(0, TimeUnit.SECONDS)) {
+                    try {
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Assert.fail("Unable to acquire lock for some reason");
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                fairLock.unlock();
+            }
+        });
+        
+        Thread t2 = new Thread(() -> {
+            try {
+                Thread.sleep(200L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            RLock fairLock = redisson.getFairLock(LOCK_NAME);
+            try {
+                if (fairLock.tryLock(200, TimeUnit.MILLISECONDS)) {
+                    Assert.fail("Should not be inside second block");
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                fairLock.unlock();
+            }
+        });
+        
+        t1.start();
+        t2.start();
+        
+        t1.join();
+        t2.join();
+        
+        RLock fairLock = redisson.getFairLock(LOCK_NAME);
+        try {
+            if (!fairLock.tryLock(0, TimeUnit.SECONDS)) {
+                Assert.fail("Could not get unlocked lock " + LOCK_NAME);
+            }
+        } finally {
+            fairLock.unlock();
+        }
+    }
+    
+    @Test
     public void testTryLockWait() throws InterruptedException {
         testSingleInstanceConcurrency(1, r -> {
             RLock lock = r.getFairLock("lock");
@@ -58,14 +115,12 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Thread t = new Thread() {
             public void run() {
                 RLock lock1 = redisson.getFairLock("lock");
-                System.out.println("0");
                 lock1.lock();
-                System.out.println("1");
+
                 long spendTime = System.currentTimeMillis() - startTime;
                 System.out.println(spendTime);
                 Assert.assertTrue(spendTime < 2020);
                 lock1.unlock();
-                System.out.println("3");
             };
         };
 

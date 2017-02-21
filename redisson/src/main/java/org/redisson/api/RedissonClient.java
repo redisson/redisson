@@ -32,6 +32,14 @@ import org.redisson.liveobject.provider.ResolverProvider;
 public interface RedissonClient {
 
     /**
+     * Returns binary stream holder instance by <code>name</code>
+     * 
+     * @param name of binary stream
+     * @return BinaryStream object 
+     */
+    RBinaryStream getBinaryStream(String name);
+    
+    /**
      * Returns geospatial items holder instance by <code>name</code>.
      * 
      * @param <V> type of value
@@ -497,13 +505,36 @@ public interface RedissonClient {
     <M> RPatternTopic<M> getPatternTopic(String pattern, Codec codec);
 
     /**
+     * Returns unbounded fair queue instance by name.
+     * 
+     * @param <V> type of value
+     * @param name of queue
+     * @return queue
+     */
+    <V> RBlockingFairQueue<V> getBlockingFairQueue(String name);
+    
+    <V> RBlockingFairQueue<V> getBlockingFairQueue(String name, Codec codec);
+    
+    /**
      * Returns unbounded queue instance by name.
      *
      * @param <V> type of value
-     * @param name - name of object
-     * @return Queue object
+     * @param name of object
+     * @return queue object
      */
     <V> RQueue<V> getQueue(String name);
+    
+    /**
+     * Returns unbounded delayed queue instance by name.
+     * <p>
+     * Could be attached to destination queue only.
+     * All elements are inserted with transfer delay to destination queue.
+     * 
+     * @param <V> type of value
+     * @param destinationQueue - destination queue
+     * @return Delayed queue object
+     */
+    <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue);
 
     /**
      * Returns unbounded queue instance by name
@@ -516,6 +547,50 @@ public interface RedissonClient {
      */
     <V> RQueue<V> getQueue(String name, Codec codec);
 
+    /**
+     * Returns priority unbounded queue instance by name.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name of object
+     * @return Queue object
+     */
+    <V> RPriorityQueue<V> getPriorityQueue(String name);
+    
+    /**
+     * Returns priority unbounded queue instance by name
+     * using provided codec for queue objects.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Queue object
+     */
+    <V> RPriorityQueue<V> getPriorityQueue(String name, Codec codec);
+
+    /**
+     * Returns priority unbounded deque instance by name.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name of object
+     * @return Queue object
+     */
+    <V> RPriorityDeque<V> getPriorityDeque(String name);
+    
+    /**
+     * Returns priority unbounded deque instance by name
+     * using provided codec for queue objects.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Queue object
+     */
+    <V> RPriorityDeque<V> getPriorityDeque(String name, Codec codec);
+    
     /**
      * Returns unbounded blocking queue instance by name.
      * 

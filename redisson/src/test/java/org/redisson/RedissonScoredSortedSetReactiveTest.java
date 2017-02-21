@@ -86,9 +86,9 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
     @Test
     public void testRemoveAsync() throws InterruptedException, ExecutionException {
         RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple");
-        set.add(0.11, 1);
-        set.add(0.22, 3);
-        set.add(0.33, 7);
+        sync(set.add(0.11, 1));
+        sync(set.add(0.22, 3));
+        sync(set.add(0.33, 7));
 
         Assert.assertTrue(sync(set.remove(1)));
         Assert.assertFalse(sync(set.contains(1)));
