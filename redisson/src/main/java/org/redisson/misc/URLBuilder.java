@@ -83,6 +83,8 @@ public class URLBuilder {
             
             if (currentFactory != newFactory) {
                 URL.setURLStreamHandlerFactory(newFactory);
+            } else {
+                currentFactory = null;
             }
         } catch (Exception e) {
             throw new IllegalStateException(e);
