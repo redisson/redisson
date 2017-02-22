@@ -4,6 +4,21 @@ Redisson Releases History
 
 Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
 
+####19-Feb-2017 - versions 2.8.0 and 3.3.0 released
+
+Feature - __`RClusteredLocalCachedMap` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#713-map-data-partitioning)  
+Feature - __`RClusteredMapCache` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#713-map-data-partitioning)  
+Feature - __`RClusteredSetCache` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#732-set-data-partitioning)  
+Feature - __`RPriorityQueue` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#715-priority-queue)  
+Feature - __`RPriorityDeque` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#716-priority-deque)  
+Feature - `removeAllListeners` and `removeListener` by instance methods added for `RTopic` and `RPatternTopic`  
+Feature - `RLockAsync` interface added  
+Improvement - `RRemoteService` is now able to support method overload  
+Fixed - `RLocalCachedMap` is not Redis cluster compatible  
+Fixed - cascade slaves are not supported in cluster mode  
+Fixed - shutdown checking during master change state check added  
+Fixed - master isn't checked during new slave discovery in Sentinel mode  
+
 ####02-Feb-2017 - versions 2.7.4 and 3.2.4 released
 
 Feature - Allow to specify Redisson instance/config during JCache cache creation  

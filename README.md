@@ -6,15 +6,15 @@ Redis 2.8+ compatible.
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.2.3  | 1.8+ | 19.01.2017 |
-| 2.7.3 | 1.6, 1.7, 1.8 and Android | 19.01.2017 |
+| 3.3.0  | 1.8+ | 19.02.2017 |
+| 2.8.0 | 1.6, 1.7, 1.8 and Android | 19.02.2017 |
 
 __NOTE__: Both version lines have same features except `CompletionStage` interface supported by 3.x.x line
 
 Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
 Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md)  
 Checkout more [code examples](https://github.com/redisson/redisson-examples)  
-Browse [javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.2.2)
+Browse [javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.2.4)
 
 Licensed under the Apache License 2.0.
 
@@ -42,7 +42,7 @@ Features
     Object holder, Binary stream holder, Geospatial holder, BitSet, AtomicLong, AtomicDouble, PublishSubscribe,
     Bloom filter, HyperLogLog
 * [Distributed collections](https://github.com/redisson/redisson/wiki/7.-Distributed-collections)  
-    Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, Queue, Deque, Blocking Queue, Bounded Blocking Queue, Blocking Deque, Delayed Queue
+    Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, Queue, Deque, Blocking Queue, Bounded Blocking Queue, Blocking Deque, Delayed Queue, Priority Queue, Priority Deque
 * [Distributed locks and synchronizers](https://github.com/redisson/redisson/wiki/8.-Distributed-locks-and-synchronizers)  
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
 * [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)  
@@ -90,23 +90,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.2.4</version>
+       <version>3.3.0</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.7.4</version>
+       <version>2.8.0</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.2.4'  
+    compile 'org.redisson:redisson:3.3.0'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.7.4'
+    compile 'org.redisson:redisson:2.8.0'
 
 #### Java
 
@@ -131,11 +131,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.2.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.2.4&e=jar),
-[Redisson node 3.2.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.2.4&e=jar)  
+[Redisson 3.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.3.0&e=jar),
+[Redisson node 3.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.3.0&e=jar)  
 
-[Redisson 2.7.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.7.4&e=jar),
-[Redisson node 2.7.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.7.4&e=jar)  
+[Redisson 2.8.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.8.0&e=jar),
+[Redisson node 2.8.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.8.0&e=jar)  
 
 ### Supported by
 
