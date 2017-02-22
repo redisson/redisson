@@ -33,7 +33,7 @@ public class URLBuilder {
 
     private static URLStreamHandlerFactory currentFactory;
     
-    private static URLStreamHandlerFactory newFactory = new URLStreamHandlerFactory() {
+    private final static URLStreamHandlerFactory newFactory = new URLStreamHandlerFactory() {
         @Override
         public URLStreamHandler createURLStreamHandler(String protocol) {
             if ("redis".equals(protocol)) {
