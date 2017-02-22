@@ -13,23 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
+package org.redisson.cache;
 
 /**
- * 
- * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * Created by jribble on 2/20/17.
  */
-public class NoneCacheMap<K, V> extends AbstractCacheMap<K, V> {
+public interface CachedValue<K, V> {
+    boolean isExpired();
 
-    public NoneCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
-        super(0, timeToLiveInMillis, maxIdleInMillis);
-    }
+    K getKey();
 
-    @Override
-    protected void onMapFull() {
-    }
-    
+    V getValue();
 }

@@ -13,20 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
-
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+package org.redisson.cache;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  * @param <K> key
- * @param <V> valu
+ * @param <V> value
  */
-public interface Cache<K, V> extends Map<K, V> {
-    
-    V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+public class SoftCacheMap<K, V> extends AbstractCacheMap<K, V> {
+
+    public SoftCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
+        super(0, timeToLiveInMillis, maxIdleInMillis);
+    }
+
+    protected CachedValue create(K key, V value, long ttl, long maxIdleTime) {
+        return new SoftCachedValue(key, value, ttl, maxIdleTime);
+    }
+
+    @Override
+    protected void onMapFull() {
+    }
     
 }

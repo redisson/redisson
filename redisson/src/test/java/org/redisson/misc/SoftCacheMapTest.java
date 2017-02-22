@@ -1,6 +1,8 @@
 package org.redisson.misc;
 
 import org.junit.Test;
+import org.redisson.cache.Cache;
+import org.redisson.cache.SoftCacheMap;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;

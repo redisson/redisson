@@ -8,6 +8,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.redisson.cache.Cache;
+import org.redisson.cache.NoneCacheMap;
 
 public class NoneCacheMapTest {
 
