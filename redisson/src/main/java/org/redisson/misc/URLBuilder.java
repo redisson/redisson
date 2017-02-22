@@ -77,7 +77,7 @@ public class URLBuilder {
             Field field = URL.class.getDeclaredField("factory");
             field.setAccessible(true);
             currentFactory = (URLStreamHandlerFactory) field.get(null);
-            if (currentFactory != null) {
+            if (currentFactory != null && currentFactory != newFactory) {
                 field.set(null, null);
             }
             
