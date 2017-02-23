@@ -15,6 +15,8 @@
  */
 package org.redisson.cache;
 
+import java.lang.ref.ReferenceQueue;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -24,14 +26,28 @@ package org.redisson.cache;
  */
 public class SoftCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
+    private final ReferenceQueue<V> queue = new ReferenceQueue<V>();
+    
     public SoftCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
         super(0, timeToLiveInMillis, maxIdleInMillis);
     }
 
-    protected CachedValue create(K key, V value, long ttl, long maxIdleTime) {
-        return new SoftCachedValue(key, value, ttl, maxIdleTime);
+    protected CachedValue<K, V> create(K key, V value, long ttl, long maxIdleTime) {
+        return new SoftCachedValue<K, V>(key, value, ttl, maxIdleTime, queue);
     }
 
+    @Override
+    protected boolean removeExpiredEntries() {
+        while (true) {
+            CachedValueReference<V> value = (CachedValueReference<V>) queue.poll();
+            if (value == null) {
+                break;
+            }
+            map.remove(value.getOwner().getKey(), value.getOwner());
+        }
+        return super.removeExpiredEntries();
+    }
+    
     @Override
     protected void onMapFull() {
     }

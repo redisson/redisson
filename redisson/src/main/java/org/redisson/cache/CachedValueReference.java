@@ -16,24 +16,19 @@
 package org.redisson.cache;
 
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
 
-/**
- * Created by jribble on 2/20/17.
- */
+public class CachedValueReference<V> extends SoftReference<V> {
 
-public class SoftCachedValue<K, V> extends StdCachedValue<K, V> implements CachedValue<K, V> {
+    private final CachedValue<?, ?> owner;
     
-    private final CachedValueReference<V> ref;
-
-    public SoftCachedValue(K key, V value, long ttl, long maxIdleTime, ReferenceQueue<V> queue) {
-        super(key, null, ttl, maxIdleTime);
-        this.ref = new CachedValueReference<V>(this, value, queue);
+    public CachedValueReference(CachedValue<?, ?> owner, V referent, ReferenceQueue<? super V> q) {
+        super(referent, q);
+        this.owner = owner;
     }
-
-    @Override
-    public V getValue() {
-        super.getValue();
-        return ref.get();
+    
+    public CachedValue<?, ?> getOwner() {
+        return owner;
     }
 
 }

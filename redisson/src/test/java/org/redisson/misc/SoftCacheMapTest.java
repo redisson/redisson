@@ -62,6 +62,7 @@ public class SoftCacheMapTest {
         assertThat(map.values().stream().filter(Objects::nonNull).count()).isEqualTo(100000);
         System.gc();
         assertThat(map.values().stream().filter(Objects::nonNull).count()).isZero();
+        assertThat(map.values().size()).isZero();
     }
 
 }
