@@ -32,16 +32,6 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
 
     /**
-     * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node
-     */
-    private int slaveSubscriptionConnectionMinimumIdleSize = 1;
-
-    /**
-     * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
-     */
-    private int slaveSubscriptionConnectionPoolSize = 50;
-
-    /**
      * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
      */
     private int slaveConnectionMinimumIdleSize = 10;
@@ -62,6 +52,18 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     private int masterConnectionPoolSize = 64;
 
     private ReadMode readMode = ReadMode.SLAVE;
+    
+    private SubscriptionMode subscriptionMode = SubscriptionMode.SLAVE;
+    
+    /**
+     * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node
+     */
+    private int subscriptionConnectionMinimumIdleSize = 1;
+
+    /**
+     * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
+     */
+    private int subscriptionConnectionPoolSize = 50;
 
     public BaseMasterSlaveServersConfig() {
     }
@@ -71,11 +73,12 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setLoadBalancer(config.getLoadBalancer());
         setMasterConnectionPoolSize(config.getMasterConnectionPoolSize());
         setSlaveConnectionPoolSize(config.getSlaveConnectionPoolSize());
-        setSlaveSubscriptionConnectionPoolSize(config.getSlaveSubscriptionConnectionPoolSize());
+        setSubscriptionConnectionPoolSize(config.getSubscriptionConnectionPoolSize());
         setMasterConnectionMinimumIdleSize(config.getMasterConnectionMinimumIdleSize());
         setSlaveConnectionMinimumIdleSize(config.getSlaveConnectionMinimumIdleSize());
-        setSlaveSubscriptionConnectionMinimumIdleSize(config.getSlaveSubscriptionConnectionMinimumIdleSize());
+        setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
         setReadMode(config.getReadMode());
+        setSubscriptionMode(config.getSubscriptionMode());
     }
 
     /**
@@ -135,23 +138,39 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
-     * <p>
-     * Default is <code>50</code>
-     * <p>
-     * @see #setSlaveSubscriptionConnectionMinimumIdleSize(int)
+     * @deprecated use {@link #setSubscriptionConnectionPoolSize(int)}
      * 
      * @param slaveSubscriptionConnectionPoolSize - pool size
      * @return config
      */
+    @Deprecated
     public T setSlaveSubscriptionConnectionPoolSize(int slaveSubscriptionConnectionPoolSize) {
-        this.slaveSubscriptionConnectionPoolSize = slaveSubscriptionConnectionPoolSize;
-        return (T)this;
+        return setSubscriptionConnectionPoolSize(slaveSubscriptionConnectionPoolSize);
     }
+    @Deprecated
     public int getSlaveSubscriptionConnectionPoolSize() {
-        return slaveSubscriptionConnectionPoolSize;
+        return getSubscriptionConnectionPoolSize();
     }
 
+    /**
+     * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
+     * <p>
+     * Default is <code>50</code>
+     * <p>
+     * @see #setSubscriptionConnectionMinimumIdleSize(int)
+     * 
+     * @param slaveSubscriptionConnectionPoolSize - pool size
+     * @return config
+     */
+    public T setSubscriptionConnectionPoolSize(int subscriptionConnectionPoolSize) {
+        this.subscriptionConnectionPoolSize = subscriptionConnectionPoolSize;
+        return (T)this;
+    }
+    public int getSubscriptionConnectionPoolSize() {
+        return subscriptionConnectionPoolSize;
+    }
+
+    
     /**
      * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
      * <p>
@@ -189,23 +208,39 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node.
-     * <p>
-     * Default is <code>1</code>
-     * <p>
-     * @see #setSlaveSubscriptionConnectionPoolSize(int)
+     * @deprecated use {@link #setSubscriptionConnectionMinimumIdleSize(int)}
      * 
      * @param slaveSubscriptionConnectionMinimumIdleSize - pool size
      * @return config
      */
+    @Deprecated
     public T setSlaveSubscriptionConnectionMinimumIdleSize(int slaveSubscriptionConnectionMinimumIdleSize) {
-        this.slaveSubscriptionConnectionMinimumIdleSize = slaveSubscriptionConnectionMinimumIdleSize;
-        return (T) this;
+        return setSubscriptionConnectionMinimumIdleSize(slaveSubscriptionConnectionMinimumIdleSize);
     }
+    @Deprecated
     public int getSlaveSubscriptionConnectionMinimumIdleSize() {
-        return slaveSubscriptionConnectionMinimumIdleSize;
+        return getSubscriptionConnectionMinimumIdleSize();
     }
 
+    /**
+     * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node.
+     * <p>
+     * Default is <code>1</code>
+     * <p>
+     * @see #setSubscriptionConnectionPoolSize(int)
+     * 
+     * @param slaveSubscriptionConnectionMinimumIdleSize - pool size
+     * @return config
+     */
+    public T setSubscriptionConnectionMinimumIdleSize(int subscriptionConnectionMinimumIdleSize) {
+        this.subscriptionConnectionMinimumIdleSize = subscriptionConnectionMinimumIdleSize;
+        return (T) this;
+    }
+    public int getSubscriptionConnectionMinimumIdleSize() {
+        return subscriptionConnectionMinimumIdleSize;
+    }
+
+    
     /**
      * Set node type used for read operation.
      * <p>
@@ -221,5 +256,22 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     public ReadMode getReadMode() {
         return readMode;
     }
+
+    /**
+     * Set node type used for subscription operation.
+     * <p>
+     * Default is <code>SLAVE</code>
+     *
+     * @param subscriptionMode param
+     * @return config
+     */
+    public T setSubscriptionMode(SubscriptionMode subscriptionMode) {
+        this.subscriptionMode = subscriptionMode;
+        return (T) this;
+    }
+    public SubscriptionMode getSubscriptionMode() {
+        return subscriptionMode;
+    }
+
 
 }

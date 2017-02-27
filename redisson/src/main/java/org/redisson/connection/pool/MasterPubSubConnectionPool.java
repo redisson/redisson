@@ -26,15 +26,20 @@ import org.redisson.connection.MasterSlaveEntry;
  * @author Nikita Koksharov
  *
  */
-public class SinglePubSubConnectionPool extends PubSubConnectionPool {
+public class MasterPubSubConnectionPool extends PubSubConnectionPool {
 
-    public SinglePubSubConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager,
+    public MasterPubSubConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager,
             MasterSlaveEntry masterSlaveEntry) {
         super(config, connectionManager, masterSlaveEntry);
     }
 
+    @Override
     protected ClientConnectionsEntry getEntry() {
         return entries.get(0);
     }
 
+    public void remove(ClientConnectionsEntry entry) {
+        entries.remove(entry);
+    }
+    
 }

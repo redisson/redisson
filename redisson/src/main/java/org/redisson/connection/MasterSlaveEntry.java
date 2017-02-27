@@ -37,9 +37,11 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
+import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
+import org.redisson.connection.pool.MasterPubSubConnectionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +67,8 @@ public class MasterSlaveEntry {
 
     final MasterConnectionPool writeConnectionHolder;
     final Set<Integer> slots = new HashSet<Integer>();
+    
+    final MasterPubSubConnectionPool pubSubConnectionHolder;
 
     final AtomicBoolean active = new AtomicBoolean(true);
 
@@ -79,6 +83,7 @@ public class MasterSlaveEntry {
 
         slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
         writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
+        pubSubConnectionHolder = new MasterPubSubConnectionPool(config, connectionManager, this);
     }
 
     public List<RFuture<Void>> initSlaveBalancer(Collection<URL> disconnectedNodes) {
@@ -98,8 +103,20 @@ public class MasterSlaveEntry {
 
     public RFuture<Void> setupMasterEntry(String host, int port) {
         RedisClient client = connectionManager.createClient(NodeType.MASTER, host, port);
-        masterEntry = new ClientConnectionsEntry(client, config.getMasterConnectionMinimumIdleSize(), config.getMasterConnectionPoolSize(),
-                                                    0, 0, connectionManager, NodeType.MASTER);
+        masterEntry = new ClientConnectionsEntry(
+                client, 
+                config.getMasterConnectionMinimumIdleSize(), 
+                config.getMasterConnectionPoolSize(),
+                config.getSubscriptionConnectionMinimumIdleSize(),
+                config.getSubscriptionConnectionPoolSize(), 
+                connectionManager, 
+                NodeType.MASTER);
+        
+        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+            RFuture<Void> f = writeConnectionHolder.add(masterEntry);
+            RFuture<Void> s = pubSubConnectionHolder.add(masterEntry);
+            return CountListener.create(s, f);
+        }
         return writeConnectionHolder.add(masterEntry);
     }
 
@@ -307,8 +324,8 @@ public class MasterSlaveEntry {
         ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                 this.config.getSlaveConnectionMinimumIdleSize(),
                 this.config.getSlaveConnectionPoolSize(),
-                this.config.getSlaveSubscriptionConnectionMinimumIdleSize(),
-                this.config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, mode);
+                this.config.getSubscriptionConnectionMinimumIdleSize(),
+                this.config.getSubscriptionConnectionPoolSize(), connectionManager, mode);
         if (freezed) {
             synchronized (entry) {
                 entry.setFreezed(freezed);
@@ -352,6 +369,7 @@ public class MasterSlaveEntry {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 writeConnectionHolder.remove(oldMaster);
+                pubSubConnectionHolder.remove(oldMaster);
                 slaveDown(oldMaster, FreezeReason.MANAGER);
 
                 // more than one slave available, so master can be removed from slaves
@@ -406,10 +424,18 @@ public class MasterSlaveEntry {
     }
 
     RFuture<RedisPubSubConnection> nextPubSubConnection() {
+        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+            return pubSubConnectionHolder.get();
+        }
+        
         return slaveBalancer.nextPubSubConnection();
     }
 
     public void returnPubSubConnection(PubSubConnectionEntry entry) {
+        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+            pubSubConnectionHolder.returnConnection(masterEntry, entry.getConnection());
+            return;
+        }
         slaveBalancer.returnPubSubConnection(entry.getConnection());
     }
 
