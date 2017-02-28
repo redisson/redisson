@@ -2,7 +2,8 @@ Redis based Tomcat Session Manager
 ===
 
 Stores session of Apache Tomcat in Redis and allows to distribute requests across a cluster of Tomcat servers. Implements non-sticky session management backed by Redis.  
-Supports Tomcat 6.x, 7.x, 8.x
+
+Supports Apache Tomcat 6.x, 7.x, 8.x
 
 Advantages
 ===
