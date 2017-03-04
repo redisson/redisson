@@ -1,5 +1,6 @@
 Redis based In-Memory Data Grid for Java. Redisson.
 ====
+[Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.3.0) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 Redis 2.8+ compatible.
@@ -10,8 +11,6 @@ Redis 2.8+ compatible.
 | 2.8.0 | 1.6, 1.7, 1.8 and Android | 19.02.2017 |
 
 __NOTE__: Both version lines have same features except `CompletionStage` interface added in 3.x.x
-
-[Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.3.0) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson)
 
 
 Features
