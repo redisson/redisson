@@ -9,16 +9,9 @@ Redis 2.8+ compatible.
 | 3.3.0  | 1.8+ | 19.02.2017 |
 | 2.8.0 | 1.6, 1.7, 1.8 and Android | 19.02.2017 |
 
-__NOTE__: Both version lines have same features except `CompletionStage` interface supported by 3.x.x line
+__NOTE__: Both version lines have same features except `CompletionStage` interface added in 3.x.x
 
-Please read [documentation](https://github.com/redisson/redisson/wiki) for more details.  
-Redisson [releases history](https://github.com/redisson/redisson/blob/master/CHANGELOG.md)  
-Checkout more [code examples](https://github.com/redisson/redisson-examples)  
-Browse [javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.2.4)
-
-Licensed under the Apache License 2.0.
-
-Welcome to support chat [![Join the chat at https://gitter.im/mrniko/redisson](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mrniko/redisson?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.3.0) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson)
 
 
 Features
