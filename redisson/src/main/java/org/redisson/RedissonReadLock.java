@@ -65,11 +65,15 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                 "if (mode == false) then " +
                                   "redis.call('hset', KEYS[1], 'mode', 'read'); " +
                                   "redis.call('hset', KEYS[1], ARGV[2], 1); " +
+                                  "redis.call('set', KEYS[1] .. ':timeout:1', 1); " +
+                                  "redis.call('pexpire', KEYS[1] .. ':timeout:1', ARGV[1]); " +
                                   "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                                   "return nil; " +
                                 "end; " +
                                 "if (mode == 'read') or (mode == 'write' and redis.call('hexists', KEYS[1], ARGV[3]) == 1) then " +
-                                  "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
+                                  "local ind = redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
+                                  "redis.call('set', KEYS[1] .. ':timeout:' .. ind, 1); " +
+                                  "redis.call('pexpire', KEYS[1] .. ':timeout:' .. ind, ARGV[1]); " +
                                   "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                                   "return nil; " +
                                 "end;" +
@@ -85,27 +89,39 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                     "redis.call('publish', KEYS[2], ARGV[1]); " +
                                     "return 1; " +
                                 "end; " +
-//                              "if (mode == 'read') then " +
-                                    "local lockExists = redis.call('hexists', KEYS[1], ARGV[3]); " +
-                                    "if (lockExists == 0) then " +
-                                        "return nil;" +
-                                    "else " +
-                                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
-                                        "if (counter > 0) then " +
-                                            "redis.call('pexpire', KEYS[1], ARGV[2]); " +
-                                            "return 0; " +
+                                "local lockExists = redis.call('hexists', KEYS[1], ARGV[2]); " +
+                                "if (lockExists == 0) then " +
+                                    "return nil;" +
+                                "else " +
+                                    "local counter = redis.call('hincrby', KEYS[1], ARGV[2], -1); " +
+                                    "redis.call('del', KEYS[1] .. ':timeout:' .. (counter+1)); " +
+                                    "if (counter > 0) then " +
+                                        "local maxRemainTime = -3; " + 
+                                        "for i=counter, 1, -1 do " + 
+                                            "local remainTime = redis.call('pttl', KEYS[1] .. ':timeout:' .. i); " + 
+                                            "maxRemainTime = math.max(remainTime, maxRemainTime);" + 
+                                        "end; " + 
+                                        "if maxRemainTime > 0 then " +
+                                            "redis.call('pexpire', KEYS[1], maxRemainTime); " + 
                                         "else " +
-                                            "redis.call('hdel', KEYS[1], ARGV[3]); " +
+                                            "redis.call('hdel', KEYS[1], ARGV[2]); " +
                                             "if (redis.call('hlen', KEYS[1]) == 1) then " +
                                                 "redis.call('del', KEYS[1]); " +
                                                 "redis.call('publish', KEYS[2], ARGV[1]); " +
                                             "end; " +
-                                            "return 1; "+
+                                        "end;" +
+                                        "return 0; " +
+                                    "else " +
+                                        "redis.call('hdel', KEYS[1], ARGV[2]); " +
+                                        "if (redis.call('hlen', KEYS[1]) == 1) then " +
+                                            "redis.call('del', KEYS[1]); " +
+                                            "redis.call('publish', KEYS[2], ARGV[1]); " +
                                         "end; " +
+                                        "return 1; "+
                                     "end; " +
-//                                "end; " +
+                                "end; " +
                                 "return nil; ",
-                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(Thread.currentThread().getId()));
+                        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, getLockName(Thread.currentThread().getId()));
         if (opStatus == null) {
             throw new IllegalMonitorStateException("attempt to unlock read lock, not locked by current thread by node id: "
                     + id + " thread-id: " + Thread.currentThread().getId());
