@@ -13,28 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.config;
+package org.redisson.cache;
+
+import java.lang.ref.ReferenceQueue;
 
 /**
- * 
- * @author Nikita Koksharov
- *
+ * Created by jribble on 2/20/17.
  */
-public enum ReadMode {
 
-    /**
-     * Read from slave nodes
-     */
-    SLAVE,
+public class SoftCachedValue<K, V> extends StdCachedValue<K, V> implements CachedValue<K, V> {
+    
+    private final CachedValueReference<V> ref;
 
-    /**
-     * Read from master node
-     */
-    MASTER,
+    public SoftCachedValue(K key, V value, long ttl, long maxIdleTime, ReferenceQueue<V> queue) {
+        super(key, null, ttl, maxIdleTime);
+        this.ref = new CachedValueReference<V>(this, value, queue);
+    }
 
-    /**
-     * Read from master and slave nodes
-     */
-    MASTER_SLAVE,
+    @Override
+    public V getValue() {
+        super.getValue();
+        return ref.get();
+    }
 
 }

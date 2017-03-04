@@ -40,6 +40,11 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisPubSubConnection extends RedisConnection {
 
     final Queue<RedisPubSubListener<Object>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<Object>>();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
+package org.redisson.cache;
 
 import java.util.AbstractCollection;
 import java.util.AbstractMap.SimpleEntry;
@@ -37,56 +37,8 @@ import io.netty.util.internal.PlatformDependent;
  */
 public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
-    public static class CachedValue {
-
-        private final Object key;
-        private final Object value;
-        
-        long ttl;
-        long maxIdleTime;
-        
-        long creationTime;
-        long lastAccess;
-
-        public CachedValue(Object key, Object value, long ttl, long maxIdleTime) {
-            this.value = value;
-            this.ttl = ttl;
-            this.key = key;
-            this.maxIdleTime = maxIdleTime;
-            creationTime = System.currentTimeMillis();
-            lastAccess = creationTime;
-        }
-        
-        public boolean isExpired() {
-            boolean result = false;
-            long currentTime = System.currentTimeMillis();
-            if (ttl != 0 && creationTime + ttl < currentTime) {
-                result = true;
-            }
-            if (maxIdleTime != 0 && lastAccess + maxIdleTime < currentTime) {
-                result = true;
-            }
-            return result;
-        }
-        
-        public Object getKey() {
-            return key;
-        }
-        
-        public Object getValue() {
-            lastAccess = System.currentTimeMillis();
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return "CachedValue [key=" + key + ", value=" + value + "]";
-        }
-
-    }
-
     final int size;
-    final ConcurrentMap<K, CachedValue> map = PlatformDependent.newConcurrentHashMap();
+    final ConcurrentMap<K, CachedValue<K, V>> map = PlatformDependent.newConcurrentHashMap();
     private final long timeToLiveInMillis;
     private final long maxIdleInMillis;
 
@@ -100,11 +52,11 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         this.timeToLiveInMillis = timeToLiveInMillis;
     }
 
-    protected void onValueRead(CachedValue value) {
+    protected void onValueRead(CachedValue<K, V> value) {
         
     }
     
-    protected void onValueRemove(CachedValue value) {
+    protected void onValueRemove(CachedValue<K, V> value) {
         
     }
 
@@ -137,7 +89,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             throw new NullPointerException();
         }
         
-        CachedValue entry = map.get(key);
+        CachedValue<K, V> entry = map.get(key);
         if (entry == null) {
             return false;
         }
@@ -161,8 +113,8 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             throw new NullPointerException();
         }
 
-        for (Map.Entry<K, CachedValue> entry : map.entrySet()) {
-            CachedValue cachedValue = entry.getValue();
+        for (Map.Entry<K, CachedValue<K, V>> entry : map.entrySet()) {
+            CachedValue<K, V> cachedValue = entry.getValue();
             if (cachedValue.getValue().equals(value)) {
                 if (cachedValue.isExpired()) {
                     if (map.remove(cachedValue.getKey(), cachedValue)) {
@@ -187,7 +139,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             throw new NullPointerException();
         }
         
-        CachedValue entry = map.get(key);
+        CachedValue<K, V> entry = map.get(key);
         if (entry == null) {
             return null;
         }
@@ -201,8 +153,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return readValue(entry);
     }
 
-    @SuppressWarnings("unchecked")
-    protected V readValue(CachedValue entry) {
+    protected V readValue(CachedValue<K, V> entry) {
         onValueRead(entry);
         return (V) entry.getValue();
     }
@@ -216,17 +167,16 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return put(key, value, timeToLiveInMillis, TimeUnit.MILLISECONDS, maxIdleInMillis, TimeUnit.MILLISECONDS);
     }
     
-    @SuppressWarnings("unchecked")
     @Override
     public V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
-        CachedValue entry = create(key, value, ttlUnit.toMillis(ttl), maxIdleUnit.toMillis(maxIdleTime));
+        CachedValue<K, V> entry = create(key, value, ttlUnit.toMillis(ttl), maxIdleUnit.toMillis(maxIdleTime));
         if (isFull(key)) {
             if (!removeExpiredEntries()) {
                 onMapFull();
             }
         }
         onValueCreate(entry);
-        CachedValue prevCachedValue = map.put(key, entry);
+        CachedValue<K, V> prevCachedValue = map.put(key, entry);
         if (prevCachedValue != null) {
             onValueRemove(prevCachedValue);
             if (!prevCachedValue.isExpired()) {
@@ -236,17 +186,17 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return null;
     }
 
-    protected CachedValue create(K key, V value, long ttl, long maxIdleTime) {
-        return new CachedValue(key, value, ttl, maxIdleTime);        
+    protected CachedValue<K, V> create(K key, V value, long ttl, long maxIdleTime) {
+        return new StdCachedValue<K, V>(key, value, ttl, maxIdleTime);
     }
     
-    protected void onValueCreate(CachedValue entry) {
+    protected void onValueCreate(CachedValue<K, V> entry) {
     }
 
-    private boolean removeExpiredEntries() {
+    protected boolean removeExpiredEntries() {
         boolean removed = false;
         // TODO optimize
-        for (CachedValue value : map.values()) {
+        for (CachedValue<K, V> value : map.values()) {
             if (value.isExpired()) {
                 if (map.remove(value.getKey(), value)) {
                     onValueRemove(value);                    
@@ -280,10 +230,9 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
      * (non-Javadoc)
      * @see java.util.Map#remove(java.lang.Object)
      */
-    @SuppressWarnings("unchecked")
     @Override
     public V remove(Object key) {
-        CachedValue entry = map.remove(key);
+        CachedValue<K, V> entry = map.remove(key);
         if (entry != null) {
             onValueRemove(entry);
             if (!entry.isExpired()) {
@@ -346,9 +295,9 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     
     abstract class MapIterator<M> implements Iterator<M> {
 
-        final Iterator<Map.Entry<K, CachedValue>> keyIterator = map.entrySet().iterator();
+        final Iterator<Map.Entry<K, CachedValue<K, V>>> keyIterator = map.entrySet().iterator();
         
-        Map.Entry<K, CachedValue> mapEntry;
+        Map.Entry<K, CachedValue<K, V>> mapEntry;
         
         @Override
         public boolean hasNext() {
@@ -357,7 +306,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             }
             mapEntry = null;
             while (keyIterator.hasNext()) {
-                Map.Entry<K, CachedValue> entry = keyIterator.next();
+                Map.Entry<K, CachedValue<K, V>> entry = keyIterator.next();
                 if (entry.getValue().isExpired()) {
                     continue; 
                 }

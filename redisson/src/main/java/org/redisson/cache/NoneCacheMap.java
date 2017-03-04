@@ -13,28 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.config;
+package org.redisson.cache;
 
 /**
  * 
  * @author Nikita Koksharov
  *
+ * @param <K> key
+ * @param <V> value
  */
-public enum ReadMode {
+public class NoneCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
-    /**
-     * Read from slave nodes
-     */
-    SLAVE,
+    public NoneCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
+        super(0, timeToLiveInMillis, maxIdleInMillis);
+    }
 
-    /**
-     * Read from master node
-     */
-    MASTER,
-
-    /**
-     * Read from master and slave nodes
-     */
-    MASTER_SLAVE,
-
+    @Override
+    protected void onMapFull() {
+    }
+    
 }

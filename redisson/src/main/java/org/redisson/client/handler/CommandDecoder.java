@@ -184,7 +184,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     CommandsData commandBatch) {
         int i = state().getBatchIndex();
 
-        RedisException error = null;
+        Throwable error = null;
         while (in.writerIndex() > in.readerIndex()) {
             CommandData<Object, Object> cmd = null;
             try {
@@ -192,12 +192,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 state().setBatchIndex(i);
                 cmd = (CommandData<Object, Object>) commandBatch.getCommands().get(i);
                 decode(in, cmd, null, ctx.channel());
-                i++;
-            } catch (IOException e) {
+            } catch (Exception e) {
                 cmd.tryFailure(e);
             }
+            i++;
             if (!cmd.isSuccess()) {
-                error = (RedisException) cmd.cause();
+                error = cmd.cause();
             }
         }
 

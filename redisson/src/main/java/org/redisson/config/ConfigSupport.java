@@ -26,13 +26,16 @@ import java.util.List;
 import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
+import org.redisson.codec.CodecProvider;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ElasticacheConnectionManager;
-import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
+import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
 import org.redisson.connection.balancer.LoadBalancer;
+import org.redisson.liveobject.provider.ResolverProvider;
+import org.redisson.misc.URLBuilder;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -45,10 +48,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.redisson.codec.CodecProvider;
-import org.redisson.liveobject.provider.ResolverProvider;
-import org.redisson.misc.URLBuilder;
 
 /**
  * 
@@ -118,8 +119,8 @@ public class ConfigSupport {
 
     }
 
-    private final ObjectMapper jsonMapper = createMapper(null);
-    private final ObjectMapper yamlMapper = createMapper(new YAMLFactory());
+    private ObjectMapper jsonMapper = createMapper(null, null);
+    private ObjectMapper yamlMapper = createMapper(new YAMLFactory(), null);
 
     public <T> T fromJSON(String content, Class<T> configType) throws IOException {
         URLBuilder.replaceURLFactory();
@@ -131,8 +132,13 @@ public class ConfigSupport {
     }
 
     public <T> T fromJSON(File file, Class<T> configType) throws IOException {
+        return fromJSON(file, configType, null);
+    }
+    
+    public <T> T fromJSON(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
         URLBuilder.replaceURLFactory();
         try {
+            jsonMapper = createMapper(null, classLoader);
             return jsonMapper.readValue(file, configType);
         } finally {
             URLBuilder.restoreURLFactory();
@@ -192,6 +198,17 @@ public class ConfigSupport {
             URLBuilder.restoreURLFactory();
         }
     }
+    
+    public <T> T fromYAML(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
+        URLBuilder.replaceURLFactory();
+        try {
+            yamlMapper = createMapper(new YAMLFactory(), classLoader);
+            return yamlMapper.readValue(file, configType);
+        } finally {
+            URLBuilder.restoreURLFactory();
+        }
+    }
+
 
     public <T> T fromYAML(URL url, Class<T> configType) throws IOException {
         URLBuilder.replaceURLFactory();
@@ -266,12 +283,12 @@ public class ConfigSupport {
         if (config.getMasterConnectionPoolSize() < config.getMasterConnectionMinimumIdleSize()) {
             throw new IllegalArgumentException("masterConnectionPoolSize can't be lower than masterConnectionMinimumIdleSize");
         }
-        if (config.getSlaveSubscriptionConnectionPoolSize() < config.getSlaveSubscriptionConnectionMinimumIdleSize()) {
+        if (config.getSubscriptionConnectionPoolSize() < config.getSubscriptionConnectionMinimumIdleSize()) {
             throw new IllegalArgumentException("slaveSubscriptionConnectionMinimumIdleSize can't be lower than slaveSubscriptionConnectionPoolSize");
         }
     }
 
-    private ObjectMapper createMapper(JsonFactory mapping) {
+    private ObjectMapper createMapper(JsonFactory mapping, ClassLoader classLoader) {
         ObjectMapper mapper = new ObjectMapper(mapping);
         mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
         mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
@@ -285,6 +302,13 @@ public class ConfigSupport {
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
         mapper.setFilterProvider(filterProvider);
         mapper.setSerializationInclusion(Include.NON_NULL);
+
+        if (classLoader != null) {
+            TypeFactory tf = TypeFactory.defaultInstance()
+                    .withClassLoader(classLoader);
+            mapper.setTypeFactory(tf);
+        }
+        
         return mapper;
     }
 

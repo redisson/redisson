@@ -143,11 +143,11 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     public void start() throws LifecycleException {
         Config config = null;
         try {
-            config = Config.fromJSON(new File(configPath));
+            config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
         } catch (IOException e) {
             // trying next format
             try {
-                config = Config.fromYAML(new File(configPath));
+                config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
             } catch (IOException e1) {
                 log.error("Can't parse json config " + configPath, e);
                 throw new LifecycleException("Can't parse yaml config " + configPath, e1);

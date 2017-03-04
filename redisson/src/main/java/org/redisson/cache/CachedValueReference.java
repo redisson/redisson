@@ -13,28 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.config;
+package org.redisson.cache;
 
-/**
- * 
- * @author Nikita Koksharov
- *
- */
-public enum ReadMode {
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
 
-    /**
-     * Read from slave nodes
-     */
-    SLAVE,
+public class CachedValueReference<V> extends SoftReference<V> {
 
-    /**
-     * Read from master node
-     */
-    MASTER,
-
-    /**
-     * Read from master and slave nodes
-     */
-    MASTER_SLAVE,
+    private final CachedValue<?, ?> owner;
+    
+    public CachedValueReference(CachedValue<?, ?> owner, V referent, ReferenceQueue<? super V> q) {
+        super(referent, q);
+        this.owner = owner;
+    }
+    
+    public CachedValue<?, ?> getOwner() {
+        return owner;
+    }
 
 }

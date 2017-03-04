@@ -17,6 +17,22 @@ import org.redisson.api.RReadWriteLock;
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
     @Test
+    public void testReadLockLeaseTimeout() throws InterruptedException {
+        RLock readLock = redisson.getReadWriteLock("my_read_write_lock").readLock();
+        Assert.assertTrue(readLock.tryLock(1, 4, TimeUnit.SECONDS));
+
+        Thread.sleep(3000);
+        RLock readLock2 = redisson.getReadWriteLock("my_read_write_lock").readLock();
+        Assert.assertTrue(readLock2.tryLock(1, 4, TimeUnit.SECONDS));
+        readLock2.unlock();
+
+        Thread.sleep(2000);
+
+        RLock writeLock = redisson.getReadWriteLock("my_read_write_lock").writeLock();
+        Assert.assertTrue(writeLock.tryLock());
+    }
+    
+    @Test
     public void testWriteReadReentrancy() throws InterruptedException {
         RReadWriteLock readWriteLock = redisson.getReadWriteLock("TEST");
         readWriteLock.writeLock().lock();

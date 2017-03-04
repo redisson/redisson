@@ -13,23 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
+package org.redisson.cache;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  * @param <K> key
- * @param <V> value
+ * @param <V> valu
  */
-public class NoneCacheMap<K, V> extends AbstractCacheMap<K, V> {
-
-    public NoneCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
-        super(0, timeToLiveInMillis, maxIdleInMillis);
-    }
-
-    @Override
-    protected void onMapFull() {
-    }
+public interface Cache<K, V> extends Map<K, V> {
+    
+    V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
     
 }
