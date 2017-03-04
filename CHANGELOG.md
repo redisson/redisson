@@ -11,6 +11,7 @@ Feature - `Config.subscriptionMode` setting added
 Improvement - errors handling during RBatch execution  
 Fixed - StackOverflowException in URLBuilder  
 Fixed - TomcatSessionManager can't be used in Tomcat if Redisson has been deployed in web application  
+Fixed - skip cluster nodes with the "handshake" flag (thanks to @dcheckoway)
 
 ####19-Feb-2017 - versions 2.8.0 and 3.3.0 released
 
