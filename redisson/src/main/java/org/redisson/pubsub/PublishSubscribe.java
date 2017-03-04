@@ -34,7 +34,6 @@ import io.netty.util.internal.PlatformDependent;
  * 
  * @author Nikita Koksharov
  *
- * @param <E>
  */
 abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 

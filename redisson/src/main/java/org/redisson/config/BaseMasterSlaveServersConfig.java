@@ -159,7 +159,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * <p>
      * @see #setSubscriptionConnectionMinimumIdleSize(int)
      * 
-     * @param slaveSubscriptionConnectionPoolSize - pool size
+     * @param subscriptionConnectionPoolSize - pool size
      * @return config
      */
     public T setSubscriptionConnectionPoolSize(int subscriptionConnectionPoolSize) {
@@ -229,7 +229,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * <p>
      * @see #setSubscriptionConnectionPoolSize(int)
      * 
-     * @param slaveSubscriptionConnectionMinimumIdleSize - pool size
+     * @param subscriptionConnectionMinimumIdleSize - pool size
      * @return config
      */
     public T setSubscriptionConnectionMinimumIdleSize(int subscriptionConnectionMinimumIdleSize) {
