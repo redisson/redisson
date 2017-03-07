@@ -573,7 +573,7 @@ public class Config {
      * @throws IOException error
      */
     public static Config fromJSON(File file) throws IOException {
-        return fromJSON(file);
+        return fromJSON(file, null);
     }
 
     /**
@@ -643,8 +643,7 @@ public class Config {
      * @throws IOException error
      */
     public static Config fromYAML(File file) throws IOException {
-        ConfigSupport support = new ConfigSupport();
-        return support.fromYAML(file, Config.class);
+        return fromYAML(file, null);
     }
     
     public static Config fromYAML(File file, ClassLoader classLoader) throws IOException {
