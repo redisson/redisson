@@ -35,11 +35,6 @@ import org.w3c.dom.Element;
 public class RedissonMultiLockDefinitionParser
         extends AbstractRedissonNamespaceDefinitionParser {
     
-//    static enum supportedTypes {
-//        redissonMultiLock,
-//        redissonRedLock
-//    }
-    
     public RedissonMultiLockDefinitionParser(RedissonNamespaceParserSupport helper) {
         super(helper,
                 RedissonNamespaceParserSupport.REDISSON_REF_ATTRIBUTE);
