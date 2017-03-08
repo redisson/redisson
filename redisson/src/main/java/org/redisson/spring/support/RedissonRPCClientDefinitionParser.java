@@ -45,7 +45,9 @@ public class RedissonRPCClientDefinitionParser
             throw new IllegalArgumentException(
                     "The class [" + helper.getAttribute(element,
                             RedissonNamespaceParserSupport.API_CLASS_ATTRIBUTE)
-                            + "] specified in \"api-class\" attribute has not "
+                            + "] specified in \""
+                            + RedissonNamespaceParserSupport.API_CLASS_ATTRIBUTE
+                            + "\" attribute has not "
                             + "found. Please check the class path.", ex);
         }
         builder.addPropertyValue("targetObject", new RuntimeBeanReference(
