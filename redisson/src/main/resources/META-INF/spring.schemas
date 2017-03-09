@@ -1,0 +1,2 @@
+http\://redisson.org/schema/redisson.xsd=org/redisson/spring/support/redisson-1.0.xsd
+http\://redisson.org/schema/redisson-1.0.xsd=org/redisson/spring/support/redisson-1.0.xsd
