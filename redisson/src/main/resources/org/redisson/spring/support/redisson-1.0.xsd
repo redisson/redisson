@@ -221,7 +221,7 @@
                     ]]></xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
-                <xsd:attribute name="use-linuxN-native-epoll"
+                <xsd:attribute name="use-linux-native-epoll"
                                type="xsd:boolean">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
@@ -796,6 +796,15 @@
         support this.</em> e.g., http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/java-dg-jvm-ttl.html
                             
         Default: false
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="dns-monitoring-interval" type="xsd:long">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        DNS change monitoring interval in milliseconds.
+                            
+        Default: 5000
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
