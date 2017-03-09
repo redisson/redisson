@@ -19,6 +19,7 @@ import java.util.List;
 import org.redisson.Redisson;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -83,7 +84,7 @@ public final class RedissonDefinitionParser
         this.helper = helper;
     }
     
-    private void parseChildElements(Element element, String parentId, String redissonRef, ParserContext parserContext) {
+    private void parseChildElements(Element element, String parentId, String redissonRef, BeanDefinitionBuilder redissonDef, ParserContext parserContext) {
         if (element.hasChildNodes()) {
             CompositeComponentDefinition compositeDef
                     = new CompositeComponentDefinition(parentId,
@@ -98,9 +99,9 @@ public final class RedissonDefinitionParser
                 String localName = parserContext.getDelegate().getLocalName(elt);
                 localName = Conventions.attributeNameToPropertyName(localName);
                 if (ConfigType.contains(localName)) {
-                    parseConfigTypes(elt, localName, parserContext);
+                    parseConfigTypes(elt, localName, redissonDef, parserContext);
                 } else if (AddressType.contains(localName)) {
-                    parseAddressTypes(elt, localName, parserContext);
+                    parseAddressTypes(elt, localName, redissonDef, parserContext);
                 } else if (helper.isRedissonNS(elt)) {
                     elt.setAttribute(REDISSON_REF, redissonRef);
                     parserContext.getDelegate().parseCustomElement(elt);
@@ -110,7 +111,7 @@ public final class RedissonDefinitionParser
         }
     }
     
-    private void parseConfigTypes(Element element, String configType, ParserContext parserContext) {
+    private void parseConfigTypes(Element element, String configType, BeanDefinitionBuilder redissonDef, ParserContext parserContext) {
         BeanDefinitionBuilder builder
                 = helper.createBeanDefinitionBuilder(element,
                         parserContext, null);
@@ -122,16 +123,19 @@ public final class RedissonDefinitionParser
         helper.registerBeanDefinition(builder, id,
                 helper.parseAliase(element), parserContext);
         parseAttributes(element, parserContext, builder);
-        parseChildElements(element, id, null, parserContext);
+        redissonDef.addDependsOn(id);
+        parseChildElements(element, id, null, redissonDef, parserContext);
         parserContext.getDelegate().parseQualifierElements(element, bd);
     }
     
-    private void parseAddressTypes(Element element, String addressType, ParserContext parserContext) {
-        helper.invoker(element,
+    private void parseAddressTypes(Element element, String addressType, BeanDefinitionBuilder redissonDef, ParserContext parserContext) {
+        BeanComponentDefinition invoker = helper.invoker(element,
                 parserContext.getContainingComponent().getName(),
                 "add" + StringUtils.capitalize(addressType),
                 new String[]{element.getAttribute("value")},
                 parserContext);
+        String id = invoker.getName();
+        redissonDef.addDependsOn(id);
     }
     
     private void parseAttributes(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
@@ -156,10 +160,7 @@ public final class RedissonDefinitionParser
                             attribute.getValue());
                 } else {
                     String value = attribute.getValue();
-                    String localName = parserContext.getDelegate()
-                            .getLocalName(element);
-                    localName = Conventions
-                            .attributeNameToPropertyName(localName);
+                    String localName = helper.getName(element);
                     if ("masterAddress".equals(propertyName)
                             && ConfigType.masterSlaveServers.name()
                                     .equals(localName)) {
@@ -194,7 +195,7 @@ public final class RedissonDefinitionParser
         String id = helper.getId(element, builder, parserContext);
         parseAttributes(element, parserContext, configBuilder);
         //Sort out all the nested elements
-        parseChildElements(element, configId, id, parserContext);
+        parseChildElements(element, configId, id, builder, parserContext);
         
         helper.registerBeanDefinition(builder, id,
                 helper.parseAliase(element), parserContext);

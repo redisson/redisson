@@ -44,7 +44,6 @@ public class RedissonMultiLockDefinitionParser
     protected void parseNested(Element element, ParserContext parserContext, BeanDefinitionBuilder builder, BeanDefinition bd) {
         bd.setDependsOn(element.getAttribute(
                 RedissonNamespaceParserSupport.REDISSON_REF_ATTRIBUTE));
-        bd.setLazyInit(true);
         List<Element> childElements = DomUtils.getChildElements(element);
         for (Element elt : childElements) {
             String localName = elt.getLocalName();
