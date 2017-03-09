@@ -1,7 +1,5 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
@@ -133,7 +131,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
     }
     
-    public class RemoteImpl implements RemoteInterface {
+    public static class RemoteImpl implements RemoteInterface {
 
         private AtomicInteger iterations;
         

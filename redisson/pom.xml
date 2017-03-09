@@ -428,6 +428,7 @@
                     <useDefaultExcludes>true</useDefaultExcludes>
                     <mapping>
                         <java>JAVADOC_STYLE</java>
+                        <xsd>XML_STYLE</xsd>
                     </mapping>
                     <strictCheck>true</strictCheck>
                     <useDefaultMapping>true</useDefaultMapping>
