@@ -174,19 +174,6 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     }
     
     @Override
-    public void unlock() {
-        Boolean opStatus = get(unlockInnerAsync(Thread.currentThread().getId()));
-        
-        if (opStatus == null) {
-            throw new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
-                    + id + " thread-id: " + Thread.currentThread().getId());
-        }
-        if (opStatus) {
-            cancelExpirationRenewal();
-        }
-    }
-
-    @Override
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads
@@ -218,15 +205,14 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 "if (counter > 0) then " +
                     "redis.call('pexpire', KEYS[1], ARGV[2]); " +
                     "return 0; " +
-                "else " +
-                    "redis.call('del', KEYS[1]); " +
-                    "local nextThreadId = redis.call('lindex', KEYS[2], 0); " + 
-                    "if nextThreadId ~= false then " +
-                        "redis.call('publish', KEYS[4] .. ':' .. nextThreadId, ARGV[1]); " +
-                    "end; " +
-                    "return 1; "+
                 "end; " +
-                "return nil;",
+                    
+                "redis.call('del', KEYS[1]); " +
+                "local nextThreadId = redis.call('lindex', KEYS[2], 0); " + 
+                "if nextThreadId ~= false then " +
+                    "redis.call('publish', KEYS[4] .. ':' .. nextThreadId, ARGV[1]); " +
+                "end; " +
+                "return 1; ",
                 Arrays.<Object>asList(getName(), getThreadsQueueName(), getTimeoutSetName(), getChannelName()), 
                 LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId), System.currentTimeMillis());
     }
