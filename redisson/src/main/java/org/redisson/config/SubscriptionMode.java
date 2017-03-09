@@ -20,21 +20,16 @@ package org.redisson.config;
  * @author Nikita Koksharov
  *
  */
-public enum ReadMode {
+public enum SubscriptionMode {
 
     /**
-     * Read from slave nodes
+     * Subscribe to slave nodes
      */
     SLAVE,
 
     /**
-     * Read from master node
+     * Subscribe to master node
      */
-    MASTER,
-
-    /**
-     * Read from master and slave nodes
-     */
-    MASTER_SLAVE,
+    MASTER
 
 }

@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
-
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+package org.redisson.cache;
 
 /**
- * 
- * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> valu
+ * Created by jribble on 2/20/17.
  */
-public interface Cache<K, V> extends Map<K, V> {
-    
-    V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
-    
+public interface CachedValue<K, V> {
+    boolean isExpired();
+
+    K getKey();
+
+    V getValue();
 }

@@ -17,69 +17,22 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
-import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.connection.pool.PubSubConnectionPool;
-import org.redisson.connection.pool.SinglePubSubConnectionPool;
-import org.redisson.misc.RPromise;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SingleEntry extends MasterSlaveEntry {
-
-    final PubSubConnectionPool pubSubConnectionHolder;
 
     public SingleEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         super(slotRanges, connectionManager, config);
-        pubSubConnectionHolder = new SinglePubSubConnectionPool(config, connectionManager, this);
-    }
-
-    @Override
-    public RFuture<Void> setupMasterEntry(String host, int port) {
-        RedisClient masterClient = connectionManager.createClient(NodeType.MASTER, host, port);
-        masterEntry = new ClientConnectionsEntry(masterClient,
-                config.getMasterConnectionMinimumIdleSize(),
-                config.getMasterConnectionPoolSize(),
-                config.getSlaveConnectionMinimumIdleSize(),
-                config.getSlaveSubscriptionConnectionPoolSize(), connectionManager, NodeType.MASTER);
-        final RPromise<Void> res = connectionManager.newPromise();
-        RFuture<Void> f = writeConnectionHolder.add(masterEntry);
-        RFuture<Void> s = pubSubConnectionHolder.add(masterEntry);
-        FutureListener<Void> listener = new FutureListener<Void>() {
-            AtomicInteger counter = new AtomicInteger(2);
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    res.tryFailure(future.cause());
-                    return;
-                }
-                if (counter.decrementAndGet() == 0) {
-                    res.trySuccess(null);
-                }
-            }
-        };
-        f.addListener(listener);
-        s.addListener(listener);
-        return res;
-    }
-
-    @Override
-    RFuture<RedisPubSubConnection> nextPubSubConnection() {
-        return pubSubConnectionHolder.get();
-    }
-
-    @Override
-    public void returnPubSubConnection(PubSubConnectionEntry entry) {
-        pubSubConnectionHolder.returnConnection(masterEntry, entry.getConnection());
     }
 
     @Override

@@ -556,12 +556,24 @@ public class Config {
      * Read config object stored in JSON format from <code>File</code>
      *
      * @param file object
+     * @param classLoader class loader 
+     * @return config
+     * @throws IOException error
+     */
+    public static Config fromJSON(File file, ClassLoader classLoader) throws IOException {
+        ConfigSupport support = new ConfigSupport();
+        return support.fromJSON(file, Config.class, classLoader);
+    }
+
+    /**
+     * Read config object stored in JSON format from <code>File</code>
+     *
+     * @param file object
      * @return config
      * @throws IOException error
      */
     public static Config fromJSON(File file) throws IOException {
-        ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(file, Config.class);
+        return fromJSON(file, null);
     }
 
     /**
@@ -631,8 +643,12 @@ public class Config {
      * @throws IOException error
      */
     public static Config fromYAML(File file) throws IOException {
+        return fromYAML(file, null);
+    }
+    
+    public static Config fromYAML(File file, ClassLoader classLoader) throws IOException {
         ConfigSupport support = new ConfigSupport();
-        return support.fromYAML(file, Config.class);
+        return support.fromYAML(file, Config.class, classLoader);
     }
 
     /**

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class LocalCachedMapOptions {
     
-    public enum EvictionPolicy {NONE, LRU, LFU};
+    public enum EvictionPolicy {NONE, LRU, LFU, SOFT};
     
     private boolean invalidateEntryOnChange;
     private EvictionPolicy evictionPolicy;
@@ -115,6 +115,7 @@ public class LocalCachedMapOptions {
      * @param evictionPolicy
      *         <p><code>LRU</code> - uses cache with LRU (least recently used) eviction policy.
      *         <p><code>LFU</code> - uses cache with LFU (least frequently used) eviction policy.
+     *         <p><code>SOFT</code> - uses cache with soft references. The garbage collector will evict items from the cache when the JVM is running out of memory.
      *         <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
      * @return LocalCachedMapOptions instance
      */

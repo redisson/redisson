@@ -18,10 +18,10 @@ import org.redisson.RedissonMapTest.SimpleKey;
 import org.redisson.RedissonMapTest.SimpleValue;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
+import org.redisson.cache.Cache;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
-import org.redisson.misc.Cache;
 
 import mockit.Deencapsulation;
 

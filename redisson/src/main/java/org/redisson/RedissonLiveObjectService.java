@@ -629,12 +629,18 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())
                         .or(ElementMatchers.named("isPhantom"))
                         .or(ElementMatchers.named("delete"))))
-                .intercept(MethodDelegation.to(
-                                new LiveObjectInterceptor(redisson, codecProvider, entityClass,
-                                        getRIdFieldName(entityClass)))
-                        .appendParameterBinder(FieldProxy.Binder
+                .intercept(MethodDelegation.withDefaultConfiguration()
+                        .withBinders(FieldProxy.Binder
                                 .install(LiveObjectInterceptor.Getter.class,
-                                        LiveObjectInterceptor.Setter.class)))
+                                        LiveObjectInterceptor.Setter.class))
+                        .to(new LiveObjectInterceptor(redisson, codecProvider, entityClass,
+                                getRIdFieldName(entityClass))))
+//                .intercept(MethodDelegation.to(
+//                                new LiveObjectInterceptor(redisson, codecProvider, entityClass,
+//                                        getRIdFieldName(entityClass)))
+//                        .appendParameterBinder(FieldProxy.Binder
+//                                .install(LiveObjectInterceptor.Getter.class,
+//                                        LiveObjectInterceptor.Setter.class)))
                 .implement(RLiveObject.class)
                 .method(ElementMatchers.isAnnotatedWith(RFieldAccessor.class)
                         .and(ElementMatchers.named("get")
