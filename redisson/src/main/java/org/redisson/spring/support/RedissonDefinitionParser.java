@@ -18,6 +18,7 @@ package org.redisson.spring.support;
 import java.util.List;
 import org.redisson.Redisson;
 import org.redisson.config.Config;
+import org.redisson.misc.URLBuilder;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
@@ -159,12 +160,17 @@ public final class RedissonDefinitionParser
                     builder.addPropertyReference(propertyName,
                             attribute.getValue());
                 } else {
-                    String value = attribute.getValue();
+                    Object value = attribute.getValue();
                     String localName = helper.getName(element);
                     if ("masterAddress".equals(propertyName)
                             && ConfigType.masterSlaveServers.name()
                                     .equals(localName)) {
-                        value = "redis://" + value;
+                        try {
+                            value = URLBuilder.create((String) value);
+                        } catch (Exception e) {
+                            //value may be a placeholder
+                            value = "redis://" + value;
+                        }
                     }
                     builder.addPropertyValue(propertyName, value);
                 }
