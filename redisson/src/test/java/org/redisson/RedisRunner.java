@@ -68,7 +68,7 @@ public class RedisRunner {
         SLAVE_PRIORITY,
         MIN_SLAVES_TO_WRITE,
         MIN_SLAVES_MAX_LAG,
-        REQUREPASS,
+        REQUIREPASS,
         RENAME_COMMAND(true),
         MAXCLIENTS,
         MAXMEMORY,
@@ -552,7 +552,7 @@ public class RedisRunner {
     }
 
     public RedisRunner requirepass(String requirepass) {
-        addConfigOption(REDIS_OPTIONS.REQUREPASS, requirepass);
+        addConfigOption(REDIS_OPTIONS.REQUIREPASS, requirepass);
         return this;
     }
 
