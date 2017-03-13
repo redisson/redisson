@@ -26,6 +26,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.CodecProvider;
 import org.redisson.codec.DefaultCodecProvider;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.provider.DefaultResolverProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 
@@ -50,6 +51,8 @@ public class Config {
     private ElasticacheServersConfig elasticacheServersConfig;
 
     private ReplicatedServersConfig replicatedServersConfig;
+    
+    private  ConnectionManager connectionManager;
 
     /**
      * Threads amount shared between all redis node clients
@@ -121,6 +124,9 @@ public class Config {
         }
         if (oldConf.getReplicatedServersConfig() != null) {
             setReplicatedServersConfig(new ReplicatedServersConfig(oldConf.getReplicatedServersConfig()));
+        }
+        if (oldConf.getConnectionManager() != null) {
+        	useConnectionManager(oldConf.getConnectionManager());
         }
 
     }
@@ -296,6 +302,15 @@ public class Config {
     void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         this.replicatedServersConfig = replicatedServersConfig;
     }
+    
+    ConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+
+    public void useConnectionManager(ConnectionManager connectionManager) {
+        this.connectionManager = connectionManager;
+    }
+    
 
     /**
      * Init single server configuration.
@@ -447,6 +462,7 @@ public class Config {
             throw new IllegalStateException("Replication servers config already used!");
         }
     }
+    
 
     /**
      * Activates an unix socket if servers binded to loopback interface.

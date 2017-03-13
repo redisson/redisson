@@ -244,6 +244,12 @@
             <version>1.2.2.RELEASE</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-elasticache</artifactId>
+            <version>1.11.100</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
