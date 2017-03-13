@@ -1,24 +1,8 @@
 package org.redisson;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.JsonJacksonMapValueCodec;
-import org.redisson.codec.CborJacksonCodec;
-import org.redisson.codec.FstCodec;
-import org.redisson.codec.JsonJacksonCodec;
-import org.redisson.codec.KryoCodec;
-import org.redisson.codec.LZ4Codec;
-import org.redisson.codec.MsgPackJacksonCodec;
-import org.redisson.codec.SerializationCodec;
-import org.redisson.codec.AvroJacksonCodec;
-import org.redisson.codec.SmileJacksonCodec;
-import org.redisson.codec.SnappyCodec;
-import org.redisson.config.Config;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,10 +10,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Assert;
+import org.junit.Test;
+import org.redisson.api.RBucket;
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.JsonJacksonMapValueCodec;
+import org.redisson.codec.AvroJacksonCodec;
+import org.redisson.codec.CborJacksonCodec;
+import org.redisson.codec.FstCodec;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.KryoCodec;
+import org.redisson.codec.LZ4Codec;
+import org.redisson.codec.MsgPackJacksonCodec;
+import org.redisson.codec.SerializationCodec;
+import org.redisson.codec.SmileJacksonCodec;
+import org.redisson.codec.SnappyCodec;
+import org.redisson.config.Config;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.dataformat.avro.AvroMapper;
+import com.fasterxml.jackson.dataformat.avro.AvroSchema;
 
 public class RedissonCodecTest extends BaseTest {
-    private Codec avroCodec = new AvroJacksonCodec();
     private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
     private Codec kryoCodec = new KryoCodec();
@@ -77,14 +81,21 @@ public class RedissonCodecTest extends BaseTest {
 
         test(redisson);
     }
-
+    
     @Test
-    public void testAvro() {
+    public void testAvro() throws IOException {
+        AvroMapper am = new AvroMapper();
+        AvroSchema schema = am.schemaFor(TestObject.class);
+        Codec avroCodec = new AvroJacksonCodec(TestObject.class, schema);
+        
         Config config = createConfig();
         config.setCodec(avroCodec);
         RedissonClient redisson = Redisson.create(config);
 
-        test(redisson);
+        RBucket<TestObject> b = redisson.getBucket("bucket");
+        b.set(new TestObject("1", "2"));
+        
+        assertThat(b.get()).isEqualTo(new TestObject("1", "2"));
     }
 
     @Test
