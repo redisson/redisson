@@ -57,6 +57,26 @@
         </xsd:restriction>
     </xsd:simpleType>
     
+    
+    <xsd:simpleType name="subscriptionMode"> 
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="SLAVE">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Subscribe with slave nodes.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="MASTER">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Subscribe with master node.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
     <xsd:simpleType name="evictionPolicy"> 
         <xsd:restriction base="xsd:string">
             <xsd:enumeration value="NONE">
@@ -201,7 +221,7 @@
                     ]]></xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
-                <xsd:attribute name="use-linuxN-native-epoll"
+                <xsd:attribute name="use-linux-native-epoll"
                                type="xsd:boolean">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
@@ -388,29 +408,6 @@
                      ]]></xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
-                <xsd:attribute
-                    name="slave-subscription-connection-minimum-idle-size"
-                    type="xsd:int">
-                    <xsd:annotation>
-                        <xsd:documentation><![CDATA[
-        Redis 'slave' node minimum idle subscription (pub/sub) connection amount
-        for <b>each</b> slave node.
-        
-        Default: 1
-                     ]]></xsd:documentation>
-                    </xsd:annotation>
-                </xsd:attribute>
-                <xsd:attribute name="slave-subscription-connection-pool-size"
-                               type="xsd:int">
-                    <xsd:annotation>
-                        <xsd:documentation><![CDATA[
-        Redis 'slave' node maximum subscription (pub/sub) connection pool size
-        for <b>each</b> slave node.
-        
-        Default: 50
-                     ]]></xsd:documentation>
-                    </xsd:annotation>
-                </xsd:attribute>
                 <xsd:attribute name="slave-connection-minimum-idle-size"
                                type="xsd:int">
                     <xsd:annotation>
@@ -462,6 +459,36 @@
                      ]]></xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
+                <xsd:attribute name="subscription-mode" type="subscriptionMode">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Set node type used for subscription operation.
+        
+        Default: SLAVE
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute
+                        name="subscription-connection-minimum-idle-size"
+                        type="xsd:int">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Minimum idle subscription connection amount.
+        
+        Default: 1
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="subscription-connection-pool-size"
+                                   type="xsd:int">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Redis subscription connection maximum pool size.
+                            
+        Default: 50
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
             </xsd:extension>
         </xsd:complexContent>
     </xsd:complexType>
@@ -477,7 +504,7 @@
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Replication group scan interval in milliseconds.
-                            
+        
         Default: 1000
                         ]]></xsd:documentation>
                     </xsd:annotation>
@@ -769,6 +796,15 @@
         support this.</em> e.g., http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/java-dg-jvm-ttl.html
                             
         Default: false
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="dns-monitoring-interval" type="xsd:long">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        DNS change monitoring interval in milliseconds.
+                            
+        Default: 5000
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
