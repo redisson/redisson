@@ -30,6 +30,7 @@ import org.redisson.api.RTopic;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
@@ -286,18 +287,19 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     }
 
     protected RFuture<Boolean> removeAsync(Object o, int count) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
                 "local s = redis.call('llen', KEYS[1]);" +
                 "for i = 0, s-1, 1 do "
                     + "local v = redis.call('lindex', KEYS[1], i);"
                     + "local randomId, value = struct.unpack('dLc0', v);"
                     + "if ARGV[1] == value then "
+                        + "redis.call('zrem', KEYS[2], v);"
                         + "redis.call('lrem', KEYS[1], 1, v);"
                         + "return 1;"
                     + "end; "
                + "end;" +
                "return 0;",
-        Collections.<Object>singletonList(getQueueName()), o);
+        Arrays.<Object>asList(getQueueName(), getTimeoutSetName()), o);
     }
 
     @Override
@@ -338,7 +340,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
             return newSucceededFuture(false);
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS),
                 "local result = 0;" + 
                 "local s = redis.call('llen', KEYS[1]);" + 
                 "local i = 0;" +
@@ -351,6 +353,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                             + "result = 1; "
                             + "i = i - 1; "
                             + "s = s - 1; "
+                            + "redis.call('zrem', KEYS[2], v);"
                             + "redis.call('lrem', KEYS[1], 0, v); "
                             + "break; "
                         + "end; "
@@ -358,7 +361,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                     + "i = i + 1;"
                + "end; " 
                + "return result;",
-                Collections.<Object>singletonList(getQueueName()), c.toArray());
+               Arrays.<Object>asList(getQueueName(), getTimeoutSetName()), c.toArray());
     }
 
     @Override
