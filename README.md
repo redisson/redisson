@@ -1,4 +1,4 @@
-Redis based In-Memory Data Grid for Java. Redisson.
+Redisson: Redis based In-Memory Data Grid for Java.
 ====
 [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.3.1) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson)
 
