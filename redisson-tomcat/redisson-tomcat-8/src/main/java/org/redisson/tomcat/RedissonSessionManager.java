@@ -18,14 +18,11 @@ package org.redisson.tomcat;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.catalina.Context;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
-import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
-import org.apache.catalina.util.LifecycleSupport;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
@@ -42,8 +39,6 @@ import org.redisson.config.Config;
 public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
-    
-    protected LifecycleSupport lifecycle = new LifecycleSupport(this);
     
     private RedissonClient redisson;
     private String configPath;
@@ -75,28 +70,13 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     }
 
     @Override
-    public void addLifecycleListener(LifecycleListener listener) {
-        lifecycle.addLifecycleListener(listener);
-    }
-
-    @Override
-    public LifecycleListener[] findLifecycleListeners() {
-        return lifecycle.findLifecycleListeners();
-    }
-
-    @Override
-    public void removeLifecycleListener(LifecycleListener listener) {
-        lifecycle.removeLifecycleListener(listener);
-    }
-
-    @Override
     public Session createSession(String sessionId) {
         RedissonSession session = (RedissonSession) createEmptySession();
         
         session.setNew(true);
         session.setValid(true);
         session.setCreationTime(System.currentTimeMillis());
-        session.setMaxInactiveInterval(((Context) getContainer()).getSessionTimeout() * 60);
+        session.setMaxInactiveInterval(getContext().getSessionTimeout() * 60);
 
         if (sessionId == null) {
             sessionId = generateSessionId();
