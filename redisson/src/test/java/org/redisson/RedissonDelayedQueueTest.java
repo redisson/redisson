@@ -25,7 +25,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
 
         Thread.sleep(9000);
         
-        assertThat(blockingFairQueue.isEmpty()).isTrue();
+        assertThat(blockingFairQueue).containsOnly("1_1_2");
     }
     
     @Test
