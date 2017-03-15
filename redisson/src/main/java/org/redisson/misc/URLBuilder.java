@@ -33,7 +33,36 @@ public class URLBuilder {
 
     private static URLStreamHandlerFactory currentFactory;
     
-    public static void restoreURLFactory() {
+    private final static URLStreamHandlerFactory newFactory = new URLStreamHandlerFactory() {
+        @Override
+        public URLStreamHandler createURLStreamHandler(String protocol) {
+            if ("redis".equals(protocol)) {
+                return new URLStreamHandler() {
+                    @Override
+                    protected URLConnection openConnection(URL u) throws IOException {
+                        throw new UnsupportedOperationException();
+                    };
+                    
+                    @Override
+                    protected boolean equals(URL u1, URL u2) {
+                        return u1.toString().equals(u2.toString());
+                    }
+                    
+                    @Override
+                    protected int hashCode(URL u) {
+                        return u.toString().hashCode();
+                    }
+                };
+            }
+            
+            if (currentFactory != null) {
+                return currentFactory.createURLStreamHandler(protocol);
+            }
+            return null;
+        }
+    };
+    
+    public static synchronized void restoreURLFactory() {
         try {
             Field field = URL.class.getDeclaredField("factory");
             field.setAccessible(true);
@@ -43,43 +72,20 @@ public class URLBuilder {
         }
     }
     
-    public static void replaceURLFactory() {
+    public static synchronized void replaceURLFactory() {
         try {
             Field field = URL.class.getDeclaredField("factory");
             field.setAccessible(true);
             currentFactory = (URLStreamHandlerFactory) field.get(null);
-            if (currentFactory != null) {
+            if (currentFactory != null && currentFactory != newFactory) {
                 field.set(null, null);
             }
             
-            URL.setURLStreamHandlerFactory(new URLStreamHandlerFactory() {
-                @Override
-                public URLStreamHandler createURLStreamHandler(String protocol) {
-                    if ("redis".equals(protocol)) {
-                        return new URLStreamHandler() {
-                            @Override
-                            protected URLConnection openConnection(URL u) throws IOException {
-                                throw new UnsupportedOperationException();
-                            };
-                            
-                            @Override
-                            protected boolean equals(URL u1, URL u2) {
-                                return u1.toString().equals(u2.toString());
-                            }
-                            
-                            @Override
-                            protected int hashCode(URL u) {
-                                return u.toString().hashCode();
-                            }
-                        };
-                    }
-                    
-                    if (currentFactory != null) {
-                        return currentFactory.createURLStreamHandler(protocol);
-                    }
-                    return null;
-                }
-            });
+            if (currentFactory != newFactory) {
+                URL.setURLStreamHandlerFactory(newFactory);
+            } else {
+                currentFactory = null;
+            }
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

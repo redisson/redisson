@@ -19,13 +19,10 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.catalina.Context;
-import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
-import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
-import org.apache.catalina.util.LifecycleSupport;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
@@ -39,11 +36,9 @@ import org.redisson.config.Config;
  * @author Nikita Koksharov
  *
  */
-public class RedissonSessionManager extends ManagerBase implements Lifecycle {
+public class RedissonSessionManager extends ManagerBase {
 
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
-    
-    protected LifecycleSupport lifecycle = new LifecycleSupport(this);
     
     private RedissonClient redisson;
     private String configPath;
@@ -62,31 +57,11 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     }
     
     @Override
-    public int getRejectedSessions() {
-        return 0;
-    }
-
-    @Override
     public void load() throws ClassNotFoundException, IOException {
     }
 
     @Override
     public void unload() throws IOException {
-    }
-
-    @Override
-    public void addLifecycleListener(LifecycleListener listener) {
-        lifecycle.addLifecycleListener(listener);
-    }
-
-    @Override
-    public LifecycleListener[] findLifecycleListeners() {
-        return lifecycle.findLifecycleListeners();
-    }
-
-    @Override
-    public void removeLifecycleListener(LifecycleListener listener) {
-        lifecycle.removeLifecycleListener(listener);
     }
 
     @Override
@@ -146,11 +121,11 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         super.startInternal();
         Config config = null;
         try {
-            config = Config.fromJSON(new File(configPath));
+            config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
         } catch (IOException e) {
             // trying next format
             try {
-                config = Config.fromYAML(new File(configPath));
+                config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
             } catch (IOException e1) {
                 log.error("Can't parse json config " + configPath, e);
                 throw new LifecycleException("Can't parse yaml config " + configPath, e1);

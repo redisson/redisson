@@ -38,6 +38,11 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedisConnection implements RedisCommands {
 
     private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");

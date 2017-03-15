@@ -93,7 +93,10 @@ public class JsonJacksonCodec implements Codec {
     public JsonJacksonCodec(ObjectMapper mapObjectMapper) {
         this.mapObjectMapper = mapObjectMapper;
         init(mapObjectMapper);
-        // type info inclusion
+        initTypeInclusion(mapObjectMapper);
+    }
+
+    protected void initTypeInclusion(ObjectMapper mapObjectMapper) {
         TypeResolverBuilder<?> mapTyper = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
             public boolean useForType(JavaType t) {
                 switch (_appliesFor) {

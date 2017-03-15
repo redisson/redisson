@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.misc;
+package org.redisson.spring.support;
+
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.xml.ParserContext;
+import org.w3c.dom.Element;
 
 /**
- * 
- * @author Nikita Koksharov
  *
- * @param <K> key
- * @param <V> value
+ * @author Rui Gu (https://github.com/jackygurui)
  */
-public class NoneCacheMap<K, V> extends AbstractCacheMap<K, V> {
-
-    public NoneCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
-        super(0, timeToLiveInMillis, maxIdleInMillis);
-    }
+public class RedissonNamespaceDefaultDecorator implements RedissonNamespaceDecorator {
 
     @Override
-    protected void onMapFull() {
+    public void decorate(Element element, ParserContext parserContext, BeanDefinitionBuilder builder, RedissonNamespaceParserSupport helper) {
+        //default is no decoration;
     }
     
 }

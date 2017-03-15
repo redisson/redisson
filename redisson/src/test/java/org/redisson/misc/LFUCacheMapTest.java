@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.redisson.cache.Cache;
+import org.redisson.cache.LFUCacheMap;
 
 public class LFUCacheMapTest {
 

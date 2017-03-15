@@ -15,6 +15,11 @@
  */
 package org.redisson.config;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public enum ReadMode {
 
     /**
