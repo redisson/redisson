@@ -137,7 +137,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
             throw new IllegalArgumentException("Value can't be null");
         }
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETEX, getName(), timeUnit.toSeconds(timeToLive), value);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PSETEX, getName(), timeUnit.toMillis(timeToLive), value);
     }
 
     @Override
