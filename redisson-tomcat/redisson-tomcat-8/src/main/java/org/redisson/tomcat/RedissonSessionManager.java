@@ -18,7 +18,6 @@ package org.redisson.tomcat;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
@@ -36,7 +35,7 @@ import org.redisson.config.Config;
  * @author Nikita Koksharov
  *
  */
-public class RedissonSessionManager extends ManagerBase implements Lifecycle {
+public class RedissonSessionManager extends ManagerBase {
 
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
     
@@ -56,11 +55,6 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         return RedissonSessionManager.class.getSimpleName();
     }
     
-    @Override
-    public int getRejectedSessions() {
-        return 0;
-    }
-
     @Override
     public void load() throws ClassNotFoundException, IOException {
     }
