@@ -27,6 +27,7 @@ import org.redisson.codec.CodecProvider;
 import org.redisson.codec.DefaultCodecProvider;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.liveobject.provider.DefaultResolverProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 
@@ -303,10 +304,23 @@ public class Config {
         this.replicatedServersConfig = replicatedServersConfig;
     }
     
+    /**
+	 * Returns the connection manager if supplied via
+	 * {@link #useCustomServers(ConnectionManager)}
+	 * 
+	 * @return ConnectionManager
+	 */
     ConnectionManager getConnectionManager() {
         return connectionManager;
     }
 
+    /**
+	 * This is an extension point to supply custom connection manager.
+	 * 
+	 * @see ReplicatedConnectionManager on how to implement a connection
+	 *      manager.
+	 * @param connectionManager
+	 */
     public void useCustomServers(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
