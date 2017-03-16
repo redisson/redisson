@@ -389,35 +389,42 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             throw new NullPointerException();
         }
 
-        List<Object> params = new ArrayList<Object>();
-        params.add(invalidateEntryOnChange);
+        if (invalidateEntryOnChange == 1) {
+            List<Object> params = new ArrayList<Object>(keys.length*2);
+            for (K k : keys) {
+                byte[] keyEncoded = encodeMapKey(k);
+                params.add(keyEncoded);
+                
+                CacheKey cacheKey = toCacheKey(keyEncoded);
+                cache.remove(cacheKey);
+                byte[] msgEncoded = encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
+                params.add(msgEncoded);
+            }
+            
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LONG,
+                      "local counter = 0; " + 
+                      "for j = 1, #ARGV, 2 do " 
+                          + "if redis.call('hdel', KEYS[1], ARGV[j]) == 1 then "
+                              + "redis.call('publish', KEYS[2], ARGV[j+1]); "
+                              + "counter = counter + 1;"
+                          + "end;"
+                    + "end;"
+                    + "return counter;",
+                    Arrays.<Object>asList(getName(), invalidationTopic.getChannelNames().get(0)), 
+                    params.toArray());            
+        }
+
+        List<Object> params = new ArrayList<Object>(keys.length + 1);
+        params.add(getName());
         for (K k : keys) {
             byte[] keyEncoded = encodeMapKey(k);
             params.add(keyEncoded);
             
             CacheKey cacheKey = toCacheKey(keyEncoded);
             cache.remove(cacheKey);
-            if (invalidateEntryOnChange == 1) {
-                byte[] msgEncoded = encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
-                params.add(msgEncoded);
-            } else {
-                params.add(null);
-            }
         }
-        
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LONG,
-                  "local counter = 0; " + 
-                  "for j = 2, #ARGV, 2 do " 
-                      + "if redis.call('hdel', KEYS[1], ARGV[j]) == 1 then "
-                          + "if ARGV[1] == '1' then "
-                              + "redis.call('publish', KEYS[2], ARGV[j+1]); "
-                          + "end; "
-                          + "counter = counter + 1;"
-                      + "end;"
-                + "end;"
-                + "return counter;",
-                Arrays.<Object>asList(getName(), invalidationTopic.getChannelNames().get(0)), 
-                params.toArray());
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.HDEL, params.toArray());
     }
 
     

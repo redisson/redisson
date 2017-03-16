@@ -570,6 +570,17 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(map.fastRemove(2)).isEqualTo(0);
         assertThat(map.size()).isEqualTo(1);
     }
+    
+    @Test
+    public void testFastRemoveEmpty() throws InterruptedException, ExecutionException {
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.NONE)
+                .cacheSize(3)
+                .invalidateEntryOnChange(false);
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", options);
+        assertThat(map.fastRemove("test")).isZero();
+    }
+
 
     @Test
     public void testFastPut() {
