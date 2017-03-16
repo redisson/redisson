@@ -265,7 +265,9 @@ public class ConfigSupport {
         } else if (configCopy.getReplicatedServersConfig() != null) {
             validate(configCopy.getReplicatedServersConfig());
             return new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy);
-        } else {
+        } else if (configCopy.getConnectionManager() != null) {
+            return configCopy.getConnectionManager();
+        }else {
             throw new IllegalArgumentException("server(s) address(es) not defined!");
         }
     }
