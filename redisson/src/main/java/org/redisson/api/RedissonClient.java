@@ -385,7 +385,7 @@ public interface RedissonClient {
      * 
      * @param <V> type of value
      * @param name - name of object
-     * @return Lock object
+     * @return Set object
      */
     <V> RSet<V> getSet(String name);
 
