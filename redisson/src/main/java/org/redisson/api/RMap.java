@@ -34,6 +34,14 @@ import java.util.concurrent.ConcurrentMap;
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
 
     /**
+     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RReadWriteLock getReadWriteLock(K key);
+    
+    /**
      * Returns <code>RLock</code> instance associated with key
      * 
      * @param key - map key

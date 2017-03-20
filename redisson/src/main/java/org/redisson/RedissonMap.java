@@ -33,6 +33,7 @@ import java.util.UUID;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
+import org.redisson.api.RReadWriteLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.codec.StringCodec;
@@ -83,10 +84,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return new RedissonLock((CommandExecutor)commandExecutor, lockName, id);
     }
     
+    @Override
+    public RReadWriteLock getReadWriteLock(K key) {
+        String lockName = getLockName(key);
+        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName, id);
+    }
+    
     private String getLockName(Object key) {
         try {
             byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            return "{" + getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
+            return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
