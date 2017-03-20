@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -24,6 +25,43 @@ import java.util.concurrent.ExecutorService;
  *
  */
 public interface RExecutorService extends ExecutorService, RExecutorServiceAsync {
+
+    /**
+     * Submits a value-returning task for execution and returns a
+     * Future representing the pending results of the task. The
+     * Future's {@code get} method will return the task's result upon
+     * successful completion.
+     *
+     * @param task the task to submit
+     * @param <T> the type of the task's result
+     * @return a Future representing pending completion of the task
+     */
+    @Override
+    <T> RFuture<T> submit(Callable<T> task);
+    
+    /**
+     * Submits a Runnable task for execution and returns a Future
+     * representing that task. The Future's {@code get} method will
+     * return the given result upon successful completion.
+     *
+     * @param task the task to submit
+     * @param result the result to return
+     * @param <T> the type of the result
+     * @return a Future representing pending completion of the task
+     */
+    @Override
+    <T> RFuture<T> submit(Runnable task, T result);;
+
+    /**
+     * Submits a Runnable task for execution and returns a Future
+     * representing that task. The Future's {@code get} method will
+     * return {@code null} upon <em>successful</em> completion.
+     *
+     * @param task the task to submit
+     * @return a Future representing pending completion of the task
+     */
+    @Override
+    RFuture<?> submit(Runnable task);
 
     /**
      * Returns executor name
