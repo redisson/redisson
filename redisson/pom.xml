@@ -244,12 +244,6 @@
             <version>1.2.2.RELEASE</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-actuator</artifactId>
-            <version>[1.4,)</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>
