@@ -137,6 +137,16 @@ public abstract class RedissonObject implements RObject {
     }
 
     @Override
+    public boolean touch() {
+        return get(touchAsync());
+    }
+
+    @Override
+    public RFuture<Boolean> touchAsync() {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.TOUCH, getName());
+    }
+    
+    @Override
     public boolean isExists() {
         return get(isExistsAsync());
     }

@@ -81,6 +81,16 @@ public class RedissonBucketTest extends BaseTest {
     }
 
     @Test
+    public void testTouch() {
+        RBucket<String> bucket = redisson.getBucket("test");
+        bucket.set("someValue");
+        assertThat(bucket.touch()).isTrue();
+        
+        RBucket<String> bucket2 = redisson.getBucket("test2");
+        assertThat(bucket2.touch()).isFalse();
+    }
+    
+    @Test
     public void testRenamenx() {
         RBucket<String> bucket = redisson.getBucket("test");
         bucket.set("someValue");

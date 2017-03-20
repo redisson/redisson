@@ -25,12 +25,19 @@ import java.util.Collection;
 public interface RKeys extends RKeysAsync {
 
     /**
+     * Update the last access time of an object. 
+     * 
+     * @return count of objects were touched
+     */
+    long touch(String... names);
+    
+    /**
      * Checks if provided keys exist
      * 
      * @param names of keys
      * @return amount of existing keys
      */
-    Long isExists(String... names);
+    long countExists(String... names);
     
     /**
      * Get Redis object type by key
