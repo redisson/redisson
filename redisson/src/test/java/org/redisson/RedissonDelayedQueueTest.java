@@ -1,6 +1,7 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -11,6 +12,41 @@ import org.redisson.api.RQueue;
 
 public class RedissonDelayedQueueTest extends BaseTest {
 
+    @Test
+    public void testRemove() throws InterruptedException {
+        RBlockingFairQueue<String> blockingFairQueue = redisson.getBlockingFairQueue("delay_queue");
+        RDelayedQueue<String> delayedQueue = redisson.getDelayedQueue(blockingFairQueue);
+        
+        delayedQueue.offer("1_1_1", 3, TimeUnit.SECONDS);
+        delayedQueue.offer("1_1_2", 7, TimeUnit.SECONDS);
+        assertThat(delayedQueue.contains("1_1_1")).isTrue();
+        assertThat(delayedQueue.remove("1_1_1")).isTrue();
+        assertThat(delayedQueue.contains("1_1_1")).isFalse();
+
+        Thread.sleep(9000);
+        
+        assertThat(blockingFairQueue).containsOnly("1_1_2");
+    }
+    
+    @Test
+    public void testRemoveAll() throws InterruptedException {
+        RBlockingFairQueue<String> blockingFairQueue = redisson.getBlockingFairQueue("delay_queue");
+        RDelayedQueue<String> delayedQueue = redisson.getDelayedQueue(blockingFairQueue);
+        
+        delayedQueue.offer("1_1_1", 3, TimeUnit.SECONDS);
+        delayedQueue.offer("1_1_2", 7, TimeUnit.SECONDS);
+        assertThat(delayedQueue.contains("1_1_1")).isTrue();
+        assertThat(delayedQueue.contains("1_1_2")).isTrue();
+        assertThat(delayedQueue.removeAll(Arrays.asList("1_1_1", "1_1_2"))).isTrue();
+        assertThat(delayedQueue.contains("1_1_1")).isFalse();
+        assertThat(delayedQueue.contains("1_1_2")).isFalse();
+        
+        Thread.sleep(9000);
+        
+        assertThat(blockingFairQueue.isEmpty()).isTrue();
+    }
+
+    
     @Test
     public void testDealyedQueueRetainAll() {
         RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
@@ -28,7 +64,6 @@ public class RedissonDelayedQueueTest extends BaseTest {
         
         dealyedQueue.destroy();
     }
-
     
     @Test
     public void testDealyedQueueReadAll() {

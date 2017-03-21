@@ -385,7 +385,7 @@ public interface RedissonClient {
      * 
      * @param <V> type of value
      * @param name - name of object
-     * @return Lock object
+     * @return Set object
      */
     <V> RSet<V> getSet(String name);
 
@@ -742,11 +742,27 @@ public interface RedissonClient {
      * Returns ScheduledExecutorService by name 
      * using provided codec for task, response and request serialization
      * 
+     * Please use getExecutorService(String name, Codec codec) method instead.
+     * 
+     * @deprecated - use {@link #getExecutorService(String, Codec)} instead.
+     * 
      * @param name - name of object
      * @param codec - codec for task, response and request
      * @return ScheduledExecutorService object
      */
+    @Deprecated
     RScheduledExecutorService getExecutorService(Codec codec, String name);
+    
+    /**
+     * Returns ScheduledExecutorService by name 
+     * using provided codec for task, response and request serialization
+     * 
+     * @param name - name of object
+     * @param codec - codec for task, response and request
+     * @return ScheduledExecutorService object
+     * @since 2.8.2
+     */
+    RScheduledExecutorService getExecutorService(String name, Codec codec);
     
     /**
      * Returns object for remote operations prefixed with the default name (redisson_remote_service)

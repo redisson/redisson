@@ -18,6 +18,7 @@ package org.redisson.spring.cache;
 import java.lang.reflect.Constructor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
@@ -40,6 +41,10 @@ public class RedissonCache implements Cache {
     private CacheConfig config;
     
     private final RedissonClient redisson;
+
+    private final AtomicLong hits = new AtomicLong();
+
+    private final AtomicLong misses = new AtomicLong();
 
     public RedissonCache(RedissonClient redisson, RMapCache<Object, Object> mapCache, CacheConfig config) {
         this.mapCache = mapCache;
@@ -66,12 +71,20 @@ public class RedissonCache implements Cache {
     @Override
     public ValueWrapper get(Object key) {
         Object value = map.get(key);
+        if (value == null) {
+            addCacheMiss();
+        }else{
+            addCacheHit();
+        }
         return toValueWrapper(value);
     }
 
     public <T> T get(Object key, Class<T> type) {
         Object value = map.get(key);
-        if (value != null) {
+        if (value == null) {
+            addCacheMiss();
+        }else{
+            addCacheHit();
             if (value.getClass().getName().equals(NullValue.class.getName())) {
                 return null;
             }
@@ -124,6 +137,7 @@ public class RedissonCache implements Cache {
     public <T> T get(Object key, Callable<T> valueLoader) {
         Object value = map.get(key);
         if (value == null) {
+            addCacheMiss();
             RLock lock = map.getLock(key);
             lock.lock();
             try {
@@ -146,6 +160,8 @@ public class RedissonCache implements Cache {
             } finally {
                 lock.unlock();
             }
+        }else{
+            addCacheHit();
         }
         
         return (T) fromStoreValue(value);
@@ -163,6 +179,28 @@ public class RedissonCache implements Cache {
             return NullValue.INSTANCE;
         }
         return userValue;
+    }
+
+    /** The number of get requests that were satisfied by the cache.
+     * @return the number of hits
+     */
+    long getCacheHits(){
+        return hits.get();
+    }
+
+    /** A miss is a get request that is not satisfied.
+     * @return the number of misses
+     */
+    long getCacheMisses(){
+        return misses.get();
+    }
+
+    private void addCacheHit(){
+        hits.incrementAndGet();
+    }
+
+    private void addCacheMiss(){
+        misses.incrementAndGet();
     }
 
 }

@@ -1,14 +1,14 @@
-Redis based In-Memory Data Grid for Java. Redisson.
+Redisson: Redis based In-Memory Data Grid for Java.
 ====
-[Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.3.0) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson)
+[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.3.1) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 Redis 2.8+ compatible.
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.3.0  | 1.8+ | 19.02.2017 |
-| 2.8.0 | 1.6, 1.7, 1.8 and Android | 19.02.2017 |
+| 3.3.1  | 1.8+ | 03.03.2017 |
+| 2.8.1 | 1.6, 1.7, 1.8 and Android | 03.03.2017 |
 
 __NOTE__: Both version lines have same features except `CompletionStage` interface added in 3.x.x
 
@@ -55,7 +55,7 @@ Features
 
 Who uses Redisson
 ================================
-[Electronic Arts](http://ea.com), [Baidu](http://baidu.com), [New Relic Synthetics](https://newrelic.com/synthetics), [Brookhaven National Laboratory](http://bnl.gov/), [Singtel](http://singtel.com), [Infor](http://www.infor.com/), [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Netflix Dyno client] (https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/), [Azar](http://azarlive.com/), [Snapfish](http://snapfish.com), [Crimson Hexagon](http://www.crimsonhexagon.com), [Quby](http://quby.com/), [Base CRM](http://getbase.com)
+[Electronic Arts](http://ea.com), [Baidu](http://baidu.com), [New Relic Synthetics](https://newrelic.com/synthetics), [Brookhaven National Laboratory](http://bnl.gov/), [Singtel](http://singtel.com), [Infor](http://www.infor.com/), [Setronica](http://setronica.com/), [Monits](http://monits.com/), [Netflix Dyno client](https://github.com/Netflix/dyno), [武林Q传](http://www.nbrpg.com/), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/), [Azar](http://azarlive.com/), [Snapfish](http://snapfish.com), [Crimson Hexagon](http://www.crimsonhexagon.com), [Quby](http://quby.com/), [Base CRM](http://getbase.com)
 
 Articles
 ================================
@@ -82,23 +82,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.3.0</version>
+       <version>3.3.1</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.8.0</version>
+       <version>2.8.1</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.3.0'  
+    compile 'org.redisson:redisson:3.3.1'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.8.0'
+    compile 'org.redisson:redisson:2.8.1'
 
 #### Java
 
@@ -123,11 +123,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.3.0&e=jar),
-[Redisson node 3.3.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.3.0&e=jar)  
+[Redisson 3.3.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.3.1&e=jar),
+[Redisson node 3.3.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.3.1&e=jar)  
 
-[Redisson 2.8.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.8.0&e=jar),
-[Redisson node 2.8.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.8.0&e=jar)  
+[Redisson 2.8.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.8.1&e=jar),
+[Redisson node 2.8.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.8.1&e=jar)  
 
 ### Supported by
 

@@ -1,5 +1,6 @@
 package org.redisson;
 
+import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.security.SecureRandom;
@@ -16,6 +17,68 @@ import org.redisson.api.RReadWriteLock;
 
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
+    @Test
+    public void testReadLockLeaseTimeoutDiffThreadsWRR() throws InterruptedException {
+        RLock writeLock = redisson.getReadWriteLock("my_read_write_lock").writeLock();
+        Assert.assertTrue(writeLock.tryLock(1, 10, TimeUnit.SECONDS));
+
+        final AtomicInteger executed = new AtomicInteger();
+        Thread t1 = new Thread(() -> {
+            RLock readLock = redisson.getReadWriteLock("my_read_write_lock").readLock();
+            readLock.lock();
+            executed.incrementAndGet();
+        });
+        
+        Thread t2 = new Thread(() -> {
+            RLock readLock = redisson.getReadWriteLock("my_read_write_lock").readLock();
+            readLock.lock();
+            executed.incrementAndGet();
+        });
+
+        t1.start();
+        t2.start();
+        
+        await().atMost(11, TimeUnit.SECONDS).until(() -> executed.get() == 2);
+    }
+    
+    @Test
+    public void testReadLockLeaseTimeoutDiffThreadsRRW() throws InterruptedException {
+        new Thread(() -> {
+            RLock readLock = redisson.getReadWriteLock("my_read_write_lock").readLock();
+            try {
+                Assert.assertTrue(readLock.tryLock(1, 10, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        Thread.sleep(5000);
+        
+        new Thread(() -> {
+            RLock readLock2 = redisson.getReadWriteLock("my_read_write_lock").readLock();
+            try {
+                Assert.assertTrue(readLock2.tryLock(1, 10, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            readLock2.unlock();
+        }).start();
+
+        final AtomicBoolean executed = new AtomicBoolean();
+        new Thread(() -> {
+            RLock writeLock = redisson.getReadWriteLock("my_read_write_lock").writeLock();
+            try {
+                boolean locked = writeLock.tryLock(10, 10, TimeUnit.SECONDS);
+                executed.set(locked);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+        
+        await().atMost(6, TimeUnit.SECONDS).untilTrue(executed);
+    }
+    
+    
     @Test
     public void testReadLockLeaseTimeout() throws InterruptedException {
         RLock readLock = redisson.getReadWriteLock("my_read_write_lock").readLock();

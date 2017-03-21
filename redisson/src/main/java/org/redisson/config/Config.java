@@ -26,6 +26,8 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.CodecProvider;
 import org.redisson.codec.DefaultCodecProvider;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.liveobject.provider.DefaultResolverProvider;
 import org.redisson.liveobject.provider.ResolverProvider;
 
@@ -50,6 +52,8 @@ public class Config {
     private ElasticacheServersConfig elasticacheServersConfig;
 
     private ReplicatedServersConfig replicatedServersConfig;
+    
+    private  ConnectionManager connectionManager;
 
     /**
      * Threads amount shared between all redis node clients
@@ -121,6 +125,9 @@ public class Config {
         }
         if (oldConf.getReplicatedServersConfig() != null) {
             setReplicatedServersConfig(new ReplicatedServersConfig(oldConf.getReplicatedServersConfig()));
+        }
+        if (oldConf.getConnectionManager() != null) {
+        	useCustomServers(oldConf.getConnectionManager());
         }
 
     }
@@ -296,6 +303,28 @@ public class Config {
     void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         this.replicatedServersConfig = replicatedServersConfig;
     }
+    
+    /**
+	 * Returns the connection manager if supplied via
+	 * {@link #useCustomServers(ConnectionManager)}
+	 * 
+	 * @return ConnectionManager
+	 */
+    ConnectionManager getConnectionManager() {
+        return connectionManager;
+    }
+
+    /**
+	 * This is an extension point to supply custom connection manager.
+	 * 
+	 * @see ReplicatedConnectionManager on how to implement a connection
+	 *      manager.
+	 * @param connectionManager
+	 */
+    public void useCustomServers(ConnectionManager connectionManager) {
+        this.connectionManager = connectionManager;
+    }
+    
 
     /**
      * Init single server configuration.
@@ -447,6 +476,7 @@ public class Config {
             throw new IllegalStateException("Replication servers config already used!");
         }
     }
+    
 
     /**
      * Activates an unix socket if servers binded to loopback interface.
@@ -573,7 +603,7 @@ public class Config {
      * @throws IOException error
      */
     public static Config fromJSON(File file) throws IOException {
-        return fromJSON(file);
+        return fromJSON(file, null);
     }
 
     /**
@@ -643,8 +673,7 @@ public class Config {
      * @throws IOException error
      */
     public static Config fromYAML(File file) throws IOException {
-        ConfigSupport support = new ConfigSupport();
-        return support.fromYAML(file, Config.class);
+        return fromYAML(file, null);
     }
     
     public static Config fromYAML(File file, ClassLoader classLoader) throws IOException {

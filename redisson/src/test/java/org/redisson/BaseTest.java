@@ -38,7 +38,9 @@ public abstract class BaseTest {
             if (redisson == null) {
                 redisson = defaultRedisson;
             }
-            redisson.getKeys().flushall();
+            if (flushBetweenTests()) {
+                redisson.getKeys().flushall();
+            }
         }
     }
 
@@ -74,4 +76,7 @@ public abstract class BaseTest {
         return Redisson.create(config);
     }
 
+    protected boolean flushBetweenTests() {
+        return true;
+    }
 }

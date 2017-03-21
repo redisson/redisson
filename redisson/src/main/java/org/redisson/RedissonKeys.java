@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -132,14 +131,45 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Long isExists(String... names) {
-        return commandExecutor.get(isExistsAsync(names));
+    public long touch(String... names) {
+        return commandExecutor.get(touchAsync(names));
     }
     
     @Override
-    public RFuture<Long> isExistsAsync(String... names) {
-        Object[] params = Arrays.copyOf(names, names.length, Object[].class);
-        return commandExecutor.readAsync((String)null, null, RedisCommands.EXISTS_LONG, params);
+    public RFuture<Long> touchAsync(String... names) {
+        return commandExecutor.writeAllAsync(RedisCommands.TOUCH_LONG, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return results.get();
+            }
+        }, names);
+    }
+    
+    @Override
+    public long countExists(String... names) {
+        return commandExecutor.get(countExistsAsync(names));
+    }
+    
+    @Override
+    public RFuture<Long> countExistsAsync(String... names) {
+        return commandExecutor.readAllAsync(RedisCommands.EXISTS_LONG, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return results.get();
+            }
+        }, names);
     }
 
     

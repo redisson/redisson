@@ -278,8 +278,10 @@ public interface RedisCommands {
     RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor(), 2);
     RedisCommand<Boolean> SETPXNX = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor(), 2);
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor(), 2);
-    RedisCommand<Void> SETEX = new RedisCommand<Void>("SETEX", new VoidReplayConvertor(), 3);
+    RedisCommand<Void> PSETEX = new RedisCommand<Void>("PSETEX", new VoidReplayConvertor(), 3);
     
+    RedisStrictCommand<Long> TOUCH_LONG = new RedisStrictCommand<Long>("TOUCH");
+    RedisStrictCommand<Boolean> TOUCH = new RedisStrictCommand<Boolean>("TOUCH", new BooleanReplayConvertor());
     RedisStrictCommand<Long> EXISTS_LONG = new RedisStrictCommand<Long>("EXISTS");
     RedisStrictCommand<Boolean> EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> NOT_EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanNumberReplayConvertor(1L));

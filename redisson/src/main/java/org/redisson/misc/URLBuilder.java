@@ -62,7 +62,7 @@ public class URLBuilder {
         }
     };
     
-    public static void restoreURLFactory() {
+    public static synchronized void restoreURLFactory() {
         try {
             Field field = URL.class.getDeclaredField("factory");
             field.setAccessible(true);
@@ -72,7 +72,7 @@ public class URLBuilder {
         }
     }
     
-    public static void replaceURLFactory() {
+    public static synchronized void replaceURLFactory() {
         try {
             Field field = URL.class.getDeclaredField("factory");
             field.setAccessible(true);

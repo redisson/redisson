@@ -147,30 +147,35 @@
             <artifactId>lz4</artifactId>
             <version>1.3.0</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.msgpack</groupId>
             <artifactId>jackson-dataformat-msgpack</artifactId>
             <version>0.8.11</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
             <version>1.1.2.6</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>de.ruedigermoeller</groupId>
             <artifactId>fst</artifactId>
             <version>2.47</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
             <version>3.0.3</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -198,50 +203,65 @@
             <artifactId>jackson-dataformat-cbor</artifactId>
             <version>2.8.7</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-smile</artifactId>
             <version>2.8.7</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-avro</artifactId>
             <version>2.8.7</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>zero-allocation-hashing</artifactId>
             <version>0.7</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>1.6.8</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-bean</artifactId>
             <version>3.7.1</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>[3.1,)</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
             <version>[3.1,)</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session</artifactId>
             <version>1.2.2.RELEASE</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-actuator</artifactId>
+            <version>[1.4,)</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -428,6 +448,7 @@
                     <useDefaultExcludes>true</useDefaultExcludes>
                     <mapping>
                         <java>JAVADOC_STYLE</java>
+                        <xsd>XML_STYLE</xsd>
                     </mapping>
                     <strictCheck>true</strictCheck>
                     <useDefaultMapping>true</useDefaultMapping>

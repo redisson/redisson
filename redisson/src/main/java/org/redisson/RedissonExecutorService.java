@@ -23,7 +23,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -35,7 +34,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,7 +46,6 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RInject;
-import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -66,8 +63,6 @@ import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
@@ -338,7 +333,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
-    public <T> Future<T> submit(Callable<T> task) {
+    public <T> RFuture<T> submit(Callable<T> task) {
         RemotePromise<T> promise = (RemotePromise<T>) submitAsync(task);
         execute(promise);
         return promise;
@@ -411,7 +406,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
-    public Future<?> submit(Runnable task) {
+    public RFuture<?> submit(Runnable task) {
         RemotePromise<Void> promise = (RemotePromise<Void>) submitAsync(task);
         execute(promise);
         return promise;
@@ -428,7 +423,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
-    public ScheduledFuture<?> schedule(Runnable task, long delay, TimeUnit unit) {
+    public RScheduledFuture<?> schedule(Runnable task, long delay, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(task, delay, unit);
         execute((RemotePromise<?>)future.getInnerPromise());
         return future;
@@ -446,7 +441,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
-    public <V> ScheduledFuture<V> schedule(Callable<V> task, long delay, TimeUnit unit) {
+    public <V> RScheduledFuture<V> schedule(Callable<V> task, long delay, TimeUnit unit) {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleAsync(task, delay, unit);
         execute((RemotePromise<V>)future.getInnerPromise());
         return future;
@@ -464,7 +459,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
+    public RScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAtFixedRateAsync(task, initialDelay, period, unit);
         execute((RemotePromise<?>)future.getInnerPromise());
         return future;
@@ -505,7 +500,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
     
     @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit) {
+    public RScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithFixedDelayAsync(task, initialDelay, delay, unit);
         execute((RemotePromise<?>)future.getInnerPromise());
         return future;
