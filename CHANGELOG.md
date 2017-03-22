@@ -9,7 +9,10 @@ Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.
 Feature - Redisson's Spring custom namespace support (thanks to Rui Gu)  
 Feature - ability to set custom connection manager (thanks to Saikiran Daripelli)  
 Feature - autoconfigured Spring Boot CacheStatisticsProvider implementation (thanks to Craig Andrews)  
+Feature - `RKeys.touch` and `RObject.touch` methods added  
+Feature - `RedissonCompletionService` implementation added  
 Feature - `RMap.getReadWriteLock` method added  
+Fixed - NPE during `RLocalCachedMap.fastRemove` invocation  
 Fixed - `redisson-tomcat-8` module is not compatible with Tomcat 8.5  
 Fixed - URLBuilder methods should be synchronized  
 Fixed - use PSETEX in `RBucket.set` method  
