@@ -4,6 +4,20 @@ Redisson Releases History
 
 Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
 
+### 21-Mar-2017 - versions 2.8.2 and 3.3.2 released
+
+Feature - Redisson's Spring custom namespace support (thanks to Rui Gu)  
+Feature - ability to set custom connection manager (thanks to Saikiran Daripelli)  
+Feature - autoconfigured Spring Boot CacheStatisticsProvider implementation (thanks to Craig Andrews)  
+Feature - `RMap.getReadWriteLock` method added  
+Fixed - `redisson-tomcat-8` module is not compatible with Tomcat 8.5  
+Fixed - URLBuilder methods should be synchronized  
+Fixed - use PSETEX in `RBucket.set` method  
+Fixed - `DelayedQueue.remove()` and `DelayedQueue.removeAll()`  
+Fixed - unable to define Type and AvroSchema for AvroJacksonCodec  
+Fixed - ReadWriteLock leaseTimeout calculation  
+Fixed - `Config.fromJson(file)` method, throws StackOverflowError
+
 ### 04-Mar-2017 - versions 2.8.1 and 3.3.1 released
 
 Feature - Cache with SoftReference support added for `RLocalCachedMap`  
