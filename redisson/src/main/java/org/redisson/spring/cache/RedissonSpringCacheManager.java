@@ -18,8 +18,10 @@ package org.redisson.spring.cache;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
@@ -48,9 +50,13 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     private RedissonClient redisson;
 
-    private Map<String, CacheConfig> configMap = new HashMap<String, CacheConfig>();
+    private Map<String, CacheConfig> configMap = new LinkedHashMap<String, CacheConfig>();
+    
+    private Map<Pattern, CacheConfig> regExpMap = new LinkedHashMap<Pattern, CacheConfig>();
 
     private String configLocation;
+    
+    private String regExpConfigLocation;
 
     /**
      * Creates CacheManager supplied by Redisson instance
@@ -69,7 +75,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * @param config object
      */
     public RedissonSpringCacheManager(RedissonClient redisson, Map<String, CacheConfig> config) {
-        this(redisson, config, null);
+        this(redisson, config, null, null);
     }
 
     /**
@@ -83,11 +89,43 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * @param codec object
      */
     public RedissonSpringCacheManager(RedissonClient redisson, Map<String, CacheConfig> config, Codec codec) {
-        this.redisson = redisson;
-        this.configMap = config;
-        this.codec = codec;
+        this(redisson, config, null, codec);
     }
 
+    /**
+     * Creates CacheManager supplied by Redisson instance and
+     * Cache config mapped by Cache name and RegExp config mapped by pattern.
+     *
+     * @param redisson object
+     * @param config object
+     * @param regExpConfig
+     */
+    public RedissonSpringCacheManager(RedissonClient redisson, Map<String, CacheConfig> config, Map<Pattern, CacheConfig> regExpConfig) {
+        this(redisson, config, regExpConfig, null);
+    }
+
+    /**
+     * Creates CacheManager supplied by Redisson instance, Codec instance,
+     * Cache config mapped by Cache name and RegExp config mapped by pattern.
+     * <p>
+     * Each Cache instance share one Codec instance.
+     *
+     * @param redisson object
+     * @param config object
+     * @param regExpConfig
+     * @param codec object
+     */
+    public RedissonSpringCacheManager(RedissonClient redisson, Map<String, CacheConfig> config, Map<Pattern, CacheConfig> regExpConfig, Codec codec) {
+        this.redisson = redisson;
+        if (config != null) {
+            this.configMap.putAll(config);
+        }
+        if (regExpConfig != null) {
+            this.regExpMap.putAll(regExpConfig);
+        }
+        this.codec = codec;
+    }
+    
     /**
      * Creates CacheManager supplied by Redisson instance
      * and Cache config mapped by Cache name.
@@ -99,7 +137,22 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * @param configLocation path
      */
     public RedissonSpringCacheManager(RedissonClient redisson, String configLocation) {
-        this(redisson, configLocation, null);
+        this(redisson, configLocation, null, null);
+    }
+
+    /**
+     * Creates CacheManager supplied by Redisson instance, 
+     * Cache config location path and RegExp pattern config location path.
+     * <p>
+     * Loads the config file from the class path, interpreting plain paths as class path resource names
+     * that include the package path (e.g. "mypackage/myresource.txt").
+     *
+     * @param redisson object
+     * @param configLocation path
+     * @param regExpConfigLocation
+     */
+    public RedissonSpringCacheManager(RedissonClient redisson, String configLocation, String regExpConfigLocation) {
+        this(redisson, configLocation, regExpConfigLocation, null);
     }
 
     /**
@@ -116,8 +169,29 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * @param codec object
      */
     public RedissonSpringCacheManager(RedissonClient redisson, String configLocation, Codec codec) {
+        this(redisson, configLocation, null, codec);
+
+    }
+
+    
+    /**
+     * Creates CacheManager supplied by Redisson instance, Codec instance,
+     * Config location path and RegExp config location path.
+     * <p>
+     * Each Cache instance share one Codec instance.
+     * <p>
+     * Loads the config file from the class path, interpreting plain paths as class path resource names
+     * that include the package path (e.g. "mypackage/myresource.txt").
+     *
+     * @param redisson object
+     * @param configLocation path
+     * @param regExpConfigLocation
+     * @param codec object
+     */
+    public RedissonSpringCacheManager(RedissonClient redisson, String configLocation, String regExpConfigLocation, Codec codec) {
         this.redisson = redisson;
         this.configLocation = configLocation;
+        this.regExpConfigLocation = regExpConfigLocation;
         this.codec = codec;
     }
 
@@ -131,12 +205,38 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     }
 
     /**
+     * Set RegExp pattern config location
+     *
+     * @param regExpConfigLocation object
+     */
+    public void setRegExpConfigLocation(String regExpConfigLocation) {
+        this.regExpConfigLocation = regExpConfigLocation;
+    }
+
+    /**
      * Set cache config mapped by cache name
      *
      * @param config object
      */
     public void setConfig(Map<String, CacheConfig> config) {
-        this.configMap = config;
+        this.configMap.clear();
+        if (config == null) {
+            return;
+        }
+        this.configMap.putAll(config);
+    }
+
+    /**
+     * Set cache regexp config mapped by pattern
+     *
+     * @param config object
+     */
+    public void setRegExpConfig(Map<Pattern, CacheConfig> config) {
+        this.regExpMap.clear();
+        if (config == null) {
+            return;
+        }
+        this.regExpMap.putAll(config);
     }
 
     /**
@@ -160,21 +260,39 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     @Override
     public Cache getCache(String name) {
         CacheConfig config = configMap.get(name);
+        final String cacheName;
         if (config == null) {
-            config = new CacheConfig();
-            configMap.put(name, config);
-
-            RMap<Object, Object> map = createMap(name);
-            return new RedissonCache(redisson, map);
+            Pattern pattern = testRegExp(name);
+            if (pattern == null) {
+                config = new CacheConfig();
+                configMap.put(name, config);
+                
+                RMap<Object, Object> map = createMap(name);
+                return new RedissonCache(redisson, map);
+            } else {
+                config = regExpMap.get(pattern);
+                cacheName = pattern.pattern();
+            }
+        } else {
+            cacheName = name;
         }
         if (config.getMaxIdleTime() == 0 && config.getTTL() == 0) {
-            RMap<Object, Object> map = createMap(name);
+            RMap<Object, Object> map = createMap(cacheName);
             return new RedissonCache(redisson, map);
         }
-        RMapCache<Object, Object> map = createMapCache(name);
+        RMapCache<Object, Object> map = createMapCache(cacheName);
         return new RedissonCache(redisson, map, config);
     }
 
+    private Pattern testRegExp(String name) {
+        for (Pattern exp : regExpMap.keySet()) {
+            if (exp.matcher(name).matches()) {
+                return exp;
+            }
+        }
+        return null;
+    }
+    
     private RMap<Object, Object> createMap(String name) {
         if (codec != null) {
             return redisson.getMap(name, codec);
@@ -191,7 +309,22 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     @Override
     public Collection<String> getCacheNames() {
+        Set<String> names = Collections.emptySet();
+        names.addAll(getConfigNames());
+        names.addAll(getPatternNames());
+        return Collections.unmodifiableSet(names);
+    }
+
+    public Collection<String> getConfigNames() {
         return Collections.unmodifiableSet(configMap.keySet());
+    }
+
+    public Collection<String> getPatternNames() {
+        Set<String> patterns = Collections.emptySet();
+        for (Pattern k : regExpMap.keySet()) {
+            patterns.add(k.pattern());
+        }
+        return Collections.unmodifiableSet(patterns);
     }
 
     @Override
@@ -201,20 +334,36 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        if (configLocation == null) {
-            return;
-        }
-
-        Resource resource = resourceLoader.getResource(configLocation);
-        try {
-            this.configMap = CacheConfig.fromJSON(resource.getInputStream());
-        } catch (IOException e) {
-            // try to read yaml
+        if (configLocation != null) {
+            Resource resource = resourceLoader.getResource(configLocation);
             try {
-                this.configMap = CacheConfig.fromYAML(resource.getInputStream());
-            } catch (IOException e1) {
-                throw new BeanDefinitionStoreException(
-                        "Could not parse cache configuration at [" + configLocation + "]", e1);
+                setConfig(CacheConfig.fromJSON(resource.getInputStream()));
+            } catch (IOException e) {
+                // try to read yaml
+                try {
+                    setConfig(CacheConfig.fromYAML(resource.getInputStream()));
+                } catch (IOException e1) {
+                    throw new BeanDefinitionStoreException(
+                            "Could not parse cache configuration at [" + configLocation + "]", e1);
+                }
+            }
+        }
+        if (regExpConfigLocation != null) {
+            Resource resource = resourceLoader.getResource(regExpConfigLocation);
+            Map<String, CacheConfig> confs;
+            try {
+                confs = CacheConfig.fromJSON(resource.getInputStream());
+            } catch (IOException e) {
+                // try to read yaml
+                try {
+                    confs = CacheConfig.fromYAML(resource.getInputStream());
+                } catch (IOException e1) {
+                    throw new BeanDefinitionStoreException(
+                            "Could not parse cache configuration at [" + configLocation + "]", e1);
+                }
+            }
+            for (Map.Entry<String, CacheConfig> conf : confs.entrySet()) {
+                regExpMap.put(Pattern.compile(conf.getKey()), conf.getValue());
             }
         }
     }
