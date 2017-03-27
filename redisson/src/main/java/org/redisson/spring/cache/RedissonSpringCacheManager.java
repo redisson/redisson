@@ -18,8 +18,8 @@ package org.redisson.spring.cache;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
@@ -48,7 +48,8 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     private RedissonClient redisson;
 
-    private Map<String, CacheConfig> configMap = new HashMap<String, CacheConfig>();
+    private Map<String, CacheConfig> configMap = new ConcurrentHashMap<String, CacheConfig>();
+    private Map<String, Cache> instanceMap = new ConcurrentHashMap<String, Cache>();
 
     private String configLocation;
 
@@ -159,34 +160,56 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     @Override
     public Cache getCache(String name) {
+        Cache cache = instanceMap.get(name);
+        if (cache != null) {
+            return cache;
+        }
+        
         CacheConfig config = configMap.get(name);
         if (config == null) {
             config = new CacheConfig();
             configMap.put(name, config);
 
-            RMap<Object, Object> map = createMap(name);
-            return new RedissonCache(redisson, map);
+            return createMap(name);
         }
+        
         if (config.getMaxIdleTime() == 0 && config.getTTL() == 0) {
-            RMap<Object, Object> map = createMap(name);
-            return new RedissonCache(redisson, map);
+            return createMap(name);
         }
-        RMapCache<Object, Object> map = createMapCache(name);
-        return new RedissonCache(redisson, map, config);
+        
+        return createMapCache(name, config);
     }
 
-    private RMap<Object, Object> createMap(String name) {
+    private Cache createMap(String name) {
+        RMap<Object, Object> map;
         if (codec != null) {
-            return redisson.getMap(name, codec);
+            map = redisson.getMap(name, codec);
+        } else {
+            map = redisson.getMap(name);
         }
-        return redisson.getMap(name);
+        
+        Cache cache = new RedissonCache(redisson, map);
+        Cache oldCache = instanceMap.putIfAbsent(name, cache);
+        if (oldCache != null) {
+            cache = oldCache;
+        }
+        return cache;
     }
 
-    private RMapCache<Object, Object> createMapCache(String name) {
+    private Cache createMapCache(String name, CacheConfig config) {
+        RMapCache<Object, Object> map;
         if (codec != null) {
-            return redisson.getMapCache(name, codec);
+            map = redisson.getMapCache(name, codec);
+        } else {
+            map = redisson.getMapCache(name);
         }
-        return redisson.getMapCache(name);
+        
+        Cache cache = new RedissonCache(redisson, map, config);
+        Cache oldCache = instanceMap.putIfAbsent(name, cache);
+        if (oldCache != null) {
+            cache = oldCache;
+        }
+        return cache;
     }
 
     @Override
