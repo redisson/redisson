@@ -339,7 +339,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
         
         byte[] encodedKey = encodeMapKey(key);
-        byte[] encodedValue = encodeMapKey(value);
+        byte[] encodedValue = encodeMapValue(value);
         CacheKey cacheKey = toCacheKey(encodedKey);
         byte[] msg = encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
         CacheValue cacheValue = new CacheValue(key, value);
