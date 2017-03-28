@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.Set;
 /**
  * Base asynchronous MultiMap interface. A collection that maps multiple values per one key.
  *
@@ -158,5 +159,11 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Long> fastRemoveAsync(K ... keys);
 
+    /**
+     * Read all keys at once
+     *
+     * @return keys
+     */
+    RFuture<Set<K>> readAllKeySetAsync();
 
 }
