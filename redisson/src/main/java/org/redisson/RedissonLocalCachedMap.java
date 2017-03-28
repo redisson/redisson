@@ -51,6 +51,7 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
+import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.Hash;
@@ -182,6 +183,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     private static final RedisCommand<Set<Object>> ALL_KEYS = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder(), ValueType.MAP_KEY);
     private static final RedisCommand<Set<Entry<Object, Object>>> ALL_ENTRIES = new RedisCommand<Set<Entry<Object, Object>>>("EVAL", new ObjectMapEntryReplayDecoder(), ValueType.MAP);
+    private static final RedisCommand<Map<Object, Object>> ALL_MAP = new RedisCommand<Map<Object, Object>>("EVAL", new ObjectMapReplayDecoder(), ValueType.MAP);
     private static final RedisCommand<Object> EVAL_PUT = new RedisCommand<Object>("EVAL", -1, ValueType.OBJECT, ValueType.MAP_VALUE);
     private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", -1, ValueType.OBJECT, ValueType.MAP_VALUE);
     
@@ -875,6 +877,37 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public RFuture<Map<K, V>> readAllMapAsync() {
+        final Map<K, V> result = new HashMap<K, V>();
+        List<Object> mapKeys = new ArrayList<Object>();
+        for (CacheValue value : cache.values()) {
+            mapKeys.add(encodeMapKey(value.getKey()));
+            result.put((K)value.getKey(), (V)value.getValue());
+        }
+
+        final RPromise<Map<K, V>> promise = newPromise();
+        RFuture<Map<K, V>> future = readAll(ALL_MAP, mapKeys, result);
+        
+        future.addListener(new FutureListener<Map<K, V>>() {
+            @Override
+            public void operationComplete(Future<Map<K, V>> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                
+                for (java.util.Map.Entry<K, V> entry : future.getNow().entrySet()) {
+                    CacheKey cacheKey = toCacheKey(entry.getKey());
+                    cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
+                }
+                result.putAll(future.getNow());
+                promise.trySuccess(result);
+            }
+        });
+        
+        return promise;
+    }
+    
+    @Override
     public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
         final Set<Entry<K, V>> result = new HashSet<Entry<K, V>>();
         List<Object> mapKeys = new ArrayList<Object>();
@@ -882,9 +915,31 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             mapKeys.add(encodeMapKey(value.getKey()));
             result.add(new AbstractMap.SimpleEntry<K, V>((K)value.getKey(), (V)value.getValue()));
         }
-        
+
         final RPromise<Set<Entry<K, V>>> promise = newPromise();
-        RFuture<Set<Entry<K, V>>> future = commandExecutor.evalReadAsync(getName(), codec, ALL_ENTRIES,
+        RFuture<Set<Entry<K, V>>> future = readAll(ALL_ENTRIES, mapKeys, result);
+        
+        future.addListener(new FutureListener<Set<Entry<K, V>>>() {
+            @Override
+            public void operationComplete(Future<Set<Entry<K, V>>> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                
+                for (java.util.Map.Entry<K, V> entry : future.getNow()) {
+                    CacheKey cacheKey = toCacheKey(entry.getKey());
+                    cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
+                }
+                result.addAll(future.getNow());
+                promise.trySuccess(result);
+            }
+        });
+        
+        return promise;
+    }
+
+    private <R> RFuture<R> readAll(RedisCommand<?> evalCommandType, List<Object> mapKeys, R result) {
+        return commandExecutor.evalReadAsync(getName(), codec, evalCommandType,
                 "local entries = redis.call('hgetall', KEYS[1]); "
               + "local result = {};"
               + "for j, v in ipairs(entries) do "
@@ -904,24 +959,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
               + "return result; ",
               Arrays.<Object>asList(getName()), 
               mapKeys.toArray());
-        
-        future.addListener(new FutureListener<Set<Entry<K, V>>>() {
-            @Override
-            public void operationComplete(Future<Set<Entry<K, V>>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                for (java.util.Map.Entry<K, V> entry : future.getNow()) {
-                    CacheKey cacheKey = toCacheKey(entry.getKey());
-                    cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
-                }
-                result.addAll(future.getNow());
-                promise.trySuccess(result);
-            }
-        });
-        
-        return promise;
     }
 
     @Override

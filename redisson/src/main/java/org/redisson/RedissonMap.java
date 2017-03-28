@@ -268,6 +268,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public Map<K, V> readAllMap() {
+        return get(readAllMapAsync());
+    }
+
+    @Override
+    public RFuture<Map<K, V>> readAllMapAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HGETALL, getName());
+    }
+
+    
+    @Override
     public V putIfAbsent(K key, V value) {
         return get(putIfAbsentAsync(key, value));
     }

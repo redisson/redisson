@@ -129,6 +129,13 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Set<Entry<K, V>> readAllEntrySet();
 
     /**
+     * Read all map as local instance at once
+     *
+     * @return map
+     */
+    Map<K, V> readAllMap();
+    
+    /**
      * Returns key set. 
      * This method <b>DOESN'T</b> fetch all of them as {@link #readAllKeySet()} does.
      */

@@ -98,6 +98,13 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Set<Entry<K, V>>> readAllEntrySetAsync();
 
+    /**
+     * Read all map as local instance at once
+     *
+     * @return map
+     */
+    RFuture<Map<K, V>> readAllMapAsync();
+
     RFuture<V> getAsync(K key);
 
     RFuture<V> putAsync(K key, V value);

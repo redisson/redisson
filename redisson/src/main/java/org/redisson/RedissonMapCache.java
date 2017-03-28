@@ -835,7 +835,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     
     @Override
     public RFuture<Set<java.util.Map.Entry<K, V>>> readAllEntrySetAsync() {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_ENTRY,
+        return readAll(RedisCommands.EVAL_MAP_ENTRY);
+    }
+
+    private <R> RFuture<R> readAll(RedisCommand<?> evalCommandType) {
+        return commandExecutor.evalWriteAsync(getName(), codec, evalCommandType,
                 "local s = redis.call('hgetall', KEYS[1]); "
                 + "local result = {}; "
                 + "for i, v in ipairs(s) do "
@@ -867,6 +871,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
              "return result;",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName()), System.currentTimeMillis());
     }
+
+    @Override
+    public RFuture<Map<K, V>> readAllMapAsync() {
+        return readAll(RedisCommands.EVAL_MAP);
+    }
+
     
     @Override
     public RFuture<Collection<V>> readAllValuesAsync() {
