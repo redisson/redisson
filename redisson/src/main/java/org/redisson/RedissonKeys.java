@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
+import org.redisson.api.RObject;
 import org.redisson.api.RType;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ScanCodec;
@@ -257,7 +258,22 @@ public class RedissonKeys implements RKeys {
     public long delete(String ... keys) {
         return commandExecutor.get(deleteAsync(keys));
     }
+    
+    @Override
+    public long delete(RObject ... objects) {
+        return commandExecutor.get(deleteAsync(objects));
+    }
 
+    @Override
+    public RFuture<Long> deleteAsync(RObject ... objects) {
+        List<String> keys = new ArrayList<String>();
+        for (RObject obj : objects) {
+            keys.add(obj.getName());
+        }
+        
+        return deleteAsync(keys.toArray(new String[keys.size()]));
+    }
+    
     @Override
     public RFuture<Long> deleteAsync(String ... keys) {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {

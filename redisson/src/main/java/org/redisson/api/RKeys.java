@@ -136,6 +136,14 @@ public interface RKeys extends RKeysAsync {
     long deleteByPattern(String pattern);
 
     /**
+     * Delete multiple objects
+     *
+     * @param objects
+     * @return number of removed keys
+     */
+    long delete(RObject ... objects);
+    
+    /**
      * Delete multiple objects by name
      *
      * @param keys - object names

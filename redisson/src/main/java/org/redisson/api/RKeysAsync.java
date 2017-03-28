@@ -92,6 +92,14 @@ public interface RKeysAsync {
     RFuture<Long> deleteByPatternAsync(String pattern);
 
     /**
+     * Delete multiple objects
+     *
+     * @param objects
+     * @return number of removed keys
+     */
+    RFuture<Long> deleteAsync(RObject ... objects);
+    
+    /**
      * Delete multiple objects by name
      *
      * @param keys - object names
