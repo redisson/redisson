@@ -105,7 +105,7 @@ public class ClassUtils {
      * 
      * @return Method object
      */
-    public static Method searchForMethod(Class type, String name, Class[] parms) {
+    public static Method searchForMethod(Class<?> type, String name, Class<?>[] parms) {
         try {
             return type.getMethod(name, parms);
         } catch (NoSuchMethodException e) {}
@@ -116,7 +116,7 @@ public class ClassUtils {
                 continue;
             }
 
-            Class[] types = methods[i].getParameterTypes();
+            Class<?>[] types = methods[i].getParameterTypes();
             // Does it have the same number of arguments that we're looking for.
             if (types.length != parms.length) {
                 continue;
@@ -130,7 +130,7 @@ public class ClassUtils {
         return null;
     }
 
-    private static boolean areTypesCompatible(Class[] targets, Class[] sources) {
+    private static boolean areTypesCompatible(Class<?>[] targets, Class<?>[] sources) {
         if (targets.length != sources.length) {
             return false;
         }

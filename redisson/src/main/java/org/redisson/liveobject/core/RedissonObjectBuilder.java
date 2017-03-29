@@ -16,7 +16,6 @@
 package org.redisson.liveobject.core;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -123,7 +122,7 @@ public class RedissonObjectBuilder {
             return codecProvider.getCodec(anno, rEntity, rObjectClass, fieldName);
         } else {
             REntity anno = rEntity.getAnnotation(REntity.class);
-            return codecProvider.getCodec(anno, (Class) rEntity);
+            return codecProvider.getCodec(anno, (Class<?>) rEntity);
         }
     }
     

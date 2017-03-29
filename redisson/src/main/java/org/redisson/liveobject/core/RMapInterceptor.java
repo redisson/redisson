@@ -33,9 +33,9 @@ public class RMapInterceptor {
     public static Object intercept(
             @Origin Method method,
             @AllArguments Object[] args,
-            @FieldValue("liveObjectLiveMap") RMap map
+            @FieldValue("liveObjectLiveMap") RMap<?, ?> map
     ) throws Exception {
-        Class[] cls = new Class[args.length];
+        Class<?>[] cls = new Class[args.length];
         for (int i = 0; i < args.length; i++) {
             cls[i] = args[i].getClass();
         }
