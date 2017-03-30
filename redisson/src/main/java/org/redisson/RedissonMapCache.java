@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapCache;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.MapScanCodec;
@@ -86,21 +87,21 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     static final RedisCommand<Boolean> EVAL_CONTAINS_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7, ValueType.MAP_VALUE);
     static final RedisCommand<Long> EVAL_FAST_REMOVE = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
 
-    RedissonMapCache(UUID id, CommandAsyncExecutor commandExecutor, String name) {
-        super(id, commandExecutor, name);
+    RedissonMapCache(UUID id, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(id, commandExecutor, name, redisson);
     }
     
-    RedissonMapCache(UUID id, Codec codec, CommandAsyncExecutor commandExecutor, String name) {
-        super(id, codec, commandExecutor, name);
+    RedissonMapCache(UUID id, Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(id, codec, commandExecutor, name, redisson);
     }
     
-    public RedissonMapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
-        super(id, commandExecutor, name);
+    public RedissonMapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(id, commandExecutor, name, redisson);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName());
     }
 
-    public RedissonMapCache(UUID id, Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
-        super(id, codec, commandExecutor, name);
+    public RedissonMapCache(UUID id, Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(id, codec, commandExecutor, name, redisson);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName());
     }
 

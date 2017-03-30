@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RQueue;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -33,12 +34,12 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
 
-    protected RedissonQueue(CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+    protected RedissonQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(commandExecutor, name, redisson);
     }
 
-    protected RedissonQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
+    protected RedissonQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(codec, commandExecutor, name, redisson);
     }
 
     @Override
@@ -113,11 +114,6 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOPLPUSH, getName(), queueName);
-    }
-
-    @Override
-    public V pollLastAndOfferFirstTo(RQueue<V> queue) {
-        return pollLastAndOfferFirstTo(queue.getName());
     }
 
 }

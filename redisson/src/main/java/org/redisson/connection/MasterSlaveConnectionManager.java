@@ -55,8 +55,8 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.TransferListener;
 import org.redisson.pubsub.AsyncSemaphore;
-import org.redisson.pubsub.TransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

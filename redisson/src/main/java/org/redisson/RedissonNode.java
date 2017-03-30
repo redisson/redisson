@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map.Entry;
 
+import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -133,6 +133,12 @@ public class RedissonNode {
         if (config.getRedissonNodeInitializer() != null) {
             config.getRedissonNodeInitializer().onStartup(this);
         }
+        
+        int mapReduceWorkers = config.getMapReduceWorkers();
+        if (mapReduceWorkers == 0) {
+            mapReduceWorkers = Runtime.getRuntime().availableProcessors();
+        }
+        redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME).registerWorkers(mapReduceWorkers);
         
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();

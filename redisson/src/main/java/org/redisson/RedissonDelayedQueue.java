@@ -493,11 +493,6 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     }
 
     @Override
-    public V pollLastAndOfferFirstTo(RQueue<V> deque) {
-        return get(pollLastAndOfferFirstToAsync(deque.getName()));
-    }
-
-    @Override
     public void destroy() {
         queueTransferService.remove(getQueueName());
     }

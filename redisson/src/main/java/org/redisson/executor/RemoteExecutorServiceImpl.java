@@ -29,6 +29,7 @@ import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.Injector;
 import org.redisson.remote.RemoteParams;
 
 import io.netty.buffer.ByteBuf;
@@ -183,18 +184,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
 
     private <T> T decode(ByteBuf buf) throws IOException {
         T task = (T) codec.getValueDecoder().decode(buf, null);
-        Field[] fields = task.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            if (RedissonClient.class.isAssignableFrom(field.getType())
-                    && field.isAnnotationPresent(RInject.class)) {
-                field.setAccessible(true);
-                try {
-                    field.set(task, redisson);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-        }
+        Injector.inject(task, redisson);
         return task;
     }
 

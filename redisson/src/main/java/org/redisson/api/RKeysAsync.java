@@ -27,6 +27,7 @@ public interface RKeysAsync {
     /**
      * Update the last access time of an object. 
      * 
+     * @param names of keys
      * @return count of objects were touched
      */
     RFuture<Long> touchAsync(String... names);
@@ -94,7 +95,7 @@ public interface RKeysAsync {
     /**
      * Delete multiple objects
      *
-     * @param objects
+     * @param objects of Redisson
      * @return number of removed keys
      */
     RFuture<Long> deleteAsync(RObject ... objects);

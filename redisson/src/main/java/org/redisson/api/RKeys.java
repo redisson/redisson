@@ -27,6 +27,7 @@ public interface RKeys extends RKeysAsync {
     /**
      * Update the last access time of an object. 
      * 
+     * @param names of keys
      * @return count of objects were touched
      */
     long touch(String... names);
@@ -138,7 +139,7 @@ public interface RKeys extends RKeysAsync {
     /**
      * Delete multiple objects
      *
-     * @param objects
+     * @param objects of Redisson
      * @return number of removed keys
      */
     long delete(RObject ... objects);

@@ -28,7 +28,7 @@ public class RedissonListMultimapIterator<K, V, M> extends RedissonMultiMapItera
 
     @Override
     protected Iterator<V> getIterator(String name) {
-        RedissonList<V> set = new RedissonList<V>(codec, commandExecutor, map.getValuesName(name));
+        RedissonList<V> set = new RedissonList<V>(codec, commandExecutor, map.getValuesName(name), null);
         return set.iterator();
     }
 

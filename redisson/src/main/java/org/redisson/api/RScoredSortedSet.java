@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.protocol.ScoredEntry;
 
 /**
@@ -34,6 +35,15 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
         SUM, MAX, MIN
         
     }
+    
+    /**
+     * Returns <code>RMapReduce</code> object associated with this object
+     * 
+     * @param <KOut> output key
+     * @param <VOut> output value
+     * @return MapReduce instance
+     */
+    <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
     
     V pollFirst();
 

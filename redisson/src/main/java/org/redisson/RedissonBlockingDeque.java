@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -38,14 +39,14 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     private final RedissonBlockingQueue<V> blockingQueue;
 
-    protected RedissonBlockingDeque(CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        blockingQueue = new RedissonBlockingQueue<V>(commandExecutor, name);
+    protected RedissonBlockingDeque(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(commandExecutor, name, redisson);
+        blockingQueue = new RedissonBlockingQueue<V>(commandExecutor, name, redisson);
     }
 
-    protected RedissonBlockingDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        blockingQueue = new RedissonBlockingQueue<V>(codec, commandExecutor, name);
+    protected RedissonBlockingDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(codec, commandExecutor, name, redisson);
+        blockingQueue = new RedissonBlockingQueue<V>(codec, commandExecutor, name, redisson);
     }
 
     @Override

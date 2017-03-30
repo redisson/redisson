@@ -37,7 +37,7 @@ import io.netty.util.concurrent.FutureListener;
  *  
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> value type
  */
 public class RedissonCompletionService<V> implements CompletionService<V> {
 

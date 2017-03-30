@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.api.mapreduce.RMapReduce;
+
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
  * and {@link java.util.Map}
@@ -33,6 +35,15 @@ import java.util.concurrent.ConcurrentMap;
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
 
+    /**
+     * Returns <code>RMapReduce</code> object associated with this map
+     * 
+     * @param <KOut> output key
+     * @param <VOut> output value
+     * @return MapReduce instance
+     */
+    <KOut, VOut> RMapReduce<K, V, KOut, VOut> mapReduce();
+    
     /**
      * Returns <code>RReadWriteLock</code> instance associated with key
      * 

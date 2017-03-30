@@ -32,10 +32,13 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RSortedSet;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
 
 /**
@@ -94,10 +97,12 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     private RLock lock;
     private RedissonList<V> list;
     private RBucket<String> comparatorHolder;
+    private RedissonClient redisson;
 
-    protected RedissonSortedSet(CommandExecutor commandExecutor, String name, Redisson redisson) {
+    protected RedissonSortedSet(CommandExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
+        this.redisson = redisson;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
@@ -115,6 +120,11 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         list = (RedissonList<V>) redisson.getList(getName());
 
         loadComparator();
+    }
+    
+    @Override
+    public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
+        return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor.getConnectionManager());
     }
 
     private void loadComparator() {

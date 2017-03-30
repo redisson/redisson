@@ -37,6 +37,7 @@ import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RTopic;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.cache.Cache;
 import org.redisson.cache.LFUCacheMap;
@@ -193,13 +194,13 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private int invalidateEntryOnChange;
     private int invalidationListenerId;
 
-    protected RedissonLocalCachedMap(UUID id, CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions options) {
-        super(id, commandExecutor, name);
+    protected RedissonLocalCachedMap(UUID id, CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions options, RedissonClient redisson) {
+        super(id, commandExecutor, name, redisson);
         init(id, name, options);
     }
 
-    protected RedissonLocalCachedMap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions options) {
-        super(id, codec, connectionManager, name);
+    protected RedissonLocalCachedMap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions options, RedissonClient redisson) {
+        super(id, codec, connectionManager, name, redisson);
         init(id, name, options);
     }
 

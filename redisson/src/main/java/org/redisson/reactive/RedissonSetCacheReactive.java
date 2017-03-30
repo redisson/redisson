@@ -59,12 +59,12 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     
     public RedissonSetCacheReactive(EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        instance = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name);
+        instance = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
     }
 
     public RedissonSetCacheReactive(Codec codec, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        instance = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name);
+        instance = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
     }
 
     @Override

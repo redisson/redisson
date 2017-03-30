@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.SortOrder;
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -66,12 +67,17 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         super(codec, commandExecutor, name);
         this.timeoutSetName = timeoutSetName;
         this.key = key;
-        this.set = new RedissonSet<V>(codec, commandExecutor, name);
+        this.set = new RedissonSet<V>(codec, commandExecutor, name, null);
     }
 
     @Override
     public int size() {
         return get(sizeAsync());
+    }
+    
+    @Override
+    public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
+        return null;
     }
     
     @Override
