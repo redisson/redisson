@@ -20,6 +20,8 @@ import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
 
@@ -838,4 +840,14 @@ public class RedissonMapCacheTest extends BaseTest {
             this.testField = testField;
         }
     }
+    
+    @Test
+    public void testIssue827() {
+        RMap<String, Object> mapCache = redisson.getMap("test_put_if_absent", StringCodec.INSTANCE);
+        mapCache.putIfAbsent("4", 0L);
+        mapCache.addAndGet("4", 1L);
+        mapCache.putIfAbsent("4", 0L);
+        System.out.println(mapCache.get("4"));
+    }
+
 }
