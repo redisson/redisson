@@ -4,6 +4,8 @@ Redisson Releases History
 
 Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
 
+## Please take part in [Redisson survey](https://www.surveymonkey.com/r/QXQZH5D)
+
 ### 21-Mar-2017 - versions 2.8.2 and 3.3.2 released
 
 Feature - Redisson's Spring custom namespace support (thanks to Rui Gu)  
