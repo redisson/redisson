@@ -207,18 +207,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         if (options.isInvalidateEntryOnChange()) {
             invalidateEntryOnChange = 1;
         }
-        if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
-            cache = new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
-        }
-        if (options.getEvictionPolicy() == EvictionPolicy.LRU) {
-            cache = new LRUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
-        }
-        if (options.getEvictionPolicy() == EvictionPolicy.LFU) {
-            cache = new LFUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
-        }
-        if (options.getEvictionPolicy() == EvictionPolicy.SOFT) {
-            cache = new SoftCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
-        }
+
+        cache = createCache(options);
 
         invalidationTopic = new RedissonTopic<Object>(commandExecutor, suffixName(name, "topic"));
         if (options.isInvalidateEntryOnChange()) {
@@ -240,6 +230,22 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 }
             });
         }
+    }
+
+    protected Cache<CacheKey, CacheValue> createCache(LocalCachedMapOptions options) {
+        if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
+            return new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.LRU) {
+            return new LRUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.LFU) {
+            return new LFUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.SOFT) {
+            return new SoftCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        throw new IllegalArgumentException("Invalid eviction policy: " + options.getEvictionPolicy());
     }
     
     private CacheKey toCacheKey(Object key) {
