@@ -33,20 +33,22 @@ public interface RExecutorServiceAsync {
     RFuture<Boolean> deleteAsync();
 
     /**
-     * Submit task for execution in async mode with listeners support 
+     * Use {@link RExecutorService#submit(Callable)} 
      * 
      * @param <T> type of return value
      * @param task - task to execute
      * @return Future object
      */
+    @Deprecated
     <T> RFuture<T> submitAsync(Callable<T> task);
 
     /**
-     * Submit task for execution in async mode with listeners support
+     * Use {@link RExecutorService#submit(Runnable)}
      * 
      * @param task - task to execute
      * @return Future object
      */
+    @Deprecated
     RFuture<?> submitAsync(Runnable task);
     
 }
