@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
@@ -75,12 +74,8 @@ public abstract class BaseMapperTask<KOut, VOut> implements Callable<Object>, Se
     }
 
     @Override
-    public Object call() {
-        try {
-            this.codec = (Codec) objectCodecClass.getConstructor().newInstance();
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
+    public Object call() throws Exception {
+        this.codec = (Codec) objectCodecClass.getConstructor().newInstance();
         
         RScheduledExecutorService executor = redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME);
         int workersAmount = executor.countActiveWorkers();
@@ -123,22 +118,20 @@ public abstract class BaseMapperTask<KOut, VOut> implements Callable<Object>, Se
             for (RFuture<?> future : futures) {
                 future.cancel(true);
             }
+            return null;
+        }
+        for (RFuture<?> rFuture : futures) {
+            if (!rFuture.isSuccess()) {
+                throw (Exception) rFuture.cause();
+            }
         }
         
         if (collator == null) {
             return null;
         }
         
-        Callable<Object> collatorTask = new CollatorTask<KOut, VOut, Object>(collator, resultMapName, objectCodecClass);
-        RFuture<Object> future = executor.submit(collatorTask);
-        try {
-            return future.get();
-        } catch (InterruptedException e) {
-            future.cancel(true);
-            return null;
-        } catch (ExecutionException e) {
-            throw new IllegalStateException(e);
-        }
+        Callable<Object> collatorTask = new CollatorTask<KOut, VOut, Object>(redisson, collator, resultMapName, objectCodecClass);
+        return collatorTask.call();
     }
 
     protected abstract void map(RCollector<KOut, VOut> collector);

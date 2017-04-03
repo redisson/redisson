@@ -70,8 +70,7 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
         RListMultimap<KOut, VOut> multimap = redisson.getListMultimap(name, codec);
         for (KOut key : multimap.keySet()) {
             if (Thread.currentThread().isInterrupted()) {
-                multimap.delete();
-                return;
+                break;
             }
             List<VOut> values = multimap.get(key);
             VOut out = reducer.reduce(key, values.iterator());

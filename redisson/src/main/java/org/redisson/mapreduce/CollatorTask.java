@@ -47,8 +47,9 @@ public class CollatorTask<KOut, VOut, R> implements Callable<R> {
     public CollatorTask() {
     }
     
-    public CollatorTask(RCollator<KOut, VOut, R> collator, String resultMapName, Class<?> codecClass) {
+    public CollatorTask(RedissonClient redisson, RCollator<KOut, VOut, R> collator, String resultMapName, Class<?> codecClass) {
         super();
+        this.redisson = redisson;
         this.collator = collator;
         this.resultMapName = resultMapName;
         this.codecClass = codecClass;
@@ -56,11 +57,7 @@ public class CollatorTask<KOut, VOut, R> implements Callable<R> {
 
     @Override
     public R call() throws Exception {
-        try {
-            this.codec = (Codec) codecClass.getConstructor().newInstance();
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
+        this.codec = (Codec) codecClass.getConstructor().newInstance();
         
         Injector.inject(collator, redisson);
         
