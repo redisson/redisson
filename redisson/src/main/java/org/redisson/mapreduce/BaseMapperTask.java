@@ -16,24 +16,9 @@
 package org.redisson.mapreduce;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 
-import org.redisson.api.RExecutorService;
-import org.redisson.api.RFuture;
-import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
-import org.redisson.api.mapreduce.RCollator;
-import org.redisson.api.mapreduce.RCollector;
-import org.redisson.api.mapreduce.RReducer;
-import org.redisson.client.codec.Codec;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -42,97 +27,44 @@ import io.netty.util.concurrent.FutureListener;
  * @param <KOut> output key
  * @param <VOut> output value
  */
-public abstract class BaseMapperTask<KOut, VOut> implements Callable<Object>, Serializable {
+public abstract class BaseMapperTask<KOut, VOut> implements Runnable, Serializable {
 
-    private static final long serialVersionUID = 7559371478909848610L;
+    private static final long serialVersionUID = 6224632826989873592L;
 
     @RInject
     protected RedissonClient redisson;
     
-    private RCollator<KOut, VOut, Object> collator;
-    private RReducer<KOut, VOut> reducer;
-    protected String objectName;
     protected Class<?> objectClass;
-    private Class<?> objectCodecClass;
-    private String resultMapName;
-
-    protected Codec codec;
+    protected String objectName;
+    protected Class<?> objectCodecClass;
+    
+    protected int workersAmount;
+    protected String collectorMapName;
     
     public BaseMapperTask() {
     }
     
-    public BaseMapperTask(RReducer<KOut, VOut> reducer, 
-            String mapName, String resultMapName, Class<?> mapCodecClass, Class<?> objectClass,
-            RCollator<KOut, VOut, Object> collator) {
+    public BaseMapperTask(Class<?> objectClass, String objectName, Class<?> objectCodecClass) {
         super();
-        this.reducer = reducer;
-        this.objectName = mapName;
-        this.objectCodecClass = mapCodecClass;
         this.objectClass = objectClass;
-        this.resultMapName = resultMapName;
-        this.collator = collator;
+        this.objectName = objectName;
+        this.objectCodecClass = objectCodecClass;
     }
 
-    @Override
-    public Object call() throws Exception {
-        this.codec = (Codec) objectCodecClass.getConstructor().newInstance();
-        
-        RScheduledExecutorService executor = redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME);
-        int workersAmount = executor.countActiveWorkers();
-
-        UUID id = UUID.randomUUID();
-                
-        RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, objectName + ":collector:" + id, workersAmount);
-
-        map(collector);
-        
-        if (Thread.currentThread().isInterrupted()) {
-            return null;
-        }
-        
-        List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
-        final CountDownLatch latch = new CountDownLatch(workersAmount);
-        for (int i = 0; i < workersAmount; i++) {
-            String name = objectName + ":collector:" + id + ":" + i;
-            Runnable runnable = new ReducerTask<KOut, VOut>(name, reducer, objectCodecClass, resultMapName);
-            RFuture<?> future = executor.submit(runnable);
-            future.addListener(new FutureListener<Object>() {
-                @Override
-                public void operationComplete(Future<Object> future) throws Exception {
-                    latch.countDown();
-                }
-            });
-            futures.add(future);
-        }
-
-        if (Thread.currentThread().isInterrupted()) {
-            for (RFuture<?> future : futures) {
-                future.cancel(true);
-            }
-            return null;
-        }
-        
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            for (RFuture<?> future : futures) {
-                future.cancel(true);
-            }
-            return null;
-        }
-        for (RFuture<?> rFuture : futures) {
-            if (!rFuture.isSuccess()) {
-                throw (Exception) rFuture.cause();
-            }
-        }
-        
-        if (collator == null) {
-            return null;
-        }
-        
-        Callable<Object> collatorTask = new CollatorTask<KOut, VOut, Object>(redisson, collator, resultMapName, objectCodecClass);
-        return collatorTask.call();
+    public int getWorkersAmount() {
+        return workersAmount;
     }
 
-    protected abstract void map(RCollector<KOut, VOut> collector);
+    public void setWorkersAmount(int workersAmount) {
+        this.workersAmount = workersAmount;
+    }
+
+    public String getCollectorMapName() {
+        return collectorMapName;
+    }
+
+    public void setCollectorMapName(String collatorMapName) {
+        this.collectorMapName = collatorMapName;
+    }
+
 }

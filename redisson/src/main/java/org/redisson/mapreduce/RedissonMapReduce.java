@@ -57,7 +57,8 @@ public class RedissonMapReduce<KIn, VIn, KOut, VOut> extends MapReduceExecutor<R
 
     @Override
     protected Callable<Object> createTask(String resultMapName, RCollator<KOut, VOut, Object> collator) {
-        return new MapperTask<KIn, VIn, KOut, VOut>(mapper, reducer, objectName, resultMapName, objectCodec.getClass(), objectClass, collator);
+        MapperTask<KIn, VIn, KOut, VOut> mapperTask = new MapperTask<KIn, VIn, KOut, VOut>(mapper, objectClass, objectName, objectCodec.getClass());
+        return new CoordinatorTask<KOut, VOut>(mapperTask, reducer, objectName, resultMapName, objectCodec.getClass(), objectClass, collator);
     }
 
 }

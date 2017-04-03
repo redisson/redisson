@@ -19,10 +19,9 @@ import java.util.Map.Entry;
 
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
-import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RCollector;
 import org.redisson.api.mapreduce.RMapper;
-import org.redisson.api.mapreduce.RReducer;
+import org.redisson.client.codec.Codec;
 import org.redisson.misc.Injector;
 
 /**
@@ -38,19 +37,25 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
 
     private static final long serialVersionUID = 2441161019495880394L;
     
-    RMapper<KIn, VIn, KOut, VOut> mapper;
+    protected RMapper<KIn, VIn, KOut, VOut> mapper;
     
     public MapperTask() {
     }
-
-    public MapperTask(RMapper<KIn, VIn, KOut, VOut> mapper, RReducer<KOut, VOut> reducer, String mapName, String resultMapName,
-            Class<?> mapCodecClass, Class<?> mapClass, RCollator<KOut, VOut, Object> collator) {
-        super(reducer, mapName, resultMapName, mapCodecClass, mapClass, collator);
+    
+    public MapperTask(RMapper<KIn, VIn, KOut, VOut> mapper, Class<?> objectClass, String objectName, Class<?> objectCodecClass) {
+        super(objectClass, objectName, objectCodecClass);
         this.mapper = mapper;
     }
 
     @Override
-    protected void map(RCollector<KOut, VOut> collector) {
+    public void run() {
+        Codec codec;
+        try {
+            codec = (Codec) objectCodecClass.getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        
         Injector.inject(mapper, redisson);
 
         RMap<KIn, VIn> map = null;
@@ -60,6 +65,8 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
             map = redisson.getMap(objectName, codec);
         }
 
+        RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount);
+        
         for (Entry<KIn, VIn> entry : map.entrySet()) {
             if (Thread.currentThread().isInterrupted()) {
                 return;

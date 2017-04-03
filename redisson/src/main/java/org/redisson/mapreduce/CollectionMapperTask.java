@@ -21,10 +21,9 @@ import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetCache;
 import org.redisson.api.RSortedSet;
-import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RCollectionMapper;
 import org.redisson.api.mapreduce.RCollector;
-import org.redisson.api.mapreduce.RReducer;
+import org.redisson.client.codec.Codec;
 import org.redisson.misc.Injector;
 
 /**
@@ -43,15 +42,21 @@ public class CollectionMapperTask<VIn, KOut, VOut> extends BaseMapperTask<KOut, 
     
     public CollectionMapperTask() {
     }
-
-    public CollectionMapperTask(RCollectionMapper<VIn, KOut, VOut> mapper, RReducer<KOut, VOut> reducer, String mapName, String resultMapName,
-            Class<?> mapCodecClass, Class<?> mapClass, RCollator<KOut, VOut, Object> collator) {
-        super(reducer, mapName, resultMapName, mapCodecClass, mapClass, collator);
+    
+    public CollectionMapperTask(RCollectionMapper<VIn, KOut, VOut> mapper, Class<?> objectClass, String objectName, Class<?> objectCodecClass) {
+        super(objectClass, objectName, objectCodecClass);
         this.mapper = mapper;
     }
 
     @Override
-    protected void map(RCollector<KOut, VOut> collector) {
+    public void run()  {
+        Codec codec;
+        try {
+            codec = (Codec) objectCodecClass.getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        
         Injector.inject(mapper, redisson);
 
         Iterable<VIn> collection = null;
@@ -70,6 +75,8 @@ public class CollectionMapperTask<VIn, KOut, VOut> extends BaseMapperTask<KOut, 
         } else {
             throw new IllegalStateException("Unable to work with " + objectClass);
         }
+
+        RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount);
 
         for (VIn value : collection) {
             if (Thread.currentThread().isInterrupted()) {
