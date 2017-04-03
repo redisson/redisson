@@ -21,6 +21,7 @@ import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetCache;
 import org.redisson.api.RSortedSet;
+import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RCollectionMapper;
 import org.redisson.api.mapreduce.RCollector;
 import org.redisson.api.mapreduce.RReducer;
@@ -43,9 +44,9 @@ public class CollectionMapperTask<VIn, KOut, VOut> extends BaseMapperTask<KOut, 
     public CollectionMapperTask() {
     }
 
-    public CollectionMapperTask(RCollectionMapper<VIn, KOut, VOut> mapper, RReducer<KOut, VOut> reducer, String mapName, String semaphoreName, String resultMapName,
-            Class<?> mapCodecClass, Class<?> mapClass) {
-        super(reducer, mapName, semaphoreName, resultMapName, mapCodecClass, mapClass);
+    public CollectionMapperTask(RCollectionMapper<VIn, KOut, VOut> mapper, RReducer<KOut, VOut> reducer, String mapName, String resultMapName,
+            Class<?> mapCodecClass, Class<?> mapClass, RCollator<KOut, VOut, Object> collator) {
+        super(reducer, mapName, resultMapName, mapCodecClass, mapClass, collator);
         this.mapper = mapper;
     }
 
@@ -71,6 +72,10 @@ public class CollectionMapperTask<VIn, KOut, VOut> extends BaseMapperTask<KOut, 
         }
 
         for (VIn value : collection) {
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
+
             mapper.map(value, collector);
         }
     }

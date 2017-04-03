@@ -25,7 +25,6 @@ import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapAsync;
 import org.redisson.api.RObject;
-import org.redisson.api.RSemaphore;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RMapReduceExecutor;
@@ -51,7 +50,6 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
 
     private final RedissonClient redisson;
     private final RExecutorService executorService;
-    final String semaphoreName;
     final String resultMapName;
     
     final Codec objectCodec;
@@ -70,7 +68,6 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
 
         this.redisson = redisson;
         UUID id = UUID.randomUUID();
-        this.semaphoreName = object.getName() + ":semaphore:" + id;
         this.resultMapName = object.getName() + ":result:" + id;
         this.executorService = redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME);
         this.connectionManager = connectionManager;
@@ -97,7 +94,9 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     @Override
     public RFuture<Map<KOut, VOut>> executeAsync() {
         final RPromise<Map<KOut, VOut>> promise = connectionManager.newPromise();
-        executeMapperAsync(resultMapName).addListener(new FutureListener<Void>() {
+        final RFuture<Void> future = executeMapperAsync(resultMapName, null);
+        addCancelHandling(promise, future);
+        future.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 if (!future.isSuccess()) {
@@ -114,6 +113,17 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
         });        
         return promise;
     }
+
+    private <T> void addCancelHandling(final RPromise<T> promise, final RFuture<?> future) {
+        promise.addListener(new FutureListener<T>() {
+            @Override
+            public void operationComplete(Future<T> f) throws Exception {
+                if (promise.isCancelled()) {
+                    future.cancel(true);
+                }
+            }
+        });
+    }
     
     @Override
     public void execute(String resultMapName) {
@@ -122,25 +132,11 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public RFuture<Void> executeAsync(String resultMapName) {
-        final RPromise<Void> promise = connectionManager.newPromise();
-        executeMapperAsync(resultMapName).addListener(new FutureListener<Void>() {
-
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-
-                promise.trySuccess(null);
-            }
-        });
-        
-        return promise;
+        return executeMapperAsync(resultMapName, null);
     }
 
 
-    private RPromise<Void> executeMapperAsync(String resultMapName) {
+    private <R> RFuture<R> executeMapperAsync(String resultMapName, RCollator<KOut, VOut, R> collator) {
         if (mapper == null) {
             throw new NullPointerException("Mapper is not defined");
         }
@@ -148,45 +144,11 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
             throw new NullPointerException("Reducer is not defined");
         }
         
-        final RPromise<Void> promise = connectionManager.newPromise();
-        Callable<Integer> task = createTask(resultMapName);
-        executorService.submit(task).addListener(new FutureListener<Integer>() {
-            @Override
-            public void operationComplete(Future<Integer> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                Integer workers = future.getNow();
-                final RSemaphore semaphore = redisson.getSemaphore(semaphoreName);
-                semaphore.acquireAsync(workers).addListener(new FutureListener<Void>() {
-                    @Override
-                    public void operationComplete(Future<Void> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            promise.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        semaphore.deleteAsync().addListener(new FutureListener<Boolean>() {
-                            @Override
-                            public void operationComplete(Future<Boolean> future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    promise.tryFailure(future.cause());
-                                    return;
-                                }
-                                
-                                promise.trySuccess(null);
-                            }
-                        });
-                    }
-                });
-            }
-        });
-        return promise;
+        Callable<Object> task = createTask(resultMapName, (RCollator<KOut, VOut, Object>) collator);
+        return (RFuture<R>) executorService.submit(task);
     }
 
-    protected abstract Callable<Integer> createTask(String resultMapName);
+    protected abstract Callable<Object> createTask(String resultMapName, RCollator<KOut, VOut, Object> collator);
     
     @Override
     public <R> R execute(RCollator<KOut, VOut, R> collator) {
@@ -197,31 +159,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     public <R> RFuture<R> executeAsync(final RCollator<KOut, VOut, R> collator) {
         check(collator);
         
-        final RPromise<R> promise = connectionManager.newPromise();
-        executeMapperAsync(resultMapName).addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-
-                Callable<R> collatorTask = new CollatorTask<KOut, VOut, R>(collator, resultMapName, objectCodec.getClass()); 
-                executorService.submit(collatorTask).addListener(new FutureListener<R>() {
-                    @Override
-                    public void operationComplete(Future<R> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            promise.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        promise.trySuccess(future.getNow());
-                    }
-                });
-            }
-        });
-
-        return promise;
+        return executeMapperAsync(resultMapName, collator);
     }
     
 }

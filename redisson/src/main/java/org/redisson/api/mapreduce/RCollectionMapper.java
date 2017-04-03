@@ -15,6 +15,8 @@
  */
 package org.redisson.api.mapreduce;
 
+import java.io.Serializable;
+
 /**
  * Mapper task invoked during map phase of MapReduce process and launched across Redisson Nodes.
  * Every task stores transformed result of input key and value into {@link RCollector} instance. 
@@ -27,7 +29,7 @@ package org.redisson.api.mapreduce;
  * @param <KOut> output key
  * @param <VOut> output value
  */
-public interface RCollectionMapper<VIn, KOut, VOut> {
+public interface RCollectionMapper<VIn, KOut, VOut> extends Serializable {
 
     /**
      * Invoked for each Collection source entry

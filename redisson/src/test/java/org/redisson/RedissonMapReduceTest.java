@@ -6,14 +6,19 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.redisson.api.RExecutorService;
+import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
+import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.mapreduce.RCollator;
@@ -21,6 +26,9 @@ import org.redisson.api.mapreduce.RCollector;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.api.mapreduce.RMapper;
 import org.redisson.api.mapreduce.RReducer;
+import org.redisson.executor.ScheduledRunnableTask;
+
+import net.bytebuddy.utility.RandomString;
 
 @RunWith(Parameterized.class)
 public class RedissonMapReduceTest extends BaseTest {
@@ -81,13 +89,23 @@ public class RedissonMapReduceTest extends BaseTest {
     }
     
     @Test
-    public void test() {
-        RMap<String, String> map = null;
-        if (RMapCache.class.isAssignableFrom(mapClass)) {
-            map = redisson.getMapCache("map");
-        } else {
-            map = redisson.getMap("map");
+    public void testCancel() throws InterruptedException, ExecutionException {
+        RMap<String, String> map = getMap();
+        for (int i = 0; i < 100000; i++) {
+            map.put("" + i, "ab cd fjks");
         }
+        
+        RMapReduce<String, String, String, Integer> mapReduce = map.<String, Integer>mapReduce().mapper(new WordMapper()).reducer(new WordReducer());
+        RFuture<Map<String, Integer>> future = mapReduce.executeAsync();
+        Thread.sleep(100);
+        future.cancel(true);
+        Thread.sleep(3000);
+    }
+
+    
+    @Test
+    public void test() {
+        RMap<String, String> map = getMap();
         
         map.put("1", "Alice was beginning to get very tired"); 
         map.put("2", "of sitting by her sister on the bank and");
@@ -150,6 +168,16 @@ public class RedissonMapReduceTest extends BaseTest {
         assertThat(resultMap).isEqualTo(result);
         resultMap.delete();
     }
+
+    private RMap<String, String> getMap() {
+        RMap<String, String> map = null;
+        if (RMapCache.class.isAssignableFrom(mapClass)) {
+            map = redisson.getMapCache("map");
+        } else {
+            map = redisson.getMap("map");
+        }
+        return map;
+    }
     
     public static class WordMapperInject implements RMapper<String, String, String, Integer> {
 
@@ -207,12 +235,7 @@ public class RedissonMapReduceTest extends BaseTest {
 
     @Test
     public void testInjector() {
-        RMap<String, String> map = null;
-        if (RMapCache.class.isAssignableFrom(mapClass)) {
-            map = redisson.getMapCache("map");
-        } else {
-            map = redisson.getMap("map");
-        }
+        RMap<String, String> map = getMap();
 
         map.put("1", "Alice was beginning to get very tired"); 
         

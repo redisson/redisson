@@ -16,16 +16,25 @@
 package org.redisson.mapreduce;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
 import org.redisson.api.RExecutorService;
+import org.redisson.api.RFuture;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
+import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RCollector;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
+
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -34,18 +43,18 @@ import org.redisson.client.codec.Codec;
  * @param <KOut> output key
  * @param <VOut> output value
  */
-public abstract class BaseMapperTask<KOut, VOut> implements Callable<Integer>, Serializable {
+public abstract class BaseMapperTask<KOut, VOut> implements Callable<Object>, Serializable {
 
     private static final long serialVersionUID = 7559371478909848610L;
 
     @RInject
     protected RedissonClient redisson;
     
+    private RCollator<KOut, VOut, Object> collator;
     private RReducer<KOut, VOut> reducer;
     protected String objectName;
     protected Class<?> objectClass;
     private Class<?> objectCodecClass;
-    private String semaphoreName;
     private String resultMapName;
 
     protected Codec codec;
@@ -54,18 +63,19 @@ public abstract class BaseMapperTask<KOut, VOut> implements Callable<Integer>, S
     }
     
     public BaseMapperTask(RReducer<KOut, VOut> reducer, 
-            String mapName, String semaphoreName, String resultMapName, Class<?> mapCodecClass, Class<?> objectClass) {
+            String mapName, String resultMapName, Class<?> mapCodecClass, Class<?> objectClass,
+            RCollator<KOut, VOut, Object> collator) {
         super();
         this.reducer = reducer;
         this.objectName = mapName;
         this.objectCodecClass = mapCodecClass;
         this.objectClass = objectClass;
-        this.semaphoreName = semaphoreName;
         this.resultMapName = resultMapName;
+        this.collator = collator;
     }
 
     @Override
-    public Integer call() {
+    public Object call() {
         try {
             this.codec = (Codec) objectCodecClass.getConstructor().newInstance();
         } catch (Exception e) {
@@ -81,13 +91,54 @@ public abstract class BaseMapperTask<KOut, VOut> implements Callable<Integer>, S
 
         map(collector);
         
-        for (int i = 0; i < workersAmount; i++) {
-            String name = objectName + ":collector:" + id + ":" + i;
-            Runnable runnable = new ReducerTask<KOut, VOut>(name, reducer, objectCodecClass, semaphoreName, resultMapName);
-            executor.submit(runnable);
+        if (Thread.currentThread().isInterrupted()) {
+            return null;
         }
         
-        return workersAmount;
+        List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
+        final CountDownLatch latch = new CountDownLatch(workersAmount);
+        for (int i = 0; i < workersAmount; i++) {
+            String name = objectName + ":collector:" + id + ":" + i;
+            Runnable runnable = new ReducerTask<KOut, VOut>(name, reducer, objectCodecClass, resultMapName);
+            RFuture<?> future = executor.submit(runnable);
+            future.addListener(new FutureListener<Object>() {
+                @Override
+                public void operationComplete(Future<Object> future) throws Exception {
+                    latch.countDown();
+                }
+            });
+            futures.add(future);
+        }
+
+        if (Thread.currentThread().isInterrupted()) {
+            for (RFuture<?> future : futures) {
+                future.cancel(true);
+            }
+            return null;
+        }
+        
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            for (RFuture<?> future : futures) {
+                future.cancel(true);
+            }
+        }
+        
+        if (collator == null) {
+            return null;
+        }
+        
+        Callable<Object> collatorTask = new CollatorTask<KOut, VOut, Object>(collator, resultMapName, objectCodecClass);
+        RFuture<Object> future = executor.submit(collatorTask);
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            future.cancel(true);
+            return null;
+        } catch (ExecutionException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     protected abstract void map(RCollector<KOut, VOut> collector);

@@ -15,12 +15,11 @@
  */
 package org.redisson.mapreduce;
 
-import java.util.Map;
 import java.util.concurrent.Callable;
 
-import org.redisson.api.RFuture;
 import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.api.mapreduce.RMapper;
 import org.redisson.api.mapreduce.RReducer;
@@ -57,8 +56,8 @@ public class RedissonMapReduce<KIn, VIn, KOut, VOut> extends MapReduceExecutor<R
     }
 
     @Override
-    protected Callable<Integer> createTask(String resultMapName) {
-        return new MapperTask<KIn, VIn, KOut, VOut>(mapper, reducer, objectName, semaphoreName, resultMapName, objectCodec.getClass(), objectClass);
+    protected Callable<Object> createTask(String resultMapName, RCollator<KOut, VOut, Object> collator) {
+        return new MapperTask<KIn, VIn, KOut, VOut>(mapper, reducer, objectName, resultMapName, objectCodec.getClass(), objectClass, collator);
     }
 
 }

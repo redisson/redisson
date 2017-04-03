@@ -41,7 +41,6 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
     private RedissonClient redisson;
     
     private String name;
-    private String semaphoreName;
     private String resultMapName;
     private RReducer<KOut, VOut> reducer;
     private Class<?> codecClass;
@@ -50,10 +49,9 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
     public ReducerTask() {
     }
     
-    public ReducerTask(String name, RReducer<KOut, VOut> reducer, Class<?> codecClass, String semaphoreName, String resultMapName) {
+    public ReducerTask(String name, RReducer<KOut, VOut> reducer, Class<?> codecClass, String resultMapName) {
         this.name = name;
         this.reducer = reducer;
-        this.semaphoreName = semaphoreName;
         this.resultMapName = resultMapName;
         this.codecClass = codecClass;
     }
@@ -71,12 +69,15 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
         RMap<KOut, VOut> map = redisson.getMap(resultMapName);
         RListMultimap<KOut, VOut> multimap = redisson.getListMultimap(name, codec);
         for (KOut key : multimap.keySet()) {
+            if (Thread.currentThread().isInterrupted()) {
+                multimap.delete();
+                return;
+            }
             List<VOut> values = multimap.get(key);
             VOut out = reducer.reduce(key, values.iterator());
             map.put(key, out);
         }
         multimap.delete();
-        redisson.getSemaphore(semaphoreName).release();
     }
 
 }
