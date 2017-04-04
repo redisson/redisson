@@ -862,6 +862,7 @@ public class RedissonMapCacheTest extends BaseTest {
         Object currValue = mapCache1.putIfAbsent("4", 1.23, 10000L, TimeUnit.SECONDS);
         Object updatedValue = mapCache1.addAndGet("4", 1D);
         System.out.println("updatedValue: " + updatedValue);
+        Assert.assertEquals(2.23, mapCache1.get("4"));
     }
 
 }
