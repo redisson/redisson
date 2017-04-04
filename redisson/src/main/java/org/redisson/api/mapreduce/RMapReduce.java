@@ -15,6 +15,8 @@
  */
 package org.redisson.api.mapreduce;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * 
  * MapReduce allows to process large amount of data stored in Redis map 
@@ -81,6 +83,15 @@ package org.redisson.api.mapreduce;
  * @param <VOut> output value
  */
 public interface RMapReduce<KIn, VIn, KOut, VOut> extends RMapReduceExecutor<VIn, KOut, VOut> {
+
+    /**
+     * Defines timeout for MapReduce process
+     * 
+     * @param timeout
+     * @param unit
+     * @return self instance
+     */
+    RMapReduce<KIn, VIn, KOut, VOut> timeout(long timeout, TimeUnit unit);
 
     /**
      * Setup Mapper object

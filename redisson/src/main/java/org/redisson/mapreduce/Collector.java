@@ -16,6 +16,8 @@
 package org.redisson.mapreduce;
 
 import java.io.IOException;
+import java.util.BitSet;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RListMultimap;
 import org.redisson.api.RedissonClient;
@@ -37,13 +39,17 @@ public class Collector<K, V> implements RCollector<K, V> {
     private String name;
     private int parts;
     private Codec codec;
+    private long timeout;
+    private BitSet expirationsBitSet = new BitSet();
     
-    public Collector(Codec codec, RedissonClient client, String name, int parts) {
+    public Collector(Codec codec, RedissonClient client, String name, int parts, long timeout) {
         super();
         this.client = client;
         this.name = name;
         this.parts = parts;
         this.codec = codec;
+        this.timeout = timeout;
+        expirationsBitSet = new BitSet(parts);
     }
 
     @Override
@@ -51,10 +57,15 @@ public class Collector<K, V> implements RCollector<K, V> {
         try {
             byte[] encodedKey = codec.getValueEncoder().encode(key);
             long hash = LongHashFunction.xx_r39().hashBytes(encodedKey);
-            String partName = name + ":" + Math.abs(hash % parts);
+            int part = (int) Math.abs(hash % parts);
+            String partName = name + ":" + part;
             
             RListMultimap<K, V> multimap = client.getListMultimap(partName, codec);
             multimap.put(key, value);
+            if (timeout > 0 && !expirationsBitSet.get(part)) {
+                multimap.expire(timeout, TimeUnit.MILLISECONDS);
+                expirationsBitSet.set(part);
+            }
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }

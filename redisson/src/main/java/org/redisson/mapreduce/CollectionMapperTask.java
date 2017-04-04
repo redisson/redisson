@@ -76,7 +76,7 @@ public class CollectionMapperTask<VIn, KOut, VOut> extends BaseMapperTask<KOut, 
             throw new IllegalStateException("Unable to work with " + objectClass);
         }
 
-        RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount);
+        RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount, timeout);
 
         for (VIn value : collection) {
             if (Thread.currentThread().isInterrupted()) {

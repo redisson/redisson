@@ -65,7 +65,7 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
             map = redisson.getMap(objectName, codec);
         }
 
-        RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount);
+        RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount, timeout);
         
         for (Entry<KIn, VIn> entry : map.entrySet()) {
             if (Thread.currentThread().isInterrupted()) {

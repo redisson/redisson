@@ -16,10 +16,12 @@
 package org.redisson.mapreduce;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RObject;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollator;
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.api.mapreduce.RMapper;
 import org.redisson.api.mapreduce.RReducer;
@@ -42,6 +44,12 @@ public class RedissonMapReduce<KIn, VIn, KOut, VOut> extends MapReduceExecutor<R
     }
 
     @Override
+    public RMapReduce<KIn, VIn, KOut, VOut> timeout(long timeout, TimeUnit unit) {
+        this.timeout = unit.toMillis(timeout);
+        return this;
+    }
+
+    @Override
     public RMapReduce<KIn, VIn, KOut, VOut> mapper(RMapper<KIn, VIn, KOut, VOut> mapper) {
         check(mapper);
         this.mapper = mapper;
@@ -58,7 +66,7 @@ public class RedissonMapReduce<KIn, VIn, KOut, VOut> extends MapReduceExecutor<R
     @Override
     protected Callable<Object> createTask(String resultMapName, RCollator<KOut, VOut, Object> collator) {
         MapperTask<KIn, VIn, KOut, VOut> mapperTask = new MapperTask<KIn, VIn, KOut, VOut>(mapper, objectClass, objectName, objectCodec.getClass());
-        return new CoordinatorTask<KOut, VOut>(mapperTask, reducer, objectName, resultMapName, objectCodec.getClass(), objectClass, collator);
+        return new CoordinatorTask<KOut, VOut>(mapperTask, reducer, objectName, resultMapName, objectCodec.getClass(), objectClass, collator, timeout, System.currentTimeMillis());
     }
 
 }

@@ -40,6 +40,7 @@ public abstract class BaseMapperTask<KOut, VOut> implements Runnable, Serializab
     
     protected int workersAmount;
     protected String collectorMapName;
+    protected long timeout;
     
     public BaseMapperTask() {
     }
@@ -51,16 +52,12 @@ public abstract class BaseMapperTask<KOut, VOut> implements Runnable, Serializab
         this.objectCodecClass = objectCodecClass;
     }
 
-    public int getWorkersAmount() {
-        return workersAmount;
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
     }
-
+    
     public void setWorkersAmount(int workersAmount) {
         this.workersAmount = workersAmount;
-    }
-
-    public String getCollectorMapName() {
-        return collectorMapName;
     }
 
     public void setCollectorMapName(String collatorMapName) {

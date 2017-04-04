@@ -15,6 +15,8 @@
  */
 package org.redisson.api.mapreduce;
 
+import java.util.concurrent.TimeUnit;
+
 import org.redisson.api.RList;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSet;
@@ -88,6 +90,15 @@ import org.redisson.api.RSortedSet;
  */
 public interface RCollectionMapReduce<VIn, KOut, VOut> extends RMapReduceExecutor<VIn, KOut, VOut> {
 
+    /**
+     * Defines timeout for MapReduce process
+     * 
+     * @param timeout
+     * @param unit
+     * @return self instance
+     */
+    RCollectionMapReduce<VIn, KOut, VOut> timeout(long timeout, TimeUnit unit);
+    
     /**
      * Setup Mapper object
      * 

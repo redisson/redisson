@@ -39,7 +39,6 @@ public interface RExecutorServiceAsync {
      * @param task - task to execute
      * @return Future object
      */
-    @Deprecated
     <T> RFuture<T> submitAsync(Callable<T> task);
 
     /**
@@ -48,7 +47,6 @@ public interface RExecutorServiceAsync {
      * @param task - task to execute
      * @return Future object
      */
-    @Deprecated
     RFuture<?> submitAsync(Runnable task);
     
 }

@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
@@ -18,7 +17,6 @@ import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
-import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.mapreduce.RCollator;
@@ -26,9 +24,7 @@ import org.redisson.api.mapreduce.RCollector;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.api.mapreduce.RMapper;
 import org.redisson.api.mapreduce.RReducer;
-import org.redisson.executor.ScheduledRunnableTask;
-
-import net.bytebuddy.utility.RandomString;
+import org.redisson.mapreduce.MapReduceTimeoutException;
 
 @RunWith(Parameterized.class)
 public class RedissonMapReduceTest extends BaseTest {
@@ -99,9 +95,22 @@ public class RedissonMapReduceTest extends BaseTest {
         RFuture<Map<String, Integer>> future = mapReduce.executeAsync();
         Thread.sleep(100);
         future.cancel(true);
-        Thread.sleep(3000);
     }
 
+    @Test(expected = MapReduceTimeoutException.class)
+    public void testTimeout() {
+        RMap<String, String> map = getMap();
+        for (int i = 0; i < 100000; i++) {
+            map.put("" + i, "ab cd fjks");
+        }
+        
+        RMapReduce<String, String, String, Integer> mapReduce = map.<String, Integer>mapReduce()
+                .mapper(new WordMapper())
+                .reducer(new WordReducer())
+                .timeout(1, TimeUnit.SECONDS);
+        
+        mapReduce.execute();
+    }
     
     @Test
     public void test() {

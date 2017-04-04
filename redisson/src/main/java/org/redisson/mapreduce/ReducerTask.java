@@ -17,6 +17,7 @@ package org.redisson.mapreduce;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RListMultimap;
 import org.redisson.api.RMap;
@@ -45,15 +46,17 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
     private RReducer<KOut, VOut> reducer;
     private Class<?> codecClass;
     private Codec codec;
+    private long timeout;
 
     public ReducerTask() {
     }
     
-    public ReducerTask(String name, RReducer<KOut, VOut> reducer, Class<?> codecClass, String resultMapName) {
+    public ReducerTask(String name, RReducer<KOut, VOut> reducer, Class<?> codecClass, String resultMapName, long timeout) {
         this.name = name;
         this.reducer = reducer;
         this.resultMapName = resultMapName;
         this.codecClass = codecClass;
+        this.timeout = timeout;
     }
 
     @Override
@@ -75,6 +78,9 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
             List<VOut> values = multimap.get(key);
             VOut out = reducer.reduce(key, values.iterator());
             map.put(key, out);
+        }
+        if (timeout > 0) {
+            map.expire(timeout, TimeUnit.MILLISECONDS);
         }
         multimap.delete();
     }

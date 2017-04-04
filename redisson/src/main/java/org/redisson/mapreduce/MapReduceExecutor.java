@@ -60,6 +60,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     private ConnectionManager connectionManager;
     RReducer<KOut, VOut> reducer;
     M mapper;
+    long timeout;
     
     public MapReduceExecutor(RObject object, RedissonClient redisson, ConnectionManager connectionManager) {
         this.objectName = object.getName();
