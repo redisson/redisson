@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedissonReference;
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
@@ -233,7 +234,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
 
         if (!connectionManager.getShutdownLatch().acquire()) {
-            mainPromise.tryFailure(new IllegalStateException("Redisson is shutdown"));
+            mainPromise.tryFailure(new RedissonShutdownException("Redisson is shutdown"));
             return;
         }
 

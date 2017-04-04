@@ -183,10 +183,10 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                         @Override
                         public void operationComplete(Future<Boolean> future) throws Exception {
                             if (!future.isSuccess()) {
-                                log.error("Can't send ack for request: " + request, future.cause());
                                 if (future.cause() instanceof RedissonShutdownException) {
                                     return;
                                 }
+                                log.error("Can't send ack for request: " + request, future.cause());
                                 // re-subscribe after a failed send (ack)
                                 subscribe(remoteInterface, requestQueue, executor);
                                 return;
@@ -287,11 +287,11 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 @Override
                 public void operationComplete(Future<List<?>> future) throws Exception {
                     if (!future.isSuccess()) {
-                        log.error("Can't send response: " + responseHolder.get() + " for request: " + request,
-                                future.cause());
                         if (future.cause() instanceof RedissonShutdownException) {
                             return;
                         }
+                        log.error("Can't send response: " + responseHolder.get() + " for request: " + request,
+                                future.cause());
                     }
                     
                     // re-subscribe anyways (fail or success) after the send
