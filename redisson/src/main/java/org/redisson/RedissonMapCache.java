@@ -419,7 +419,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                      + "end; "
                  + "end; "
                  + "local newValue = tonumber(ARGV[3]); "
-                 + "if expireDate <= tonumber(ARGV[1]) then "
+                 + "if expireDate >= tonumber(ARGV[1]) then "
                      + "newValue = tonumber(val) + newValue; "
                  + "end; "
                  + "local newValuePack = struct.pack('dLc0', t + tonumber(ARGV[1]), string.len(newValue), newValue); "
