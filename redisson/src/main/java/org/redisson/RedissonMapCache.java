@@ -378,19 +378,26 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
+    public V addAndGet(K key, Number value) {
+        return get(addAndGetAsync(key, value));
+    }
+    
+    @Override
     public RFuture<V> addAndGetAsync(K key, Number value) {
         byte[] keyState = encodeMapKey(key);
         byte[] valueState = encodeMapValue(new BigDecimal(value.toString()).toPlainString());
         return commandExecutor.evalWriteAsync(getName(key), StringCodec.INSTANCE,
                 new RedisCommand<Object>("EVAL", new NumberConvertor(value.getClass())),
                   "local value = redis.call('hget', KEYS[1], ARGV[2]); "
+                 + "local expireDate = 92233720368547758; "
+                 + "local idleTtl = 0; "
                  + "if value ~= false then "
                      + "local t, val = struct.unpack('dLc0', value); "
-                     + "local expireDate = 92233720368547758; " +
-                       "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                     + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
                      + "if expireDateScore ~= false then "
                          + "expireDate = tonumber(expireDateScore) "
                      + "end; "
+                     + "idleTtl = t; "
                      + "if t ~= 0 then "
                          + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
                          + "if expireIdle ~= false then "
@@ -407,9 +414,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                  + "if expireDate <= tonumber(ARGV[1]) then "
                      + "newValue = tonumber(value) + newValue; "
                  + "end; "
-                 + "local newValuePack = struct.pack('dLc0', t + tonumber(ARGV[1]), string.len(newValue), newValue); "
+                 + "local newValuePack = struct.pack('dLc0', idleTtl + tonumber(ARGV[1]), string.len(newValue), newValue); "
                  + "redis.call('hset', KEYS[1], ARGV[2], newValuePack);"
-                 + "return newValue; ",
+                 + "return tostring(newValue); ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key)), System.currentTimeMillis(), keyState, valueState);
     }
 
