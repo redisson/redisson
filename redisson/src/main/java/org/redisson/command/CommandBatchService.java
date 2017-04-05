@@ -208,7 +208,7 @@ public class CommandBatchService extends CommandReactiveService {
                     return;
                 }
 
-                List<BatchCommandData<?, ?>> entries = new ArrayList<BatchCommandData<?, ?>>();
+                List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
                 for (Entry e : commands.values()) {
                     entries.addAll(e.getCommands());
                 }
