@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RAtomicDoubleAsync;
 import org.redisson.api.RAtomicLongAsync;
@@ -58,6 +59,10 @@ public class RedissonBatch implements RBatch {
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
     private final UUID id;
+
+    private long timeout;
+    private int retryAttempts;
+    private long retryInterval;
 
     protected RedissonBatch(UUID id, EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.executorService = new CommandBatchService(connectionManager);
@@ -226,23 +231,41 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public RBatch retryAttempts(int retryAttempts) {
+        this.retryAttempts = retryAttempts;
+        return this;
+    }
+    
+    @Override
+    public RBatch retryInterval(long retryInterval, TimeUnit unit) {
+        this.retryInterval = unit.toMillis(retryInterval);
+        return this;
+    }
+    
+    @Override
+    public RBatch timeout(long timeout, TimeUnit unit) {
+        this.timeout = unit.toMillis(timeout);
+        return this;
+    }
+    
+    @Override
     public List<?> execute() {
-        return executorService.execute();
+        return executorService.execute(timeout, retryAttempts, retryInterval);
     }
 
     @Override
     public void executeSkipResult() {
-        executorService.executeSkipResult();
+        executorService.executeSkipResult(timeout, retryAttempts, retryInterval);
     }
     
     @Override
     public RFuture<Void> executeSkipResultAsync() {
-        return executorService.executeSkipResultAsync();
+        return executorService.executeSkipResultAsync(timeout, retryAttempts, retryInterval);
     }
     
     @Override
     public RFuture<List<?>> executeAsync() {
-        return executorService.executeAsync();
+        return executorService.executeAsync(timeout, retryAttempts, retryInterval);
     }
 
     @Override
