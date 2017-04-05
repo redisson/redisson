@@ -141,8 +141,8 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Error will be thrown if Redis command can't be sended to Redis server after <code>retryAttempts</code>.
-     * But if it sent succesfully then <code>timeout</code> will be started.
+     * Error will be thrown if Redis command can't be sent to Redis server after <code>retryAttempts</code>.
+     * But if it sent successfully then <code>timeout</code> will be started.
      * <p>
      * Default is <code>3</code> attempts
      *
@@ -160,7 +160,9 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Time interval after which another one attempt to send Redis command will be executed.
+     * Defines time interval for another one attempt send Redis command 
+     * if it hasn't been sent already.
+     * 
      * <p>
      * Default is <code>1500</code> milliseconds
      *
@@ -178,7 +180,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Redis server response timeout.
+     * Redis server response timeout. Starts to countdown when Redis command has been successfully sent.
      * <p>
      * Default is <code>3000</code> milliseconds
      *
