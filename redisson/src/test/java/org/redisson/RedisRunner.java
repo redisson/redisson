@@ -855,7 +855,7 @@ public class RedisRunner {
 
     public boolean deleteClusterFile() {
         File f = new File(clusterFile);
-        if (f.exists()) {
+        if (f.exists() && isRandomDir()) {
             System.out.println("REDIS RUNNER: Deleting cluster config file " + f.getAbsolutePath());
             return f.delete();
         }
