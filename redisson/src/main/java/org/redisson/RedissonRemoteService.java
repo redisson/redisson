@@ -131,12 +131,20 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     private <T> void subscribe(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue,
             final ExecutorService executor) {
+        Set<RFuture<RemoteServiceRequest>> futuresSet = futures.get(remoteInterface);
+        if (futuresSet == null) {
+            return;
+        }
         final RFuture<RemoteServiceRequest> take = requestQueue.takeAsync();
-        futures.get(remoteInterface).add(take);
+        futuresSet.add(take);
         take.addListener(new FutureListener<RemoteServiceRequest>() {
             @Override
             public void operationComplete(Future<RemoteServiceRequest> future) throws Exception {
-                futures.get(remoteInterface).remove(take);
+                Set<RFuture<RemoteServiceRequest>> futuresSet = futures.get(remoteInterface);
+                if (futuresSet == null) {
+                    return;
+                }
+                futuresSet.remove(take);
                 
                 if (!future.isSuccess()) {
                     if (future.cause() instanceof RedissonShutdownException) {
@@ -286,6 +294,11 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             clientsFuture.addListener(new FutureListener<List<?>>() {
                 @Override
                 public void operationComplete(Future<List<?>> future) throws Exception {
+                    // interface has been deregistered 
+                    if (futures.get(remoteInterface) == null) {
+                        return;
+                    }
+                    
                     if (!future.isSuccess()) {
                         if (future.cause() instanceof RedissonShutdownException) {
                             return;
