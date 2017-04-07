@@ -16,6 +16,8 @@
 package org.redisson.mapreduce;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
@@ -35,7 +37,7 @@ public abstract class BaseMapperTask<KOut, VOut> implements Runnable, Serializab
     protected RedissonClient redisson;
     
     protected Class<?> objectClass;
-    protected String objectName;
+    protected List<String> objectNames = new ArrayList<String>();
     protected Class<?> objectCodecClass;
     
     protected int workersAmount;
@@ -45,13 +47,20 @@ public abstract class BaseMapperTask<KOut, VOut> implements Runnable, Serializab
     public BaseMapperTask() {
     }
     
-    public BaseMapperTask(Class<?> objectClass, String objectName, Class<?> objectCodecClass) {
+    public BaseMapperTask(Class<?> objectClass, Class<?> objectCodecClass) {
         super();
         this.objectClass = objectClass;
-        this.objectName = objectName;
         this.objectCodecClass = objectCodecClass;
     }
 
+    public void addObjectName(String objectName) {
+        this.objectNames.add(objectName);
+    }
+    
+    public void clearObjectNames() {
+        this.objectNames.clear();
+    }
+    
     public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
@@ -63,5 +72,5 @@ public abstract class BaseMapperTask<KOut, VOut> implements Runnable, Serializab
     public void setCollectorMapName(String collatorMapName) {
         this.collectorMapName = collatorMapName;
     }
-
+    
 }

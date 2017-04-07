@@ -42,8 +42,8 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
     public MapperTask() {
     }
     
-    public MapperTask(RMapper<KIn, VIn, KOut, VOut> mapper, Class<?> objectClass, String objectName, Class<?> objectCodecClass) {
-        super(objectClass, objectName, objectCodecClass);
+    public MapperTask(RMapper<KIn, VIn, KOut, VOut> mapper, Class<?> objectClass, Class<?> objectCodecClass) {
+        super(objectClass, objectCodecClass);
         this.mapper = mapper;
     }
 
@@ -57,22 +57,23 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
         }
         
         Injector.inject(mapper, redisson);
-
-        RMap<KIn, VIn> map = null;
-        if (RMapCache.class.isAssignableFrom(objectClass)) {
-            map = redisson.getMapCache(objectName, codec);
-        } else {
-            map = redisson.getMap(objectName, codec);
-        }
-
         RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount, timeout);
-        
-        for (Entry<KIn, VIn> entry : map.entrySet()) {
-            if (Thread.currentThread().isInterrupted()) {
-                return;
+
+        for (String objectName : objectNames) {
+            RMap<KIn, VIn> map = null;
+            if (RMapCache.class.isAssignableFrom(objectClass)) {
+                map = redisson.getMapCache(objectName, codec);
+            } else {
+                map = redisson.getMap(objectName, codec);
             }
             
-            mapper.map(entry.getKey(), entry.getValue(), collector);
+            for (Entry<KIn, VIn> entry : map.entrySet()) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+                
+                mapper.map(entry.getKey(), entry.getValue(), collector);
+            }
         }
     }
 

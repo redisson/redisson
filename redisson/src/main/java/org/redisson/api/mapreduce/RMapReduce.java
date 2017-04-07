@@ -85,7 +85,8 @@ import java.util.concurrent.TimeUnit;
 public interface RMapReduce<KIn, VIn, KOut, VOut> extends RMapReduceExecutor<VIn, KOut, VOut> {
 
     /**
-     * Defines timeout for MapReduce process
+     * Defines timeout for MapReduce process.
+     * <code>0</code> means infinity timeout.
      * 
      * @param timeout
      * @param unit

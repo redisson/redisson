@@ -16,11 +16,8 @@
 package org.redisson.mapreduce;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -34,9 +31,6 @@ import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -46,25 +40,6 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializable {
 
-    public static class LatchListener implements FutureListener<Object> {
-
-        private CountDownLatch latch;
-        
-        public LatchListener() {
-        }
-        
-        public LatchListener(CountDownLatch latch) {
-            super();
-            this.latch = latch;
-        }
-
-        @Override
-        public void operationComplete(Future<Object> future) throws Exception {
-            latch.countDown();
-        }
-        
-    }
-    
     private static final long serialVersionUID = 7559371478909848610L;
 
     @RInject
@@ -124,59 +99,31 @@ public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializab
         if (timeout > 0) {
             mapperTask.setTimeout(timeout - timeSpent);
         }
-        RFuture<?> mapperFuture = executor.submit(mapperTask);
-        if (timeout > 0 && !mapperFuture.await(timeout - timeSpent)) {
-            mapperFuture.cancel(true);
-            throw new MapReduceTimeoutException();
-        }
-        if (timeout == 0) {
-            try {
-                mapperFuture.await();
-            } catch (InterruptedException e) {
-                return null;
-            }
-        }
-        
-        List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
-        final CountDownLatch latch = new CountDownLatch(workersAmount);
-        for (int i = 0; i < workersAmount; i++) {
-            String name = collectorMapName + ":" + i;
-            Runnable runnable = new ReducerTask<KOut, VOut>(name, reducer, objectCodecClass, resultMapName, timeout - timeSpent);
-            RFuture<?> future = executor.submitAsync(runnable);
-            future.addListener(new LatchListener(latch));
-            futures.add(future);
-        }
 
-        if (Thread.currentThread().isInterrupted()) {
-            cancelReduce(futures);
-            return null;
-        }
-        
-        timeSpent = System.currentTimeMillis() - startTime;
-        if (isTimeoutExpired(timeSpent)) {
-            cancelReduce(futures);
-            throw new MapReduceTimeoutException();
-        }
+        mapperTask.addObjectName(objectName);
+        RFuture<?> mapperFuture = executor.submitAsync(mapperTask);
         try {
-            if (timeout > 0 && !latch.await(timeout - timeSpent, TimeUnit.MILLISECONDS)) {
-                cancelReduce(futures);
+            if (timeout > 0 && !mapperFuture.await(timeout - timeSpent)) {
+                mapperFuture.cancel(true);
                 throw new MapReduceTimeoutException();
             }
             if (timeout == 0) {
-                try {
-                    latch.await();
-                } catch (InterruptedException e) {
-                    return null;
-                }
+                mapperFuture.await();
             }
         } catch (InterruptedException e) {
-            cancelReduce(futures);
+            mapperFuture.cancel(true);
             return null;
         }
-        for (RFuture<?> rFuture : futures) {
-            if (!rFuture.isSuccess()) {
-                throw (Exception) rFuture.cause();
-            }
+
+        SubTasksExecutor reduceExecutor = new SubTasksExecutor(executor, workersAmount, startTime, timeout);
+        for (int i = 0; i < workersAmount; i++) {
+            String name = collectorMapName + ":" + i;
+            Runnable runnable = new ReducerTask<KOut, VOut>(name, reducer, objectCodecClass, resultMapName, timeout - timeSpent);
+            reduceExecutor.submit(runnable);
+        }
+
+        if (!reduceExecutor.await()) {
+            return null;
         }
         
         return executeCollator();
@@ -213,12 +160,6 @@ public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializab
 
     private boolean isTimeoutExpired(long timeSpent) {
         return timeSpent > timeout && timeout > 0;
-    }
-
-    private void cancelReduce(List<RFuture<?>> futures) {
-        for (RFuture<?> future : futures) {
-            future.cancel(true);
-        }
     }
 
 }

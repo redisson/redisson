@@ -43,8 +43,8 @@ public class CollectionMapperTask<VIn, KOut, VOut> extends BaseMapperTask<KOut, 
     public CollectionMapperTask() {
     }
     
-    public CollectionMapperTask(RCollectionMapper<VIn, KOut, VOut> mapper, Class<?> objectClass, String objectName, Class<?> objectCodecClass) {
-        super(objectClass, objectName, objectCodecClass);
+    public CollectionMapperTask(RCollectionMapper<VIn, KOut, VOut> mapper, Class<?> objectClass, Class<?> objectCodecClass) {
+        super(objectClass, objectCodecClass);
         this.mapper = mapper;
     }
 
@@ -59,31 +59,33 @@ public class CollectionMapperTask<VIn, KOut, VOut> extends BaseMapperTask<KOut, 
         
         Injector.inject(mapper, redisson);
 
-        Iterable<VIn> collection = null;
-        if (RSetCache.class.isAssignableFrom(objectClass)) {
-            collection = redisson.getSetCache(objectName, codec);
-        } else if (RSet.class.isAssignableFrom(objectClass)) {
-            collection = redisson.getSet(objectName, codec);
-        } else if (RSortedSet.class.isAssignableFrom(objectClass)) {
-            collection = redisson.getSortedSet(objectName, codec);
-        } else if (RScoredSortedSet.class.isAssignableFrom(objectClass)) {
-            collection = redisson.getScoredSortedSet(objectName, codec);
-        } else if (RLexSortedSet.class.isAssignableFrom(objectClass)) {
-            collection = (Iterable<VIn>) redisson.getLexSortedSet(objectName);
-        } else if (RList.class.isAssignableFrom(objectClass)) {
-            collection = redisson.getList(objectName, codec);
-        } else {
-            throw new IllegalStateException("Unable to work with " + objectClass);
-        }
-
-        RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount, timeout);
-
-        for (VIn value : collection) {
-            if (Thread.currentThread().isInterrupted()) {
-                return;
+        for (String objectName : objectNames) {
+            Iterable<VIn> collection = null;
+            if (RSetCache.class.isAssignableFrom(objectClass)) {
+                collection = redisson.getSetCache(objectName, codec);
+            } else if (RSet.class.isAssignableFrom(objectClass)) {
+                collection = redisson.getSet(objectName, codec);
+            } else if (RSortedSet.class.isAssignableFrom(objectClass)) {
+                collection = redisson.getSortedSet(objectName, codec);
+            } else if (RScoredSortedSet.class.isAssignableFrom(objectClass)) {
+                collection = redisson.getScoredSortedSet(objectName, codec);
+            } else if (RLexSortedSet.class.isAssignableFrom(objectClass)) {
+                collection = (Iterable<VIn>) redisson.getLexSortedSet(objectName);
+            } else if (RList.class.isAssignableFrom(objectClass)) {
+                collection = redisson.getList(objectName, codec);
+            } else {
+                throw new IllegalStateException("Unable to work with " + objectClass);
             }
-
-            mapper.map(value, collector);
+            
+            RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount, timeout);
+            
+            for (VIn value : collection) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+                
+                mapper.map(value, collector);
+            }
         }
     }
 
