@@ -191,6 +191,7 @@ public class RedisRunner {
     protected static RedisRunner.RedisProcess defaultRedisInstance;
     private static int defaultRedisInstanceExitCode;
 
+    private String path = "";
     private String defaultDir = Paths.get("").toString();
     private boolean nosave = false;
     private boolean randomDir = false;
@@ -459,6 +460,7 @@ public class RedisRunner {
     public RedisRunner dir(String dir) {
         if (!randomDir) {
             addConfigOption(REDIS_OPTIONS.DIR, dir);
+            this.path = dir;
         }
         return this;
     }
@@ -823,6 +825,10 @@ public class RedisRunner {
 
     public String defaultDir() {
         return this.defaultDir;
+    }
+    
+    public String dir() {
+        return this.path;
     }
 
     public String getInitialBindAddr() {
