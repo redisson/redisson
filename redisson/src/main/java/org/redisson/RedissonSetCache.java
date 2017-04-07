@@ -66,13 +66,17 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     
     public RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
-        evictionScheduler.schedule(getName());
+        if (evictionScheduler != null) {
+            evictionScheduler.schedule(getName());
+        }
         this.redisson = redisson;
     }
 
     public RedissonSetCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
-        evictionScheduler.schedule(getName());
+        if (evictionScheduler != null) {
+            evictionScheduler.schedule(getName());
+        }
         this.redisson = redisson;
     }
     

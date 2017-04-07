@@ -18,7 +18,6 @@ package org.redisson;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,9 +45,7 @@ import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScheduledFuture;
 import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
-import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
-import org.redisson.api.annotation.RInject;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -62,6 +59,7 @@ import org.redisson.executor.RemoteExecutorServiceAsync;
 import org.redisson.executor.RemoteExecutorServiceImpl;
 import org.redisson.executor.RemotePromise;
 import org.redisson.executor.ScheduledExecutorRemoteService;
+import org.redisson.misc.Injector;
 import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -244,18 +242,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     private byte[] encode(Object task) {
         // erase RedissonClient field to avoid its serialization
-        Field[] fields = task.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            if (RedissonClient.class.isAssignableFrom(field.getType())
-                    && field.isAnnotationPresent(RInject.class)) {
-                field.setAccessible(true);
-                try {
-                    field.set(task, null);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-        }
+        Injector.inject(task, null);
         
         try {
             return codec.getValueEncoder().encode(task);
