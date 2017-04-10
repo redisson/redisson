@@ -17,9 +17,10 @@ import java.util.List;
 public class ClusterRunner {
     
     private final LinkedHashMap<RedisRunner, String> nodes = new LinkedHashMap<>();
+    private final LinkedHashMap<String, String> masters = new LinkedHashMap<>();
     
     public ClusterRunner addNode(RedisRunner runner) {
-        nodes.put(runner, getRandomId());
+        nodes.putIfAbsent(runner, getRandomId());
         if (!runner.hasOption(RedisRunner.REDIS_OPTIONS.CLUSTER_ENABLED)) {
             runner.clusterEnabled(true);
         }
@@ -36,11 +37,20 @@ public class ClusterRunner {
         return this;
     }
     
+    public ClusterRunner addNode(RedisRunner master, RedisRunner... slaves) {
+        addNode(master);
+        for (RedisRunner slave : slaves) {
+            addNode(slave);
+            masters.put(nodes.get(slave), nodes.get(master));
+        }
+        return this;
+    }
+    
     public List<RedisRunner.RedisProcess> run() throws IOException, InterruptedException, RedisRunner.FailedToStartRedisException {
         ArrayList<RedisRunner.RedisProcess> processes = new ArrayList<>();
         for (RedisRunner runner : nodes.keySet()) {
             List<String> options = getClusterConfig(runner);
-            String confFile = runner.defaultDir() + File.pathSeparator + nodes.get(runner) + ".conf";
+            String confFile = runner.dir() + File.separatorChar + nodes.get(runner) + ".conf";
             System.out.println("WRITING CONFIG: for " + nodes.get(runner));
             try (PrintWriter printer = new PrintWriter(new FileWriter(confFile))) {
                 options.stream().forEach((line) -> {
@@ -64,13 +74,20 @@ public class ClusterRunner {
         List<String> nodeConfig = new ArrayList<>();
         int c = 0;
         for (RedisRunner node : nodes.keySet()) {
+            String nodeId = nodes.get(node);
             StringBuilder sb = new StringBuilder();
             String nodeAddr = node.getInitialBindAddr() + ":" + node.getPort();
-            sb.append(nodes.get(node)).append(" ");
+            sb.append(nodeId).append(" ");
             sb.append(nodeAddr).append(" ");
             sb.append(me.equals(nodeAddr)
                     ? "myself,"
-                    : "").append("master -").append(" ");
+                    : "");
+            if (!masters.containsKey(nodeId)) {
+                 sb.append("master -");
+            } else {
+                sb.append("slave ").append(masters.get(nodeId));
+            }
+            sb.append(" ");
             sb.append("0").append(" ");
             sb.append(me.equals(nodeAddr)
                     ? "0"
