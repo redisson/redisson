@@ -746,12 +746,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 	                + "if t ~= 0 then "
 	                    + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[5]); "
 	                    + "if expireIdle ~= false then "
-	                        + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
-	                        		// do we need this code?
-	                            //+ "local value = struct.pack('dLc0', t, string.len(val), val); "
-	                            //+ redis.call('hset', KEYS[1], ARGV[5], value); "
-	                            + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), ARGV[5]); "
-	                        + "end; "
 	                        + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
 	                    + "end; "
 	                + "end; "
