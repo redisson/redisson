@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -384,4 +385,85 @@ public class RedissonKeys implements RKeys {
         }
     }
 
+    @Override
+    public long remainTimeToLive(String name) {
+        return commandExecutor.get(remainTimeToLiveAsync(name));
+    }
+
+    @Override
+    public RFuture<Long> remainTimeToLiveAsync(String name) {
+        return commandExecutor.readAsync(name, StringCodec.INSTANCE, RedisCommands.PTTL, name);
+    }
+
+    @Override
+    public void rename(String currentName, String newName) {
+        commandExecutor.get(renameAsync(currentName, newName));
+    }
+
+    @Override
+    public RFuture<Void> renameAsync(String currentName, String newName) {
+        return commandExecutor.writeAsync(currentName, RedisCommands.RENAME, currentName, newName);
+    }
+
+    @Override
+    public boolean renamenx(String oldName, String newName) {
+        return commandExecutor.get(renamenxAsync(oldName, newName));
+    }
+
+    @Override
+    public RFuture<Boolean> renamenxAsync(String oldName, String newName) {
+        return commandExecutor.writeAsync(oldName, RedisCommands.RENAMENX, oldName, newName);
+    }
+
+    @Override
+    public boolean clearExpire(String name) {
+        return commandExecutor.get(clearExpireAsync(name));
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync(String name) {
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PERSIST, name);
+    }
+
+    @Override
+    public boolean expireAt(String name, long timestamp) {
+        return commandExecutor.get(expireAtAsync(name, timestamp));
+    }
+
+    @Override
+    public RFuture<Boolean> expireAtAsync(String name, long timestamp) {
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PEXPIREAT, name, timestamp);
+    }
+
+    @Override
+    public boolean expire(String name, long timeToLive, TimeUnit timeUnit) {
+        return commandExecutor.get(expireAsync(name, timeToLive, timeUnit));
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(String name, long timeToLive, TimeUnit timeUnit) {
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PEXPIRE, name, timeUnit.toMillis(timeToLive));
+    }
+
+    @Override
+    public void migrate(String name, String host, int port, int database) {
+        commandExecutor.get(migrateAsync(name, host, port, database));
+    }
+
+    @Override
+    public RFuture<Void> migrateAsync(String name, String host, int port, int database) {
+        return commandExecutor.writeAsync(name, RedisCommands.MIGRATE, host, port, name, database);
+    }
+
+    @Override
+    public boolean move(String name, int database) {
+        return commandExecutor.get(moveAsync(name, database));
+    }
+
+    @Override
+    public RFuture<Boolean> moveAsync(String name, int database) {
+        return commandExecutor.writeAsync(name, RedisCommands.MOVE, name, database);
+    }
+
+    
 }
