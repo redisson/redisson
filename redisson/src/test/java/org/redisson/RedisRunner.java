@@ -290,10 +290,7 @@ public class RedisRunner {
             throw new FailedToStartRedisException();
         }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                rp.stop();
-            } catch (InterruptedException ex) {
-            }
+            rp.stop();
         }));
         return rp;
     }
@@ -884,17 +881,36 @@ public class RedisRunner {
             this.runner = runner;
         }
 
-        public int stop() throws InterruptedException {
+        public int stop() {
             if (runner.isNosave() && !runner.isRandomDir()) {
                 RedisClient c = createDefaultRedisClientInstance();
                 RedisConnection connection = c.connect();
-                connection.async(new RedisStrictCommand<Void>("SHUTDOWN", "NOSAVE", new VoidReplayConvertor()))
-                        .await(3, TimeUnit.SECONDS);
+                try {
+                    connection.async(new RedisStrictCommand<Void>("SHUTDOWN", "NOSAVE", new VoidReplayConvertor()))
+                            .await(3, TimeUnit.SECONDS);
+                } catch (InterruptedException interruptedException) {
+                    //shutdown via command failed, lets wait and kill it later.
+                }
                 c.shutdown();
                 connection.closeAsync().syncUninterruptibly();
             }
-            redisProcess.destroy();
-            int exitCode = redisProcess.isAlive() ? redisProcess.waitFor() : redisProcess.exitValue();
+            Process p = redisProcess;
+            p.destroy();
+            boolean normalTermination = false;
+            try {
+                normalTermination = p.waitFor(5, TimeUnit.SECONDS);
+            } catch (InterruptedException ex) {
+                //OK lets hurry up by force kill;
+            }
+            if (!normalTermination) {
+                p = p.destroyForcibly();
+            }
+            cleanup();
+            int exitCode = p.exitValue();
+            return exitCode == 1 && RedissonRuntimeEnvironment.isWindows ? 0 : exitCode;
+        }
+
+        private void cleanup() {
             if (runner.isSentinel()) {
                 runner.deleteSentinelFile();
             }
@@ -904,9 +920,8 @@ public class RedisRunner {
             if (runner.isRandomDir()) {
                 runner.deleteDBfileDir();
             }
-            return exitCode == 1 && RedissonRuntimeEnvironment.isWindows ? 0 : exitCode;
         }
-
+        
         public Process getRedisProcess() {
             return redisProcess;
         }
