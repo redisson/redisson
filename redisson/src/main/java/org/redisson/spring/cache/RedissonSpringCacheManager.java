@@ -188,7 +188,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             map = redisson.getMap(name);
         }
         
-        Cache cache = new RedissonCache(redisson, map);
+        Cache cache = new RedissonCache(map);
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;
@@ -204,7 +204,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             map = redisson.getMapCache(name);
         }
         
-        Cache cache = new RedissonCache(redisson, map, config);
+        Cache cache = new RedissonCache(map, config);
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;
