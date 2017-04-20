@@ -30,7 +30,9 @@ import java.util.Map.Entry;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.SortOrder;
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
@@ -44,6 +46,7 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.mapreduce.RedissonCollectionMapReduce;
 
 /**
  * 
@@ -53,12 +56,21 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RScoredSortedSet<V> {
 
-    public RedissonScoredSortedSet(CommandAsyncExecutor commandExecutor, String name) {
+    private RedissonClient redisson;
+    
+    public RedissonScoredSortedSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
+        this.redisson = redisson;
     }
 
-    public RedissonScoredSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonScoredSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
+        this.redisson = redisson;
+    }
+
+    @Override
+    public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
+        return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor.getConnectionManager());
     }
 
     @Override

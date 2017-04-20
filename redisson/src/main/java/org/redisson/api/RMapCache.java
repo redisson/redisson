@@ -161,6 +161,53 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
     boolean fastPut(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    
+    /**
+     * If the specified key is not already associated
+     * with a value, associate it with the given value.
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * <p>
+     * Works faster than usual {@link #putIfAbsent(Object, Object, long, TimeUnit)}
+     * as it not returns previous value.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     * @return <code>true</code> if key is a new key in the hash and value was set.
+     *         <code>false</code> if key already exists in the hash
+     */
+    boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit);
+
+    /**
+     * If the specified key is not already associated
+     * with a value, associate it with the given value.
+     * <p>
+     * Stores value mapped by key with specified time to live and max idle time.
+     * Entry expires when specified time to live or max idle time has expired.
+     * <p>
+     * Works faster than usual {@link #putIfAbsent(Object, Object, long, TimeUnit, long, TimeUnit)}
+     * as it not returns previous value.
+     * 
+     * @param key - map key
+     * @param value - map value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * @param ttlUnit - time unit
+     * @param maxIdleTime - max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * @param maxIdleUnit - time unit
+     * <p>
+     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
+     * then entry stores infinitely.
+     *
+     * @return <code>true</code> if key is a new key in the hash and value was set.
+     *         <code>false</code> if key already exists in the hash.
+     */
+    boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Returns the number of entries in cache.

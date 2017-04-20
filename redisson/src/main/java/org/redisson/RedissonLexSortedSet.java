@@ -21,14 +21,21 @@ import java.util.List;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLexSortedSet;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
+/**
+ * Sorted set contained values of String type
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implements RLexSortedSet {
 
-    public RedissonLexSortedSet(CommandAsyncExecutor commandExecutor, String name) {
-        super(StringCodec.INSTANCE, commandExecutor, name);
+    public RedissonLexSortedSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(StringCodec.INSTANCE, commandExecutor, name, redisson);
     }
 
     @Override

@@ -19,6 +19,8 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.SortedSet;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -26,6 +28,15 @@ import java.util.SortedSet;
  * @param <V> value type
  */
 public interface RSortedSet<V> extends SortedSet<V>, RObject {
+
+    /**
+     * Returns <code>RMapReduce</code> object associated with this object
+     * 
+     * @param <KOut> output key
+     * @param <VOut> output value
+     * @return MapReduce instance
+     */
+    <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
 
     Set<V> readAll();
     

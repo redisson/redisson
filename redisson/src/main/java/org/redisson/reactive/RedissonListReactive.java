@@ -56,12 +56,12 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     public RedissonListReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        instance = new RedissonList<V>(commandExecutor, name);
+        instance = new RedissonList<V>(commandExecutor, name, null);
     }
 
     public RedissonListReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        instance = new RedissonList<V>(codec, commandExecutor, name);
+        instance = new RedissonList<V>(codec, commandExecutor, name, null);
     }
 
     @Override

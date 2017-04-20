@@ -45,12 +45,12 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     public RedissonSetReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        instance = new RedissonSet<V>(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+        instance = new RedissonSet<V>(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name, null);
     }
 
     public RedissonSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        instance = new RedissonSet<V>(codec, commandExecutor, name);
+        instance = new RedissonSet<V>(codec, commandExecutor, name, null);
     }
 
     @Override

@@ -15,7 +15,9 @@
  */
 package org.redisson;
 
-public class RedissonShutdownException extends RuntimeException {
+import org.redisson.client.RedisException;
+
+public class RedissonShutdownException extends RedisException {
 
     private static final long serialVersionUID = -2694051226420789395L;
 

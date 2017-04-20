@@ -89,6 +89,14 @@ public interface RRemoteService {
     <T> void register(Class<T> remoteInterface, T object, int workers, ExecutorService executor);
     
     /**
+     * Deregister all workers for remote service
+     *
+     * @param <T> type of remote service
+     * @param remoteInterface - remote service interface
+     */
+    <T> void deregister(Class<T> remoteInterface);
+    
+    /**
      * Get remote service object for remote invocations.
      * <p>
      * This method is a shortcut for

@@ -1,10 +1,29 @@
 Redisson Releases History
 ================================
-####Please Note: trunk is current development branch.
+### Please Note: trunk is current development branch.
 
 Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
 
-####04-Mar-2017 - versions 2.8.1 and 3.3.1 released
+## Please take part in [Redisson survey](https://www.surveymonkey.com/r/QXQZH5D)
+
+### 21-Mar-2017 - versions 2.8.2 and 3.3.2 released
+
+Feature - Redisson's Spring custom namespace support (thanks to Rui Gu)  
+Feature - ability to set custom connection manager (thanks to Saikiran Daripelli)  
+Feature - autoconfigured Spring Boot CacheStatisticsProvider implementation (thanks to Craig Andrews)  
+Feature - `RKeys.touch` and `RObject.touch` methods added  
+Feature - `RedissonCompletionService` implementation added  
+Feature - `RMap.getReadWriteLock` method added  
+Fixed - NPE during `RLocalCachedMap.fastRemove` invocation  
+Fixed - `redisson-tomcat-8` module is not compatible with Tomcat 8.5  
+Fixed - URLBuilder methods should be synchronized  
+Fixed - use PSETEX in `RBucket.set` method  
+Fixed - `DelayedQueue.remove()` and `DelayedQueue.removeAll()`  
+Fixed - unable to define Type and AvroSchema for AvroJacksonCodec  
+Fixed - ReadWriteLock leaseTimeout calculation  
+Fixed - `Config.fromJson(file)` method, throws StackOverflowError
+
+### 04-Mar-2017 - versions 2.8.1 and 3.3.1 released
 
 Feature - Cache with SoftReference support added for `RLocalCachedMap`  
 Feature - `Config.subscriptionMode` setting added  
@@ -13,7 +32,7 @@ Fixed - StackOverflowException in URLBuilder
 Fixed - TomcatSessionManager can't be used in Tomcat if Redisson has been deployed in web application  
 Fixed - skip cluster nodes with the "handshake" flag (thanks to @dcheckoway)
 
-####19-Feb-2017 - versions 2.8.0 and 3.3.0 released
+### 19-Feb-2017 - versions 2.8.0 and 3.3.0 released
 
 Feature - __`RClusteredLocalCachedMap` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#713-map-data-partitioning)  
 Feature - __`RClusteredMapCache` object added__ More details [here](https://github.com/redisson/redisson/wiki/7.-distributed-collections#713-map-data-partitioning)  
@@ -28,7 +47,7 @@ Fixed - cascade slaves are not supported in cluster mode
 Fixed - shutdown checking during master change state check added  
 Fixed - master isn't checked during new slave discovery in Sentinel mode  
 
-####02-Feb-2017 - versions 2.7.4 and 3.2.4 released
+### 02-Feb-2017 - versions 2.7.4 and 3.2.4 released
 
 Feature - Allow to specify Redisson instance/config during JCache cache creation  
 Fixed - `ByteBuf.release` method invocation is missed in `LZ4Codec` and `SnappyCodec`  
@@ -40,7 +59,7 @@ Fixed - `JCache` expiration listener doesn't work
 Fixed - `RLocalCachedMap` doesn't work with `SerializationCodec`  
 Fixed - `Can't find entry` error during operation execution on slave nodes  
 
-####19-Jan-2017 - versions 2.7.3 and 3.2.3 released
+### 19-Jan-2017 - versions 2.7.3 and 3.2.3 released
 
 Redisson Team is pleased to announce __ULTRA-FAST__ Redisson PRO edition.  
 Performance measure results available in [Benchmark whitepaper](https://redisson.pro/Redisson%20PRO%20benchmark%20whitepaper.pdf)
@@ -55,7 +74,7 @@ Fixed - `RSortedSet.removeAsync` and `RSortedSet.addAsync`
 Fixed - `RBloomFilter.tryInit` were not validated properly  
 Fixed - CommandDecoder should print all replay body on error  
 
-####19-Dec-2016 - versions 2.7.2 and 3.2.2 released
+### 19-Dec-2016 - versions 2.7.2 and 3.2.2 released
 
 Feature - `RList`, `RSet` and `RScoredSortedSet` implements `RSortable` interface with SORT command support  
 Feature - `NodeAsync` interface  
@@ -63,7 +82,7 @@ Feature - `Node.info`, `Node.getNode` methods added
 Fixed - elements distribution of `RBlockingFairQueue` across consumers  
 Fixed - `factory already defined` error during Redisson initialization under Apache Tomcat  
 
-####14-Dec-2016 - versions 2.7.1 and 3.2.1 released
+### 14-Dec-2016 - versions 2.7.1 and 3.2.1 released
 
 Url format used in config files __has changed__. For example:
 
@@ -77,7 +96,7 @@ Fixed - command timeout didn't respect during topic subscription
 Fixed - possible PublishSubscribe race-condition  
 Fixed - blocking queue/deque poll method blocks infinitely if delay less than 1 second  
 
-####26-Nov-2016 - versions 2.7.0 and 3.2.0 released
+### 26-Nov-2016 - versions 2.7.0 and 3.2.0 released
 
 Feature - __Spring Session implementation__. More details [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#145-spring-session)  
 Feature - __Tomcat Session Manager implementation__. More details [here](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#144-tomcat-redis-session-manager)  
@@ -89,31 +108,31 @@ Fixed - Wrong nodes parsing in result of cluster info command
 Fixed - NullPointerException in CommandDecoder.handleResult  
 Fixed - Redisson shutdown status should be checked during async command invocation  
 
-####07-Nov-2016 - versions 2.6.0 and 3.1.0 released
+### 07-Nov-2016 - versions 2.6.0 and 3.1.0 released
 
 Feature - __new object added__ `RBinaryStream`. More info about it [here](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#62-binary-stream-holder)  
 Improvement - limit Payload String on RedisTimeoutException  
 Improvement - Elasticache master node change detection process optimization  
 
-####27-Oct-2016 - versions 2.5.1 and 3.0.1 released
+### 27-Oct-2016 - versions 2.5.1 and 3.0.1 released
 
 Include all code changes from __2.2.27__ version
 
 Fixed - RMapCache.fastPutIfAbsentAsync doesn't take in account expiration  
 Fixed - timer field of RedisClient hasn't been initialized properly in some cases  
 
-####27-Oct-2016 - version 2.2.27 released
+### 27-Oct-2016 - version 2.2.27 released
 
 This version fixes old and annonying problem with `ConnectionPool exhusted` error. From this moment connection pool waits for free connection instead of throwing pool exhausted error. This leads to more effective Redis connection utilization.
 
 Improvement - remove `Connection pool exhausted` exception  
 
-####17-Oct-2016 - version 3.0.0 released
+### 17-Oct-2016 - version 3.0.0 released
 Fully compatible with JDK 8. Includes all code changes from __2.5.0__ version
 
 Feature - `RFeature` extends `CompletionStage`
 
-####17-Oct-2016 - version 2.5.0 released
+### 17-Oct-2016 - version 2.5.0 released
 This version brings greatly improved version of `RLiveObjectService` and adds cascade handling, cyclic dependency resolving, simplified object creation. Read more in this [article](https://dzone.com/articles/java-distributed-in-memory-data-model-powered-by-r)
 
 Includes all code changes from __2.2.26__ version
@@ -139,11 +158,11 @@ Fixed - `RLiveObjectService` can't detach content of List object
 Fixed - `RLiveObjectService` doesn't create objects mapped to Redisson objects in runtime during getter accesss  
 Fixed - `RLiveObjectService` can't recognize id field of object without setter  
 
-####17-Oct-2016 - version 2.2.26 released
+### 17-Oct-2016 - version 2.2.26 released
 Fixed - NPE in CommandDecoder  
 Fixed - PubSub connection re-subscription doesn't work in case when there is only one slave available
 
-####27-Sep-2016 - version 2.4.0 released
+### 27-Sep-2016 - version 2.4.0 released
 Includes all code changes from __2.2.25__ version
 
 Feature - __new object added__ `RPermitExpirableSemaphore`. More info about it [here](https://github.com/redisson/redisson/wiki/8.-distributed-locks-and-synchronizers#87-permitexpirablesemaphore)  
@@ -162,7 +181,7 @@ Improvement - `RMultimap.get` should return `RSet` or `RList` interface instead 
 Fixed - `RExecutorService` should reject non-static inner task class  
 Fixed - wrong object encoding in `RScoredSortedSet.addScore` method  
 
-####27-Sep-2016 - version 2.2.25 released
+### 27-Sep-2016 - version 2.2.25 released
 Improvement - log unexpected errors in netty handlers  
 Improvement - `Not all slots are covered` error should be more informative  
 Improvement - implement random wait time in `lock` method of `RedissonRedLock` and `RedissonMultiLock` objects  
@@ -176,7 +195,7 @@ Fixed - TRYAGAIN error handling in cluster mode
 Fixed - sync commands in connectionListener leads to connection timeout exception  
 Fixed - can't find slave error in cluster mode if failed slave hasn't been added before  
 
-####24-Aug-2016 - version 2.3.0 released
+### 24-Aug-2016 - version 2.3.0 released
 Starting from this version Redisson could be run as standalone node to execute distributed tasks. More features will be added to it in future. Read docs about it [here](https://github.com/mrniko/redisson/wiki/12.-Standalone-node)
 
 Feature - __new service added__ `RExecutorService`. More info about it [here](https://github.com/mrniko/redisson/wiki/9.-distributed-services/#93-distributed-executor-service)  
@@ -194,11 +213,11 @@ __Breaking api change__ - all classes moved from `org.redisson.core` to `org.red
 __Breaking api change__ - switched from `io.netty.util.concurrent.Future` to `org.redisson.api.RFuture` interface  
 Fixed - division by zero in WeightedRoundRobinBalancer (thanks to Shailender R Bathula)
 
-####08-Aug-2016 - version 2.2.24 released
+### 08-Aug-2016 - version 2.2.24 released
 Fixed - PubSub connection in cluster mode should be connected to node according slot derived from channel name  
 Fixed - `RLock.tryLock` could block forever under some conditions  
 
-####04-Aug-2016 - version 2.2.23 released
+### 04-Aug-2016 - version 2.2.23 released
 Improvement - `Future.cancel` method handling for RemoteService async call  
 Fixed - unable to redefine RedisClient command execution timeout  
 Fixed - exception occured in CommandEncoder leads to reponse timeout exception  
@@ -206,23 +225,23 @@ Fixed - exception occured in CommandDecoder leads to reponse timeout exception
 Fixed - BLPOP timeout calculation fixed  
 Fixed - object used in RemoteService to prevent race-condition during ack receiving should be created per request  
 
-####26-Jul-2016 - version 2.2.22 released  
+### 26-Jul-2016 - version 2.2.22 released  
 Fixed -  java.lang.UnsupportedOperationException during command batch usage with netty 4.0.38 and higher  
 
-####15-Jul-2016 - version 2.2.21 released  
+### 15-Jul-2016 - version 2.2.21 released  
 Fixed - `RLock`, `RReadWriteLock`, `RSemaphore` and `RCountDownLatch` can blocks forever under some conditions  
 
-####14-Jul-2016 - version 2.2.20 released  
+### 14-Jul-2016 - version 2.2.20 released  
 Fixed - NPE during pubsub re-subscription (regression since 2.2.18)  
 Fixed - `RSortedSet` doesn't work in cluster mode (regression since 2.2.16)  
 Fixed - PubSub connection pool initialization in cluster mode  
 Fixed - NPE during pubsub usage in cluster mode (regression since 2.2.18)  
 
-####13-Jul-2016 - version 2.2.19 released  
+### 13-Jul-2016 - version 2.2.19 released  
 Feature - `RSetReactive.readIntersection`, `RSetReactive.diff` and `RSetReactive.intersection` added  
 Fixed - cluster commands handling regression (regression since 2.2.18)
 
-####13-Jul-2016 - version 2.2.18 released  
+### 13-Jul-2016 - version 2.2.18 released  
 Feature - `RSet.randomAsync` and `RSet.random` commands added (thanks to dcheckoway)  
 Feature - commandTimeout param added to RedisClient  
 Feature - `JsonJacksonMapValueCodec` basic typed map value codec added (thanks to andrejserafim)  
@@ -235,7 +254,7 @@ Fixed - response parsing of cluster nodes command
 Fixed - Connections weren't closing during `RedisClient` shutdown  
 Fixed - `RedissonRedLock.unlock`  
 
-####30-Jun-2016 - version 2.2.17 released  
+### 30-Jun-2016 - version 2.2.17 released  
 Feature - `RMultimap.keySize` method added  
 Feature - `RKeys.getType` method added  
 Feature - `RKeys.getKeysByPattern` method with count param added  
@@ -251,7 +270,7 @@ Fixed - RLock.lock can hang in some cases
 Fixed - PubSub subscription may stuck in some cases  
 Fixed - return value of `RedissonMultimap.keySet.size` method  
 
-####12-Jun-2016 - version 2.2.16 released  
+### 12-Jun-2016 - version 2.2.16 released  
 Feature - `RGeo`, `RMultimapCache` added to `RBatch`  
 Feature - `fastRemove` and `fastRemoveAsync` methods were added to `RList`  
 Improvement - added Spring 4.3.0 support to RedissonSpringCacheManager  
@@ -261,14 +280,14 @@ Improvement - ability to define `Codec` for `RRemoteService`
 Fixed - cluster state managing with redis masters only  
 Fixed - dead lock during `RLock`, `RSemaphore`, `RReadWriteLock`, `RCountDownLatch` usage under heavy load  
 
-####08-Jun-2016 - version 2.2.15 released  
+### 08-Jun-2016 - version 2.2.15 released  
 Improvement - Performance boost up to 30% for `RSortedSet.add` method  
 Fixed - auth during reconnection (thanks to fransiskusx)  
 Fixed - Infinity loop with iterator  
 Fixed - NPE in `RSortedSet`  
 Fixed - `RSortedSet.remove` and `iterator.remove` methods can break elements ordering  
 
-####27-May-2016 - version 2.2.14 released  
+### 27-May-2016 - version 2.2.14 released  
 Redisson Team is pleased to announce [Redisson PRO](http://redisson.pro) edition. This version is based on open-source edition and has 24x7 support and some features.  
 
 Feature - __data sharding for `RMap`, `RSet` structures in cluster mode__ available only in [Redisson PRO](http://redisson.pro) edition  
@@ -293,7 +312,7 @@ Fixed - FSTObjectOutput shouldn't be closed after write
 Fixed - possible race-condition during ack waiting in `RRemoteService` object  
 Fixed - timeWait checking fixed in `RLock.tryLockAsync`  
 
-####30-Apr-2016 - version 2.2.13 released  
+### 30-Apr-2016 - version 2.2.13 released  
 
 Feature - `RSet.diff` and `RSet.intersection` methods added  
 Imporovement - `RScoredSortedSet`.`containsAll`, `removeAll` and `retainAll` methods speed optimization  
@@ -303,7 +322,7 @@ Fixed - possible infinity `RLock` expiration renewal process
 Fixed - error during `RSetCache.readAll` invocation.  
 Fixed - expiration override wasn't work in `RSetCache.add`  
 
-####22-Apr-2016 - version 2.2.12 released  
+### 22-Apr-2016 - version 2.2.12 released  
 
 Imporovement - Replaying phase handling in CommandDecoder  
 Fixed - cluster state update manager can't try next node if current node has failed to response   
@@ -320,7 +339,7 @@ Fixed - array start index in LUA scripts
 Fixed - RMap iterator  
 Fixed - probably thread blocking issues  
 
-####04-Apr-2016 - version 2.2.11 released  
+### 04-Apr-2016 - version 2.2.11 released  
 
 Since this version Redisson has __perfomance boost up to 43%__
 
@@ -335,7 +354,7 @@ Fixed - RTopic listeners hangs during synchronous commands execution inside it
 Fixed - Redisson hangs during shutdown if `RBlockingQueue\Deque.take` or `RBlockingQueue\Deque.poll` methods were invoked  
 
 
-####23-Mar-2016 - version 2.2.10 released  
+### 23-Mar-2016 - version 2.2.10 released  
 
 Feature - __new object added__ `RRemoteService`  
 Feature - __new object added__ `RSetMultimapCache`  
@@ -350,7 +369,7 @@ Fixed - `RLock.tryLockAsync` NPE
 Fixed - possible NPE during Redisson version logging  
 Fixed - Netty threads shutdown after connection error  
 
-####04-Mar-2016 - version 2.2.9 released  
+### 04-Mar-2016 - version 2.2.9 released  
 
 Feature - __new object added__ `RSetMultimap`  
 Feature - __new object added__ `RListMultimap`  
@@ -361,7 +380,7 @@ Improvement - Add DynamicImport-Package to OSGi headers
 Fixed - `RedissonSpringCacheManager` Sentinel compatibility  
 Fixed - `RAtomicLong.compareAndSet` doesn't work when expected value is 0 and it wasn't initialized  
 
-####12-Feb-2016 - version 2.2.8 released  
+### 12-Feb-2016 - version 2.2.8 released  
 
 Feature - `union`, `unionAsync`, `readUnion` and `readUnionAsync` methods were added to `RSet` object  
 Feature - `readAll` and `readAllAsync` methods were added to `RSetCache` object  
@@ -370,7 +389,7 @@ Fixed - Script error during `RSetCache.toArray` and `RSetCache.readAll` methods 
 Fixed - Sentinel doesn't support AUTH command  
 Fixed - RMap iterator  
 
-####03-Feb-2016 - version 2.2.7 released  
+### 03-Feb-2016 - version 2.2.7 released  
 
 Feature - `readAllKeySet`, `readAllValues`, `readAllEntry`, `readAllKeySetAsync`, `readAllValuesAsync`, `readAllEntryAsync` methods were added to `RMap` object  
 Improvement - `RKeys.delete` optimization in Cluster mode  
@@ -385,7 +404,7 @@ Fixed - offline slaves handling during Redisson start in Sentinel mode
 Fixed - `SELECT` command can't be executed in Sentinel mode  
 Fixed - `database` setting removed from cluster config  
 
-####28-Jan-2016 - version 2.2.6 released  
+### 28-Jan-2016 - version 2.2.6 released  
 
 Feature - __new object added__ `RedissonMultiLock`  
 Feature - `move` method added to `RSet`, `RSetReactive` objects (thanks to thrau)  
@@ -405,7 +424,7 @@ Fixed - can't connect with password to Sentinel and Elasticache servers
 Fixed - Cluster slave discovery (regression since 2.1.5)  
 Fixed - Sentinel slave discovery (regression since 2.1.5)  
 
-####09-Jan-2015 - version 2.2.5 released  
+### 09-Jan-2015 - version 2.2.5 released  
 
 Feature - __new object added__ `RBloomFilter`  
 Feature - __new object added__ `RAtomicDouble`  
@@ -424,7 +443,7 @@ Fixed - `RMap.addAndGetAsync` key encoding
 Fixed - `RBatch` errors handling  
 Fixed - `RBlockingQueue.pollLastAndOfferFirstToAsync` does not block properly  
 
-####25-Dec-2015 - version 2.2.4 released  
+### 25-Dec-2015 - version 2.2.4 released  
 Please update to this version ASAP due to connection leak discovered in previous versions since Redisson 2.1.4.
 
 Feature - __new object added__ `RBlockingDeque`  
@@ -441,18 +460,18 @@ Fixed - `RReadWriteLock.forceUnlock` works only for current thread
 Fixed - MapKeyDecoder and MapValueDecoder are called in wrong order  
 Fixed - `RReadWriteLock` doesn't work in cluster mode  
 
-####15-Dec-2015 - version 2.2.3 released  
+### 15-Dec-2015 - version 2.2.3 released  
 Feature - ability to set connection listener via `Config.connectionListener` setting  
 Fixed - `RLock` expiration bug fixed (regression bug since 2.2.2)  
 Fixed - NPE in `RedissonSortedSet` constructor  
 
-####14-Dec-2015 - version 2.2.2 released  
+### 14-Dec-2015 - version 2.2.2 released  
 Feature - `isShuttingDown` and `isShutdown` methods were added to RedissonClient and RedissonReactiveClient  
 Feature - __new object added__ `RSetCacheReactive`  
 Fixed - RLock expiration renewal task scheduling fixed (regression bug since 2.2.1)  
 Fixed - RExpirable.expireAsync timeUnit precision fixed (regression bug since 2.2.1)  
 
-####11-Dec-2015 - version 2.2.1 released  
+### 11-Dec-2015 - version 2.2.1 released  
 Feature - __new object added__ `RReadWriteLock` with reentrant read/write locking  
 Feature - __new object added__ `RMapCache` map-based cache with TTL support for each entry  
 Feature - __new object added__ `RSetCache` set-based cache with TTL support for each value  
@@ -461,7 +480,7 @@ Feature - `RMap.values()`, `RMap.keySet()`, `RMap.entrySet()` reimplemented with
 Feature - `RObjectReactive.isExists`, `RObject.isExists` and `RObject.isExistsAsync` added  
 Fixed - `RLock.unlock` not thrown IllegalMonitorStateException  
 
-####04-Dec-2015 - version 2.2.0 released  
+### 04-Dec-2015 - version 2.2.0 released  
 Since 2.2.0 version Redisson supports [Reactive Streams](http://www.reactive-streams.org). Use `Redisson.createReactive` method to access Reactive objects.
 
 Feature - [Reactive Streams](http://www.reactive-streams.org) support  
@@ -476,12 +495,12 @@ Fixed - `RLock.delete` didn't check lock existence
 Deprecated methods are dropped
 
 
-####30-Nov-2015 - version 2.1.6 released  
+### 30-Nov-2015 - version 2.1.6 released  
 Fixed - connection pool regression bug  
 Fixed - connection init during `Node.ping` and `ClusterNode.info` invocation  
 
 
-####24-Nov-2015 - version 2.1.5 released  
+### 24-Nov-2015 - version 2.1.5 released  
 Feature - new methods with `limit` option support were added to `RLexSortedSet`: `lexRange`, `lexRangeHead`, `lexRangeHeadAsync`, `lexRangeTail`, `lexRangeTailAsync`, `lexRangeAsync` (thanks to jackygurui)  
 Feature - new methods with `limit` option support were added to `RScoredSortedSet`: `valueRange`, `valueRangeAsync`, `entryRange`, `entryRangeAsync`, `valueRange`, `valueRangeAsync` (thanks to jackygurui)  
 Feature - `LOADING` Redis server response handling  
@@ -497,7 +516,7 @@ Fixed - `RSet.iterator`
 Fixed - `RBatch.execute` and `RBatch.executeAsync` errors handling  
 
 
-####11-Nov-2015 - version 2.1.4 released  
+### 11-Nov-2015 - version 2.1.4 released  
 Cluster support improvements. New codecs. Stability improvements.
 
 Feature - [LZ4](https://github.com/jpountz/lz4-java) compression codec support  
@@ -522,7 +541,7 @@ Fixed - NPE during Publish/Subscribe event handling
 Fixed - Redisson shutdown handling  
 Fixed - EOFException during RLock usage with SerializationCodec (thanks to Oleg Ternovoi)
 
-####17-Sep-2015 - version 2.1.3 released  
+### 17-Sep-2015 - version 2.1.3 released  
 Feature - Ability to define `Codec` for each object  
 Feature - `refreshConnectionAfterFails` setting added  
 Feature - [AWS Elasticache](https://aws.amazon.com/elasticache/) support via `Config.useElasticacheServers` method (thanks to Steve Ungerer)  
@@ -530,7 +549,7 @@ Feature - `RScoredSortedSet` and `RLexSortedSet` added. Both uses native Redis S
 Fixed - missed AUTH during channel reconnection  
 Fixed - resubscribe to subscribed topics during channel reconnection  
 
-####05-Sep-2015 - version 2.1.2 released  
+### 05-Sep-2015 - version 2.1.2 released  
 Fixed - possible NPE during channel reconnection  
 Fixed - executeAsync freezes in cluster mode  
 Fixed - use same node for SCAN/SSCAN/HSCAN during iteration  
@@ -540,7 +559,7 @@ Fixed - NPE with empty sentinel servers
 Fixed - unable to read `clientName` config param in Master\Slave and Sentinel modes  
 Fixed - "Too many open files" error in cluster mode
 
-####15-Aug-2015 - version 2.1.1 released  
+### 15-Aug-2015 - version 2.1.1 released  
 Feature - all keys operations extracted to `RKeys` interface  
 Feature - `RKeys.getKeys`, `RKeys.getKeysByPattern` and `RKeys.randomKey`methods added  
 Feature - `RBlockingQueueAsync.drainToAsync` method added  
@@ -554,7 +573,7 @@ Fixed - skip disconnected sentinels during startup
 Fixed - slave node discovery in sentinel mode which has been disconnected since start  
 __Deprecated__ - Redisson methods `deleteAsync`, `delete`, `deleteByPatternAsync`, `deleteByPattern`, `findKeysByPatternAsync`, `findKeysByPattern`. Use same methods with `RKeys` interface  
 
-####03-Aug-2015 - version 2.1.0 released  
+### 03-Aug-2015 - version 2.1.0 released  
 Feature - `RTopic` subscribtion/unsubscription status listener added  
 Feature - `RSet`: `removeRandom` and `removeRandomAsync` methods added  
 Improvement - `RList`: `retainAll`,`containsAll`, `indexOf`, `lastIndexOf` optimization  
@@ -565,7 +584,7 @@ Fixed - timeout timer interval calculation
 Fixed - `RBatch` NPE's with very big commands list  
 Fixed - `RBucket.set` with timeout  
 
-####26-Jul-2015 - version 2.0.0 released  
+### 26-Jul-2015 - version 2.0.0 released  
 Starting from 2.0.0 version Redisson has a new own async and lock-free Redis client under the hood. Thanks to the new architecture pipline (command batches) support has been implemented and a lot of code has gone.  
 
 Feature - new `RObject` methods: `move`, `moveAsync`, `migrate`, `migrateAsync`  
@@ -574,12 +593,12 @@ Feature - multiple commands batch (Redis pipelining) support via `Redisson.creat
 Feature - new methods `flushall`, `deleteAsync`, `delete`, `deleteByPatternAsync`, `deleteByPattern`, `findKeysByPatternAsync`, `findKeysByPattern` added to `RedissonClient` interface  
 Improvement - closed channel detection speedup  
 
-####22-Jul-2015 - version 1.3.1 released  
+### 22-Jul-2015 - version 1.3.1 released  
 Fixed - requests state sync during shutdown  
 Fixed - netty-transport-native-epoll is now has a provided scope  
 Fixed - NPE during `BlockingQueue.poll` invocation  
 
-####04-Jul-2015 - version 1.3.0 released
+### 04-Jul-2015 - version 1.3.0 released
 Feature - `RQueue.pollLastAndOfferFirstTo` method added  
 Feature - `RObject.rename`, `RObject.renameAsync`, `RObject.renamenx`, `RObject.renamenxAsync` methods added  
 Feature - `RList.getAsync`, `RList.addAsync`, `RList.addAllAsync` methods added  
@@ -600,7 +619,7 @@ Fixed - `RedissonClient.getScript` method added
 Fixed - `BlockingQueue.poll` method  
 Fixed - Incorrect map key encoding makes hmget return no fields when string keys are used (thanks to sammiq)  
 
-####02-Apr-2015 - version 1.2.1 released
+### 02-Apr-2015 - version 1.2.1 released
 Feature - all redis-script commands via 'RScript' object  
 Feature - implementation of `java.util.concurrent.BlockingQueue` (thanks to pdeschen)  
 Feature - buckets load by pattern (thanks to mathieucarbou)  
@@ -614,13 +633,13 @@ Fixed - `RMap.replace` concurrency issue (thanks to AndrewKolpakov)
 Fixed - `RLock` subscription timeout units fixed (thanks to AndrewKolpakov)  
 Fixed - Re-throw async exceptions (thanks to AndrewKolpakov)  
 
-####09-Jan-2015 - version 1.2.0 released
+### 09-Jan-2015 - version 1.2.0 released
 Feature - cluster mode support  
 Fixed - `RList` iterator race conditions  
 Fixed - `RDeque.addFirst` `RDeque.addLast` methods  
 Fixed - OSGi support
 
-####16-Dec-2014 - version 1.1.7 released
+### 16-Dec-2014 - version 1.1.7 released
 Improvement - `RAtomicLong` optimization  
 Fixed - `RMap.fastRemove` and `RMap.getAll` methods  
 Fixed - `RTopic` listeners re-subscribing in sentinel mode  
@@ -631,7 +650,7 @@ Fixed - `RAtomicLong` NPE
 Fixed - infinity loop during master/slave connection acquiring  
 Fixed - `RedissonList.addAll` result  
 
-####18-Nov-2014 - version 1.1.6 released
+### 18-Nov-2014 - version 1.1.6 released
 Feature - `RBucket.exists` and `RBucket.existsAsync` methods added  
 Feature - `RMap.addAndGet` method added  
 Feature -  database index via `database` and operation timeout via `timeout` config params added  
@@ -644,40 +663,40 @@ Fixed - HashedWheelTimer shutdown
 Fixed - `RLock` race conditions (thanks to jsotuyod and AndrewKolpakov)  
 Fixed - `RCountDownLatch` race conditions  
 
-####23-Jul-2014 - version 1.1.5 released
+### 23-Jul-2014 - version 1.1.5 released
 Feature - operations auto-retry. `retryAttempts` and `retryInterval` params added for each connection type  
 Feature - `RMap.filterEntries`, `RMap.getAll`, `RMap.filterKeys`, `RMap.filterValues` methods added  
 Feature - `RMap.fastRemove`, `RMap.fastRemoveAsync`, `RMap.fastPut` & `RMap.fastPutAsync` methods added  
 Fixed - async operations timeout handling  
 Fixed - sorting algorithm used in `RSortedSet`.  
 
-####15-Jul-2014 - version 1.1.4 released
+### 15-Jul-2014 - version 1.1.4 released
 Feature - new `RLock.lockInterruptibly`, `RLock.tryLock`, `RLock.lock` methods with TTL support  
 Fixed - pub/sub connections reattach then slave/master down  
 Fixed - turn off connection watchdog then slave/master down  
 Fixed - sentinel master switch  
 Fixed - slave down connection closing  
 
-####13-Jul-2014 - version 1.1.3 released
+### 13-Jul-2014 - version 1.1.3 released
 Improvement - RedissonCountDownLatch optimization  
 Improvement - RedissonLock optimization  
 Fixed - RedissonLock thread-safety  
 Fixed - master/slave auth using Sentinel servers  
 Fixed - slave down handling using Sentinel servers  
 
-####03-Jul-2014 - version 1.1.2 released
+### 03-Jul-2014 - version 1.1.2 released
 Improvement - RedissonSet.iterator implemented with sscan  
 Improvement - RedissonSortedSet.iterator optimization  
 Feature - `RSortedSet.removeAsync`, `RSortedSet.addAsync`, `RSet.removeAsync`, RSet.addAsync methods added  
 Feature - slave up/down detection in Sentinel servers connection mode  
 Feature - new-slave automatic discovery in Sentinel servers connection mode  
 
-####17-June-2014 - version 1.1.1 released
+### 17-June-2014 - version 1.1.1 released
 Feature - sentinel servers support  
 Fixed - connection leak in `RTopic`  
 Fixed - setted password not used in single server connection  
 
-####07-June-2014 - version 1.1.0 released
+### 07-June-2014 - version 1.1.0 released
 Feature - master/slave connection management  
 Feature - simple set/get object support via `org.redisson.core.RBucket`  
 Feature - hyperloglog support via `org.redisson.core.RHyperLogLog`  
@@ -691,24 +710,24 @@ Fixed - `RTopic.publish` now returns the number of clients that received the mes
 Fixed - reconnection handling (thanks to renzihui)  
 Improvement - `org.redisson.core.RTopic` now use lazy apporach for subscribe/unsubscribe  
 
-####04-May-2014 - version 1.0.4 released
+### 04-May-2014 - version 1.0.4 released
 Feature - distributed implementation of `java.util.Deque`  
 Feature - some objects implements `org.redisson.core.RExpirable`  
 Fixed - JsonJacksonCodec lazy init  
 
-####26-Mar-2014 - version 1.0.3 released
+### 26-Mar-2014 - version 1.0.3 released
 Fixed - RedissonAtomicLong state format  
 Fixed - Long serialization in JsonJacksonCodec  
 
-####05-Feb-2014 - version 1.0.2 released
+### 05-Feb-2014 - version 1.0.2 released
 Feature - distributed implementation of `java.util.SortedSet`  
 Fixed - OSGi compability  
 
-####17-Jan-2014 - version 1.0.1 released
+### 17-Jan-2014 - version 1.0.1 released
 Improvement - forceUnlock, isLocked, isHeldByCurrentThread and getHoldCount methods added to RLock  
 Feature - connection load balancer to use multiple Redis servers  
 Feature - published in maven central repo  
 
-####11-Jan-2014 - version 1.0.0 released
+### 11-Jan-2014 - version 1.0.0 released
 First stable release.
 

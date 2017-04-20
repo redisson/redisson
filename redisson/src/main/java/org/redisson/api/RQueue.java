@@ -29,9 +29,6 @@ public interface RQueue<V> extends Queue<V>, RExpirable, RQueueAsync<V> {
 
     V pollLastAndOfferFirstTo(String dequeName);
 
-    @Deprecated
-    V pollLastAndOfferFirstTo(RQueue<V> deque);
-
     List<V> readAll();
     
 }

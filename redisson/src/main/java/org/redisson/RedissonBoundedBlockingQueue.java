@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBoundedBlockingQueue;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -47,14 +48,14 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     private final CommandExecutor commandExecutor;
     private final SemaphorePubSub semaphorePubSub;
     
-    protected RedissonBoundedBlockingQueue(SemaphorePubSub semaphorePubSub, CommandExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+    protected RedissonBoundedBlockingQueue(SemaphorePubSub semaphorePubSub, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(commandExecutor, name, redisson);
         this.semaphorePubSub = semaphorePubSub;
         this.commandExecutor = commandExecutor;
     }
 
-    protected RedissonBoundedBlockingQueue(SemaphorePubSub semaphorePubSub, Codec codec, CommandExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
+    protected RedissonBoundedBlockingQueue(SemaphorePubSub semaphorePubSub, Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(codec, commandExecutor, name, redisson);
         this.semaphorePubSub = semaphorePubSub;
         this.commandExecutor = commandExecutor;
     }

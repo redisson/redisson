@@ -34,7 +34,9 @@ import java.util.NoSuchElementException;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.SortOrder;
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -44,6 +46,7 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.mapreduce.RedissonCollectionMapReduce;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -56,14 +59,23 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     public static final RedisCommand<Boolean> EVAL_BOOLEAN_ARGS2 = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS);
 
-    public RedissonList(CommandAsyncExecutor commandExecutor, String name) {
+    private RedissonClient redisson;
+    
+    public RedissonList(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
+        this.redisson = redisson;
     }
 
-    public RedissonList(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonList(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
+        this.redisson = redisson;
     }
 
+    @Override
+    public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
+        return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor.getConnectionManager());
+    }
+    
     @Override
     public int size() {
         return get(sizeAsync());

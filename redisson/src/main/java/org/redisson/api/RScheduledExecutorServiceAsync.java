@@ -19,7 +19,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.ScheduledExecutorService}
+ * Redis based implementation of {@link java.util.concurrent.ScheduledExecutorService}
  * 
  * @author Nikita Koksharov
  *

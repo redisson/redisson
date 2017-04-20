@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.pubsub;
-
-import org.redisson.misc.RPromise;
+package org.redisson.misc;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;

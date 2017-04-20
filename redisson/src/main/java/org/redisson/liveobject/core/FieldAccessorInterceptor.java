@@ -15,15 +15,16 @@
  */
 package org.redisson.liveobject.core;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
+import org.redisson.api.RMap;
+import org.redisson.liveobject.misc.ClassUtils;
+
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.This;
-import org.redisson.api.RMap;
-import org.redisson.liveobject.misc.ClassUtils;
 
 /**
  *
@@ -36,7 +37,7 @@ public class FieldAccessorInterceptor {
             @Origin Method method,
             @AllArguments Object[] args,
             @This Object me,
-            @FieldValue("liveObjectLiveMap") RMap map
+            @FieldValue("liveObjectLiveMap") RMap<?, ?> map
     ) throws Exception {
         if (args.length >= 1 && String.class.isAssignableFrom(args[0].getClass())) {
             String name = ((String) args[0]).substring(0, 1).toUpperCase() + ((String) args[0]).substring(1);

@@ -18,6 +18,8 @@ package org.redisson.api;
 import java.util.List;
 import java.util.RandomAccess;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
+
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
  *
@@ -27,6 +29,15 @@ import java.util.RandomAccess;
  */
 public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<List<V>>, RandomAccess {
 
+    /**
+     * Returns <code>RMapReduce</code> object associated with this map
+     * 
+     * @param <KOut> output key
+     * @param <VOut> output value
+     * @return MapReduce instance
+     */
+    <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
+    
     /**
      * Add <code>element</code> after <code>elementToFind</code>
      * 

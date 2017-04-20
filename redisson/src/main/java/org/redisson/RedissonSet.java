@@ -26,7 +26,9 @@ import java.util.Set;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.SortOrder;
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -36,6 +38,7 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.mapreduce.RedissonCollectionMapReduce;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -46,12 +49,21 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIterator {
 
-    protected RedissonSet(CommandAsyncExecutor commandExecutor, String name) {
+    RedissonClient redisson;
+    
+    protected RedissonSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
+        this.redisson = redisson;
     }
 
-    public RedissonSet(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
+        this.redisson = redisson;
+    }
+
+    @Override
+    public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
+        return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor.getConnectionManager());
     }
 
     @Override
@@ -77,10 +89,6 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
         return commandExecutor.readAsync(getName(o), codec, RedisCommands.SISMEMBER, getName(o), o);
-    }
-
-    protected String getName(Object o) {
-        return getName();
     }
 
     @Override

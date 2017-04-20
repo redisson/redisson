@@ -17,6 +17,12 @@ package org.redisson.api;
 
 import java.util.Collection;
 
+/**
+ * Sorted set contained values of String type
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RLexSortedSetAsync extends RCollectionAsync<String> {
 
     RFuture<String> pollLastAsync();

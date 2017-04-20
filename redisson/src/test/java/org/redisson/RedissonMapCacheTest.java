@@ -865,4 +865,29 @@ public class RedissonMapCacheTest extends BaseTest {
         Assert.assertEquals(2.23, mapCache1.get("4"));
     }
 
+    
+    @Test
+    public void testFastPutIfAbsentWithTTL() throws Exception {
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simpleTTL");
+        SimpleKey key = new SimpleKey("1");
+        SimpleValue value = new SimpleValue("2");
+        map.fastPutIfAbsent(key, value, 1, TimeUnit.SECONDS);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("3"), 1, TimeUnit.SECONDS)).isFalse();
+        assertThat(map.get(key)).isEqualTo(value);
+        
+        Thread.sleep(1100);
+        
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("3"), 1, TimeUnit.SECONDS)).isTrue();
+        assertThat(map.get(key)).isEqualTo(new SimpleValue("3"));
+        
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("4"), 1, TimeUnit.SECONDS)).isFalse();
+        assertThat(map.get(key)).isEqualTo(new SimpleValue("3"));
+        
+        Thread.sleep(1100);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("4"), 1, TimeUnit.SECONDS, 500, TimeUnit.MILLISECONDS)).isTrue();
+        
+        Thread.sleep(550);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("5"), 1, TimeUnit.SECONDS, 500, TimeUnit.MILLISECONDS)).isTrue();
+
+    }
 }

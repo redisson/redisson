@@ -84,7 +84,7 @@ public class RedissonDequeTest extends BaseTest {
         queue2.addFirst(5);
         queue2.addFirst(4);
 
-        queue1.pollLastAndOfferFirstTo(queue2);
+        queue1.pollLastAndOfferFirstTo(queue2.getName());
         assertThat(queue2).containsExactly(3, 4, 5, 6);
     }
 

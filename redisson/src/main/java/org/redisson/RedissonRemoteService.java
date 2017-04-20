@@ -17,8 +17,10 @@ package org.redisson;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,6 +61,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     private static final Logger log = LoggerFactory.getLogger(RedissonRemoteService.class);
 
     private final Map<RemoteServiceKey, RemoteServiceMethod> beans = PlatformDependent.newConcurrentHashMap();
+    private final Map<Class<?>, Set<RFuture<RemoteServiceRequest>>> futures = PlatformDependent.newConcurrentHashMap();
 
     public RedissonRemoteService(RedissonClient redisson, CommandExecutor commandExecutor) {
         super(redisson, commandExecutor);
@@ -82,6 +85,23 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
 
     @Override
+    public <T> void deregister(Class<T> remoteInterface) {
+        for (Method method : remoteInterface.getMethods()) {
+            RemoteServiceKey key = new RemoteServiceKey(remoteInterface, method.getName(), getMethodSignatures(method));
+            beans.remove(key);
+        }
+        
+        Set<RFuture<RemoteServiceRequest>> removedFutures = futures.remove(remoteInterface);
+        if (removedFutures == null) {
+            return;
+        }
+        
+        for (RFuture<RemoteServiceRequest> future : removedFutures) {
+            future.cancel(false);
+        }
+    }
+    
+    @Override
     public <T> void register(Class<T> remoteInterface, T object, int workers) {
         register(remoteInterface, object, workers, commandExecutor.getConnectionManager().getExecutor());
     }
@@ -99,19 +119,33 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             }
         }
 
+        Set<RFuture<RemoteServiceRequest>> values = Collections.newSetFromMap(PlatformDependent.<RFuture<RemoteServiceRequest>, Boolean>newConcurrentHashMap());
+        futures.put(remoteInterface, values);
+        
+        String requestQueueName = getRequestQueueName(remoteInterface);
+        RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
         for (int i = 0; i < workers; i++) {
-            String requestQueueName = getRequestQueueName(remoteInterface);
-            RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
             subscribe(remoteInterface, requestQueue, executor);
         }
     }
 
     private <T> void subscribe(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue,
             final ExecutorService executor) {
-        RFuture<RemoteServiceRequest> take = requestQueue.takeAsync();
+        Set<RFuture<RemoteServiceRequest>> futuresSet = futures.get(remoteInterface);
+        if (futuresSet == null) {
+            return;
+        }
+        final RFuture<RemoteServiceRequest> take = requestQueue.takeAsync();
+        futuresSet.add(take);
         take.addListener(new FutureListener<RemoteServiceRequest>() {
             @Override
             public void operationComplete(Future<RemoteServiceRequest> future) throws Exception {
+                Set<RFuture<RemoteServiceRequest>> futuresSet = futures.get(remoteInterface);
+                if (futuresSet == null) {
+                    return;
+                }
+                futuresSet.remove(take);
+                
                 if (!future.isSuccess()) {
                     if (future.cause() instanceof RedissonShutdownException) {
                         return;
@@ -157,10 +191,10 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                         @Override
                         public void operationComplete(Future<Boolean> future) throws Exception {
                             if (!future.isSuccess()) {
-                                log.error("Can't send ack for request: " + request, future.cause());
                                 if (future.cause() instanceof RedissonShutdownException) {
                                     return;
                                 }
+                                log.error("Can't send ack for request: " + request, future.cause());
                                 // re-subscribe after a failed send (ack)
                                 subscribe(remoteInterface, requestQueue, executor);
                                 return;
@@ -260,12 +294,17 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             clientsFuture.addListener(new FutureListener<List<?>>() {
                 @Override
                 public void operationComplete(Future<List<?>> future) throws Exception {
+                    // interface has been deregistered 
+                    if (futures.get(remoteInterface) == null) {
+                        return;
+                    }
+                    
                     if (!future.isSuccess()) {
-                        log.error("Can't send response: " + responseHolder.get() + " for request: " + request,
-                                future.cause());
                         if (future.cause() instanceof RedissonShutdownException) {
                             return;
                         }
+                        log.error("Can't send response: " + responseHolder.get() + " for request: " + request,
+                                future.cause());
                     }
                     
                     // re-subscribe anyways (fail or success) after the send

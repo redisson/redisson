@@ -22,13 +22,16 @@ import java.util.Date;
 import java.util.concurrent.Callable;
 
 import org.redisson.RedissonExecutorService;
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RInject;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.Injector;
 import org.redisson.remote.RemoteParams;
 
 import io.netty.buffer.ByteBuf;
@@ -100,10 +103,10 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
         RFuture<Void> future = asyncScheduledServiceAtFixed().scheduleAtFixedRate(className, classBody, state, newStartTime, period);
         try {
             executeRunnable(className, classBody, state);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // cancel task if it throws an exception
             future.cancel(true);
-            throw new RuntimeException(e);
+            throw e;
         }
     }
     
@@ -113,10 +116,10 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
         RFuture<Void> future = asyncScheduledServiceAtFixed().schedule(className, classBody, state, nextStartDate.getTime(), cronExpression);
         try {
             executeRunnable(className, classBody, state);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // cancel task if it throws an exception
             future.cancel(true);
-            throw new RuntimeException(e);
+            throw e;
         }
     }
 
@@ -172,6 +175,11 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
             
             Callable<?> callable = decode(buf);
             return callable.call();
+        } catch (RedissonShutdownException e) {
+            return null;
+            // skip
+        } catch (RedisException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         } finally {
@@ -183,18 +191,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
 
     private <T> T decode(ByteBuf buf) throws IOException {
         T task = (T) codec.getValueDecoder().decode(buf, null);
-        Field[] fields = task.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            if (RedissonClient.class.isAssignableFrom(field.getType())
-                    && field.isAnnotationPresent(RInject.class)) {
-                field.setAccessible(true);
-                try {
-                    field.set(task, redisson);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-        }
+        Injector.inject(task, redisson);
         return task;
     }
 
@@ -214,6 +211,10 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
         
             Runnable runnable = decode(buf);
             runnable.run();
+        } catch (RedissonShutdownException e) {
+            // skip
+        } catch (RedisException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         } finally {

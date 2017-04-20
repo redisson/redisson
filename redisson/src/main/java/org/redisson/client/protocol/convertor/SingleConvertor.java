@@ -15,6 +15,12 @@
  */
 package org.redisson.client.protocol.convertor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <R> type
+ */
 public abstract class SingleConvertor<R> implements Convertor<R> {
 
     @Override

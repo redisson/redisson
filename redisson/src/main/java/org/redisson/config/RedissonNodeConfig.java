@@ -23,12 +23,14 @@ import java.util.Map;
 import org.redisson.api.RedissonNodeInitializer;
 
 /**
+ * Redisson Node configuration
  * 
  * @author Nikita Koksharov
  *
  */
 public class RedissonNodeConfig extends Config {
     
+    private int mapReduceWorkers = 0;
     private RedissonNodeInitializer redissonNodeInitializer;
     private Map<String, Integer> executorServiceWorkers = new HashMap<String, Integer>();
     
@@ -47,6 +49,23 @@ public class RedissonNodeConfig extends Config {
     }
     
     /**
+     * MapReduce workers amount. 
+     * 0 = current_processors_amount
+     * <p>
+     * Default is <code>0</code>
+     * 
+     * @param mapReduceWorkers workers for MapReduce
+     * @return config
+     */
+    public RedissonNodeConfig setMapReduceWorkers(int mapReduceWorkers) {
+        this.mapReduceWorkers = mapReduceWorkers;
+        return this;
+    }
+    public int getMapReduceWorkers() {
+        return mapReduceWorkers;
+    }
+    
+    /**
      * Executor service workers amount per service name 
      * 
      * @param workers mapping
@@ -60,10 +79,6 @@ public class RedissonNodeConfig extends Config {
         return executorServiceWorkers;
     }
     
-    public RedissonNodeInitializer getRedissonNodeInitializer() {
-        return redissonNodeInitializer;
-    }
-
     /**
      * Redisson node initializer
      * 
@@ -74,6 +89,10 @@ public class RedissonNodeConfig extends Config {
         this.redissonNodeInitializer = redissonNodeInitializer;
         return this;
     }
+    public RedissonNodeInitializer getRedissonNodeInitializer() {
+        return redissonNodeInitializer;
+    }
+
 
     /**
      * Read config object stored in JSON format from <code>File</code>
