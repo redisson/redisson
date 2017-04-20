@@ -64,10 +64,25 @@ public class URLBuilder {
         }
     };
     
+    private static Field getFactoryField() {
+        Field field;
+        try {
+            field = URL.class.getDeclaredField("factory");
+        } catch (NoSuchFieldException e) {
+            try {
+                // used in Android
+                field = URL.class.getDeclaredField("streamHandlerFactory");
+            } catch (Exception e1) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return field;
+    }
+    
     public static synchronized void restoreURLFactory() {
         if (refCounter.decrementAndGet() == 0) {
             try {
-                Field field = URL.class.getDeclaredField("factory");
+                Field field = getFactoryField();
                 field.setAccessible(true);
                 field.set(null, currentFactory);
                 currentFactory = null;
@@ -80,7 +95,7 @@ public class URLBuilder {
     public static synchronized void replaceURLFactory() {
         try {
             refCounter.incrementAndGet();
-            Field field = URL.class.getDeclaredField("factory");
+            Field field = getFactoryField();
             field.setAccessible(true);
             final URLStreamHandlerFactory temp = (URLStreamHandlerFactory) field.get(null);
             if (temp != newFactory) {
