@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
-import org.redisson.api.RedissonClient;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -40,22 +39,18 @@ public class RedissonCache implements Cache {
 
     private CacheConfig config;
     
-    private final RedissonClient redisson;
-
     private final AtomicLong hits = new AtomicLong();
 
     private final AtomicLong misses = new AtomicLong();
 
-    public RedissonCache(RedissonClient redisson, RMapCache<Object, Object> mapCache, CacheConfig config) {
+    public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config) {
         this.mapCache = mapCache;
         this.map = mapCache;
         this.config = config;
-        this.redisson = redisson;
     }
 
-    public RedissonCache(RedissonClient redisson, RMap<Object, Object> map) {
+    public RedissonCache(RMap<Object, Object> map) {
         this.map = map;
-        this.redisson = redisson;
     }
 
     @Override
