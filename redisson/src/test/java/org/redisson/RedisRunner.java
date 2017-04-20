@@ -272,7 +272,7 @@ public class RedisRunner {
     public RedisProcess runAndCheck() throws IOException, InterruptedException, FailedToStartRedisException {
         List<String> args = new ArrayList(options.values());
         if (sentinelFile != null && sentinelFile.length() > 0) {
-            String confFile = defaultDir + File.pathSeparator + sentinelFile;
+            String confFile = defaultDir + File.separator + sentinelFile;
             try (PrintWriter printer = new PrintWriter(new FileWriter(confFile))) {
                 args.stream().forEach((arg) -> {
                     if (arg.contains("--")) {
@@ -845,7 +845,7 @@ public class RedisRunner {
     }
 
     public boolean deleteSentinelFile() {
-        File f = new File(defaultDir + File.pathSeparator + sentinelFile);
+        File f = new File(defaultDir + File.separator + sentinelFile);
         if (f.exists()) {
             System.out.println("REDIS RUNNER: Deleting sentinel config file " + f.getAbsolutePath());
             return f.delete();
@@ -863,7 +863,7 @@ public class RedisRunner {
     }
 
     private void makeRandomDefaultDir() {
-        File f = new File(RedissonRuntimeEnvironment.tempDir + File.pathSeparator + UUID.randomUUID());
+        File f = new File(RedissonRuntimeEnvironment.tempDir + File.separator + UUID.randomUUID());
         if (f.exists()) {
             makeRandomDefaultDir();
         } else {

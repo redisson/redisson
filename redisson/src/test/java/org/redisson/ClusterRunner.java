@@ -50,7 +50,7 @@ public class ClusterRunner {
         ArrayList<RedisRunner.RedisProcess> processes = new ArrayList<>();
         for (RedisRunner runner : nodes.keySet()) {
             List<String> options = getClusterConfig(runner);
-            String confFile = runner.dir() + File.separatorChar + nodes.get(runner) + ".conf";
+            String confFile = runner.dir() + File.separator + nodes.get(runner) + ".conf";
             System.out.println("WRITING CONFIG: for " + nodes.get(runner));
             try (PrintWriter printer = new PrintWriter(new FileWriter(confFile))) {
                 options.stream().forEach((line) -> {
