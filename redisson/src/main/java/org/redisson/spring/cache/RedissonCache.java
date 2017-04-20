@@ -165,7 +165,7 @@ public class RedissonCache implements Cache {
     }
 
     protected Object fromStoreValue(Object storeValue) {
-        if (storeValue.getClass() == NullValue.class) {
+        if (storeValue instanceof NullValue) {
             return null;
         }
         return storeValue;
