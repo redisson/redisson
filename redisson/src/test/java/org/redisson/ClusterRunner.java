@@ -102,14 +102,14 @@ public class ClusterRunner {
         return nodeConfig;
     }
     
-    private String getSlots(int index, int groupNum) {
+    private static String getSlots(int index, int groupNum) {
         final double t = 16383;
         int start = index == 0 ? 0 : (int) (t / groupNum * index);
         int end = index == groupNum - 1 ? (int) t : (int) (t / groupNum * (index + 1)) - 1;
         return start + "-" + end;
     }
 
-    private String getRandomId() {
+    private static String getRandomId() {
         final SecureRandom r = new SecureRandom();
         return new BigInteger(160, r).toString(16);
     }
