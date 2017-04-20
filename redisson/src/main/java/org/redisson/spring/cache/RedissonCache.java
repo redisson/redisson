@@ -87,7 +87,7 @@ public class RedissonCache implements Cache {
                 throw new IllegalStateException("Cached value is not of required type [" + type.getName() + "]: " + value);
             }
         }
-        return (T) value;
+        return (T) fromStoreValue(value);
     }
 
     @Override
@@ -165,7 +165,7 @@ public class RedissonCache implements Cache {
     }
 
     protected Object fromStoreValue(Object storeValue) {
-        if (storeValue == NullValue.INSTANCE) {
+        if (storeValue.getClass() == NullValue.class) {
             return null;
         }
         return storeValue;
