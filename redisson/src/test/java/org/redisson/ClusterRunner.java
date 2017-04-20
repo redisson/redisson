@@ -17,7 +17,7 @@ import java.util.List;
 public class ClusterRunner {
     
     private final LinkedHashMap<RedisRunner, String> nodes = new LinkedHashMap<>();
-    private final LinkedHashMap<String, String> masters = new LinkedHashMap<>();
+    private final LinkedHashMap<String, String> slaveMasters = new LinkedHashMap<>();
     
     public ClusterRunner addNode(RedisRunner runner) {
         nodes.putIfAbsent(runner, getRandomId());
@@ -41,7 +41,7 @@ public class ClusterRunner {
         addNode(master);
         for (RedisRunner slave : slaves) {
             addNode(slave);
-            masters.put(nodes.get(slave), nodes.get(master));
+            slaveMasters.put(nodes.get(slave), nodes.get(master));
         }
         return this;
     }
@@ -82,10 +82,10 @@ public class ClusterRunner {
             sb.append(me.equals(nodeAddr)
                     ? "myself,"
                     : "");
-            if (!masters.containsKey(nodeId)) {
+            if (!slaveMasters.containsKey(nodeId)) {
                  sb.append("master -");
             } else {
-                sb.append("slave ").append(masters.get(nodeId));
+                sb.append("slave ").append(slaveMasters.get(nodeId));
             }
             sb.append(" ");
             sb.append("0").append(" ");
