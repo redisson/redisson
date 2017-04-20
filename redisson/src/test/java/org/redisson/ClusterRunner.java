@@ -72,7 +72,8 @@ public class ClusterRunner {
     private List<String> getClusterConfig(RedisRunner runner) {
         String me = runner.getInitialBindAddr() + ":" + runner.getPort();
         List<String> nodeConfig = new ArrayList<>();
-        int c = 0;
+        int c = 1;
+        int master = 0;
         for (RedisRunner node : nodes.keySet()) {
             String nodeId = nodes.get(node);
             StringBuilder sb = new StringBuilder();
@@ -82,7 +83,8 @@ public class ClusterRunner {
             sb.append(me.equals(nodeAddr)
                     ? "myself,"
                     : "");
-            if (!masters.containsKey(nodeId)) {
+            boolean isMaster = !masters.containsKey(nodeId);
+            if (isMaster) {
                  sb.append("master -");
             } else {
                 sb.append("slave ").append(masters.get(nodeId));
@@ -92,9 +94,13 @@ public class ClusterRunner {
             sb.append(me.equals(nodeAddr)
                     ? "0"
                     : "1").append(" ");
-            sb.append(c + 1).append(" ");
+            sb.append(c).append(" ");
             sb.append("connected ");
-            sb.append(getSlots(c, nodes.size()));
+            if (isMaster) {
+                sb.append(getSlots(master, masters.size()));
+                master++;
+            }
+            
             c++;
             nodeConfig.add(sb.toString());
         }
