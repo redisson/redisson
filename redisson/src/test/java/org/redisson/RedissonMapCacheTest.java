@@ -842,7 +842,7 @@ public class RedissonMapCacheTest extends BaseTest {
     }
     
     @Test
-    public void testIssue827() {
+    public void testAddAndGet() {
         RMapCache<String, Object> mapCache = redisson.getMapCache("test_put_if_absent", StringCodec.INSTANCE);
         mapCache.putIfAbsent("4", 0L, 10000L, TimeUnit.SECONDS);
         mapCache.addAndGet("4", 1L);
@@ -859,9 +859,8 @@ public class RedissonMapCacheTest extends BaseTest {
         map.putIfAbsent("4", 0L);
         Assert.assertEquals("1", map.get("4"));
         RMapCache<String, Object> mapCache1 = redisson.getMapCache("test_put_if_absent_3");
-        Object currValue = mapCache1.putIfAbsent("4", 1.23, 10000L, TimeUnit.SECONDS);
-        Object updatedValue = mapCache1.addAndGet("4", 1D);
-        System.out.println("updatedValue: " + updatedValue);
+        mapCache1.putIfAbsent("4", 1.23, 10000L, TimeUnit.SECONDS);
+        mapCache1.addAndGet("4", 1D);
         Assert.assertEquals(2.23, mapCache1.get("4"));
     }
 
