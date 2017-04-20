@@ -155,7 +155,7 @@ public class RedissonCache implements Cache {
                             throw new IllegalStateException(e);
                         }
                     }
-                    map.put(key, value);
+                    put(key, value);
                 }
             } finally {
                 lock.unlock();
