@@ -16,13 +16,19 @@
 package org.redisson.cache;
 
 import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
 
-public class CachedValueReference<V> extends SoftReference<V> {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
+public class CachedValueWeakReference<V> extends WeakReference<V> {
 
     private final CachedValue<?, ?> owner;
     
-    public CachedValueReference(CachedValue<?, ?> owner, V referent, ReferenceQueue<? super V> q) {
+    public CachedValueWeakReference(CachedValue<?, ?> owner, V referent, ReferenceQueue<? super V> q) {
         super(referent, q);
         this.owner = owner;
     }

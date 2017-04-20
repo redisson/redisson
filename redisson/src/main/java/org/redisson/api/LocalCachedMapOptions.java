@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class LocalCachedMapOptions {
     
-    public enum EvictionPolicy {NONE, LRU, LFU, SOFT};
+    public enum EvictionPolicy {NONE, LRU, LFU, SOFT, WEAK};
     
     private boolean invalidateEntryOnChange;
     private EvictionPolicy evictionPolicy;

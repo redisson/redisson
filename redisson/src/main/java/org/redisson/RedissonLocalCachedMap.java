@@ -43,7 +43,7 @@ import org.redisson.cache.Cache;
 import org.redisson.cache.LFUCacheMap;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.cache.NoneCacheMap;
-import org.redisson.cache.SoftCacheMap;
+import org.redisson.cache.ReferenceCacheMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -246,7 +246,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             return new LFUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }
         if (options.getEvictionPolicy() == EvictionPolicy.SOFT) {
-            return new SoftCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+            return ReferenceCacheMap.soft(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.WEAK) {
+            return ReferenceCacheMap.weak(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }
         throw new IllegalArgumentException("Invalid eviction policy: " + options.getEvictionPolicy());
     }

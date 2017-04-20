@@ -17,6 +17,8 @@ package org.redisson.cache;
 
 import java.lang.ref.ReferenceQueue;
 
+import org.redisson.cache.ReferenceCachedValue.Type;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -24,22 +26,33 @@ import java.lang.ref.ReferenceQueue;
  * @param <K> key
  * @param <V> value
  */
-public class SoftCacheMap<K, V> extends AbstractCacheMap<K, V> {
+public class ReferenceCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     private final ReferenceQueue<V> queue = new ReferenceQueue<V>();
     
-    public SoftCacheMap(long timeToLiveInMillis, long maxIdleInMillis) {
+    private ReferenceCachedValue.Type type;
+    
+    public static <K, V> ReferenceCacheMap<K, V> weak(long timeToLiveInMillis, long maxIdleInMillis) {
+        return new ReferenceCacheMap<K, V>(timeToLiveInMillis, maxIdleInMillis, Type.WEAK);
+    }
+    
+    public static <K, V> ReferenceCacheMap<K, V> soft(long timeToLiveInMillis, long maxIdleInMillis) {
+        return new ReferenceCacheMap<K, V>(timeToLiveInMillis, maxIdleInMillis, Type.SOFT);
+    }
+    
+    ReferenceCacheMap(long timeToLiveInMillis, long maxIdleInMillis, ReferenceCachedValue.Type type) {
         super(0, timeToLiveInMillis, maxIdleInMillis);
+        this.type = type;
     }
 
     protected CachedValue<K, V> create(K key, V value, long ttl, long maxIdleTime) {
-        return new SoftCachedValue<K, V>(key, value, ttl, maxIdleTime, queue);
+        return new ReferenceCachedValue<K, V>(key, value, ttl, maxIdleTime, queue, type);
     }
 
     @Override
     protected boolean removeExpiredEntries() {
         while (true) {
-            CachedValueReference<V> value = (CachedValueReference<V>) queue.poll();
+            CachedValueSoftReference<V> value = (CachedValueSoftReference<V>) queue.poll();
             if (value == null) {
                 break;
             }
