@@ -92,6 +92,7 @@ public class RedissonCache implements Cache {
 
     @Override
     public void put(Object key, Object value) {
+        value = toStoreValue(value);
         if (mapCache != null) {
             mapCache.fastPut(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
         } else {
@@ -100,6 +101,7 @@ public class RedissonCache implements Cache {
     }
 
     public ValueWrapper putIfAbsent(Object key, Object value) {
+        value = toStoreValue(value);
         Object prevValue;
         if (mapCache != null) {
             prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
