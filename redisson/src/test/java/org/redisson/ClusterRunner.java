@@ -9,6 +9,10 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.redisson.misc.BiHashMap;
 
 /**
  *
@@ -46,8 +50,8 @@ public class ClusterRunner {
         return this;
     }
     
-    public List<RedisRunner.RedisProcess> run() throws IOException, InterruptedException, RedisRunner.FailedToStartRedisException {
-        ArrayList<RedisRunner.RedisProcess> processes = new ArrayList<>();
+    public synchronized ClusterProcesses run() throws IOException, InterruptedException, RedisRunner.FailedToStartRedisException {
+        BiHashMap<String, RedisRunner.RedisProcess> processes = new BiHashMap<>();
         for (RedisRunner runner : nodes.keySet()) {
             List<String> options = getClusterConfig(runner);
             String confFile = runner.dir() + File.separator + nodes.get(runner) + ".conf";
@@ -58,15 +62,15 @@ public class ClusterRunner {
                     System.out.println(line);
                 });
             }
-            processes.add(runner.clusterConfigFile(confFile).run());
+            processes.put(nodes.get(runner), runner.clusterConfigFile(confFile).run());
         }
         Thread.sleep(1000);
-        for (RedisRunner.RedisProcess process : processes) {
+        for (RedisRunner.RedisProcess process : processes.valueSet()) {
             if (!process.isAlive()) {
                 throw new RedisRunner.FailedToStartRedisException();
             }
         }
-        return processes;
+        return new ClusterProcesses(processes);
     }
     
     private List<String> getClusterConfig(RedisRunner runner) {
@@ -94,8 +98,10 @@ public class ClusterRunner {
                     : "1").append(" ");
             sb.append(c + 1).append(" ");
             sb.append("connected ");
-            sb.append(getSlots(c, nodes.size()));
-            c++;
+            if (!slaveMasters.containsKey(nodeId)) {
+                sb.append(getSlots(c, nodes.size() - slaveMasters.size()));
+                c++;
+            }
             nodeConfig.add(sb.toString());
         }
         nodeConfig.add("vars currentEpoch 0 lastVoteEpoch 0");
@@ -112,5 +118,38 @@ public class ClusterRunner {
     private static String getRandomId() {
         final SecureRandom r = new SecureRandom();
         return new BigInteger(160, r).toString(16);
+    }
+    
+    public static class ClusterProcesses {
+        private final BiHashMap<String, RedisRunner.RedisProcess> processes;
+
+        private ClusterProcesses(BiHashMap<String, RedisRunner.RedisProcess> processes) {
+            this.processes = processes;
+        }
+        
+        public RedisRunner.RedisProcess getProcess(String nodeId) {
+            return processes.get(nodeId);
+        }
+        
+        public String getNodeId(RedisRunner.RedisProcess process) {
+            return processes.reverseGet(process);
+        }
+        
+        public Set<RedisRunner.RedisProcess> getNodes() {
+            return processes.valueSet();
+        }
+        
+        public Set<String> getNodeIds() {
+            return processes.keySet();
+        }
+        
+        public synchronized Map<String, Integer> shutdown() {
+            return processes
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey(),
+                            e -> e.getValue().stop()));
+        }
     }
 }
