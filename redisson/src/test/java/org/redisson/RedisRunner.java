@@ -828,7 +828,7 @@ public class RedisRunner {
     }
     
     public String dir() {
-        return this.path;
+        return isRandomDir() ? defaultDir() : this.path;
     }
 
     public String getInitialBindAddr() {
