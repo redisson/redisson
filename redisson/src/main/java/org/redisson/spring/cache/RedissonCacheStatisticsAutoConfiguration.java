@@ -15,10 +15,12 @@
  */
 package org.redisson.spring.cache;
 
+import org.springframework.boot.actuate.cache.CacheStatisticsProvider;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +35,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @AutoConfigureAfter(CacheAutoConfiguration.class)
 @ConditionalOnBean(CacheManager.class)
+@ConditionalOnClass(CacheStatisticsProvider.class)
 public class RedissonCacheStatisticsAutoConfiguration {
     @Bean
     public RedissonCacheStatisticsProvider redissonCacheStatisticsProvider(){
