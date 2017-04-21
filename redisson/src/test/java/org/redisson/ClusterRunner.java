@@ -86,7 +86,7 @@ public class ClusterRunner {
             sb.append(me.equals(nodeAddr)
                     ? "myself,"
                     : "");
-            boolean isMaster = !masters.containsKey(nodeId);
+            boolean isMaster = !slaveMasters.containsKey(nodeId);
             if (isMaster) {
                  sb.append("master -");
             } else {
