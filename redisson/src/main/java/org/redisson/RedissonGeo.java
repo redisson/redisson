@@ -413,7 +413,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
 	@Override
 	public RFuture<Integer> radiusStoreAsync(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit) {
-        return commandExecutor.writeAsync(fromKey, LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE_INT, fromKey, convert(longitude), convert(latitude), radius, geoUnit, "STORE", getName());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE_INT, fromKey, convert(longitude), convert(latitude), radius, geoUnit, "STORE", getName());
 	}
 
 	@Override
@@ -423,7 +423,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
 	@Override
 	public RFuture<Integer> radiusStoreAsync(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit, int count) {
-        return commandExecutor.writeAsync(fromKey, LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE_INT, fromKey, convert(longitude), convert(latitude), radius, geoUnit, "COUNT", count, "STORE", getName());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE_INT, fromKey, convert(longitude), convert(latitude), radius, geoUnit, "COUNT", count, "STORE", getName());
 	}
 
 	@Override
@@ -433,7 +433,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
 	@Override
 	public RFuture<Integer> radiusStoreAsync(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count) {
-        return commandExecutor.writeAsync(fromKey, LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE_INT, fromKey, convert(longitude), convert(latitude), radius, geoUnit, geoOrder, "COUNT", count, "STORE", getName());
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE_INT, fromKey, convert(longitude), convert(latitude), radius, geoUnit, geoOrder, "COUNT", count, "STORE", getName());
 	}
 
 	@Override
@@ -443,7 +443,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
 	@Override
 	public RFuture<Integer> radiusStoreAsync(String fromKey, V member, double radius, GeoUnit geoUnit) {
-        return commandExecutor.writeAsync(fromKey, codec, RedisCommands.GEORADIUSBYMEMBER_STORE_INT, fromKey, member, radius, geoUnit, "STORE", getName());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE_INT, fromKey, member, radius, geoUnit, "STORE", getName());
 	}
 
 	@Override
@@ -453,17 +453,17 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
 	@Override
 	public RFuture<Integer> radiusStoreAsync(String fromKey, V member, double radius, GeoUnit geoUnit, int count) {
-        return commandExecutor.writeAsync(fromKey, codec, RedisCommands.GEORADIUSBYMEMBER_STORE_INT, fromKey, member, radius, geoUnit, "COUNT", count, "STORE", getName());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE_INT, fromKey, member, radius, geoUnit, "COUNT", count, "STORE", getName());
 	}
 
 	@Override
 	public int radiusStore(String fromKey, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count) {
-		return get(radiusStoreAsync(fromKey, member, radius, geoUnit, count));
+        return get(radiusStoreAsync(fromKey, member, radius, geoUnit, geoOrder, count));
 	}
 
 	@Override
 	public RFuture<Integer> radiusStoreAsync(String fromKey, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count) {
-        return commandExecutor.writeAsync(fromKey, codec, RedisCommands.GEORADIUSBYMEMBER_STORE_INT, fromKey, member, radius, geoUnit, geoOrder, "COUNT", count, "STORE", getName());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE_INT, fromKey, member, radius, geoUnit, geoOrder, "COUNT", count, "STORE", getName());
 	}
 
 }
