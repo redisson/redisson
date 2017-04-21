@@ -557,10 +557,15 @@ public class RedissonMapCacheTest extends BaseTest {
 
         map.putIfAbsent(new SimpleKey("4"), new SimpleValue("4"), 1, TimeUnit.SECONDS);
         Assert.assertEquals(new SimpleValue("4"), map.get(new SimpleKey("4")));
-
+        
         Thread.sleep(1000);
 
         Assert.assertNull(map.get(new SimpleKey("4")));
+        
+        // this should be passed
+        map.putIfAbsent(new SimpleKey("4"), new SimpleValue("4"), 1, TimeUnit.SECONDS);
+        Assert.assertEquals(new SimpleValue("4"), map.get(new SimpleKey("4")));
+        
 
         SimpleKey key1 = new SimpleKey("2");
         SimpleValue value1 = new SimpleValue("4");
