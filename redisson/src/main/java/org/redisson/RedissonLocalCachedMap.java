@@ -69,17 +69,14 @@ import io.netty.util.internal.ThreadLocalRandom;
  * @author Nikita Koksharov
  *
  */
+@SuppressWarnings("serial")
 public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements RLocalCachedMap<K, V> {
 
     public static class LocalCachedMapClear implements Serializable {
-
-        private static final long serialVersionUID = -1147504473565519634L;
         
     }
     
     public static class LocalCachedMapInvalidate implements Serializable {
-        
-        private static final long serialVersionUID = 3042193807326712670L;
         
         private byte[] excludedId;
         private List<byte[]> keyHashes;
@@ -104,8 +101,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     public static class CacheKey implements Serializable {
-        
-        private static final long serialVersionUID = 4885833426313953713L;
         
         private final byte[] keyHash;
 
@@ -148,8 +143,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     public static class CacheValue implements Serializable {
-        
-        private static final long serialVersionUID = -2641840567498434353L;
         
         private final Object key;
         private final Object value;
