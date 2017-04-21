@@ -76,6 +76,8 @@ public interface RedisCommands {
     RedisCommand<Double> GEODIST = new RedisCommand<Double>("GEODIST", new DoubleReplayConvertor(), 2, Arrays.asList(ValueType.OBJECT, ValueType.OBJECT, ValueType.STRING));
     RedisCommand<List<Object>> GEORADIUS = new RedisCommand<List<Object>>("GEORADIUS", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> GEORADIUSBYMEMBER = new RedisCommand<List<Object>>("GEORADIUSBYMEMBER", new ObjectListReplayDecoder<Object>(), 2);
+    RedisCommand<Integer> GEORADIUS_STORE_INT = new RedisStrictCommand<Integer>("GEORADIUS", new IntegerReplayConvertor());
+    RedisCommand<Integer> GEORADIUSBYMEMBER_STORE_INT = new RedisStrictCommand<Integer>("GEORADIUSBYMEMBER", new IntegerReplayConvertor(), 2);
     
     RedisStrictCommand<Integer> KEYSLOT = new RedisStrictCommand<Integer>("CLUSTER", "KEYSLOT", new IntegerReplayConvertor());
     RedisStrictCommand<RType> TYPE = new RedisStrictCommand<RType>("TYPE", new TypeConvertor());
