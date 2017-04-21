@@ -86,7 +86,8 @@ public class ClusterRunner {
             sb.append(me.equals(nodeAddr)
                     ? "myself,"
                     : "");
-            if (!slaveMasters.containsKey(nodeId)) {
+            boolean isMaster = !masters.containsKey(nodeId);
+            if (isMaster) {
                  sb.append("master -");
             } else {
                 sb.append("slave ").append(slaveMasters.get(nodeId));
@@ -98,7 +99,7 @@ public class ClusterRunner {
                     : "1").append(" ");
             sb.append(c + 1).append(" ");
             sb.append("connected ");
-            if (!slaveMasters.containsKey(nodeId)) {
+            if (isMaster) {
                 sb.append(getSlots(c, nodes.size() - slaveMasters.size()));
                 c++;
             }
