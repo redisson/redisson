@@ -444,5 +444,99 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @return geo position mapped by object
      */
     Map<V, GeoPosition> radiusWithPosition(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
-    
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units. 
+     * Store result to current Geo.
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return length of result
+     */
+    int radiusStore(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units and limited by count 
+     * Store result to current Geo.
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return length of result
+     */
+    int radiusStore(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code> 
+     * and limited by count 
+     * Store result to current Geo.
+     * 
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @param count - result limit
+     * @return length of result
+     */
+    int radiusStore(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units. 
+     * Store result to current Geo.
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return length of result
+     */
+    int radiusStore(String fromKey, V member, double radius, GeoUnit geoUnit);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * Store result to current Geo.
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return length of result
+     */
+    int radiusStore(String fromKey, V member, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code> 
+     * Store result to current Geo.
+     * 
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return length of result
+     */
+    int radiusStore(String fromKey, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+
 }
