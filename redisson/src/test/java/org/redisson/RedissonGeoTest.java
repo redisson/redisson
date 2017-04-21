@@ -476,4 +476,88 @@ public class RedissonGeoTest extends BaseTest {
         assertThat(geo.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS)).isEmpty();
     }
 
+    @Test
+    public void testRadiusStore() {
+        RGeo<String> geoSource = redisson.getGeo("test");
+        RGeo<String> geoDest = redisson.getGeo("test-store");
+        geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(2);
+        assertThat(geoDest.readAll()).containsExactlyInAnyOrder("Palermo", "Catania");
+    }
+
+    @Test
+    public void testRadiusStoreCount() {
+        RGeo<String> geoSource = redisson.getGeo("test");
+        RGeo<String> geoDest = redisson.getGeo("test-store");
+        geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
+        assertThat(geoDest.readAll()).containsExactly("Catania");
+    }
+
+    @Test
+    public void testRadiusStoreOrderCount() {
+        RGeo<String> geoSource = redisson.getGeo("test");
+        RGeo<String> geoDest = redisson.getGeo("test-store");
+        geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
+        assertThat(geoDest.readAll()).containsExactly("Palermo");
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
+        assertThat(geoDest.readAll()).containsExactly("Catania");
+    }
+
+    @Test
+    public void testRadiusStoreEmpty() {
+        RGeo<String> geoSource = redisson.getGeo("test");
+        RGeo<String> geoDest = redisson.getGeo("test-store");
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(0);
+        assertThat(geoDest.readAll()).isEmpty();
+    }
+
+    @Test
+    public void testRadiusStoreMember() {
+        RGeo<String> geoSource = redisson.getGeo("test");
+        RGeo<String> geoDest = redisson.getGeo("test-store");
+        geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(2);
+        assertThat(geoDest.readAll()).containsExactlyInAnyOrder("Palermo", "Catania");
+    }
+
+    @Test
+    public void testRadiusStoreMemberCount() {
+        RGeo<String> geoSource = redisson.getGeo("test");
+        RGeo<String> geoDest = redisson.getGeo("test-store");
+        geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
+        assertThat(geoDest.readAll()).containsExactly("Palermo");
+    }
+
+    @Test
+    public void testRadiusStoreMemberOrderCount() {
+        RGeo<String> geoSource = redisson.getGeo("test");
+        RGeo<String> geoDest = redisson.getGeo("test-store");
+        geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
+        assertThat(geoDest.readAll()).containsExactly("Catania");
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
+        assertThat(geoDest.readAll()).containsExactly("Palermo");
+    }
+
+    @Test
+    public void testRadiusStoreMemberEmpty() {
+        RGeo<String> geoSource = redisson.getGeo("test");
+        RGeo<String> geoDest = redisson.getGeo("test-store");
+
+        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(0);
+        assertThat(geoDest.readAll()).isEmpty();
+    }
+
 }
