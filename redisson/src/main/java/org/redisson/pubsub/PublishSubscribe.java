@@ -98,7 +98,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 }
                 
                 RedisPubSubListener<Object> listener = createListener(channelName, value);
-                connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener, semaphore);
+                connectionManager.subscribe(LongCodec.INSTANCE, channelName, semaphore, listener);
             }
         };
         semaphore.acquire(listener);

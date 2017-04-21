@@ -211,21 +211,15 @@ public class MasterSlaveEntry {
 
     private void subscribe(final String channelName, final Collection<RedisPubSubListener<?>> listeners,
             final Codec subscribeCodec) {
-        RFuture<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, null);
+        RFuture<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[listeners.size()]));
         subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
             
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future)
                     throws Exception {
-                if (!future.isSuccess()) {
-                    subscribe(channelName, listeners, subscribeCodec);
-                    return;
+                if (future.isSuccess()) {
+                    log.debug("resubscribed listeners of '{}' channel to {}", channelName, future.getNow().getConnection().getRedisClient());
                 }
-                PubSubConnectionEntry newEntry = future.getNow();
-                for (RedisPubSubListener<?> redisPubSubListener : listeners) {
-                    newEntry.addListener(channelName, redisPubSubListener);
-                }
-                log.debug("resubscribed listeners of '{}' channel to {}", channelName, newEntry.getConnection().getRedisClient());
             }
         });
     }
