@@ -34,10 +34,12 @@ import java.util.UUID;
 
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
+import org.redisson.api.LocalCachedMapOptions.InvalidationPolicy;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.cache.Cache;
 import org.redisson.cache.LFUCacheMap;
@@ -70,10 +72,14 @@ import io.netty.util.internal.ThreadLocalRandom;
 public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements RLocalCachedMap<K, V> {
 
     public static class LocalCachedMapClear implements Serializable {
+
+        private static final long serialVersionUID = -1147504473565519634L;
         
     }
     
     public static class LocalCachedMapInvalidate implements Serializable {
+        
+        private static final long serialVersionUID = 3042193807326712670L;
         
         private byte[] excludedId;
         private List<byte[]> keyHashes;
@@ -98,6 +104,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     public static class CacheKey implements Serializable {
+        
+        private static final long serialVersionUID = 4885833426313953713L;
         
         private final byte[] keyHash;
 
@@ -140,6 +148,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     public static class CacheValue implements Serializable {
+        
+        private static final long serialVersionUID = -2641840567498434353L;
         
         private final Object key;
         private final Object value;
@@ -193,6 +203,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private Cache<CacheKey, CacheValue> cache;
     private int invalidateEntryOnChange;
     private int invalidationListenerId;
+    private int invalidationStatusListenerId;
 
     protected RedissonLocalCachedMap(UUID id, CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions options, RedissonClient redisson) {
         super(id, commandExecutor, name, redisson);
@@ -207,14 +218,25 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private void init(UUID id, String name, LocalCachedMapOptions options) {
         instanceId = generateId();
         
-        if (options.isInvalidateEntryOnChange()) {
+        if (options.getInvalidationPolicy() != InvalidationPolicy.NONE) {
             invalidateEntryOnChange = 1;
         }
 
         cache = createCache(options);
 
         invalidationTopic = new RedissonTopic<Object>(commandExecutor, suffixName(name, "topic"));
-        if (options.isInvalidateEntryOnChange()) {
+        if (options.getInvalidationPolicy() != InvalidationPolicy.NONE) {
+            if (options.getInvalidationPolicy() != InvalidationPolicy.ON_CHANGE) {
+                invalidationStatusListenerId = invalidationTopic.addListener(new BaseStatusListener() {
+                    @Override
+                    public void onSubscribe(String channel) {
+                        if (options.getInvalidationPolicy() == InvalidationPolicy.ON_CHANGE_WITH_CLEAR_ON_RECONNECT) {
+                            cache.clear();
+                        }
+                    }
+                });
+            }
+            
             invalidationListenerId = invalidationTopic.addListener(new MessageListener<Object>() {
                 @Override
                 public void onMessage(String channel, Object msg) {
@@ -372,6 +394,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public void destroy() {
         if (invalidationListenerId != 0) {
             invalidationTopic.removeListener(invalidationListenerId);
+        }
+        if (invalidationStatusListenerId != 0) {
+            invalidationTopic.removeListener(invalidationStatusListenerId);
         }
     }
 
