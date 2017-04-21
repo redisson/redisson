@@ -180,16 +180,14 @@ public class SpringNamespaceWikiTest {
                         .port(6381)
                         .randomDir()
                         .nosave());
-        List<RedisRunner.RedisProcess> nodes = clusterRunner.run();
+        ClusterRunner.ClusterProcesses cluster = clusterRunner.run();
         
         try {
             ((ConfigurableApplicationContext)
                     new ClassPathXmlApplicationContext("classpath:org/redisson/spring/support/namespace_wiki_cluster.xml"))
                     .close();
         } finally {
-            for (RedisRunner.RedisProcess node : nodes) {
-                node.stop();
-            }
+            cluster.shutdown();
         }
     }
 }

@@ -9,6 +9,10 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.redisson.misc.BiHashMap;
 
 /**
  *
@@ -17,7 +21,7 @@ import java.util.List;
 public class ClusterRunner {
     
     private final LinkedHashMap<RedisRunner, String> nodes = new LinkedHashMap<>();
-    private final LinkedHashMap<String, String> masters = new LinkedHashMap<>();
+    private final LinkedHashMap<String, String> slaveMasters = new LinkedHashMap<>();
     
     public ClusterRunner addNode(RedisRunner runner) {
         nodes.putIfAbsent(runner, getRandomId());
@@ -41,16 +45,16 @@ public class ClusterRunner {
         addNode(master);
         for (RedisRunner slave : slaves) {
             addNode(slave);
-            masters.put(nodes.get(slave), nodes.get(master));
+            slaveMasters.put(nodes.get(slave), nodes.get(master));
         }
         return this;
     }
     
-    public List<RedisRunner.RedisProcess> run() throws IOException, InterruptedException, RedisRunner.FailedToStartRedisException {
-        ArrayList<RedisRunner.RedisProcess> processes = new ArrayList<>();
+    public synchronized ClusterProcesses run() throws IOException, InterruptedException, RedisRunner.FailedToStartRedisException {
+        BiHashMap<String, RedisRunner.RedisProcess> processes = new BiHashMap<>();
         for (RedisRunner runner : nodes.keySet()) {
             List<String> options = getClusterConfig(runner);
-            String confFile = runner.dir() + File.separatorChar + nodes.get(runner) + ".conf";
+            String confFile = runner.dir() + File.separator + nodes.get(runner) + ".conf";
             System.out.println("WRITING CONFIG: for " + nodes.get(runner));
             try (PrintWriter printer = new PrintWriter(new FileWriter(confFile))) {
                 options.stream().forEach((line) -> {
@@ -58,22 +62,21 @@ public class ClusterRunner {
                     System.out.println(line);
                 });
             }
-            processes.add(runner.clusterConfigFile(confFile).run());
+            processes.put(nodes.get(runner), runner.clusterConfigFile(confFile).run());
         }
         Thread.sleep(1000);
-        for (RedisRunner.RedisProcess process : processes) {
+        for (RedisRunner.RedisProcess process : processes.valueSet()) {
             if (!process.isAlive()) {
                 throw new RedisRunner.FailedToStartRedisException();
             }
         }
-        return processes;
+        return new ClusterProcesses(processes);
     }
     
     private List<String> getClusterConfig(RedisRunner runner) {
         String me = runner.getInitialBindAddr() + ":" + runner.getPort();
         List<String> nodeConfig = new ArrayList<>();
-        int c = 1;
-        int master = 0;
+        int c = 0;
         for (RedisRunner node : nodes.keySet()) {
             String nodeId = nodes.get(node);
             StringBuilder sb = new StringBuilder();
@@ -87,36 +90,67 @@ public class ClusterRunner {
             if (isMaster) {
                  sb.append("master -");
             } else {
-                sb.append("slave ").append(masters.get(nodeId));
+                sb.append("slave ").append(slaveMasters.get(nodeId));
             }
             sb.append(" ");
             sb.append("0").append(" ");
             sb.append(me.equals(nodeAddr)
                     ? "0"
                     : "1").append(" ");
-            sb.append(c).append(" ");
+            sb.append(c + 1).append(" ");
             sb.append("connected ");
             if (isMaster) {
-                sb.append(getSlots(master, masters.size()));
-                master++;
+                sb.append(getSlots(c, nodes.size() - slaveMasters.size()));
+                c++;
             }
-            
-            c++;
             nodeConfig.add(sb.toString());
         }
         nodeConfig.add("vars currentEpoch 0 lastVoteEpoch 0");
         return nodeConfig;
     }
     
-    private String getSlots(int index, int groupNum) {
+    private static String getSlots(int index, int groupNum) {
         final double t = 16383;
         int start = index == 0 ? 0 : (int) (t / groupNum * index);
         int end = index == groupNum - 1 ? (int) t : (int) (t / groupNum * (index + 1)) - 1;
         return start + "-" + end;
     }
 
-    private String getRandomId() {
+    private static String getRandomId() {
         final SecureRandom r = new SecureRandom();
         return new BigInteger(160, r).toString(16);
+    }
+    
+    public static class ClusterProcesses {
+        private final BiHashMap<String, RedisRunner.RedisProcess> processes;
+
+        private ClusterProcesses(BiHashMap<String, RedisRunner.RedisProcess> processes) {
+            this.processes = processes;
+        }
+        
+        public RedisRunner.RedisProcess getProcess(String nodeId) {
+            return processes.get(nodeId);
+        }
+        
+        public String getNodeId(RedisRunner.RedisProcess process) {
+            return processes.reverseGet(process);
+        }
+        
+        public Set<RedisRunner.RedisProcess> getNodes() {
+            return processes.valueSet();
+        }
+        
+        public Set<String> getNodeIds() {
+            return processes.keySet();
+        }
+        
+        public synchronized Map<String, Integer> shutdown() {
+            return processes
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey(),
+                            e -> e.getValue().stop()));
+        }
     }
 }
