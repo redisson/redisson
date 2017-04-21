@@ -74,13 +74,24 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     @Override
     protected void onMapFull() {
-        Collection<CachedValue<K, V>> queue = queues.get((int)Math.abs(index.incrementAndGet() % queues.size()));
-        synchronized (queue) {
-            Iterator<CachedValue<K, V>> iter = queue.iterator();
-            if (iter.hasNext()) {
-                CachedValue<K, V> value = iter.next();
-                iter.remove();
-                map.remove(value.getKey(), value);
+        int startIndex = -1;
+        while (true) {
+            int queueIndex = (int)Math.abs(index.incrementAndGet() % queues.size());
+            if (queueIndex == startIndex) {
+                return;
+            }
+            if (startIndex == -1) {
+                startIndex = queueIndex;
+            }
+            Collection<CachedValue<K, V>> queue = queues.get(queueIndex);
+            synchronized (queue) {
+                Iterator<CachedValue<K, V>> iter = queue.iterator();
+                if (iter.hasNext()) {
+                    CachedValue<K, V> value = iter.next();
+                    iter.remove();
+                    map.remove(value.getKey(), value);
+                    return;
+                }
             }
         }
     }
