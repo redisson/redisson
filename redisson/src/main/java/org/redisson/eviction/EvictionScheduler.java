@@ -55,8 +55,8 @@ public class EvictionScheduler {
         }
     }
     
-    public void schedule(String name) {
-        EvictionTask task = new SetCacheEvictionTask(name, executor);
+    public void schedule(String name, long shiftInMilliseconds) {
+        EvictionTask task = new ScoredSetEvictionTask(name, executor, shiftInMilliseconds);
         EvictionTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask == null) {
             task.schedule();

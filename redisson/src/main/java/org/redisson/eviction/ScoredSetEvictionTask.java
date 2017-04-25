@@ -25,18 +25,20 @@ import org.redisson.command.CommandAsyncExecutor;
  * @author Nikita Koksharov
  *
  */
-public class SetCacheEvictionTask extends EvictionTask {
+public class ScoredSetEvictionTask extends EvictionTask {
 
     private final String name;
+    private final long shiftInMilliseconds;
     
-    public SetCacheEvictionTask(String name, CommandAsyncExecutor executor) {
+    public ScoredSetEvictionTask(String name, CommandAsyncExecutor executor, long shiftInMilliseconds) {
         super(executor);
         this.name = name;
+        this.shiftInMilliseconds = shiftInMilliseconds;
     }
 
     @Override
     RFuture<Integer> execute() {
-        return executor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.ZREMRANGEBYSCORE, name, 0, System.currentTimeMillis());
+        return executor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.ZREMRANGEBYSCORE, name, 0, System.currentTimeMillis() - shiftInMilliseconds);
     }
     
 }

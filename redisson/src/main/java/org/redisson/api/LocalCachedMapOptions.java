@@ -25,8 +25,65 @@ import java.util.concurrent.TimeUnit;
  */
 public class LocalCachedMapOptions {
     
-    public enum InvalidationPolicy {NONE, ON_CHANGE, ON_CHANGE_WITH_CLEAR_ON_RECONNECT}
-    public enum EvictionPolicy {NONE, LRU, LFU, SOFT, WEAK};
+    public enum InvalidationPolicy {
+        
+        /**
+         * No invalidation on map changes
+         */
+        NONE, 
+
+        /**
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         */
+        ON_CHANGE, 
+        
+        /**
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         * <p>
+         * Clear cache if LocalCachedMap instance has been disconnected for a while.
+         */
+        ON_CHANGE_WITH_CLEAR_ON_RECONNECT, 
+
+        /**
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         * <p>
+         * Store invalidated entry hash in invalidation log for 10 minutes.
+         * Cache keys for stored invalidated entry hashes will be removed 
+         * if LocalCachedMap instance has been disconnected less than 10 minutes 
+         * or whole cache will be cleaned otherwise.
+         */
+        ON_CHANGE_WITH_LOAD_ON_RECONNECT
+    }
+    
+    public enum EvictionPolicy {
+        
+        /**
+         * Cache without eviction. 
+         */
+        NONE, 
+        
+        /**
+         * Least Recently Used cache.
+         */
+        LRU, 
+        
+        /**
+         * Least Frequently Used cache.
+         */
+        LFU, 
+        
+        /**
+         * Cache with Soft Reference used for values.
+         * All references will be collected by GC
+         */
+        SOFT, 
+
+        /**
+         * Cache with Weak Reference used for values. 
+         * All references will be collected by GC
+         */
+        WEAK
+    };
     
     private InvalidationPolicy invalidationPolicy;
     private EvictionPolicy evictionPolicy;
@@ -63,7 +120,7 @@ public class LocalCachedMapOptions {
         return new LocalCachedMapOptions()
                     .cacheSize(0).timeToLive(0).maxIdle(0)
                     .evictionPolicy(EvictionPolicy.NONE)
-                    .invalidateEntryOnChange(true);
+                    .invalidationPolicy(InvalidationPolicy.ON_CHANGE);
     }
     
     public EvictionPolicy getEvictionPolicy() {
