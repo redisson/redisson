@@ -235,7 +235,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         addListeners(name, options, redisson);
     }
 
-    private void addListeners(String name, LocalCachedMapOptions options, RedissonClient redisson) {
+    private void addListeners(String name, final LocalCachedMapOptions options, final RedissonClient redisson) {
         invalidationTopic = new RedissonTopic<Object>(commandExecutor, suffixName(name, "topic"));
 
         if (options.getInvalidationPolicy() == InvalidationPolicy.NONE) {
