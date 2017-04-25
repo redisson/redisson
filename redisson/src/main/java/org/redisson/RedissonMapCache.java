@@ -85,6 +85,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private static final RedisCommand<Object> EVAL_REMOVE = new RedisCommand<Object>("EVAL", 4, ValueType.MAP_KEY, ValueType.MAP_VALUE);
     private static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.MAP);
     private static final RedisCommand<Object> EVAL_PUT_TTL = new RedisCommand<Object>("EVAL", 9, ValueType.MAP, ValueType.MAP_VALUE);
+    private static final RedisCommand<Object> EVAL_PUT_TTL_IF_ABSENT = new RedisCommand<Object>("EVAL", 10, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<Boolean> EVAL_FAST_PUT_TTL = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 9, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<Boolean> EVAL_FAST_PUT_TTL_IF_ABSENT = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 10, ValueType.MAP, ValueType.MAP_VALUE);
     private static final RedisCommand<Object> EVAL_GET_TTL = new RedisCommand<Object>("EVAL", 7, ValueType.MAP_KEY, ValueType.MAP_VALUE);
@@ -273,26 +274,57 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             maxIdleTimeout = System.currentTimeMillis() + maxIdleDelta;
         }
 
-        return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT_TTL,
-                      "if redis.call('hexists', KEYS[1], ARGV[4]) == 0 then "
-                        + "if tonumber(ARGV[1]) > 0 then "
-                            + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[4]); "
-                        + "end; "
-                        + "if tonumber(ARGV[2]) > 0 then "
-                            + "redis.call('zadd', KEYS[3], ARGV[2], ARGV[4]); "
-                        + "end; "
-                        + "local value = struct.pack('dLc0', ARGV[3], string.len(ARGV[5]), ARGV[5]); "
-                        + "redis.call('hset', KEYS[1], ARGV[4], value); "
-                        + "return nil; "
-                    + "else "
-                        + "local value = redis.call('hget', KEYS[1], ARGV[4]); "
-                        + "if value == false then "
-                            + "return nil; "
-                        + "end;"
-                        + "local t, val = struct.unpack('dLc0', value); "
-                        + "return val; "
-                    + "end",
-                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key)), ttlTimeout, maxIdleTimeout, maxIdleDelta, key, value);
+        return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT_TTL_IF_ABSENT,
+        		  "local insertable = false; "
+	            + "local value = redis.call('hget', KEYS[1], ARGV[5]); "
+	            + "if value == false then "
+	            	+ "insertable = true; "
+	        	+ "else "
+	        		+ "if insertable == false then "
+		        		+ "local t, val = struct.unpack('dLc0', value); "
+		                + "local expireDate = 92233720368547758; "
+		                + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[5]); "
+		                + "if expireDateScore ~= false then "
+		                    + "expireDate = tonumber(expireDateScore) "
+		                + "end; "
+		                + "if t ~= 0 then "
+		                    + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[5]); "
+		                    + "if expireIdle ~= false then "
+		                        + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+		                    + "end; "
+		                + "end; "
+		                + "if expireDate <= tonumber(ARGV[1]) then "
+		                    + "insertable = true; "
+		                + "end; "        	
+	        		+ "end; "
+				+ "end; "
+	        		
+				+ "if insertable == true then "
+					// ttl
+					+ "if tonumber(ARGV[2]) > 0 then "
+						+ "redis.call('zadd', KEYS[2], ARGV[2], ARGV[5]); "
+					+ "else "
+						+ "redis.call('zrem', KEYS[2], ARGV[5]); "
+					+ "end; "
+						
+					// idle
+					+ "if tonumber(ARGV[3]) > 0 then "
+						+ "redis.call('zadd', KEYS[3], ARGV[3], ARGV[5]); "
+					+ "else "
+						+ "redis.call('zrem', KEYS[3], ARGV[5]); "
+					+ "end; "
+					
+					// value
+					+ "local val = struct.pack('dLc0', ARGV[4], string.len(ARGV[6]), ARGV[6]); "
+					+ "redis.call('hset', KEYS[1], ARGV[5], val); "
+					
+					+ "return nil;"
+				+ "else "
+					+ "local t, val = struct.unpack('dLc0', value); "
+					+ "redis.call('zadd', KEYS[3], t + ARGV[1], ARGV[5]); "
+					+ "return val;"
+				+ "end; ",
+				Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key)), System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, key, value);
     }
 
     @Override
