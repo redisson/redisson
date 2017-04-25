@@ -41,6 +41,7 @@ public class LocalCachedMapOptions {
          * Invalidate cache entry across all LocalCachedMap instances on map entry change.
          * <p>
          * Clear cache if LocalCachedMap instance has been disconnected for a while.
+         * It's applied to avoid stale objects in cache.
          */
         ON_CHANGE_WITH_CLEAR_ON_RECONNECT, 
 
@@ -51,6 +52,7 @@ public class LocalCachedMapOptions {
          * Cache keys for stored invalidated entry hashes will be removed 
          * if LocalCachedMap instance has been disconnected less than 10 minutes 
          * or whole cache will be cleaned otherwise.
+         * It's applied to avoid stale objects in cache.
          */
         ON_CHANGE_WITH_LOAD_ON_RECONNECT
     }
